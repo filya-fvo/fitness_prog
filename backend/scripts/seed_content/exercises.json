@@ -1,0 +1,1802 @@
+[
+  {
+    "name_ru": "Приседания со своим весом",
+    "muscle_group": "ноги",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=aclHkVaku9U",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Приседания гоблет",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Приседания со штангой",
+    "muscle_group": "ноги",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Фронтальные приседания",
+    "muscle_group": "ноги",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 4,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Выпады вперёд",
+    "muscle_group": "ноги",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=QOVaHwm-Q6U",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Выпады назад с гантелями",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Болгарские выпады",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=2C-uNgKwPLE",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Жим ногами",
+    "muscle_group": "ноги",
+    "equipment": "machine",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=IZxyjW7MPJQ",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Разгибания ног",
+    "muscle_group": "ноги",
+    "equipment": "machine",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Сгибания ног лёжа",
+    "muscle_group": "ноги",
+    "equipment": "machine",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Румынская тяга",
+    "muscle_group": "ноги",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=jEy_czb3RKA",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Румынская тяга с гантелями",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Становая тяга классическая",
+    "muscle_group": "ноги",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 4,
+    "video_url": "https://www.youtube.com/watch?v=op9kVnSso6Q",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Ягодичный мост",
+    "muscle_group": "ноги",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=OUgsJ8-Vi0E",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Хип-траст со штангой",
+    "muscle_group": "ноги",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=LM8XHLYJoYs",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки стоя",
+    "muscle_group": "ноги",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки сидя",
+    "muscle_group": "ноги",
+    "equipment": "machine",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Зашагивания на тумбу",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Боковые выпады",
+    "muscle_group": "ноги",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Сумо-приседания",
+    "muscle_group": "ноги",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «ноги».",
+    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
+    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Отжимания от пола",
+    "muscle_group": "грудь",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Отжимания с колен",
+    "muscle_group": "грудь",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Отжимания с возвышения",
+    "muscle_group": "грудь",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим гантелей лёжа",
+    "muscle_group": "грудь",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим штанги лёжа",
+    "muscle_group": "грудь",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим гантелей на наклонной",
+    "muscle_group": "грудь",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Разведение гантелей лёжа",
+    "muscle_group": "грудь",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Сведение рук в кроссовере",
+    "muscle_group": "грудь",
+    "equipment": "cable",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Отжимания на брусьях",
+    "muscle_group": "грудь",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=2z8JmcrW-As",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим в тренажёре",
+    "muscle_group": "грудь",
+    "equipment": "machine",
+    "description": "Упражнение на группу «грудь».",
+    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
+    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Тяга гантели в наклоне",
+    "muscle_group": "спина",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=pYcpY20QaE8",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга штанги в наклоне",
+    "muscle_group": "спина",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга верхнего блока",
+    "muscle_group": "спина",
+    "equipment": "cable",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=CAwf7n6Luuc",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга горизонтального блока",
+    "muscle_group": "спина",
+    "equipment": "cable",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Подтягивания",
+    "muscle_group": "спина",
+    "equipment": "pullup_bar",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 4,
+    "video_url": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Австралийские подтягивания",
+    "muscle_group": "спина",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга Т-грифа",
+    "muscle_group": "спина",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Пуловер с гантелью",
+    "muscle_group": "спина",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Гиперэкстензия",
+    "muscle_group": "спина",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=ph3pddpKzzw",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Face pull",
+    "muscle_group": "спина",
+    "equipment": "cable",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=rep-qVOkqgk",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга резинки к поясу",
+    "muscle_group": "спина",
+    "equipment": "bands",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Шраги с гантелями",
+    "muscle_group": "спина",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «спина».",
+    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
+    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Жим гантелей сидя",
+    "muscle_group": "плечи",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=qEwKCR5JCog",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Жим штанги стоя",
+    "muscle_group": "плечи",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Разводка гантелей в стороны",
+    "muscle_group": "плечи",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Разводка в наклоне",
+    "muscle_group": "плечи",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы гантелей перед собой",
+    "muscle_group": "плечи",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Тяга к подбородку",
+    "muscle_group": "плечи",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Арнольд-жим",
+    "muscle_group": "плечи",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Обратные разведения в тренажёре",
+    "muscle_group": "плечи",
+    "equipment": "machine",
+    "description": "Упражнение на группу «плечи».",
+    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
+    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Сгибания гантелей на бицепс",
+    "muscle_group": "бицепс",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «бицепс».",
+    "technique": "Локти зафиксированы, без раскачки корпуса.",
+    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=ykJmrZ5v0Oo",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Сгибания со штангой",
+    "muscle_group": "бицепс",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «бицепс».",
+    "technique": "Локти зафиксированы, без раскачки корпуса.",
+    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Молотковые сгибания",
+    "muscle_group": "бицепс",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «бицепс».",
+    "technique": "Локти зафиксированы, без раскачки корпуса.",
+    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=zC3nLlEvin4",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Сгибания на скамье Скотта",
+    "muscle_group": "бицепс",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «бицепс».",
+    "technique": "Локти зафиксированы, без раскачки корпуса.",
+    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Сгибания на нижнем блоке",
+    "muscle_group": "бицепс",
+    "equipment": "cable",
+    "description": "Упражнение на группу «бицепс».",
+    "technique": "Локти зафиксированы, без раскачки корпуса.",
+    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Французский жим гантели",
+    "muscle_group": "трицепс",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «трицепс».",
+    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
+    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=nRiJVZDpdL0",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "трицепс"
+    ]
+  },
+  {
+    "name_ru": "Разгибания на блоке",
+    "muscle_group": "трицепс",
+    "equipment": "cable",
+    "description": "Упражнение на группу «трицепс».",
+    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
+    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=2-LAMcpzODU",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "трицепс"
+    ]
+  },
+  {
+    "name_ru": "Отжимания узким хватом",
+    "muscle_group": "трицепс",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «трицепс».",
+    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
+    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "трицепс"
+    ]
+  },
+  {
+    "name_ru": "Жим лёжа узким хватом",
+    "muscle_group": "трицепс",
+    "equipment": "barbell",
+    "description": "Упражнение на группу «трицепс».",
+    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
+    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "трицепс"
+    ]
+  },
+  {
+    "name_ru": "Разгибания гантели из-за головы",
+    "muscle_group": "трицепс",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «трицепс».",
+    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
+    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "трицепс"
+    ]
+  },
+  {
+    "name_ru": "Планка",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=ASdvN_XEl_c",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Боковая планка",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Скручивания",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Велосипед",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы ног лёжа",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Dead bug",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=4XLEnwUr1d8",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Bird dog",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=wiFNA3sqjCA",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Русские скручивания",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Mountain climbers",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=nmwgirgXLYM",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Hollow hold",
+    "muscle_group": "кор",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кор».",
+    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
+    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Бёрпи",
+    "muscle_group": "кардио",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=TU8QYVW0gDU",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Джампинг-джеки",
+    "muscle_group": "кардио",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=iSSAk4XCsRA",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Высокие колени",
+    "muscle_group": "кардио",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Прыжки на скакалке",
+    "muscle_group": "кардио",
+    "equipment": "none",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Гребля в тренажёре",
+    "muscle_group": "кардио",
+    "equipment": "machine",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Велотренажёр",
+    "muscle_group": "кардио",
+    "equipment": "machine",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Эллипс",
+    "muscle_group": "кардио",
+    "equipment": "machine",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gym",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Бег на месте",
+    "muscle_group": "кардио",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Скейтер-прыжки",
+    "muscle_group": "кардио",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Kettlebell swing",
+    "muscle_group": "кардио",
+    "equipment": "kettlebell",
+    "description": "Упражнение на группу «кардио».",
+    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
+    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=YSxHifyI6s8",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "кардио"
+    ]
+  },
+  {
+    "name_ru": "Кошка-корова",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": "https://www.youtube.com/watch?v=kqnua4rHVVA",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Раскрытие грудного отдела у стены",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Растяжка сгибателей бедра",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Поза голубя",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Вращения таза",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Мобилизация голеностопа",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Растяжка грушевидной",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "World greatest stretch",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=oNzynUF41kA",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Растяжка грудных у дверного проёма",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Мобилизация плеч с резинкой",
+    "muscle_group": "мобильность",
+    "equipment": "bands",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Наклоны к носкам",
+    "muscle_group": "мобильность",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «мобильность».",
+    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
+    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "мобильность"
+    ]
+  },
+  {
+    "name_ru": "Трастеры с гантелями",
+    "muscle_group": "full_body",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Махи гирей",
+    "muscle_group": "full_body",
+    "equipment": "kettlebell",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 3,
+    "video_url": "https://www.youtube.com/watch?v=YSxHifyI6s8",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Комплекс squat-to-press",
+    "muscle_group": "full_body",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Фермерская прогулка",
+    "muscle_group": "full_body",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": "https://www.youtube.com/watch?v=Fkzk_RqlYig",
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "youtube",
+    "tags": [
+      "gym",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Присед + жим гантелей",
+    "muscle_group": "full_body",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Выпад + сгибание на бицепс",
+    "muscle_group": "full_body",
+    "equipment": "dumbbells",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Планка с касанием плеч",
+    "muscle_group": "full_body",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Обратные выпады с поворотом",
+    "muscle_group": "full_body",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  },
+  {
+    "name_ru": "Медвежья походка",
+    "muscle_group": "full_body",
+    "equipment": "bodyweight",
+    "description": "Упражнение на группу «full_body».",
+    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
+    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "home",
+      "full_body"
+    ]
+  }
+]

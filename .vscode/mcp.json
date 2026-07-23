@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "codebase-memory-mcp": {
+      "type": "stdio",
+      "command": "C:/Users/broadview/.local/bin/codebase-memory-mcp.exe",
+      "args": []
+    }
+  }
+}

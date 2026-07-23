@@ -1,0 +1,59 @@
+# Render Blueprint (optional). Connect repo and adjust service names/domains.
+# Free web services sleep on inactivity — for always-on use paid or Railway/VPS.
+
+services:
+  - type: web
+    name: fitness-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_USERNAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: worker
+    name: fitness-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: arq app.tasks.notifications.WorkerSettings
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: DATABASE_URL
+      - key: BOT_TOKEN
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: BOT_TOKEN
+      - key: REDIS_URL
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: REDIS_URL
+      - key: JWT_SECRET
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: JWT_SECRET

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Env & secrets
+.env
+.env.local
+.env.production
+.env.*.local
+!**/.env.example
+!**/.env.production.example
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/mcp.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local codebase-memory-mcp artifacts (shared artifact optional)
+.codebase-memory/
+
+
+# Logs & coverage
+*.log
+coverage/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+
+# Frontend build
+frontend/dist/
+
+# Test / cache
+*.tsbuildinfo
+.cache/
+
+# Local tunnel URLs
+scripts/tunnel-urls.local.env
+
+
+ngrok.txt
+.ngrok.yml
+scripts/ngrok-urls.local.env
+
+
+tools/ngrok/
+
