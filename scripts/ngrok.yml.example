@@ -1,0 +1,8 @@
+# Copy to ngrok.yml (gitignored) or let scripts/dev.ps1 generate it from .env
+version: "2"
+# Prefer NGROK_AUTHTOKEN in repo-root .env or backend/.env — do not commit tokens.
+# authtoken: ${NGROK_AUTHTOKEN}
+tunnels:
+  frontend:
+    addr: 5173
+    proto: http

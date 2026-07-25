@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.exercise import (
     ExerciseCreate,
@@ -65,9 +65,9 @@ async def get_exercise(
 async def create_exercise(
     body: ExerciseCreate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> ExerciseResponse:
-    """Admin-style create used by simple admin CRUD in Sprint 2."""
+    """Admin-only create."""
     exercise = await exercise_service.create_exercise(session, body)
     return ExerciseResponse.model_validate(exercise)
 
@@ -77,7 +77,7 @@ async def update_exercise(
     exercise_id: uuid.UUID,
     body: ExerciseUpdate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> ExerciseResponse:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
@@ -90,7 +90,7 @@ async def update_exercise(
 async def delete_exercise(
     exercise_id: uuid.UUID,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> None:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:

@@ -4,17 +4,27 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
-import { fetchMyProfile } from "@/api/users";
+import { fetchWorkoutHistory } from "@/api/workouts";
+import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
+  readCachedExercises,
+  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { trackEvent } from "@/lib/analytics";
 import { useWorkoutStore } from "@/store/workoutStore";
-import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import { isOnline } from "@/utils/network";
+import {
+  buildExerciseHistory,
+  draftsWithSuggestions,
+  ensureProgramStartDate,
+  resolveWeekPhase,
+} from "@/utils/loadProgression";
 import { pickTodayDayIndex, recommendPrograms } from "@/utils/programRecommend";
 
 function draftsFromWorkout(workout: {
@@ -58,9 +68,58 @@ const TYPE_LABELS: Record<string, string> = {
   strength: "Сила",
   hypertrophy: "Гипертрофия",
   mobility: "Мобильность",
-  conditioning: "Кардио",
+  conditioning: "Улица / кондишн",
   custom: "Custom",
 };
+
+const LOC_LABELS: Record<string, string> = {
+  home: "Дом",
+  gym: "Зал",
+  outdoor: "Улица",
+};
+
+const LVL_LABELS: Record<string, string> = {
+  beginner: "Новичок",
+  intermediate: "Опытный",
+  advanced: "Продвинутый",
+};
+
+const LIM_LABELS: Record<string, string> = {
+  no_knee: "без коленей",
+  no_spine: "без позвоночника",
+};
+
+function metaLine(program: Program): string {
+  const st = (program.structure || {}) as Record<string, unknown>;
+  const loc = String(st.location || "");
+  const sexArr = Array.isArray(st.sex) ? (st.sex as string[]) : [];
+  const sex =
+    sexArr.includes("male") && !sexArr.includes("female")
+      ? "М"
+      : sexArr.includes("female") && !sexArr.includes("male")
+        ? "Ж"
+        : "";
+  const lvl = LVL_LABELS[(program.level || program.target_level || "").toLowerCase()] ||
+    program.level ||
+    program.target_level ||
+    "";
+  const lims = Array.isArray(st.limitations)
+    ? (st.limitations as string[]).map((x) => LIM_LABELS[x] || x).filter(Boolean)
+    : [];
+  const days = Array.isArray(st.schedule)
+    ? (st.schedule as unknown[]).length
+    : Number(st.days_per_week) || 0;
+  return [
+    sex,
+    LOC_LABELS[loc] || loc,
+    lvl,
+    TYPE_LABELS[program.workout_type] ?? program.workout_type,
+    days ? `${days} дн.` : "",
+    lims.length ? lims.join(", ") : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 function scheduleOf(program: Program): Array<Record<string, unknown>> {
   const raw =
@@ -70,6 +129,107 @@ function scheduleOf(program: Program): Array<Record<string, unknown>> {
   return Array.isArray(raw)
     ? raw.filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === "object")
     : [];
+}
+
+type DayExerciseRow = {
+  key: string;
+  name: string;
+  exerciseId?: string;
+  sets?: string;
+  reps?: string;
+  restSec?: number;
+};
+
+function dayExerciseRows(day: Record<string, unknown>): DayExerciseRow[] {
+  const exercises = Array.isArray(day.exercises) ? day.exercises : [];
+  if (exercises.length) {
+    return exercises.map((raw, idx) => {
+      const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+      const name = String(
+        item.exercise_name ||
+          item.name_ru ||
+          item.name ||
+          item.title ||
+          `Упражнение ${idx + 1}`,
+      );
+      const sets =
+        item.sets != null
+          ? String(item.sets)
+          : item.target_sets != null
+            ? String(item.target_sets)
+            : undefined;
+      const reps =
+        item.reps != null
+          ? String(item.reps)
+          : item.target_reps != null
+            ? String(item.target_reps)
+            : undefined;
+      const restRaw = item.rest_sec ?? item.rest_time_sec;
+      const restSec =
+        restRaw != null && Number.isFinite(Number(restRaw)) ? Number(restRaw) : undefined;
+      const exerciseId =
+        item.exercise_id != null
+          ? String(item.exercise_id)
+          : item.id != null
+            ? String(item.id)
+            : undefined;
+      return {
+        key: String(exerciseId || `${name}-${idx}`),
+        name,
+        exerciseId,
+        sets,
+        reps,
+        restSec,
+      };
+    });
+  }
+
+  const ids = Array.isArray(day.exercise_ids) ? day.exercise_ids : [];
+  return ids.map((id, idx) => ({
+    key: String(id ?? idx),
+    exerciseId: id != null ? String(id) : undefined,
+    name: `Упражнение ${idx + 1}`,
+  }));
+}
+
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function resolveExerciseFromCatalog(
+  row: DayExerciseRow,
+  byId: Map<string, Exercise>,
+  byName: Map<string, Exercise>,
+): Exercise | null {
+  if (row.exerciseId && byId.has(row.exerciseId)) {
+    return byId.get(row.exerciseId) ?? null;
+  }
+  const byExact = byName.get(normalizeName(row.name));
+  if (byExact) return byExact;
+  const needle = normalizeName(row.name);
+  for (const [name, ex] of byName) {
+    if (name.includes(needle) || needle.includes(name)) return ex;
+  }
+  return null;
+}
+
+function placeholderExercise(row: DayExerciseRow): Exercise {
+  return {
+    id: row.exerciseId || "00000000-0000-4000-8000-000000000001",
+    name_ru: row.name,
+    muscle_group: "",
+    equipment: null,
+    description: "Карточка из программы. Полное описание появится после синхронизации каталога.",
+    technique: "Выполняйте движение подконтрольно, сохраняя нейтраль корпуса.",
+    common_mistakes: null,
+    difficulty: 1,
+    video_url: null,
+    animation_url: null,
+    thumbnail_url: null,
+    media_duration_sec: null,
+    media_source: "none",
+    tags: [],
+  };
 }
 
 export function ProgramsPage() {
@@ -85,7 +245,11 @@ export function ProgramsPage() {
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || "");
   const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || "");
   const [expandedId, setExpandedId] = useState<string | null>(searchParams.get("id"));
+  const [dayExercisesOpen, setDayExercisesOpen] = useState<Record<string, boolean>>({});
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
+  const [profileSex, setProfileSex] = useState<string>("");
+  const [exerciseCatalog, setExerciseCatalog] = useState<Exercise[]>([]);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +260,12 @@ export function ProgramsPage() {
       setLoading(true);
       setError(null);
       try {
+        const cached = await readCachedExercises();
+        if (!cancelled && cached.length) {
+          setExerciseCatalog(cached);
+          setCatalog(cached);
+        }
+
         if (!getStoredToken() || !isOnline()) {
           if (!cancelled) {
             setError("Нужен онлайн и авторизация, чтобы загрузить программы");
@@ -103,13 +273,22 @@ export function ProgramsPage() {
           }
           return;
         }
-        const [result, profile] = await Promise.all([
+        const [result, profile, exercises] = await Promise.all([
           fetchPrograms({ templatesOnly: true }),
           fetchMyProfile().catch(() => null),
+          fetchExercises({ pageSize: 200 }).catch(() => null),
         ]);
         if (!cancelled) {
           setItems(result.items);
-          setProfileGoals((profile?.goals as Record<string, unknown>) || {});
+          const goals = (profile?.goals as Record<string, unknown>) || {};
+          const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
+          setProfileGoals(goals);
+          setProfileSex(String(anthro.sex || goals.sex || ""));
+          if (exercises?.items?.length) {
+            setExerciseCatalog(exercises.items);
+            setCatalog(exercises.items);
+            await cacheExercises(exercises.items);
+          }
           setLoading(false);
         }
       } catch (err) {
@@ -123,19 +302,45 @@ export function ProgramsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setCatalog]);
+
+  const exerciseById = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const ex of exerciseCatalog) map.set(ex.id, ex);
+    return map;
+  }, [exerciseCatalog]);
+
+  const exerciseByName = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const ex of exerciseCatalog) map.set(normalizeName(ex.name_ru), ex);
+    return map;
+  }, [exerciseCatalog]);
+
+  function openProgramExercise(row: DayExerciseRow) {
+    const resolved = resolveExerciseFromCatalog(row, exerciseById, exerciseByName);
+    setDetailExercise(resolved ?? placeholderExercise(row));
+  }
 
   const recommended = useMemo(
     () =>
-      recommendPrograms(items, {
-        primaryGoal: String(profileGoals.primary_goal || ""),
-        level: String(profileGoals.level || ""),
-        daysPerWeek: Number(profileGoals.days_per_week) || undefined,
-        equipment: Array.isArray(profileGoals.equipment)
-          ? (profileGoals.equipment as string[])
-          : [],
-      }),
-    [items, profileGoals],
+      recommendPrograms(
+        items,
+        {
+          primaryGoal: String(profileGoals.primary_goal || ""),
+          level: String(profileGoals.level || ""),
+          daysPerWeek: Number(profileGoals.days_per_week) || undefined,
+          equipment: Array.isArray(profileGoals.equipment)
+            ? (profileGoals.equipment as string[])
+            : [],
+          sex: profileSex || String(profileGoals.sex || ""),
+          location: String(profileGoals.location || ""),
+          limitations: Array.isArray(profileGoals.limitations)
+            ? (profileGoals.limitations as string[])
+            : (profileGoals.limitations as string | null) || null,
+        },
+        8,
+      ),
+    [items, profileGoals, profileSex],
   );
 
   const filtered = useMemo(() => {
@@ -164,6 +369,22 @@ export function ProgramsPage() {
         const ex = await fetchExercises({ pageSize: 200 });
         await cacheExercises(ex.items);
         setCatalog(ex.items);
+        setExerciseCatalog(ex.items);
+      }
+
+      // Persist program start date for 3-week light/medium/heavy cycle
+      const { start, goalsPatch } = ensureProgramStartDate(profileGoals, program.id);
+      if (goalsPatch && isOnline() && getStoredToken()) {
+        try {
+          const profile = await updateMyProfile({
+            goals: { ...profileGoals, ...goalsPatch },
+          });
+          setProfileGoals((profile.goals as Record<string, unknown>) || { ...profileGoals, ...goalsPatch });
+        } catch {
+          setProfileGoals((g) => ({ ...g, ...goalsPatch }));
+        }
+      } else if (goalsPatch) {
+        setProfileGoals((g) => ({ ...g, ...goalsPatch }));
       }
 
       const workout = await startProgramWorkout({
@@ -171,7 +392,24 @@ export function ProgramsPage() {
         dayIndex,
       });
       const clientId = crypto.randomUUID();
-      const drafts = draftsFromWorkout(workout);
+      const plan = (workout.plan || {}) as WorkoutPlan;
+      const phaseMeta = resolveWeekPhase(start);
+      let historyMap = buildExerciseHistory(await readCachedWorkouts());
+      if (isOnline() && getStoredToken()) {
+        try {
+          historyMap = buildExerciseHistory(await fetchWorkoutHistory());
+        } catch {
+          // keep cache
+        }
+      }
+      const drafts =
+        Array.isArray(plan.exercises) && plan.exercises.length
+          ? draftsWithSuggestions({
+              exercises: plan.exercises,
+              history: historyMap,
+              phase: phaseMeta,
+            })
+          : draftsFromWorkout(workout);
       await rememberWorkoutId(clientId, workout.id);
       await saveLocalSession({
         clientId,
@@ -188,6 +426,7 @@ export function ProgramsPage() {
         program_id: program.id,
         day_index: dayIndex,
         exercises: drafts.length,
+        week_phase: phaseMeta.phase,
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
@@ -215,13 +454,7 @@ export function ProgramsPage() {
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-xs text-tg-hint">
-              {TYPE_LABELS[program.workout_type] ?? program.workout_type}
-              {program.level || program.target_level
-                ? ` · ${program.level || program.target_level}`
-                : ""}
-              {days ? ` · ${days} дн.` : ""}
-            </p>
+            <p className="mt-1 text-xs text-tg-hint">{metaLine(program) || (days ? `${days} дн.` : "")}</p>
           </div>
           <button
             type="button"
@@ -243,35 +476,88 @@ export function ProgramsPage() {
               schedule.map((day, idx) => {
                 const dayIndex = Number(day.day_index ?? day.day ?? idx + 1) || idx + 1;
                 const name = String(day.name || day.title || `День ${dayIndex}`);
-                const exercises = Array.isArray(day.exercises) ? day.exercises : [];
-                const exCount =
-                  exercises.length ||
-                  (Array.isArray(day.exercise_ids) ? day.exercise_ids.length : 0);
+                const rows = dayExerciseRows(day);
+                const exCount = rows.length;
                 const isToday = dayIndex === todayIdx;
+                const dayKey = `${program.id}:${dayIndex}`;
+                const listOpen = Boolean(dayExercisesOpen[dayKey]);
                 return (
-                  <div
-                    key={`${program.id}-${dayIndex}`}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-tg-secondary px-3 py-2"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {name}
-                        {isToday ? (
-                          <span className="ml-2 text-[10px] text-tg-link">сегодня</span>
+                  <div key={dayKey} className="rounded-lg bg-tg-secondary px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {name}
+                          {isToday ? (
+                            <span className="ml-2 text-[10px] text-tg-link">сегодня</span>
+                          ) : null}
+                        </p>
+                        <p className="text-[11px] text-tg-hint">
+                          {exCount ? `${exCount} упр.` : "упражнения по шаблону"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {exCount > 0 ? (
+                          <button
+                            type="button"
+                            className="text-xs text-tg-link"
+                            onClick={() =>
+                              setDayExercisesOpen((prev) => ({
+                                ...prev,
+                                [dayKey]: !prev[dayKey],
+                              }))
+                            }
+                          >
+                            {listOpen ? "Скрыть список" : "Упражнения"}
+                          </button>
                         ) : null}
-                      </p>
-                      <p className="text-[11px] text-tg-hint">
-                        {exCount ? `${exCount} упр.` : "упражнения по шаблону"}
-                      </p>
+                        <button
+                          type="button"
+                          disabled={startingKey === dayKey}
+                          onClick={() => void startProgram(program, dayIndex)}
+                          className="rounded-lg bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text disabled:opacity-60"
+                        >
+                          Старт
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      disabled={startingKey === `${program.id}:${dayIndex}`}
-                      onClick={() => void startProgram(program, dayIndex)}
-                      className="rounded-lg bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text disabled:opacity-60"
-                    >
-                      Старт
-                    </button>
+                    {listOpen && exCount > 0 ? (
+                      <ol className="mt-2 space-y-1 border-t border-black/5 pt-2">
+                        {rows.map((row, exIdx) => {
+                          const resolved = resolveExerciseFromCatalog(
+                            row,
+                            exerciseById,
+                            exerciseByName,
+                          );
+                          return (
+                            <li key={row.key}>
+                              <button
+                                type="button"
+                                onClick={() => openProgramExercise(row)}
+                                className="flex w-full items-start justify-between gap-2 rounded-lg px-1 py-1.5 text-left text-xs hover:bg-black/5"
+                              >
+                                <span>
+                                  <span className="font-medium text-tg-text">
+                                    {exIdx + 1}. {row.name}
+                                  </span>
+                                  <span className="ml-1 text-tg-hint">
+                                    {[
+                                      row.sets ? `${row.sets}x` : null,
+                                      row.reps || null,
+                                      row.restSec != null ? `отдых ${row.restSec}с` : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 text-tg-link">
+                                  {resolved ? "Открыть" : "Описание"}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    ) : null}
                   </div>
                 );
               })
@@ -366,6 +652,13 @@ export function ProgramsPage() {
       <Link to="/workouts" className="mt-4 block text-center text-xs text-tg-link">
         Или собрать свою тренировку из каталога
       </Link>
+
+      {detailExercise ? (
+        <ExerciseDetailModal
+          exercise={detailExercise}
+          onClose={() => setDetailExercise(null)}
+        />
+      ) : null}
     </section>
   );
 }

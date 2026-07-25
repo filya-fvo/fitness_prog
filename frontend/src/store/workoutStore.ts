@@ -30,8 +30,12 @@ type WorkoutState = {
   addDraftSet: (exerciseId: string, template?: Partial<LocalSetDraft>) => void;
   removeDraftSet: (exerciseId: string, setNumber: number) => void;
   startRest: (seconds: number) => void;
+  /** Add/subtract seconds while timer is running (clamped). */
+  adjustRest: (deltaSeconds: number) => void;
   tickRest: () => void;
   stopRest: () => void;
+  /** Set rest duration for all incomplete sets of an exercise. */
+  setExerciseRest: (exerciseId: string, restTimeSec: number) => void;
   resetSession: () => void;
 };
 
@@ -122,7 +126,21 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     });
     set({ drafts: renumbered });
   },
-  startRest: (seconds) => set({ isResting: true, restSecondsLeft: seconds }),
+  startRest: (seconds) =>
+    set({
+      isResting: true,
+      restSecondsLeft: Math.max(0, Math.round(seconds)),
+    }),
+  adjustRest: (deltaSeconds) => {
+    const state = get();
+    if (!state.isResting) return;
+    const next = Math.max(0, Math.min(600, state.restSecondsLeft + Math.round(deltaSeconds)));
+    if (next <= 0) {
+      set({ isResting: false, restSecondsLeft: 0 });
+      return;
+    }
+    set({ restSecondsLeft: next });
+  },
   tickRest: () => {
     const left = get().restSecondsLeft;
     if (left <= 1) {
@@ -132,6 +150,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set({ restSecondsLeft: left - 1 });
   },
   stopRest: () => set({ isResting: false, restSecondsLeft: 0 }),
+  setExerciseRest: (exerciseId, restTimeSec) => {
+    const sec = Math.max(0, Math.min(600, Math.round(restTimeSec)));
+    set({
+      drafts: get().drafts.map((d) =>
+        d.exerciseId === exerciseId && !d.isCompleted ? { ...d, restTimeSec: sec } : d,
+      ),
+    });
+  },
   resetSession: () =>
     set({
       activeWorkout: null,

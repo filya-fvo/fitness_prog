@@ -78,3 +78,25 @@ class DailyNutritionResponse(BaseModel):
     totals: dict[str, float]
     meals: dict[str, list[NutritionLogResponse]]
     targets: EnergyTargetsResponse | None = None
+
+
+class NutritionDayTotal(BaseModel):
+    date: Date
+    calories: float
+    proteins: float = 0
+    fats: float = 0
+    carbs: float = 0
+    has_logs: bool = False
+    target_calories: float | None = None
+    delta_calories: float | None = None  # eaten - target (positive = surplus)
+
+
+class NutritionRangeResponse(BaseModel):
+    start: Date
+    end: Date
+    days: list[NutritionDayTotal]
+    targets: EnergyTargetsResponse | None = None
+    daily_target_calories: float | None = None
+    period_target_calories: float | None = None
+    period_eaten_calories: float = 0
+    period_delta_calories: float | None = None

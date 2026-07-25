@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { formatKg, formatRestTime, formatTonnage } from "@/utils/format";
+import { formatElapsed, formatKg, formatRestTime, formatTonnage } from "@/utils/format";
 
 describe("format utils", () => {
   it("formats rest timer mm:ss", () => {
     expect(formatRestTime(0)).toBe("0:00");
     expect(formatRestTime(65)).toBe("1:05");
     expect(formatRestTime(600)).toBe("10:00");
+  });
+
+  it("formats elapsed workout clock", () => {
+    expect(formatElapsed(0)).toBe("0:00");
+    expect(formatElapsed(65)).toBe("1:05");
+    expect(formatElapsed(3600 + 65)).toBe("1:01:05");
   });
 
   it("formats kg", () => {

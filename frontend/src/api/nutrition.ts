@@ -68,9 +68,24 @@ export type NutritionLog = z.infer<typeof logSchema>;
 export type DailyNutrition = z.infer<typeof dailySchema>;
 export type EnergyTargets = z.infer<typeof targetsSchema>;
 
-export async function searchProducts(q: string): Promise<NutritionProduct[]> {
-  const { data } = await apiClient.get("/nutrition/products", { params: { q, limit: 20 } });
-  const parsed = z.object({ items: z.array(productSchema), total: z.number() }).parse(data);
+export async function searchProducts(
+  q: string,
+  opts?: { limit?: number; offset?: number; category?: string },
+): Promise<{ items: NutritionProduct[]; total: number }> {
+  const { data } = await apiClient.get("/nutrition/products", {
+    params: {
+      q,
+      limit: opts?.limit ?? 30,
+      offset: opts?.offset ?? 0,
+      category: opts?.category || undefined,
+    },
+  });
+  return z.object({ items: z.array(productSchema), total: z.number() }).parse(data);
+}
+
+export async function fetchProductCategories(): Promise<string[]> {
+  const { data } = await apiClient.get("/nutrition/categories");
+  const parsed = z.object({ items: z.array(z.string()), total: z.number() }).parse(data);
   return parsed.items;
 }
 
@@ -99,6 +114,44 @@ export async function fetchDailyNutrition(date?: string): Promise<DailyNutrition
 export async function fetchEnergyTargets(): Promise<EnergyTargets> {
   const { data } = await apiClient.get("/nutrition/targets");
   return targetsSchema.parse(data);
+}
+
+const rangeDaySchema = z.object({
+  date: z.string(),
+  calories: z.number(),
+  proteins: z.number().optional().default(0),
+  fats: z.number().optional().default(0),
+  carbs: z.number().optional().default(0),
+  has_logs: z.boolean().optional().default(false),
+  target_calories: z.number().nullable().optional(),
+  delta_calories: z.number().nullable().optional(),
+});
+
+const rangeSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  days: z.array(rangeDaySchema),
+  targets: targetsSchema.nullable().optional(),
+  daily_target_calories: z.number().nullable().optional(),
+  period_target_calories: z.number().nullable().optional(),
+  period_eaten_calories: z.number().optional().default(0),
+  period_delta_calories: z.number().nullable().optional(),
+});
+
+export type NutritionRangeDay = z.infer<typeof rangeDaySchema>;
+export type NutritionRange = z.infer<typeof rangeSchema>;
+
+export async function fetchNutritionRange(opts?: {
+  days?: number;
+  end?: string;
+}): Promise<NutritionRange> {
+  const { data } = await apiClient.get("/nutrition/range", {
+    params: {
+      days: opts?.days ?? 7,
+      end: opts?.end,
+    },
+  });
+  return rangeSchema.parse(data);
 }
 
 /** Local KBJU preview while typing grams (per 100g product macros). */

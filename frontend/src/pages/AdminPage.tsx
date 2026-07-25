@@ -1,13 +1,28 @@
 /**
  * Minimal admin CRUD UI for exercises/programs.
  * P1: media URLs + workout_type/level fields.
+ * Access: only configured bot owner (default @Filatov_Slava).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { apiClient, getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
+import { useUserStore } from "@/store/userStore";
 import type { Exercise } from "@/types/workout";
+
+const ADMIN_USERNAMES = new Set(
+  String(import.meta.env.VITE_ADMIN_TELEGRAM_USERNAMES || "Filatov_Slava")
+    .split(",")
+    .map((s) => s.trim().replace(/^@/, "").toLowerCase())
+    .filter(Boolean),
+);
+
+function isAdminUser(username: string | null | undefined): boolean {
+  const u = (username || "").trim().replace(/^@/, "").toLowerCase();
+  return Boolean(u && ADMIN_USERNAMES.has(u));
+}
 
 type ProgramRow = {
   id: string;
@@ -34,6 +49,8 @@ const WORKOUT_TYPES = [
 ];
 
 export function AdminPage() {
+  const user = useUserStore((s) => s.user);
+  const allowed = useMemo(() => isAdminUser(user?.username), [user?.username]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -73,10 +90,11 @@ export function AdminPage() {
   }
 
   useEffect(() => {
+    if (!allowed) return;
     void reload().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Ошибка загрузки");
     });
-  }, []);
+  }, [allowed]);
 
   function fillExerciseForm(item: Exercise) {
     setEditingExId(item.id);
@@ -186,7 +204,25 @@ export function AdminPage() {
       setBusy(false);
     }
   }
+if (!allowed) {
+    return (
+      <section>
+        <Header title="Админка" subtitle="Доступ ограничен" />
+        <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+          Админка доступна только владельцу бота
+          {ADMIN_USERNAMES.size
+            ? ` (@${Array.from(ADMIN_USERNAMES).join(", @")})`
+            : ""}
+          .
+          <Link to="/" className="mt-3 block text-center text-tg-link">
+            На главную
+          </Link>
+        </div>
+      </section>
+    );
+  }
 
+  
   return (
     <section>
       <Header title="Админка" subtitle="CRUD + media / workout_type / level" />

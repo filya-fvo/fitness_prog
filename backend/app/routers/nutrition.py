@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,10 +13,12 @@ from app.models.user import User
 from app.schemas.nutrition import (
     DailyNutritionResponse,
     EnergyTargetsResponse,
+    NutritionDayTotal,
     NutritionLogCreate,
     NutritionLogResponse,
     NutritionProductListResponse,
     NutritionProductResponse,
+    NutritionRangeResponse,
 )
 from app.services import nutrition_service
 from app.services.energy_targets import compute_energy_targets
@@ -41,16 +43,34 @@ def _product_resp(p) -> NutritionProductResponse:
 @router.get("/products", response_model=NutritionProductListResponse)
 async def search_products(
     q: str = Query(default="", description="Search by name/barcode"),
-    limit: int = Query(default=20, ge=1, le=50),
+    category: str | None = Query(default=None, description="Filter by category"),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=5000),
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> NutritionProductListResponse:
     _ = user
-    items, total = await nutrition_service.search_products(session, q=q, limit=limit)
+    items, total = await nutrition_service.search_products(
+        session,
+        q=q,
+        category=category,
+        limit=limit,
+        offset=offset,
+    )
     return NutritionProductListResponse(
         items=[_product_resp(p) for p in items],
         total=total,
     )
+
+
+@router.get("/categories")
+async def list_categories(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    _ = user
+    cats = await nutrition_service.list_categories(session)
+    return {"items": cats, "total": len(cats)}
 
 
 @router.post("/log", response_model=NutritionLogResponse, status_code=201)
@@ -116,4 +136,56 @@ async def energy_targets(
     """BMR/TDEE/target calories from profile anthropometry + deficit/surplus %."""
     return EnergyTargetsResponse.model_validate(
         compute_energy_targets(user.anthropometry or {}, user.goals or {})
+    )
+
+
+@router.get("/range", response_model=NutritionRangeResponse)
+async def nutrition_range(
+    days: int = Query(default=7, ge=1, le=31, description="Number of days ending at end date"),
+    end: date | None = Query(default=None, description="Inclusive end date (default: today)"),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> NutritionRangeResponse:
+    """Daily calorie totals for a period (for Progress day/week charts)."""
+    end_day = end or date.today()
+    start_day = end_day - timedelta(days=days - 1)
+    raw_days = await nutrition_service.range_daily_totals(
+        session, user, start=start_day, end=end_day
+    )
+    targets_raw = compute_energy_targets(user.anthropometry or {}, user.goals or {})
+    targets = EnergyTargetsResponse.model_validate(targets_raw)
+    daily_target = (
+        float(targets.calories_target)
+        if targets.complete and targets.calories_target is not None
+        else None
+    )
+    day_models: list[NutritionDayTotal] = []
+    eaten = 0.0
+    for row in raw_days:
+        cal = float(row["calories"])
+        eaten += cal
+        delta = (cal - daily_target) if daily_target is not None else None
+        day_models.append(
+            NutritionDayTotal(
+                date=date.fromisoformat(str(row["date"])),
+                calories=cal,
+                proteins=float(row["proteins"]),
+                fats=float(row["fats"]),
+                carbs=float(row["carbs"]),
+                has_logs=bool(row["has_logs"]),
+                target_calories=daily_target,
+                delta_calories=round(delta, 2) if delta is not None else None,
+            )
+        )
+    period_target = (daily_target * len(day_models)) if daily_target is not None else None
+    period_delta = (eaten - period_target) if period_target is not None else None
+    return NutritionRangeResponse(
+        start=start_day,
+        end=end_day,
+        days=day_models,
+        targets=targets,
+        daily_target_calories=daily_target,
+        period_target_calories=round(period_target, 2) if period_target is not None else None,
+        period_eaten_calories=round(eaten, 2),
+        period_delta_calories=round(period_delta, 2) if period_delta is not None else None,
     )

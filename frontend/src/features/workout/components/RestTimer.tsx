@@ -4,9 +4,11 @@ type RestTimerProps = {
   secondsLeft: number;
   isResting: boolean;
   onSkip: () => void;
+  /** Adjust remaining rest time while timer runs (e.g. ±15 / ±30). */
+  onAdjust?: (deltaSeconds: number) => void;
 };
 
-export function RestTimer({ secondsLeft, isResting, onSkip }: RestTimerProps) {
+export function RestTimer({ secondsLeft, isResting, onSkip, onAdjust }: RestTimerProps) {
   if (!isResting) {
     return null;
   }
@@ -29,6 +31,21 @@ export function RestTimer({ secondsLeft, isResting, onSkip }: RestTimerProps) {
             Пропустить
           </button>
         </div>
+        {onAdjust ? (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            {([-30, -15, 15, 30] as const).map((delta) => (
+              <button
+                key={delta}
+                type="button"
+                onClick={() => onAdjust(delta)}
+                className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-semibold"
+                aria-label={delta < 0 ? `Минус ${Math.abs(delta)} секунд` : `Плюс ${delta} секунд`}
+              >
+                {delta > 0 ? `+${delta}с` : `${delta}с`}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

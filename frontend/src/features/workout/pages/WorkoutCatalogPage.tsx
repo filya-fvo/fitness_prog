@@ -13,6 +13,7 @@ import {
   saveLocalSession,
 } from "@/db/syncQueue";
 import { ExerciseCard } from "@/features/workout/components/ExerciseCard";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { trackEvent } from "@/lib/analytics";
 import { useUserStore } from "@/store/userStore";
@@ -76,6 +77,7 @@ export function WorkoutCatalogPage() {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [fromCache, setFromCache] = useState(false);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
 
   const activeTemplate = SET_TEMPLATES.find((t) => t.id === templateId) ?? defaultSetTemplate();
   const muscleGroups = useMemo(() => {
@@ -360,9 +362,21 @@ export function WorkoutCatalogPage() {
             exercise={exercise}
             selected={selectedIds.includes(exercise.id)}
             onSelect={toggleExercise}
+            onOpenDetail={setDetailExercise}
           />
         ))}
       </div>
+
+      {detailExercise ? (
+        <ExerciseDetailModal
+          exercise={detailExercise}
+          selected={selectedIds.includes(detailExercise.id)}
+          onClose={() => setDetailExercise(null)}
+          onToggleSelect={(ex) => {
+            toggleExercise(ex);
+          }}
+        />
+      ) : null}
 
       {selectedExercises.length > 0 ? (
         <button

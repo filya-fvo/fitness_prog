@@ -47,7 +47,35 @@ def _normalize_plan(plan: WorkoutPlan | dict[str, Any] | None) -> dict[str, Any]
     return {
         "title": plan.get("title"),
         "workout_type": plan.get("workout_type"),
+        "day_index": plan.get("day_index"),
+        "week_phase": plan.get("week_phase"),
+        "week_in_cycle": plan.get("week_in_cycle"),
+        "week_label": plan.get("week_label"),
+        "week_rir": plan.get("week_rir"),
         "exercises": list(plan.get("exercises") or []),
+    }
+
+
+def resolve_week_phase_meta(started_at: date | None, today: date | None = None) -> dict[str, Any]:
+    """3-week cycle: light -> medium -> heavy."""
+    today = today or date.today()
+    if started_at is None:
+        started_at = today
+    weeks = max(0, (today - started_at).days // 7)
+    week_in_cycle = (weeks % 3) + 1
+    if week_in_cycle == 1:
+        phase, label, rir, reps = "light", "Лёгкая", "3–4 до отказа", "10-15"
+    elif week_in_cycle == 2:
+        phase, label, rir, reps = "medium", "Средняя", "1–2 до отказа", "8-12"
+    else:
+        phase, label, rir, reps = "heavy", "Тяжёлая", "в отказ", "6-8"
+    return {
+        "week_phase": phase,
+        "week_in_cycle": week_in_cycle,
+        "week_label": label,
+        "week_rir": rir,
+        "target_reps": reps,
+        "cycle_index": weeks // 3,
     }
 
 
@@ -111,9 +139,13 @@ async def build_plan_from_program_day(
     session: AsyncSession,
     program: Program,
     day_index: int,
+    *,
+    program_started_at: date | None = None,
+    today: date | None = None,
 ) -> dict[str, Any]:
     structure = program.structure or {}
     day = _extract_day_from_program(program, day_index)
+    phase = resolve_week_phase_meta(program_started_at, today)
     raw_exercises = day.get("exercises") or []
     if not raw_exercises:
         raw_ids = day.get("exercise_ids") or []
@@ -160,8 +192,13 @@ async def build_plan_from_program_day(
         if exercise is None:
             continue
         target_sets = int(item.get("sets") or item.get("target_sets") or 3)
-        target_reps = item.get("reps") or item.get("target_reps") or "8-12"
+        # Prefer phase-based reps (3-week cycle) over static seed reps
+        target_reps = phase["target_reps"]
         rest_sec = int(item.get("rest_sec") or day.get("rest_sec_default") or 60)
+        if phase["week_phase"] == "heavy":
+            rest_sec = max(rest_sec, 90)
+        elif phase["week_phase"] == "light":
+            rest_sec = min(rest_sec, 75)
         plan_exercises.append(
             {
                 "exercise_id": str(exercise.id),
@@ -181,6 +218,7 @@ async def build_plan_from_program_day(
         )
 
     title = day.get("name") or day.get("title") or program.name
+    phase_title = f"{title} · {phase['week_label']}"
     workout_type = (
         day.get("workout_type")
         or structure.get("workout_type")
@@ -188,9 +226,13 @@ async def build_plan_from_program_day(
         or "custom"
     )
     return {
-        "title": title,
+        "title": phase_title,
         "workout_type": workout_type,
         "day_index": day_index,
+        "week_phase": phase["week_phase"],
+        "week_in_cycle": phase["week_in_cycle"],
+        "week_label": phase["week_label"],
+        "week_rir": phase["week_rir"],
         "exercises": plan_exercises,
     }
 
@@ -258,7 +300,25 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             item.setdefault("name_ru", ex_map[eid].name_ru)
     elif program is not None and (data.day_index is not None or not data.exercise_ids):
         day_index = data.day_index or 1
-        plan = await build_plan_from_program_day(session, program, day_index)
+        started_raw = (user.goals or {}).get("active_program_started_at")
+        started_at: date | None = None
+        if isinstance(started_raw, str) and len(started_raw) >= 10:
+            try:
+                started_at = date.fromisoformat(started_raw[:10])
+            except ValueError:
+                started_at = None
+        active_id = str((user.goals or {}).get("active_program_id") or "")
+        if active_id and active_id != str(program.id):
+            started_at = data.scheduled_date
+        elif started_at is None:
+            started_at = data.scheduled_date
+        plan = await build_plan_from_program_day(
+            session,
+            program,
+            day_index,
+            program_started_at=started_at,
+            today=data.scheduled_date,
+        )
     elif data.exercise_ids:
         plan = await _plan_from_exercise_ids(
             session,

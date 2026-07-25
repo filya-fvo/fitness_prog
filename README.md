@@ -22,19 +22,20 @@ docs/       TZ, ops runbook, QA checklists
 
 ## Local run
 
-**Под рукой:** [RUN.md](RUN.md) · [scripts/dev.ps1](scripts/dev.ps1) · [scripts/dev.cmd](scripts/dev.cmd)
+**Полный запуск одной кнопкой:** дважды кликни [start-all.cmd](start-all.cmd)  
+Шпаргалка: [RUN.md](RUN.md) · стоп: [stop-all.cmd](stop-all.cmd) · статус: [status.cmd](status.cmd)  
+**Changelog версий:** [docs/CHANGELOG.md](docs/CHANGELOG.md) · GIF: [docs/exercise-gifs.md](docs/exercise-gifs.md)
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-. C:\fitness_prog\scripts\dev.ps1
-Start-FitnessStack
-Get-FitnessStatus
-Restart-Backend
-# или: C:\fitness_prog\scripts\dev.cmd restart-backend
+```bat
+C:\fitness_prog\start-all.cmd
 ```
 
+Поднимает backend `:8001` + frontend `:5173` + ngrok + Telegram кнопку **Open**.
+
+Точечно: [scripts/dev.cmd](scripts/dev.cmd) (`start`, `restart-backend`, `status`…).
+
 ```powershell
-# backend (port 8001 recommended on Windows)
+# backend (port 8001 recommended on Windows) — manual
 cd backend
 python -m venv .venv
 .\.venv\Scripts\activate

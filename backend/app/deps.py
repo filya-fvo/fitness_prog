@@ -47,3 +47,30 @@ async def get_current_user(
             detail="User not found",
         )
     return user
+
+
+def user_is_admin(user: User, settings: Settings | None = None) -> bool:
+    """True if user is configured bot owner / admin."""
+    cfg = settings or get_settings()
+    ids = cfg.admin_telegram_id_set
+    if ids and int(user.telegram_id) in ids:
+        return True
+    names = cfg.admin_username_set
+    uname = (user.username or "").strip().lstrip("@").lower()
+    if uname and uname in names:
+        return True
+    # If nothing configured, deny admin (safer default).
+    return False
+
+
+async def require_admin(
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> User:
+    """Protect admin-only write routes."""
+    if not user_is_admin(user, settings):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return user

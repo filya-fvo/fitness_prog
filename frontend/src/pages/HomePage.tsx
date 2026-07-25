@@ -4,8 +4,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
-import { fetchMyProfile } from "@/api/users";
+import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { fetchWorkoutHistory } from "@/api/workouts";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
@@ -15,11 +16,25 @@ import {
   saveLocalSession,
 } from "@/db/syncQueue";
 import { trackEvent } from "@/lib/analytics";
+import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import { isOnline } from "@/utils/network";
+import {
+  buildExerciseHistory,
+  draftsWithSuggestions,
+  ensureProgramStartDate,
+  resolveWeekPhase,
+} from "@/utils/loadProgression";
 import { pickTodayDayIndex, recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak } from "@/utils/progress";
+
+const ADMIN_USERNAMES = new Set(
+  String(import.meta.env.VITE_ADMIN_TELEGRAM_USERNAMES || "Filatov_Slava")
+    .split(",")
+    .map((s) => s.trim().replace(/^@/, "").toLowerCase())
+    .filter(Boolean),
+);
 
 function draftsFromWorkout(workout: {
   plan?: WorkoutPlan | Record<string, unknown> | null;
@@ -55,6 +70,11 @@ function draftsFromWorkout(workout: {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const user = useUserStore((s) => s.user);
+  const isAdmin = Boolean(
+    user?.username &&
+      ADMIN_USERNAMES.has(user.username.replace(/^@/, "").toLowerCase()),
+  );
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -69,6 +89,8 @@ export function HomePage() {
   const [recommended, setRecommended] = useState<Program[]>([]);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -112,13 +134,34 @@ export function HomePage() {
               fetchMyProfile().catch(() => null),
             ]);
             const goals = (profile?.goals as Record<string, unknown>) || {};
-            const rec = recommendPrograms(programs.items, {
-              primaryGoal: String(goals.primary_goal || ""),
-              level: String(goals.level || ""),
-              daysPerWeek: Number(goals.days_per_week) || undefined,
-              equipment: Array.isArray(goals.equipment) ? (goals.equipment as string[]) : [],
-            });
-            if (!cancelled) setRecommended(rec);
+            if (!cancelled) setProfileGoals(goals);
+            const activeId = String(goals.active_program_id || "");
+            const active = activeId
+              ? programs.items.find((p) => p.id === activeId) || null
+              : null;
+            const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
+            const rec = recommendPrograms(
+              programs.items,
+              {
+                primaryGoal: String(goals.primary_goal || ""),
+                level: String(goals.level || ""),
+                daysPerWeek: Number(goals.days_per_week) || undefined,
+                equipment: Array.isArray(goals.equipment)
+                  ? (goals.equipment as string[])
+                  : [],
+                sex: String(anthro.sex || goals.sex || ""),
+                location: String(goals.location || ""),
+                limitations: Array.isArray(goals.limitations)
+                  ? (goals.limitations as string[])
+                  : (goals.limitations as string | null) || null,
+              },
+              6,
+            );
+            // Active program from profile always first on Home
+            const ordered = active
+              ? [active, ...rec.filter((p) => p.id !== active.id)]
+              : rec;
+            if (!cancelled) setRecommended(ordered);
           } catch {
             // soft fail recommendations
           }
@@ -150,12 +193,44 @@ export function HomePage() {
         await cacheExercises(ex.items);
         setCatalog(ex.items);
       }
+
+      const { start, goalsPatch } = ensureProgramStartDate(profileGoals, todayProgram.id);
+      if (goalsPatch && isOnline() && getStoredToken()) {
+        try {
+          const profile = await updateMyProfile({
+            goals: { ...profileGoals, ...goalsPatch },
+          });
+          setProfileGoals((profile.goals as Record<string, unknown>) || { ...profileGoals, ...goalsPatch });
+        } catch {
+          setProfileGoals((g) => ({ ...g, ...goalsPatch }));
+        }
+      } else if (goalsPatch) {
+        setProfileGoals((g) => ({ ...g, ...goalsPatch }));
+      }
+
       const workout = await startProgramWorkout({
         programId: todayProgram.id,
         dayIndex: todayDay,
       });
       const clientId = crypto.randomUUID();
-      const drafts = draftsFromWorkout(workout);
+      const plan = (workout.plan || {}) as WorkoutPlan;
+      const phaseMeta = resolveWeekPhase(start);
+      let historyMap = buildExerciseHistory(await readCachedWorkouts());
+      if (isOnline() && getStoredToken()) {
+        try {
+          historyMap = buildExerciseHistory(await fetchWorkoutHistory());
+        } catch {
+          // keep cache
+        }
+      }
+      const drafts =
+        Array.isArray(plan.exercises) && plan.exercises.length
+          ? draftsWithSuggestions({
+              exercises: plan.exercises,
+              history: historyMap,
+              phase: phaseMeta,
+            })
+          : draftsFromWorkout(workout);
       await rememberWorkoutId(clientId, workout.id);
       await saveLocalSession({
         clientId,
@@ -173,6 +248,7 @@ export function HomePage() {
         day_index: todayDay,
         source: "home",
         exercises: drafts.length,
+        week_phase: phaseMeta.phase,
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
@@ -268,10 +344,21 @@ export function HomePage() {
         >
           Профиль: замеры и калории
         </Link>
-        <Link to="/admin" className="block text-center text-xs text-tg-link">
-          Админка exercises/programs
-        </Link>
+        <button
+          type="button"
+          onClick={() => setFeedbackOpen(true)}
+          className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
+        >
+          Обратная связь
+        </button>
+        {isAdmin ? (
+          <Link to="/admin" className="block text-center text-xs text-tg-link">
+            Админка exercises/programs
+          </Link>
+        ) : null}
       </div>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </section>
   );
 }

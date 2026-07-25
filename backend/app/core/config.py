@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fitness"
     bot_token: str = "replace_with_telegram_bot_token"
     bot_username: str = ""  # e.g. fil_fit_bot — for Mini App deep links
+    # Public HTTPS Mini App front (ngrok / prod). Used for Menu Button Open + /start web_app.
+    mini_app_url: str = ""
+    # Optional secret for Telegram webhook header X-Telegram-Bot-Api-Secret-Token
+    telegram_webhook_secret: str = ""
+    # Comma-separated Telegram usernames (without @) allowed to use admin CRUD / feedback target.
+    # Example: Filatov_Slava
+    admin_telegram_usernames: str = "Filatov_Slava"
+    # Optional comma-separated Telegram numeric IDs (more stable than username).
+    # Required for reliable feedback delivery if admin never opened the Mini App.
+    admin_telegram_ids: str = ""
     jwt_secret: str = "replace_with_long_random_secret"
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30
@@ -34,6 +44,27 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
     sentry_dsn: str = ""
+
+    @property
+    def admin_username_set(self) -> set[str]:
+        return {
+            u.strip().lstrip("@").lower()
+            for u in self.admin_telegram_usernames.split(",")
+            if u.strip()
+        }
+
+    @property
+    def admin_telegram_id_set(self) -> set[int]:
+        out: set[int] = set()
+        for part in self.admin_telegram_ids.split(","):
+            p = part.strip()
+            if not p:
+                continue
+            try:
+                out.add(int(p))
+            except ValueError:
+                continue
+        return out
 
     @property
     def cors_origin_list(self) -> list[str]:

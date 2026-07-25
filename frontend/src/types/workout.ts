@@ -33,12 +33,18 @@ export type WorkoutPlanExercise = {
   target_reps?: string | null;
   rest_sec?: number | null;
   name_ru?: string | null;
+  suggested_weight?: number | null;
 };
 
 export type WorkoutPlan = {
   title?: string | null;
   workout_type?: string | null;
   day_index?: number | null;
+  /** light | medium | heavy — 3-week cycle */
+  week_phase?: "light" | "medium" | "heavy" | string | null;
+  week_in_cycle?: number | null;
+  week_label?: string | null;
+  week_rir?: string | null;
   exercises: WorkoutPlanExercise[];
 };
 

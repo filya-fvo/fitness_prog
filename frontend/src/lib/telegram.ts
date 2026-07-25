@@ -49,6 +49,8 @@ export type TelegramWebApp = {
   };
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
+  openTelegramLink?: (url: string) => void;
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 };
 
 declare global {
@@ -118,6 +120,32 @@ export function initTelegramApp(): TelegramWebApp | null {
 /** Deep-link startapp param from reminder links (workout_<id>). */
 export function getStartParam(): string {
   return getTelegramWebApp()?.initDataUnsafe?.start_param ?? "";
+}
+
+/** Open t.me / tg:// link inside Telegram client when possible. */
+export function openTelegramLink(url: string): void {
+  const wa = getTelegramWebApp();
+  if (wa?.openTelegramLink) {
+    wa.openTelegramLink(url);
+    return;
+  }
+  if (wa?.openLink) {
+    wa.openLink(url);
+    return;
+  }
+  if (typeof window !== "undefined") {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
+/**
+ * Open a direct chat with a user and optional prefilled text.
+ * Message is sent by the user themselves (not by the bot).
+ */
+export function openUserChatWithText(username: string, text: string): void {
+  const u = username.replace(/^@/, "").trim();
+  const encoded = encodeURIComponent(text);
+  openTelegramLink(`https://t.me/${u}?text=${encoded}`);
 }
 
 export function hapticImpact(style: "light" | "medium" | "heavy" = "light"): void {

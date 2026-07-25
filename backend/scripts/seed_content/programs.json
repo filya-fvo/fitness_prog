@@ -1,17 +1,27 @@
 [
   {
-    "name": "Full Body Beginner 3 дня",
-    "description": "Базовая full body программа для новичков дома/зале.",
+    "name": "М · Зал · Новичок · Тренажёры FB",
+    "description": "Мужская full body на тренажёрах и гантелях. 3 дня. Без разминочных упражнений в списке — разминку делайте 5–8 мин сами.",
     "target_level": "beginner",
     "level": "beginner",
     "workout_type": "full_body",
-    "duration_weeks": 4,
+    "duration_weeks": 6,
     "is_template": true,
     "structure": {
       "workout_type": "full_body",
       "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells"
+      ],
+      "limitations": [],
       "days_per_week": 3,
-      "session_duration_min": 40,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
       "schedule": [
         {
           "day_index": 1,
@@ -19,74 +29,25 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Приседания со своим весом",
+              "exercise_name": "Жим ногами",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Отжимания от пола",
+              "exercise_name": "Жим в тренажёре",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Тяга гантели в наклоне",
+              "exercise_name": "Тяга верхнего блока",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Планка",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Разводка гантелей в стороны",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            }
-          ]
-        },
-        {
-          "day_index": 2,
-          "name": "Full Body B",
-          "focus": "full",
-          "exercises": [
-            {
-              "exercise_name": "Выпады вперёд",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Отжимания с возвышения",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Тяга резинки к поясу",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Dead bug",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Жим гантелей сидя",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
@@ -96,16 +57,22 @@
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 60
             }
           ]
         },
         {
-          "day_index": 3,
-          "name": "Full Body C",
+          "day_index": 2,
+          "name": "Full Body B",
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Приседания гоблет",
+              "exercise_name": "Приседания с гантелью у груди",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
@@ -117,17 +84,36 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Австралийские подтягивания",
+              "exercise_name": "Тяга горизонтального блока",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Боковая планка",
+              "exercise_name": "Разводка гантелей в стороны",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Full Body C",
+          "focus": "full",
+          "exercises": [
             {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 3,
@@ -135,286 +121,34 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Разгибания гантели из-за головы",
+              "exercise_name": "Жим гантелей на наклонной",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "name": "Full Body A/B Intermediate",
-    "description": "Чередование full body A/B для среднего уровня.",
-    "target_level": "intermediate",
-    "level": "intermediate",
-    "workout_type": "full_body_alt",
-    "duration_weeks": 6,
-    "is_template": true,
-    "structure": {
-      "workout_type": "full_body_alt",
-      "days_per_week": 4,
-      "schedule": [
-        {
-          "day_index": 1,
-          "name": "Full Body A",
-          "focus": "full",
-          "exercises": [
-            {
-              "exercise_name": "Приседания со штангой",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Жим штанги лёжа",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Тяга штанги в наклоне",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Планка",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Face pull",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Французский жим гантели",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            }
-          ]
-        },
-        {
-          "day_index": 2,
-          "name": "Full Body B",
-          "focus": "full",
-          "exercises": [
-            {
-              "exercise_name": "Румынская тяга",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Подтягивания",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Хип-траст со штангой",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Молотковые сгибания",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Mountain climbers",
-              "sets": 4,
-              "reps": "6-10",
-              "rest_sec": 90
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "name": "Upper/Lower 4 дня",
-    "description": "Сплит верх/низ 4 тренировки в неделю.",
-    "target_level": "intermediate",
-    "level": "intermediate",
-    "workout_type": "upper_lower",
-    "duration_weeks": 8,
-    "is_template": true,
-    "structure": {
-      "workout_type": "upper_lower",
-      "days_per_week": 4,
-      "schedule": [
-        {
-          "day_index": 1,
-          "name": "Upper A",
-          "focus": "upper",
-          "exercises": [
-            {
-              "exercise_name": "Жим штанги лёжа",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Тяга верхнего блока",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Жим гантелей сидя",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
               "sets": 3,
               "reps": "8-12",
-              "rest_sec": 90
+              "rest_sec": 75
             },
             {
-              "exercise_name": "Сгибания гантелей на бицепс",
+              "exercise_name": "Ягодичный мост",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Разгибания на блоке",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            }
-          ]
-        },
-        {
-          "day_index": 2,
-          "name": "Lower A",
-          "focus": "lower",
-          "exercises": [
-            {
-              "exercise_name": "Приседания со штангой",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Румынская тяга",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Подъёмы на носки стоя",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Планка",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            }
-          ]
-        },
-        {
-          "day_index": 3,
-          "name": "Upper B",
-          "focus": "upper",
-          "exercises": [
-            {
-              "exercise_name": "Жим гантелей на наклонной",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Тяга горизонтального блока",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Разводка гантелей в стороны",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Face pull",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
+              "reps": "10-15",
+              "rest_sec": 75
             },
             {
               "exercise_name": "Молотковые сгибания",
               "sets": 3,
               "reps": "8-12",
-              "rest_sec": 90
+              "rest_sec": 75
             },
             {
-              "exercise_name": "Отжимания узким хватом",
+              "exercise_name": "Боковая планка",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            }
-          ]
-        },
-        {
-          "day_index": 4,
-          "name": "Lower B",
-          "focus": "lower",
-          "exercises": [
-            {
-              "exercise_name": "Жим ногами",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Болгарские выпады",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Сгибания ног лёжа",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
-            },
-            {
-              "exercise_name": "Dead bug",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 90
+              "reps": "20-40с",
+              "rest_sec": 60
             }
           ]
         }
@@ -422,8 +156,8 @@
     }
   },
   {
-    "name": "Push Pull Legs 3 дня",
-    "description": "Классический PPL beginner/intermediate 3 дня.",
+    "name": "М · Зал · Новичок · PPL intro",
+    "description": "Мягкий push/pull/legs для мужчины-новичка в зале.",
     "target_level": "beginner",
     "level": "beginner",
     "workout_type": "push_pull_legs",
@@ -431,7 +165,20 @@
     "is_template": true,
     "structure": {
       "workout_type": "push_pull_legs",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells",
+        "barbell"
+      ],
+      "limitations": [],
       "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
       "schedule": [
         {
           "day_index": 1,
@@ -451,22 +198,22 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Отжимания от пола",
+              "exercise_name": "Разведение гантелей лёжа",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
+              "reps": "10-15",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
+              "reps": "10-15",
+              "rest_sec": 55
             },
             {
-              "exercise_name": "Разгибания гантели из-за головы",
+              "exercise_name": "Разгибания на блоке",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
+              "reps": "10-15",
+              "rest_sec": 55
             }
           ]
         },
@@ -476,34 +223,34 @@
           "focus": "pull",
           "exercises": [
             {
-              "exercise_name": "Тяга гантели в наклоне",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
-            },
-            {
               "exercise_name": "Тяга верхнего блока",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Face pull",
+              "exercise_name": "Тяга горизонтального блока",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
               "sets": 3,
               "reps": "8-12",
-              "rest_sec": 75
+              "rest_sec": 55
             },
             {
-              "exercise_name": "Bird dog",
+              "exercise_name": "Планка",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 75
+              "reps": "30-45с",
+              "rest_sec": 45
             }
           ]
         },
@@ -513,9 +260,9 @@
           "focus": "legs",
           "exercises": [
             {
-              "exercise_name": "Приседания гоблет",
+              "exercise_name": "Жим ногами",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "10-15",
               "rest_sec": 75
             },
             {
@@ -527,11 +274,80 @@
             {
               "exercise_name": "Выпады вперёд",
               "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Новичок · Гантели FB",
+    "description": "Full body преимущественно с гантелями (зал/уголок).",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "full_body",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "full_body",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "dumbbells"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "DB A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
@@ -539,7 +355,248 @@
             {
               "exercise_name": "Планка",
               "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "DB B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Выпады назад с гантелями",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
               "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Молотковые сгибания",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Французский жим гантели",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "DB C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Присед с жимом над головой",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Пуловер с гантелью",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Дом · Новичок · Свой вес",
+    "description": "Домашняя программа с весом тела, 3 дня.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "home",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 35,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Home A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Home B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8-10/стор",
+              "rest_sec": 75
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Home C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Отжимания с колен",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Птица-собака",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Обратные выпады с поворотом",
+              "sets": 3,
+              "reps": "8/стор",
               "rest_sec": 75
             }
           ]
@@ -548,8 +605,2086 @@
     }
   },
   {
-    "name": "Push Pull Legs 6 дней",
-    "description": "PPL advanced template 6 дней (A/B).",
+    "name": "М · Улица · Новичок · Площадка",
+    "description": "Уличная программа: турник/брусья/свой вес. Разминку на улице — отдельно.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "conditioning",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "conditioning",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "outdoor",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 40,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Outdoor A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 3,
+              "reps": "30с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Outdoor B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Медвежья походка",
+              "sets": 3,
+              "reps": "20-30с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Outdoor C + резинка",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Бёрпи",
+              "sets": 2,
+              "reps": "6-10",
+              "rest_sec": 75
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Новичок · Ягодицы + верх",
+    "description": "Женская full body с акцентом на ноги/ягодицы и верх. Зал.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "hypertrophy",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "hypertrophy",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells",
+        "barbell"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Lower + pull",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Glute + push",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Legs + upper",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Подъёмы на носки сидя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 55
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Новичок · Тренажёры FB",
+    "description": "Мягкий вход в зал на тренажёрах, 3 full body.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "full_body",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "full_body",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 40,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Machine A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Machine B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 65
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Machine C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Дом · Новичок · Свой вес",
+    "description": "Дома: свой вес, акцент на бёдра/ягодицы и кор.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "home",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 35,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Home A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Home B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Отжимания с колен",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Home C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Обратные выпады с поворотом",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Птица-собака",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Русские скручивания",
+              "sets": 3,
+              "reps": "12-16",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Улица · Новичок · Площадка",
+    "description": "Улица/парк: свой вес, без разминочного блока в списке.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "conditioning",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "conditioning",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "outdoor",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 35,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Outdoor A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 2,
+              "reps": "20-30с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Outdoor B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Медвежья походка",
+              "sets": 3,
+              "reps": "20-30с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Outdoor C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Отжимания с колен",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 3,
+              "reps": "5-10",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "15-30с",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Опытный · Верх/Низ 4 дня",
+    "description": "Upper/Lower 4 дня: штанга, гантели, блоки.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "upper_lower",
+    "duration_weeks": 8,
+    "is_template": true,
+    "structure": {
+      "workout_type": "upper_lower",
+      "level": "intermediate",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
+      "days_per_week": 4,
+      "session_duration_min": 55,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Upper A",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим штанги лёжа",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга штанги в наклоне",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Lower A",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со штангой",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Румынская тяга",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "40-60с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Upper B",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 4,
+              "reps": "5-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим Арнольда",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Молотковые сгибания",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Французский жим гантели",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 4,
+          "name": "Lower B",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Фронтальные приседания",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Подъёмы на носки сидя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Опытный · PPL 3 дня",
+    "description": "Классический PPL 3 дня для опытного.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "push_pull_legs",
+    "duration_weeks": 8,
+    "is_template": true,
+    "structure": {
+      "workout_type": "push_pull_legs",
+      "level": "intermediate",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 55,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Push",
+          "focus": "push",
+          "exercises": [
+            {
+              "exercise_name": "Жим штанги лёжа",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим штанги стоя",
+              "sets": 3,
+              "reps": "5-8",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Отжимания на брусьях",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Pull",
+          "focus": "pull",
+          "exercises": [
+            {
+              "exercise_name": "Тяга штанги в наклоне",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 3,
+              "reps": "5-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания со штангой",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 70
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Legs",
+          "focus": "legs",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со штангой",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Румынская тяга",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "40-60с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Дом · Опытный · Гантели",
+    "description": "Дом с гантелями, full body 3 дня.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "intermediate",
+      "sex": [
+        "male"
+      ],
+      "location": "home",
+      "equipment": [
+        "dumbbells",
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Home DB A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Home DB B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Выпады назад с гантелями",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Молотковые сгибания",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Французский жим гантели",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Home DB C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Присед с жимом над головой",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Пуловер с гантелью",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Улица · Опытный · Сила площадки",
+    "description": "Улица: подтягивания, отжимания, ноги, кор. Без разминки в списке.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "strength",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "strength",
+      "level": "intermediate",
+      "sex": [
+        "male"
+      ],
+      "location": "outdoor",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Push + legs",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Отжимания на брусьях",
+              "sets": 4,
+              "reps": "6-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "10-20",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 4,
+              "reps": "15-25",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "10-15/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "40-60с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Pull + core",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 4,
+              "reps": "4-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Удержание «лодочки»",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Альпинисты",
+              "sets": 3,
+              "reps": "20-30с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Full circuit",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 4,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 4,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 4,
+              "reps": "6-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 4,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 4,
+              "reps": "30-45с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 4,
+              "reps": "30с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Опытный · Glute focus 3 дня",
+    "description": "Опытная: ягодицы/ноги + верх, 3 дня в зале.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "hypertrophy",
+    "duration_weeks": 8,
+    "is_template": true,
+    "structure": {
+      "workout_type": "hypertrophy",
+      "level": "intermediate",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Glute A",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Upper",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Full + glute",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Опытный · Верх/Низ 4 дня",
+    "description": "4 дня upper/lower с акцентом на бёдра и ягодицы.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "upper_lower",
+    "duration_weeks": 8,
+    "is_template": true,
+    "structure": {
+      "workout_type": "upper_lower",
+      "level": "intermediate",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
+      "days_per_week": 4,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Upper A",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Lower glute A",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Upper B",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим Арнольда",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 4,
+          "name": "Lower B",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Выпады назад с гантелями",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Подъёмы на носки сидя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Дом · Опытный · Резинки + вес тела",
+    "description": "Дом: резинки и свой вес, 3 дня.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "intermediate",
+      "sex": [
+        "female"
+      ],
+      "location": "home",
+      "equipment": [
+        "bands",
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 40,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Bands A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Bands B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Bands C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Обратные выпады с поворотом",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Улица · Опытный · Площадка",
+    "description": "Улица для опытной: сила + ягодицы своим весом.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "conditioning",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "conditioning",
+      "level": "intermediate",
+      "sex": [
+        "female"
+      ],
+      "location": "outdoor",
+      "equipment": [
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 40,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Legs + glute",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 4,
+              "reps": "15-25",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "10-15/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Upper + core",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 4,
+              "reps": "6-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Австралийские подтягивания",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Full",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 4,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 4,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Медвежья походка",
+              "sets": 4,
+              "reps": "20-30с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 4,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 4,
+              "reps": "8-12/стор",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Продвинутый · PPL 6 дней",
+    "description": "PPL x2 для продвинутых. Высокий объём, зал.",
     "target_level": "advanced",
     "level": "advanced",
     "workout_type": "push_pull_legs",
@@ -557,7 +2692,20 @@
     "is_template": true,
     "structure": {
       "workout_type": "push_pull_legs",
+      "level": "advanced",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
       "days_per_week": 6,
+      "session_duration_min": 60,
+      "exclude_warmup": true,
       "schedule": [
         {
           "day_index": 1,
@@ -567,32 +2715,32 @@
             {
               "exercise_name": "Жим штанги лёжа",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "5-8",
+              "rest_sec": 120
             },
             {
               "exercise_name": "Жим гантелей на наклонной",
               "sets": 4,
-              "reps": "8-12",
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим штанги стоя",
+              "sets": 4,
+              "reps": "5-8",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "exercise_name": "Отжимания на брусьях",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 90
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 60
             }
           ]
         },
@@ -602,34 +2750,34 @@
           "focus": "pull",
           "exercises": [
             {
+              "exercise_name": "Становая тяга классическая",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 120
+            },
+            {
               "exercise_name": "Подтягивания",
               "sets": 4,
-              "reps": "8-12",
+              "reps": "5-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Тяга штанги в наклоне",
               "sets": 4,
-              "reps": "8-12",
+              "reps": "5-8",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Тяга горизонтального блока",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Face pull",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Сгибания со штангой",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 75
             }
           ]
         },
@@ -641,32 +2789,32 @@
             {
               "exercise_name": "Приседания со штангой",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "5-8",
+              "rest_sec": 120
             },
             {
               "exercise_name": "Румынская тяга",
               "sets": 4,
-              "reps": "8-12",
+              "reps": "5-8",
               "rest_sec": 100
             },
             {
               "exercise_name": "Жим ногами",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 90
             },
             {
-              "exercise_name": "Подъёмы на носки сидя",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "exercise_name": "Выпады назад с гантелями",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
             },
             {
-              "exercise_name": "Планка",
+              "exercise_name": "Подъёмы на носки стоя",
               "sets": 4,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 45
             }
           ]
         },
@@ -676,34 +2824,34 @@
           "focus": "push",
           "exercises": [
             {
-              "exercise_name": "Жим в тренажёре",
+              "exercise_name": "Жим гантелей лёжа",
               "sets": 4,
-              "reps": "8-12",
+              "reps": "6-10",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Отжимания на брусьях",
+              "exercise_name": "Жим Арнольда",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Арнольд-жим",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "6-10",
+              "rest_sec": 90
             },
             {
               "exercise_name": "Сведение рук в кроссовере",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Французский жим гантели",
-              "sets": 4,
+              "exercise_name": "Жим лёжа узким хватом",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Разгибания гантели из-за головы",
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 60
             }
           ]
         },
@@ -713,34 +2861,34 @@
           "focus": "pull",
           "exercises": [
             {
+              "exercise_name": "Тяга Т-грифа",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 100
+            },
+            {
               "exercise_name": "Тяга верхнего блока",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "6-10",
+              "rest_sec": 90
             },
             {
-              "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Пуловер с гантелью",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 75
             },
             {
               "exercise_name": "Шраги с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 60
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 60
             }
           ]
         },
@@ -752,32 +2900,32 @@
             {
               "exercise_name": "Фронтальные приседания",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "5-8",
+              "rest_sec": 110
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
             },
             {
               "exercise_name": "Болгарские выпады",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 100
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Хип-траст со штангой",
+              "exercise_name": "Подъёмы на носки сидя",
               "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Hollow hold",
-              "sets": 4,
-              "reps": "8-12",
-              "rest_sec": 100
+              "reps": "10-15",
+              "rest_sec": 45
             }
           ]
         }
@@ -785,144 +2933,1740 @@
     }
   },
   {
-    "name": "Home Bodyweight 3 дня",
-    "description": "Домашняя программа без оборудования.",
-    "target_level": "beginner",
-    "level": "beginner",
-    "workout_type": "home_express",
-    "duration_weeks": 4,
+    "name": "Ж · Зал · Продвинутый · Гипертрофия 4 дня",
+    "description": "Продвинутая женская гипертрофия upper/lower.",
+    "target_level": "advanced",
+    "level": "advanced",
+    "workout_type": "hypertrophy",
+    "duration_weeks": 8,
     "is_template": true,
     "structure": {
-      "workout_type": "home_express",
-      "days_per_week": 3,
-      "session_duration_min": 30,
+      "workout_type": "hypertrophy",
+      "level": "advanced",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "barbell",
+        "dumbbells",
+        "machines"
+      ],
+      "limitations": [],
+      "days_per_week": 4,
+      "session_duration_min": 55,
+      "exclude_warmup": true,
       "schedule": [
         {
           "day_index": 1,
-          "name": "Home A",
+          "name": "Lower strength",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со штангой",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 120
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Румынская тяга",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Upper strength",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга штанги в наклоне",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Lower volume",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 4,
+          "name": "Upper volume",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Дом · Продвинутый · Гантели dense",
+    "description": "Плотный домашний комплекс с гантелями.",
+    "target_level": "advanced",
+    "level": "advanced",
+    "workout_type": "strength",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "strength",
+      "level": "advanced",
+      "sex": [
+        "male"
+      ],
+      "location": "home",
+      "equipment": [
+        "dumbbells",
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 4,
+      "session_duration_min": 50,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Push home",
+          "focus": "push",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Отжимания на брусьях",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Французский жим гантели",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Pull home",
+          "focus": "pull",
+          "exercises": [
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 4,
+              "reps": "5-8",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 4,
+              "reps": "4-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Пуловер с гантелью",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Молотковые сгибания",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "40-60с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Legs home",
+          "focus": "legs",
+          "exercises": [
+            {
+              "exercise_name": "Приседания с гантелью у груди",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Подъёмы на носки стоя",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 4,
+          "name": "Full dense",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Болгарские выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Присед с жимом над головой",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Пуловер с гантелью",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Дом · Продвинутый · Резинки dense",
+    "description": "Продвинутый дом: резинки + вес тела, 4 дня.",
+    "target_level": "advanced",
+    "level": "advanced",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "advanced",
+      "sex": [
+        "female"
+      ],
+      "location": "home",
+      "equipment": [
+        "bands",
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 4,
+      "session_duration_min": 45,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Lower",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 4,
+              "reps": "15-25",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "12-15/стор",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "10-12/стор",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "40-60с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Upper",
+          "focus": "upper",
+          "exercises": [
+            {
+              "exercise_name": "Отжимания от пола",
+              "sets": 4,
+              "reps": "8-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 4,
+              "reps": "12-15",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 35
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Lower B",
+          "focus": "lower",
+          "exercises": [
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
+              "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 4,
+          "name": "Full",
           "focus": "full",
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "15-20",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Обратные выпады с поворотом",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8/стор",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Без нагрузки на колени",
+    "description": "Мужская зальная программа без приседов/выпадов/прыжков. Акцент: верх + hinge/ягодицы + сгибатели бедра.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "full_body",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "full_body",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells",
+        "barbell"
+      ],
+      "limitations": [
+        "no_knee"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "No-knee A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "No-knee B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 4,
+              "reps": "5-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим Арнольда",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "No-knee C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга Т-грифа",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Французский жим гантели",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Без нагрузки на колени",
+    "description": "Женская зальная без осевой нагрузки на колени (без приседов/выпадов).",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "hypertrophy",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "hypertrophy",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells",
+        "barbell"
+      ],
+      "limitations": [
+        "no_knee"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "No-knee A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 4,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "No-knee B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Румынская тяга с гантелями",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковая планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "No-knee C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Ягодичный мост со штангой",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Тяга гантели в наклоне",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Новичок · Без нагрузки на позвоночник",
+    "description": "Новичок мужчина: машины и жимы, минимум осевой нагрузки на позвоночник (без становой/тяг в наклоне).",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "full_body",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "full_body",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells"
+      ],
+      "limitations": [
+        "no_spine"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Spine-safe A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Spine-safe B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Spine-safe C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Обратные разведения в тренажёре",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Подъёмы на носки сидя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Молотковые сгибания",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Новичок · Без нагрузки на позвоночник",
+    "description": "Новичок женщина: тренажёры и гантели, без становой и наклонных тяг.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "full_body",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "full_body",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells"
+      ],
+      "limitations": [
+        "no_spine"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 45,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Spine-safe A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 65
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "20-40с",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Spine-safe B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Spine-safe C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Обратные разведения в тренажёре",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Подъёмы на носки сидя",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Зал · Опытный · Без нагрузки на позвоночник",
+    "description": "Опытный мужчина: сила верха + ноги в тренажёрах, без осевой нагрузки на позвоночник.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "upper_lower",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "upper_lower",
+      "level": "intermediate",
+      "sex": [
+        "male"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells",
+        "barbell"
+      ],
+      "limitations": [
+        "no_spine"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Spine-safe A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим штанги лёжа",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 100
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Spine-safe B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Жим Арнольда",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания со штангой",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Spine-safe C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 4,
+              "reps": "6-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Подтягивания",
+              "sets": 4,
+              "reps": "5-10",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 90
+            },
+            {
+              "exercise_name": "Обратные разведения в тренажёре",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Жим лёжа узким хватом",
+              "sets": 3,
+              "reps": "6-10",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Планка",
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "Ж · Зал · Опытный · Без нагрузки на позвоночник",
+    "description": "Опытная: ягодицы/ноги в тренажёрах + верх, без становой и наклонных тяг.",
+    "target_level": "intermediate",
+    "level": "intermediate",
+    "workout_type": "hypertrophy",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "hypertrophy",
+      "level": "intermediate",
+      "sex": [
+        "female"
+      ],
+      "location": "gym",
+      "equipment": [
+        "machines",
+        "dumbbells"
+      ],
+      "limitations": [
+        "no_spine"
+      ],
+      "days_per_week": 3,
+      "session_duration_min": 50,
+      "exclude_warmup": true,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Spine-safe A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 4,
+              "reps": "10-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Жим гантелей лёжа",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Разводка гантелей в стороны",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Spine-safe B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим в тренажёре",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга горизонтального блока",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Разгибания ног",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Жим гантелей сидя",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 70
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Разгибания на блоке",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Spine-safe C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Жим ногами",
+              "sets": 4,
+              "reps": "8-12",
+              "rest_sec": 80
+            },
+            {
+              "exercise_name": "Тяга верхнего блока",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Сгибания ног лёжа",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Жим гантелей на наклонной",
+              "sets": 3,
+              "reps": "8-12",
+              "rest_sec": 75
+            },
+            {
+              "exercise_name": "Тяга к лицу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "М · Дом · Новичок · Резинки",
+    "description": "Дом с резинками для новичка-мужчины.",
+    "target_level": "beginner",
+    "level": "beginner",
+    "workout_type": "home_express",
+    "duration_weeks": 6,
+    "is_template": true,
+    "structure": {
+      "workout_type": "home_express",
+      "level": "beginner",
+      "sex": [
+        "male"
+      ],
+      "location": "home",
+      "equipment": [
+        "bands",
+        "bodyweight"
+      ],
+      "limitations": [],
+      "days_per_week": 3,
+      "session_duration_min": 35,
+      "exclude_warmup": false,
+      "schedule": [
+        {
+          "day_index": 1,
+          "name": "Bands A",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Отжимания от пола",
               "sets": 3,
               "reps": "8-12",
-              "rest_sec": 45
-            },
-            {
-              "exercise_name": "Австралийские подтягивания",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "rest_sec": 60
             },
             {
               "exercise_name": "Выпады вперёд",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "8-12/стор",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "30-45с",
               "rest_sec": 45
             },
             {
-              "exercise_name": "Джампинг-джеки",
+              "exercise_name": "Ягодичный мост",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "12-15",
               "rest_sec": 45
             }
           ]
         },
         {
           "day_index": 2,
-          "name": "Home B",
+          "name": "Bands B",
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Сумо-приседания",
+              "exercise_name": "Боковые выпады",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "8-12/стор",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Отжимания с колен",
+              "exercise_name": "Тяга резинки к поясу",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "12-15",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Bird dog",
+              "exercise_name": "Отжимания с возвышения",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "8-15",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Ягодичный мост",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
-            },
-            {
-              "exercise_name": "Mountain climbers",
-              "sets": 3,
-              "reps": "8-12",
+              "reps": "15-20",
               "rest_sec": 45
             },
             {
               "exercise_name": "Боковая планка",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "20-40с",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Мёртвый жук",
+              "sets": 3,
+              "reps": "8/стор",
               "rest_sec": 45
             }
           ]
         },
         {
           "day_index": 3,
-          "name": "Home C",
+          "name": "Bands C",
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Зашагивания на тумбу",
+              "exercise_name": "Приседания со своим весом",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "15-20",
+              "rest_sec": 55
             },
             {
               "exercise_name": "Отжимания узким хватом",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "6-12",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Dead bug",
+              "exercise_name": "Тяга резинки к поясу",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "12-15",
+              "rest_sec": 55
             },
             {
-              "exercise_name": "Бёрпи",
+              "exercise_name": "Обратные выпады с поворотом",
               "sets": 3,
-              "reps": "8-12",
+              "reps": "8/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8/стор",
               "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
               "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
-            },
-            {
-              "exercise_name": "Кошка-корова",
-              "sets": 3,
-              "reps": "8-12",
-              "rest_sec": 45
+              "reps": "12-15",
+              "rest_sec": 40
             }
           ]
         }
@@ -930,252 +4674,155 @@
     }
   },
   {
-    "name": "Strength 3 дня",
-    "description": "Силовой акцент на базовые движения.",
-    "target_level": "intermediate",
-    "level": "intermediate",
-    "workout_type": "strength",
-    "duration_weeks": 8,
-    "is_template": true,
-    "structure": {
-      "workout_type": "strength",
-      "days_per_week": 3,
-      "schedule": [
-        {
-          "day_index": 1,
-          "name": "Squat day",
-          "focus": "legs",
-          "exercises": [
-            {
-              "exercise_name": "Приседания со штангой",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Жим ногами",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Болгарские выпады",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Планка",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            }
-          ]
-        },
-        {
-          "day_index": 2,
-          "name": "Bench day",
-          "focus": "push",
-          "exercises": [
-            {
-              "exercise_name": "Жим штанги лёжа",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Жим гантелей на наклонной",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Отжимания на брусьях",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Разгибания на блоке",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            }
-          ]
-        },
-        {
-          "day_index": 3,
-          "name": "Deadlift day",
-          "focus": "pull",
-          "exercises": [
-            {
-              "exercise_name": "Становая тяга классическая",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Тяга штанги в наклоне",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Подтягивания",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            },
-            {
-              "exercise_name": "Face pull",
-              "sets": 5,
-              "reps": "5",
-              "rest_sec": 150
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "name": "Mobility + Core",
-    "description": "Восстановление, мобильность и кор 2-3 раза в неделю.",
+    "name": "Ж · Дом · Новичок · Резинки",
+    "description": "Дом с резинками для новичка-женщины.",
     "target_level": "beginner",
     "level": "beginner",
-    "workout_type": "mobility",
-    "duration_weeks": 4,
+    "workout_type": "home_express",
+    "duration_weeks": 6,
     "is_template": true,
     "structure": {
-      "workout_type": "mobility",
+      "workout_type": "home_express",
+      "level": "beginner",
+      "sex": [
+        "female"
+      ],
+      "location": "home",
+      "equipment": [
+        "bands",
+        "bodyweight"
+      ],
+      "limitations": [],
       "days_per_week": 3,
-      "session_duration_min": 25,
+      "session_duration_min": 35,
+      "exclude_warmup": false,
       "schedule": [
         {
           "day_index": 1,
-          "name": "Mobility A",
-          "focus": "mobility",
+          "name": "Bands A",
+          "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Кошка-корова",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "World greatest stretch",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Растяжка сгибателей бедра",
-              "sets": 2,
+              "exercise_name": "Отжимания от пола",
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 30
+              "rest_sec": 60
             },
             {
-              "exercise_name": "Dead bug",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "exercise_name": "Выпады вперёд",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Мобилизация голеностопа",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            }
-          ]
-        },
-        {
-          "day_index": 2,
-          "name": "Core focus",
-          "focus": "core",
-          "exercises": [
-            {
-              "exercise_name": "Bird dog",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Hollow hold",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Боковая планка",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Велосипед",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Поза голубя",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Раскрытие грудного отдела у стены",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            }
-          ]
-        },
-        {
-          "day_index": 3,
-          "name": "Mobility B",
-          "focus": "mobility",
-          "exercises": [
-            {
-              "exercise_name": "Вращения таза",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Растяжка грушевидной",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
-            },
-            {
-              "exercise_name": "Кошка-корова",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "sets": 3,
+              "reps": "30-45с",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 2,
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 45
+            }
+          ]
+        },
+        {
+          "day_index": 2,
+          "name": "Bands B",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Ягодичный мост",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 40
+            },
+            {
+              "exercise_name": "Отжимания с возвышения",
+              "sets": 3,
               "reps": "8-12",
-              "rest_sec": 30
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Боковые выпады",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 55
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
+            }
+          ]
+        },
+        {
+          "day_index": 3,
+          "name": "Bands C",
+          "focus": "full",
+          "exercises": [
+            {
+              "exercise_name": "Приседания со своим весом",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 55
             },
             {
-              "exercise_name": "World greatest stretch",
-              "sets": 2,
-              "reps": "8-12",
-              "rest_sec": 30
+              "exercise_name": "Отжимания узким хватом",
+              "sets": 3,
+              "reps": "6-12",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Тяга резинки к поясу",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Обратные выпады с поворотом",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 55
+            },
+            {
+              "exercise_name": "Планка с касанием плеч",
+              "sets": 3,
+              "reps": "8/стор",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-15",
+              "rest_sec": 40
             }
           ]
         }

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.program import (
     ProgramCreate,
@@ -77,7 +77,7 @@ async def start_program(
 async def create_program(
     body: ProgramCreate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> ProgramResponse:
     program = await program_service.create_program(session, body)
     return ProgramResponse.model_validate(program)
@@ -88,7 +88,7 @@ async def update_program(
     program_id: uuid.UUID,
     body: ProgramUpdate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> ProgramResponse:
     program = await program_service.get_program(session, program_id)
     if program is None:
@@ -101,7 +101,7 @@ async def update_program(
 async def delete_program(
     program_id: uuid.UUID,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ) -> None:
     program = await program_service.get_program(session, program_id)
     if program is None:

@@ -8,6 +8,7 @@ import { getStoredToken } from "@/api/client";
 import {
   addNutritionLog,
   fetchDailyNutrition,
+  fetchProductCategories,
   previewKbju,
   searchProducts,
   type DailyNutrition,
@@ -23,10 +24,34 @@ const MEALS = [
   { id: "snack", label: "Перекус" },
 ] as const;
 
+const CATEGORY_LABELS: Record<string, string> = {
+  meat: "Мясо",
+  fish: "Рыба",
+  eggs: "Яйца",
+  dairy: "Молочка",
+  grains: "Крупы",
+  veg: "Овощи",
+  fruit: "Фрукты",
+  bakery: "Выпечка",
+  legumes: "Бобовые",
+  oils: "Масла",
+  sauces: "Соусы",
+  nuts: "Орехи",
+  sweets: "Сладости",
+  drinks: "Напитки",
+  ready: "Готовое",
+  supplements: "Спортпит",
+};
+
 type MealId = (typeof MEALS)[number]["id"];
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function categoryLabel(cat: string | null | undefined): string {
+  if (!cat) return "Прочее";
+  return CATEGORY_LABELS[cat] ?? cat;
 }
 
 export function DailyLog() {
@@ -38,9 +63,14 @@ export function DailyLog() {
   const [mealType, setMealType] = useState<MealId>("breakfast");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<NutritionProduct[]>([]);
+  const [catalog, setCatalog] = useState<NutritionProduct[]>([]);
+  const [catalogTotal, setCatalogTotal] = useState(0);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [category, setCategory] = useState("");
   const [selected, setSelected] = useState<NutritionProduct | null>(null);
   const [grams, setGrams] = useState("100");
   const [saving, setSaving] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(true);
 
   async function reload() {
     if (!getStoredToken()) {
@@ -65,16 +95,24 @@ export function DailyLog() {
   }, [day]);
 
   useEffect(() => {
+    if (!getStoredToken() || !isOnline()) return;
+    void fetchProductCategories()
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
+  // Typeahead suggestions while typing
+  useEffect(() => {
     let cancelled = false;
     const q = query.trim();
-    if (!q || q.length < 1 || !getStoredToken() || !isOnline()) {
+    if (!q || selected || !getStoredToken() || !isOnline()) {
       setSuggestions([]);
       return;
     }
     const t = window.setTimeout(() => {
-      void searchProducts(q)
-        .then((items) => {
-          if (!cancelled) setSuggestions(items.slice(0, 8));
+      void searchProducts(q, { limit: 12 })
+        .then((res) => {
+          if (!cancelled) setSuggestions(res.items);
         })
         .catch(() => {
           if (!cancelled) setSuggestions([]);
@@ -84,7 +122,36 @@ export function DailyLog() {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [query]);
+  }, [query, selected]);
+
+  // Full catalog browser (empty query = all products)
+  useEffect(() => {
+    let cancelled = false;
+    if (!browseOpen || !getStoredToken() || !isOnline()) return;
+    const t = window.setTimeout(() => {
+      void searchProducts(query.trim(), {
+        limit: 40,
+        offset: 0,
+        category: category || undefined,
+      })
+        .then((res) => {
+          if (!cancelled) {
+            setCatalog(res.items);
+            setCatalogTotal(res.total);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setCatalog([]);
+            setCatalogTotal(0);
+          }
+        });
+    }, query.trim() ? 250 : 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [browseOpen, query, category]);
 
   const preview = useMemo(() => {
     if (!selected) return null;
@@ -92,6 +159,12 @@ export function DailyLog() {
     if (!g || g <= 0) return null;
     return previewKbju(selected, g);
   }, [grams, selected]);
+
+  function pickProduct(p: NutritionProduct) {
+    setSelected(p);
+    setQuery(p.name_ru);
+    setSuggestions([]);
+  }
 
   async function submit() {
     if (!selected || saving) return;
@@ -236,11 +309,7 @@ export function DailyLog() {
                 <button
                   type="button"
                   className="w-full px-3 py-2 text-left text-sm hover:bg-black/5"
-                  onClick={() => {
-                    setSelected(p);
-                    setQuery(p.name_ru);
-                    setSuggestions([]);
-                  }}
+                  onClick={() => pickProduct(p)}
                 >
                   {p.name_ru}
                   <span className="ml-2 text-xs text-tg-hint">{p.calories} ккал/100г</span>
@@ -249,6 +318,74 @@ export function DailyLog() {
             ))}
           </ul>
         ) : null}
+
+        <button
+          type="button"
+          className="text-xs text-tg-link"
+          onClick={() => setBrowseOpen((v) => !v)}
+        >
+          {browseOpen ? "Скрыть каталог" : "Открыть каталог продуктов"}
+          {catalogTotal ? ` · ${catalogTotal}` : ""}
+        </button>
+
+        {browseOpen ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCategory("")}
+                className={[
+                  "rounded-full px-2.5 py-1 text-[11px]",
+                  !category ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                ].join(" ")}
+              >
+                Все
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c === category ? "" : c)}
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[11px]",
+                    category === c ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                  ].join(" ")}
+                >
+                  {categoryLabel(c)}
+                </button>
+              ))}
+            </div>
+            <ul className="max-h-56 overflow-auto rounded-lg bg-tg-bg">
+              {catalog.length === 0 ? (
+                <li className="px-3 py-2 text-xs text-tg-hint">Нет продуктов</li>
+              ) : (
+                catalog.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className={[
+                        "w-full px-3 py-2 text-left text-sm hover:bg-black/5",
+                        selected?.id === p.id ? "bg-black/5" : "",
+                      ].join(" ")}
+                      onClick={() => pickProduct(p)}
+                    >
+                      <span className="font-medium">{p.name_ru}</span>
+                      <span className="ml-2 text-xs text-tg-hint">
+                        {p.calories} ккал · {categoryLabel(p.category)}
+                      </span>
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+            {catalogTotal > catalog.length ? (
+              <p className="text-[11px] text-tg-hint">
+                Показано {catalog.length} из {catalogTotal}. Уточните поиск или категорию.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <label className="block text-xs text-tg-hint">
           Граммы
           <input

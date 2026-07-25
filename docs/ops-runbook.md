@@ -108,12 +108,34 @@ Put Nginx/Caddy TLS in front for real domains.
 
 ---
 
-## 4. Telegram BotFather
+## 4. Telegram BotFather / Menu Button /start
+
+Blue **Open** in chat list and next to the message field = Telegram **Menu Button**
+(`setChatMenuButton` type `web_app`).
+
+### Local (ngrok)
+
+```powershell
+# stack up
+C:\fitness_prog\scripts\dev.cmd start
+C:\fitness_prog\scripts\dev.cmd start-ngrok   # if not already
+
+# set MINI_APP_URL + Menu Button Open + webhook /telegram/webhook
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\setup_telegram_bot.ps1
+
+# reload backend env
+C:\fitness_prog\scripts\dev.cmd restart-backend
+```
+
+Then in Telegram: `/start` → welcome text + inline **Open**; menu **Open** stays on the chat.
+
+### Production / BotFather UI
 
 1. `/mybots` → bot → **Bot Settings** → **Menu Button**
 2. URL = production frontend HTTPS, e.g. `https://app.example.com`
-3. Optional: domain allow-list for Mini App
-4. User must press `/start` once for reminder DMs
+3. Webhook: `https://api.example.com/telegram/webhook` (or same-origin proxy)
+4. Env: `MINI_APP_URL`, `BOT_TOKEN`, optional `TELEGRAM_WEBHOOK_SECRET`
+5. User must press `/start` once for reminder DMs (and to see welcome)
 
 ---
 

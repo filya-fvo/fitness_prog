@@ -44,14 +44,18 @@ frontend/dist/
 *.tsbuildinfo
 .cache/
 
-# Local tunnel URLs
+# Local tunnel URLs / ngrok secrets
 scripts/tunnel-urls.local.env
-
-
+scripts/ngrok-urls.local.env
+scripts/public-url.local.env
+scripts/ngrok.yml
+scripts/ngrok.yml.local
 ngrok.txt
 .ngrok.yml
-scripts/ngrok-urls.local.env
-
+.env.ngrok
 
 tools/ngrok/
+
+
+backups/
 

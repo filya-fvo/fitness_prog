@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.schemas.user import UserProfileResponse, UserProfileUpdate
@@ -34,12 +35,14 @@ async def update_profile(
 ) -> User:
     if data.anthropometry is not None:
         user.anthropometry = {**(user.anthropometry or {}), **data.anthropometry}
+        flag_modified(user, "anthropometry")
     if data.goals is not None:
         merged = {**(user.goals or {}), **data.goals}
         # Completing onboarding when core fields present
         if merged.get("primary_goal") and merged.get("level"):
             merged["onboarding_completed"] = True
         user.goals = merged
+        flag_modified(user, "goals")
     if data.auth_email is not None:
         user.auth_email = data.auth_email
 

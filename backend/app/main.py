@@ -13,9 +13,12 @@ from app.core.sentry import init_sentry
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import exercises as exercises_router
+from app.routers import feedback as feedback_router
 from app.routers import notifications as notifications_router
 from app.routers import nutrition as nutrition_router
 from app.routers import programs as programs_router
+from app.routers import supplements as supplements_router
+from app.routers import telegram as telegram_router
 from app.routers import users as users_router
 from app.routers import workouts as workouts_router
 
@@ -28,7 +31,7 @@ _redoc = None if settings.environment == "production" else "/redoc"
 
 app = FastAPI(
     title="Fitness Mini App API",
-    version="0.6.0",
+    version="0.8.1",
     docs_url=_docs,
     redoc_url=_redoc,
 )
@@ -47,8 +50,11 @@ app.include_router(exercises_router.router)
 app.include_router(programs_router.router)
 app.include_router(workouts_router.router)
 app.include_router(nutrition_router.router)
+app.include_router(supplements_router.router)
 app.include_router(ai_router.router)
 app.include_router(notifications_router.router)
+app.include_router(feedback_router.router)
+app.include_router(telegram_router.router)
 
 
 @app.exception_handler(StarletteHTTPException)

@@ -21,6 +21,11 @@ class WorkoutPlanExercise(BaseModel):
 class WorkoutPlan(BaseModel):
     title: str | None = None
     workout_type: str | None = None
+    day_index: int | None = None
+    week_phase: str | None = None  # light | medium | heavy
+    week_in_cycle: int | None = None
+    week_label: str | None = None
+    week_rir: str | None = None
     exercises: list[WorkoutPlanExercise] = Field(default_factory=list)
 
 

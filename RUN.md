@@ -1,34 +1,169 @@
-# Local run / restart cheat sheet
+# Как запустить fitness_prog
 
-Один файл под рукой. Скрипт с функциями: [scripts/dev.ps1](scripts/dev.ps1)
+## Самый простой способ (рекомендуется)
 
-## Быстрый старт (рекомендуется)
+В корне проекта лежат 3 файла:
 
-На Windows часто заблокирован ExecutionPolicy — используй `Bypass` или `dev.cmd`.
+| Файл | Что делает |
+|------|------------|
+| **[start-all.cmd](start-all.cmd)** | Полный запуск: backend + frontend + ngrok + кнопка Open в Telegram |
+| **[status.cmd](status.cmd)** | Показать, что сейчас запущено |
+| **[stop-all.cmd](stop-all.cmd)** | Остановить backend и frontend |
 
-```powershell
-# подгрузить функции в текущий терминал
-powershell -NoProfile -ExecutionPolicy Bypass -Command ". C:\fitness_prog\scripts\dev.ps1; Get-FitnessStatus"
+### Шаг 1 — один раз проверь окружение
 
-# или в уже открытом PS:
-Set-ExecutionPolicy -Scope Process Bypass -Force
-. C:\fitness_prog\scripts\dev.ps1
+1. PostgreSQL запущен, в `backend/.env` есть `DATABASE_URL=...@127.0.0.1:5432/...`  
+   (на Windows именно **127.0.0.1**, не `localhost`)
+2. Есть `backend/.venv` (если нет — см. «Первый раз» ниже)
+3. В `backend/.env` (или корневом `.env`):
+   - `BOT_TOKEN=...`
+   - `BOT_USERNAME=fil_fit_bot`
+   - `NGROK_AUTHTOKEN=...` (токен с https://dashboard.ngrok.com)
+4. `ngrok` установлен и доступен в PATH  
+5. В Telegram-боте уже можно открывать Mini App (после `start-all` Menu Button настроится сам)
 
-Get-FitnessStatus
-Start-FitnessStack              # backend :8001 + frontend :5173
-# Start-FitnessStack -WithNgrok # + ngrok
-Restart-Backend                 # после правок API
-Restart-Frontend
-Restart-FitnessStack
-Stop-FitnessStack
-Show-FitnessHelp
+### Шаг 2 — запуск всего
+
+**Дважды кликни:**
+
+```
+C:\fitness_prog\start-all.cmd
 ```
 
-Без dot-source (удобнее через cmd-обёртку):
+Или в терминале:
+
+```bat
+C:\fitness_prog\start-all.cmd
+```
+
+Откроются отдельные окна:
+
+1. **BACKEND** — API на порту 8001  
+2. **FRONTEND** — Vite на порту 5173  
+3. **NGROK** — публичный HTTPS → frontend  
+
+Скрипт сам:
+
+- дождётся готовности API и UI  
+- возьмёт HTTPS URL из ngrok  
+- пропишет `MINI_APP_URL`  
+- настроит синюю кнопку **Open** и webhook на `/start`  
+
+### Шаг 3 — открыть приложение
+
+| Где | URL |
+|-----|-----|
+| Браузер (локально) | http://127.0.0.1:5173 |
+| API docs | http://127.0.0.1:8001/docs |
+| ngrok inspector | http://127.0.0.1:4040 |
+| Telegram | бот → `/start` → кнопка **Open** |
+
+Публичный HTTPS URL печатается в конце `start-all` и пишется в  
+`scripts/ngrok-urls.local.env`.
+
+### Остановить
+
+```bat
+C:\fitness_prog\stop-all.cmd
+```
+
+Окно **ngrok** закрой вручную (крестик), если оно ещё открыто.
+
+### Уведомления бота (добавки / тренировки / замеры)
+
+Нужен **Redis** + worker (отдельное окно):
+
+```bat
+cd C:\fitness_prog\backend
+.\.venv\Scripts\arq.exe app.tasks.notifications.WorkerSettings
+```
+
+В профиле → вкладка **Уведомления** настрой дни/время и сохрани.  
+Пользователь должен хотя бы раз нажать `/start` у бота.
+
+История версий фич: [docs/CHANGELOG.md](docs/CHANGELOG.md)  
+GIF упражнений: [docs/exercise-gifs.md](docs/exercise-gifs.md)
+
+### Статус
+
+```bat
+C:\fitness_prog\status.cmd
+```
+
+---
+
+## Варианты start-all
+
+```bat
+REM всё (по умолчанию)
+C:\fitness_prog\start-all.cmd
+
+REM только локально, без ngrok/Telegram
+C:\fitness_prog\start-all.cmd -SkipNgrok
+
+REM с ngrok, но без setup Telegram menu/webhook
+C:\fitness_prog\start-all.cmd -SkipTelegram
+```
+
+Через PowerShell напрямую:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\start-all.ps1
+```
+
+---
+
+## Первый раз (если ещё не ставил зависимости)
+
+### Backend
+
+```bat
+cd C:\fitness_prog\backend
+python -m venv .venv
+.\.venv\Scripts\pip.exe install -e ".[dev]"
+```
+
+Скопируй `backend\.env.example` → `backend\.env` и заполни:
+
+- `DATABASE_URL`
+- `BOT_TOKEN`
+- `BOT_USERNAME`
+- `JWT_SECRET`
+- `NGROK_AUTHTOKEN`
+
+Примени миграции SQL из `supabase/` (как у тебя уже настроено локально).
+
+Опционально сиды:
+
+```bat
+cd C:\fitness_prog\backend
+.\.venv\Scripts\python.exe scripts\seed_prod_content.py
+.\.venv\Scripts\python.exe scripts\seed_nutrition.py
+.\.venv\Scripts\python.exe scripts\gen_exercise_gif_list.py
+.\.venv\Scripts\python.exe scripts\apply_local_exercise_gifs.py
+```
+
+### Frontend
+
+```bat
+cd C:\fitness_prog\frontend
+npm.cmd install
+```
+
+После этого снова: **`start-all.cmd`**.
+
+---
+
+## Отдельные команды (если не нужен полный стек)
+
+Обёртка: [scripts/dev.cmd](scripts/dev.cmd)
 
 ```bat
 C:\fitness_prog\scripts\dev.cmd status
-C:\fitness_prog\scripts\dev.cmd start
+C:\fitness_prog\scripts\dev.cmd start              REM только backend+frontend
+C:\fitness_prog\scripts\dev.cmd start-backend
+C:\fitness_prog\scripts\dev.cmd start-frontend
+C:\fitness_prog\scripts\dev.cmd start-ngrok
 C:\fitness_prog\scripts\dev.cmd restart-backend
 C:\fitness_prog\scripts\dev.cmd restart-frontend
 C:\fitness_prog\scripts\dev.cmd restart
@@ -36,101 +171,76 @@ C:\fitness_prog\scripts\dev.cmd stop
 C:\fitness_prog\scripts\dev.cmd help
 ```
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\dev.ps1 status
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\dev.ps1 restart-backend
-```
+### Сырой backend
 
-## Порты
-
-| Сервис   | URL |
-|----------|-----|
-| Backend  | http://127.0.0.1:8001/docs |
-| Frontend | http://127.0.0.1:5173 |
-| ngrok UI | http://127.0.0.1:4040 |
-
-## Сырые команды (copy-paste)
-
-### Backend
-
-```powershell
+```bat
 cd C:\fitness_prog\backend
-.\.venv\Scripts\activate
-# DATABASE_URL → 127.0.0.1 (не localhost)
 .\.venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 8001
-# с авто-перезагрузкой:
-.\.venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-Перезапуск вручную:
+### Сырой frontend
 
-```powershell
-# убить процесс на 8001
-Get-NetTCPConnection -LocalPort 8001 -State Listen -EA SilentlyContinue |
-  Select-Object -Expand OwningProcess -Unique |
-  ForEach-Object { Stop-Process -Id $_ -Force }
-# затем снова uvicorn (см. выше)
-```
-
-### Frontend
-
-```powershell
+```bat
 cd C:\fitness_prog\frontend
-npm.cmd install
 npm.cmd run dev -- --host 0.0.0.0 --port 5173
 ```
 
-> В PowerShell используй `npm.cmd`, не `npm` (execution policy).
+### Сырой ngrok
 
-### ngrok (Telegram Mini App)
+Токен только из `.env` (`NGROK_AUTHTOKEN`), не коммить в `ngrok.yml`.
 
-```powershell
+```bat
 ngrok start --config C:\fitness_prog\scripts\ngrok.yml frontend
-# публичный https → BotFather Web App URL
-# API идёт через Vite proxy (same origin)
 ```
 
-### Worker (опционально, Redis)
+### Только Telegram Open + webhook (если стек уже запущен)
 
-```powershell
-cd C:\fitness_prog\backend
-.\.venv\Scripts\arq.exe app.tasks.notifications.WorkerSettings
+```bat
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\setup_telegram_bot.ps1
+C:\fitness_prog\scripts\dev.cmd restart-backend
 ```
 
-### Seed / тесты
+---
 
-```powershell
-cd C:\fitness_prog\backend
-.\.venv\Scripts\python.exe scripts\seed_prod_content.py
-.\.venv\Scripts\python.exe -m pytest -q
+## Порты
 
-cd C:\fitness_prog\frontend
-npm.cmd test -- --run
-npm.cmd run build
+| Сервис | Порт | URL |
+|--------|------|-----|
+| Backend API | 8001 | http://127.0.0.1:8001/docs |
+| Frontend Vite | 5173 | http://127.0.0.1:5173 |
+| ngrok UI | 4040 | http://127.0.0.1:4040 |
+
+API в Telegram идёт **через Vite proxy** (same origin с ngrok URL).  
+Отдельный публичный URL для backend не нужен.
+
+---
+
+## Если что-то не работает
+
+| Симптом | Что сделать |
+|---------|-------------|
+| `start-all` пишет backend not ready | Проверь окно BACKEND, `DATABASE_URL`, что Postgres жив |
+| frontend не открывается | В окне FRONTEND: `npm.cmd install`, потом снова start-all |
+| ngrok error / auth | Проверь `NGROK_AUTHTOKEN` в `.env`, что `ngrok` в PATH |
+| В Telegram нет кнопки Open | Запусти `start-all` ещё раз или `setup_telegram_bot.ps1` |
+| `/start` молчит | Нужны backend + ngrok + webhook; смотри `status.cmd` |
+| Сменился ngrok URL | Снова **`start-all.cmd`** (он обновит Menu Button) |
+| Порт занят | `stop-all.cmd`, потом `start-all.cmd` |
+
+---
+
+## Файлы запуска (карта)
+
 ```
-
-Или через скрипт: `Invoke-FitnessSeed`, `Invoke-FitnessTest`.
-
-## Когда что перезапускать
-
-| Изменение | Действие |
-|-----------|----------|
-| `backend/app/**` | `Restart-Backend` (или uvicorn `--reload`) |
-| `frontend/src/**` | обычно HMR; иначе `Restart-Frontend` |
-| `.env` backend | `Restart-Backend` |
-| миграции SQL | migrate → `Restart-Backend` |
-| новый код energy/targets | `Restart-Backend` |
-| Telegram не открывает | проверь ngrok https + BotFather URL |
-
-## Профиль / калории
-
-После заполнения профиля (замеры, возраст, % дефицита):
-
-- дневник: `/nutrition` — цель из API, не 2200
-- профиль: `/profile`
-
-## Важно
-
-- `DATABASE_URL` на Windows: `127.0.0.1`, не `localhost`
-- не коммить `.env` с секретами
-- tunnel URL смотри в ngrok UI или `scripts/ngrok-urls.local.env`
+C:\fitness_prog\
+  start-all.cmd          ← ЖМИ ЭТО для полного старта
+  stop-all.cmd
+  status.cmd
+  RUN.md                 ← эта шпаргалка
+  scripts\
+    start-all.ps1        ← логика полного старта
+    dev.ps1 / dev.cmd    ← точечный start/restart
+    setup_telegram_bot.ps1
+    ngrok.yml            ← без токена (gitignore)
+    ngrok.yml.example
+```

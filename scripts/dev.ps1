@@ -173,11 +173,37 @@ function Start-Ngrok {
   if (-not $ngrok) {
     throw "ngrok not in PATH"
   }
+  # Prefer full launcher which also wires Telegram:
+  #   C:\fitness_prog\start-all.cmd
+  $token = ""
+  foreach ($envFile in @(
+      (Join-Path $script:Root ".env"),
+      (Join-Path $script:BackendDir ".env")
+    )) {
+    if (-not (Test-Path $envFile)) { continue }
+    $line = Get-Content $envFile | Where-Object { $_ -match "^\s*NGROK_AUTHTOKEN\s*=" } | Select-Object -First 1
+    if ($line) {
+      $token = (($line -split "=", 2)[1]).Trim().Trim('"')
+      if ($token -match "^(.*?)(\s+#.*)$") { $token = $Matches[1].Trim() }
+      break
+    }
+  }
   $cfg = Join-Path $script:ScriptsDir "ngrok.yml"
+  if (-not (Test-Path $cfg)) {
+    $cfg = Join-Path $script:ScriptsDir "ngrok.yml.example"
+  }
   if (Test-Path $cfg) {
-    $cmd = "Write-Host 'ngrok frontend :$script:FrontendPort' -ForegroundColor Green; ngrok start --config `"$cfg`" frontend"
+    $cmd = @"
+if ('$token') { `$env:NGROK_AUTHTOKEN='$token'; ngrok config add-authtoken `$env:NGROK_AUTHTOKEN 2>`$null | Out-Null }
+Write-Host 'ngrok frontend :$script:FrontendPort' -ForegroundColor Green
+ngrok start --config `"$cfg`" frontend
+"@
   } else {
-    $cmd = "Write-Host 'ngrok http $script:FrontendPort' -ForegroundColor Green; ngrok http $script:FrontendPort"
+    $cmd = @"
+if ('$token') { `$env:NGROK_AUTHTOKEN='$token'; ngrok config add-authtoken `$env:NGROK_AUTHTOKEN 2>`$null | Out-Null }
+Write-Host 'ngrok http $script:FrontendPort' -ForegroundColor Green
+ngrok http $script:FrontendPort
+"@
   }
   Start-Process -FilePath "powershell.exe" -ArgumentList @(
     "-NoExit", "-NoProfile", "-Command", $cmd
@@ -358,6 +384,13 @@ if (-not $isDotSourced) {
     "^(help|-h|--help)$" { Show-FitnessHelp; break }
     "^status$" { Get-FitnessStatus; break }
     "^start$" { Start-FitnessStack; break }
+    "^start-all$" {
+      $all = Join-Path $script:ScriptsDir "start-all.ps1"
+      $extra = @()
+      if ($args.Count -gt 1) { $extra = $args[1..($args.Count - 1)] }
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $all @extra
+      break
+    }
     "^start-backend$" { Start-Backend; break }
     "^start-frontend$" { Start-Frontend; break }
     "^start-ngrok$" { Start-Ngrok; break }
