@@ -31,6 +31,10 @@ Thumbs.db
 
 # Logs & coverage
 *.log
+logs/**
+!logs/.gitkeep
+!logs/archive/
+!logs/archive/.gitkeep
 coverage/
 .pytest_cache/
 .ruff_cache/

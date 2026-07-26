@@ -23,7 +23,12 @@ from app.routers import users as users_router
 from app.routers import workouts as workouts_router
 
 settings = get_settings()
-setup_logging(environment=settings.environment)
+setup_logging(
+    environment=settings.environment,
+    service="api",
+    log_dir=settings.log_dir or None,
+    keep_archive_days=settings.log_archive_days,
+)
 init_sentry(dsn=settings.sentry_dsn, environment=settings.environment)
 
 _docs = None if settings.environment == "production" else "/docs"

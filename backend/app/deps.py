@@ -53,7 +53,7 @@ def user_is_admin(user: User, settings: Settings | None = None) -> bool:
     """True if user is configured bot owner / admin."""
     cfg = settings or get_settings()
     ids = cfg.admin_telegram_id_set
-    if ids and int(user.telegram_id) in ids:
+    if user.telegram_id is not None and ids and int(user.telegram_id) in ids:
         return True
     names = cfg.admin_username_set
     uname = (user.username or "").strip().lstrip("@").lower()

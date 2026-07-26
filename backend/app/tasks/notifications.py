@@ -58,7 +58,12 @@ async def dispatch_scheduled_notifications_task(ctx: dict[str, Any]) -> dict[str
 
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
-    setup_logging(environment=settings.environment)
+    setup_logging(
+        environment=settings.environment,
+        service="worker",
+        log_dir=settings.log_dir or None,
+        keep_archive_days=settings.log_archive_days,
+    )
     ctx["settings"] = settings
     logger.info("arq_worker_started env={}", settings.environment)
 

@@ -5,13 +5,19 @@
 import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { loginWithTelegram } from "@/api/auth";
-import { updateMyProfile } from "@/api/users";
+import { hasSession, loginWithTelegram } from "@/api/auth";
+import { fetchMyProfile, updateMyProfile } from "@/api/users";
+import { EmailLoginForm } from "@/components/auth/EmailLoginForm";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { startSyncListeners } from "@/db/syncQueue";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
-import { getStartParam, initTelegramApp, isTelegramEnvironment } from "@/lib/telegram";
+import {
+  getStartParam,
+  initTelegramApp,
+  isTelegramEnvironment,
+  pathFromStartParam,
+} from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { isOnline } from "@/utils/network";
 
@@ -38,42 +44,60 @@ export function Shell() {
     async function bootstrapAuth() {
       setAuthLoading(true);
       try {
-        // Restore unfinished workout into Zustand (reload-safe)
         const session = await findResumableSession();
         if (session && !cancelled) {
           await restoreSessionIntoStore(session);
         }
 
-        // Deep link from bot reminder: t.me/bot/app?startapp=workout_<id>
         const start = getStartParam();
-        if (start.startsWith("workout_") && !cancelled) {
-          const id = start.slice("workout_".length);
-          if (id) {
-            navigate(`/workouts/active/${id}`);
+        if (start && !cancelled) {
+          const target = pathFromStartParam(start);
+          if (target && target !== location.pathname + location.search) {
+            if (target.startsWith("/workouts/active/")) {
+              if (session) navigate(target);
+              else navigate("/workouts");
+            } else {
+              navigate(target);
+            }
           }
         }
 
         if (!isTelegramEnvironment()) {
-          // Local browser: skip real auth, keep shell usable for UI work
+          if (hasSession() && isOnline()) {
+            try {
+              const profile = await fetchMyProfile();
+              if (!cancelled) {
+                setUser({
+                  id: profile.id,
+                  telegram_id: profile.telegram_id ?? null,
+                  username: profile.username ?? null,
+                  auth_email: profile.auth_email ?? null,
+                  subscription_status: profile.subscription_status,
+                  onboarding_completed: profile.onboarding_completed,
+                });
+                setAuthLoading(false);
+              }
+              return;
+            } catch {
+              // stale token
+            }
+          }
           if (!cancelled) {
             setUser(null);
             setAuthLoading(false);
           }
           return;
         }
+
         const result = await loginWithTelegram();
         if (!cancelled) {
           setUser(result.user);
           setAuthLoading(false);
 
-          // Flush offline onboarding draft if any
           const draftRaw = localStorage.getItem("fitness_onboarding_draft");
           if (draftRaw && isOnline()) {
             try {
-              const draft = JSON.parse(draftRaw) as {
-                goals?: Record<string, unknown>;
-                anthropometry?: Record<string, unknown>;
-              };
+              const draft = JSON.parse(draftRaw);
               const profile = await updateMyProfile(draft);
               localStorage.removeItem("fitness_onboarding_draft");
               setUser({
@@ -81,7 +105,7 @@ export function Shell() {
                 onboarding_completed: profile.onboarding_completed,
               });
             } catch {
-              // keep draft for next online attempt
+              // keep draft
             }
           }
         }
@@ -98,15 +122,25 @@ export function Shell() {
       cancelled = true;
       stopSync();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, setAuthError, setAuthLoading, setUser]);
 
-  // Gate onboarding after auth
   useEffect(() => {
     if (isAuthLoading || authError || !user) return;
     if (user.onboarding_completed) return;
     if (location.pathname.startsWith("/onboarding")) return;
     navigate("/onboarding", { replace: true });
   }, [authError, isAuthLoading, location.pathname, navigate, user]);
+
+  const identity = user
+    ? user.username
+      ? `@${user.username}`
+      : user.auth_email
+        ? user.auth_email
+        : user.telegram_id
+          ? `id ${user.telegram_id}`
+          : "account"
+    : "";
 
   return (
     <div className="min-h-screen bg-tg-bg text-tg-text">
@@ -124,14 +158,17 @@ export function Shell() {
 
         {!isAuthLoading && !authError && user ? (
           <p className="mb-3 text-xs text-tg-hint">
-            {user.username ? `@${user.username}` : `id ${user.telegram_id}`} · {user.subscription_status}
+            {identity} · {user.subscription_status}
           </p>
         ) : null}
 
-        {!isAuthLoading && !isTelegramEnvironment() ? (
-          <p className="mb-3 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
-            Dev mode: откройте Mini App в Telegram для полной авторизации.
-          </p>
+        {!isAuthLoading && !isTelegramEnvironment() && !user ? (
+          <>
+            <p className="mb-3 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
+              Вход через сайт: укажите email и код. В Telegram Mini App вход автоматический.
+            </p>
+            <EmailLoginForm />
+          </>
         ) : null}
 
         <Outlet />

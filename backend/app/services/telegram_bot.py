@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote, urlencode
 
 import httpx
 from loguru import logger
@@ -11,7 +12,7 @@ from app.core.config import Settings
 
 
 class TelegramBotError(Exception):
-    """Raised when Telegram Bot API returns an error."""
+    """Raised when Telegram Bot API call fails or bot is misconfigured."""
 
 
 def _token_ready(settings: Settings) -> bool:
@@ -68,27 +69,65 @@ async def send_message(
     return await bot_api(settings, "sendMessage", payload)
 
 
-def mini_app_keyboard(
+def build_mini_app_open_url(
+    mini_app_url: str,
     *,
-    bot_username: str,
-    startapp: str,
-    button_text: str = "Открыть тренировку",
-) -> dict[str, Any]:
-    """Inline keyboard with deep link into Mini App (TZ §7)."""
-    username = bot_username.lstrip("@")
-    url = f"https://t.me/{username}/app?startapp={startapp}"
-    return {
-        "inline_keyboard": [[{"text": button_text, "url": url}]],
-    }
+    startapp: str | None = None,
+) -> str:
+    """
+    Build HTTPS Mini App URL opened by web_app buttons.
+
+    Prefer real public front (ngrok/prod) over t.me/.../app Direct Links:
+    Direct Links only work after BotFather Main Mini App / short name setup.
+    startapp is passed as query so the SPA can route even when
+    initDataUnsafe.start_param is empty (common for web_app URL buttons).
+    """
+    base = (mini_app_url or "").strip().rstrip("/")
+    if not base:
+        return ""
+    # Map logical targets to SPA paths (React Router)
+    path = "/"
+    query: dict[str, str] = {}
+    key = (startapp or "").strip()
+    if key.startswith("workout_") and len(key) > len("workout_"):
+        wid = key[len("workout_") :]
+        path = f"/workouts/active/{quote(wid, safe='')}"
+        query["startapp"] = key
+    elif key in {"supplements", "alerts", "notifications"}:
+        path = "/profile"
+        query["startapp"] = key
+        query["tab"] = "supplements" if key == "supplements" else "alerts"
+    elif key in {"profile", "me"}:
+        path = "/profile"
+        query["startapp"] = key
+    elif key in {"nutrition", "food"}:
+        path = "/nutrition"
+        query["startapp"] = key
+    elif key in {"programs", "workouts"}:
+        path = f"/{key}"
+        query["startapp"] = key
+    elif key in {"ai", "coach", "chat"}:
+        path = "/ai"
+        query["startapp"] = key
+    else:
+        path = "/"
+        if key:
+            query["startapp"] = key
+
+    url = f"{base}{path}"
+    if query:
+        url = f"{url}?{urlencode(query)}"
+    return url
 
 
 def open_web_app_keyboard(
     *,
     mini_app_url: str,
     button_text: str = "Open",
+    startapp: str | None = None,
 ) -> dict[str, Any] | None:
-    """Inline keyboard with web_app button (opens Mini App inside Telegram)."""
-    url = (mini_app_url or "").strip()
+    """Inline keyboard with web_app button. None if mini_app_url empty."""
+    url = build_mini_app_open_url(mini_app_url, startapp=startapp)
     if not url.startswith("https://"):
         return None
     return {
@@ -98,15 +137,63 @@ def open_web_app_keyboard(
     }
 
 
-def start_welcome_text(*, first_name: str | None = None) -> str:
+def mini_app_keyboard(
+    *,
+    bot_username: str,
+    startapp: str | None = None,
+    button_text: str = "Open",
+    mini_app_url: str = "",
+) -> dict[str, Any]:
+    """
+    Inline keyboard into Mini App.
+
+    Prefer web_app + MINI_APP_URL (works with ngrok without BotFather Direct Link).
+    Fallback: t.me deep link (needs Main Mini App configured in BotFather).
+    """
+    web = open_web_app_keyboard(
+        mini_app_url=mini_app_url,
+        button_text=button_text,
+        startapp=startapp,
+    )
+    if web is not None:
+        return web
+
+    username = bot_username.lstrip("@")
+    # Direct Link formats Telegram accepts when Main App is configured
+    param = quote((startapp or "home").strip() or "home", safe="")
+    url = f"https://t.me/{username}?startapp={param}"
+    return {
+        "inline_keyboard": [[{"text": button_text, "url": url}]],
+    }
+
+
+def start_welcome_text(
+    *,
+    first_name: str | None = None,
+    mini_app_url: str | None = None,
+) -> str:
     name = (first_name or "").strip()
     hello = f"Привет, {name}!" if name else "Привет!"
-    return (
-        f"{hello}\n\n"
-        "Это фитнес Mini App: программы, тренировки, питание и AI-тренер.\n\n"
-        "Чтобы начать работу с приложением, нажмите кнопку <b>Open</b> "
-        "(внизу чата или на кнопке под этим сообщением)."
-    )
+    app_url = (mini_app_url or "").strip().rstrip("/")
+    lines = [
+        hello,
+        "",
+        "Это фитнес Mini App: программы, тренировки, питание и AI-тренер.",
+        "",
+        "Чтобы начать — нажмите <b>Open</b> ниже или синюю кнопку меню.",
+    ]
+    if app_url:
+        lines.extend(
+            [
+                "",
+                "Также можно открыть приложение в браузере по адресу:",
+                f"<a href=\"{app_url}\">{app_url}</a>",
+                "",
+                "На сайте войдите по email (код придёт в Telegram или на почту, "
+                "если email привязан в профиле).",
+            ]
+        )
+    return "\n".join(lines)
 
 
 async def send_start_welcome(
@@ -115,10 +202,16 @@ async def send_start_welcome(
     chat_id: int,
     first_name: str | None = None,
 ) -> dict[str, Any]:
-    """Reply to /start with instructions + Open web_app button when URL known."""
-    text = start_welcome_text(first_name=first_name)
+    """Reply to /start with instructions + Open Mini App button (web_app preferred)."""
     mini_url = resolve_mini_app_url(settings)
-    markup = open_web_app_keyboard(mini_app_url=mini_url, button_text="Open")
+    text = start_welcome_text(first_name=first_name, mini_app_url=mini_url)
+    markup: dict[str, Any] | None = None
+    if mini_url:
+        markup = open_web_app_keyboard(
+            mini_app_url=mini_url,
+            button_text="Open",
+            startapp="home",
+        )
     if markup is None and settings.bot_username:
         username = settings.bot_username.lstrip("@")
         markup = {
@@ -148,13 +241,11 @@ async def set_chat_menu_button(
     """
     url = (mini_app_url or resolve_mini_app_url(settings) or "").strip().rstrip("/")
     if not url.startswith("https://"):
-        raise TelegramBotError(
-            "MINI_APP_URL must be https://... (public front URL, e.g. ngrok)"
-        )
+        raise TelegramBotError("MINI_APP_URL must be https:// for Menu Button")
 
     menu_button: dict[str, Any] = {
         "type": "web_app",
-        "text": (text or "Open")[:12],
+        "text": text or "Open",
         "web_app": {"url": url},
     }
     payload: dict[str, Any] = {"menu_button": menu_button}
@@ -204,15 +295,11 @@ async def send_workout_reminder(
     workout_id: str,
     title: str = "Напоминание о тренировке",
 ) -> dict[str, Any]:
-    text = (
-        f"💪 <b>{title}</b>\n"
-        "Пора тренироваться! Откройте Mini App и начните сессию."
-    )
     return await send_app_notification(
         settings,
         telegram_id=telegram_id,
         title=title,
-        text=text,
+        text="Пора тренироваться! Откройте Mini App и начните сессию.",
         startapp=f"workout_{workout_id}",
     )
 
@@ -223,26 +310,33 @@ async def send_app_notification(
     telegram_id: int,
     title: str,
     text: str,
-    startapp: str | None = None,
+    startapp: str | None = "home",
 ) -> dict[str, Any]:
-    """Generic chat notification with optional Mini App deep link."""
+    """Send HTML notification with Mini App Open button (web_app preferred)."""
     body = f"🔔 <b>{title}</b>\n{text}"
-    markup = None
+    target = (startapp or "home").strip() or "home"
     mini_url = resolve_mini_app_url(settings)
-    if settings.bot_username and startapp:
+    markup: dict[str, Any] | None = None
+    if mini_url:
+        markup = open_web_app_keyboard(
+            mini_app_url=mini_url,
+            button_text="Open",
+            startapp=target,
+        )
+    if markup is None and settings.bot_username:
         markup = mini_app_keyboard(
             bot_username=settings.bot_username,
-            startapp=startapp,
+            startapp=target,
             button_text="Open",
+            mini_app_url=mini_url,
         )
-    elif mini_url:
-        markup = open_web_app_keyboard(mini_app_url=mini_url, button_text="Open")
-    elif settings.bot_username:
-        markup = mini_app_keyboard(
-            bot_username=settings.bot_username,
-            startapp=startapp or "home",
-            button_text="Open",
+
+    if markup is None:
+        logger.warning(
+            "notification_without_open_button telegram_id={} reason=no_MINI_APP_URL_or_bot_username",
+            telegram_id,
         )
+
     return await send_message(
         settings,
         chat_id=telegram_id,
@@ -260,20 +354,27 @@ def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(message, dict):
         return None
     text = str(message.get("text") or "").strip()
-    if not text:
+    if not text.startswith("/start"):
         return None
-    cmd = text.split()[0]
-    base = cmd.split("@", 1)[0].lower()
-    if base != "/start":
+    # Allow /start@BotName payload
+    first = text.split(maxsplit=1)[0]
+    if not (first == "/start" or first.startswith("/start@")):
         return None
+
     chat = message.get("chat") or {}
-    chat_id = chat.get("id")
-    if chat_id is None:
-        return None
     user = message.get("from") or {}
+    if not isinstance(chat, dict) or chat.get("id") is None:
+        return None
+
+    payload = ""
+    parts = text.split(maxsplit=1)
+    if len(parts) > 1:
+        payload = parts[1].strip()
+
     return {
-        "chat_id": int(chat_id),
-        "user_id": user.get("id"),
-        "first_name": user.get("first_name") or chat.get("first_name"),
+        "chat_id": int(chat["id"]),
+        "user_id": int(user["id"]) if user.get("id") is not None else None,
+        "first_name": user.get("first_name"),
         "username": user.get("username"),
+        "start_payload": payload or None,
     }

@@ -132,7 +132,7 @@ def validate_init_data(
 def create_access_token(
     *,
     subject: str,
-    telegram_id: int,
+    telegram_id: int | None = None,
     settings: Settings | None = None,
     extra_claims: dict[str, Any] | None = None,
 ) -> str:
@@ -141,10 +141,11 @@ def create_access_token(
     now = datetime.now(UTC)
     payload: dict[str, Any] = {
         "sub": subject,
-        "telegram_id": telegram_id,
         "iat": now,
         "exp": now + timedelta(days=cfg.jwt_expire_days),
     }
+    if telegram_id is not None:
+        payload["telegram_id"] = telegram_id
     if extra_claims:
         payload.update(extra_claims)
     return jwt.encode(payload, cfg.jwt_secret, algorithm=cfg.jwt_algorithm)

@@ -71,18 +71,34 @@ C:\fitness_prog\stop-all.cmd
 
 ### Уведомления бота (добавки / тренировки / замеры)
 
-Нужен **Redis** + worker (отдельное окно):
+**Полная инструкция (открой на ПК):** [УВЕДОМЛЕНИЯ.md](УВЕДОМЛЕНИЯ.md)  
+(дубликат имени: [NOTIFICATIONS.md](NOTIFICATIONS.md))
 
-```bat
-cd C:\fitness_prog\backend
-.\.venv\Scripts\arq.exe app.tasks.notifications.WorkerSettings
-```
+Коротко:
 
-В профиле → вкладка **Уведомления** настрой дни/время и сохрани.  
-Пользователь должен хотя бы раз нажать `/start` у бота.
+1. Redis (один раз): `winget install -e --id Memurai.MemuraiDeveloper`
+2. Проверка: `C:\fitness_prog\status-notifications.cmd`
+3. Worker: **`C:\fitness_prog\start-notifications.cmd`** (отдельное окно, не закрывать)
+4. В Mini App: Профиль → Уведомления → сохранить  
+5. Пользователь хотя бы раз нажал `/start` у бота
 
 История версий фич: [docs/CHANGELOG.md](docs/CHANGELOG.md)  
 GIF упражнений: [docs/exercise-gifs.md](docs/exercise-gifs.md)
+
+### Логи (по дням)
+
+Пишутся в корень проекта:
+
+```
+C:\fitness_prog\logs\api-YYYY-MM-DD.log
+C:\fitness_prog\logs\worker-YYYY-MM-DD.log
+C:\fitness_prog\logs\archive\*.log.zip   ← вчера и старше
+```
+
+- Один календарный день = один файл на сервис (`api` / `worker`).
+- При старте и в полночь старые `.log` уходят в `logs\archive\` как zip.
+- Архивы старше 30 дней удаляются (`LOG_ARCHIVE_DAYS` в `backend\.env`).
+- Опционально: `LOG_DIR=...` чтобы сменить каталог.
 
 ### Статус
 

@@ -53,9 +53,13 @@ npm.cmd install
 npm.cmd run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Optional worker (reminders):
+Optional worker (reminders / notifications):
+
+- **Full PC guide (RU):** [УВЕДОМЛЕНИЯ.md](УВЕДОМЛЕНИЯ.md) · [NOTIFICATIONS.md](NOTIFICATIONS.md)
+- Launchers: [start-notifications.cmd](start-notifications.cmd), [status-notifications.cmd](status-notifications.cmd)
 
 ```powershell
+# or double-click start-notifications.cmd
 cd backend
 .\.venv\Scripts\arq.exe app.tasks.notifications.WorkerSettings
 ```

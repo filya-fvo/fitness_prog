@@ -108,12 +108,16 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
         await session.commit()
         return 0
 
+    if user.telegram_id is None:
+        logger.info("notification_skip_no_telegram user={} count={}", user.id, len(due))
+        return 0
+
     sent_items: list[dict[str, Any]] = []
     for item in due:
         try:
             await send_app_notification(
                 settings,
-                telegram_id=user.telegram_id,
+                telegram_id=int(user.telegram_id),
                 title=str(item.get("title") or "Напоминание"),
                 text=str(item.get("text") or ""),
                 startapp=str(item.get("startapp") or "home"),
@@ -144,6 +148,12 @@ async def create_reminder(
     workout = await workout_service.get_workout(session, user, body.workout_id)
     title = body.title or "Напоминание о тренировке"
 
+    if user.telegram_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="У аккаунта нет Telegram — напоминания в бот недоступны",
+        )
+
     if body.enqueue:
         try:
             from arq import create_pool
@@ -153,7 +163,7 @@ async def create_reminder(
             try:
                 job = await redis.enqueue_job(
                     "send_reminder_task",
-                    telegram_id=user.telegram_id,
+                    telegram_id=int(user.telegram_id),
                     workout_id=str(workout.id),
                     title=title,
                 )
@@ -188,7 +198,7 @@ async def create_reminder(
     try:
         await send_workout_reminder(
             settings,
-            telegram_id=user.telegram_id,
+            telegram_id=int(user.telegram_id),
             workout_id=str(workout.id),
             title=title,
         )

@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     jwt_secret: str = "replace_with_long_random_secret"
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30
+    # Optional SMTP for email OTP (web login). If empty, codes go via Telegram when possible.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_tls: bool = True
     cors_origins: str = "https://web.telegram.org"
     r2_access_key: str = ""
     r2_secret_key: str = ""
@@ -44,6 +51,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
     sentry_dsn: str = ""
+    # Optional override for daily log files (default: <repo>/logs)
+    log_dir: str = ""
+    # How long to keep zipped day logs under logs/archive/
+    log_archive_days: int = 30
 
     @property
     def admin_username_set(self) -> set[str]:

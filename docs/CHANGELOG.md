@@ -5,6 +5,19 @@
 
 ---
 
+## 0.8.8 — 2026-07-26
+
+### Ops / логи
+- Дневные файлы логов: `logs/api-YYYY-MM-DD.log`, `logs/worker-YYYY-MM-DD.log`.
+- Вчерашние и старше → `logs/archive/*.log.zip` (хранение 30 дней, `LOG_ARCHIVE_DAYS`).
+- Подключено в API (`main`) и ARQ worker.
+
+## 0.8.7 — 2026-07-25
+
+### Ops / уведомления
+- Отдельная инструкция в корне: `УВЕДОМЛЕНИЯ.md` / `NOTIFICATIONS.md`.
+- Лаунчеры: `start-notifications.cmd`, `status-notifications.cmd`.
+
 ## 0.8.6 — 2026-07-25
 
 ### Прогресс / питание

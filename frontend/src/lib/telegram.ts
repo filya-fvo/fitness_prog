@@ -117,9 +117,59 @@ export function initTelegramApp(): TelegramWebApp | null {
   return webApp;
 }
 
-/** Deep-link startapp param from reminder links (workout_<id>). */
+/**
+ * Deep-link startapp param from:
+ * - Telegram initDataUnsafe.start_param (t.me/...?...startapp=)
+ * - URL ?startapp=... (web_app buttons with MINI_APP_URL)
+ * - hash #startapp=...
+ */
 export function getStartParam(): string {
-  return getTelegramWebApp()?.initDataUnsafe?.start_param ?? "";
+  const fromTg = getTelegramWebApp()?.initDataUnsafe?.start_param?.trim() ?? "";
+  if (fromTg) return fromTg;
+
+  if (typeof window === "undefined") return "";
+
+  try {
+    const q = new URLSearchParams(window.location.search).get("startapp");
+    if (q && q.trim()) return q.trim();
+  } catch {
+    // ignore
+  }
+
+  try {
+    const raw = (window.location.hash || "").replace(/^#/, "");
+    if (!raw) return "";
+    if (raw.startsWith("startapp=")) {
+      return decodeURIComponent(raw.slice("startapp=".length).split("&")[0] || "").trim();
+    }
+    const hp = new URLSearchParams(raw);
+    const h = hp.get("startapp");
+    if (h && h.trim()) return h.trim();
+  } catch {
+    // ignore
+  }
+
+  return "";
+}
+
+/** Map startapp token → in-app path (used after Open from notifications). */
+export function pathFromStartParam(start: string): string | null {
+  const key = (start || "").trim();
+  if (!key || key === "home" || key === "start" || key === "app") return "/";
+  if (key.startsWith("workout_") && key.length > "workout_".length) {
+    return `/workouts/active/${key.slice("workout_".length)}`;
+  }
+  if (key === "profile" || key === "measurements") return "/profile";
+  if (key === "supplements" || key === "alerts" || key === "notifications") {
+    const tab = key === "supplements" ? "supplements" : "alerts";
+    return `/profile?tab=${tab}`;
+  }
+  if (key === "nutrition" || key === "food") return "/nutrition";
+  if (key === "programs") return "/programs";
+  if (key === "workouts") return "/workouts";
+  if (key === "progress") return "/progress";
+  if (key === "ai") return "/ai";
+  return null;
 }
 
 /** Open t.me / tg:// link inside Telegram client when possible. */

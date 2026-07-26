@@ -20,9 +20,13 @@ import {
   type SupplementCatalogItem,
   type SupplementEntry,
 } from "@/api/supplements";
+import {
+  requestEmailLinkCode,
+  verifyEmailLinkCode,
+} from "@/api/auth";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
+import { useUserStore } from "@/store/userStore";
 import { Header } from "@/components/layout/Header";
-import { TimeSlotsEditor } from "@/components/ui/TimeSlotsEditor";
 import {
   ACTIVITY_OPTIONS,
   BODY_MEASURE_FIELDS,
@@ -64,7 +68,15 @@ function asRecord(v: unknown): Record<string, unknown> {
 }
 
 export function ProfilePage() {
+  const setUser = useUserStore((s) => s.setUser);
+  const storeUser = useUserStore((s) => s.user);
   const [tab, setTab] = useState<TabId>("body");
+  const [authEmail, setAuthEmail] = useState("");
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailCode, setEmailCode] = useState("");
+  const [emailStep, setEmailStep] = useState<"idle" | "code">("idle");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailDebugCode, setEmailDebugCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +95,6 @@ export function ProfilePage() {
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramId, setActiveProgramId] = useState("");
-  const [goalsKeep, setGoalsKeep] = useState<Record<string, unknown>>({});
 
   const [stack, setStack] = useState<SupplementEntry[]>([]);
   const [catalog, setCatalog] = useState<SupplementCatalogItem[]>([]);
@@ -120,7 +131,8 @@ export function ProfilePage() {
 
         const a = asRecord(p.anthropometry);
         const g = asRecord(p.goals);
-        setGoalsKeep(g);
+        setAuthEmail(String(p.auth_email || ""));
+        setEmailDraft(String(p.auth_email || ""));
         setSex(String(a.sex || g.sex || "male"));
         setWeight(numOrEmpty(a.weight_kg));
         setHeight(numOrEmpty(a.height_cm));
@@ -198,7 +210,56 @@ export function ProfilePage() {
   const activeProgram = programs.find((p) => p.id === activeProgramId) || null;
   const unusedCatalog = catalog.filter((c) => !stack.some((s) => s.key === c.key && !s.custom));
 
-  async function saveBody() {
+  
+  async function sendEmailCode() {
+    if (emailBusy) return;
+    setEmailBusy(true);
+    setError(null);
+    setOk(null);
+    setEmailDebugCode(null);
+    try {
+      const res = await requestEmailLinkCode(emailDraft.trim());
+      setEmailStep("code");
+      setOk(res.message || "Код отправлен");
+      if (res.debug_code) setEmailDebugCode(res.debug_code);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось отправить код");
+    } finally {
+      setEmailBusy(false);
+    }
+  }
+
+  async function confirmEmailCode() {
+    if (emailBusy) return;
+    setEmailBusy(true);
+    setError(null);
+    setOk(null);
+    try {
+      const linked = await verifyEmailLinkCode(emailDraft.trim(), emailCode.trim());
+      const nextEmail = linked.auth_email || emailDraft.trim().toLowerCase();
+      setAuthEmail(nextEmail);
+      setEmailDraft(nextEmail);
+      setEmailStep("idle");
+      setEmailCode("");
+      setEmailDebugCode(null);
+      if (storeUser) {
+        setUser({
+          ...storeUser,
+          auth_email: linked.auth_email ?? storeUser.auth_email,
+          telegram_id: linked.telegram_id ?? storeUser.telegram_id,
+          username: linked.username ?? storeUser.username,
+          onboarding_completed: linked.onboarding_completed,
+        });
+      }
+      setOk("Email подтверждён. Можно входить через сайт по почте.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось подтвердить email");
+    } finally {
+      setEmailBusy(false);
+    }
+  }
+
+async function saveBody() {
     if (saving) return;
     setSaving(true);
     setError(null);
@@ -220,7 +281,6 @@ export function ProfilePage() {
         measurements_updated_at: new Date().toISOString(),
       };
       const goals = {
-        ...goalsKeep,
         primary_goal: primaryGoal,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
@@ -350,6 +410,88 @@ export function ProfilePage() {
 
       {tab === "body" ? (
         <div className="space-y-4">
+
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <p className="text-sm font-medium">Email для входа на сайте</p>
+            <p className="text-xs text-tg-hint">
+              Привяжите почту, чтобы открывать приложение в браузере без Telegram. Код подтверждения придёт в Telegram (и на email, если настроен SMTP).
+            </p>
+            {authEmail ? (
+              <p className="text-xs text-tg-link">Текущий email: {authEmail}</p>
+            ) : (
+              <p className="text-xs text-tg-hint">Email ещё не привязан</p>
+            )}
+            <label className="block text-xs text-tg-hint">
+              Email
+              <input
+                type="email"
+                autoComplete="email"
+                value={emailDraft}
+                onChange={(e) => {
+                  setEmailDraft(e.target.value);
+                  setEmailStep("idle");
+                  setEmailCode("");
+                }}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                placeholder="you@example.com"
+              />
+            </label>
+            {emailStep === "code" ? (
+              <label className="block text-xs text-tg-hint">
+                Код подтверждения
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm tracking-widest"
+                  placeholder="123456"
+                  maxLength={12}
+                />
+              </label>
+            ) : null}
+            {emailDebugCode ? (
+              <p className="text-xs text-tg-hint">
+                Dev-code: <span className="font-mono">{emailDebugCode}</span>
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {emailStep === "idle" ? (
+                <button
+                  type="button"
+                  disabled={emailBusy || !emailDraft.trim()}
+                  onClick={() => void sendEmailCode()}
+                  className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-60"
+                >
+                  {emailBusy ? "Отправка…" : authEmail ? "Сменить email" : "Привязать email"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={emailBusy || emailCode.trim().length < 4}
+                    onClick={() => void confirmEmailCode()}
+                    className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-60"
+                  >
+                    {emailBusy ? "Проверка…" : "Подтвердить код"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl bg-tg-bg px-3 py-2 text-xs text-tg-link"
+                    onClick={() => {
+                      setEmailStep("idle");
+                      setEmailCode("");
+                      setEmailDebugCode(null);
+                    }}
+                  >
+                    Отмена
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="mb-2 text-sm font-medium">Пол</p>
             <div className="flex gap-2">
@@ -652,16 +794,22 @@ export function ProfilePage() {
                             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5"
                           />
                         </label>
-                        <div className="mt-2">
-                          <TimeSlotsEditor
-                            times={item.times || []}
-                            onChange={(times) => {
+                        <label className="mt-1 block">
+                          Времена (через запятую: 10:00, pre_workout)
+                          <input
+                            value={(item.times || []).join(", ")}
+                            onChange={(e) => {
+                              const times = e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean);
                               setStack((prev) =>
                                 prev.map((x) => (x.id === item.id ? { ...x, times } : x)),
                               );
                             }}
+                            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5"
                           />
-                        </div>
+                        </label>
                       </div>
                     ) : null}
                   </li>

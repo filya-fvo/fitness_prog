@@ -4,13 +4,11 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
-import { fetchWorkoutHistory } from "@/api/workouts";
-import { fetchMyProfile, updateMyProfile } from "@/api/users";
+import { fetchMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
   readCachedExercises,
-  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
@@ -20,12 +18,10 @@ import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 import {
-  buildExerciseHistory,
-  draftsWithSuggestions,
-  ensureProgramStartDate,
-  resolveWeekPhase,
-} from "@/utils/loadProgression";
-import { pickTodayDayIndex, recommendPrograms } from "@/utils/programRecommend";
+  pickTodayDayIndex,
+  programSex,
+  recommendPrograms,
+} from "@/utils/programRecommend";
 
 function draftsFromWorkout(workout: {
   plan?: WorkoutPlan | Record<string, unknown> | null;
@@ -68,58 +64,9 @@ const TYPE_LABELS: Record<string, string> = {
   strength: "Сила",
   hypertrophy: "Гипертрофия",
   mobility: "Мобильность",
-  conditioning: "Улица / кондишн",
+  conditioning: "Кардио",
   custom: "Custom",
 };
-
-const LOC_LABELS: Record<string, string> = {
-  home: "Дом",
-  gym: "Зал",
-  outdoor: "Улица",
-};
-
-const LVL_LABELS: Record<string, string> = {
-  beginner: "Новичок",
-  intermediate: "Опытный",
-  advanced: "Продвинутый",
-};
-
-const LIM_LABELS: Record<string, string> = {
-  no_knee: "без коленей",
-  no_spine: "без позвоночника",
-};
-
-function metaLine(program: Program): string {
-  const st = (program.structure || {}) as Record<string, unknown>;
-  const loc = String(st.location || "");
-  const sexArr = Array.isArray(st.sex) ? (st.sex as string[]) : [];
-  const sex =
-    sexArr.includes("male") && !sexArr.includes("female")
-      ? "М"
-      : sexArr.includes("female") && !sexArr.includes("male")
-        ? "Ж"
-        : "";
-  const lvl = LVL_LABELS[(program.level || program.target_level || "").toLowerCase()] ||
-    program.level ||
-    program.target_level ||
-    "";
-  const lims = Array.isArray(st.limitations)
-    ? (st.limitations as string[]).map((x) => LIM_LABELS[x] || x).filter(Boolean)
-    : [];
-  const days = Array.isArray(st.schedule)
-    ? (st.schedule as unknown[]).length
-    : Number(st.days_per_week) || 0;
-  return [
-    sex,
-    LOC_LABELS[loc] || loc,
-    lvl,
-    TYPE_LABELS[program.workout_type] ?? program.workout_type,
-    days ? `${days} дн.` : "",
-    lims.length ? lims.join(", ") : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
 
 function scheduleOf(program: Program): Array<Record<string, unknown>> {
   const raw =
@@ -244,6 +191,14 @@ export function ProgramsPage() {
   const [items, setItems] = useState<Program[]>([]);
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || "");
   const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || "");
+  // male | female | "" (all). URL ?sex=male|female or default from profile after load.
+  const [sexFilter, setSexFilter] = useState<string>(() => {
+    const q = (searchParams.get("sex") || "").toLowerCase();
+    if (q === "male" || q === "m" || q === "муж" || q === "м") return "male";
+    if (q === "female" || q === "f" || q === "жен" || q === "ж") return "female";
+    return "";
+  });
+  const [sexFilterTouched, setSexFilterTouched] = useState(() => Boolean(searchParams.get("sex")));
   const [expandedId, setExpandedId] = useState<string | null>(searchParams.get("id"));
   const [dayExercisesOpen, setDayExercisesOpen] = useState<Record<string, boolean>>({});
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
@@ -283,7 +238,14 @@ export function ProgramsPage() {
           const goals = (profile?.goals as Record<string, unknown>) || {};
           const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
           setProfileGoals(goals);
-          setProfileSex(String(anthro.sex || goals.sex || ""));
+          const sexFromProfile = String(anthro.sex || goals.sex || "").toLowerCase();
+          setProfileSex(sexFromProfile);
+          // Default filter to profile sex once (unless user/URL already chose)
+          if (!sexFilterTouched && !searchParams.get("sex")) {
+            if (sexFromProfile === "male" || sexFromProfile === "female") {
+              setSexFilter(sexFromProfile);
+            }
+          }
           if (exercises?.items?.length) {
             setExerciseCatalog(exercises.items);
             setCatalog(exercises.items);
@@ -350,9 +312,20 @@ export function ProgramsPage() {
         const lvl = (p.level || p.target_level || "").toLowerCase();
         if (lvl !== levelFilter.toLowerCase()) return false;
       }
+      if (sexFilter === "male" || sexFilter === "female") {
+        const pSex = programSex(p).map((s) => s.toLowerCase());
+        // empty / any / unisex / both → show for any sex filter
+        const isUnisex =
+          pSex.length === 0 ||
+          pSex.includes("any") ||
+          pSex.includes("unisex") ||
+          pSex.includes("all") ||
+          (pSex.includes("male") && pSex.includes("female"));
+        if (!isUnisex && !pSex.includes(sexFilter)) return false;
+      }
       return true;
     });
-  }, [items, levelFilter, typeFilter]);
+  }, [items, levelFilter, typeFilter, sexFilter]);
 
   const types = useMemo(() => {
     const set = new Set(items.map((p) => p.workout_type).filter(Boolean));
@@ -372,44 +345,12 @@ export function ProgramsPage() {
         setExerciseCatalog(ex.items);
       }
 
-      // Persist program start date for 3-week light/medium/heavy cycle
-      const { start, goalsPatch } = ensureProgramStartDate(profileGoals, program.id);
-      if (goalsPatch && isOnline() && getStoredToken()) {
-        try {
-          const profile = await updateMyProfile({
-            goals: { ...profileGoals, ...goalsPatch },
-          });
-          setProfileGoals((profile.goals as Record<string, unknown>) || { ...profileGoals, ...goalsPatch });
-        } catch {
-          setProfileGoals((g) => ({ ...g, ...goalsPatch }));
-        }
-      } else if (goalsPatch) {
-        setProfileGoals((g) => ({ ...g, ...goalsPatch }));
-      }
-
       const workout = await startProgramWorkout({
         programId: program.id,
         dayIndex,
       });
       const clientId = crypto.randomUUID();
-      const plan = (workout.plan || {}) as WorkoutPlan;
-      const phaseMeta = resolveWeekPhase(start);
-      let historyMap = buildExerciseHistory(await readCachedWorkouts());
-      if (isOnline() && getStoredToken()) {
-        try {
-          historyMap = buildExerciseHistory(await fetchWorkoutHistory());
-        } catch {
-          // keep cache
-        }
-      }
-      const drafts =
-        Array.isArray(plan.exercises) && plan.exercises.length
-          ? draftsWithSuggestions({
-              exercises: plan.exercises,
-              history: historyMap,
-              phase: phaseMeta,
-            })
-          : draftsFromWorkout(workout);
+      const drafts = draftsFromWorkout(workout);
       await rememberWorkoutId(clientId, workout.id);
       await saveLocalSession({
         clientId,
@@ -426,7 +367,6 @@ export function ProgramsPage() {
         program_id: program.id,
         day_index: dayIndex,
         exercises: drafts.length,
-        week_phase: phaseMeta.phase,
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
@@ -454,7 +394,13 @@ export function ProgramsPage() {
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-xs text-tg-hint">{metaLine(program) || (days ? `${days} дн.` : "")}</p>
+            <p className="mt-1 text-xs text-tg-hint">
+              {TYPE_LABELS[program.workout_type] ?? program.workout_type}
+              {program.level || program.target_level
+                ? ` · ${program.level || program.target_level}`
+                : ""}
+              {days ? ` · ${days} дн.` : ""}
+            </p>
           </div>
           <button
             type="button"
@@ -595,6 +541,31 @@ export function ProgramsPage() {
       ) : null}
 
       <div className="mb-2 flex flex-wrap gap-2">
+        {(
+          [
+            { id: "", label: "Все" },
+            { id: "male", label: "Мужские" },
+            { id: "female", label: "Женские" },
+          ] as const
+        ).map((opt) => (
+          <button
+            key={opt.id || "all-sex"}
+            type="button"
+            onClick={() => {
+              setSexFilterTouched(true);
+              setSexFilter(opt.id);
+            }}
+            className={[
+              "rounded-full px-3 py-1 text-xs",
+              sexFilter === opt.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+            ].join(" ")}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-2 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setTypeFilter("")}
@@ -640,8 +611,8 @@ export function ProgramsPage() {
 
       {!loading && filtered.length === 0 ? (
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
-          Нет программ по выбранным фильтрам. Сбросьте тип/уровень или соберите тренировку в
-          каталоге.
+          Нет программ по выбранным фильтрам. Сбросьте пол / тип / уровень или соберите
+          тренировку в каталоге.
         </div>
       ) : null}
 

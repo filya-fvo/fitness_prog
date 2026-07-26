@@ -22,9 +22,9 @@ class User(Base, TimestampSoftDeleteMixin):
 
     __tablename__ = "users"
 
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True, index=True)
     username: Mapped[str | None] = mapped_column(Text, nullable=True)
-    auth_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    auth_email: Mapped[str | None] = mapped_column(String(320), nullable=True, index=True)
     anthropometry: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     goals: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     subscription_status: Mapped[str] = mapped_column(
