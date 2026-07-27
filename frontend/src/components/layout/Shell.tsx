@@ -7,7 +7,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithTelegram } from "@/api/auth";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { EmailLoginForm } from "@/components/auth/EmailLoginForm";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { startSyncListeners } from "@/db/syncQueue";
 import { trackEvent } from "@/lib/analytics";
@@ -63,6 +62,7 @@ export function Shell() {
         }
 
         if (!isTelegramEnvironment()) {
+          // Browser outside Telegram: restore existing JWT if present (no email login).
           if (hasSession() && isOnline()) {
             try {
               const profile = await fetchMyProfile();
@@ -71,7 +71,6 @@ export function Shell() {
                   id: profile.id,
                   telegram_id: profile.telegram_id ?? null,
                   username: profile.username ?? null,
-                  auth_email: profile.auth_email ?? null,
                   subscription_status: profile.subscription_status,
                   onboarding_completed: profile.onboarding_completed,
                 });
@@ -135,11 +134,9 @@ export function Shell() {
   const identity = user
     ? user.username
       ? `@${user.username}`
-      : user.auth_email
-        ? user.auth_email
-        : user.telegram_id
-          ? `id ${user.telegram_id}`
-          : "account"
+      : user.telegram_id
+        ? `id ${user.telegram_id}`
+        : "account"
     : "";
 
   return (
@@ -163,12 +160,9 @@ export function Shell() {
         ) : null}
 
         {!isAuthLoading && !isTelegramEnvironment() && !user ? (
-          <>
-            <p className="mb-3 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
-              Вход через сайт: укажите email и код. В Telegram Mini App вход автоматический.
-            </p>
-            <EmailLoginForm />
-          </>
+          <p className="mb-3 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
+            Откройте Mini App в Telegram для входа. Вход по email временно отключён.
+          </p>
         ) : null}
 
         <Outlet />

@@ -1,6 +1,6 @@
 # Список GIF-файлов для упражнений
 
-Всего упражнений: **100**.
+Всего упражнений: **99**.
 
 1. Скачайте или сделайте GIF техники.
 2. Переименуйте **точно** как в колонке `file` (например `bench-press.gif`).
@@ -13,15 +13,8 @@
 
 | file | name_ru | muscle |
 |------|---------|--------|
-| `bird-dog.gif` | Птица-собака | кор |
-| `dead-bug.gif` | Мёртвый жук | кор |
-| `face-pull.gif` | Тяга к лицу | спина |
-| `hollow-hold.gif` | Удержание «лодочки» | кор |
-| `kettlebell-swing.gif` | Махи гирей | кардио |
-| `mountain-climbers.gif` | Альпинисты | кор |
-| `worlds-greatest-stretch.gif` | Мировая растяжка | мобильность |
 | `australian-pull-ups.gif` | Австралийские подтягивания | спина |
-| `arnold-press.gif` | Жим Арнольда | плечи |
+| `mountain-climbers.gif` | Альпинисты | кор |
 | `running-in-place.gif` | Бег на месте | кардио |
 | `burpees.gif` | Бёрпи | кардио |
 | `side-plank.gif` | Боковая планка | кор |
@@ -36,7 +29,7 @@
 | `high-knees.gif` | Высокие колени | кардио |
 | `hyperextension.gif` | Гиперэкстензия | спина |
 | `rowing-machine.gif` | Гребля в тренажёре | кардио |
-| `jumping-jacks.gif` | Прыжки «звездой» | кардио |
+| `arnold-press.gif` | Жим Арнольда | плечи |
 | `chest-press-machine.gif` | Жим в тренажёре | грудь |
 | `dumbbell-bench-press.gif` | Жим гантелей лёжа | грудь |
 | `incline-dumbbell-press.gif` | Жим гантелей на наклонной | грудь |
@@ -48,8 +41,10 @@
 | `box-step-ups.gif` | Зашагивания на тумбу | ноги |
 | `squat-to-press.gif` | Комплекс присед + жим | full_body |
 | `cat-cow.gif` | Кошка-корова | мобильность |
-| `kettlebell-swings.gif` | Махи гирей | full_body |
+| `kettlebell-swings.gif` | Махи гирей | кардио |
 | `bear-crawl.gif` | Медвежья походка | full_body |
+| `dead-bug.gif` | Мёртвый жук | кор |
+| `worlds-greatest-stretch.gif` | Мировая растяжка | мобильность |
 | `ankle-mobility.gif` | Мобилизация голеностопа | мобильность |
 | `band-shoulder-mobility.gif` | Мобилизация плеч с резинкой | мобильность |
 | `hammer-curls.gif` | Молотковые сгибания | бицепс |
@@ -70,10 +65,13 @@
 | `lying-leg-raises.gif` | Подъёмы ног лёжа | кор |
 | `pigeon-pose.gif` | Поза голубя | мобильность |
 | `squat-dumbbell-press.gif` | Присед + жим гантелей | full_body |
+| `squat-to-press-2.gif` | Присед с жимом над головой | full_body |
 | `goblet-squat.gif` | Приседания с гантелью у груди | ноги |
 | `bodyweight-squat.gif` | Приседания со своим весом | ноги |
 | `barbell-back-squat.gif` | Приседания со штангой | ноги |
+| `jumping-jacks.gif` | Прыжки «звездой» | кардио |
 | `jump-rope.gif` | Прыжки на скакалке | кардио |
+| `bird-dog.gif` | Птица-собака | кор |
 | `dumbbell-pullover.gif` | Пуловер с гантелью | спина |
 | `dumbbell-fly.gif` | Разведение гантелей лёжа | грудь |
 | `bent-over-lateral-raise.gif` | Разводка в наклоне | плечи |
@@ -98,18 +96,19 @@
 | `crunches.gif` | Скручивания | кор |
 | `conventional-deadlift.gif` | Становая тяга классическая | ноги |
 | `sumo-squat.gif` | Сумо-приседания | ноги |
-| `dumbbell-thrusters.gif` | Присед с жимом над головой | full_body |
 | `lat-pulldown.gif` | Тяга верхнего блока | спина |
 | `single-arm-dumbbell-row.gif` | Тяга гантели в наклоне | спина |
 | `seated-cable-row.gif` | Тяга горизонтального блока | спина |
+| `face-pull.gif` | Тяга к лицу | спина |
 | `upright-row.gif` | Тяга к подбородку | плечи |
 | `band-row.gif` | Тяга резинки к поясу | спина |
 | `t-bar-row.gif` | Тяга Т-грифа | спина |
 | `barbell-bent-over-row.gif` | Тяга штанги в наклоне | спина |
+| `hollow-hold.gif` | Удержание «лодочки» | кор |
 | `farmers-walk.gif` | Фермерская прогулка | full_body |
 | `dumbbell-skull-crusher.gif` | Французский жим гантели | трицепс |
 | `front-squat.gif` | Фронтальные приседания | ноги |
-| `barbell-hip-thrust.gif` | Ягодичный мост со штангой | ноги |
 | `dumbbell-shrugs.gif` | Шраги с гантелями | спина |
 | `elliptical.gif` | Эллипс | кардио |
 | `glute-bridge.gif` | Ягодичный мост | ноги |
+| `barbell-hip-thrust.gif` | Ягодичный мост со штангой | ноги |

@@ -20,13 +20,11 @@ import {
   type SupplementCatalogItem,
   type SupplementEntry,
 } from "@/api/supplements";
-import {
-  requestEmailLinkCode,
-  verifyEmailLinkCode,
-} from "@/api/auth";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { useUserStore } from "@/store/userStore";
 import { Header } from "@/components/layout/Header";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { fetchExercises } from "@/api/exercises";
+import type { Exercise } from "@/types/workout";
 import {
   ACTIVITY_OPTIONS,
   BODY_MEASURE_FIELDS,
@@ -34,6 +32,11 @@ import {
 } from "@/utils/energyTargets";
 import { isOnline } from "@/utils/network";
 import type { Program } from "@/types/workout";
+import {
+  programDays,
+  programSex,
+  recommendPrograms,
+} from "@/utils/programRecommend";
 
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
@@ -67,16 +70,145 @@ function asRecord(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
 }
 
+const PROGRAM_TYPE_LABELS: Record<string, string> = {
+  full_body: "Full body",
+  full_body_alt: "Full body A/B",
+  upper_lower: "Верх/низ",
+  push_pull_legs: "PPL",
+  home_express: "Дома",
+  strength: "Сила",
+  hypertrophy: "Гипертрофия",
+  mobility: "Мобильность",
+  conditioning: "Кардио",
+  custom: "Custom",
+};
+
+const PROGRAM_LEVEL_LABELS: Record<string, string> = {
+  beginner: "Новичок",
+  intermediate: "Опытный",
+  advanced: "Продвинутый",
+};
+
+function scheduleOfProgram(program: Program): Array<Record<string, unknown>> {
+  const raw =
+    (program.structure?.schedule as unknown[]) ||
+    (program.structure?.days as unknown[]) ||
+    [];
+  return Array.isArray(raw)
+    ? raw.filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === "object")
+    : [];
+}
+
+function dayExerciseRowsProfile(day: Record<string, unknown>): Array<{
+  key: string;
+  name: string;
+  exerciseId?: string;
+  sets?: string;
+  reps?: string;
+  restSec?: number;
+}> {
+  const exercises = Array.isArray(day.exercises) ? day.exercises : [];
+  if (exercises.length) {
+    return exercises.map((raw, idx) => {
+      const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+      const name = String(
+        item.exercise_name || item.name_ru || item.name || item.title || `Упражнение ${idx + 1}`,
+      );
+      const sets =
+        item.sets != null
+          ? String(item.sets)
+          : item.target_sets != null
+            ? String(item.target_sets)
+            : undefined;
+      const reps =
+        item.reps != null
+          ? String(item.reps)
+          : item.target_reps != null
+            ? String(item.target_reps)
+            : undefined;
+      const restRaw = item.rest_sec ?? item.rest_time_sec;
+      const restSec =
+        restRaw != null && Number.isFinite(Number(restRaw)) ? Number(restRaw) : undefined;
+      const exerciseId =
+        item.exercise_id != null
+          ? String(item.exercise_id)
+          : item.id != null
+            ? String(item.id)
+            : undefined;
+      return {
+        key: String(exerciseId || `${name}-${idx}`),
+        name,
+        sets,
+        reps,
+        restSec,
+      };
+    });
+  }
+  const ids = Array.isArray(day.exercise_ids) ? day.exercise_ids : [];
+  return ids.map((id, idx) => ({
+    key: String(id ?? idx),
+    name: `Упражнение ${idx + 1}`,
+  }));
+}
+
+
+function normalizeExerciseName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function resolveExerciseFromCatalog(
+  row: { name: string; exerciseId?: string },
+  byId: Map<string, Exercise>,
+  byName: Map<string, Exercise>,
+): Exercise | null {
+  if (row.exerciseId && byId.has(row.exerciseId)) {
+    return byId.get(row.exerciseId) ?? null;
+  }
+  const exact = byName.get(normalizeExerciseName(row.name));
+  if (exact) return exact;
+  const needle = normalizeExerciseName(row.name);
+  for (const [name, ex] of byName) {
+    if (name.includes(needle) || needle.includes(name)) return ex;
+  }
+  return null;
+}
+
+function placeholderExerciseFromRow(row: {
+  name: string;
+  exerciseId?: string;
+}): Exercise {
+  return {
+    id: row.exerciseId || "00000000-0000-4000-8000-000000000001",
+    name_ru: row.name,
+    muscle_group: "",
+    equipment: null,
+    description: "Карточка из программы. Полное описание появится после синхронизации каталога.",
+    technique: "Выполняйте движение подконтрольно, сохраняя нейтраль корпуса.",
+    common_mistakes: null,
+    difficulty: 1,
+    video_url: null,
+    animation_url: null,
+    thumbnail_url: null,
+    media_duration_sec: null,
+    media_source: "none",
+    tags: [],
+  };
+}
+
+function programMetaLine(program: Program): string {
+  const st = (program.structure || {}) as Record<string, unknown>;
+  const days = programDays(program);
+  const lvlRaw = (program.level || program.target_level || "").toLowerCase();
+  const lvl = PROGRAM_LEVEL_LABELS[lvlRaw] || program.level || program.target_level || "";
+  const type = PROGRAM_TYPE_LABELS[program.workout_type] ?? program.workout_type;
+  const loc = String(st.location || "");
+  const locLabel = loc === "home" ? "Дом" : loc === "gym" ? "Зал" : loc === "outdoor" ? "Улица" : loc;
+  return [type, lvl, locLabel, days ? `${days} дн.` : ""].filter(Boolean).join(" · ");
+}
+
+
 export function ProfilePage() {
-  const setUser = useUserStore((s) => s.setUser);
-  const storeUser = useUserStore((s) => s.user);
   const [tab, setTab] = useState<TabId>("body");
-  const [authEmail, setAuthEmail] = useState("");
-  const [emailDraft, setEmailDraft] = useState("");
-  const [emailCode, setEmailCode] = useState("");
-  const [emailStep, setEmailStep] = useState<"idle" | "code">("idle");
-  const [emailBusy, setEmailBusy] = useState(false);
-  const [emailDebugCode, setEmailDebugCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +227,15 @@ export function ProfilePage() {
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramId, setActiveProgramId] = useState("");
+  const [programTypeFilter, setProgramTypeFilter] = useState("");
+  const [programLevelFilter, setProgramLevelFilter] = useState("");
+  const [programSexFilter, setProgramSexFilter] = useState("");
+  const [expandedProgramId, setExpandedProgramId] = useState<string | null>(null);
+  const [programDayOpen, setProgramDayOpen] = useState<Record<string, boolean>>({});
+  const [profileGoalsKeep, setProfileGoalsKeep] = useState<Record<string, unknown>>({});
+  const [autoAssignedProgram, setAutoAssignedProgram] = useState(false);
+  const [exerciseCatalog, setExerciseCatalog] = useState<Exercise[]>([]);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
 
   const [stack, setStack] = useState<SupplementEntry[]>([]);
   const [catalog, setCatalog] = useState<SupplementCatalogItem[]>([]);
@@ -121,19 +262,23 @@ export function ProfilePage() {
         return;
       }
       try {
-        const [p, prog, sup, nset] = await Promise.all([
+        const [p, prog, sup, nset, exCatalog] = await Promise.all([
           fetchMyProfile(),
           fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] as Program[] })),
           fetchSupplementStack().catch(() => ({ items: [], catalog: [] })),
           fetchNotificationSettings().catch(() => null),
+          fetchExercises({ pageSize: 200 }).catch(() => ({ items: [] as Exercise[] })),
         ]);
         if (cancelled) return;
 
         const a = asRecord(p.anthropometry);
         const g = asRecord(p.goals);
-        setAuthEmail(String(p.auth_email || ""));
-        setEmailDraft(String(p.auth_email || ""));
-        setSex(String(a.sex || g.sex || "male"));
+        setProfileGoalsKeep(g);
+        const sexFromProfile = String(a.sex || g.sex || "male").toLowerCase();
+        setSex(sexFromProfile === "female" ? "female" : "male");
+        if (sexFromProfile === "male" || sexFromProfile === "female") {
+          setProgramSexFilter(sexFromProfile);
+        }
         setWeight(numOrEmpty(a.weight_kg));
         setHeight(numOrEmpty(a.height_cm));
         setAge(numOrEmpty(a.age));
@@ -147,13 +292,64 @@ export function ProfilePage() {
           ),
         );
         setDaysPerWeek(numOrEmpty(g.days_per_week || 3));
-        setActiveProgramId(String(g.active_program_id || ""));
+        const existingActive = String(g.active_program_id || "");
+        setActiveProgramId(existingActive);
         const m = asRecord(a.measurements);
         const next: Record<string, string> = {};
         for (const f of BODY_MEASURE_FIELDS) next[f.key] = numOrEmpty(m[f.key]);
         setMeasures(next);
 
-        setPrograms(prog.items || []);
+        const programItems = prog.items || [];
+        setPrograms(programItems);
+        if (exCatalog?.items?.length) {
+          setExerciseCatalog(exCatalog.items);
+        }
+
+        // Auto-assign recommended program if user has none yet
+        if (!existingActive && programItems.length) {
+          const rec = recommendPrograms(
+            programItems,
+            {
+              primaryGoal: String(g.primary_goal || "maintain"),
+              level: String(g.level || "beginner"),
+              daysPerWeek: Number(g.days_per_week) || Number(daysPerWeek) || 3,
+              equipment: Array.isArray(g.equipment) ? (g.equipment as string[]) : [],
+              sex: String(a.sex || g.sex || sex || ""),
+              location: String(g.location || ""),
+              limitations: Array.isArray(g.limitations)
+                ? (g.limitations as string[])
+                : (g.limitations as string | null) || null,
+            },
+            1,
+          );
+          if (rec[0]) {
+            setActiveProgramId(rec[0].id);
+            setAutoAssignedProgram(true);
+            setExpandedProgramId(rec[0].id);
+            // Persist quietly so home/recommendations use it immediately
+            if (isOnline() && getStoredToken()) {
+              try {
+                await updateMyProfile({
+                  goals: {
+                    ...g,
+                    active_program_id: rec[0].id,
+                    recommended_program_id: rec[0].id,
+                    recommended_program_at: new Date().toISOString(),
+                  },
+                });
+                setProfileGoalsKeep((prev) => ({
+                  ...prev,
+                  ...g,
+                  active_program_id: rec[0].id,
+                  recommended_program_id: rec[0].id,
+                }));
+              } catch {
+                // keep local selection; user can save manually
+              }
+            }
+          }
+        }
+
         setStack(sup.items || []);
         setCatalog(sup.catalog || []);
         if (sup.catalog?.[0]) setPickerKey(sup.catalog[0].key);
@@ -210,56 +406,87 @@ export function ProfilePage() {
   const activeProgram = programs.find((p) => p.id === activeProgramId) || null;
   const unusedCatalog = catalog.filter((c) => !stack.some((s) => s.key === c.key && !s.custom));
 
-  
-  async function sendEmailCode() {
-    if (emailBusy) return;
-    setEmailBusy(true);
-    setError(null);
-    setOk(null);
-    setEmailDebugCode(null);
-    try {
-      const res = await requestEmailLinkCode(emailDraft.trim());
-      setEmailStep("code");
-      setOk(res.message || "Код отправлен");
-      if (res.debug_code) setEmailDebugCode(res.debug_code);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось отправить код");
-    } finally {
-      setEmailBusy(false);
-    }
-  }
+  const recommendedPrograms = useMemo(
+    () =>
+      recommendPrograms(
+        programs,
+        {
+          primaryGoal,
+          level: String(profileGoalsKeep.level || "beginner"),
+          daysPerWeek: Number(daysPerWeek) || undefined,
+          equipment: Array.isArray(profileGoalsKeep.equipment)
+            ? (profileGoalsKeep.equipment as string[])
+            : [],
+          sex,
+          location: String(profileGoalsKeep.location || ""),
+          limitations: Array.isArray(profileGoalsKeep.limitations)
+            ? (profileGoalsKeep.limitations as string[])
+            : (profileGoalsKeep.limitations as string | null) || null,
+        },
+        3,
+      ),
+    [programs, primaryGoal, daysPerWeek, sex, profileGoalsKeep],
+  );
 
-  async function confirmEmailCode() {
-    if (emailBusy) return;
-    setEmailBusy(true);
-    setError(null);
-    setOk(null);
-    try {
-      const linked = await verifyEmailLinkCode(emailDraft.trim(), emailCode.trim());
-      const nextEmail = linked.auth_email || emailDraft.trim().toLowerCase();
-      setAuthEmail(nextEmail);
-      setEmailDraft(nextEmail);
-      setEmailStep("idle");
-      setEmailCode("");
-      setEmailDebugCode(null);
-      if (storeUser) {
-        setUser({
-          ...storeUser,
-          auth_email: linked.auth_email ?? storeUser.auth_email,
-          telegram_id: linked.telegram_id ?? storeUser.telegram_id,
-          username: linked.username ?? storeUser.username,
-          onboarding_completed: linked.onboarding_completed,
-        });
+  const recommendedProgram = recommendedPrograms[0] || null;
+  const recommendedIds = useMemo(
+    () => new Set(recommendedPrograms.map((p) => p.id)),
+    [recommendedPrograms],
+  );
+
+  const programTypes = useMemo(() => {
+    const set = new Set(programs.map((p) => p.workout_type).filter(Boolean));
+    return Array.from(set);
+  }, [programs]);
+
+  const filteredPrograms = useMemo(() => {
+    return programs.filter((p) => {
+      if (programTypeFilter && p.workout_type !== programTypeFilter) return false;
+      if (programLevelFilter) {
+        const lvl = (p.level || p.target_level || "").toLowerCase();
+        if (lvl !== programLevelFilter.toLowerCase()) return false;
       }
-      setOk("Email подтверждён. Можно входить через сайт по почте.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось подтвердить email");
-    } finally {
-      setEmailBusy(false);
-    }
+      if (programSexFilter === "male" || programSexFilter === "female") {
+        const pSex = programSex(p).map((x) => x.toLowerCase());
+        const isUnisex =
+          pSex.length === 0 ||
+          pSex.includes("any") ||
+          pSex.includes("unisex") ||
+          pSex.includes("all") ||
+          (pSex.includes("male") && pSex.includes("female"));
+        if (!isUnisex && !pSex.includes(programSexFilter)) return false;
+      }
+      return true;
+    });
+  }, [programs, programTypeFilter, programLevelFilter, programSexFilter]);
+
+  const exerciseById = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const ex of exerciseCatalog) map.set(ex.id, ex);
+    return map;
+  }, [exerciseCatalog]);
+
+  const exerciseByName = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const ex of exerciseCatalog) map.set(normalizeExerciseName(ex.name_ru), ex);
+    return map;
+  }, [exerciseCatalog]);
+
+  function openProgramExercise(row: { name: string; exerciseId?: string }) {
+    const resolved = resolveExerciseFromCatalog(row, exerciseById, exerciseByName);
+    setDetailExercise(resolved ?? placeholderExerciseFromRow(row));
   }
 
-async function saveBody() {
+  function applyRecommendedProgram() {
+    if (!recommendedProgram) return;
+    setActiveProgramId(recommendedProgram.id);
+    setExpandedProgramId(recommendedProgram.id);
+    setAutoAssignedProgram(true);
+    setOk(`Рекомендуем: ${recommendedProgram.name}`);
+  }
+
+  
+  async function saveBody() {
     if (saving) return;
     setSaving(true);
     setError(null);
@@ -281,11 +508,13 @@ async function saveBody() {
         measurements_updated_at: new Date().toISOString(),
       };
       const goals = {
+        ...profileGoalsKeep,
         primary_goal: primaryGoal,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
         days_per_week: Number(daysPerWeek) || 3,
         active_program_id: activeProgramId || null,
+        sex,
       };
       if (isOnline() && getStoredToken()) {
         await updateMyProfile({ anthropometry, goals });
@@ -308,10 +537,17 @@ async function saveBody() {
     try {
       await updateMyProfile({
         goals: {
+          ...profileGoalsKeep,
           active_program_id: activeProgramId || null,
           days_per_week: Number(daysPerWeek) || 3,
         },
       });
+      setProfileGoalsKeep((prev) => ({
+        ...prev,
+        active_program_id: activeProgramId || null,
+        days_per_week: Number(daysPerWeek) || 3,
+      }));
+      setAutoAssignedProgram(false);
       setOk(
         activeProgram
           ? `Активная программа: ${activeProgram.name}`
@@ -410,87 +646,6 @@ async function saveBody() {
 
       {tab === "body" ? (
         <div className="space-y-4">
-
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <p className="text-sm font-medium">Email для входа на сайте</p>
-            <p className="text-xs text-tg-hint">
-              Привяжите почту, чтобы открывать приложение в браузере без Telegram. Код подтверждения придёт в Telegram (и на email, если настроен SMTP).
-            </p>
-            {authEmail ? (
-              <p className="text-xs text-tg-link">Текущий email: {authEmail}</p>
-            ) : (
-              <p className="text-xs text-tg-hint">Email ещё не привязан</p>
-            )}
-            <label className="block text-xs text-tg-hint">
-              Email
-              <input
-                type="email"
-                autoComplete="email"
-                value={emailDraft}
-                onChange={(e) => {
-                  setEmailDraft(e.target.value);
-                  setEmailStep("idle");
-                  setEmailCode("");
-                }}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                placeholder="you@example.com"
-              />
-            </label>
-            {emailStep === "code" ? (
-              <label className="block text-xs text-tg-hint">
-                Код подтверждения
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={emailCode}
-                  onChange={(e) => setEmailCode(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm tracking-widest"
-                  placeholder="123456"
-                  maxLength={12}
-                />
-              </label>
-            ) : null}
-            {emailDebugCode ? (
-              <p className="text-xs text-tg-hint">
-                Dev-code: <span className="font-mono">{emailDebugCode}</span>
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              {emailStep === "idle" ? (
-                <button
-                  type="button"
-                  disabled={emailBusy || !emailDraft.trim()}
-                  onClick={() => void sendEmailCode()}
-                  className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-60"
-                >
-                  {emailBusy ? "Отправка…" : authEmail ? "Сменить email" : "Привязать email"}
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    disabled={emailBusy || emailCode.trim().length < 4}
-                    onClick={() => void confirmEmailCode()}
-                    className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-60"
-                  >
-                    {emailBusy ? "Проверка…" : "Подтвердить код"}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl bg-tg-bg px-3 py-2 text-xs text-tg-link"
-                    onClick={() => {
-                      setEmailStep("idle");
-                      setEmailCode("");
-                      setEmailDebugCode(null);
-                    }}
-                  >
-                    Отмена
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
 
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="mb-2 text-sm font-medium">Пол</p>
@@ -653,19 +808,130 @@ async function saveBody() {
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
             <p className="font-medium">Активная программа</p>
             <p className="mt-1 text-xs text-tg-hint">
-              Выберите программу — она будет основной на главной и в рекомендациях. Сменить можно
-              в любой момент.
+              Фильтры помогают быстрее найти подходящую. Если программа не выбрана, система
+              назначает рекомендуемую автоматически по вашему профилю.
             </p>
             {activeProgram ? (
-              <p className="mt-2 text-tg-link">Сейчас: {activeProgram.name}</p>
+              <p className="mt-2 text-tg-link">
+                Сейчас: {activeProgram.name}
+                {autoAssignedProgram ? " (авто)" : ""}
+              </p>
             ) : (
               <p className="mt-2 text-tg-hint">Программа не выбрана</p>
             )}
+            {recommendedProgram ? (
+              <div className="mt-3 rounded-xl bg-tg-bg p-3">
+                <p className="text-xs text-tg-hint">Рекомендуем сейчас</p>
+                <p className="mt-1 text-sm font-medium">{recommendedProgram.name}</p>
+                <p className="mt-0.5 text-xs text-tg-hint">{programMetaLine(recommendedProgram)}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyRecommendedProgram()}
+                    className="rounded-lg bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text"
+                  >
+                    Назначить рекомендуемую
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedProgramId((id) =>
+                        id === recommendedProgram.id ? null : recommendedProgram.id,
+                      )
+                    }
+                    className="rounded-lg bg-tg-secondary px-3 py-1.5 text-xs text-tg-link"
+                  >
+                    {expandedProgramId === recommendedProgram.id ? "Скрыть детали" : "Детали"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "", label: "Все" },
+                { id: "male", label: "Мужские" },
+                { id: "female", label: "Женские" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id || "all-sex"}
+                type="button"
+                onClick={() => setProgramSexFilter(opt.id)}
+                className={[
+                  "rounded-full px-3 py-1 text-xs",
+                  programSexFilter === opt.id
+                    ? "bg-tg-button text-tg-button-text"
+                    : "bg-tg-secondary",
+                ].join(" ")}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setProgramTypeFilter("")}
+              className={[
+                "rounded-full px-3 py-1 text-xs",
+                !programTypeFilter ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+              ].join(" ")}
+            >
+              Все типы
+            </button>
+            {programTypes.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setProgramTypeFilter(t)}
+                className={[
+                  "rounded-full px-3 py-1 text-xs",
+                  programTypeFilter === t
+                    ? "bg-tg-button text-tg-button-text"
+                    : "bg-tg-secondary",
+                ].join(" ")}
+              >
+                {PROGRAM_TYPE_LABELS[t] ?? t}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "", label: "Все уровни" },
+                { id: "beginner", label: "Новичок" },
+                { id: "intermediate", label: "Опытный" },
+                { id: "advanced", label: "Продвинутый" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id || "all-lvl"}
+                type="button"
+                onClick={() => setProgramLevelFilter(opt.id)}
+                className={[
+                  "rounded-full px-3 py-1 text-xs",
+                  programLevelFilter === opt.id
+                    ? "bg-tg-button text-tg-button-text"
+                    : "bg-tg-secondary",
+                ].join(" ")}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setActiveProgramId("")}
+              onClick={() => {
+                setActiveProgramId("");
+                setAutoAssignedProgram(false);
+              }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
                 !activeProgramId ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
@@ -673,26 +939,207 @@ async function saveBody() {
             >
               Без фиксированной программы
             </button>
-            {programs.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setActiveProgramId(p.id)}
-                className={[
-                  "w-full rounded-xl px-4 py-3 text-left text-sm",
-                  activeProgramId === p.id
-                    ? "bg-tg-button text-tg-button-text"
-                    : "bg-tg-secondary",
-                ].join(" ")}
-              >
-                <span className="font-medium">{p.name}</span>
-                <span className="mt-0.5 block text-xs opacity-80">
-                  {p.workout_type}
-                  {p.level ? ` · ${p.level}` : ""}
-                </span>
-              </button>
-            ))}
+
+            {filteredPrograms.length === 0 ? (
+              <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+                Нет программ по фильтрам. Сбросьте пол / тип / уровень.
+              </div>
+            ) : null}
+
+            {filteredPrograms.map((p) => {
+              const selected = activeProgramId === p.id;
+              const open = expandedProgramId === p.id;
+              const schedule = scheduleOfProgram(p);
+              const isRec = recommendedIds.has(p.id);
+              return (
+                <article
+                  key={p.id}
+                  className={[
+                    "rounded-2xl p-4",
+                    selected ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => {
+                        setActiveProgramId(p.id);
+                        setAutoAssignedProgram(false);
+                      }}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{p.name}</span>
+                        {isRec ? (
+                          <span
+                            className={[
+                              "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                              selected
+                                ? "bg-white/20 text-tg-button-text"
+                                : "bg-tg-button/15 text-tg-link",
+                            ].join(" ")}
+                          >
+                            рекомендуем
+                          </span>
+                        ) : null}
+                      </div>
+                      <span
+                        className={[
+                          "mt-0.5 block text-xs",
+                          selected ? "opacity-90" : "text-tg-hint",
+                        ].join(" ")}
+                      >
+                        {programMetaLine(p)}
+                      </span>
+                      {p.description ? (
+                        <span
+                          className={[
+                            "mt-1 block text-xs",
+                            selected ? "opacity-90" : "text-tg-hint",
+                          ].join(" ")}
+                        >
+                          {p.description}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        "shrink-0 text-xs",
+                        selected ? "text-tg-button-text underline" : "text-tg-link",
+                      ].join(" ")}
+                      onClick={() => setExpandedProgramId(open ? null : p.id)}
+                    >
+                      {open ? "Скрыть" : "Детали"}
+                    </button>
+                  </div>
+
+                  {open ? (
+                    <div
+                      className={[
+                        "mt-3 space-y-2 rounded-xl p-3",
+                        selected ? "bg-black/10" : "bg-tg-bg",
+                      ].join(" ")}
+                    >
+                      {schedule.length === 0 ? (
+                        <p className={["text-xs", selected ? "opacity-90" : "text-tg-hint"].join(" ")}>
+                          В программе пока нет дней.
+                        </p>
+                      ) : (
+                        schedule.map((day, idx) => {
+                          const dayIndex = Number(day.day_index ?? day.day ?? idx + 1) || idx + 1;
+                          const name = String(day.name || day.title || `День ${dayIndex}`);
+                          const rows = dayExerciseRowsProfile(day);
+                          const dayKey = `${p.id}:${dayIndex}`;
+                          const listOpen = Boolean(programDayOpen[dayKey]);
+                          return (
+                            <div
+                              key={dayKey}
+                              className={[
+                                "rounded-lg px-3 py-2",
+                                selected ? "bg-black/10" : "bg-tg-secondary",
+                              ].join(" ")}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium">{name}</p>
+                                  <p
+                                    className={[
+                                      "text-[11px]",
+                                      selected ? "opacity-80" : "text-tg-hint",
+                                    ].join(" ")}
+                                  >
+                                    {rows.length ? `${rows.length} упр.` : "упражнения по шаблону"}
+                                  </p>
+                                </div>
+                                {rows.length > 0 ? (
+                                  <button
+                                    type="button"
+                                    className={[
+                                      "text-xs",
+                                      selected ? "underline" : "text-tg-link",
+                                    ].join(" ")}
+                                    onClick={() =>
+                                      setProgramDayOpen((prev) => ({
+                                        ...prev,
+                                        [dayKey]: !prev[dayKey],
+                                      }))
+                                    }
+                                  >
+                                    {listOpen ? "Скрыть список" : "Упражнения"}
+                                  </button>
+                                ) : null}
+                              </div>
+                              {listOpen && rows.length > 0 ? (
+                                <ol className="mt-2 space-y-1 border-t border-black/10 pt-2">
+                                  {rows.map((row, exIdx) => (
+                                    <li key={row.key}>
+                                      <button
+                                        type="button"
+                                        onClick={() => openProgramExercise(row)}
+                                        className={[
+                                          "flex w-full items-start justify-between gap-2 rounded-lg px-1 py-1.5 text-left text-xs",
+                                          selected ? "hover:bg-white/10" : "hover:bg-black/5",
+                                        ].join(" ")}
+                                      >
+                                        <span>
+                                          <span className="font-medium">
+                                            {exIdx + 1}. {row.name}
+                                          </span>
+                                          <span
+                                            className={[
+                                              "ml-1",
+                                              selected ? "opacity-80" : "text-tg-hint",
+                                            ].join(" ")}
+                                          >
+                                            {[
+                                              row.sets ? `${row.sets}x` : null,
+                                              row.reps || null,
+                                              row.restSec != null ? `отдых ${row.restSec}с` : null,
+                                            ]
+                                              .filter(Boolean)
+                                              .join(" · ")}
+                                          </span>
+                                        </span>
+                                        <span
+                                          className={[
+                                            "shrink-0",
+                                            selected ? "underline" : "text-tg-link",
+                                          ].join(" ")}
+                                        >
+                                          Открыть
+                                        </span>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ol>
+                              ) : null}
+                            </div>
+                          );
+                        })
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveProgramId(p.id);
+                          setAutoAssignedProgram(false);
+                        }}
+                        className={[
+                          "mt-1 w-full rounded-lg px-3 py-2 text-xs font-semibold",
+                          selected
+                            ? "bg-white/20 text-tg-button-text"
+                            : "bg-tg-button text-tg-button-text",
+                        ].join(" ")}
+                      >
+                        {selected ? "Выбрана" : "Выбрать программу"}
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
+
           <button
             type="button"
             disabled={saving}
@@ -702,7 +1149,7 @@ async function saveBody() {
             Сохранить программу
           </button>
           <Link to="/programs" className="block text-center text-xs text-tg-link">
-            Открыть каталог программ
+            Открыть полный каталог программ
           </Link>
         </div>
       ) : null}
@@ -1037,6 +1484,13 @@ async function saveBody() {
       <Link to="/nutrition" className="mt-4 block text-center text-xs text-tg-link">
         К дневнику питания
       </Link>
-    </section>
+          {detailExercise ? (
+        <ExerciseDetailModal
+          exercise={detailExercise}
+          onClose={() => setDetailExercise(null)}
+        />
+      ) : null}
+
+</section>
   );
 }

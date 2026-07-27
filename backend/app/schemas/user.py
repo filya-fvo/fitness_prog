@@ -12,7 +12,6 @@ class UserProfileResponse(BaseModel):
     id: uuid.UUID
     telegram_id: int | None = None
     username: str | None = None
-    auth_email: str | None = None
     anthropometry: dict[str, Any] = Field(default_factory=dict)
     goals: dict[str, Any] = Field(default_factory=dict)
     subscription_status: str
@@ -27,4 +26,3 @@ class UserProfileUpdate(BaseModel):
 
     anthropometry: dict[str, Any] | None = None
     goals: dict[str, Any] | None = None
-    auth_email: str | None = None

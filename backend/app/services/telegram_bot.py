@@ -189,8 +189,7 @@ def start_welcome_text(
                 "Также можно открыть приложение в браузере по адресу:",
                 f"<a href=\"{app_url}\">{app_url}</a>",
                 "",
-                "На сайте войдите по email (код придёт в Telegram или на почту, "
-                "если email привязан в профиле).",
+                "Полный вход и данные доступны через Telegram Mini App (кнопка Open).",
             ]
         )
     return "\n".join(lines)

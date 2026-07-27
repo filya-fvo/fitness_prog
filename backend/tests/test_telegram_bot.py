@@ -69,7 +69,7 @@ def test_start_welcome_includes_web_url() -> None:
     )
     assert "https://example.ngrok-free.dev" in text
     assert "браузере" in text
-    assert "email" in text.lower()
+    assert "Open" in text
 
 
 def test_extract_start_command() -> None:

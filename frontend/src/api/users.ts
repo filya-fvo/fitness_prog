@@ -5,8 +5,7 @@ import { apiClient } from "@/api/client";
 const profileSchema = z.object({
   id: z.string().uuid(),
   telegram_id: z.number(),
-  username: z.string().nullable().optional(),
-  auth_email: z.string().nullable().optional(),
+  username: z.string().nullable().optional(),
   anthropometry: z.record(z.unknown()).default({}),
   goals: z.record(z.unknown()).default({}),
   subscription_status: z.string(),
@@ -23,8 +22,7 @@ export async function fetchMyProfile(): Promise<UserProfile> {
 
 export async function updateMyProfile(input: {
   anthropometry?: Record<string, unknown>;
-  goals?: Record<string, unknown>;
-  auth_email?: string | null;
+  goals?: Record<string, unknown>;
 }): Promise<UserProfile> {
   const { data } = await apiClient.put("/users/me", input);
   return profileSchema.parse(data);

@@ -22,14 +22,20 @@ function extractYouTubeId(url: string | null | undefined): string | null {
   return null;
 }
 
-function resolveLocalGif(url: string | null | undefined): string | null {
+function resolveLocalMedia(url: string | null | undefined): string | null {
   if (!url) return null;
   const u = url.trim();
   if (!u) return null;
+  // Local public path or absolute URL (gif/webp/png/jpg/jpeg)
   if (/^https?:\/\//i.test(u) || u.startsWith("/")) {
     return u;
   }
   return null;
+}
+
+function isLikelyStaticImage(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return /\.(png|jpe?g|webp)(\?|#|$)/i.test(url);
 }
 
 type Props = {
@@ -55,11 +61,11 @@ export function ExerciseMediaPlayer({
   compact = false,
   preferVideo = false,
 }: Props) {
-  const gifUrl = useMemo(
-    () => resolveLocalGif(exercise.animation_url),
+  const mediaUrl = useMemo(
+    () => resolveLocalMedia(exercise.animation_url),
     [exercise.animation_url],
   );
-  const [gifFailed, setGifFailed] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
   const [showVideo, setShowVideo] = useState(preferVideo);
   const [videoFailed, setVideoFailed] = useState(false);
 
@@ -72,27 +78,28 @@ export function ExerciseMediaPlayer({
     exercise.description ||
     "Описание техники пока не заполнено.";
 
-  const showGif = Boolean(gifUrl) && !gifFailed;
+  const showMedia = Boolean(mediaUrl) && !mediaFailed;
+  const mediaIsStatic = isLikelyStaticImage(mediaUrl);
 
   return (
     <div className="space-y-2">
       {!showVideo ? (
         <div className="overflow-hidden rounded-xl bg-black/5">
-          {showGif ? (
+          {showMedia ? (
             <img
-              src={gifUrl ?? undefined}
+              src={mediaUrl ?? undefined}
               alt={exercise.name_ru}
               className={`w-full bg-black/10 object-contain ${heightClass}`}
-              onError={() => setGifFailed(true)}
+              onError={() => setMediaFailed(true)}
               onLoad={() =>
                 trackEvent("exercise_media_played", {
                   exercise_id: exercise.id,
-                  source: "animation",
+                  source: mediaIsStatic ? "image" : "animation",
                 })
               }
             />
           ) : null}
-          {!showGif ? (
+          {!showMedia ? (
             exercise.thumbnail_url ? (
               <img
                 src={exercise.thumbnail_url}
@@ -103,7 +110,7 @@ export function ExerciseMediaPlayer({
               <div
                 className={`flex items-center justify-center bg-tg-secondary text-xs text-tg-hint ${heightClass}`}
               >
-                GIF пока не добавлен
+                Медиа пока не добавлено (GIF/картинка)
               </div>
             )
           ) : null}
@@ -142,7 +149,7 @@ export function ExerciseMediaPlayer({
             <video
               className={`w-full rounded-xl bg-black object-contain ${heightClass}`}
               src={exercise.video_url ?? undefined}
-              poster={gifUrl ?? exercise.thumbnail_url ?? undefined}
+              poster={mediaUrl ?? exercise.thumbnail_url ?? undefined}
               controls
               playsInline
               onPlay={() =>
@@ -171,7 +178,7 @@ export function ExerciseMediaPlayer({
             onClick={() => setShowVideo((v) => !v)}
             className="rounded-full bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text"
           >
-            {showVideo ? "К GIF и описанию" : "Видео инструкция"}
+            {showVideo ? "К медиа и описанию" : "Видео инструкция"}
           </button>
         ) : (
           <span className="rounded-full bg-tg-secondary px-3 py-1.5 text-xs text-tg-hint">

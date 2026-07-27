@@ -1,0 +1,113 @@
+CHECKLIST: exercise media
+total=99 need_gif=64 need_video=20 ok=15
+
+=== 1) СКАЧАТЬ GIF/картинку (имя файла строго) ===
+Папка: frontend/public/exercise-gifs/
+После загрузки: cd backend && python scripts/apply_local_exercise_gifs.py
+
+01. bear-crawl.gif  |  Медвежья походка  |  full_body
+02. ankle-mobility.gif  |  Мобилизация голеностопа  |  мобильность
+03. band-shoulder-mobility.gif  |  Мобилизация плеч с резинкой  |  мобильность
+04. hammer-curls.gif  |  Молотковые сгибания  |  бицепс
+05. toe-touch-stretch.gif  |  Наклоны к носкам  |  мобильность
+06. reverse-lunge-with-twist.gif  |  Обратные выпады с поворотом  |  full_body
+07. reverse-pec-deck.gif  |  Обратные разведения в тренажёре  |  плечи
+08. dips.gif  |  Отжимания на брусьях  |  грудь
+09. push-ups.gif  |  Отжимания от пола  |  грудь
+10. incline-push-ups.gif  |  Отжимания с возвышения  |  грудь
+11. knee-push-ups.gif  |  Отжимания с колен  |  грудь
+12. close-grip-push-ups.gif  |  Отжимания узким хватом  |  трицепс
+13. plank.gif  |  Планка  |  кор
+14. plank-shoulder-taps.gif  |  Планка с касанием плеч  |  full_body
+15. pull-ups.gif  |  Подтягивания  |  спина
+16. front-dumbbell-raise.gif  |  Подъёмы гантелей перед собой  |  плечи
+17. seated-calf-raise.gif  |  Подъёмы на носки сидя  |  ноги
+18. standing-calf-raise.gif  |  Подъёмы на носки стоя  |  ноги
+19. lying-leg-raises.gif  |  Подъёмы ног лёжа  |  кор
+20. pigeon-pose.gif  |  Поза голубя  |  мобильность
+21. squat-dumbbell-press.gif  |  Присед + жим гантелей  |  full_body
+22. squat-to-press-2.gif  |  Присед с жимом над головой  |  full_body
+23. goblet-squat.gif  |  Приседания с гантелью у груди  |  ноги
+24. bodyweight-squat.gif  |  Приседания со своим весом  |  ноги
+25. barbell-back-squat.gif  |  Приседания со штангой  |  ноги
+26. jump-rope.gif  |  Прыжки на скакалке  |  кардио
+27. dumbbell-pullover.gif  |  Пуловер с гантелью  |  спина
+28. dumbbell-fly.gif  |  Разведение гантелей лёжа  |  грудь
+29. bent-over-lateral-raise.gif  |  Разводка в наклоне  |  плечи
+30. lateral-raise.gif  |  Разводка гантелей в стороны  |  плечи
+31. overhead-triceps-extension.gif  |  Разгибания гантели из-за головы  |  трицепс
+32. cable-triceps-pushdown.gif  |  Разгибания на блоке  |  трицепс
+33. leg-extension.gif  |  Разгибания ног  |  ноги
+34. wall-chest-opener.gif  |  Раскрытие грудного отдела у стены  |  мобильность
+35. doorway-chest-stretch.gif  |  Растяжка грудных у дверного проёма  |  мобильность
+36. piriformis-stretch.gif  |  Растяжка грушевидной  |  мобильность
+37. hip-flexor-stretch.gif  |  Растяжка сгибателей бедра  |  мобильность
+38. romanian-deadlift.gif  |  Румынская тяга  |  ноги
+39. dumbbell-romanian-deadlift.gif  |  Румынская тяга с гантелями  |  ноги
+40. russian-twists.gif  |  Русские скручивания  |  кор
+41. cable-crossover.gif  |  Сведение рук в кроссовере  |  грудь
+42. dumbbell-bicep-curl.gif  |  Сгибания гантелей на бицепс  |  бицепс
+43. cable-bicep-curl.gif  |  Сгибания на нижнем блоке  |  бицепс
+44. preacher-curl.gif  |  Сгибания на скамье Скотта  |  бицепс
+45. lying-leg-curl.gif  |  Сгибания ног лёжа  |  ноги
+46. barbell-bicep-curl.gif  |  Сгибания со штангой  |  бицепс
+47. skater-jumps.gif  |  Скейтер-прыжки  |  кардио
+48. crunches.gif  |  Скручивания  |  кор
+49. conventional-deadlift.gif  |  Становая тяга классическая  |  ноги
+50. sumo-squat.gif  |  Сумо-приседания  |  ноги
+51. lat-pulldown.gif  |  Тяга верхнего блока  |  спина
+52. single-arm-dumbbell-row.gif  |  Тяга гантели в наклоне  |  спина
+53. seated-cable-row.gif  |  Тяга горизонтального блока  |  спина
+54. upright-row.gif  |  Тяга к подбородку  |  плечи
+55. band-row.gif  |  Тяга резинки к поясу  |  спина
+56. t-bar-row.gif  |  Тяга Т-грифа  |  спина
+57. barbell-bent-over-row.gif  |  Тяга штанги в наклоне  |  спина
+58. farmers-walk.gif  |  Фермерская прогулка  |  full_body
+59. dumbbell-skull-crusher.gif  |  Французский жим гантели  |  трицепс
+60. front-squat.gif  |  Фронтальные приседания  |  ноги
+61. dumbbell-shrugs.gif  |  Шраги с гантелями  |  спина
+62. elliptical.gif  |  Эллипс  |  кардио
+63. glute-bridge.gif  |  Ягодичный мост  |  ноги
+64. barbell-hip-thrust.gif  |  Ягодичный мост со штангой  |  ноги
+
+=== 2) ДОБАВИТЬ VIDEO_URL (YouTube) ===
+Где: /admin или seed exercises.json поле video_url
+
+01. Австралийские подтягивания  |  gif=australian-pull-ups.gif  |  video=MISSING
+02. Бег на месте  |  gif=running-in-place.gif  |  video=MISSING
+03. Боковая планка  |  gif=side-plank.gif  |  video=MISSING
+04. Боковые выпады  |  gif=lateral-lunges.gif  |  video=MISSING
+05. Велосипед  |  gif=bicycle-crunches.gif  |  video=MISSING
+06. Велотренажёр  |  gif=stationary-bike.gif  |  video=MISSING
+07. Вращения таза  |  gif=hip-circles.gif  |  video=MISSING
+08. Выпад + сгибание на бицепс  |  gif=lunge-bicep-curl.gif  |  video=MISSING
+09. Выпады назад с гантелями  |  gif=reverse-lunges-dumbbell.gif  |  video=MISSING
+10. Высокие колени  |  gif=high-knees.gif  |  video=MISSING
+11. Гребля в тренажёре  |  gif=rowing-machine.gif  |  video=MISSING
+12. Жим Арнольда  |  gif=arnold-press.gif  |  video=MISSING
+13. Жим в тренажёре  |  gif=chest-press-machine.gif  |  video=MISSING
+14. Жим гантелей лёжа  |  gif=dumbbell-bench-press.gif  |  video=MISSING
+15. Жим гантелей на наклонной  |  gif=incline-dumbbell-press.gif  |  video=MISSING
+16. Жим лёжа узким хватом  |  gif=close-grip-bench-press.gif  |  video=MISSING
+17. Жим штанги стоя  |  gif=overhead-press.gif  |  video=MISSING
+18. Зашагивания на тумбу  |  gif=box-step-ups.gif  |  video=MISSING
+19. Комплекс присед + жим  |  gif=squat-to-press.gif  |  video=MISSING
+20. Удержание «лодочки»  |  gif=hollow-hold.gif  |  video=MISSING
+
+=== 3) УЖЕ ОК ===
+
+01. Альпинисты  |  mountain-climbers.gif  |  https://www.youtube.com/watch?v=nmwgirgXLYM
+02. Болгарские выпады  |  bulgarian-split-squat.gif  |  https://www.youtube.com/watch?v=2C-uNgKwPLE
+03. Бёрпи  |  burpees.gif  |  https://www.youtube.com/watch?v=TU8QYVW0gDU
+04. Выпады вперёд  |  forward-lunges.gif  |  https://www.youtube.com/watch?v=QOVaHwm-Q6U
+05. Гиперэкстензия  |  hyperextension.gif  |  https://www.youtube.com/watch?v=ph3pddpKzzw
+06. Жим гантелей сидя  |  seated-dumbbell-shoulder-press.gif  |  https://www.youtube.com/watch?v=qEwKCR5JCog
+07. Жим ногами  |  leg-press.gif  |  https://www.youtube.com/watch?v=IZxyjW7MPJQ
+08. Жим штанги лёжа  |  bench-press.gif  |  https://www.youtube.com/watch?v=rT7DgCr-3pg
+09. Кошка-корова  |  cat-cow.gif  |  https://www.youtube.com/watch?v=kqnua4rHVVA
+10. Махи гирей  |  kettlebell-swings.gif  |  https://www.youtube.com/watch?v=YSxHifyI6s8
+11. Мировая растяжка  |  worlds-greatest-stretch.gif  |  https://www.youtube.com/watch?v=oNzynUF41kA
+12. Мёртвый жук  |  dead-bug.gif  |  https://www.youtube.com/watch?v=4XLEnwUr1d8
+13. Прыжки «звездой»  |  jumping-jacks.gif  |  https://www.youtube.com/watch?v=iSSAk4XCsRA
+14. Птица-собака  |  bird-dog.gif  |  https://www.youtube.com/watch?v=wiFNA3sqjCA
+15. Тяга к лицу  |  face-pull.gif  |  https://www.youtube.com/watch?v=rep-qVOkqgk

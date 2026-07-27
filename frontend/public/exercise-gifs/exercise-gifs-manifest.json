@@ -1,54 +1,5 @@
 [
   {
-    "id": "804be998-7034-47ec-b930-d83c36da425f",
-    "name_ru": "Птица-собака",
-    "muscle_group": "кор",
-    "file": "bird-dog.gif",
-    "animation_url": "/exercise-gifs/bird-dog.gif"
-  },
-  {
-    "id": "7aa6e98a-f1b7-4da3-aef7-c9f04824d385",
-    "name_ru": "Мёртвый жук",
-    "muscle_group": "кор",
-    "file": "dead-bug.gif",
-    "animation_url": "/exercise-gifs/dead-bug.gif"
-  },
-  {
-    "id": "11ba6284-70db-4a14-99e2-dff6aa891465",
-    "name_ru": "Тяга к лицу",
-    "muscle_group": "спина",
-    "file": "face-pull.gif",
-    "animation_url": "/exercise-gifs/face-pull.gif"
-  },
-  {
-    "id": "46cd5116-a07b-4089-80e2-17e0f54c0981",
-    "name_ru": "Удержание «лодочки»",
-    "muscle_group": "кор",
-    "file": "hollow-hold.gif",
-    "animation_url": "/exercise-gifs/hollow-hold.gif"
-  },
-  {
-    "id": "57e54c37-08a9-4d0a-b492-1f76c487b864",
-    "name_ru": "Махи гирей",
-    "muscle_group": "кардио",
-    "file": "kettlebell-swing.gif",
-    "animation_url": "/exercise-gifs/kettlebell-swing.gif"
-  },
-  {
-    "id": "feddbab7-2f5a-483c-a35e-6c948587efd4",
-    "name_ru": "Альпинисты",
-    "muscle_group": "кор",
-    "file": "mountain-climbers.gif",
-    "animation_url": "/exercise-gifs/mountain-climbers.gif"
-  },
-  {
-    "id": "5116adbc-c916-4f1b-b452-59d4e73f266c",
-    "name_ru": "Мировая растяжка",
-    "muscle_group": "мобильность",
-    "file": "worlds-greatest-stretch.gif",
-    "animation_url": "/exercise-gifs/worlds-greatest-stretch.gif"
-  },
-  {
     "id": "085acd6f-63b4-4347-b5a4-ef24094dea1a",
     "name_ru": "Австралийские подтягивания",
     "muscle_group": "спина",
@@ -56,11 +7,11 @@
     "animation_url": "/exercise-gifs/australian-pull-ups.gif"
   },
   {
-    "id": "82823ad2-03dd-4c48-886b-65d233c69a7c",
-    "name_ru": "Жим Арнольда",
-    "muscle_group": "плечи",
-    "file": "arnold-press.gif",
-    "animation_url": "/exercise-gifs/arnold-press.gif"
+    "id": "feddbab7-2f5a-483c-a35e-6c948587efd4",
+    "name_ru": "Альпинисты",
+    "muscle_group": "кор",
+    "file": "mountain-climbers.gif",
+    "animation_url": "/exercise-gifs/mountain-climbers.gif"
   },
   {
     "id": "6c972c3c-b8b2-4492-8041-ed90f765e283",
@@ -161,11 +112,11 @@
     "animation_url": "/exercise-gifs/rowing-machine.gif"
   },
   {
-    "id": "ba751ab0-3ed5-40eb-92ad-b4c1ec41ec4f",
-    "name_ru": "Прыжки «звездой»",
-    "muscle_group": "кардио",
-    "file": "jumping-jacks.gif",
-    "animation_url": "/exercise-gifs/jumping-jacks.gif"
+    "id": "82823ad2-03dd-4c48-886b-65d233c69a7c",
+    "name_ru": "Жим Арнольда",
+    "muscle_group": "плечи",
+    "file": "arnold-press.gif",
+    "animation_url": "/exercise-gifs/arnold-press.gif"
   },
   {
     "id": "4582a779-48af-4f92-bf7b-51b9a50b8208",
@@ -247,7 +198,7 @@
   {
     "id": "bf0072b0-2fc0-421d-9f8b-33b407b862ab",
     "name_ru": "Махи гирей",
-    "muscle_group": "full_body",
+    "muscle_group": "кардио",
     "file": "kettlebell-swings.gif",
     "animation_url": "/exercise-gifs/kettlebell-swings.gif"
   },
@@ -257,6 +208,20 @@
     "muscle_group": "full_body",
     "file": "bear-crawl.gif",
     "animation_url": "/exercise-gifs/bear-crawl.gif"
+  },
+  {
+    "id": "7aa6e98a-f1b7-4da3-aef7-c9f04824d385",
+    "name_ru": "Мёртвый жук",
+    "muscle_group": "кор",
+    "file": "dead-bug.gif",
+    "animation_url": "/exercise-gifs/dead-bug.gif"
+  },
+  {
+    "id": "5116adbc-c916-4f1b-b452-59d4e73f266c",
+    "name_ru": "Мировая растяжка",
+    "muscle_group": "мобильность",
+    "file": "worlds-greatest-stretch.gif",
+    "animation_url": "/exercise-gifs/worlds-greatest-stretch.gif"
   },
   {
     "id": "7711fd28-cdc8-4048-a1f9-1942ea2ce6a7",
@@ -399,6 +364,13 @@
     "animation_url": "/exercise-gifs/squat-dumbbell-press.gif"
   },
   {
+    "id": "7e2b8b4d-4910-41ac-a4e2-b3f56be38a26",
+    "name_ru": "Присед с жимом над головой",
+    "muscle_group": "full_body",
+    "file": "squat-to-press-2.gif",
+    "animation_url": "/exercise-gifs/squat-to-press-2.gif"
+  },
+  {
     "id": "b3cad716-fdd2-4b6e-84fa-cedf8dbc147a",
     "name_ru": "Приседания с гантелью у груди",
     "muscle_group": "ноги",
@@ -420,11 +392,25 @@
     "animation_url": "/exercise-gifs/barbell-back-squat.gif"
   },
   {
+    "id": "ba751ab0-3ed5-40eb-92ad-b4c1ec41ec4f",
+    "name_ru": "Прыжки «звездой»",
+    "muscle_group": "кардио",
+    "file": "jumping-jacks.gif",
+    "animation_url": "/exercise-gifs/jumping-jacks.gif"
+  },
+  {
     "id": "0c8a4b27-3b14-4394-b3f6-80eaa53a9286",
     "name_ru": "Прыжки на скакалке",
     "muscle_group": "кардио",
     "file": "jump-rope.gif",
     "animation_url": "/exercise-gifs/jump-rope.gif"
+  },
+  {
+    "id": "804be998-7034-47ec-b930-d83c36da425f",
+    "name_ru": "Птица-собака",
+    "muscle_group": "кор",
+    "file": "bird-dog.gif",
+    "animation_url": "/exercise-gifs/bird-dog.gif"
   },
   {
     "id": "581a13f7-5ac6-440c-8bbc-227be94e3e42",
@@ -595,13 +581,6 @@
     "animation_url": "/exercise-gifs/sumo-squat.gif"
   },
   {
-    "id": "7e2b8b4d-4910-41ac-a4e2-b3f56be38a26",
-    "name_ru": "Присед с жимом над головой",
-    "muscle_group": "full_body",
-    "file": "dumbbell-thrusters.gif",
-    "animation_url": "/exercise-gifs/dumbbell-thrusters.gif"
-  },
-  {
     "id": "3ba9a818-2f66-42a6-9631-3f136a110d75",
     "name_ru": "Тяга верхнего блока",
     "muscle_group": "спина",
@@ -621,6 +600,13 @@
     "muscle_group": "спина",
     "file": "seated-cable-row.gif",
     "animation_url": "/exercise-gifs/seated-cable-row.gif"
+  },
+  {
+    "id": "11ba6284-70db-4a14-99e2-dff6aa891465",
+    "name_ru": "Тяга к лицу",
+    "muscle_group": "спина",
+    "file": "face-pull.gif",
+    "animation_url": "/exercise-gifs/face-pull.gif"
   },
   {
     "id": "08f8ebc2-9b82-4768-9578-66996d40890c",
@@ -651,6 +637,13 @@
     "animation_url": "/exercise-gifs/barbell-bent-over-row.gif"
   },
   {
+    "id": "46cd5116-a07b-4089-80e2-17e0f54c0981",
+    "name_ru": "Удержание «лодочки»",
+    "muscle_group": "кор",
+    "file": "hollow-hold.gif",
+    "animation_url": "/exercise-gifs/hollow-hold.gif"
+  },
+  {
     "id": "70cdc865-0196-431b-b27a-affef9514adf",
     "name_ru": "Фермерская прогулка",
     "muscle_group": "full_body",
@@ -672,13 +665,6 @@
     "animation_url": "/exercise-gifs/front-squat.gif"
   },
   {
-    "id": "419c560c-8f44-45e6-9c1d-2373eec2f865",
-    "name_ru": "Ягодичный мост со штангой",
-    "muscle_group": "ноги",
-    "file": "barbell-hip-thrust.gif",
-    "animation_url": "/exercise-gifs/barbell-hip-thrust.gif"
-  },
-  {
     "id": "651cf0ce-ca83-4439-b320-dd8051b3b696",
     "name_ru": "Шраги с гантелями",
     "muscle_group": "спина",
@@ -698,5 +684,12 @@
     "muscle_group": "ноги",
     "file": "glute-bridge.gif",
     "animation_url": "/exercise-gifs/glute-bridge.gif"
+  },
+  {
+    "id": "419c560c-8f44-45e6-9c1d-2373eec2f865",
+    "name_ru": "Ягодичный мост со штангой",
+    "muscle_group": "ноги",
+    "file": "barbell-hip-thrust.gif",
+    "animation_url": "/exercise-gifs/barbell-hip-thrust.gif"
   }
 ]
