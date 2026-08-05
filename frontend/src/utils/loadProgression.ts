@@ -166,7 +166,7 @@ export function suggestLoad(input: {
     return single ? single[1] : "10";
   })();
 
-  if (!hist || hist.lastWeight <= 0) {
+  if (!hist || (hist.lastWeight <= 0 && hist.lastReps <= 0)) {
     return {
       weight: "",
       reps: repsMid,
@@ -174,22 +174,23 @@ export function suggestLoad(input: {
     };
   }
 
-  // After each full 3-week cycle, nudge base up a bit from last heavy performance
-  const cycleBump = hist.lastWeight > 0 ? phase.cycleIndex * 2.5 : 0;
-  let suggested = hist.lastWeight * phase.weightFactor + cycleBump;
-  // Heavy week: prefer at least +1 kg over last if last was medium/light-ish
-  if (phase.phase === "heavy") {
-    suggested = Math.max(suggested, hist.lastWeight + 1);
-  }
-  if (phase.phase === "light") {
-    suggested = Math.min(suggested, hist.lastWeight);
-  }
-  suggested = roundWeightKg(suggested);
+  // Prefill from last session as-is (week phase does not rewrite the shown numbers).
+  // Phase still drives plan target_reps / RIR copy elsewhere.
+  const weight = hist.lastWeight > 0 ? formatWeight(hist.lastWeight) : "";
+  const reps = hist.lastReps > 0 ? String(hist.lastReps) : repsMid;
+  const phaseHint =
+    phase.phase === "heavy"
+      ? "тяжёлая неделя — можно +1–2.5 кг к прошлому"
+      : phase.phase === "light"
+        ? "лёгкая неделя — можно чуть легче прошлого"
+        : "средняя неделя";
 
   return {
-    weight: formatWeight(suggested),
-    reps: repsMid,
-    note: `Предложение: ${formatWeight(suggested)} кг × ${repsMid} (${phase.label.toLowerCase()} нед., было ${formatWeight(hist.lastWeight)} кг)`,
+    weight,
+    reps,
+    note: weight
+      ? `Прошлый раз: ${weight} кг × ${reps}. Сейчас ${phase.label.toLowerCase()} (${phaseHint}).`
+      : `Прошлый раз: ${reps} повт. Цель недели: ${phase.defaultReps}.`,
   };
 }
 
@@ -220,9 +221,11 @@ export function draftsWithSuggestions(input: {
   history: Map<string, ExerciseHistoryBest>;
   phase: WeekPhaseMeta;
 }): LocalSetDraft[] {
+  // Prefill planned set slots with history-based suggestions (fast log).
+  // User can tap «Готово» or open modal to edit.
   const drafts: LocalSetDraft[] = [];
   for (const item of [...input.exercises].sort((a, b) => a.order - b.order)) {
-    const sets = item.target_sets || 3;
+    const sets = Math.max(1, Math.min(12, item.target_sets || 3));
     const sug = suggestLoad({
       history: input.history.get(item.exercise_id),
       phase: input.phase,
@@ -231,14 +234,32 @@ export function draftsWithSuggestions(input: {
       drafts.push({
         exerciseId: item.exercise_id,
         setNumber: n,
-        reps: sug.reps,
-        weight: sug.weight,
+        reps: sug.reps || "",
+        weight: sug.weight || "",
         isCompleted: false,
         restTimeSec: item.rest_sec ?? 60,
       });
     }
   }
   return drafts;
+}
+
+/** True when a draft has enough fields to log without opening the modal. */
+export function draftReadyToComplete(
+  draft: Pick<LocalSetDraft, "reps" | "weight" | "durationSec">,
+  loadType: "weight_reps" | "reps_only" | "timed" | "cardio_machine",
+): boolean {
+  if (loadType === "timed" || loadType === "cardio_machine") {
+    return Boolean(draft.durationSec && draft.durationSec > 0);
+  }
+  if (loadType === "reps_only") {
+    return Boolean(draft.reps && Number(draft.reps) > 0);
+  }
+  // weight_reps: allow bodyweight 0 only if reps set; prefer both
+  const repsOk = Boolean(draft.reps && Number(draft.reps) > 0);
+  const w = draft.weight === "" || draft.weight == null ? null : Number(draft.weight);
+  const weightOk = w != null && Number.isFinite(w) && w >= 0;
+  return repsOk && weightOk;
 }
 
 export function ensureProgramStartDate(

@@ -1,6 +1,11 @@
 ﻿import { describe, expect, it } from "vitest";
 import type { Program } from "@/types/workout";
-import { pickTodayDayIndex, recommendPrograms } from "@/utils/programRecommend";
+import {
+  explainProgramMatch,
+  pickTodayDayIndex,
+  recommendPrograms,
+  scorePrograms,
+} from "@/utils/programRecommend";
 
 function prog(partial: Partial<Program> & Pick<Program, "id" | "name" | "workout_type">): Program {
   return {
@@ -51,6 +56,34 @@ describe("programRecommend", () => {
       level: "beginner",
       structure: { sex: ["female"], location: "outdoor", equipment: ["bodyweight"], limitations: [], days_per_week: 3, schedule: [{}, {}, {}] },
     }),
+    prog({
+      id: "6",
+      name: "M Home DB",
+      workout_type: "home_express",
+      level: "beginner",
+      structure: {
+        sex: ["male"],
+        location: "home",
+        equipment: ["dumbbells", "bodyweight"],
+        limitations: [],
+        days_per_week: 3,
+        schedule: [{}, {}, {}],
+      },
+    }),
+    prog({
+      id: "7",
+      name: "F Home No Knee DB",
+      workout_type: "home_express",
+      level: "beginner",
+      structure: {
+        sex: ["female"],
+        location: "home",
+        equipment: ["dumbbells", "bodyweight"],
+        limitations: ["no_knee"],
+        days_per_week: 3,
+        schedule: [{}, {}, {}],
+      },
+    }),
   ];
 
   it("prefers male home bodyweight beginner", () => {
@@ -88,6 +121,48 @@ describe("programRecommend", () => {
       limitations: ["no_knee"],
     });
     expect(top[0]?.name).toBe("M Gym No Knee");
+  });
+
+  it("explains why a program matches", () => {
+    const input = {
+      primaryGoal: "maintain" as const,
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["machines", "dumbbells"],
+      sex: "male",
+      location: "gym",
+      limitations: ["no_knee"],
+    };
+    const scored = scorePrograms(catalog, input, 3);
+    expect(scored[0]?.program.name).toBe("M Gym No Knee");
+    expect(scored[0]?.reasons.some((r) => /колен|зал|уровень/i.test(r))).toBe(true);
+    const why = explainProgramMatch(catalog.find((p) => p.id === "4")!, input);
+    expect(why.length).toBeGreaterThan(0);
+  });
+
+  it("prefers home dumbbells when profile is home+dumbbells", () => {
+    const top = recommendPrograms(catalog, {
+      primaryGoal: "gain_muscle",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["dumbbells", "bodyweight"],
+      sex: "male",
+      location: "home",
+    });
+    expect(top[0]?.name).toBe("M Home DB");
+  });
+
+  it("prefers home no_knee dumbbells for female home+no_knee", () => {
+    const top = recommendPrograms(catalog, {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["dumbbells", "bodyweight"],
+      sex: "female",
+      location: "home",
+      limitations: ["no_knee"],
+    });
+    expect(top[0]?.name).toBe("F Home No Knee DB");
   });
 
   it("pickTodayDayIndex cycles within program length", () => {

@@ -50,6 +50,8 @@ class ProgramResponse(BaseModel):
 class ProgramStartRequest(BaseModel):
     day_index: int = Field(default=1, ge=1)
     scheduled_date: date | None = None
+    # Optional manual override for 3-week cycle (light|medium|heavy)
+    week_phase: str | None = Field(default=None, pattern=r'^(light|medium|heavy)$')
 
 
 class ProgramListResponse(BaseModel):

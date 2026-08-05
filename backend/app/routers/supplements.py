@@ -8,20 +8,25 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.database import get_db
 from app.data.supplements_catalog import (
     SUPPLEMENTS_CATALOG,
     catalog_by_key,
-    recommended_user_entries,
     user_entry_from_catalog,
 )
-from sqlalchemy.orm.attributes import flag_modified
-
 from app.deps import get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/supplements", tags=["supplements"])
+
+
+class SupplementScheduleItem(BaseModel):
+    """One reminder slot: clock time or special (pre_workout/...) + day rule."""
+
+    slot: str
+    days: str = Field(default="every", description="every | workout | rest")
 
 
 class SupplementEntry(BaseModel):
@@ -30,6 +35,7 @@ class SupplementEntry(BaseModel):
     name_ru: str
     dose: str = ""
     times: list[str] = Field(default_factory=list)
+    schedule: list[SupplementScheduleItem] = Field(default_factory=list)
     enabled: bool = True
     custom: bool = False
     notes: str = ""
@@ -67,10 +73,35 @@ def _stack(user: User) -> list[dict[str, Any]]:
     return [x for x in raw if isinstance(x, dict)]
 
 
-def _save_stack(session: AsyncSession, user: User, items: list[dict[str, Any]]) -> User:
-    goals = {**(user.goals or {}), "supplements": items}
-    user.goals = goals
-    return user
+def _normalize_entry_dump(raw: dict[str, Any]) -> dict[str, Any]:
+    """Keep times[] in sync with schedule[] for legacy clients / bot marks."""
+    item = dict(raw)
+    schedule = item.get("schedule") or []
+    times = item.get("times") or []
+    norm_schedule: list[dict[str, str]] = []
+    if isinstance(schedule, list) and schedule:
+        for s in schedule:
+            if isinstance(s, dict):
+                slot = str(s.get("slot") or s.get("time") or "").strip()
+                days = str(s.get("days") or "every").strip().lower()
+                if days in {"workout", "workout_day", "training", "train"}:
+                    days = "workout"
+                elif days in {"rest", "rest_day", "off", "non_workout", "no_workout", "recovery"}:
+                    days = "rest"
+                else:
+                    days = "every"
+                if slot:
+                    norm_schedule.append({"slot": slot, "days": days})
+            elif isinstance(s, str) and s.strip():
+                norm_schedule.append({"slot": s.strip(), "days": "every"})
+    if not norm_schedule and isinstance(times, list):
+        for t in times:
+            slot = str(t).strip()
+            if slot:
+                norm_schedule.append({"slot": slot, "days": "every"})
+    item["schedule"] = norm_schedule
+    item["times"] = [x["slot"] for x in norm_schedule]
+    return item
 
 
 @router.get("/catalog")
@@ -85,18 +116,18 @@ async def get_stack(
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
     items = _stack(user)
-    # first visit: seed recommended
-    if not items and not (user.goals or {}).get("supplements_initialized"):
-        items = recommended_user_entries()
+    # Do not auto-seed stack — user adds supplements manually from catalog.
+    if not (user.goals or {}).get("supplements_initialized"):
         goals = {
             **(user.goals or {}),
-            "supplements": items,
+            "supplements": items if items else [],
             "supplements_initialized": True,
         }
         user.goals = goals
         flag_modified(user, "goals")
         await session.commit()
         await session.refresh(user)
+        items = _stack(user)
     return SupplementStackResponse(
         items=[SupplementEntry.model_validate(x) for x in items],
         catalog=SUPPLEMENTS_CATALOG,
@@ -109,7 +140,7 @@ async def put_stack(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
-    items = [x.model_dump() for x in body.items]
+    items = [_normalize_entry_dump(x.model_dump()) for x in body.items]
     user.goals = {
         **(user.goals or {}),
         "supplements": items,
@@ -139,8 +170,10 @@ async def add_from_catalog(
     entry = user_entry_from_catalog(cat)
     if body.dose:
         entry["dose"] = body.dose
-    if body.times:
-        entry["times"] = body.times
+    if body.times is not None:
+        times = [str(t).strip() for t in body.times if str(t).strip()]
+        entry["times"] = times
+        entry["schedule"] = [{"slot": t, "days": "every"} for t in times]
     items.append(entry)
     user.goals = {
         **(user.goals or {}),
@@ -163,12 +196,14 @@ async def add_custom(
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
     items = _stack(user)
+    times = [str(t).strip() for t in (body.times or ["10:00"]) if str(t).strip()] or ["10:00"]
     entry = {
         "id": f"custom_{uuid.uuid4().hex[:10]}",
         "key": body.key or "custom",
         "name_ru": body.name_ru.strip(),
         "dose": body.dose,
-        "times": body.times or ["10:00"],
+        "times": times,
+        "schedule": [{"slot": t, "days": "every"} for t in times],
         "enabled": True,
         "custom": True,
         "notes": body.notes,

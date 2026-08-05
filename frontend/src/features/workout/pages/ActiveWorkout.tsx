@@ -1,10 +1,14 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { sendAIChat } from "@/api/ai";
+import { fetchExercises } from "@/api/exercises";
+import { notifyTimerEnded } from "@/api/notifications";
+import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { addWorkoutSet, completeWorkout, fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
-import { NumberStepper } from "@/components/NumberStepper";
 import {
+  cacheExercises,
   deleteLocalSession,
   enqueueSync,
   flushSyncQueue,
@@ -12,10 +16,17 @@ import {
   resolveServerWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
+import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
 import { RestTimer } from "@/features/workout/components/RestTimer";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { trackEvent } from "@/lib/analytics";
+import {
+  markWorkoutTimerStart,
+  msSinceWorkoutTimerStart,
+  summarizeFunnel,
+} from "@/lib/metrics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { hapticImpact, hapticNotification } from "@/lib/telegram";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
@@ -23,15 +34,25 @@ import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout
 import { formatElapsed } from "@/utils/format";
 import {
   buildExerciseHistory,
+  draftReadyToComplete,
+  localDateKey,
   resolveWeekPhase,
   suggestLoad,
+  type WeekPhase,
   type WeekPhaseMeta,
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
+import { inferLoadType, formatDurationLabel, defaultTimedSeconds } from "@/utils/exerciseLoadType";
+import { advanceCursorAfterWorkout, cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
+import { buildWarmupPlan } from "@/utils/warmupPlan";
+import { fetchPrograms } from "@/api/programs";
 
-function asPlan(raw: Workout["plan"]): WorkoutPlan {
+function asPlan(raw: Workout["plan"]): WorkoutPlan & {
+  warmup_pending?: boolean;
+  warmup_location?: string;
+} {
   if (!raw || typeof raw !== "object") return { exercises: [] };
-  const plan = raw as WorkoutPlan;
+  const plan = raw as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
   return {
     title: plan.title ?? null,
     workout_type: plan.workout_type ?? null,
@@ -41,6 +62,8 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan {
     week_label: plan.week_label ?? null,
     week_rir: plan.week_rir ?? null,
     exercises: Array.isArray(plan.exercises) ? plan.exercises : [],
+    warmup_pending: Boolean(plan.warmup_pending),
+    warmup_location: plan.warmup_location,
   };
 }
 
@@ -64,11 +87,13 @@ export function ActiveWorkout() {
   const isResting = useWorkoutStore((s) => s.isResting);
   const restSecondsLeft = useWorkoutStore((s) => s.restSecondsLeft);
   const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
+  const setCatalog = useWorkoutStore((s) => s.setCatalog);
   const setDrafts = useWorkoutStore((s) => s.setDrafts);
   const nextExercise = useWorkoutStore((s) => s.nextExercise);
   const prevExercise = useWorkoutStore((s) => s.prevExercise);
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
   const resetSession = useWorkoutStore((s) => s.resetSession);
+  const replaceExercise = useWorkoutStore((s) => s.replaceExercise);
 
   const [booting, setBooting] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -81,6 +106,27 @@ export function ActiveWorkout() {
   const [suggestNote, setSuggestNote] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [elapsedFinalSec, setElapsedFinalSec] = useState<number | null>(null);
+  const [replaceOpen, setReplaceOpen] = useState(false);
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [replaceMuscle, setReplaceMuscle] = useState("");
+  const [aiAssistOpen, setAiAssistOpen] = useState(false);
+  const [aiAssistLoading, setAiAssistLoading] = useState(false);
+  const [aiAssistText, setAiAssistText] = useState<string | null>(null);
+  const [aiAssistError, setAiAssistError] = useState<string | null>(null);
+  const [addSetOpen, setAddSetOpen] = useState(false);
+  /** When set, AddSetModal edits this draft set instead of appending a new one. */
+  const [editingSetNumber, setEditingSetNumber] = useState<number | null>(null);
+  const [warmupDone, setWarmupDone] = useState(false);
+  const [lastCardioId, setLastCardioId] = useState<string | null>(null);
+  const [lastCardioDur, setLastCardioDur] = useState<number | null>(null);
+  const [lastCardioParams, setLastCardioParams] = useState<Record<string, string | number> | null>(null);
+  const restNotifySentRef = useRef(false);
+  const [restContext, setRestContext] = useState<{
+    exerciseName: string;
+    nextExerciseName: string | null;
+    isLastSetOfExercise: boolean;
+    isLastExercise: boolean;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +142,35 @@ export function ActiveWorkout() {
         state.serverWorkoutId === routeId ||
         state.activeWorkout?.id === routeId;
       if (state.activeWorkout && matches) {
-        if (!cancelled) setBooting(false);
+        if (!cancelled) {
+          setBooting(false);
+          markWorkoutTimerStart();
+        }
+        // still refresh cardio prefs in background
+      }
+      if (isOnline()) {
+        try {
+          const profile = await fetchMyProfile();
+          const g = (profile.goals as Record<string, unknown>) || {};
+          if (!cancelled) {
+            setLastCardioId(
+              g.last_warmup_cardio_exercise_id
+                ? String(g.last_warmup_cardio_exercise_id)
+                : null,
+            );
+            setLastCardioDur(Number(g.last_warmup_cardio_duration_sec) || null);
+            const lp = g.last_warmup_cardio_params;
+            setLastCardioParams(
+              lp && typeof lp === "object"
+                ? (lp as Record<string, string | number>)
+                : null,
+            );
+          }
+        } catch {
+          /* soft */
+        }
+      }
+      if (state.activeWorkout && matches) {
         return;
       }
       const session = await findResumableSession();
@@ -105,7 +179,10 @@ export function ActiveWorkout() {
         (session.clientId === routeId || session.serverId === routeId || session.workout.id === routeId)
       ) {
         await restoreSessionIntoStore(session);
-        if (!cancelled) setBooting(false);
+        if (!cancelled) {
+          setBooting(false);
+          markWorkoutTimerStart();
+        }
         return;
       }
       if (!cancelled) {
@@ -119,18 +196,64 @@ export function ActiveWorkout() {
     };
   }, [navigate, workoutId]);
 
+  // Refresh exercise catalog (GIF URLs etc.) so IndexedDB cache is not stale.
   useEffect(() => {
-    if (!isResting) return;
+    if (!isOnline()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await fetchExercises({ pageSize: 200 });
+        if (cancelled || !result.items.length) return;
+        setCatalog(result.items);
+        await cacheExercises(result.items);
+      } catch {
+        /* soft */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setCatalog, workoutId]);
+
+  useEffect(() => {
+    if (!isResting) {
+      restNotifySentRef.current = false;
+      return;
+    }
     const timer = window.setInterval(() => {
       const before = useWorkoutStore.getState().restSecondsLeft;
       tickRest();
-      if (before <= 1) {
+      if (before <= 1 && !restNotifySentRef.current) {
+        restNotifySentRef.current = true;
         hapticImpact("medium");
         hapticNotification("success");
+        const ctx = restContext;
+        const title = "Отдых завершён";
+        let text = "Ваш отдых завершён! Время продолжить тренировку 💪";
+        if (ctx) {
+          if (ctx.isLastSetOfExercise && ctx.nextExerciseName) {
+            text = `Отдых завершён! Дальше: ${ctx.nextExerciseName} 💪`;
+          } else if (ctx.isLastSetOfExercise && ctx.isLastExercise) {
+            text = "Отдых завершён! Это было последнее упражнение — можно завершать тренировку 🏁";
+          } else {
+            text = `Отдых завершён! Продолжайте: ${ctx.exerciseName} 💪`;
+          }
+        }
+        if (isOnline()) {
+          void notifyTimerEnded({
+            kind: "rest",
+            title,
+            text,
+            workoutId: useWorkoutStore.getState().serverWorkoutId || activeWorkout?.id,
+            startapp: "home",
+          }).catch(() => {
+            /* soft fail */
+          });
+        }
       }
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [isResting, tickRest]);
+  }, [activeWorkout?.id, isResting, restContext, tickRest]);
 
   // Workout elapsed clock — ticks while session is active
   useEffect(() => {
@@ -245,10 +368,26 @@ export function ActiveWorkout() {
 
   const REST_PRESETS = [45, 60, 75, 90, 120, 150, 180] as const;
 
+
   const completedCount = drafts.filter((d) => d.isCompleted).length;
   const targetReps =
     plan.exercises.find((e) => e.exercise_id === currentExerciseId)?.target_reps ??
     weekPhase.defaultReps;
+
+  const showWarmup = Boolean((plan as { warmup_pending?: boolean }).warmup_pending) && !warmupDone;
+  const warmupPlanBuilt = useMemo(() => {
+    if (!showWarmup) return null;
+    const loc = String((plan as { warmup_location?: string }).warmup_location || "gym");
+    return buildWarmupPlan({
+      location: loc,
+      plan,
+      catalog,
+      lastCardioExerciseId: lastCardioId,
+      lastCardioDurationSec: lastCardioDur,
+    });
+  }, [catalog, lastCardioDur, lastCardioId, plan, showWarmup]);
+
+  const currentLoadType = currentExercise ? inferLoadType(currentExercise) : "weight_reps";
 
   // Fill empty drafts from history once per exercise when session is live
   useEffect(() => {
@@ -329,6 +468,109 @@ export function ActiveWorkout() {
     [currentExerciseIndex, drafts, stableClientId],
   );
 
+  const hasReplacements = useMemo(() => {
+    return plan.exercises.some(
+      (e) => e.original_exercise_id && e.original_exercise_id !== e.exercise_id,
+    );
+  }, [plan.exercises]);
+
+  const occupiedExerciseIds = useMemo(() => new Set(exerciseIds), [exerciseIds]);
+
+  const recommendedAlternatives = useMemo(() => {
+    if (!currentExercise) return [] as Exercise[];
+    const muscle = (currentExercise.muscle_group || "").toLowerCase();
+    const equip = (currentExercise.equipment || "").toLowerCase();
+    const tags = new Set((currentExercise.tags || []).map((t) => t.toLowerCase()));
+    return catalog
+      .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
+      .map((ex) => {
+        let score = 0;
+        if (muscle && (ex.muscle_group || "").toLowerCase() === muscle) score += 5;
+        if (equip && (ex.equipment || "").toLowerCase() === equip) score += 2;
+        for (const t of ex.tags || []) {
+          if (tags.has(t.toLowerCase())) score += 1;
+        }
+        return { ex, score };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || a.ex.name_ru.localeCompare(b.ex.name_ru, "ru"))
+      .slice(0, 8)
+      .map((x) => x.ex);
+  }, [catalog, currentExercise, occupiedExerciseIds]);
+
+  const replaceCatalog = useMemo(() => {
+    if (!currentExercise) return [] as Exercise[];
+    const q = replaceQuery.trim().toLowerCase();
+    return catalog
+      .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
+      .filter((ex) => {
+        if (replaceMuscle && ex.muscle_group !== replaceMuscle) return false;
+        if (!q) return true;
+        const hay = [ex.name_ru, ex.muscle_group, ex.equipment || "", ex.description || ""]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      })
+      .slice(0, 40);
+  }, [catalog, currentExercise, occupiedExerciseIds, replaceMuscle, replaceQuery]);
+
+  const replaceMuscleGroups = useMemo(() => {
+    const set = new Set(catalog.map((c) => c.muscle_group).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
+  }, [catalog]);
+
+  const applyReplace = useCallback(
+    (ex: Exercise) => {
+      if (!currentExerciseId) return;
+      const ok = replaceExercise(currentExerciseId, ex);
+      if (!ok) {
+        setError("Не удалось заменить: упражнение уже есть в тренировке.");
+        return;
+      }
+      setReplaceOpen(false);
+      setReplaceQuery("");
+      setReplaceMuscle("");
+      setError(null);
+      hapticImpact("light");
+      const next = useWorkoutStore.getState();
+      if (next.activeWorkout) {
+        void persistSession(next.activeWorkout, next.drafts, next.currentExerciseIndex);
+      }
+    },
+    [currentExerciseId, persistSession, replaceExercise],
+  );
+
+  const askAiForCurrent = useCallback(async () => {
+    if (!currentExercise || aiAssistLoading) return;
+    if (!isOnline()) {
+      setAiAssistError("AI доступен только онлайн");
+      setAiAssistOpen(true);
+      return;
+    }
+    setAiAssistOpen(true);
+    setAiAssistLoading(true);
+    setAiAssistError(null);
+    setAiAssistText(null);
+    const alts = recommendedAlternatives
+      .slice(0, 5)
+      .map((e) => e.name_ru)
+      .join(", ");
+    const msg =
+      `Сейчас в тренировке упражнение «${currentExercise.name_ru}» ` +
+      `(${currentExercise.muscle_group || "мышца ?"}${currentExercise.equipment ? `, ${currentExercise.equipment}` : ""}). ` +
+      `Предложи 2–3 безопасные замены из похожих движений` +
+      (alts ? ` (кандидаты: ${alts})` : "") +
+      `. Кратко: почему и на что обратить внимание в технике. Ответ на русском, коротко.`;
+    try {
+      const result = await sendAIChat({ message: msg });
+      setAiAssistText(result.reply);
+    } catch (err) {
+      setAiAssistError(err instanceof Error ? err.message : "AI недоступен");
+    } finally {
+      setAiAssistLoading(false);
+    }
+  }, [aiAssistLoading, currentExercise, recommendedAlternatives]);
+
   const applyRestForCurrentExercise = useCallback(
     (sec: number) => {
       if (!currentExerciseId) return;
@@ -351,15 +593,7 @@ export function ActiveWorkout() {
 
   const finishWorkout = useCallback(async () => {
     if (!activeWorkout || completing) return;
-    // Only allow finish on the last exercise (or single-exercise session)
-    const ids = exerciseIds.length
-      ? exerciseIds
-      : uniqueExerciseIds(useWorkoutStore.getState().drafts);
-    const lastIdx = Math.max(0, ids.length - 1);
-    if (ids.length > 0 && currentExerciseIndex < lastIdx) {
-      setError("Завершить тренировку можно на последнем упражнении.");
-      return;
-    }
+    // Allow finish from any exercise (user may end early).
     setCompleting(true);
     setError(null);
     setOfflineNote(null);
@@ -424,6 +658,45 @@ export function ActiveWorkout() {
 
       setActiveWorkout(result);
       await persistSession(result, drafts);
+
+      // Advance program day + week phase after full split cycle
+      try {
+        if (activeWorkout.program_id && isOnline()) {
+          const [profile, programs] = await Promise.all([
+            fetchMyProfile().catch(() => null),
+            fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] })),
+          ]);
+          const goals = (profile?.goals as Record<string, unknown>) || {};
+          const prog = programs.items.find((x) => x.id === activeWorkout.program_id) || null;
+          if (prog) {
+            const dayIndex = Number(plan.day_index) || 1;
+            const phase = (
+              plan.week_phase === "light" ||
+              plan.week_phase === "medium" ||
+              plan.week_phase === "heavy"
+                ? plan.week_phase
+                : weekPhase.phase
+            ) as WeekPhase;
+            const cur = readProgramCursor(goals, prog);
+            const next = advanceCursorAfterWorkout(prog, cur, dayIndex, phase);
+            const patch = cursorGoalsPatch(
+              prog.id,
+              {
+                nextDayIndex: next.nextDayIndex,
+                weekPhase: next.weekPhase,
+                phaseSource: next.phaseSource,
+                workoutsInPhase: next.workoutsInPhase,
+                startedAt: String(goals.active_program_started_at || localDateKey()),
+              },
+              localDateKey(),
+            );
+            await updateMyProfile({ goals: { ...goals, ...patch } });
+          }
+        }
+      } catch {
+        // soft fail
+      }
+
       await deleteLocalSession(clientId);
       resetSession();
       hapticNotification("success");
@@ -448,12 +721,13 @@ export function ActiveWorkout() {
     apiWorkoutId,
     completedCount,
     completing,
-    currentExerciseIndex,
     drafts,
     elapsedSec,
     exerciseIds,
     notes,
     persistSession,
+    plan.day_index,
+    plan.week_phase,
     resetSession,
     rpe,
     setActiveWorkout,
@@ -463,34 +737,79 @@ export function ActiveWorkout() {
   ]);
 
   const scrollToFinish = useCallback(() => {
-    if (!isLastExercise) {
-      setCurrentExerciseIndex(Math.max(0, exerciseIds.length - 1));
-      setError("Перейдите к последнему упражнению, чтобы завершить тренировку.");
-      return;
+    // Jump to last exercise so the finish panel is in context, then scroll.
+    if (exerciseIds.length > 0 && currentExerciseIndex < exerciseIds.length - 1) {
+      setCurrentExerciseIndex(exerciseIds.length - 1);
     }
-    const el = document.getElementById("workout-finish-panel");
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [exerciseIds.length, isLastExercise, setCurrentExerciseIndex]);
+    window.setTimeout(() => {
+      const el = document.getElementById("workout-finish-panel");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }, [currentExerciseIndex, exerciseIds.length, setCurrentExerciseIndex]);
 
   useMainButton({
     text: completing ? "Сохраняем…" : "Завершить тренировку",
     visible: Boolean(
-      activeWorkout &&
-        activeWorkout.status !== "completed" &&
-        !booting &&
-        !summary &&
-        isLastExercise,
+      activeWorkout && activeWorkout.status !== "completed" && !booting && !summary,
     ),
-    enabled: !completing && isLastExercise,
+    enabled: !completing,
     onClick: () => {
       void finishWorkout();
     },
   });
 
-  async function completeSet(exerciseId: string, setNumber: number) {
+  async function completeSet(
+    exerciseId: string,
+    setNumberInput: number,
+    overrides?: Partial<{
+      reps: string;
+      weight: string;
+      durationSec: number | null;
+      restTimeSec: number;
+      note: string | null;
+      machineParams: Record<string, string | number> | null;
+    }>,
+  ) {
     if (!activeWorkout) return;
-    const draft = drafts.find((d) => d.exerciseId === exerciseId && d.setNumber === setNumber);
+    let setNumber = setNumberInput;
+    // Always read latest drafts from store (modal apply must not race with stale closure).
+    const liveDrafts = useWorkoutStore.getState().drafts;
+    let draft = liveDrafts.find((d) => d.exerciseId === exerciseId && d.setNumber === setNumber);
+    if (!draft && overrides) {
+      // create on the fly
+      addDraftSet(exerciseId, {
+        reps: overrides.reps,
+        weight: overrides.weight,
+        durationSec: overrides.durationSec,
+        restTimeSec: overrides.restTimeSec,
+        note: overrides.note,
+        machineParams: overrides.machineParams,
+      });
+      draft = useWorkoutStore.getState().drafts.find(
+        (d) => d.exerciseId === exerciseId && !d.isCompleted,
+      );
+      if (draft && setNumber !== draft.setNumber) {
+        setNumber = draft.setNumber;
+      }
+    }
     if (!draft) return;
+    if (overrides) {
+      updateDraft(exerciseId, draft.setNumber, {
+        reps: overrides.reps ?? draft.reps,
+        weight: overrides.weight ?? draft.weight,
+        durationSec: overrides.durationSec ?? draft.durationSec,
+        restTimeSec: overrides.restTimeSec ?? draft.restTimeSec,
+        note: overrides.note ?? draft.note,
+        machineParams: overrides.machineParams ?? draft.machineParams,
+      });
+      draft = {
+        ...draft,
+        ...overrides,
+        setNumber: draft.setNumber,
+        exerciseId,
+      } as typeof draft;
+      setNumber = draft.setNumber;
+    }
     const key = `${exerciseId}:${setNumber}`;
     setSavingKey(key);
     setError(null);
@@ -530,10 +849,21 @@ export function ActiveWorkout() {
         setOfflineNote("Подход сохранён локально (очередь синхронизации).");
       }
 
-      const nextDrafts = drafts.map((d) =>
-        d.exerciseId === exerciseId && d.setNumber === setNumber ? { ...d, isCompleted: true } : d,
+      const baseDrafts = useWorkoutStore.getState().drafts;
+      const nextDrafts = baseDrafts.map((d) =>
+        d.exerciseId === exerciseId && d.setNumber === setNumber
+          ? {
+              ...d,
+              isCompleted: true,
+              reps: draft.reps,
+              weight: draft.weight,
+              durationSec: draft.durationSec,
+              note: draft.note,
+              machineParams: draft.machineParams,
+              restTimeSec,
+            }
+          : d,
       );
-      updateDraft(exerciseId, setNumber, { isCompleted: true });
       setDrafts(nextDrafts);
 
       const localSet: WorkoutSet = serverSet ?? {
@@ -559,6 +889,28 @@ export function ActiveWorkout() {
       await persistSession(nextWorkout, nextDrafts);
       hapticImpact("light");
       startRest(restTimeSec);
+
+      const msFromStart = msSinceWorkoutTimerStart();
+      const completedSetsNow = nextDrafts.filter((d) => d.isCompleted).length;
+      trackEvent("set_logged", {
+        exercise_id: exerciseId,
+        set_number: setNumber,
+        completed_sets: completedSetsNow,
+        ms_from_workout_start: msFromStart,
+        offline: !serverSet,
+      });
+      // activation = first successful set after onboarding (local funnel)
+      try {
+        const funnel = summarizeFunnel();
+        if (funnel.onboardingCompleted && completedSetsNow === 1 && !funnel.counts.activation_completed) {
+          trackEvent("activation_completed", {
+            source: "first_set",
+            ms_from_workout_start: msFromStart,
+          });
+        }
+      } catch {
+        /* soft */
+      }
 
       const allCurrentDone = nextDrafts
         .filter((d) => d.exerciseId === exerciseId)
@@ -654,9 +1006,62 @@ export function ActiveWorkout() {
         <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">{suggestNote}</div>
       ) : null}
 
+      
+      {showWarmup && warmupPlanBuilt ? (
+        <div className="mb-4">
+          <WarmupPanel
+            plan={warmupPlanBuilt}
+            catalog={catalog}
+            lastCardioParams={lastCardioParams}
+            onSkipAll={() => {
+              setWarmupDone(true);
+              if (activeWorkout) {
+                const nextPlan = { ...(asPlan(activeWorkout.plan) as object), warmup_pending: false };
+                const w = { ...activeWorkout, plan: nextPlan as Workout["plan"] };
+                setActiveWorkout(w);
+                void persistSession(w, drafts);
+              }
+            }}
+            onCompleteAll={async (payload) => {
+              setWarmupDone(true);
+              if (activeWorkout) {
+                const nextPlan = {
+                  ...(asPlan(activeWorkout.plan) as object),
+                  warmup_pending: false,
+                  warmup_log: payload.cardio || null,
+                };
+                const w = { ...activeWorkout, plan: nextPlan as Workout["plan"] };
+                setActiveWorkout(w);
+                void persistSession(w, drafts);
+              }
+              // Remember last cardio machine in profile goals
+              if (payload.cardio && isOnline()) {
+                try {
+                  const profile = await fetchMyProfile();
+                  const goals = (profile.goals as Record<string, unknown>) || {};
+                  await updateMyProfile({
+                    goals: {
+                      ...goals,
+                      last_warmup_cardio_exercise_id: payload.cardio.exerciseId,
+                      last_warmup_cardio_duration_sec: payload.cardio.durationSec,
+                      last_warmup_cardio_params: payload.cardio.params,
+                    },
+                  });
+                } catch {
+                  /* soft */
+                }
+              }
+            }}
+          />
+        </div>
+      ) : null}
+
       <div className="mb-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
         Неделя {weekPhase.weekInCycle}/3 · {weekPhase.label}: цель {weekPhase.defaultReps} повт.,{" "}
         {weekPhase.rir}. Вес: −/+ 1 кг, тонко −/+ 100 г.
+        {hasReplacements
+          ? " Есть замены — вернуть исходные можно на Главной в блоке «Сегодня»."
+          : ""}
       </div>
 
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -675,7 +1080,7 @@ export function ActiveWorkout() {
                 if (activeWorkout) void persistSession(activeWorkout, drafts, idx);
               }}
               className={[
-                "shrink-0 rounded-full px-3 py-1 text-xs",
+                "tap-target-x shrink-0 rounded-full px-3 py-2 text-xs min-h-[44px]",
                 idx === currentExerciseIndex
                   ? "bg-tg-button text-tg-button-text"
                   : done
@@ -694,21 +1099,41 @@ export function ActiveWorkout() {
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="font-medium">{currentExercise.name_ru}</h2>
-              <p className="mt-1 text-xs text-tg-hint">Цель: {targetReps} повт.</p>
+              <p className="mt-1 text-xs text-tg-hint">
+                {currentLoadType === "timed" || currentLoadType === "cardio_machine"
+                  ? "Формат: по времени"
+                  : currentLoadType === "reps_only"
+                    ? `Цель: ${targetReps} повт.`
+                    : `Цель: ${targetReps} повт. · ${weekPhase.label}`}
+              </p>
+              {suggestNote ? (
+                <p className="mt-1 text-[11px] text-tg-hint">{suggestNote}</p>
+              ) : null}
+              {plan.exercises.find((e) => e.exercise_id === currentExercise.id)?.original_exercise_id ? (
+                <p className="mt-1 text-[10px] text-tg-hint">Заменено (можно вернуть по умолчанию)</p>
+              ) : null}
             </div>
-            <button
-              type="button"
-              className="shrink-0 text-xs text-tg-link"
-              onClick={() => {
-                addDraftSet(currentExercise.id);
-                const next = useWorkoutStore.getState();
-                if (next.activeWorkout) {
-                  void persistSession(next.activeWorkout, next.drafts);
-                }
-              }}
-            >
-              + подход
-            </button>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <button
+                type="button"
+                className="text-xs text-tg-link"
+                onClick={() => {
+                  setReplaceOpen(true);
+                  setReplaceQuery("");
+                  setReplaceMuscle(currentExercise.muscle_group || "");
+                }}
+              >
+                Заменить
+              </button>
+              <button
+                type="button"
+                className="text-xs text-tg-link"
+                disabled={aiAssistLoading}
+                onClick={() => void askAiForCurrent()}
+              >
+                {aiAssistLoading ? "AI…" : "AI: замена"}
+              </button>
+            </div>
           </div>
 
           <ExerciseMediaPlayer exercise={currentExercise} compact />
@@ -801,13 +1226,62 @@ export function ActiveWorkout() {
             <p className="text-xs text-tg-hint">Частые ошибки: {currentExercise.common_mistakes}</p>
           ) : null}
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {currentSets.map((draft) => {
               const key = `${draft.exerciseId}:${draft.setNumber}`;
+              const dur = draft.durationSec;
+              const ready = draftReadyToComplete(draft, currentLoadType);
               return (
-                <div key={key} className="rounded-xl bg-tg-bg p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-medium text-tg-hint">Подход {draft.setNumber}</p>
+                <div
+                  key={key}
+                  className={[
+                    "flex items-center justify-between rounded-xl bg-tg-bg px-3 py-2 text-sm",
+                    draft.isCompleted ? "opacity-80" : "",
+                  ].join(" ")}
+                >
+                  <div>
+                    <p className="text-xs text-tg-hint">Подход {draft.setNumber}</p>
+                    <p className="font-medium">
+                      {currentLoadType === "weight_reps"
+                        ? `${draft.weight || "—"} кг × ${draft.reps || "—"}`
+                        : currentLoadType === "reps_only"
+                          ? `${draft.reps || "—"} повт.`
+                          : formatDurationLabel(Number(dur) || 0)}
+                      {draft.note ? ` · ${draft.note}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {draft.isCompleted ? (
+                      <span className="text-xs text-tg-hint">✓</span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          onClick={() => {
+                            setEditingSetNumber(draft.setNumber);
+                            setAddSetOpen(true);
+                          }}
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          type="button"
+                          disabled={savingKey === key || !ready}
+                          onClick={() => {
+                            if (!ready) {
+                              setEditingSetNumber(draft.setNumber);
+                              setAddSetOpen(true);
+                              return;
+                            }
+                            void completeSet(draft.exerciseId, draft.setNumber);
+                          }}
+                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-50"
+                        >
+                          {savingKey === key ? "…" : "Готово"}
+                        </button>
+                      </>
+                    )}
                     {!draft.isCompleted && currentSets.length > 1 ? (
                       <button
                         type="button"
@@ -815,59 +1289,195 @@ export function ActiveWorkout() {
                         onClick={() => {
                           removeDraftSet(draft.exerciseId, draft.setNumber);
                           const next = useWorkoutStore.getState();
-                          if (next.activeWorkout) {
-                            void persistSession(next.activeWorkout, next.drafts);
-                          }
+                          if (next.activeWorkout) void persistSession(next.activeWorkout, next.drafts);
                         }}
                       >
-                        удалить
+                        ✕
                       </button>
                     ) : null}
                   </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <NumberStepper
-                      label="Вес"
-                      unit="кг"
-                      value={draft.weight}
-                      disabled={draft.isCompleted}
-                      step={1}
-                      fineStep={0.1}
-                      fineLabel="0.1"
-                      onChange={(next) =>
-                        updateDraft(draft.exerciseId, draft.setNumber, { weight: next })
-                      }
-                    />
-                    <NumberStepper
-                      label="Повторения"
-                      value={draft.reps}
-                      disabled={draft.isCompleted}
-                      step={1}
-                      onChange={(next) =>
-                        updateDraft(draft.exerciseId, draft.setNumber, { reps: next })
-                      }
-                      format={(n) => (n <= 0 ? "" : String(Math.round(n)))}
-                      parse={(raw) => {
-                        const n = Number(raw);
-                        return Number.isFinite(n) ? Math.round(n) : 0;
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={draft.isCompleted || savingKey === key}
-                    onClick={() => void completeSet(draft.exerciseId, draft.setNumber)}
-                    className="mt-2 w-full rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-50"
-                  >
-                    {draft.isCompleted
-                      ? "Выполнено"
-                      : savingKey === key
-                        ? "Сохраняем…"
-                        : "Отметить выполненным"}
-                  </button>
                 </div>
               );
             })}
           </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setRestContext({
+                  exerciseName: currentExercise.name_ru,
+                  nextExerciseName: null,
+                  isLastSetOfExercise: false,
+                  isLastExercise: false,
+                });
+                startRest(currentRestSec);
+              }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-tg-bg text-lg"
+              aria-label="Таймер отдыха"
+              title="Таймер"
+            >
+              ⏱
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                // Repeat last completed set values into a new draft, then open modal if empty
+                const done = [...currentSets].filter((d) => d.isCompleted).sort((a, b) => b.setNumber - a.setNumber)[0];
+                const open = currentSets.find((d) => !d.isCompleted);
+                if (done && open) {
+                  updateDraft(open.exerciseId, open.setNumber, {
+                    reps: done.reps,
+                    weight: done.weight,
+                    durationSec: done.durationSec,
+                    restTimeSec: done.restTimeSec,
+                    machineParams: done.machineParams,
+                  });
+                  void completeSet(open.exerciseId, open.setNumber, {
+                    reps: done.reps,
+                    weight: done.weight,
+                    durationSec: done.durationSec,
+                    restTimeSec: done.restTimeSec,
+                    machineParams: done.machineParams,
+                  });
+                  return;
+                }
+                if (done) {
+                  addDraftSet(currentExercise.id, {
+                    reps: done.reps,
+                    weight: done.weight,
+                    durationSec: done.durationSec,
+                    restTimeSec: done.restTimeSec,
+                    machineParams: done.machineParams,
+                  });
+                  const created = [...useWorkoutStore.getState().drafts]
+                    .filter((d) => d.exerciseId === currentExercise.id && !d.isCompleted)
+                    .sort((a, b) => b.setNumber - a.setNumber)[0];
+                  if (created) {
+                    void completeSet(created.exerciseId, created.setNumber, {
+                      reps: done.reps,
+                      weight: done.weight,
+                      durationSec: done.durationSec,
+                      restTimeSec: done.restTimeSec,
+                      machineParams: done.machineParams,
+                    });
+                  }
+                  return;
+                }
+                setEditingSetNumber(null);
+                setAddSetOpen(true);
+              }}
+              className="rounded-full bg-tg-secondary px-3 py-3 text-xs font-semibold"
+            >
+              Как прошлый
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingSetNumber(null);
+                setAddSetOpen(true);
+              }}
+              className="flex-1 rounded-full bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+            >
+              Добавить +
+            </button>
+          </div>
+          <p className="text-[11px] text-tg-hint">
+            План: {plan.exercises.find((e) => e.exercise_id === currentExercise.id)?.target_sets ?? "—"}{" "}
+            подх. × {targetReps}. «Готово» — если поля заполнены; иначе «Изменить».
+          </p>
+
+          {addSetOpen ? (
+            <AddSetModal
+              open={addSetOpen}
+              exercise={currentExercise}
+              defaultRestSec={currentRestSec}
+              initial={(() => {
+                const editing =
+                  editingSetNumber != null
+                    ? currentSets.find((d) => d.setNumber === editingSetNumber)
+                    : null;
+                const openDraft = currentSets.find((d) => !d.isCompleted);
+                const base = editing || openDraft || currentSets[0];
+                return {
+                  reps: base?.reps || "",
+                  weight: base?.weight || "",
+                  durationSec: base?.durationSec || defaultTimedSeconds(currentExercise),
+                  restTimeSec: base?.restTimeSec || currentRestSec,
+                  machineParams: base?.machineParams || null,
+                  note: base?.note || "",
+                };
+              })()}
+              onClose={() => {
+                setAddSetOpen(false);
+                setEditingSetNumber(null);
+              }}
+              onStartTimerOnly={(seconds) => {
+                setRestContext({
+                  exerciseName: currentExercise.name_ru,
+                  nextExerciseName: null,
+                  isLastSetOfExercise: false,
+                  isLastExercise: false,
+                });
+                startRest(seconds);
+                setAddSetOpen(false);
+                setEditingSetNumber(null);
+              }}
+              onApply={(vals) => {
+                const targetSet = editingSetNumber;
+                setAddSetOpen(false);
+                setEditingSetNumber(null);
+                if (targetSet != null) {
+                  // Edit existing draft set in place, then complete it.
+                  updateDraft(currentExercise.id, targetSet, {
+                    reps: vals.reps,
+                    weight: vals.weight,
+                    durationSec: vals.durationSec,
+                    note: vals.note,
+                    machineParams: vals.machineParams,
+                    restTimeSec: vals.restTimeSec,
+                  });
+                  const next = useWorkoutStore.getState();
+                  if (next.activeWorkout) void persistSession(next.activeWorkout, next.drafts);
+                  void completeSet(currentExercise.id, targetSet, {
+                    reps: vals.reps,
+                    weight: vals.weight,
+                    durationSec: vals.durationSec,
+                    note: vals.note,
+                    machineParams: vals.machineParams,
+                    restTimeSec: vals.restTimeSec,
+                  });
+                  return;
+                }
+                // Append a new set with entered values, then complete it.
+                addDraftSet(currentExercise.id, {
+                  reps: vals.reps,
+                  weight: vals.weight,
+                  durationSec: vals.durationSec,
+                  note: vals.note,
+                  machineParams: vals.machineParams,
+                  restTimeSec: vals.restTimeSec,
+                });
+                const next = useWorkoutStore.getState();
+                const created = [...next.drafts]
+                  .filter((d) => d.exerciseId === currentExercise.id)
+                  .sort((a, b) => b.setNumber - a.setNumber)[0];
+                if (next.activeWorkout) void persistSession(next.activeWorkout, next.drafts);
+                if (created) {
+                  void completeSet(created.exerciseId, created.setNumber, {
+                    reps: vals.reps,
+                    weight: vals.weight,
+                    durationSec: vals.durationSec,
+                    note: vals.note,
+                    machineParams: vals.machineParams,
+                    restTimeSec: vals.restTimeSec,
+                  });
+                } else if (vals.startTimer) {
+                  startRest(vals.restTimeSec);
+                }
+              }}
+            />
+          ) : null}
 
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -913,97 +1523,94 @@ export function ActiveWorkout() {
         />
       ) : null}
 
-      {isLastExercise ? (
-        <div id="workout-finish-panel" className="mt-4 space-y-2">
-          <div className="rounded-xl bg-tg-secondary p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">Завершение тренировки</p>
-              <p className="text-sm font-semibold tabular-nums text-tg-hint">
-                {formatElapsed(elapsedSec)}
-              </p>
-            </div>
-            <label className="block text-sm font-medium text-tg-text">
-              Насколько тяжело было? (оценка 1–10)
-            </label>
-            <p className="mt-1 text-xs text-tg-hint">
-              Это субъективная оценка усилия всей тренировки. Нужна, чтобы видеть,
-              как вы переносите нагрузку, и не перетренироваться. 1 — очень легко,
-              10 — максимум, почти не смогли закончить.
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {(
-                [
-                  [1, "Очень легко"],
-                  [3, "Легко"],
-                  [5, "Средне"],
-                  [7, "Тяжело"],
-                  [9, "Очень тяжело"],
-                  [10, "На пределе"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRpe(value)}
-                  className={[
-                    "rounded-full px-2.5 py-1 text-[11px]",
-                    rpe === value
-                      ? "bg-tg-button text-tg-button-text"
-                      : "bg-tg-bg text-tg-hint",
-                  ].join(" ")}
-                >
-                  {value} · {label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="range"
-                min={1}
-                max={10}
-                step={1}
-                value={rpe}
-                onChange={(e) => setRpe(Number(e.target.value) || 7)}
-                className="min-w-0 flex-1"
-                aria-label="Оценка сложности тренировки от 1 до 10"
-              />
-              <span className="w-8 text-center text-sm font-semibold tabular-nums">{rpe}</span>
-            </div>
-            <p className="mt-1 text-[10px] text-tg-hint">
-              Подсказка: комфортная рабочая тренировка обычно 6–8. Если часто 9–10 —
-              снизьте вес или объём на следующей неделе.
+      <div id="workout-finish-panel" className="mt-4 space-y-2">
+        <div className="rounded-xl bg-tg-secondary p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Завершение тренировки</p>
+            <p className="text-sm font-semibold tabular-nums text-tg-hint">
+              {formatElapsed(elapsedSec)}
             </p>
           </div>
-          <label className="block text-xs text-tg-hint">
-            Заметки к тренировке
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="Как самочувствие, что мешало, что получилось лучше…"
-              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-            />
+          {!isLastExercise ? (
+            <p className="mb-2 text-xs text-tg-hint">
+              Упр. {Math.min(currentExerciseIndex + 1, exerciseIds.length || 1)} из{" "}
+              {exerciseIds.length || 1}. Можно завершить досрочно.
+            </p>
+          ) : null}
+          <label className="block text-sm font-medium text-tg-text">
+            Насколько тяжело было? (оценка 1–10)
           </label>
-          <button
-            type="button"
-            disabled={completing}
-            onClick={() => void finishWorkout()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-          >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-current">
-              <span className="block h-2.5 w-2.5 rounded-[1px] bg-current" />
-            </span>
-            {completing ? "Сохраняем…" : "Завершить тренировку"}
-          </button>
+          <p className="mt-1 text-xs text-tg-hint">
+            Это субъективная оценка усилия всей тренировки. Нужна, чтобы видеть, как вы
+            переносите нагрузку, и не перетренироваться. 1 — очень легко, 10 — максимум,
+            почти не смогли закончить.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(
+              [
+                [1, "Очень легко"],
+                [3, "Легко"],
+                [5, "Средне"],
+                [7, "Тяжело"],
+                [9, "Очень тяжело"],
+                [10, "На пределе"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRpe(value)}
+                className={[
+                  "rounded-full px-2.5 py-1 text-[11px]",
+                  rpe === value
+                    ? "bg-tg-button text-tg-button-text"
+                    : "bg-tg-bg text-tg-hint",
+                ].join(" ")}
+              >
+                {value} · {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              value={rpe}
+              onChange={(e) => setRpe(Number(e.target.value) || 7)}
+              className="min-w-0 flex-1"
+              aria-label="Оценка сложности тренировки от 1 до 10"
+            />
+            <span className="w-8 text-center text-sm font-semibold tabular-nums">{rpe}</span>
+          </div>
+          <p className="mt-1 text-[10px] text-tg-hint">
+            Подсказка: комфортная рабочая тренировка обычно 6–8. Если часто 9–10 — снизьте
+            вес или объём на следующей неделе.
+          </p>
         </div>
-      ) : (
-        <div className="mt-4 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
-          Завершение доступно на последнем упражнении. Сейчас{" "}
-          {Math.min(currentExerciseIndex + 1, exerciseIds.length || 1)} из{" "}
-          {exerciseIds.length || 1}. Кнопка «стоп» (у таймера и снизу справа) перенесёт
-          на финиш.
-        </div>
-      )}
+        <label className="block text-xs text-tg-hint">
+          Заметки к тренировке
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Как самочувствие, что мешало, что получилось лучше…"
+            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={completing}
+          onClick={() => void finishWorkout()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-current">
+            <span className="block h-2.5 w-2.5 rounded-[1px] bg-current" />
+          </span>
+          {completing ? "Сохраняем…" : "Завершить тренировку"}
+        </button>
+      </div>
 
       {/* Always-visible floating stop control (duplicates header stop) */}
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 mx-auto flex w-full max-w-lg justify-end px-4">
@@ -1020,6 +1627,179 @@ export function ActiveWorkout() {
           </span>
         </button>
       </div>
+
+      {replaceOpen && currentExercise ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl">
+            <div className="flex items-center justify-between border-b border-black/5 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold">Замена упражнения</p>
+                <p className="text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
+              </div>
+              <button
+                type="button"
+                className="text-sm text-tg-link"
+                onClick={() => setReplaceOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+            <div className="space-y-3 overflow-y-auto p-4" style={{ maxHeight: "70vh" }}>
+              {recommendedAlternatives.length ? (
+                <div>
+                  <p className="mb-2 text-xs font-medium text-tg-hint">Рекомендуемые замены</p>
+                  <div className="space-y-2">
+                    {recommendedAlternatives.map((ex) => (
+                      <button
+                        key={`rec-${ex.id}`}
+                        type="button"
+                        onClick={() => applyReplace(ex)}
+                        className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
+                      >
+                        <span>
+                          <span className="block text-sm font-medium">{ex.name_ru}</span>
+                          <span className="block text-[11px] text-tg-hint">
+                            {ex.muscle_group}
+                            {ex.equipment ? ` · ${ex.equipment}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-tg-hint">
+                  Нет близких рекомендаций — выберите из каталога ниже.
+                </p>
+              )}
+
+              <label className="block text-xs text-tg-hint">
+                Поиск по каталогу
+                <input
+                  type="search"
+                  value={replaceQuery}
+                  onChange={(e) => setReplaceQuery(e.target.value)}
+                  placeholder="Название, мышца, инвентарь"
+                  className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setReplaceMuscle("")}
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[11px]",
+                    !replaceMuscle ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint",
+                  ].join(" ")}
+                >
+                  Все
+                </button>
+                {replaceMuscleGroups.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setReplaceMuscle(g)}
+                    className={[
+                      "rounded-full px-2.5 py-1 text-[11px]",
+                      replaceMuscle === g
+                        ? "bg-tg-button text-tg-button-text"
+                        : "bg-tg-secondary text-tg-hint",
+                    ].join(" ")}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                {replaceCatalog.length === 0 ? (
+                  <p className="text-xs text-tg-hint">Ничего не найдено.</p>
+                ) : (
+                  replaceCatalog.map((ex) => (
+                    <button
+                      key={`all-${ex.id}`}
+                      type="button"
+                      onClick={() => applyReplace(ex)}
+                      className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
+                    >
+                      <span>
+                        <span className="block text-sm font-medium">{ex.name_ru}</span>
+                        <span className="block text-[11px] text-tg-hint">
+                          {ex.muscle_group}
+                          {ex.equipment ? ` · ${ex.equipment}` : ""}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {aiAssistOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div className="w-full max-w-lg rounded-2xl bg-tg-bg p-4 shadow-xl">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">AI · замена упражнения</p>
+              <button
+                type="button"
+                className="text-sm text-tg-link"
+                onClick={() => setAiAssistOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+            {currentExercise ? (
+              <p className="mb-2 text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
+            ) : null}
+            {aiAssistError ? (
+              <p className="mb-2 text-sm text-amber-800">{aiAssistError}</p>
+            ) : null}
+            {aiAssistLoading ? (
+              <p className="text-sm text-tg-hint">Думаю…</p>
+            ) : aiAssistText ? (
+              <p className="whitespace-pre-wrap text-sm">{aiAssistText}</p>
+            ) : null}
+            {recommendedAlternatives.length ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium text-tg-hint">Быстрый выбор</p>
+                {recommendedAlternatives.slice(0, 4).map((ex) => (
+                  <button
+                    key={`ai-alt-${ex.id}`}
+                    type="button"
+                    onClick={() => {
+                      applyReplace(ex);
+                      setAiAssistOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl bg-tg-secondary px-3 py-2 text-left text-sm"
+                  >
+                    <span>{ex.name_ru}</span>
+                    <span className="text-xs text-tg-link">Заменить</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="mt-3 w-full rounded-xl bg-tg-secondary px-3 py-2 text-sm"
+              onClick={() => {
+                setAiAssistOpen(false);
+                setReplaceOpen(true);
+                setReplaceQuery("");
+                setReplaceMuscle(currentExercise?.muscle_group || "");
+              }}
+            >
+              Открыть полный список замен
+            </button>
+          </div>
+        </div>
+      ) : null}
+
     </section>
   );
 }

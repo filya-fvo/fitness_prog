@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { fetchPrograms } from "@/api/programs";
 import { updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
@@ -15,7 +16,10 @@ import {
   ACTIVITY_OPTIONS,
   previewEnergyTargets,
 } from "@/utils/energyTargets";
+import { localDateKey } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
+import { cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
+import { recommendPrograms } from "@/utils/programRecommend";
 
 const GOALS = [
   { id: "lose_fat", label: "Похудение" },
@@ -168,8 +172,54 @@ export function OnboardingPage() {
         measurements: {},
       };
 
+      let goalsToSave: Record<string, unknown> = { ...goals };
+
+      // First-run: auto-assign best matching program so Home shows Day 1 CTA.
       if (isOnline()) {
-        const profile = await updateMyProfile({ goals, anthropometry });
+        try {
+          const { items } = await fetchPrograms({ templatesOnly: true });
+          const rec = recommendPrograms(
+            items,
+            {
+              primaryGoal,
+              level,
+              daysPerWeek,
+              equipment,
+              sex,
+              location,
+              limitations: jointLimits,
+            },
+            3,
+          );
+          const best = rec[0];
+          if (best) {
+            const today = localDateKey();
+            const cur = readProgramCursor(goalsToSave, best, today);
+            goalsToSave = {
+              ...goalsToSave,
+              ...cursorGoalsPatch(
+                best.id,
+                {
+                  nextDayIndex: 1,
+                  weekPhase: cur.weekPhase,
+                  phaseSource: cur.phaseSource,
+                  workoutsInPhase: 0,
+                  startedAt: today,
+                },
+                today,
+              ),
+            };
+          }
+        } catch {
+          // soft — user can pick program later
+        }
+      }
+
+      if (isOnline()) {
+        const profile = await updateMyProfile({
+          goals: goalsToSave,
+          anthropometry,
+        });
         if (user) {
           setUser({
             ...user,
@@ -183,14 +233,14 @@ export function OnboardingPage() {
       } else {
         localStorage.setItem(
           "fitness_onboarding_draft",
-          JSON.stringify({ goals, anthropometry }),
+          JSON.stringify({ goals: goalsToSave, anthropometry }),
         );
         if (user) {
           setUser({ ...user, onboarding_completed: true });
         }
       }
 
-      await new Promise((r) => window.setTimeout(r, 700));
+      await new Promise((r) => window.setTimeout(r, 400));
       trackEvent("onboarding_completed", {
         primary_goal: primaryGoal,
         level,
@@ -198,9 +248,10 @@ export function OnboardingPage() {
         days_per_week: daysPerWeek,
         calorie_adjustment_pct: Number(adjPct),
         offline: !isOnline(),
+        active_program_assigned: Boolean(goalsToSave.active_program_id),
       });
       hapticNotification("success");
-      navigate("/programs", { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось сохранить анкету");
       setGenerating(false);
@@ -434,7 +485,7 @@ export function OnboardingPage() {
             </select>
           </label>
           <label className="block text-xs text-tg-hint">
-            % к TDEE (дефицит / профицит)
+            % к суточному расходу (дефицит / профицит)
             <input
               type="number"
               value={adjPct}
@@ -456,8 +507,7 @@ export function OnboardingPage() {
           </div>
           {energyPreview.complete ? (
             <p className="text-xs text-tg-hint">
-              Цель ≈ {energyPreview.caloriesTarget} ккал (BMR {energyPreview.bmr}, TDEE{" "}
-              {energyPreview.tdee})
+              Цель ≈ {energyPreview.caloriesTarget} ккал (обмен {energyPreview.bmr}, расход {energyPreview.tdee})
             </p>
           ) : (
             <p className="text-xs text-tg-hint">

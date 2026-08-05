@@ -1,1784 +1,1974 @@
 [
   {
-    "name_ru": "Приседания со своим весом",
-    "muscle_group": "ноги",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=aclHkVaku9U",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Приседания с гантелью у груди",
-    "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Гоблет-присед: гантель или гиря у груди, акцент на квадрицепсы и корпус.",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
     "name_ru": "Приседания со штангой",
     "muscle_group": "ноги",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "equipment": "штанга",
+    "description": "Приседания со штангой. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, носки слегка развернуты наружу.\n2. Держите штангу на верхней части спины, опираясь на трапеции или задние дельты.\n3. Напрягите корпус и держите грудь поднятой, когда начинаете опускать тело вниз.\n4. Согните колени и бедра, отводя бедра назад и вниз, как будто вы сидите на стуле.\n5. Опускайтесь до тех пор, пока бедра не станут параллельны земле или немного ниже.\n6. Держите колени на одной линии с пальцами ног, а вес тела перенесите на пятки.\n7. Протолкните пятки, чтобы встать обратно, выпрямляя бедра и колени.\n8. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0043-qXTaZnJ.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "gym",
-      "ноги"
+      "gymvisual",
+      "ds:0043",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Фронтальные приседания",
     "muscle_group": "ноги",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
+    "equipment": "штанга",
+    "description": "Фронтальные приседания. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Для начала встаньте, поставив ноги на ширине плеч, носки слегка развернуты наружу.\n2. Держите штангу перед плечами, положив ее на ключицы и плечи.\n3. Напрягите корпус и держите грудь поднятой, опуская тело в присед, отводя бедра назад и сгибая колени.\n4. Опускайтесь до тех пор, пока бедра не станут параллельны земле или настолько низко, насколько вам будет удобно.\n5. Задержитесь на мгновение внизу, затем оттолкнитесь пятками, чтобы вернуться в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 4,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0042-zG0zs85.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Выпады вперёд",
-    "muscle_group": "ноги",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=QOVaHwm-Q6U",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Выпады назад с гантелями",
-    "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Болгарские выпады",
-    "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=2C-uNgKwPLE",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Жим ногами",
-    "muscle_group": "ноги",
-    "equipment": "machine",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=IZxyjW7MPJQ",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Разгибания ног",
-    "muscle_group": "ноги",
-    "equipment": "machine",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Сгибания ног лёжа",
-    "muscle_group": "ноги",
-    "equipment": "machine",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Румынская тяга",
-    "muscle_group": "ноги",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=jEy_czb3RKA",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Румынская тяга с гантелями",
-    "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Становая тяга классическая",
-    "muscle_group": "ноги",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 4,
-    "video_url": "https://www.youtube.com/watch?v=op9kVnSso6Q",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Ягодичный мост",
-    "muscle_group": "ноги",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=OUgsJ8-Vi0E",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Ягодичный мост со штангой",
-    "muscle_group": "ноги",
-    "equipment": "barbell",
-    "description": "Хип-траст: верх спины на скамье, штанга на бёдрах — мощная работа ягодиц.",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=LM8XHLYJoYs",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Подъёмы на носки стоя",
-    "muscle_group": "ноги",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Подъёмы на носки сидя",
-    "muscle_group": "ноги",
-    "equipment": "machine",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Зашагивания на тумбу",
-    "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
-    ]
-  },
-  {
-    "name_ru": "Боковые выпады",
-    "muscle_group": "ноги",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "ноги"
+      "gymvisual",
+      "ds:0042",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Сумо-приседания",
     "muscle_group": "ноги",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «ноги».",
-    "technique": "Стопы устойчивы, колени по носкам, корпус нейтральный, движение контролируемое.",
-    "common_mistakes": "Колени заваливаются внутрь; округление поясницы; отрыв пяток.",
-    "difficulty": 2,
+    "equipment": "штанга",
+    "description": "Сумо-приседания. Цель: quads. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, поставив ноги шире плеч, носки слегка направлены наружу.\n2. Держите штангу на верхней части спины, опираясь на трапеции или задние дельты.\n3. Напрягите корпус и держите грудь поднятой, опуская тело в присед, отводя бедра назад и сгибая колени.\n4. Опускайтесь до тех пор, пока бедра не станут параллельны земле или настолько низко, насколько вам будет удобно.\n5. Задержитесь на мгновение внизу, затем оттолкнитесь пятками, чтобы вернуться в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0124-s7HX1BY.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "ноги"
+      "gymvisual",
+      "ds:0124",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
-    "name_ru": "Отжимания от пола",
-    "muscle_group": "грудь",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=IODxDxX7oi4",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Отжимания с колен",
-    "muscle_group": "грудь",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "name_ru": "Приседания со своим весом",
+    "muscle_group": "ноги",
+    "equipment": "свой вес",
+    "description": "Приседания со своим весом. Цель: glutes. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч.\n2. Опустите тело в присед, согнув колени и отведя бедра назад.\n3. Резко подпрыгните от земли, выпрямляя бедра, колени и лодыжки.\n4. Находясь в воздухе, быстро вытяните руки вперед для равновесия.\n5. Мягко приземлитесь на подушечки стоп и сразу же переходите к следующему повторению.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0514-LIlE5Tn.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "грудь"
+      "gymvisual",
+      "ds:0514",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
-    "name_ru": "Отжимания с возвышения",
-    "muscle_group": "грудь",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Жим гантелей лёжа",
-    "muscle_group": "грудь",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "name_ru": "Приседания с гантелью у груди",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Приседания с гантелью у груди. Цель: quads. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, удерживая гантель вертикально у груди обеими руками.\n2. Удерживая грудь поднятой и напряженным корпус, опустите тело в присед, отведя бедра назад и согнув колени.\n3. Продолжайте опускаться до тех пор, пока ваши бедра не станут параллельны земле или настолько низко, насколько вам будет удобно.\n4. Задержитесь на мгновение внизу, затем оттолкнитесь пятками, чтобы вернуться в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1760-yn8yg1r.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "грудь"
+      "gymvisual",
+      "ds:1760",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим ногами",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Жим ногами. Цель: glutes. Оборудование: sled machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте сиденье саней так, чтобы колени находились под углом 90 градусов, когда ступни стоят на подножке.\n2. Сядьте на санки, прижав спину к спинке и поставив ноги на подножку на ширине плеч.\n3. Возьмитесь за ручки по бокам сиденья для устойчивости.\n4. Надавите на подножку, чтобы вытянуть ноги и полностью их выпрямить.\n5. Задержитесь на мгновение в верхней точке, затем медленно согните колени, чтобы опустить подножку обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1463-2Qh2J1e.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1463",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Разгибания ног",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Разгибания ног. Цель: quads. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту сиденья и спинки машины в соответствии с вашим телом.\n2. Сядьте на тренажер, прислонившись спиной к спинке сиденья и положив ноги на подножку.\n3. Возьмитесь за ручки или боковые перекладины для устойчивости.\n4. Вытяните ноги вперед, выпрямив колени и подняв вес.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите вес обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0585-my33uHU.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0585",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сгибания ног лёжа",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Сгибания ног лёжа. Цель: hamstrings. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте тренажер под свое тело и выберите желаемый вес.\n2. Лягте на тренажер лицом вниз, выпрямив ноги и упираясь пятками в мягкий рычаг.\n3. Возьмитесь за ручки или боковые стороны машины для устойчивости.\n4. Удерживая верхнюю часть тела неподвижно, выдохните и согните ноги как можно выше, не отрывая бедра от подушки.\n5. Задержитесь в сокращенном положении на короткую паузу, сжимая мышцы задней поверхности бедра.\n6. Вдохните и медленно опустите рычаг обратно в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0586-17lJ1kr.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0586",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Румынская тяга",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Румынская тяга. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, поставив ноги на ширине плеч, носки ног направлены вперед.\n2. Возьмите штангу хватом сверху, руки чуть шире плеч.\n3. Согните бедра, сохраняя спину прямой и слегка согнутыми в коленях.\n4. Опустите штангу к земле, держа ее близко к телу.\n5. Почувствуйте растяжение подколенных сухожилий, когда опускаете штангу.\n6. Как только вы почувствуете растяжение подколенных сухожилий, выдвиньте бедра вперед и встаньте прямо.\n7. Напрягите ягодицы в верхней точке движения.\n8. Опустите штангу обратно в исходное положение и повторите желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0085-wQ2c4XD.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0085",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Румынская тяга с гантелями",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Румынская тяга с гантелями. Цель: glutes. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держите по гантели в каждой руке хватом сверху.\n2. Удерживая спину прямой, а корпус напряженным, наклонитесь в бедрах и опустите гантели к земле, слегка согнув колени.\n3. Опускайте гантели до тех пор, пока не почувствуете растяжение подколенных сухожилий, затем надавите на пятки и задействуйте ягодицы, чтобы вернуться в исходное положение.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1459-rR0LJzx.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1459",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Становая тяга классическая",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Становая тяга классическая. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, положите штангу на землю перед собой.\n2. Согните колени и наклоните бедра, чтобы опустить туловище и взять штангу хватом сверху, руки на расстоянии чуть шире плеч.\n3. Держите спину прямо, а грудь приподнятой, пока вы двигаетесь пятками, чтобы поднять штангу с земли, вытягивая бедра и колени.\n4. Вставая прямо, сожмите ягодицы и держите корпус напряженным.\n5. Опустите штангу обратно на землю, сгибая бедра и колени, сохраняя спину прямой.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 4,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0032-ila4NZS.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0032",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Болгарские выпады",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Болгарские выпады. Цель: quads. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держа в каждой руке по гантели.\n2. Сделайте шаг вперед одной ногой и расположите ступни так, чтобы передняя ступня стояла ровно на земле, а задняя нога была приподнята на скамье или ступеньке.\n3. Опустите тело, согнув переднее колено и бедро, сохраняя слегка согнутым заднее колено и заднюю пятку над землей.\n4. Продолжайте опускаться до тех пор, пока переднее бедро не станет параллельно земле, затем оттолкнитесь передней пяткой, чтобы вернуться в исходное положение.\n5. Повторите необходимое количество повторений, затем поменяйте ногу и повторите.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0410-qx4fgX7.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0410",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Выпады вперёд",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Выпады вперёд. Цель: glutes. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держа в каждой руке по гантели.\n2. Сделайте шаг вперед правой ногой, опуская тело в положение выпада.\n3. При опускании тела держите спину прямо и грудь вверх.\n4. Оттолкнитесь правой пяткой, чтобы вернуться в исходное положение.\n5. Повторите с левой ногой.\n6. Чередуйте ноги необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0336-RRWFUcw.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0336",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Выпады назад с гантелями",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Выпады назад с гантелями. Цель: glutes. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держа в каждой руке по гантели.\n2. Сделайте шаг назад правой ногой, опуская тело в положение выпада.\n3. Согните левое колено и опустите тело до тех пор, пока левое бедро не станет параллельно земле.\n4. Сделайте паузу на мгновение, затем оттолкнитесь левой пяткой, чтобы вернуться в исходное положение.\n5. Повторите то же самое в другую сторону, отступив левой ногой назад.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0381-SSsBDwB.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0381",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Боковые выпады",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Боковые выпады. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, удерживая штангу на верхней части спины.\n2. Сделайте большой шаг в сторону правой ногой, удерживая левую ногу на месте.\n3. Согните правое колено и опустите тело в положение выпада, сохраняя левую ногу прямой.\n4. Оттолкнитесь правой ногой и вернитесь в исходное положение.\n5. Повторите то же самое в другую сторону, наступая левой ногой.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1410-py1HSzx.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1410",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Зашагивания на тумбу",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Зашагивания на тумбу. Цель: glutes. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте перед скамьей или сделайте шаг вперед, взяв в каждую руку по гантели ладонями к телу.\n2. Поставьте правую ногу на скамью или ступеньку так, чтобы вся ступня касалась поверхности.\n3. Оттолкнитесь правой пяткой и поднимите тело на скамью или ступеньку, выпрямляя правую ногу.\n4. Поднимите левую ногу на скамью или ступеньку, встав полностью вертикально.\n5. Сделайте шаг назад левой ногой, затем правой ногой, возвращаясь в исходное положение.\n6. Повторите необходимое количество повторений, затем поменяйте ногу.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0431-aXtJhlg.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0431",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Ягодичный мост",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Ягодичный мост. Цель: glutes. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что лягте на спину на землю, согните колени и поставьте ступни на пол.\n2. Положите штангу на бедра, крепко удерживая ее обеими руками.\n3. Задействуйте ягодицы и мышцы корпуса, затем поднимите бедра от земли, пока ваше тело не образует прямую линию от колен до плеч.\n4. Задержитесь на мгновение в верхней точке, напрягая ягодицы.\n5. Медленно опустите бедра обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1409",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Ягодичный мост со штангой",
+    "muscle_group": "кор",
+    "equipment": "машина смита",
+    "description": "Ягодичный мост со штангой. Цель: abs. Оборудование: smith machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте на тренажер Смита, прислонившись спиной к подушке и поставив ноги на ширине плеч.\n2. Положите руки на штангу на расстоянии чуть шире ширины плеч.\n3. Задействуйте корпус и ягодицы, затем подтолкните пятки, чтобы поднять бедра от земли.\n4. Продолжайте подниматься до тех пор, пока ваше тело не образует прямую линию от колен до плеч.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите бедра обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0756",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки стоя",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Подъёмы на носки стоя. Цель: calves. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, положите штангу на верхнюю часть спины.\n2. Поднимите пятки от земли как можно выше, используя только пальцы ног.\n3. Задержитесь на мгновение в верхней точке, затем медленно опустите пятки обратно в исходное положение.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1372-8ozhUIZ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1372",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки сидя",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Подъёмы на носки сидя. Цель: calves. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту сиденья так, чтобы ваши колени были слегка согнуты, а ступни лежали на подножке.\n2. Поместите пальцы ног на подножку так, чтобы пятки свисали с края.\n3. Возьмитесь за ручки или боковые стороны сиденья для устойчивости.\n4. Оттолкнитесь подушечками стоп, чтобы поднять пятки как можно выше.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите пятки обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0594-bOOdeyc.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0594",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Жим штанги лёжа",
     "muscle_group": "грудь",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "equipment": "штанга",
+    "description": "Жим штанги лёжа. Цель: pectorals. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, поставьте ступни на землю и прижмите спину к скамье.\n2. Возьмите штангу хватом сверху на расстоянии чуть шире плеч.\n3. Снимите штангу со стойки и держите ее прямо над грудью, полностью вытянув руки.\n4. Медленно опустите штангу к груди, держа локти прижатыми.\n5. Сделайте паузу на мгновение, когда штанга коснется вашей груди.\n6. Верните штангу в исходное положение, вытянув руки.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
-    "animation_url": null,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0025-EIeI8Vf.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
-    "media_source": "youtube",
+    "media_source": "none",
     "tags": [
-      "gym",
-      "грудь"
+      "gymvisual",
+      "ds:0025",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим гантелей лёжа",
+    "muscle_group": "грудь",
+    "equipment": "гантели",
+    "description": "Жим гантелей лёжа. Цель: pectorals. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, поставьте ступни на землю и прижмите спину к скамье.\n2. Возьмите по гантели в каждую руку ладонями вперед и руками, вытянутыми над грудью.\n3. Медленно опустите гантели по бокам груди, держа локти под углом 90 градусов.\n4. Сделайте паузу на мгновение, затем верните гантели в исходное положение, полностью выпрямляя руки.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0289-SpYC0Kp.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0289",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Жим гантелей на наклонной",
     "muscle_group": "грудь",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
+    "equipment": "гантели",
+    "description": "Жим гантелей на наклонной. Цель: pectorals. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Установите наклонную скамью под углом 45 градусов.\n2. Сядьте на скамью, поставьте ноги на землю и плотно прижмите спину к скамье.\n3. Возьмите по гантели в каждую руку ладонями вперед и поднимите их на высоту плеч.\n4. Медленно опустите гантели по бокам груди, держа локти под углом 90 градусов.\n5. Верните гантели в исходное положение, полностью выпрямив руки.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0314-ns0SIbU.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "gym",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Разведение гантелей лёжа",
-    "muscle_group": "грудь",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Сведение рук в кроссовере",
-    "muscle_group": "грудь",
-    "equipment": "cable",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Отжимания на брусьях",
-    "muscle_group": "грудь",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=2z8JmcrW-As",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Жим в тренажёре",
-    "muscle_group": "грудь",
-    "equipment": "machine",
-    "description": "Упражнение на группу «грудь».",
-    "technique": "Лопатки сведены, локти под контролем, полная амплитуда без боли в плечах.",
-    "common_mistakes": "Провисание поясницы; неполная амплитуда; разведённые локти на 90°.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "грудь"
-    ]
-  },
-  {
-    "name_ru": "Тяга гантели в наклоне",
-    "muscle_group": "спина",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=pYcpY20QaE8",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга штанги в наклоне",
-    "muscle_group": "спина",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга верхнего блока",
-    "muscle_group": "спина",
-    "equipment": "cable",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=CAwf7n6Luuc",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга горизонтального блока",
-    "muscle_group": "спина",
-    "equipment": "cable",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Подтягивания",
-    "muscle_group": "спина",
-    "equipment": "pullup_bar",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 4,
-    "video_url": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Австралийские подтягивания",
-    "muscle_group": "спина",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга Т-грифа",
-    "muscle_group": "спина",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Пуловер с гантелью",
-    "muscle_group": "спина",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Гиперэкстензия",
-    "muscle_group": "спина",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=ph3pddpKzzw",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга к лицу",
-    "muscle_group": "спина",
-    "equipment": "cable",
-    "description": "Тяга каната/рукояти к лицу — задние дельты, верх спины и ротаторы плеча.",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=rep-qVOkqgk",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Тяга резинки к поясу",
-    "muscle_group": "спина",
-    "equipment": "bands",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Шраги с гантелями",
-    "muscle_group": "спина",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «спина».",
-    "technique": "Нейтральная поясница, тяга локтями, без рывка корпусом.",
-    "common_mistakes": "Рывок корпусом; скругление спины; тяга бицепсом вместо спины.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "спина"
-    ]
-  },
-  {
-    "name_ru": "Жим гантелей сидя",
-    "muscle_group": "плечи",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=qEwKCR5JCog",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Жим штанги стоя",
-    "muscle_group": "плечи",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Разводка гантелей в стороны",
-    "muscle_group": "плечи",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Разводка в наклоне",
-    "muscle_group": "плечи",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Подъёмы гантелей перед собой",
-    "muscle_group": "плечи",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Тяга к подбородку",
-    "muscle_group": "плечи",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Жим Арнольда",
-    "muscle_group": "плечи",
-    "equipment": "dumbbells",
-    "description": "Жим гантелей сидя/стоя с разворотом ладоней — передние и средние дельты.",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Обратные разведения в тренажёре",
-    "muscle_group": "плечи",
-    "equipment": "machine",
-    "description": "Упражнение на группу «плечи».",
-    "technique": "Не задирайте плечи к ушам, контролируйте негативную фазу.",
-    "common_mistakes": "Читинг корпусом; слишком большой вес; подъём трапецией.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "плечи"
-    ]
-  },
-  {
-    "name_ru": "Сгибания гантелей на бицепс",
-    "muscle_group": "бицепс",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «бицепс».",
-    "technique": "Локти зафиксированы, без раскачки корпуса.",
-    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=ykJmrZ5v0Oo",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "бицепс"
-    ]
-  },
-  {
-    "name_ru": "Сгибания со штангой",
-    "muscle_group": "бицепс",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «бицепс».",
-    "technique": "Локти зафиксированы, без раскачки корпуса.",
-    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "бицепс"
-    ]
-  },
-  {
-    "name_ru": "Молотковые сгибания",
-    "muscle_group": "бицепс",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «бицепс».",
-    "technique": "Локти зафиксированы, без раскачки корпуса.",
-    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=zC3nLlEvin4",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "бицепс"
-    ]
-  },
-  {
-    "name_ru": "Сгибания на скамье Скотта",
-    "muscle_group": "бицепс",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «бицепс».",
-    "technique": "Локти зафиксированы, без раскачки корпуса.",
-    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "бицепс"
-    ]
-  },
-  {
-    "name_ru": "Сгибания на нижнем блоке",
-    "muscle_group": "бицепс",
-    "equipment": "cable",
-    "description": "Упражнение на группу «бицепс».",
-    "technique": "Локти зафиксированы, без раскачки корпуса.",
-    "common_mistakes": "Раскачка; локти уезжают вперёд; неполная амплитуда.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "бицепс"
-    ]
-  },
-  {
-    "name_ru": "Французский жим гантели",
-    "muscle_group": "трицепс",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «трицепс».",
-    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
-    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=nRiJVZDpdL0",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "трицепс"
-    ]
-  },
-  {
-    "name_ru": "Разгибания на блоке",
-    "muscle_group": "трицепс",
-    "equipment": "cable",
-    "description": "Упражнение на группу «трицепс».",
-    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
-    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=2-LAMcpzODU",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "трицепс"
-    ]
-  },
-  {
-    "name_ru": "Отжимания узким хватом",
-    "muscle_group": "трицепс",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «трицепс».",
-    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
-    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "трицепс"
+      "gymvisual",
+      "ds:0314",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Жим лёжа узким хватом",
     "muscle_group": "трицепс",
-    "equipment": "barbell",
-    "description": "Упражнение на группу «трицепс».",
-    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
-    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "equipment": "штанга",
+    "description": "Жим лёжа узким хватом. Цель: triceps. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, поставьте ступни на землю и прижмите спину к скамье.\n2. Возьмите штангу узким хватом, на расстоянии чуть уже ширины плеч.\n3. Снимите штангу и медленно опустите ее к груди, держа локти близко к телу.\n4. Сделайте паузу на мгновение, когда штанга коснется вашей груди.\n5. Верните штангу в исходное положение, полностью выпрямив руки.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0030-J6Dx1Mu.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "gym",
-      "трицепс"
+      "gymvisual",
+      "ds:0030",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим в тренажёре",
+    "muscle_group": "грудь",
+    "equipment": "тренажёр",
+    "description": "Жим в тренажёре. Цель: pectorals. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту сиденья и расположитесь на тренажере, прижавшись спиной к подушке.\n2. Возьмитесь за рукоятки хватом сверху и расположите локти под углом 90 градусов.\n3. Толкайте ручки вперед до полного выпрямления рук, выдыхая во время движения.\n4. Сделайте короткую паузу в конце движения, затем медленно вернитесь в исходное положение, вдыхая при этом.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0576-DOoWcnA.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0576",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Разведение гантелей лёжа",
+    "muscle_group": "грудь",
+    "equipment": "гантели",
+    "description": "Разведение гантелей лёжа. Цель: pectorals. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, взяв в каждую руку по гантели, ладони обращены друг к другу.\n2. Вытяните руки прямо вверх над грудью, слегка согнув их в локтях.\n3. Сохраняя небольшой изгиб в локтях, опустите руки в стороны по широкой дуге, пока не почувствуете растяжение в груди.\n4. Сделайте паузу на мгновение, затем поменяйте направление движения и верните гантели в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0308-yz9nUhF.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0308",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сведение рук в кроссовере",
+    "muscle_group": "грудь",
+    "equipment": "блок/кроссовер",
+    "description": "Сведение рук в кроссовере. Цель: pectorals. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Прикрепите кабели к обеим сторонам канатной машины на уровне груди.\n2. Встаньте в центре тренажера, поставив одну ногу немного впереди другой.\n3. Возьмитесь за рукоятки верхним хватом и вытяните руки в стороны.\n4. Сохраняйте небольшой изгиб в локтях и сохраняйте небольшой наклон вперед.\n5. Задействуйте мышцы груди и сделайте размашистое движение руками вперед.\n6. Задержитесь на мгновение в центре, затем медленно верните руки в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0188-xLYSdtg.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0188",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Отжимания от пола",
+    "muscle_group": "грудь",
+    "equipment": "свой вес",
+    "description": "Отжимания от пола. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с позиции высокой планки, расставив руки чуть шире плеч и поставив ноги вместе.\n2. Напрягите корпус и опустите тело к земле, сгибая локти, удерживая тело на прямой линии.\n3. Сделайте паузу на мгновение, когда ваша грудь окажется чуть выше земли, затем вернитесь в исходное положение, выпрямляя руки.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0662-I4hDWkc.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0662",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Отжимания с колен",
+    "muscle_group": "грудь",
+    "equipment": "свой вес",
+    "description": "Отжимания с колен. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте на колени на землю, поставив руки на ширине плеч, пальцы направлены вперед.\n2. Вытяните ноги позади себя, опираясь на подушечки стоп так, чтобы ваше тело образовывало прямую линию от головы до пяток.\n3. Напрягите корпус и опустите тело к земле, сгибая локти и держа их близко к бокам.\n4. Продолжайте опускаться до тех пор, пока ваша грудь не окажется чуть выше земли, затем вернитесь в исходное положение, выпрямляя руки.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3211-ZOuKWir.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3211",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Отжимания с возвышения",
+    "muscle_group": "грудь",
+    "equipment": "свой вес",
+    "description": "Отжимания с возвышения. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Положите руки на возвышенную поверхность, например на скамью или ступеньку, на расстоянии чуть шире ширины плеч.\n2. Вытяните ноги позади себя, опираясь на подушечки стоп, создавая прямую линию от головы до пяток.\n3. Опустите грудь к возвышению, сгибая локти, сохраняя тело прямой линией.\n4. Задержитесь на мгновение в нижней точке, затем вернитесь в исходное положение, выпрямляя руки.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0493-B1EVP9F.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0493",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Отжимания узким хватом",
+    "muscle_group": "трицепс",
+    "equipment": "свой вес",
+    "description": "Отжимания узким хватом. Цель: triceps. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с положения высокой планки, сложив руки вместе, образуя ромбовидную форму большими и указательными пальцами.\n2. Держите тело прямой линией от головы до пят, задействуя корпус и ягодицы.\n3. Опустите грудь в сторону ромбовидной формы, образованной руками, держа локти близко к телу.\n4. Задержитесь на мгновение в нижней точке, затем вернитесь в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0283-soIB2rj.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0283",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Отжимания на брусьях",
+    "muscle_group": "грудь",
+    "equipment": "свой вес",
+    "description": "Отжимания на брусьях. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте на параллельные брусья, полностью вытянув руки и выпрямив тело.\n2. Опускайте корпус, сгибая локти, пока плечи не окажутся ниже локтей.\n3. Вернитесь в исходное положение, выпрямляя руки.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0251-9WTm7dq.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0251",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Подтягивания",
+    "muscle_group": "спина",
+    "equipment": "свой вес",
+    "description": "Подтягивания. Цель: lats. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Повисните на перекладине, повернув ладонями от себя и полностью вытянув руки.\n2. Напрягите корпус и сведите лопатки вместе.\n3. Подтяните тело к перекладине, сгибая локти и приближая грудь к перекладине.\n4. Сделайте паузу в верхней точке движения, затем медленно опустите тело обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 4,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0652-lBDjFxJ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0652",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Австралийские подтягивания",
+    "muscle_group": "спина",
+    "equipment": "свой вес",
+    "description": "Австралийские подтягивания. Цель: upper back. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Установите перекладину на уровне талии или используйте тренажер для подвешивания.\n2. Встаньте лицом к штанге или тренажеру для отягощения, поставив ноги на ширине плеч.\n3. Возьмитесь за перекладину или ручки хватом сверху, на расстоянии чуть шире ширины плеч.\n4. Откиньтесь назад, держа тело прямо, а пятки на земле.\n5. Подтяните грудь к перекладине или ручкам, сведя лопатки вместе.\n6. Задержитесь на мгновение в верхней точке, затем медленно опуститесь обратно в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0499-bZGHsAZ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0499",
+      "© Gym visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Тяга штанги в наклоне",
+    "muscle_group": "спина",
+    "equipment": "штанга",
+    "description": "Тяга штанги в наклоне. Цель: upper back. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч и слегка согнуты в коленях.\n2. Наклонитесь вперед в бедрах, сохраняя спину прямой и грудь вверх.\n3. Возьмите штангу хватом сверху, руки на расстоянии чуть шире плеч.\n4. Потяните штангу к нижней части груди, сводя лопатки и напрягая мышцы спины.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите штангу обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0027-eZyBC3j.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0027",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга гантели в наклоне",
+    "muscle_group": "спина",
+    "equipment": "гантели",
+    "description": "Тяга гантели в наклоне. Цель: upper back. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держите гантель в одной руке ладонью к телу.\n2. Слегка согните колени и наклонитесь вперед в бедрах, сохраняя спину прямой и напряженный корпус.\n3. Пусть гантель свисает прямо к полу, полностью выпрямив руку.\n4. Подтяните гантель к груди, держа локоть близко к телу и сжимая лопатки вместе.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите гантель обратно в исходное положение.\n6. Повторите желаемое количество повторений, затем поменяйте сторону.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0292-C0MA9bC.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0292",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга верхнего блока",
+    "muscle_group": "спина",
+    "equipment": "блок/кроссовер",
+    "description": "Тяга верхнего блока. Цель: lats. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на тренажер для тяги широчайших, расположив колени под подушечками.\n2. Возьмитесь за перекладину хватом сверху, на расстоянии чуть шире ширины плеч.\n3. Слегка откиньтесь назад и держите грудь вверх, сохраняя небольшой изгиб в пояснице.\n4. Потяните штангу вниз к верхней части груди, сжимая лопатки вместе.\n5. Сделайте паузу на мгновение в нижней части движения, затем медленно отпустите штангу обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2330",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга горизонтального блока",
+    "muscle_group": "спина",
+    "equipment": "блок/кроссовер",
+    "description": "Тяга горизонтального блока. Цель: upper back. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на тренажер для тяги тросов, поставьте ноги на подножки и слегка согните колени.\n2. Возьмитесь за рукоятки верхним хватом, сохраняя спину прямой, а плечи расслабленными.\n3. Потяните ручки к телу, сведя лопатки вместе.\n4. Задержитесь на мгновение на пике движения, затем медленно отпустите ручки обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0861-fUBheHs.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0861",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга Т-грифа",
+    "muscle_group": "спина",
+    "equipment": "тренажёр",
+    "description": "Тяга Т-грифа. Цель: upper back. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту сиденья и положение подножки на рычаге машины.\n2. Сядьте на тренажер, прижав грудь к подушке и положив ноги на подножку.\n3. Возьмитесь за ручки хватом сверху, на расстоянии чуть шире плеч.\n4. Держите спину прямо и задействуйте корпус.\n5. Потяните ручки к груди, сведя лопатки вместе.\n6. Сделайте паузу на мгновение в верхней точке движения, затем медленно расслабьтесь и вытяните руки обратно в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1349-BgljGjd.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1349",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга резинки к поясу",
+    "muscle_group": "спина",
+    "equipment": "resistance band",
+    "description": "Тяга резинки к поясу. Цель: upper back. Оборудование: resistance band. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, вытянув ноги, и оберните ленту сопротивления вокруг ступней.\n2. Возьмите концы эспандера руками, ладонями друг к другу.\n3. Держите спину прямо и слегка откиньтесь назад, задействуя корпус.\n4. Потяните ленту сопротивления к груди, сжимая лопатки вместе.\n5. Задержитесь на мгновение в верхней точке, затем медленно ослабьте напряжение и вернитесь в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3144-Nu7jqFE.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3144",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Пуловер с гантелью",
+    "muscle_group": "грудь",
+    "equipment": "гантели",
+    "description": "Пуловер с гантелью. Цель: pectorals. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, положив голову на один конец и поставив ноги на пол.\n2. Возьмите гантель обеими руками и вытяните руки прямо над грудью.\n3. Сохраняя небольшой изгиб в локтях, медленно опускайте гантель за голову, пока не почувствуете растяжение в груди и плечах.\n4. Сделайте паузу на мгновение, затем поднимите гантель обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0375-9XjtHvS.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0375",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Гиперэкстензия",
+    "muscle_group": "спина",
+    "equipment": "свой вес",
+    "description": "Гиперэкстензия. Цель: spine. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте скамью для гиперэкстензии так, чтобы верхняя часть бедер опиралась на подушку, а ступни были зафиксированы.\n2. Скрестите руки на груди или заведите руки за голову.\n3. Опустите верхнюю часть тела к земле, сохраняя спину прямой.\n4. Задержитесь на мгновение в нижней точке, затем снова поднимите верхнюю часть тела вверх, пока она не окажется на одной линии с ногами.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0489-zhMwOwE.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0489",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга к лицу",
+    "muscle_group": "плечи",
+    "equipment": "блок/кроссовер",
+    "description": "Тяга к лицу. Цель: delts. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Прикрепите веревочную ручку к канатной машине с низким шкивом.\n2. Встаньте лицом к тренажеру, поставив ноги на ширине плеч.\n3. Возьмитесь за ручку веревки верхним хватом, ладони обращены друг к другу.\n4. Слегка согните колени и наклонитесь вперед в бедрах, сохраняя спину прямой.\n5. Держите локти слегка согнутыми и тяните веревку к груди, сжимая лопатки вместе.\n6. Сделайте паузу на мгновение в верхней точке движения, затем медленно ослабьте напряжение и вернитесь в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0203-wqNPGCg.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0203",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим штанги стоя",
+    "muscle_group": "плечи",
+    "equipment": "штанга",
+    "description": "Жим штанги стоя. Цель: delts. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, поставив ноги на ширине плеч, и возьмите штангу хватом сверху, чуть шире ширины плеч.\n2. Поднимите штангу на высоту плеч, держа локти немного впереди штанги.\n3. Выжмите штангу над головой, полностью выпрямив руки.\n4. Опустите штангу обратно на высоту плеч и повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1457-Kyd9Rz5.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1457",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим гантелей сидя",
+    "muscle_group": "плечи",
+    "equipment": "гантели",
+    "description": "Жим гантелей сидя. Цель: delts. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на скамью, взяв в каждую руку по гантели, положив их на бедра.\n2. Поднимите гантели на высоту плеч, ладони смотрят вперед.\n3. Выжмите гантели вверх, пока руки полностью не выпрямятся над головой.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите гантели обратно на высоту плеч.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0405-znQUdHY.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0405",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Жим Арнольда",
+    "muscle_group": "плечи",
+    "equipment": "гантели",
+    "description": "Жим Арнольда. Цель: delts. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на скамью с поддержкой спины и держите по гантели в каждой руке на уровне плеч, ладони обращены к телу, локти согнуты.\n2. Выжимайте гантели вверх до тех пор, пока руки полностью не выпрямятся и ладони не повернутся вперед.\n3. Во время подъема вращайте запястья так, чтобы ладони были направлены вперед в верхней точке движения.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите гантели обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2137-Xy4jlWA.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2137",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Разводка гантелей в стороны",
+    "muscle_group": "плечи",
+    "equipment": "гантели",
+    "description": "Разводка гантелей в стороны. Цель: delts. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, возьмите в каждую руку по гантели ладонями к телу.\n2. Держите спину прямо и задействуйте корпус.\n3. Поднимите руки в стороны до тех пор, пока они не станут параллельны полу, сохраняя небольшой изгиб в локтях.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите руки обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0334",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Разводка в наклоне",
+    "muscle_group": "плечи",
+    "equipment": "гантели",
+    "description": "Разводка в наклоне. Цель: delts. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, возьмите в каждую руку по гантели ладонями к телу.\n2. Слегка согните колени и наклонитесь вперед в бедрах, сохраняя спину прямой.\n3. Поднимите руки в стороны, сохраняя небольшой изгиб в локтях, пока они не станут параллельны полу.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите руки обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2292-mu5Guxt.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2292",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы гантелей перед собой",
+    "muscle_group": "плечи",
+    "equipment": "гантели",
+    "description": "Подъёмы гантелей перед собой. Цель: delts. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, держите по гантели в каждой руке ладонями к бедрам.\n2. Держа руки прямыми, выдохните и поднимите гантели перед собой до уровня плеч.\n3. Задержитесь на мгновение в верхней точке, затем вдохните и медленно опустите гантели обратно в исходное положение.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0310-3eGE2JC.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0310",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Обратные разведения в тренажёре",
+    "muscle_group": "плечи",
+    "equipment": "тренажёр",
+    "description": "Обратные разведения в тренажёре. Цель: delts. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту сиденья и расположитесь на тренажере так, чтобы грудь опиралась на подушку, а ступни стояли на полу.\n2. Возьмитесь за рукоятки верхним хватом и держите руки слегка согнутыми.\n3. Выдохните и сведите лопатки вместе, потянув рукоятки назад и наружу, от тела.\n4. Сделайте паузу на мгновение в момент максимального сокращения, затем вдохните и медленно вернитесь в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0602-myfUsKf.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0602",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Тяга к подбородку",
+    "muscle_group": "плечи",
+    "equipment": "штанга",
+    "description": "Тяга к подбородку. Цель: delts. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, возьмите штангу хватом сверху, руки расставлены чуть шире плеч.\n2. Пусть штанга висит перед бедрами, руки полностью выпрямлены.\n3. Удерживая спину прямой и напряженным корпус, выдохните и поднимите штангу прямо вверх к подбородку, ведя локтями.\n4. Задержитесь на мгновение в верхней точке, затем вдохните и медленно опустите штангу обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0120-UDlhcO8.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0120",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Шраги с гантелями",
+    "muscle_group": "спина",
+    "equipment": "гантели",
+    "description": "Шраги с гантелями. Цель: traps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, возьмите в каждую руку по гантели ладонями к телу.\n2. Держите руки прямо и позвольте гантелям висеть по бокам.\n3. Поднимите плечи как можно выше, как будто пытаетесь коснуться плечами ушей.\n4. Удерживайте напряжение в течение секунды, затем медленно опустите плечи обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0406-NJzBsGJ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0406",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сгибания гантелей на бицепс",
+    "muscle_group": "бицепс",
+    "equipment": "гантели",
+    "description": "Сгибания гантелей на бицепс. Цель: biceps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, взяв в каждую руку по гантели, ладони направлены вперед, руки полностью выпрямлены.\n2. Удерживая плечи неподвижно, выдохните и согните гири, одновременно сокращая бицепсы.\n3. Продолжайте поднимать гири до тех пор, пока ваши бицепсы полностью не сократятся и гантели не окажутся на уровне плеч.\n4. Задержитесь в сокращенном положении на короткую паузу, одновременно сжимая бицепсы.\n5. Вдохните и медленно начните опускать гантели обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0294-NbVPDMW.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0294",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сгибания со штангой",
+    "muscle_group": "бицепс",
+    "equipment": "штанга",
+    "description": "Сгибания со штангой. Цель: biceps. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, ноги на ширине плеч, возьмите штангу обратным хватом ладонями вперед.\n2. Держите локти близко к туловищу и выдыхайте, сгибая штангу и одновременно сокращая бицепсы.\n3. Продолжайте поднимать штангу до тех пор, пока ваши бицепсы полностью не сократятся и штанга не окажется на уровне плеч.\n4. Задержитесь в сокращенном положении на короткую паузу, одновременно сжимая бицепсы.\n5. На вдохе начните медленно опускать штангу обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0031-25GPyDY.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0031",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Молотковые сгибания",
+    "muscle_group": "бицепс",
+    "equipment": "гантели",
+    "description": "Молотковые сгибания. Цель: biceps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, возьмите в каждую руку по гантели, ладони обращены к туловищу.\n2. Держите локти близко к туловищу и поворачивайте ладони рук так, чтобы они смотрели вперед.\n3. Это будет ваша исходная позиция.\n4. Теперь, удерживая плечи неподвижно, выдохните и согните гантели, одновременно сокращая бицепсы.\n5. Продолжайте поднимать гири до тех пор, пока ваши бицепсы полностью не сократятся и гантели не окажутся на уровне плеч.\n6. Задержитесь в сокращенном положении на короткую паузу, одновременно сжимая бицепсы.\n7. Затем вдохните и медленно начните опускать гантели обратно в исходное положение.\n8. Повторите рекомендованное количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0313-slDvUAU.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0313",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сгибания на скамье Скотта",
+    "muscle_group": "бицепс",
+    "equipment": "штанга",
+    "description": "Сгибания на скамье Скотта. Цель: biceps. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на скамью для проповедника, положив плечи на подушку и грудь на опору.\n2. Возьмите штангу хватом снизу, на расстоянии чуть шире ширины плеч.\n3. Удерживая плечи неподвижно, выдохните и поднимите штангу к плечам.\n4. Задержитесь на мгновение в верхней точке, напрягая бицепсы.\n5. Вдохните и медленно опустите штангу обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0070-qOgPVf6.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0070",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Сгибания на нижнем блоке",
+    "muscle_group": "бицепс",
+    "equipment": "блок/кроссовер",
+    "description": "Сгибания на нижнем блоке. Цель: biceps. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте лицом к канатному тренажеру, поставив ноги на ширине плеч.\n2. Возьмитесь за блочное крепление снизу ладонями вверх.\n3. Держите локти близко к бокам, а плечи неподвижно.\n4. Выдохните и согните трос к плечам, напрягая бицепсы.\n5. Задержитесь на мгновение в верхней точке движения, напрягая бицепсы.\n6. Вдохните и медленно опустите тросовое крепление обратно в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0868-G08RZcQ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0868",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Разгибания на блоке",
+    "muscle_group": "трицепс",
+    "equipment": "блок/кроссовер",
+    "description": "Разгибания на блоке. Цель: triceps. Оборудование: cable. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Прикрепите прямую штангу к канатной машине с высоким шкивом.\n2. Встаньте лицом к тренажеру, ноги на ширине плеч и слегка согните колени.\n3. Возьмите штангу хватом сверху, руки на ширине плеч.\n4. Держите локти близко к бокам, а плечи неподвижно.\n5. Выдохните и опустите штангу вниз, пока локти полностью не выпрямятся.\n6. Сделайте паузу на мгновение, затем вдохните и медленно верните штангу в исходное положение.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0201",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Разгибания гантели из-за головы",
     "muscle_group": "трицепс",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «трицепс».",
-    "technique": "Плечи стабильны, разгибание в локте без разведения локтей в стороны.",
-    "common_mistakes": "Разведение локтей; работа плечами; рывок.",
+    "equipment": "гантели",
+    "description": "Разгибания гантели из-за головы. Цель: triceps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на скамью, выпрямив спину и поставив ноги на землю.\n2. Возьмите гантель обеими руками и вытяните руки прямо над головой.\n3. Согните руки в локтях и опустите гантель за голову, держа плечи близко к ушам.\n4. Сделайте паузу на мгновение, затем выпрямите руки и вернитесь в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/2188-kont8Ut.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "трицепс"
+      "gymvisual",
+      "ds:2188",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Французский жим гантели",
+    "muscle_group": "трицепс",
+    "equipment": "гантели",
+    "description": "Французский жим гантели. Цель: triceps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на скамью, взяв в каждую руку по гантели, ладони обращены друг к другу.\n2. Вытяните руки прямо вверх над грудью, держа локти близко к телу.\n3. Опустите гантели ко лбу, сгибая локти.\n4. Сделайте паузу на мгновение, затем вытяните руки обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0351",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Планка",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=ASdvN_XEl_c",
-    "animation_url": null,
+    "equipment": "с отягощением",
+    "description": "Планка. Цель: abs. Оборудование: weighted. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Для начала лягте на пол лицом вниз.\n2. Положите предплечья на землю так, чтобы локти находились прямо под плечами.\n3. Вытяните ноги прямо позади себя, положив пальцы ног на землю.\n4. Напрягите корпус и поднимите тело от земли, балансируя на предплечьях и пальцах ног.\n5. Держите тело на прямой линии от головы до пяток.\n6. Удерживайте это положение желаемое время.\n7. Опустите тело обратно в исходное положение.\n8. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2135-VBAWRPG.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
-    "media_source": "youtube",
+    "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:2135",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Боковая планка",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "equipment": "свой вес",
+    "description": "Боковая планка. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что лягте на бок, вытянув ноги и положив их друг на друга.\n2. Положите предплечье на землю прямо под плечом, согнув локоть под углом 90 градусов.\n3. Напрягите корпус и поднимите бедра от земли, создавая прямую линию от головы до ступней.\n4. Удерживайте это положение желаемое время.\n5. Опустите бедра обратно на землю и повторите то же самое с другой стороны.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/3544-5VXmnV5.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:3544",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Планка с касанием плеч",
+    "muscle_group": "кор",
+    "equipment": "свой вес",
+    "description": "Планка с касанием плеч. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните в положении стоя на коленях, положив руки на землю на ширине плеч.\n2. Вытяните ноги позади себя, опираясь на носки, и поднимите тело в положение планки.\n3. Сохраняя корпус напряженным, а бедра устойчивыми, поднимите одну руку от земли и коснитесь противоположного плеча.\n4. Верните руку на землю и повторите то же самое с другой рукой.\n5. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3239-h1ezqSu.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3239",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Скручивания",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "equipment": "свой вес",
+    "description": "Скручивания. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину, согните колени и поставьте ступни на землю.\n2. Положите руки за голову локтями наружу.\n3. Напрягите пресс и поднимите плечи от земли, наклонившись вперед к коленям.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите плечи обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0274-TFqbd8t.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:0274",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Велосипед",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "equipment": "свой вес",
+    "description": "Велосипед. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину, положив руки за голову.\n2. Поднимите ноги от земли и согните колени под углом 90 градусов.\n3. Поднесите правый локоть к левому колену, одновременно выпрямляя правую ногу.\n4. Вернитесь в исходное положение и повторите движение в противоположную сторону, приближая левый локоть к правому колену и выпрямляя левую ногу.\n5. Продолжайте чередовать стороны, вращая педали, необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0003-1ZFqTDN.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кор"
-    ]
-  },
-  {
-    "name_ru": "Подъёмы ног лёжа",
-    "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "кор"
-    ]
-  },
-  {
-    "name_ru": "Мёртвый жук",
-    "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Лежа на спине поочерёдно выпрямляете руку и противоположную ногу, сохраняя поясницу прижатой — стабилизация кора.",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=4XLEnwUr1d8",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "кор"
-    ]
-  },
-  {
-    "name_ru": "Птица-собака",
-    "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "На четвереньках вытягиваете противоположные руку и ногу, удерживая таз и корпус стабильными — кор и баланс.",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=wiFNA3sqjCA",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:0003",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Русские скручивания",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кор».",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "equipment": "свой вес",
+    "description": "Русские скручивания. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, согните колени и поставьте ступни на пол.\n2. Слегка откиньтесь назад, сохраняя спину прямой и напряженный корпус.\n3. При желании держите руки вместе перед грудью или держите гирю.\n4. Поднимите ноги от земли, балансируя на седалищных костях.\n5. Поверните туловище вправо, перемещая руки или вес тела к правой стороне тела.\n6. Сделайте паузу на мгновение, затем поверните туловище влево, перемещая руки или вес тела к левой стороне тела.\n7. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0687-XVDdcoj.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:0687",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
-    "name_ru": "Альпинисты",
+    "name_ru": "Подъёмы ног лёжа",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "В упоре лёжа поочерёдно подтягиваете колени к груди в быстром темпе — кор и кардио.",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
+    "equipment": "свой вес",
+    "description": "Подъёмы ног лёжа. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на плоскую скамью, прижавшись к ней спиной.\n2. Положите руки под ягодицы для поддержки.\n3. Держите ноги прямо и вместе и поднимите их к потолку.\n4. Задержитесь на мгновение в верхней точке, затем медленно опустите ноги обратно в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=nmwgirgXLYM",
-    "animation_url": null,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0620-WhuFnR7.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
-    "media_source": "youtube",
+    "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:0620",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Мёртвый жук",
+    "muscle_group": "кор",
+    "equipment": "свой вес",
+    "description": "Мёртвый жук. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину, вытянув руки к потолку.\n2. Согните колени и оторвите ноги от земли, создавая угол в 90 градусов в бедрах и коленях.\n3. Напрягите корпус и поясницу, чтобы прижать поясницу к земле.\n4. Медленно опустите правую руку и левую ногу к земле, сохраняя их прямыми и зависая над полом.\n5. Сделайте паузу на мгновение, затем вернитесь в исходное положение.\n6. Повторите движение левой рукой и правой ногой.\n7. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0276-iny3m5y.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0276",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Птица-собака",
+    "muscle_group": "кор",
+    "equipment": "свой вес",
+    "description": "Птица-собака. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с позиции высокой планки, положив руки прямо под плечи, а тело образуя прямую линию от головы до пят.\n2. Задействуйте корпус и ягодицы, чтобы сохранить устойчивое положение.\n3. Поверните туловище вправо, подняв правую руку и вытянув ее к потолку.\n4. Во время поворотов сохраняйте устойчивость бедер и ног.\n5. Задержитесь на мгновение, затем вернитесь в исходное положение.\n6. Повторите поворот с левой стороны.\n7. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0464-CosupLu.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0464",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Удержание «лодочки»",
     "muscle_group": "кор",
-    "equipment": "bodyweight",
-    "description": "Лёжа на спине удерживаете корпус в форме «банана»/лодочки — изометрия пресса и глубокого кора.",
-    "technique": "Дышите ровно, не проваливайте поясницу, держите рёбра нейтрально.",
-    "common_mistakes": "Прогиб поясницы; задержка дыхания; шея в напряжении.",
-    "difficulty": 3,
+    "equipment": "резинка",
+    "description": "Удержание «лодочки». Цель: abs. Оборудование: band. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину, выпрямите ноги и вытяните руки над головой, удерживая ленту.\n2. Включив пресс, одновременно поднимите ноги и верхнюю часть тела от земли, потянув руки к пальцам ног.\n3. Задержитесь на мгновение в верхней точке, затем медленно опустите ноги и верхнюю часть тела обратно в исходное положение.\n4. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1014-H6ETwO9.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кор"
+      "gymvisual",
+      "ds:1014",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Альпинисты",
+    "muscle_group": "кардио",
+    "equipment": "свой вес",
+    "description": "Альпинисты. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с позиции высокой планки, положив руки прямо под плечи, а тело образуя прямую линию.\n2. Напрягите корпус и поднесите правое колено к груди, затем быстро переключитесь и подтяните левое колено к груди.\n3. Продолжайте чередовать ноги в беговом движении, держа бедра низко и напрягая корпус.\n4. Поддерживайте устойчивый темп и дышите ровно на протяжении всего упражнения.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0630-RJgzwny.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0630",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Бёрпи",
     "muscle_group": "кардио",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "equipment": "свой вес",
+    "description": "Бёрпи. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с положения стоя, поставив ноги на ширине плеч.\n2. Опустите тело в присед, согнув колени и положив руки на пол перед собой.\n3. Верните ноги в положение для отжимания.\n4. Выполните отжимание, удерживая тело прямой.\n5. Верните ноги в положение приседа.\n6. Резко подпрыгните вверх, вытянув руки над головой.\n7. Мягко приземлитесь и сразу же опуститесь в присед, чтобы начать следующее повторение.",
+    "common_mistakes": null,
     "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=TU8QYVW0gDU",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Прыжки «звездой»",
-    "muscle_group": "кардио",
-    "equipment": "bodyweight",
-    "description": "Jumping jacks: прыжки с разведением ног и рук — лёгкое кардио и разминка.",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=iSSAk4XCsRA",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Высокие колени",
-    "muscle_group": "кардио",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1160-dK9394r.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Прыжки на скакалке",
-    "muscle_group": "кардио",
-    "equipment": "none",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Гребля в тренажёре",
-    "muscle_group": "кардио",
-    "equipment": "machine",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Велотренажёр",
-    "muscle_group": "кардио",
-    "equipment": "machine",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "кардио"
-    ]
-  },
-  {
-    "name_ru": "Эллипс",
-    "muscle_group": "кардио",
-    "equipment": "machine",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gym",
-      "кардио"
+      "gymvisual",
+      "ds:1160",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Бег на месте",
     "muscle_group": "кардио",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "equipment": "свой вес",
+    "description": "Бег на месте. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте прямо, ноги на ширине плеч.\n2. Задействуйте корпус и держите верхнюю часть тела расслабленной.\n3. Начните бег на месте, подтягивая колени к груди и мягко приземляясь на подушечки стоп.\n4. Поддерживайте устойчивый темп и продолжайте бег трусцой желаемую продолжительность или расстояние.\n5. Не забывайте глубоко дышать и сохранять правильную осанку на протяжении всего упражнения.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0685-oLrKqDH.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кардио"
+      "gymvisual",
+      "ds:0685",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Высокие колени",
+    "muscle_group": "кардио",
+    "equipment": "свой вес",
+    "description": "Высокие колени. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте лицом к стене, поставив ноги на ширине плеч.\n2. Положите руки на стену для поддержки.\n3. Напрягите корпус и поднимите правое колено к груди, удерживая левую ногу на земле.\n4. Быстро поменяйте ноги, поднеся левое колено к груди и опустив правую ногу обратно вниз.\n5. Продолжайте чередовать ноги бегущим движением, поднимая колени как можно выше.\n6. Поддерживайте быстрый темп и сохраняйте устойчивость верхней части тела на протяжении всего упражнения.\n7. Повторяйте желаемую продолжительность или количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3636-ealLwvX.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3636",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Прыжки на скакалке",
+    "muscle_group": "кардио",
+    "equipment": "канат",
+    "description": "Прыжки на скакалке. Цель: cardiovascular system. Оборудование: rope. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Возьмитесь руками за ручки скакалки ладонями внутрь.\n2. Встаньте, ноги на ширине плеч и слегка согнуты в коленях.\n3. Перекиньте веревку над головой и перепрыгните через нее, когда она приблизится к вашим ногам.\n4. Мягко приземлитесь на подушечки ног и повторите прыжок, когда веревка снова закрутится.\n5. Продолжайте прыгать желаемую продолжительность или количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2612-e1e76I2.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2612",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Прыжки «звездой»",
+    "muscle_group": "кардио",
+    "equipment": "свой вес",
+    "description": "Прыжки «звездой». Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, руки по бокам.\n2. Слегка согните колени и резко подпрыгните вверх.\n3. Во время прыжка раздвиньте ноги и вытяните руки в стороны, образуя своим телом звездообразную форму.\n4. Мягко приземлитесь на подушечки стоп, слегка согнув колени.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3223-HtfCpfi.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3223",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Скейтер-прыжки",
     "muscle_group": "кардио",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «кардио».",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "equipment": "свой вес",
+    "description": "Скейтер-прыжки. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч.\n2. Слегка согните колени и прыгните вправо, приземлившись на правую ногу.\n3. При приземлении заведите левую ногу за правую и коснитесь земли пальцами левой ноги.\n4. Сразу же прыгните влево, приземлившись на левую ногу.\n5. При приземлении заведите правую ногу за левую и коснитесь земли пальцами правой ноги.\n6. Продолжайте чередовать стороны, подпрыгивая и постукивая по земле каждой ногой.\n7. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/3361-zfNHMN9.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "кардио"
+      "gymvisual",
+      "ds:3361",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Эллипс",
+    "muscle_group": "кардио",
+    "equipment": "эллипс",
+    "description": "Эллипс. Цель: cardiovascular system. Оборудование: elliptical machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте уровень сопротивления и наклон эллиптического тренажера до желаемых настроек.\n2. Встаньте на педали машины и слегка возьмитесь за ручки.\n3. Начните с отталкивания ногами и подтягивания ручек к телу.\n4. Продолжайте это движение, чередуя толкание и вытягивание, чтобы имитировать ходьбу или бег.\n5. Поддерживайте устойчивый темп и задействуйте корпус на протяжении всего упражнения.\n6. Продолжайте кардио-тренировку в течение желаемой продолжительности.\n7. Постепенно уменьшайте интенсивность и скорость тренажера, прежде чем сойти с него.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2141-rjtuP6X.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2141",
+      "© Gym visual",
+      "curated",
+      "load:cardio_machine"
+    ]
+  },
+  {
+    "name_ru": "Велотренажёр",
+    "muscle_group": "кардио",
+    "equipment": "тренажёр",
+    "description": "Велотренажёр. Цель: cardiovascular system. Оборудование: leverage machine. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Отрегулируйте высоту и положение сиденья на велотренажере, чтобы обеспечить правильное выравнивание.\n2. Поставьте ноги на педали и закрепите их ремнями, если таковые имеются.\n3. Начните крутить педали в удобном темпе, держа спину прямо и напрягая корпус.\n4. Поддерживайте устойчивый ритм и при желании увеличивайте уровень сопротивления.\n5. Продолжайте крутить педали в течение желаемой продолжительности кардио-тренировки.\n6. Охладитесь, постепенно снижая темп и уровень сопротивления.\n7. Растягивайте мышцы ног после тренировки, чтобы предотвратить напряжение и ускорить восстановление.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0798-a8VDgLw.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0798",
+      "© Gym visual",
+      "curated",
+      "load:cardio_machine"
     ]
   },
   {
     "name_ru": "Махи гирей",
     "muscle_group": "кардио",
-    "equipment": "kettlebell",
-    "description": "Маховое движение гирей от бёдер — задняя цепь, мощность и кардио-нагрузка.",
-    "technique": "Держите ровный ритм, при усталости снижайте интенсивность, не жертвуйте техникой.",
-    "common_mistakes": "Слишком высокий темп с потерей техники; задержка дыхания.",
+    "equipment": "гиря",
+    "description": "Махи гирей. Цель: glutes. Оборудование: kettlebell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, носки слегка направлены наружу.\n2. Держите гирю обеими руками перед телом, руки вытянуты.\n3. Слегка согните колени и наклонитесь в бедрах, отводя ягодицы назад.\n4. Поверните гирю назад между ног, держа руки прямыми и сохраняя ровную спину.\n5. Поднимите бедра вперед и поднимите гирю на высоту плеч, используя инерцию, создаваемую бедрами.\n6. Позвольте гире опуститься между ног и повторите движение желаемое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 3,
-    "video_url": "https://www.youtube.com/watch?v=YSxHifyI6s8",
-    "animation_url": null,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0549-UHJlbu3.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
-    "media_source": "youtube",
+    "media_source": "none",
     "tags": [
-      "gym",
-      "кардио"
+      "gymvisual",
+      "ds:0549",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Фермерская прогулка",
+    "muscle_group": "ноги",
+    "equipment": "гантели",
+    "description": "Фермерская прогулка. Цель: quads. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, возьмите в каждую руку по гантели, ладони повернуты в стороны.\n2. Держите спину прямо, а плечи отведите назад.\n3. Делайте небольшие контролируемые шаги вперед, сохраняя вертикальное положение.\n4. Продолжайте идти желаемое расстояние или время.\n5. В завершение остановитесь и осторожно опустите гантели в стороны.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2133-qPEzJjA.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2133",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Медвежья походка",
+    "muscle_group": "кардио",
+    "equipment": "свой вес",
+    "description": "Медвежья походка. Цель: cardiovascular system. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте на четвереньки, положив руки прямо под плечи и колени прямо под бедрами.\n2. Слегка поднимите колени от земли, сохраняя спину ровной и напряженным корпус.\n3. Одновременно переместите вперед правую руку и левую ногу, а затем левую руку и правую ногу.\n4. Продолжайте ползти вперед, чередуя движения рук и ног.\n5. Поддерживайте устойчивый темп и держите корпус напряженным на протяжении всего упражнения.\n6. Продолжайте движение желаемое расстояние или время.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3360-0Yz8WdV.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3360",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Присед + жим гантелей",
+    "muscle_group": "плечи",
+    "equipment": "гиря",
+    "description": "Присед + жим гантелей. Цель: delts. Оборудование: kettlebell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте, поставив ноги на ширине плеч, держа гирю перед грудью обеими руками, ладони обращены друг к другу.\n2. Опуститесь в присед, согнув колени и отведя бедра назад, сохраняя грудь поднятой, а спину прямой.\n3. Достигнув нижней точки приседа, резко поднимите пятки, чтобы встать, одновременно нажимая гирю над головой.\n4. Зафиксируйте руки в верхней точке движения, полностью разгибая локти.\n5. Опустите гирю обратно в исходное положение, изменив движение, согнув локти и опустив вес обратно на грудь.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0550-yWxMvB5.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0550",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Присед с жимом над головой",
+    "muscle_group": "плечи",
+    "equipment": "штанга",
+    "description": "Присед с жимом над головой. Цель: delts. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте, поставив ноги на ширине плеч, удерживая штангу на уровне плеч хватом сверху.\n2. Опуститесь в присед, согнув колени и отведя бедра назад.\n3. Достигнув нижней точки приседа, резко поднимите пятки, чтобы встать, одновременно выжимая штангу над головой.\n4. Опустите штангу обратно на высоту плеч, возвращаясь в положение приседа.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3305",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Комплекс присед + жим",
+    "muscle_group": "плечи",
+    "equipment": "штанга",
+    "description": "Комплекс присед + жим. Цель: delts. Оборудование: barbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте, поставив ноги на ширине плеч, удерживая штангу на уровне плеч хватом сверху.\n2. Опуститесь в присед, согнув колени и отведя бедра назад.\n3. Достигнув нижней точки приседа, резко поднимите пятки, чтобы встать, одновременно выжимая штангу над головой.\n4. Опустите штангу обратно на высоту плеч, возвращаясь в положение приседа.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3305",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Выпад + сгибание на бицепс",
+    "muscle_group": "бицепс",
+    "equipment": "гантели",
+    "description": "Выпад + сгибание на бицепс. Цель: biceps. Оборудование: dumbbell. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, поставив ноги на ширине плеч, держа в каждой руке по гантели ладонями вперед.\n2. Сделайте шаг вперед правой ногой, опуская тело в положение выпада. Правое колено должно быть согнуто под углом 90 градусов, а левое колено должно парить над землей.\n3. Делая выпад вперед, одновременно подтягивайте гантели к плечам, держа локти близко к телу.\n4. Задержитесь на мгновение в нижней части выпада, затем оттолкнитесь правой пяткой, чтобы вернуться в исходное положение, опуская гантели обратно в стороны.\n5. Повторите выпад и сгибание бицепса на противоположной стороне, шагнув вперед левой ногой.\n6. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1658-Mz6lLcW.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1658",
+      "© Gym visual",
+      "curated"
+    ]
+  },
+  {
+    "name_ru": "Обратные выпады с поворотом",
+    "muscle_group": "кор",
+    "equipment": "свой вес",
+    "description": "Обратные выпады с поворотом. Цель: abs. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с того, что встаньте, поставив ноги на ширине плеч.\n2. Сделайте шаг вперед правой ногой, опуская тело в положение выпада.\n3. Делая выпад, поверните туловище вправо, поднеся левый локоть к правому колену.\n4. Сделайте паузу на мгновение, затем вернитесь в исходное положение.\n5. Повторите то же самое с другой стороны, шагнув вперед левой ногой и повернув туловище влево.\n6. Продолжайте чередовать стороны желаемое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1688-K9VL0Jq.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1688",
+      "© Gym visual",
+      "curated"
     ]
   },
   {
     "name_ru": "Кошка-корова",
     "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": "https://www.youtube.com/watch?v=kqnua4rHVVA",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Раскрытие грудного отдела у стены",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "equipment": "свой вес",
+    "description": "Кошка-корова. Цель: spine. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, вытянув ноги перед собой.\n2. Положите руки на землю позади себя, пальцы направлены к телу.\n3. Напрягите корпус и медленно откиньтесь назад, сохраняя спину прямой.\n4. Продолжайте откидываться назад, пока не почувствуете растяжение в позвоночнике.\n5. Удерживайте растяжку несколько секунд, затем медленно вернитесь в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1363-JbC2iaV.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Растяжка сгибателей бедра",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Поза голубя",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Вращения таза",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "мобильность"
+      "gymvisual",
+      "ds:1363",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Мобилизация голеностопа",
     "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "equipment": "свой вес",
+    "description": "Мобилизация голеностопа. Цель: calves. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, вытянув ноги перед собой.\n2. Поднимите одну ногу с земли и сделайте круговые движения лодыжкой.\n3. Выполните нужное количество кругов в одну сторону, затем переключитесь на другую сторону.\n4. Повторите с другой ногой.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1368-uL9CsKm.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Растяжка грушевидной",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Мировая растяжка",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Динамическая мобильность: выпад, раскрытие грудного отдела и задней поверхности бедра.",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=oNzynUF41kA",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "home",
-      "мобильность"
-    ]
-  },
-  {
-    "name_ru": "Растяжка грудных у дверного проёма",
-    "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
-    "difficulty": 1,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "мобильность"
+      "gymvisual",
+      "ds:1368",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Мобилизация плеч с резинкой",
     "muscle_group": "мобильность",
-    "equipment": "bands",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "equipment": "резинка",
+    "description": "Мобилизация плеч с резинкой. Цель: delts. Оборудование: band. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, и поместите ленту под ноги.\n2. Держите ручки лент ладонями друг к другу, а руки вытянуты перед собой.\n3. Слегка согните колени и наклонитесь вперед в бедрах, сохраняя спину прямой.\n4. Потяните ленту к груди, сжимая лопатки вместе.\n5. Задержитесь на мгновение в верхней точке, затем медленно ослабьте напряжение и вернитесь в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1022-tc5dYrf.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "мобильность"
+      "gymvisual",
+      "ds:1022",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Поза голубя",
+    "muscle_group": "мобильность",
+    "equipment": "свой вес",
+    "description": "Поза голубя. Цель: glutes. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, вытянув ноги перед собой.\n2. Согните правое колено и поставьте правую стопу снаружи левого колена.\n3. Положите левый локоть на внешнюю сторону правого колена и осторожно поверните туловище вправо.\n4. Удерживайте растяжку 20–30 секунд, затем поменяйте сторону и повторите.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2567",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Растяжка грушевидной",
+    "muscle_group": "мобильность",
+    "equipment": "свой вес",
+    "description": "Растяжка грушевидной. Цель: glutes. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на пол, вытянув ноги перед собой.\n2. Согните правое колено и поставьте правую стопу снаружи левого колена.\n3. Положите левый локоть на внешнюю сторону правого колена и осторожно поверните туловище вправо.\n4. Удерживайте растяжку 20–30 секунд, затем поменяйте сторону и повторите.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2567",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Растяжка сгибателей бедра",
+    "muscle_group": "мобильность",
+    "equipment": "канат",
+    "description": "Растяжка сгибателей бедра. Цель: quads. Оборудование: rope. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, ноги на ширине плеч.\n2. Держитесь за устойчивый объект для поддержки.\n3. Согните правое колено и поднесите правую ногу к ягодицам, захватив веревку правой рукой.\n4. Медленно подтяните правую ногу к ягодицам, чувствуя растяжение правого квадрицепса.\n5. Удерживайте растяжку 20–30 секунд.\n6. Освободите растяжку и повторите с левой стороны.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1564-tFGKm99.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1564",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Раскрытие грудного отдела у стены",
+    "muscle_group": "мобильность",
+    "equipment": "свой вес",
+    "description": "Раскрытие грудного отдела у стены. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, ноги на ширине плеч.\n2. Вытяните руки прямо в стороны, параллельно земле.\n3. Медленно вытяните руки вперед, скрестив их перед телом.\n4. Почувствуйте растяжение мышц груди.\n5. Удерживайте растяжку 10–30 секунд.\n6. Вернитесь в исходное положение и повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1167",
+      "© Gym visual",
+      "curated",
+      "load:timed"
+    ]
+  },
+  {
+    "name_ru": "Растяжка грудных у дверного проёма",
+    "muscle_group": "мобильность",
+    "equipment": "свой вес",
+    "description": "Растяжка грудных у дверного проёма. Цель: pectorals. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте прямо, ноги на ширине плеч.\n2. Вытяните руки прямо в стороны, параллельно земле.\n3. Медленно вытяните руки вперед, скрестив их перед телом.\n4. Почувствуйте растяжение мышц груди.\n5. Удерживайте растяжку 10–30 секунд.\n6. Вернитесь в исходное положение и повторите необходимое количество повторений.",
+    "common_mistakes": null,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1167",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
     "name_ru": "Наклоны к носкам",
     "muscle_group": "мобильность",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «мобильность».",
-    "technique": "Двигайтесь в комфортном диапазоне, без резкой боли, дыхание спокойное.",
-    "common_mistakes": "Резкие рывки; работа через острую боль.",
+    "equipment": "свой вес",
+    "description": "Наклоны к носкам. Цель: glutes. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Встаньте, ноги на ширине плеч, руки по бокам.\n2. Наклонитесь вперед в талии, сохраняя спину прямой и слегка согнутыми в коленях.\n3. Потянитесь руками к пальцам ног, сохраняя ноги как можно более прямыми.\n4. Задержитесь на мгновение в нижней точке, затем медленно вернитесь в исходное положение.\n5. Повторите необходимое количество повторений.",
+    "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/3212-BbfB8Gb.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "мобильность"
+      "gymvisual",
+      "ds:3212",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   },
   {
-    "name_ru": "Присед с жимом над головой",
-    "muscle_group": "full_body",
-    "equipment": "dumbbells",
-    "description": "Трастеры: из приседа сразу выжимаете гантели вверх — ноги, плечи и кор.",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 3,
+    "name_ru": "Мировая растяжка",
+    "muscle_group": "мобильность",
+    "equipment": "свой вес",
+    "description": "Мировая растяжка. Цель: hamstrings. Оборудование: body weight. © Gym visual — https://gymvisual.com/",
+    "technique": "1. Начните с выпада, поставив правую ногу вперед, а левую назад.\n2. Положите руки на землю по обе стороны от правой стопы.\n3. Опустите левое колено на землю и вытяните правую ногу, удерживая правую ступню на земле.\n4. Поверните туловище вправо, подняв правую руку к потолку.\n5. Удерживайте это положение несколько секунд, затем вернитесь в исходное положение.\n6. Поменяйте сторону и повторите растяжку, поставив левую ногу вперед.",
+    "common_mistakes": null,
+    "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/1604-DFGXwZr.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Комплекс присед + жим",
-    "muscle_group": "full_body",
-    "equipment": "dumbbells",
-    "description": "Приседание с гантелями/гирей и сразу жим над головой — full body комплекс.",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Фермерская прогулка",
-    "muscle_group": "full_body",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": "https://www.youtube.com/watch?v=Fkzk_RqlYig",
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "youtube",
-    "tags": [
-      "gym",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Присед + жим гантелей",
-    "muscle_group": "full_body",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Выпад + сгибание на бицепс",
-    "muscle_group": "full_body",
-    "equipment": "dumbbells",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Планка с касанием плеч",
-    "muscle_group": "full_body",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Обратные выпады с поворотом",
-    "muscle_group": "full_body",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
-    ]
-  },
-  {
-    "name_ru": "Медвежья походка",
-    "muscle_group": "full_body",
-    "equipment": "bodyweight",
-    "description": "Упражнение на группу «full_body».",
-    "technique": "Держите корпус собранным, выбирайте вес, который позволяет чистую технику во всех фазах.",
-    "common_mistakes": "Потеря нейтрали корпуса; слишком тяжёлый вес; торопливые повторы.",
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "home",
-      "full_body"
+      "gymvisual",
+      "ds:1604",
+      "© Gym visual",
+      "curated",
+      "load:timed"
     ]
   }
 ]

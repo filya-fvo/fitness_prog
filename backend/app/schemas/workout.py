@@ -33,6 +33,7 @@ class WorkoutCreate(BaseModel):
     scheduled_date: date
     program_id: uuid.UUID | None = None
     day_index: int | None = Field(default=None, ge=1)
+    week_phase: str | None = Field(default=None, pattern=r"^(light|medium|heavy)$")
     title: str | None = None
     workout_type: str | None = None
     exercise_ids: list[uuid.UUID] = Field(

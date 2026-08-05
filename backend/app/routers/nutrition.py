@@ -11,11 +11,13 @@ from app.core.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.schemas.nutrition import (
+    BarcodeLookupResponse,
     DailyNutritionResponse,
     EnergyTargetsResponse,
     NutritionDayTotal,
     NutritionLogCreate,
     NutritionLogResponse,
+    NutritionProductCreate,
     NutritionProductListResponse,
     NutritionProductResponse,
     NutritionRangeResponse,
@@ -60,6 +62,53 @@ async def search_products(
     return NutritionProductListResponse(
         items=[_product_resp(p) for p in items],
         total=total,
+    )
+
+
+
+
+@router.post("/products", response_model=NutritionProductResponse, status_code=201)
+async def create_product(
+    body: NutritionProductCreate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> NutritionProductResponse:
+    """Add a custom product to the shared catalog (visible to all users)."""
+    _ = user
+    row = await nutrition_service.create_product(
+        session,
+        name_ru=body.name_ru,
+        calories=body.calories,
+        proteins=body.proteins,
+        fats=body.fats,
+        carbs=body.carbs,
+        category=body.category,
+        barcode=body.barcode,
+    )
+    return _product_resp(row)
+
+
+@router.get("/barcode/{code}", response_model=BarcodeLookupResponse)
+async def lookup_barcode(
+    code: str,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BarcodeLookupResponse:
+    """Resolve EAN/UPC barcode via local catalog, then Open Food Facts (cached)."""
+    _ = user
+    product, meta = await nutrition_service.lookup_barcode(session, code, fetch_remote=True)
+    return BarcodeLookupResponse(
+        found=bool(meta.get("found")),
+        barcode=str(meta.get("barcode") or code),
+        source=meta.get("source"),
+        product=_product_resp(product) if product is not None else None,
+        serving_grams=(
+            float(meta["serving_grams"])
+            if meta.get("serving_grams") is not None
+            else None
+        ),
+        created=bool(meta.get("created")),
+        error=meta.get("error"),
     )
 
 

@@ -1,0 +1,100 @@
+﻿status;name_ru;muscle_group;file;file_exists;animation_url;animation_in_db;video_url;video_in_db;id
+NEED_GIF;Медвежья походка;full_body;bear-crawl.gif;no;+;no;;no;ddaf6871-7ac1-4e74-82f9-32cc542c302c
+NEED_GIF;Мобилизация голеностопа;мобильность;ankle-mobility.gif;no;+;no;;no;7711fd28-cdc8-4048-a1f9-1942ea2ce6a7
+NEED_GIF;Мобилизация плеч с резинкой;мобильность;band-shoulder-mobility.gif;no;+;no;;no;323cb947-f1cf-4de6-8938-3099cd678eca
+NEED_GIF;Молотковые сгибания;бицепс;hammer-curls.gif;no;+;no;https://www.youtube.com/watch?v=zC3nLlEvin4;yes;a9782bf8-6222-47a1-b859-2591ce685113
+NEED_GIF;Наклоны к носкам;мобильность;toe-touch-stretch.gif;no;+;no;;no;d6137bce-2e2a-41e8-bb40-879a1abdcfa8
+NEED_GIF;Обратные выпады с поворотом;full_body;reverse-lunge-with-twist.gif;no;+;no;;no;ce6a617c-32bf-46d4-a0da-fc6ee268536c
+NEED_GIF;Обратные разведения в тренажёре;плечи;reverse-pec-deck.gif;no;+;no;;no;2f9243b2-a664-4551-922f-a19eedfc4684
+NEED_GIF;Отжимания на брусьях;грудь;dips.gif;no;+;no;https://www.youtube.com/watch?v=2z8JmcrW-As;yes;e5c2906d-877a-4a07-935e-98a3d667ed40
+NEED_GIF;Отжимания от пола;грудь;push-ups.gif;no;+;no;https://www.youtube.com/watch?v=IODxDxX7oi4;yes;17202ab5-6ba6-47db-9a0e-37bea80fa3a3
+NEED_GIF;Отжимания с возвышения;грудь;incline-push-ups.gif;no;+;no;;no;2a4f9ad0-c6a7-4f22-8d0c-84adb035de8d
+NEED_GIF;Отжимания с колен;грудь;knee-push-ups.gif;no;+;no;;no;74bc0bc2-3c7b-4de8-b56e-fa308eb388d9
+NEED_GIF;Отжимания узким хватом;трицепс;close-grip-push-ups.gif;no;+;no;;no;0f9a86d6-1dc6-4d04-b72c-2b6cc86d7e0a
+NEED_GIF;Планка;кор;plank.gif;no;+;no;https://www.youtube.com/watch?v=ASdvN_XEl_c;yes;906311c0-d258-4da1-9dfc-a246b1cf4cd7
+NEED_GIF;Планка с касанием плеч;full_body;plank-shoulder-taps.gif;no;+;no;;no;756dc65c-bb12-4e73-8283-28cc5b900da6
+NEED_GIF;Подтягивания;спина;pull-ups.gif;no;+;no;https://www.youtube.com/watch?v=eGo4IYlbE5g;yes;d88807ff-fda2-4e05-a39b-4fe22a3010f5
+NEED_GIF;Подъёмы гантелей перед собой;плечи;front-dumbbell-raise.gif;no;+;no;;no;6adb3dc4-c9e0-467c-90fc-77c38d770cbb
+NEED_GIF;Подъёмы на носки сидя;ноги;seated-calf-raise.gif;no;+;no;;no;ff7ad3ff-1e99-4266-bf73-9e82f660f224
+NEED_GIF;Подъёмы на носки стоя;ноги;standing-calf-raise.gif;no;+;no;;no;25ac7883-aca3-4a1d-9ac6-99bd6cfc49a2
+NEED_GIF;Подъёмы ног лёжа;кор;lying-leg-raises.gif;no;+;no;;no;48e6d1fd-1978-4ac7-96d8-e32e3b977e9e
+NEED_GIF;Поза голубя;мобильность;pigeon-pose.gif;no;+;no;;no;8112cf8a-8f95-4522-842e-dfd1d76ee519
+NEED_GIF;Присед + жим гантелей;full_body;squat-dumbbell-press.gif;no;+;no;;no;c87bd330-9993-40e1-9657-0b35c74d6618
+NEED_GIF;Присед с жимом над головой;full_body;squat-to-press-2.gif;no;+;no;;no;7e2b8b4d-4910-41ac-a4e2-b3f56be38a26
+NEED_GIF;Приседания с гантелью у груди;ноги;goblet-squat.gif;no;+;no;;no;b3cad716-fdd2-4b6e-84fa-cedf8dbc147a
+NEED_GIF;Приседания со своим весом;ноги;bodyweight-squat.gif;no;+;no;https://www.youtube.com/watch?v=aclHkVaku9U;yes;005521fd-a39e-4495-8dae-6ea8cb743112
+NEED_GIF;Приседания со штангой;ноги;barbell-back-squat.gif;no;+;no;;no;3212f5bd-16ea-476d-b2e4-21a37b695dd7
+NEED_GIF;Прыжки на скакалке;кардио;jump-rope.gif;no;+;no;;no;0c8a4b27-3b14-4394-b3f6-80eaa53a9286
+NEED_GIF;Пуловер с гантелью;спина;dumbbell-pullover.gif;no;+;no;;no;581a13f7-5ac6-440c-8bbc-227be94e3e42
+NEED_GIF;Разведение гантелей лёжа;грудь;dumbbell-fly.gif;no;+;no;;no;3b139146-ce30-47ae-99bd-5e183a3c8197
+NEED_GIF;Разводка в наклоне;плечи;bent-over-lateral-raise.gif;no;+;no;;no;b3c80664-d90f-4a0b-a645-999a14d7e98e
+NEED_GIF;Разводка гантелей в стороны;плечи;lateral-raise.gif;no;+;no;https://www.youtube.com/watch?v=3VcKaXpzqRo;yes;c13c0041-8fc2-4f82-a416-18dcee15c04f
+NEED_GIF;Разгибания гантели из-за головы;трицепс;overhead-triceps-extension.gif;no;+;no;;no;fea22eb6-fe97-4efb-9c5e-ffb5db39f0fd
+NEED_GIF;Разгибания на блоке;трицепс;cable-triceps-pushdown.gif;no;+;no;https://www.youtube.com/watch?v=2-LAMcpzODU;yes;0d24016d-47ce-4c93-80bc-bf4a408024c0
+NEED_GIF;Разгибания ног;ноги;leg-extension.gif;no;+;no;;no;c06c2a29-ade7-4b4a-bca8-69f5abb7da67
+NEED_GIF;Раскрытие грудного отдела у стены;мобильность;wall-chest-opener.gif;no;+;no;;no;032bcfdc-f05d-43a9-931a-878456b0336c
+NEED_GIF;Растяжка грудных у дверного проёма;мобильность;doorway-chest-stretch.gif;no;+;no;;no;3743ba2f-33fe-4bb0-b059-30f2451528ae
+NEED_GIF;Растяжка грушевидной;мобильность;piriformis-stretch.gif;no;+;no;;no;b82cf528-7f43-4048-a1ec-343698878c7f
+NEED_GIF;Растяжка сгибателей бедра;мобильность;hip-flexor-stretch.gif;no;+;no;;no;03d7f8a7-20ca-42b2-bb4e-598e832719fa
+NEED_GIF;Румынская тяга;ноги;romanian-deadlift.gif;no;+;no;https://www.youtube.com/watch?v=jEy_czb3RKA;yes;b2f7ac51-9b7e-42e0-a8aa-41bfc20113d7
+NEED_GIF;Румынская тяга с гантелями;ноги;dumbbell-romanian-deadlift.gif;no;+;no;;no;b80ed9d8-aff9-41dd-8aca-fc8b5f12ed2e
+NEED_GIF;Русские скручивания;кор;russian-twists.gif;no;+;no;;no;a5ad4d50-7c93-462f-81cb-14781708c0cf
+NEED_GIF;Сведение рук в кроссовере;грудь;cable-crossover.gif;no;+;no;;no;b387fc78-495d-4f7e-92a1-aafda8ec3415
+NEED_GIF;Сгибания гантелей на бицепс;бицепс;dumbbell-bicep-curl.gif;no;+;no;https://www.youtube.com/watch?v=ykJmrZ5v0Oo;yes;eb2293fb-e9ad-4518-ac09-334c1109aa0b
+NEED_GIF;Сгибания на нижнем блоке;бицепс;cable-bicep-curl.gif;no;+;no;;no;19079ff5-5b94-4434-9b6b-1a1935de49e6
+NEED_GIF;Сгибания на скамье Скотта;бицепс;preacher-curl.gif;no;+;no;;no;c0058803-3d6e-4fdc-a935-2c2e08d938f8
+NEED_GIF;Сгибания ног лёжа;ноги;lying-leg-curl.gif;no;+;no;;no;392bf165-396f-4824-9989-21f0e4f1b6bf
+NEED_GIF;Сгибания со штангой;бицепс;barbell-bicep-curl.gif;no;+;no;;no;b4d35a89-2f8f-47c5-a6f3-5abe8c31a504
+NEED_GIF;Скейтер-прыжки;кардио;skater-jumps.gif;no;+;no;;no;55eeda41-0502-4477-85e3-13a538a95d52
+NEED_GIF;Скручивания;кор;crunches.gif;no;+;no;;no;483f3197-3077-43c4-90bd-8a6ca20d8962
+NEED_GIF;Становая тяга классическая;ноги;conventional-deadlift.gif;no;+;no;https://www.youtube.com/watch?v=op9kVnSso6Q;yes;9d13dadf-adea-4c31-92ec-d2d850589804
+NEED_GIF;Сумо-приседания;ноги;sumo-squat.gif;no;+;no;;no;a81d460f-ebb6-41b3-9d88-9779f0a0411b
+NEED_GIF;Тяга верхнего блока;спина;lat-pulldown.gif;no;+;no;https://www.youtube.com/watch?v=CAwf7n6Luuc;yes;3ba9a818-2f66-42a6-9631-3f136a110d75
+NEED_GIF;Тяга гантели в наклоне;спина;single-arm-dumbbell-row.gif;no;+;no;https://www.youtube.com/watch?v=pYcpY20QaE8;yes;bec7ac86-5b91-4307-a382-1d352842f188
+NEED_GIF;Тяга горизонтального блока;спина;seated-cable-row.gif;no;+;no;;no;f360d8be-ee56-4b6a-be14-d0b29bcc19c7
+NEED_GIF;Тяга к подбородку;плечи;upright-row.gif;no;+;no;;no;08f8ebc2-9b82-4768-9578-66996d40890c
+NEED_GIF;Тяга резинки к поясу;спина;band-row.gif;no;+;no;;no;beaa18f5-9ba1-4895-8402-038946ebe7fd
+NEED_GIF;Тяга Т-грифа;спина;t-bar-row.gif;no;+;no;;no;30ccfbd2-7bf0-48b6-9b28-d1da256a00f6
+NEED_GIF;Тяга штанги в наклоне;спина;barbell-bent-over-row.gif;no;+;no;;no;c653ebb0-ddd7-49e6-9388-aaacc0305fca
+NEED_GIF;Фермерская прогулка;full_body;farmers-walk.gif;no;+;no;https://www.youtube.com/watch?v=Fkzk_RqlYig;yes;70cdc865-0196-431b-b27a-affef9514adf
+NEED_GIF;Французский жим гантели;трицепс;dumbbell-skull-crusher.gif;no;+;no;https://www.youtube.com/watch?v=nRiJVZDpdL0;yes;0a86ce93-61b0-4ce6-b236-f11d64e34d11
+NEED_GIF;Фронтальные приседания;ноги;front-squat.gif;no;+;no;;no;eff2c96d-47f8-42a9-9091-e00ba737acc8
+NEED_GIF;Шраги с гантелями;спина;dumbbell-shrugs.gif;no;+;no;;no;651cf0ce-ca83-4439-b320-dd8051b3b696
+NEED_GIF;Эллипс;кардио;elliptical.gif;no;+;no;;no;6df7274b-de53-4431-93ff-77a22b610bb1
+NEED_GIF;Ягодичный мост;ноги;glute-bridge.gif;no;+;no;https://www.youtube.com/watch?v=OUgsJ8-Vi0E;yes;d7145f4f-877b-422d-ba4a-ddd31e54af4a
+NEED_GIF;Ягодичный мост со штангой;ноги;barbell-hip-thrust.gif;no;+;no;https://www.youtube.com/watch?v=LM8XHLYJoYs;yes;419c560c-8f44-45e6-9c1d-2373eec2f865
+NEED_VIDEO;Австралийские подтягивания;спина;australian-pull-ups.gif;yes;/exercise-gifs/australian-pull-ups.gif;yes;;no;085acd6f-63b4-4347-b5a4-ef24094dea1a
+NEED_VIDEO;Бег на месте;кардио;running-in-place.gif;yes;/exercise-gifs/running-in-place.gif;yes;;no;6c972c3c-b8b2-4492-8041-ed90f765e283
+NEED_VIDEO;Боковая планка;кор;side-plank.gif;yes;/exercise-gifs/side-plank.gif;yes;;no;5f773c0d-e73c-4689-9c51-be639a584603
+NEED_VIDEO;Боковые выпады;ноги;lateral-lunges.gif;yes;/exercise-gifs/lateral-lunges.gif;yes;;no;b861bc90-6ddd-4946-806f-391907f5c5e0
+NEED_VIDEO;Велосипед;кор;bicycle-crunches.gif;yes;/exercise-gifs/bicycle-crunches.gif;yes;;no;e787eac6-6006-4625-b79a-d5ab88a93684
+NEED_VIDEO;Велотренажёр;кардио;stationary-bike.gif;yes;/exercise-gifs/stationary-bike.gif;yes;;no;4ccc619a-d09a-49ee-bfca-c6f3681db4d8
+NEED_VIDEO;Вращения таза;мобильность;hip-circles.gif;yes;/exercise-gifs/hip-circles.gif;yes;;no;f2dced43-403f-437c-858c-59a960b12326
+NEED_VIDEO;Выпад + сгибание на бицепс;full_body;lunge-bicep-curl.gif;yes;/exercise-gifs/lunge-bicep-curl.gif;yes;;no;8d1edb1d-ac58-4d9f-9d03-deeb21e7a7fd
+NEED_VIDEO;Выпады назад с гантелями;ноги;reverse-lunges-dumbbell.gif;yes;/exercise-gifs/reverse-lunges-dumbbell.gif;yes;;no;f4f66963-9f80-4768-907b-b750aa8d08e8
+NEED_VIDEO;Высокие колени;кардио;high-knees.gif;yes;/exercise-gifs/high-knees.gif;yes;;no;fa6f5e5a-8803-4e90-99a7-ab734678fa81
+NEED_VIDEO;Гребля в тренажёре;кардио;rowing-machine.gif;yes;/exercise-gifs/rowing-machine.gif;yes;;no;164a277e-b54f-4a07-b754-8789b36633dd
+NEED_VIDEO;Жим Арнольда;плечи;arnold-press.gif;yes;/exercise-gifs/arnold-press.gif;yes;;no;82823ad2-03dd-4c48-886b-65d233c69a7c
+NEED_VIDEO;Жим в тренажёре;грудь;chest-press-machine.gif;yes;/exercise-gifs/chest-press-machine.gif;yes;;no;4582a779-48af-4f92-bf7b-51b9a50b8208
+NEED_VIDEO;Жим гантелей лёжа;грудь;dumbbell-bench-press.gif;yes;/exercise-gifs/dumbbell-bench-press.gif;yes;;no;d55bb6ab-b1df-4e10-9623-f14c7625f777
+NEED_VIDEO;Жим гантелей на наклонной;грудь;incline-dumbbell-press.gif;yes;/exercise-gifs/incline-dumbbell-press.gif;yes;;no;0b7282ed-b06d-4087-83c9-75416b065cec
+NEED_VIDEO;Жим лёжа узким хватом;трицепс;close-grip-bench-press.gif;yes;/exercise-gifs/close-grip-bench-press.gif;yes;;no;b683ced2-ed93-4996-9fa5-3b40d31ac4b4
+NEED_VIDEO;Жим штанги стоя;плечи;overhead-press.gif;yes;/exercise-gifs/overhead-press.gif;yes;;no;40409464-2ec0-4bf3-92dc-f949117217e5
+NEED_VIDEO;Зашагивания на тумбу;ноги;box-step-ups.gif;yes;/exercise-gifs/box-step-ups.gif;yes;;no;52e44cf1-04d4-4490-8cf3-0a9f95f1e953
+NEED_VIDEO;Комплекс присед + жим;full_body;squat-to-press.gif;yes;/exercise-gifs/squat-to-press.gif;yes;;no;c7931c33-7c50-47d1-baa0-0bb2f13d8845
+NEED_VIDEO;Удержание «лодочки»;кор;hollow-hold.gif;yes;/exercise-gifs/hollow-hold.gif;yes;;no;46cd5116-a07b-4089-80e2-17e0f54c0981
+OK;Альпинисты;кор;mountain-climbers.gif;yes;/exercise-gifs/mountain-climbers.gif;yes;https://www.youtube.com/watch?v=nmwgirgXLYM;yes;feddbab7-2f5a-483c-a35e-6c948587efd4
+OK;Болгарские выпады;ноги;bulgarian-split-squat.gif;yes;/exercise-gifs/bulgarian-split-squat.gif;yes;https://www.youtube.com/watch?v=2C-uNgKwPLE;yes;a8678119-801e-41b0-b260-d55cec68e35e
+OK;Бёрпи;кардио;burpees.gif;yes;/exercise-gifs/burpees.gif;yes;https://www.youtube.com/watch?v=TU8QYVW0gDU;yes;e8cc3dd1-cb59-49f3-bb5b-1549a33b0145
+OK;Выпады вперёд;ноги;forward-lunges.gif;yes;/exercise-gifs/forward-lunges.gif;yes;https://www.youtube.com/watch?v=QOVaHwm-Q6U;yes;dbdc8be9-c172-427b-b40b-29704a6208c8
+OK;Гиперэкстензия;спина;hyperextension.gif;yes;/exercise-gifs/hyperextension.gif;yes;https://www.youtube.com/watch?v=ph3pddpKzzw;yes;df7d3e19-a449-449a-ae98-c2cbbc936907
+OK;Жим гантелей сидя;плечи;seated-dumbbell-shoulder-press.gif;yes;/exercise-gifs/seated-dumbbell-shoulder-press.gif;yes;https://www.youtube.com/watch?v=qEwKCR5JCog;yes;22103447-ff96-4bf1-9724-b2dfff1a818d
+OK;Жим ногами;ноги;leg-press.gif;yes;/exercise-gifs/leg-press.gif;yes;https://www.youtube.com/watch?v=IZxyjW7MPJQ;yes;f3fea375-14c0-4e07-9e6a-1de72de4e3bf
+OK;Жим штанги лёжа;грудь;bench-press.gif;yes;/exercise-gifs/bench-press.gif;yes;https://www.youtube.com/watch?v=rT7DgCr-3pg;yes;80b84a74-b013-43b0-83f2-38d4629eb3d1
+OK;Кошка-корова;мобильность;cat-cow.gif;yes;/exercise-gifs/cat-cow.gif;yes;https://www.youtube.com/watch?v=kqnua4rHVVA;yes;0d56725b-b225-40f8-8165-e1a91daf8fde
+OK;Махи гирей;кардио;kettlebell-swings.gif;yes;/exercise-gifs/kettlebell-swings.gif;yes;https://www.youtube.com/watch?v=YSxHifyI6s8;yes;bf0072b0-2fc0-421d-9f8b-33b407b862ab
+OK;Мировая растяжка;мобильность;worlds-greatest-stretch.gif;yes;/exercise-gifs/worlds-greatest-stretch.gif;yes;https://www.youtube.com/watch?v=oNzynUF41kA;yes;5116adbc-c916-4f1b-b452-59d4e73f266c
+OK;Мёртвый жук;кор;dead-bug.gif;yes;/exercise-gifs/dead-bug.gif;yes;https://www.youtube.com/watch?v=4XLEnwUr1d8;yes;7aa6e98a-f1b7-4da3-aef7-c9f04824d385
+OK;Прыжки «звездой»;кардио;jumping-jacks.gif;yes;/exercise-gifs/jumping-jacks.gif;yes;https://www.youtube.com/watch?v=iSSAk4XCsRA;yes;ba751ab0-3ed5-40eb-92ad-b4c1ec41ec4f
+OK;Птица-собака;кор;bird-dog.gif;yes;/exercise-gifs/bird-dog.gif;yes;https://www.youtube.com/watch?v=wiFNA3sqjCA;yes;804be998-7034-47ec-b930-d83c36da425f
+OK;Тяга к лицу;спина;face-pull.gif;yes;/exercise-gifs/face-pull.gif;yes;https://www.youtube.com/watch?v=rep-qVOkqgk;yes;11ba6284-70db-4a14-99e2-dff6aa891465

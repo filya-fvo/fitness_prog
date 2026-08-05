@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { Workout } from "@/types/workout";
 import {
   buildExerciseHistory,
+  draftReadyToComplete,
+  draftsWithSuggestions,
   resolveWeekPhase,
   roundWeightKg,
   suggestLoad,
@@ -92,13 +94,67 @@ describe("loadProgression", () => {
     expect(hist.get("bench")?.lastWeight).toBe(92.5);
   });
 
-  it("suggests lower weight on light week and higher on heavy", () => {
+  it("prefills last session weight/reps and notes week phase", () => {
     const history = { exerciseId: "bench", lastWeight: 100, lastReps: 10, lastDate: "2026-07-10" };
     const light = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20)); // week 1 light
     const heavy = resolveWeekPhase("2026-07-06", new Date(2026, 6, 20)); // ~2 weeks → heavy
     const sLight = suggestLoad({ history, phase: light });
     const sHeavy = suggestLoad({ history, phase: heavy });
-    expect(Number(sLight.weight)).toBeLessThan(100);
-    expect(Number(sHeavy.weight)).toBeGreaterThanOrEqual(100);
+    // Phase does not rewrite numbers — only hint text.
+    expect(Number(sLight.weight)).toBe(100);
+    expect(Number(sHeavy.weight)).toBe(100);
+    expect(sLight.reps).toBe("10");
+    expect(sLight.note || "").toMatch(/лёгкая/i);
+    expect(sHeavy.note || "").toMatch(/тяжёл/i);
+  });
+
+  it("prefills draft slots from plan target_sets and history", () => {
+    const phase = resolveWeekPhase("2026-07-01", new Date(2026, 6, 1));
+    const history = new Map([
+      ["bench", { exerciseId: "bench", lastWeight: 80, lastReps: 10, lastDate: "2026-06-20" }],
+    ]);
+    const drafts = draftsWithSuggestions({
+      exercises: [
+        {
+          exercise_id: "bench",
+          order: 1,
+          target_sets: 3,
+          target_reps: "10",
+          rest_sec: 90,
+        },
+        {
+          exercise_id: "row",
+          order: 2,
+          target_sets: 2,
+          target_reps: "12",
+          rest_sec: 60,
+        },
+      ],
+      history,
+      phase,
+    });
+    expect(drafts).toHaveLength(5);
+    expect(drafts.filter((d) => d.exerciseId === "bench")).toHaveLength(3);
+    expect(drafts[0]?.reps).toBeTruthy();
+    expect(drafts[0]?.weight).toBeTruthy();
+    expect(drafts.every((d) => !d.isCompleted)).toBe(true);
+  });
+
+  it("draftReadyToComplete checks load type fields", () => {
+    expect(
+      draftReadyToComplete({ reps: "10", weight: "80", durationSec: undefined }, "weight_reps"),
+    ).toBe(true);
+    expect(
+      draftReadyToComplete({ reps: "10", weight: "", durationSec: undefined }, "weight_reps"),
+    ).toBe(false);
+    expect(
+      draftReadyToComplete({ reps: "12", weight: "", durationSec: undefined }, "reps_only"),
+    ).toBe(true);
+    expect(
+      draftReadyToComplete({ reps: "", weight: "", durationSec: 45 }, "timed"),
+    ).toBe(true);
+    expect(
+      draftReadyToComplete({ reps: "10", weight: "0", durationSec: undefined }, "weight_reps"),
+    ).toBe(true);
   });
 });

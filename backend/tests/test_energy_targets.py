@@ -11,9 +11,37 @@ from app.services.energy_targets import (
 
 
 def test_mifflin_male_known_values() -> None:
-    # 80kg, 180cm, 30y male ≈ 1780
+    # 80kg, 180cm, 30y male = 10*80 + 6.25*180 - 5*30 + 5 = 1780
     bmr = mifflin_st_jeor_bmr(sex="male", weight_kg=80, height_cm=180, age=30)
-    assert 1770 <= bmr <= 1790
+    assert bmr == 1780.0
+
+
+def test_mifflin_female_known_values() -> None:
+    # 65kg, 165cm, 28y female = 10*65 + 6.25*165 - 5*28 - 161 = 1380.25
+    bmr = mifflin_st_jeor_bmr(sex="female", weight_kg=65, height_cm=165, age=28)
+    assert abs(bmr - 1380.25) < 1e-9
+
+
+def test_russian_female_sex_uses_female_bmr_and_floor() -> None:
+    result = compute_energy_targets(
+        {
+            "sex": "женский",
+            "weight_kg": 45,
+            "height_cm": 155,
+            "age": 50,
+        },
+        {
+            "primary_goal": "lose_fat",
+            "activity_level": "sedentary",
+            "calorie_adjustment_pct": -30,
+        },
+    )
+    assert result["complete"] is True
+    # same BMR as english female
+    bmr_en = mifflin_st_jeor_bmr(sex="female", weight_kg=45, height_cm=155, age=50)
+    assert result["bmr"] == round(bmr_en)
+    # floor 1200 for women (not 1500)
+    assert result["calories_target"] == 1200.0
 
 
 def test_age_from_birth_date() -> None:

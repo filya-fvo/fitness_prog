@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""DEPRECATED — semantic local GIF naming is retired.
+
+Use: python scripts/rebuild_catalog_from_dataset.py
+"""
+raise SystemExit("DEPRECATED: use scripts/rebuild_catalog_from_dataset.py")
+
 """Generate exercise GIF filename list + clear bad external meme GIFs."""
 from __future__ import annotations
 

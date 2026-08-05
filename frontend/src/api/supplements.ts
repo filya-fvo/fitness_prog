@@ -2,12 +2,18 @@ import { z } from "zod";
 
 import { apiClient } from "@/api/client";
 
+const scheduleItemSchema = z.object({
+  slot: z.string(),
+  days: z.enum(["every", "workout", "rest"]).or(z.string()).default("every"),
+});
+
 const entrySchema = z.object({
   id: z.string(),
   key: z.string(),
   name_ru: z.string(),
   dose: z.string().default(""),
   times: z.array(z.string()).default([]),
+  schedule: z.array(scheduleItemSchema).default([]),
   enabled: z.boolean().default(true),
   custom: z.boolean().default(false),
   notes: z.string().default(""),

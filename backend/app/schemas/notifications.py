@@ -19,3 +19,19 @@ class ReminderResponse(BaseModel):
     ok: bool
     mode: str  # inline | queued | dry_run
     detail: Optional[str] = None
+
+
+class TimerNotifyRequest(BaseModel):
+    """Immediate bot ping when rest/hold timer ends in Mini App."""
+
+    kind: str = Field(default="rest", pattern=r"^(rest|hold)$")
+    title: str | None = Field(default=None, max_length=120)
+    text: str = Field(..., min_length=1, max_length=500)
+    startapp: str | None = Field(default="home", max_length=80)
+    workout_id: uuid.UUID | None = None
+
+
+class TimerNotifyResponse(BaseModel):
+    ok: bool
+    detail: str | None = None
+

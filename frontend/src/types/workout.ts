@@ -34,6 +34,8 @@ export type WorkoutPlanExercise = {
   rest_sec?: number | null;
   name_ru?: string | null;
   suggested_weight?: number | null;
+  /** Set when user replaces an exercise during a session; used to restore default. */
+  original_exercise_id?: string | null;
 };
 
 export type WorkoutPlan = {
@@ -72,6 +74,11 @@ export type LocalSetDraft = {
   weight: string;
   isCompleted: boolean;
   restTimeSec: number;
+  /** Duration seconds for timed / cardio sets (optional). */
+  durationSec?: number | null;
+  note?: string | null;
+  /** Free-form machine params: speed, incline, resistance… */
+  machineParams?: Record<string, string | number> | null;
 };
 
 export type Program = {

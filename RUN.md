@@ -155,8 +155,8 @@ python -m venv .venv
 cd C:\fitness_prog\backend
 .\.venv\Scripts\python.exe scripts\seed_prod_content.py
 .\.venv\Scripts\python.exe scripts\seed_nutrition.py
-.\.venv\Scripts\python.exe scripts\gen_exercise_gif_list.py
-.\.venv\Scripts\python.exe scripts\apply_local_exercise_gifs.py
+.\.venv\Scripts\python.exe scripts\rebuild_catalog_from_dataset.py --skip-archive --skip-download
+.\.venv\Scripts\python.exe scripts\add_extra_programs.py
 ```
 
 ### Frontend

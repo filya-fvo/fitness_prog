@@ -13,8 +13,13 @@ export type AnalyticsEventName =
   | "program_started"
   | "exercise_media_played"
   | "onboarding_completed"
+  | "activation_completed"
+  | "set_logged"
   | "nutrition_logged"
-  | "ai_message_sent";
+  | "nutrition_barcode_selected"
+  | "ai_message_sent"
+  | "reentry_shown"
+  | "habit_checked";
 
 export type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 

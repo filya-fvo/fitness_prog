@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
@@ -11,15 +13,20 @@ from pydantic import BaseModel, Field
 from app.core.config import Settings, get_settings
 from app.services.telegram_bot import (
     TelegramBotError,
+    extract_help_command,
     extract_start_command,
     get_webhook_info,
     resolve_mini_app_url,
     send_start_welcome,
+    send_user_guide,
     set_chat_menu_button,
     set_webhook,
 )
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
+
+# Persist which Telegram users already received the full guide on first /start.
+_GUIDE_SENT_PATH = Path(__file__).resolve().parents[2] / "data" / "bot_guide_sent.json"
 
 
 class SetupMenuRequest(BaseModel):
@@ -49,6 +56,62 @@ def _verify_secret(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="bad secret")
 
 
+def _load_guide_sent() -> dict[str, Any]:
+    try:
+        if _GUIDE_SENT_PATH.is_file():
+            raw = json.loads(_GUIDE_SENT_PATH.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                return raw
+    except Exception as exc:  # noqa: BLE001 — soft fail local store
+        logger.warning("guide_sent_load_failed err={}", exc)
+    return {}
+
+
+def _save_guide_sent(data: dict[str, Any]) -> None:
+    try:
+        _GUIDE_SENT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _GUIDE_SENT_PATH.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("guide_sent_save_failed err={}", exc)
+
+
+def _is_first_start(telegram_user_id: int | None, chat_id: int) -> bool:
+    """True if this Telegram identity has not received the full guide yet."""
+    key = str(telegram_user_id if telegram_user_id is not None else chat_id)
+    store = _load_guide_sent()
+    return key not in store
+
+
+def _mark_guide_sent(telegram_user_id: int | None, chat_id: int) -> None:
+    from datetime import datetime, timezone
+
+    key = str(telegram_user_id if telegram_user_id is not None else chat_id)
+    store = _load_guide_sent()
+    store[key] = {
+        "chat_id": chat_id,
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _save_guide_sent(store)
+
+
+async def _ensure_menu_button(settings: Settings, chat_id: int) -> None:
+    mini = resolve_mini_app_url(settings)
+    if not mini:
+        return
+    try:
+        await set_chat_menu_button(
+            settings,
+            mini_app_url=mini,
+            text="Open",
+            chat_id=chat_id,
+        )
+    except TelegramBotError as exc:
+        logger.warning("set_chat_menu_button_failed chat={} err={}", chat_id, exc)
+
+
 @router.post("/webhook")
 async def telegram_webhook(
     request: Request,
@@ -58,7 +121,9 @@ async def telegram_webhook(
     """
     Telegram update endpoint.
 
-    Handles /start → welcome text + Open button.
+    - /start → short welcome (name from Telegram) + Open button
+      On first /start also sends the full guide as a downloadable file
+    - /help → full user guide as a Markdown file (open/save in Telegram)
     Always returns 200 so Telegram does not retry forever on user errors.
     """
     _verify_secret(settings, x_telegram_bot_api_secret_token)
@@ -71,38 +136,49 @@ async def telegram_webhook(
     if not isinstance(update, dict):
         return {"ok": True}
 
+    help_cmd = extract_help_command(update)
+    if help_cmd:
+        chat_id = help_cmd["chat_id"]
+        logger.info(
+            "telegram_help chat_id={} user_id={} username={}",
+            chat_id,
+            help_cmd.get("user_id"),
+            help_cmd.get("username"),
+        )
+        try:
+            await _ensure_menu_button(settings, chat_id)
+            await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
+            _mark_guide_sent(help_cmd.get("user_id"), chat_id)
+        except TelegramBotError as exc:
+            logger.error("telegram_help_reply_failed chat={} err={}", chat_id, exc)
+        return {"ok": True}
+
     start = extract_start_command(update)
     if not start:
         return {"ok": True}
 
     chat_id = start["chat_id"]
     first_name = start.get("first_name")
+    user_id = start.get("user_id")
+    first_time = _is_first_start(user_id if isinstance(user_id, int) else None, chat_id)
     logger.info(
-        "telegram_start chat_id={} user_id={} username={}",
+        "telegram_start chat_id={} user_id={} username={} first_time={}",
         chat_id,
-        start.get("user_id"),
+        user_id,
         start.get("username"),
+        first_time,
     )
 
     try:
-        # Ensure this chat also gets the blue Open menu button
-        mini = resolve_mini_app_url(settings)
-        if mini:
-            try:
-                await set_chat_menu_button(
-                    settings,
-                    mini_app_url=mini,
-                    text="Open",
-                    chat_id=chat_id,
-                )
-            except TelegramBotError as exc:
-                logger.warning("set_chat_menu_button_failed chat={} err={}", chat_id, exc)
-
+        await _ensure_menu_button(settings, chat_id)
         await send_start_welcome(
             settings,
             chat_id=chat_id,
             first_name=str(first_name) if first_name else None,
+            send_full_guide=first_time,
         )
+        if first_time:
+            _mark_guide_sent(user_id if isinstance(user_id, int) else None, chat_id)
     except TelegramBotError as exc:
         logger.error("telegram_start_reply_failed chat={} err={}", chat_id, exc)
 

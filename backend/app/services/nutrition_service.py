@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
+import httpx
 from fastapi import HTTPException, status
+from loguru import logger
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.nutrition import NutritionLog, NutritionProduct
 from app.models.user import User
 from app.schemas.nutrition import NutritionLogCreate
+
+_BARCODE_RE = re.compile(r"^\d{8,14}$")
 
 
 def calc_kbju(
@@ -96,13 +102,33 @@ async def add_log(
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
+    cal = data.calories_per_100 if data.calories_per_100 is not None else product.calories
+    prot = data.proteins_per_100 if data.proteins_per_100 is not None else product.proteins
+    fat = data.fats_per_100 if data.fats_per_100 is not None else product.fats
+    carb = data.carbs_per_100 if data.carbs_per_100 is not None else product.carbs
     kbj = calc_kbju(
-        calories_per_100=product.calories,
-        proteins_per_100=product.proteins,
-        fats_per_100=product.fats,
-        carbs_per_100=product.carbs,
+        calories_per_100=cal,
+        proteins_per_100=prot,
+        fats_per_100=fat,
+        carbs_per_100=carb,
         quantity_grams=data.quantity_grams,
     )
+    # Keep override snapshot for UI/history
+    if any(
+        x is not None
+        for x in (
+            data.calories_per_100,
+            data.proteins_per_100,
+            data.fats_per_100,
+            data.carbs_per_100,
+        )
+    ):
+        kbj["per_100_override"] = {
+            "calories": float(cal),
+            "proteins": float(prot),
+            "fats": float(fat),
+            "carbs": float(carb),
+        }
     row = NutritionLog(
         user_id=user.id,
         date=data.log_date or date.today(),
@@ -204,3 +230,222 @@ async def get_products_map(
         select(NutritionProduct).where(NutritionProduct.id.in_(product_ids))
     )
     return {p.id: p for p in result.all()}
+
+
+def normalize_barcode(raw: str | None) -> str:
+    code = re.sub(r"\D", "", str(raw or "").strip())
+    return code
+
+
+def is_valid_barcode(code: str) -> bool:
+    return bool(_BARCODE_RE.match(code or ""))
+
+
+async def get_product_by_barcode(
+    session: AsyncSession,
+    barcode: str,
+) -> NutritionProduct | None:
+    code = normalize_barcode(barcode)
+    if not code:
+        return None
+    return await session.scalar(
+        select(NutritionProduct).where(
+            NutritionProduct.is_deleted.is_(False),
+            NutritionProduct.barcode == code,
+        )
+    )
+
+
+def _num(v: Any, default: float = 0.0) -> float:
+    try:
+        if v is None or v == "":
+            return default
+        return max(0.0, float(v))
+    except (TypeError, ValueError):
+        return default
+
+
+async def fetch_openfoodfacts(barcode: str) -> dict[str, Any] | None:
+    """Lookup product macros on Open Food Facts (per 100g)."""
+    code = normalize_barcode(barcode)
+    if not is_valid_barcode(code):
+        return None
+    url = f"https://world.openfoodfacts.org/api/v2/product/{code}.json"
+    headers = {
+        "User-Agent": "FitnessProgMiniApp/1.0 (nutrition barcode lookup)",
+        "Accept": "application/json",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=12.0, headers=headers) as client:
+            resp = await client.get(url)
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            payload = resp.json()
+    except Exception as exc:
+        logger.warning("openfoodfacts_lookup_failed barcode={} err={}", code, exc)
+        return None
+
+    if int(payload.get("status") or 0) != 1:
+        return None
+    product = payload.get("product") or {}
+    if not isinstance(product, dict):
+        return None
+
+    nutriments = product.get("nutriments") or {}
+    if not isinstance(nutriments, dict):
+        nutriments = {}
+
+    calories = _num(
+        nutriments.get("energy-kcal_100g", nutriments.get("energy-kcal")),
+        default=-1.0,
+    )
+    if calories < 0:
+        # kJ → kcal fallback
+        kj = _num(nutriments.get("energy-kj_100g", nutriments.get("energy")), default=-1.0)
+        calories = round(kj / 4.184, 2) if kj >= 0 else 0.0
+
+    proteins = _num(nutriments.get("proteins_100g", nutriments.get("proteins")))
+    fats = _num(nutriments.get("fat_100g", nutriments.get("fat")))
+    carbs = _num(nutriments.get("carbohydrates_100g", nutriments.get("carbohydrates")))
+
+    name = (
+        str(product.get("product_name_ru") or "").strip()
+        or str(product.get("product_name") or "").strip()
+        or str(product.get("generic_name_ru") or "").strip()
+        or str(product.get("generic_name") or "").strip()
+        or f"Товар {code}"
+    )
+    brands = str(product.get("brands") or "").strip()
+    if brands and brands.lower() not in name.lower():
+        name = f"{name} ({brands})"
+
+    cats_raw = str(product.get("categories_tags") or product.get("categories") or "")
+    category = "ready"
+    low = cats_raw.lower()
+    if "dairy" in low or "milk" in low or "yogurt" in low:
+        category = "dairy"
+    elif "beverage" in low or "drink" in low:
+        category = "drinks"
+    elif "meat" in low:
+        category = "meat"
+    elif "fish" in low or "seafood" in low:
+        category = "fish"
+    elif "fruit" in low:
+        category = "fruit"
+    elif "vegetable" in low:
+        category = "veg"
+    elif "cereal" in low or "bread" in low:
+        category = "grains"
+    elif "snack" in low or "sweet" in low or "chocolate" in low:
+        category = "sweets"
+
+    serving = _num(product.get("serving_quantity"), default=0.0)
+    if serving <= 0:
+        serving_size = str(product.get("serving_size") or "")
+        m = re.search(r"(\d+(?:[.,]\d+)?)\s*g", serving_size, flags=re.I)
+        if m:
+            serving = _num(m.group(1).replace(",", "."), default=0.0)
+
+    return {
+        "barcode": code,
+        "name_ru": name[:200],
+        "calories": round(min(1200.0, calories), 2),
+        "proteins": round(min(100.0, proteins), 2),
+        "fats": round(min(100.0, fats), 2),
+        "carbs": round(min(100.0, carbs), 2),
+        "category": category,
+        "serving_grams": round(serving, 1) if serving > 0 else None,
+        "source": "openfoodfacts",
+    }
+
+
+async def create_product(
+    session: AsyncSession,
+    *,
+    name_ru: str,
+    calories: float,
+    proteins: float,
+    fats: float,
+    carbs: float,
+    category: str | None = "custom",
+    barcode: str | None = None,
+    source: str = "manual",
+) -> NutritionProduct:
+    name = (name_ru or "").strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="name_ru required")
+    code = normalize_barcode(barcode) or None
+    if code:
+        existing = await get_product_by_barcode(session, code)
+        if existing is not None:
+            return existing
+    src = source if source in {"manual", "openfoodfacts"} else "manual"
+    row = NutritionProduct(
+        name_ru=name,
+        barcode=code,
+        calories=Decimal(str(round(float(calories), 2))),
+        proteins=Decimal(str(round(float(proteins), 2))),
+        fats=Decimal(str(round(float(fats), 2))),
+        carbs=Decimal(str(round(float(carbs), 2))),
+        category=(category or "custom").strip() or "custom",
+        source=src,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def lookup_barcode(
+    session: AsyncSession,
+    barcode: str,
+    *,
+    fetch_remote: bool = True,
+) -> tuple[NutritionProduct | None, dict[str, Any]]:
+    """
+    Resolve barcode to a catalog product.
+    1) local DB
+    2) Open Food Facts (+ cache into nutrition_products)
+    Returns (product|None, meta).
+    """
+    code = normalize_barcode(barcode)
+    meta: dict[str, Any] = {"barcode": code, "found": False, "source": None, "serving_grams": None}
+    if not is_valid_barcode(code):
+        meta["error"] = "invalid_barcode"
+        return None, meta
+
+    local = await get_product_by_barcode(session, code)
+    if local is not None:
+        meta.update({"found": True, "source": local.source or "local"})
+        return local, meta
+
+    if not fetch_remote:
+        meta["error"] = "not_found"
+        return None, meta
+
+    remote = await fetch_openfoodfacts(code)
+    if not remote:
+        meta["error"] = "not_found"
+        return None, meta
+
+    row = await create_product(
+        session,
+        name_ru=str(remote["name_ru"]),
+        calories=float(remote["calories"]),
+        proteins=float(remote["proteins"]),
+        fats=float(remote["fats"]),
+        carbs=float(remote["carbs"]),
+        category=str(remote.get("category") or "ready"),
+        barcode=code,
+        source="openfoodfacts",
+    )
+    meta.update(
+        {
+            "found": True,
+            "source": "openfoodfacts",
+            "serving_grams": remote.get("serving_grams"),
+            "created": True,
+        }
+    )
+    return row, meta

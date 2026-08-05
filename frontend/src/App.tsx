@@ -11,6 +11,8 @@ import { WorkoutCatalogPage } from "@/features/workout/pages/WorkoutCatalogPage"
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { AdminPage } from "@/pages/AdminPage";
 import { HomePage } from "@/pages/HomePage";
+import { MorePage } from "@/pages/MorePage";
+import { TrainHubPage } from "@/pages/TrainHubPage";
 
 export function App() {
   return (
@@ -19,6 +21,7 @@ export function App() {
         <Route element={<Shell />}>
           <Route index element={<HomePage />} />
           <Route path="onboarding" element={<OnboardingPage />} />
+          <Route path="train" element={<TrainHubPage />} />
           <Route path="workouts" element={<WorkoutCatalogPage />} />
           <Route path="programs" element={<ProgramsPage />} />
           <Route path="workouts/active/:workoutId" element={<ActiveWorkout />} />
@@ -26,6 +29,7 @@ export function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="ai" element={<Chat />} />
+          <Route path="more" element={<MorePage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

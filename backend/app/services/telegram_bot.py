@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode
 
@@ -67,6 +68,45 @@ async def send_message(
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
     return await bot_api(settings, "sendMessage", payload)
+
+
+async def send_document(
+    settings: Settings,
+    *,
+    chat_id: int,
+    filename: str,
+    content: bytes,
+    caption: str | None = None,
+    reply_markup: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """POST sendDocument (multipart) to Telegram Bot API."""
+    if not _token_ready(settings):
+        raise TelegramBotError("BOT_TOKEN is not configured")
+
+    import json as _json
+
+    url = f"https://api.telegram.org/bot{settings.bot_token}/sendDocument"
+    data: dict[str, Any] = {"chat_id": str(chat_id)}
+    if caption:
+        data["caption"] = caption
+        data["parse_mode"] = "HTML"
+    if reply_markup is not None:
+        data["reply_markup"] = _json.dumps(reply_markup, ensure_ascii=False)
+
+    files = {
+        "document": (filename, content, "text/markdown; charset=utf-8"),
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(url, data=data, files=files)
+        body = resp.json()
+        if resp.status_code >= 400 or not body.get("ok"):
+            logger.error(
+                "telegram_api_failed method=sendDocument status={} body={}",
+                resp.status_code,
+                body,
+            )
+            raise TelegramBotError(str(body.get("description") or resp.text))
+        return body
 
 
 def build_mini_app_open_url(
@@ -171,39 +211,56 @@ def start_welcome_text(
     *,
     first_name: str | None = None,
     mini_app_url: str | None = None,
+    include_guide_hint: bool = True,
 ) -> str:
+    """Short /start greeting. first_name is taken from Telegram profile (variable)."""
+    _ = mini_app_url  # API compatibility; not shown (no browser/email login)
+    _ = include_guide_hint  # always the same short text
     name = (first_name or "").strip()
-    hello = f"Привет, {name}!" if name else "Привет!"
-    app_url = (mini_app_url or "").strip().rstrip("/")
+    hello = f"\u041f\u0440\u0438\u0432\u0435\u0442, {name}!" if name else "\u041f\u0440\u0438\u0432\u0435\u0442!"
     lines = [
         hello,
         "",
-        "Это фитнес Mini App: программы, тренировки, питание и AI-тренер.",
+        "\u042d\u0442\u043e <b>Fitness Mini App</b> \u2014 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438, \u043f\u0438\u0442\u0430\u043d\u0438\u0435, \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 AI-\u0442\u0440\u0435\u043d\u0435\u0440.",
         "",
-        "Чтобы начать — нажмите <b>Open</b> ниже или синюю кнопку меню.",
+        "\u0427\u0442\u043e\u0431\u044b \u043d\u0430\u0447\u0430\u0442\u044c \u2014 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 <b>Open</b> \u043d\u0438\u0436\u0435 \u0438\u043b\u0438 \u0441\u0438\u043d\u044e\u044e \u043a\u043d\u043e\u043f\u043a\u0443 \u043c\u0435\u043d\u044e.",
+        "",
+        "\u0412\u0445\u043e\u0434 \u0442\u043e\u043b\u044c\u043a\u043e \u0447\u0435\u0440\u0435\u0437 Telegram Mini App (\u043a\u043d\u043e\u043f\u043a\u0430 Open).",
+        "",
+        "\u2022 \u041f\u0435\u0440\u0432\u044b\u0439 \u0432\u0445\u043e\u0434: \u043a\u043e\u0440\u043e\u0442\u043a\u0430\u044f \u0430\u043d\u043a\u0435\u0442\u0430 (\u0446\u0435\u043b\u044c, \u0443\u0440\u043e\u0432\u0435\u043d\u044c, \u0442\u0435\u043b\u043e).",
+        "\u2022 <b>\u0413\u043b\u0430\u0432\u043d\u0430\u044f \u2192 \u0421\u0435\u0433\u043e\u0434\u043d\u044f</b> \u2014 \u0441\u0442\u0430\u0440\u0442/\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0435\u043d\u0438\u0435 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438.",
+        "\u2022 \u0412 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0435: \u043f\u043e\u0434\u0445\u043e\u0434\u044b, \u043e\u0442\u0434\u044b\u0445, \u0437\u0430\u043c\u0435\u043d\u0430 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439, GIF/\u0432\u0438\u0434\u0435\u043e.",
+        "\u2022 \u0412\u0435\u0440\u043d\u0443\u0442\u044c \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b: <b>\u0413\u043b\u0430\u0432\u043d\u0430\u044f \u2192 \u0421\u0435\u0433\u043e\u0434\u043d\u044f \u2192 \u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c\u2026</b>",
+        "\u2022 \u041f\u0438\u0442\u0430\u043d\u0438\u0435, \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441, AI \u2014 \u0432 \u043d\u0438\u0436\u043d\u0435\u043c \u043c\u0435\u043d\u044e.",
+        "",
+        "\u041f\u043e\u043b\u043d\u0430\u044f \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f \u043f\u0440\u0438\u0434\u0451\u0442 \u043f\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0435 <b>/help</b>.",
     ]
-    if app_url:
-        lines.extend(
-            [
-                "",
-                "Также можно открыть приложение в браузере по адресу:",
-                f"<a href=\"{app_url}\">{app_url}</a>",
-                "",
-                "Полный вход и данные доступны через Telegram Mini App (кнопка Open).",
-            ]
-        )
     return "\n".join(lines)
 
 
-async def send_start_welcome(
-    settings: Settings,
-    *,
-    chat_id: int,
-    first_name: str | None = None,
-) -> dict[str, Any]:
-    """Reply to /start with instructions + Open Mini App button (web_app preferred)."""
+def user_guide_path() -> Path:
+    """Path to docs/USER_GUIDE.md (repo root / docs)."""
+    # backend/app/services/telegram_bot.py -> repo root
+    return Path(__file__).resolve().parents[3] / "docs" / "USER_GUIDE.md"
+
+
+def load_user_guide_bytes() -> tuple[str, bytes]:
+    """Load user guide markdown file for Telegram sendDocument."""
+    path = user_guide_path()
+    if not path.is_file():
+        raise TelegramBotError(f"User guide not found: {path}")
+    data = path.read_bytes()
+    try:
+        text = data.decode("utf-8-sig")
+        data = text.encode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise TelegramBotError(f"User guide is not valid UTF-8: {exc}") from exc
+    return "Fitness_Mini_App_Instrukciya.md", data
+
+
+def open_app_markup(settings: Settings) -> dict[str, Any] | None:
+    """Inline Open button for Mini App (web_app preferred)."""
     mini_url = resolve_mini_app_url(settings)
-    text = start_welcome_text(first_name=first_name, mini_app_url=mini_url)
     markup: dict[str, Any] | None = None
     if mini_url:
         markup = open_web_app_keyboard(
@@ -218,12 +275,55 @@ async def send_start_welcome(
                 [{"text": "Open", "url": f"https://t.me/{username}/app"}],
             ],
         }
-    return await send_message(
+    return markup
+
+
+async def send_user_guide(
+    settings: Settings,
+    *,
+    chat_id: int,
+    with_open_button: bool = True,
+    with_open_button_on_last: bool | None = None,
+) -> dict[str, Any]:
+    """Send full user guide as a downloadable Markdown file."""
+    # with_open_button_on_last kept for older call sites
+    if with_open_button_on_last is not None:
+        with_open_button = with_open_button_on_last
+    filename, content = load_user_guide_bytes()
+    caption = (
+        "\U0001f4d6 <b>\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f Fitness Mini App</b>\n"
+        "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 Telegram "
+        "\u0438\u043b\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435 \u043d\u0430 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e."
+    )
+    markup = open_app_markup(settings) if with_open_button else None
+    return await send_document(
+        settings,
+        chat_id=chat_id,
+        filename=filename,
+        content=content,
+        caption=caption,
+        reply_markup=markup,
+    )
+
+
+async def send_start_welcome(
+    settings: Settings,
+    *,
+    chat_id: int,
+    first_name: str | None = None,
+    send_full_guide: bool = False,
+) -> dict[str, Any]:
+    """Reply to /start with short welcome + Open. Optionally attach guide file."""
+    text = start_welcome_text(first_name=first_name)
+    result = await send_message(
         settings,
         chat_id=chat_id,
         text=text,
-        reply_markup=markup,
+        reply_markup=open_app_markup(settings),
     )
+    if send_full_guide:
+        await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
+    return result
 
 
 async def set_chat_menu_button(
@@ -344,20 +444,18 @@ async def send_app_notification(
     )
 
 
-def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
-    """
-    If update is a private /start message, return chat/user info.
-    Otherwise None.
-    """
+def extract_bot_command(update: dict[str, Any], command: str) -> dict[str, Any] | None:
+    """If update is a private message with /command (optional @BotName), return chat/user info."""
     message = update.get("message") or update.get("edited_message")
     if not isinstance(message, dict):
         return None
     text = str(message.get("text") or "").strip()
-    if not text.startswith("/start"):
+    if not text.startswith("/"):
         return None
-    # Allow /start@BotName payload
     first = text.split(maxsplit=1)[0]
-    if not (first == "/start" or first.startswith("/start@")):
+    base = command.lstrip("/")
+    cmd = f"/{base}"
+    if not (first == cmd or first.startswith(f"{cmd}@")):
         return None
 
     chat = message.get("chat") or {}
@@ -376,4 +474,15 @@ def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
         "first_name": user.get("first_name"),
         "username": user.get("username"),
         "start_payload": payload or None,
+        "command": base,
     }
+
+
+def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
+    """If update is a private /start message, return chat/user info."""
+    return extract_bot_command(update, "start")
+
+
+def extract_help_command(update: dict[str, Any]) -> dict[str, Any] | None:
+    """If update is /help — return chat/user info (resend user guide)."""
+    return extract_bot_command(update, "help")

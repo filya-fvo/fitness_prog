@@ -1,695 +1,584 @@
 [
   {
-    "id": "085acd6f-63b4-4347-b5a4-ef24094dea1a",
-    "name_ru": "Австралийские подтягивания",
-    "muscle_group": "спина",
-    "file": "australian-pull-ups.gif",
-    "animation_url": "/exercise-gifs/australian-pull-ups.gif"
-  },
-  {
-    "id": "feddbab7-2f5a-483c-a35e-6c948587efd4",
-    "name_ru": "Альпинисты",
-    "muscle_group": "кор",
-    "file": "mountain-climbers.gif",
-    "animation_url": "/exercise-gifs/mountain-climbers.gif"
-  },
-  {
-    "id": "6c972c3c-b8b2-4492-8041-ed90f765e283",
-    "name_ru": "Бег на месте",
-    "muscle_group": "кардио",
-    "file": "running-in-place.gif",
-    "animation_url": "/exercise-gifs/running-in-place.gif"
-  },
-  {
-    "id": "e8cc3dd1-cb59-49f3-bb5b-1549a33b0145",
-    "name_ru": "Бёрпи",
-    "muscle_group": "кардио",
-    "file": "burpees.gif",
-    "animation_url": "/exercise-gifs/burpees.gif"
-  },
-  {
-    "id": "5f773c0d-e73c-4689-9c51-be639a584603",
-    "name_ru": "Боковая планка",
-    "muscle_group": "кор",
-    "file": "side-plank.gif",
-    "animation_url": "/exercise-gifs/side-plank.gif"
-  },
-  {
-    "id": "b861bc90-6ddd-4946-806f-391907f5c5e0",
-    "name_ru": "Боковые выпады",
-    "muscle_group": "ноги",
-    "file": "lateral-lunges.gif",
-    "animation_url": "/exercise-gifs/lateral-lunges.gif"
-  },
-  {
-    "id": "a8678119-801e-41b0-b260-d55cec68e35e",
-    "name_ru": "Болгарские выпады",
-    "muscle_group": "ноги",
-    "file": "bulgarian-split-squat.gif",
-    "animation_url": "/exercise-gifs/bulgarian-split-squat.gif"
-  },
-  {
-    "id": "e787eac6-6006-4625-b79a-d5ab88a93684",
-    "name_ru": "Велосипед",
-    "muscle_group": "кор",
-    "file": "bicycle-crunches.gif",
-    "animation_url": "/exercise-gifs/bicycle-crunches.gif"
-  },
-  {
-    "id": "4ccc619a-d09a-49ee-bfca-c6f3681db4d8",
-    "name_ru": "Велотренажёр",
-    "muscle_group": "кардио",
-    "file": "stationary-bike.gif",
-    "animation_url": "/exercise-gifs/stationary-bike.gif"
-  },
-  {
-    "id": "f2dced43-403f-437c-858c-59a960b12326",
-    "name_ru": "Вращения таза",
-    "muscle_group": "мобильность",
-    "file": "hip-circles.gif",
-    "animation_url": "/exercise-gifs/hip-circles.gif"
-  },
-  {
-    "id": "8d1edb1d-ac58-4d9f-9d03-deeb21e7a7fd",
-    "name_ru": "Выпад + сгибание на бицепс",
-    "muscle_group": "full_body",
-    "file": "lunge-bicep-curl.gif",
-    "animation_url": "/exercise-gifs/lunge-bicep-curl.gif"
-  },
-  {
-    "id": "dbdc8be9-c172-427b-b40b-29704a6208c8",
-    "name_ru": "Выпады вперёд",
-    "muscle_group": "ноги",
-    "file": "forward-lunges.gif",
-    "animation_url": "/exercise-gifs/forward-lunges.gif"
-  },
-  {
-    "id": "f4f66963-9f80-4768-907b-b750aa8d08e8",
-    "name_ru": "Выпады назад с гантелями",
-    "muscle_group": "ноги",
-    "file": "reverse-lunges-dumbbell.gif",
-    "animation_url": "/exercise-gifs/reverse-lunges-dumbbell.gif"
-  },
-  {
-    "id": "fa6f5e5a-8803-4e90-99a7-ab734678fa81",
-    "name_ru": "Высокие колени",
-    "muscle_group": "кардио",
-    "file": "high-knees.gif",
-    "animation_url": "/exercise-gifs/high-knees.gif"
-  },
-  {
-    "id": "df7d3e19-a449-449a-ae98-c2cbbc936907",
-    "name_ru": "Гиперэкстензия",
-    "muscle_group": "спина",
-    "file": "hyperextension.gif",
-    "animation_url": "/exercise-gifs/hyperextension.gif"
-  },
-  {
-    "id": "164a277e-b54f-4a07-b754-8789b36633dd",
-    "name_ru": "Гребля в тренажёре",
-    "muscle_group": "кардио",
-    "file": "rowing-machine.gif",
-    "animation_url": "/exercise-gifs/rowing-machine.gif"
-  },
-  {
-    "id": "82823ad2-03dd-4c48-886b-65d233c69a7c",
-    "name_ru": "Жим Арнольда",
-    "muscle_group": "плечи",
-    "file": "arnold-press.gif",
-    "animation_url": "/exercise-gifs/arnold-press.gif"
-  },
-  {
-    "id": "4582a779-48af-4f92-bf7b-51b9a50b8208",
-    "name_ru": "Жим в тренажёре",
-    "muscle_group": "грудь",
-    "file": "chest-press-machine.gif",
-    "animation_url": "/exercise-gifs/chest-press-machine.gif"
-  },
-  {
-    "id": "d55bb6ab-b1df-4e10-9623-f14c7625f777",
-    "name_ru": "Жим гантелей лёжа",
-    "muscle_group": "грудь",
-    "file": "dumbbell-bench-press.gif",
-    "animation_url": "/exercise-gifs/dumbbell-bench-press.gif"
-  },
-  {
-    "id": "0b7282ed-b06d-4087-83c9-75416b065cec",
-    "name_ru": "Жим гантелей на наклонной",
-    "muscle_group": "грудь",
-    "file": "incline-dumbbell-press.gif",
-    "animation_url": "/exercise-gifs/incline-dumbbell-press.gif"
-  },
-  {
-    "id": "22103447-ff96-4bf1-9724-b2dfff1a818d",
-    "name_ru": "Жим гантелей сидя",
-    "muscle_group": "плечи",
-    "file": "seated-dumbbell-shoulder-press.gif",
-    "animation_url": "/exercise-gifs/seated-dumbbell-shoulder-press.gif"
-  },
-  {
-    "id": "b683ced2-ed93-4996-9fa5-3b40d31ac4b4",
-    "name_ru": "Жим лёжа узким хватом",
-    "muscle_group": "трицепс",
-    "file": "close-grip-bench-press.gif",
-    "animation_url": "/exercise-gifs/close-grip-bench-press.gif"
-  },
-  {
-    "id": "f3fea375-14c0-4e07-9e6a-1de72de4e3bf",
-    "name_ru": "Жим ногами",
-    "muscle_group": "ноги",
-    "file": "leg-press.gif",
-    "animation_url": "/exercise-gifs/leg-press.gif"
-  },
-  {
-    "id": "80b84a74-b013-43b0-83f2-38d4629eb3d1",
-    "name_ru": "Жим штанги лёжа",
-    "muscle_group": "грудь",
-    "file": "bench-press.gif",
-    "animation_url": "/exercise-gifs/bench-press.gif"
-  },
-  {
-    "id": "40409464-2ec0-4bf3-92dc-f949117217e5",
-    "name_ru": "Жим штанги стоя",
-    "muscle_group": "плечи",
-    "file": "overhead-press.gif",
-    "animation_url": "/exercise-gifs/overhead-press.gif"
-  },
-  {
-    "id": "52e44cf1-04d4-4490-8cf3-0a9f95f1e953",
-    "name_ru": "Зашагивания на тумбу",
-    "muscle_group": "ноги",
-    "file": "box-step-ups.gif",
-    "animation_url": "/exercise-gifs/box-step-ups.gif"
-  },
-  {
-    "id": "c7931c33-7c50-47d1-baa0-0bb2f13d8845",
-    "name_ru": "Комплекс присед + жим",
-    "muscle_group": "full_body",
-    "file": "squat-to-press.gif",
-    "animation_url": "/exercise-gifs/squat-to-press.gif"
-  },
-  {
-    "id": "0d56725b-b225-40f8-8165-e1a91daf8fde",
-    "name_ru": "Кошка-корова",
-    "muscle_group": "мобильность",
-    "file": "cat-cow.gif",
-    "animation_url": "/exercise-gifs/cat-cow.gif"
-  },
-  {
-    "id": "bf0072b0-2fc0-421d-9f8b-33b407b862ab",
-    "name_ru": "Махи гирей",
-    "muscle_group": "кардио",
-    "file": "kettlebell-swings.gif",
-    "animation_url": "/exercise-gifs/kettlebell-swings.gif"
-  },
-  {
-    "id": "ddaf6871-7ac1-4e74-82f9-32cc542c302c",
-    "name_ru": "Медвежья походка",
-    "muscle_group": "full_body",
-    "file": "bear-crawl.gif",
-    "animation_url": "/exercise-gifs/bear-crawl.gif"
-  },
-  {
-    "id": "7aa6e98a-f1b7-4da3-aef7-c9f04824d385",
-    "name_ru": "Мёртвый жук",
-    "muscle_group": "кор",
-    "file": "dead-bug.gif",
-    "animation_url": "/exercise-gifs/dead-bug.gif"
-  },
-  {
-    "id": "5116adbc-c916-4f1b-b452-59d4e73f266c",
-    "name_ru": "Мировая растяжка",
-    "muscle_group": "мобильность",
-    "file": "worlds-greatest-stretch.gif",
-    "animation_url": "/exercise-gifs/worlds-greatest-stretch.gif"
-  },
-  {
-    "id": "7711fd28-cdc8-4048-a1f9-1942ea2ce6a7",
-    "name_ru": "Мобилизация голеностопа",
-    "muscle_group": "мобильность",
-    "file": "ankle-mobility.gif",
-    "animation_url": "/exercise-gifs/ankle-mobility.gif"
-  },
-  {
-    "id": "323cb947-f1cf-4de6-8938-3099cd678eca",
-    "name_ru": "Мобилизация плеч с резинкой",
-    "muscle_group": "мобильность",
-    "file": "band-shoulder-mobility.gif",
-    "animation_url": "/exercise-gifs/band-shoulder-mobility.gif"
-  },
-  {
-    "id": "a9782bf8-6222-47a1-b859-2591ce685113",
-    "name_ru": "Молотковые сгибания",
-    "muscle_group": "бицепс",
-    "file": "hammer-curls.gif",
-    "animation_url": "/exercise-gifs/hammer-curls.gif"
-  },
-  {
-    "id": "d6137bce-2e2a-41e8-bb40-879a1abdcfa8",
-    "name_ru": "Наклоны к носкам",
-    "muscle_group": "мобильность",
-    "file": "toe-touch-stretch.gif",
-    "animation_url": "/exercise-gifs/toe-touch-stretch.gif"
-  },
-  {
-    "id": "ce6a617c-32bf-46d4-a0da-fc6ee268536c",
-    "name_ru": "Обратные выпады с поворотом",
-    "muscle_group": "full_body",
-    "file": "reverse-lunge-with-twist.gif",
-    "animation_url": "/exercise-gifs/reverse-lunge-with-twist.gif"
-  },
-  {
-    "id": "2f9243b2-a664-4551-922f-a19eedfc4684",
-    "name_ru": "Обратные разведения в тренажёре",
-    "muscle_group": "плечи",
-    "file": "reverse-pec-deck.gif",
-    "animation_url": "/exercise-gifs/reverse-pec-deck.gif"
-  },
-  {
-    "id": "e5c2906d-877a-4a07-935e-98a3d667ed40",
-    "name_ru": "Отжимания на брусьях",
-    "muscle_group": "грудь",
-    "file": "dips.gif",
-    "animation_url": "/exercise-gifs/dips.gif"
-  },
-  {
-    "id": "17202ab5-6ba6-47db-9a0e-37bea80fa3a3",
-    "name_ru": "Отжимания от пола",
-    "muscle_group": "грудь",
-    "file": "push-ups.gif",
-    "animation_url": "/exercise-gifs/push-ups.gif"
-  },
-  {
-    "id": "2a4f9ad0-c6a7-4f22-8d0c-84adb035de8d",
-    "name_ru": "Отжимания с возвышения",
-    "muscle_group": "грудь",
-    "file": "incline-push-ups.gif",
-    "animation_url": "/exercise-gifs/incline-push-ups.gif"
-  },
-  {
-    "id": "74bc0bc2-3c7b-4de8-b56e-fa308eb388d9",
-    "name_ru": "Отжимания с колен",
-    "muscle_group": "грудь",
-    "file": "knee-push-ups.gif",
-    "animation_url": "/exercise-gifs/knee-push-ups.gif"
-  },
-  {
-    "id": "0f9a86d6-1dc6-4d04-b72c-2b6cc86d7e0a",
-    "name_ru": "Отжимания узким хватом",
-    "muscle_group": "трицепс",
-    "file": "close-grip-push-ups.gif",
-    "animation_url": "/exercise-gifs/close-grip-push-ups.gif"
-  },
-  {
-    "id": "906311c0-d258-4da1-9dfc-a246b1cf4cd7",
-    "name_ru": "Планка",
-    "muscle_group": "кор",
-    "file": "plank.gif",
-    "animation_url": "/exercise-gifs/plank.gif"
-  },
-  {
-    "id": "756dc65c-bb12-4e73-8283-28cc5b900da6",
-    "name_ru": "Планка с касанием плеч",
-    "muscle_group": "full_body",
-    "file": "plank-shoulder-taps.gif",
-    "animation_url": "/exercise-gifs/plank-shoulder-taps.gif"
-  },
-  {
-    "id": "d88807ff-fda2-4e05-a39b-4fe22a3010f5",
-    "name_ru": "Подтягивания",
-    "muscle_group": "спина",
-    "file": "pull-ups.gif",
-    "animation_url": "/exercise-gifs/pull-ups.gif"
-  },
-  {
-    "id": "6adb3dc4-c9e0-467c-90fc-77c38d770cbb",
-    "name_ru": "Подъёмы гантелей перед собой",
-    "muscle_group": "плечи",
-    "file": "front-dumbbell-raise.gif",
-    "animation_url": "/exercise-gifs/front-dumbbell-raise.gif"
-  },
-  {
-    "id": "ff7ad3ff-1e99-4266-bf73-9e82f660f224",
-    "name_ru": "Подъёмы на носки сидя",
-    "muscle_group": "ноги",
-    "file": "seated-calf-raise.gif",
-    "animation_url": "/exercise-gifs/seated-calf-raise.gif"
-  },
-  {
-    "id": "25ac7883-aca3-4a1d-9ac6-99bd6cfc49a2",
-    "name_ru": "Подъёмы на носки стоя",
-    "muscle_group": "ноги",
-    "file": "standing-calf-raise.gif",
-    "animation_url": "/exercise-gifs/standing-calf-raise.gif"
-  },
-  {
-    "id": "48e6d1fd-1978-4ac7-96d8-e32e3b977e9e",
-    "name_ru": "Подъёмы ног лёжа",
-    "muscle_group": "кор",
-    "file": "lying-leg-raises.gif",
-    "animation_url": "/exercise-gifs/lying-leg-raises.gif"
-  },
-  {
-    "id": "8112cf8a-8f95-4522-842e-dfd1d76ee519",
-    "name_ru": "Поза голубя",
-    "muscle_group": "мобильность",
-    "file": "pigeon-pose.gif",
-    "animation_url": "/exercise-gifs/pigeon-pose.gif"
-  },
-  {
-    "id": "c87bd330-9993-40e1-9657-0b35c74d6618",
-    "name_ru": "Присед + жим гантелей",
-    "muscle_group": "full_body",
-    "file": "squat-dumbbell-press.gif",
-    "animation_url": "/exercise-gifs/squat-dumbbell-press.gif"
-  },
-  {
-    "id": "7e2b8b4d-4910-41ac-a4e2-b3f56be38a26",
-    "name_ru": "Присед с жимом над головой",
-    "muscle_group": "full_body",
-    "file": "squat-to-press-2.gif",
-    "animation_url": "/exercise-gifs/squat-to-press-2.gif"
-  },
-  {
-    "id": "b3cad716-fdd2-4b6e-84fa-cedf8dbc147a",
-    "name_ru": "Приседания с гантелью у груди",
-    "muscle_group": "ноги",
-    "file": "goblet-squat.gif",
-    "animation_url": "/exercise-gifs/goblet-squat.gif"
-  },
-  {
-    "id": "005521fd-a39e-4495-8dae-6ea8cb743112",
-    "name_ru": "Приседания со своим весом",
-    "muscle_group": "ноги",
-    "file": "bodyweight-squat.gif",
-    "animation_url": "/exercise-gifs/bodyweight-squat.gif"
-  },
-  {
-    "id": "3212f5bd-16ea-476d-b2e4-21a37b695dd7",
     "name_ru": "Приседания со штангой",
-    "muscle_group": "ноги",
-    "file": "barbell-back-squat.gif",
-    "animation_url": "/exercise-gifs/barbell-back-squat.gif"
+    "file": "0043-qXTaZnJ.gif",
+    "animation_url": "/exercise-gifs/0043-qXTaZnJ.gif",
+    "muscle_group": "ноги"
   },
   {
-    "id": "ba751ab0-3ed5-40eb-92ad-b4c1ec41ec4f",
-    "name_ru": "Прыжки «звездой»",
-    "muscle_group": "кардио",
-    "file": "jumping-jacks.gif",
-    "animation_url": "/exercise-gifs/jumping-jacks.gif"
-  },
-  {
-    "id": "0c8a4b27-3b14-4394-b3f6-80eaa53a9286",
-    "name_ru": "Прыжки на скакалке",
-    "muscle_group": "кардио",
-    "file": "jump-rope.gif",
-    "animation_url": "/exercise-gifs/jump-rope.gif"
-  },
-  {
-    "id": "804be998-7034-47ec-b930-d83c36da425f",
-    "name_ru": "Птица-собака",
-    "muscle_group": "кор",
-    "file": "bird-dog.gif",
-    "animation_url": "/exercise-gifs/bird-dog.gif"
-  },
-  {
-    "id": "581a13f7-5ac6-440c-8bbc-227be94e3e42",
-    "name_ru": "Пуловер с гантелью",
-    "muscle_group": "спина",
-    "file": "dumbbell-pullover.gif",
-    "animation_url": "/exercise-gifs/dumbbell-pullover.gif"
-  },
-  {
-    "id": "3b139146-ce30-47ae-99bd-5e183a3c8197",
-    "name_ru": "Разведение гантелей лёжа",
-    "muscle_group": "грудь",
-    "file": "dumbbell-fly.gif",
-    "animation_url": "/exercise-gifs/dumbbell-fly.gif"
-  },
-  {
-    "id": "b3c80664-d90f-4a0b-a645-999a14d7e98e",
-    "name_ru": "Разводка в наклоне",
-    "muscle_group": "плечи",
-    "file": "bent-over-lateral-raise.gif",
-    "animation_url": "/exercise-gifs/bent-over-lateral-raise.gif"
-  },
-  {
-    "id": "c13c0041-8fc2-4f82-a416-18dcee15c04f",
-    "name_ru": "Разводка гантелей в стороны",
-    "muscle_group": "плечи",
-    "file": "lateral-raise.gif",
-    "animation_url": "/exercise-gifs/lateral-raise.gif"
-  },
-  {
-    "id": "fea22eb6-fe97-4efb-9c5e-ffb5db39f0fd",
-    "name_ru": "Разгибания гантели из-за головы",
-    "muscle_group": "трицепс",
-    "file": "overhead-triceps-extension.gif",
-    "animation_url": "/exercise-gifs/overhead-triceps-extension.gif"
-  },
-  {
-    "id": "0d24016d-47ce-4c93-80bc-bf4a408024c0",
-    "name_ru": "Разгибания на блоке",
-    "muscle_group": "трицепс",
-    "file": "cable-triceps-pushdown.gif",
-    "animation_url": "/exercise-gifs/cable-triceps-pushdown.gif"
-  },
-  {
-    "id": "c06c2a29-ade7-4b4a-bca8-69f5abb7da67",
-    "name_ru": "Разгибания ног",
-    "muscle_group": "ноги",
-    "file": "leg-extension.gif",
-    "animation_url": "/exercise-gifs/leg-extension.gif"
-  },
-  {
-    "id": "032bcfdc-f05d-43a9-931a-878456b0336c",
-    "name_ru": "Раскрытие грудного отдела у стены",
-    "muscle_group": "мобильность",
-    "file": "wall-chest-opener.gif",
-    "animation_url": "/exercise-gifs/wall-chest-opener.gif"
-  },
-  {
-    "id": "3743ba2f-33fe-4bb0-b059-30f2451528ae",
-    "name_ru": "Растяжка грудных у дверного проёма",
-    "muscle_group": "мобильность",
-    "file": "doorway-chest-stretch.gif",
-    "animation_url": "/exercise-gifs/doorway-chest-stretch.gif"
-  },
-  {
-    "id": "b82cf528-7f43-4048-a1ec-343698878c7f",
-    "name_ru": "Растяжка грушевидной",
-    "muscle_group": "мобильность",
-    "file": "piriformis-stretch.gif",
-    "animation_url": "/exercise-gifs/piriformis-stretch.gif"
-  },
-  {
-    "id": "03d7f8a7-20ca-42b2-bb4e-598e832719fa",
-    "name_ru": "Растяжка сгибателей бедра",
-    "muscle_group": "мобильность",
-    "file": "hip-flexor-stretch.gif",
-    "animation_url": "/exercise-gifs/hip-flexor-stretch.gif"
-  },
-  {
-    "id": "b2f7ac51-9b7e-42e0-a8aa-41bfc20113d7",
-    "name_ru": "Румынская тяга",
-    "muscle_group": "ноги",
-    "file": "romanian-deadlift.gif",
-    "animation_url": "/exercise-gifs/romanian-deadlift.gif"
-  },
-  {
-    "id": "b80ed9d8-aff9-41dd-8aca-fc8b5f12ed2e",
-    "name_ru": "Румынская тяга с гантелями",
-    "muscle_group": "ноги",
-    "file": "dumbbell-romanian-deadlift.gif",
-    "animation_url": "/exercise-gifs/dumbbell-romanian-deadlift.gif"
-  },
-  {
-    "id": "a5ad4d50-7c93-462f-81cb-14781708c0cf",
-    "name_ru": "Русские скручивания",
-    "muscle_group": "кор",
-    "file": "russian-twists.gif",
-    "animation_url": "/exercise-gifs/russian-twists.gif"
-  },
-  {
-    "id": "b387fc78-495d-4f7e-92a1-aafda8ec3415",
-    "name_ru": "Сведение рук в кроссовере",
-    "muscle_group": "грудь",
-    "file": "cable-crossover.gif",
-    "animation_url": "/exercise-gifs/cable-crossover.gif"
-  },
-  {
-    "id": "eb2293fb-e9ad-4518-ac09-334c1109aa0b",
-    "name_ru": "Сгибания гантелей на бицепс",
-    "muscle_group": "бицепс",
-    "file": "dumbbell-bicep-curl.gif",
-    "animation_url": "/exercise-gifs/dumbbell-bicep-curl.gif"
-  },
-  {
-    "id": "19079ff5-5b94-4434-9b6b-1a1935de49e6",
-    "name_ru": "Сгибания на нижнем блоке",
-    "muscle_group": "бицепс",
-    "file": "cable-bicep-curl.gif",
-    "animation_url": "/exercise-gifs/cable-bicep-curl.gif"
-  },
-  {
-    "id": "c0058803-3d6e-4fdc-a935-2c2e08d938f8",
-    "name_ru": "Сгибания на скамье Скотта",
-    "muscle_group": "бицепс",
-    "file": "preacher-curl.gif",
-    "animation_url": "/exercise-gifs/preacher-curl.gif"
-  },
-  {
-    "id": "392bf165-396f-4824-9989-21f0e4f1b6bf",
-    "name_ru": "Сгибания ног лёжа",
-    "muscle_group": "ноги",
-    "file": "lying-leg-curl.gif",
-    "animation_url": "/exercise-gifs/lying-leg-curl.gif"
-  },
-  {
-    "id": "b4d35a89-2f8f-47c5-a6f3-5abe8c31a504",
-    "name_ru": "Сгибания со штангой",
-    "muscle_group": "бицепс",
-    "file": "barbell-bicep-curl.gif",
-    "animation_url": "/exercise-gifs/barbell-bicep-curl.gif"
-  },
-  {
-    "id": "55eeda41-0502-4477-85e3-13a538a95d52",
-    "name_ru": "Скейтер-прыжки",
-    "muscle_group": "кардио",
-    "file": "skater-jumps.gif",
-    "animation_url": "/exercise-gifs/skater-jumps.gif"
-  },
-  {
-    "id": "483f3197-3077-43c4-90bd-8a6ca20d8962",
-    "name_ru": "Скручивания",
-    "muscle_group": "кор",
-    "file": "crunches.gif",
-    "animation_url": "/exercise-gifs/crunches.gif"
-  },
-  {
-    "id": "9d13dadf-adea-4c31-92ec-d2d850589804",
-    "name_ru": "Становая тяга классическая",
-    "muscle_group": "ноги",
-    "file": "conventional-deadlift.gif",
-    "animation_url": "/exercise-gifs/conventional-deadlift.gif"
-  },
-  {
-    "id": "a81d460f-ebb6-41b3-9d88-9779f0a0411b",
-    "name_ru": "Сумо-приседания",
-    "muscle_group": "ноги",
-    "file": "sumo-squat.gif",
-    "animation_url": "/exercise-gifs/sumo-squat.gif"
-  },
-  {
-    "id": "3ba9a818-2f66-42a6-9631-3f136a110d75",
-    "name_ru": "Тяга верхнего блока",
-    "muscle_group": "спина",
-    "file": "lat-pulldown.gif",
-    "animation_url": "/exercise-gifs/lat-pulldown.gif"
-  },
-  {
-    "id": "bec7ac86-5b91-4307-a382-1d352842f188",
-    "name_ru": "Тяга гантели в наклоне",
-    "muscle_group": "спина",
-    "file": "single-arm-dumbbell-row.gif",
-    "animation_url": "/exercise-gifs/single-arm-dumbbell-row.gif"
-  },
-  {
-    "id": "f360d8be-ee56-4b6a-be14-d0b29bcc19c7",
-    "name_ru": "Тяга горизонтального блока",
-    "muscle_group": "спина",
-    "file": "seated-cable-row.gif",
-    "animation_url": "/exercise-gifs/seated-cable-row.gif"
-  },
-  {
-    "id": "11ba6284-70db-4a14-99e2-dff6aa891465",
-    "name_ru": "Тяга к лицу",
-    "muscle_group": "спина",
-    "file": "face-pull.gif",
-    "animation_url": "/exercise-gifs/face-pull.gif"
-  },
-  {
-    "id": "08f8ebc2-9b82-4768-9578-66996d40890c",
-    "name_ru": "Тяга к подбородку",
-    "muscle_group": "плечи",
-    "file": "upright-row.gif",
-    "animation_url": "/exercise-gifs/upright-row.gif"
-  },
-  {
-    "id": "beaa18f5-9ba1-4895-8402-038946ebe7fd",
-    "name_ru": "Тяга резинки к поясу",
-    "muscle_group": "спина",
-    "file": "band-row.gif",
-    "animation_url": "/exercise-gifs/band-row.gif"
-  },
-  {
-    "id": "30ccfbd2-7bf0-48b6-9b28-d1da256a00f6",
-    "name_ru": "Тяга Т-грифа",
-    "muscle_group": "спина",
-    "file": "t-bar-row.gif",
-    "animation_url": "/exercise-gifs/t-bar-row.gif"
-  },
-  {
-    "id": "c653ebb0-ddd7-49e6-9388-aaacc0305fca",
-    "name_ru": "Тяга штанги в наклоне",
-    "muscle_group": "спина",
-    "file": "barbell-bent-over-row.gif",
-    "animation_url": "/exercise-gifs/barbell-bent-over-row.gif"
-  },
-  {
-    "id": "46cd5116-a07b-4089-80e2-17e0f54c0981",
-    "name_ru": "Удержание «лодочки»",
-    "muscle_group": "кор",
-    "file": "hollow-hold.gif",
-    "animation_url": "/exercise-gifs/hollow-hold.gif"
-  },
-  {
-    "id": "70cdc865-0196-431b-b27a-affef9514adf",
-    "name_ru": "Фермерская прогулка",
-    "muscle_group": "full_body",
-    "file": "farmers-walk.gif",
-    "animation_url": "/exercise-gifs/farmers-walk.gif"
-  },
-  {
-    "id": "0a86ce93-61b0-4ce6-b236-f11d64e34d11",
-    "name_ru": "Французский жим гантели",
-    "muscle_group": "трицепс",
-    "file": "dumbbell-skull-crusher.gif",
-    "animation_url": "/exercise-gifs/dumbbell-skull-crusher.gif"
-  },
-  {
-    "id": "eff2c96d-47f8-42a9-9091-e00ba737acc8",
     "name_ru": "Фронтальные приседания",
-    "muscle_group": "ноги",
-    "file": "front-squat.gif",
-    "animation_url": "/exercise-gifs/front-squat.gif"
+    "file": "0042-zG0zs85.gif",
+    "animation_url": "/exercise-gifs/0042-zG0zs85.gif",
+    "muscle_group": "ноги"
   },
   {
-    "id": "651cf0ce-ca83-4439-b320-dd8051b3b696",
-    "name_ru": "Шраги с гантелями",
-    "muscle_group": "спина",
-    "file": "dumbbell-shrugs.gif",
-    "animation_url": "/exercise-gifs/dumbbell-shrugs.gif"
+    "name_ru": "Сумо-приседания",
+    "file": "0124-s7HX1BY.gif",
+    "animation_url": "/exercise-gifs/0124-s7HX1BY.gif",
+    "muscle_group": "ноги"
   },
   {
-    "id": "6df7274b-de53-4431-93ff-77a22b610bb1",
-    "name_ru": "Эллипс",
-    "muscle_group": "кардио",
-    "file": "elliptical.gif",
-    "animation_url": "/exercise-gifs/elliptical.gif"
+    "name_ru": "Приседания со своим весом",
+    "file": "0514-LIlE5Tn.gif",
+    "animation_url": "/exercise-gifs/0514-LIlE5Tn.gif",
+    "muscle_group": "ноги"
   },
   {
-    "id": "d7145f4f-877b-422d-ba4a-ddd31e54af4a",
+    "name_ru": "Приседания с гантелью у груди",
+    "file": "1760-yn8yg1r.gif",
+    "animation_url": "/exercise-gifs/1760-yn8yg1r.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Жим ногами",
+    "file": "1463-2Qh2J1e.gif",
+    "animation_url": "/exercise-gifs/1463-2Qh2J1e.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Разгибания ног",
+    "file": "0585-my33uHU.gif",
+    "animation_url": "/exercise-gifs/0585-my33uHU.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Сгибания ног лёжа",
+    "file": "0586-17lJ1kr.gif",
+    "animation_url": "/exercise-gifs/0586-17lJ1kr.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Румынская тяга",
+    "file": "0085-wQ2c4XD.gif",
+    "animation_url": "/exercise-gifs/0085-wQ2c4XD.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Румынская тяга с гантелями",
+    "file": "1459-rR0LJzx.gif",
+    "animation_url": "/exercise-gifs/1459-rR0LJzx.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Становая тяга классическая",
+    "file": "0032-ila4NZS.gif",
+    "animation_url": "/exercise-gifs/0032-ila4NZS.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Болгарские выпады",
+    "file": "0410-qx4fgX7.gif",
+    "animation_url": "/exercise-gifs/0410-qx4fgX7.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Выпады вперёд",
+    "file": "0336-RRWFUcw.gif",
+    "animation_url": "/exercise-gifs/0336-RRWFUcw.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Выпады назад с гантелями",
+    "file": "0381-SSsBDwB.gif",
+    "animation_url": "/exercise-gifs/0381-SSsBDwB.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Боковые выпады",
+    "file": "1410-py1HSzx.gif",
+    "animation_url": "/exercise-gifs/1410-py1HSzx.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Зашагивания на тумбу",
+    "file": "0431-aXtJhlg.gif",
+    "animation_url": "/exercise-gifs/0431-aXtJhlg.gif",
+    "muscle_group": "ноги"
+  },
+  {
     "name_ru": "Ягодичный мост",
-    "muscle_group": "ноги",
-    "file": "glute-bridge.gif",
-    "animation_url": "/exercise-gifs/glute-bridge.gif"
+    "file": "1409-qKBpF7I.gif",
+    "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
+    "muscle_group": "ноги"
   },
   {
-    "id": "419c560c-8f44-45e6-9c1d-2373eec2f865",
     "name_ru": "Ягодичный мост со штангой",
-    "muscle_group": "ноги",
-    "file": "barbell-hip-thrust.gif",
-    "animation_url": "/exercise-gifs/barbell-hip-thrust.gif"
+    "file": "0756-CqhoytW.gif",
+    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Подъёмы на носки стоя",
+    "file": "1372-8ozhUIZ.gif",
+    "animation_url": "/exercise-gifs/1372-8ozhUIZ.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Подъёмы на носки сидя",
+    "file": "0594-bOOdeyc.gif",
+    "animation_url": "/exercise-gifs/0594-bOOdeyc.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Жим штанги лёжа",
+    "file": "0025-EIeI8Vf.gif",
+    "animation_url": "/exercise-gifs/0025-EIeI8Vf.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Жим гантелей лёжа",
+    "file": "0289-SpYC0Kp.gif",
+    "animation_url": "/exercise-gifs/0289-SpYC0Kp.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Жим гантелей на наклонной",
+    "file": "0314-ns0SIbU.gif",
+    "animation_url": "/exercise-gifs/0314-ns0SIbU.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Жим лёжа узким хватом",
+    "file": "0030-J6Dx1Mu.gif",
+    "animation_url": "/exercise-gifs/0030-J6Dx1Mu.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Жим в тренажёре",
+    "file": "0576-DOoWcnA.gif",
+    "animation_url": "/exercise-gifs/0576-DOoWcnA.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Разведение гантелей лёжа",
+    "file": "0308-yz9nUhF.gif",
+    "animation_url": "/exercise-gifs/0308-yz9nUhF.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Сведение рук в кроссовере",
+    "file": "0188-xLYSdtg.gif",
+    "animation_url": "/exercise-gifs/0188-xLYSdtg.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Отжимания от пола",
+    "file": "0662-I4hDWkc.gif",
+    "animation_url": "/exercise-gifs/0662-I4hDWkc.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Отжимания с колен",
+    "file": "3211-ZOuKWir.gif",
+    "animation_url": "/exercise-gifs/3211-ZOuKWir.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Отжимания с возвышения",
+    "file": "0493-B1EVP9F.gif",
+    "animation_url": "/exercise-gifs/0493-B1EVP9F.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Отжимания узким хватом",
+    "file": "0283-soIB2rj.gif",
+    "animation_url": "/exercise-gifs/0283-soIB2rj.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Отжимания на брусьях",
+    "file": "0251-9WTm7dq.gif",
+    "animation_url": "/exercise-gifs/0251-9WTm7dq.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Подтягивания",
+    "file": "0652-lBDjFxJ.gif",
+    "animation_url": "/exercise-gifs/0652-lBDjFxJ.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Австралийские подтягивания",
+    "file": "0499-bZGHsAZ.gif",
+    "animation_url": "/exercise-gifs/0499-bZGHsAZ.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга штанги в наклоне",
+    "file": "0027-eZyBC3j.gif",
+    "animation_url": "/exercise-gifs/0027-eZyBC3j.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга гантели в наклоне",
+    "file": "0292-C0MA9bC.gif",
+    "animation_url": "/exercise-gifs/0292-C0MA9bC.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга верхнего блока",
+    "file": "2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга горизонтального блока",
+    "file": "0861-fUBheHs.gif",
+    "animation_url": "/exercise-gifs/0861-fUBheHs.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга Т-грифа",
+    "file": "1349-BgljGjd.gif",
+    "animation_url": "/exercise-gifs/1349-BgljGjd.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга резинки к поясу",
+    "file": "3144-Nu7jqFE.gif",
+    "animation_url": "/exercise-gifs/3144-Nu7jqFE.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Пуловер с гантелью",
+    "file": "0375-9XjtHvS.gif",
+    "animation_url": "/exercise-gifs/0375-9XjtHvS.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Гиперэкстензия",
+    "file": "0489-zhMwOwE.gif",
+    "animation_url": "/exercise-gifs/0489-zhMwOwE.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга к лицу",
+    "file": "0203-wqNPGCg.gif",
+    "animation_url": "/exercise-gifs/0203-wqNPGCg.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Жим штанги стоя",
+    "file": "1457-Kyd9Rz5.gif",
+    "animation_url": "/exercise-gifs/1457-Kyd9Rz5.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Жим гантелей сидя",
+    "file": "0405-znQUdHY.gif",
+    "animation_url": "/exercise-gifs/0405-znQUdHY.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Жим Арнольда",
+    "file": "2137-Xy4jlWA.gif",
+    "animation_url": "/exercise-gifs/2137-Xy4jlWA.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Разводка гантелей в стороны",
+    "file": "0334-DsgkuIt.gif",
+    "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Разводка в наклоне",
+    "file": "2292-mu5Guxt.gif",
+    "animation_url": "/exercise-gifs/2292-mu5Guxt.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Подъёмы гантелей перед собой",
+    "file": "0310-3eGE2JC.gif",
+    "animation_url": "/exercise-gifs/0310-3eGE2JC.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Обратные разведения в тренажёре",
+    "file": "0602-myfUsKf.gif",
+    "animation_url": "/exercise-gifs/0602-myfUsKf.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Тяга к подбородку",
+    "file": "0120-UDlhcO8.gif",
+    "animation_url": "/exercise-gifs/0120-UDlhcO8.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Шраги с гантелями",
+    "file": "0406-NJzBsGJ.gif",
+    "animation_url": "/exercise-gifs/0406-NJzBsGJ.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Сгибания гантелей на бицепс",
+    "file": "0294-NbVPDMW.gif",
+    "animation_url": "/exercise-gifs/0294-NbVPDMW.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Сгибания со штангой",
+    "file": "0031-25GPyDY.gif",
+    "animation_url": "/exercise-gifs/0031-25GPyDY.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Молотковые сгибания",
+    "file": "0313-slDvUAU.gif",
+    "animation_url": "/exercise-gifs/0313-slDvUAU.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Сгибания на скамье Скотта",
+    "file": "0070-qOgPVf6.gif",
+    "animation_url": "/exercise-gifs/0070-qOgPVf6.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Сгибания на нижнем блоке",
+    "file": "0868-G08RZcQ.gif",
+    "animation_url": "/exercise-gifs/0868-G08RZcQ.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Разгибания на блоке",
+    "file": "0201-3ZflifB.gif",
+    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Разгибания гантели из-за головы",
+    "file": "2188-kont8Ut.gif",
+    "animation_url": "/exercise-gifs/2188-kont8Ut.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Французский жим гантели",
+    "file": "0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Планка",
+    "file": "2135-VBAWRPG.gif",
+    "animation_url": "/exercise-gifs/2135-VBAWRPG.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Боковая планка",
+    "file": "3544-5VXmnV5.gif",
+    "animation_url": "/exercise-gifs/3544-5VXmnV5.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Планка с касанием плеч",
+    "file": "3239-h1ezqSu.gif",
+    "animation_url": "/exercise-gifs/3239-h1ezqSu.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Скручивания",
+    "file": "0274-TFqbd8t.gif",
+    "animation_url": "/exercise-gifs/0274-TFqbd8t.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Велосипед",
+    "file": "0003-1ZFqTDN.gif",
+    "animation_url": "/exercise-gifs/0003-1ZFqTDN.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Русские скручивания",
+    "file": "0687-XVDdcoj.gif",
+    "animation_url": "/exercise-gifs/0687-XVDdcoj.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Подъёмы ног лёжа",
+    "file": "0620-WhuFnR7.gif",
+    "animation_url": "/exercise-gifs/0620-WhuFnR7.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Мёртвый жук",
+    "file": "0276-iny3m5y.gif",
+    "animation_url": "/exercise-gifs/0276-iny3m5y.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Птица-собака",
+    "file": "0464-CosupLu.gif",
+    "animation_url": "/exercise-gifs/0464-CosupLu.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Удержание «лодочки»",
+    "file": "1014-H6ETwO9.gif",
+    "animation_url": "/exercise-gifs/1014-H6ETwO9.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Альпинисты",
+    "file": "0630-RJgzwny.gif",
+    "animation_url": "/exercise-gifs/0630-RJgzwny.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Бёрпи",
+    "file": "1160-dK9394r.gif",
+    "animation_url": "/exercise-gifs/1160-dK9394r.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Бег на месте",
+    "file": "0685-oLrKqDH.gif",
+    "animation_url": "/exercise-gifs/0685-oLrKqDH.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Высокие колени",
+    "file": "3636-ealLwvX.gif",
+    "animation_url": "/exercise-gifs/3636-ealLwvX.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Прыжки на скакалке",
+    "file": "2612-e1e76I2.gif",
+    "animation_url": "/exercise-gifs/2612-e1e76I2.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Прыжки «звездой»",
+    "file": "3223-HtfCpfi.gif",
+    "animation_url": "/exercise-gifs/3223-HtfCpfi.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Скейтер-прыжки",
+    "file": "3361-zfNHMN9.gif",
+    "animation_url": "/exercise-gifs/3361-zfNHMN9.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Эллипс",
+    "file": "2141-rjtuP6X.gif",
+    "animation_url": "/exercise-gifs/2141-rjtuP6X.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Велотренажёр",
+    "file": "0798-a8VDgLw.gif",
+    "animation_url": "/exercise-gifs/0798-a8VDgLw.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Махи гирей",
+    "file": "0549-UHJlbu3.gif",
+    "animation_url": "/exercise-gifs/0549-UHJlbu3.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Фермерская прогулка",
+    "file": "2133-qPEzJjA.gif",
+    "animation_url": "/exercise-gifs/2133-qPEzJjA.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Медвежья походка",
+    "file": "3360-0Yz8WdV.gif",
+    "animation_url": "/exercise-gifs/3360-0Yz8WdV.gif",
+    "muscle_group": "кардио"
+  },
+  {
+    "name_ru": "Присед + жим гантелей",
+    "file": "0550-yWxMvB5.gif",
+    "animation_url": "/exercise-gifs/0550-yWxMvB5.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Присед с жимом над головой",
+    "file": "3305-f7Y9eDZ.gif",
+    "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Комплекс присед + жим",
+    "file": "3305-f7Y9eDZ.gif",
+    "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Выпад + сгибание на бицепс",
+    "file": "1658-Mz6lLcW.gif",
+    "animation_url": "/exercise-gifs/1658-Mz6lLcW.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Обратные выпады с поворотом",
+    "file": "1688-K9VL0Jq.gif",
+    "animation_url": "/exercise-gifs/1688-K9VL0Jq.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Кошка-корова",
+    "file": "1363-JbC2iaV.gif",
+    "animation_url": "/exercise-gifs/1363-JbC2iaV.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Мобилизация голеностопа",
+    "file": "1368-uL9CsKm.gif",
+    "animation_url": "/exercise-gifs/1368-uL9CsKm.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Мобилизация плеч с резинкой",
+    "file": "1022-tc5dYrf.gif",
+    "animation_url": "/exercise-gifs/1022-tc5dYrf.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Поза голубя",
+    "file": "2567-QY39eBr.gif",
+    "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Растяжка грушевидной",
+    "file": "2567-QY39eBr.gif",
+    "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Растяжка сгибателей бедра",
+    "file": "1564-tFGKm99.gif",
+    "animation_url": "/exercise-gifs/1564-tFGKm99.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Раскрытие грудного отдела у стены",
+    "file": "1167-3uj0Ozg.gif",
+    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Растяжка грудных у дверного проёма",
+    "file": "1167-3uj0Ozg.gif",
+    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Наклоны к носкам",
+    "file": "3212-BbfB8Gb.gif",
+    "animation_url": "/exercise-gifs/3212-BbfB8Gb.gif",
+    "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Мировая растяжка",
+    "file": "1604-DFGXwZr.gif",
+    "animation_url": "/exercise-gifs/1604-DFGXwZr.gif",
+    "muscle_group": "мобильность"
   }
 ]

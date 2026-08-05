@@ -161,6 +161,24 @@ if ($dbUrl -and $dbUrl -match "localhost") {
   Warn "DATABASE_URL uses localhost - on Windows prefer 127.0.0.1"
 }
 
+# --- backend import preflight (fail fast on SyntaxError) ---
+$PyExe = Join-Path $BackendDir ".venv\Scripts\python.exe"
+if (Test-Path -LiteralPath $PyExe) {
+  Info "Checking backend import..."
+  Push-Location $BackendDir
+  try {
+    & $PyExe -c "import app.main"
+    if ($LASTEXITCODE -ne 0) {
+      Die "Backend import failed (app.main). Fix SyntaxError in backend, then retry."
+    }
+  } catch {
+    Die "Backend import failed: $($_.Exception.Message)"
+  } finally {
+    Pop-Location
+  }
+  Ok "Backend import OK"
+}
+
 # --- backend ---
 if ((Get-ListenPids $BackendPort).Count -gt 0) {
   Ok "Backend already on :$BackendPort"

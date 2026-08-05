@@ -21,7 +21,7 @@ const logSchema = z.object({
   meal_type: z.string(),
   product_id: z.string().uuid(),
   quantity_grams: z.number(),
-  calculated_kbj: z.record(z.number()).default({}),
+  calculated_kbj: z.record(z.any()).default({}),
   product: productSchema.nullable().optional(),
 });
 
@@ -94,14 +94,62 @@ export async function addNutritionLog(input: {
   quantityGrams: number;
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   date?: string;
+  /** Optional KBJU per 100g override for this log only */
+  caloriesPer100?: number;
+  proteinsPer100?: number;
+  fatsPer100?: number;
+  carbsPer100?: number;
 }): Promise<NutritionLog> {
   const { data } = await apiClient.post("/nutrition/log", {
     product_id: input.productId,
     quantity_grams: input.quantityGrams,
     meal_type: input.mealType,
     date: input.date,
+    calories_per_100: input.caloriesPer100,
+    proteins_per_100: input.proteinsPer100,
+    fats_per_100: input.fatsPer100,
+    carbs_per_100: input.carbsPer100,
   });
   return logSchema.parse(data);
+}
+
+export async function createNutritionProduct(input: {
+  nameRu: string;
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbs: number;
+  category?: string;
+  barcode?: string;
+}): Promise<NutritionProduct> {
+  const { data } = await apiClient.post("/nutrition/products", {
+    name_ru: input.nameRu,
+    calories: input.calories,
+    proteins: input.proteins,
+    fats: input.fats,
+    carbs: input.carbs,
+    category: input.category ?? "custom",
+    barcode: input.barcode,
+  });
+  return productSchema.parse(data);
+}
+
+const barcodeLookupSchema = z.object({
+  found: z.boolean(),
+  barcode: z.string(),
+  source: z.string().nullable().optional(),
+  product: productSchema.nullable().optional(),
+  serving_grams: z.number().nullable().optional(),
+  created: z.boolean().optional().default(false),
+  error: z.string().nullable().optional(),
+});
+
+export type BarcodeLookup = z.infer<typeof barcodeLookupSchema>;
+
+export async function lookupBarcode(code: string): Promise<BarcodeLookup> {
+  const clean = String(code || "").replace(/\D/g, "");
+  const { data } = await apiClient.get(`/nutrition/barcode/${encodeURIComponent(clean)}`);
+  return barcodeLookupSchema.parse(data);
 }
 
 export async function fetchDailyNutrition(date?: string): Promise<DailyNutrition> {

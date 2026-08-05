@@ -1,21 +1,35 @@
 /**
  * Daily nutrition diary — TZ §5 tracker.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import {
   addNutritionLog,
+  createNutritionProduct,
   fetchDailyNutrition,
   fetchProductCategories,
+  lookupBarcode,
   previewKbju,
   searchProducts,
   type DailyNutrition,
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
+import { BarcodeScannerModal } from "@/features/nutrition/components/BarcodeScannerModal";
+import { trackEvent } from "@/lib/analytics";
 import { isOnline } from "@/utils/network";
+import {
+  loadFavoriteProducts,
+  loadRecentProducts,
+  localYesterdayISO,
+  productFromQuick,
+  rememberRecentProduct,
+  toggleFavoriteProduct,
+  yesterdayEntries,
+  type QuickProduct,
+} from "@/utils/nutritionQuick";
 
 const MEALS = [
   { id: "breakfast", label: "Завтрак" },
@@ -71,6 +85,23 @@ export function DailyLog() {
   const [grams, setGrams] = useState("100");
   const [saving, setSaving] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(true);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [ovCal, setOvCal] = useState("");
+  const [ovP, setOvP] = useState("");
+  const [ovF, setOvF] = useState("");
+  const [ovC, setOvC] = useState("");
+  const [customOpen, setCustomOpen] = useState(false);
+  const [cName, setCName] = useState("");
+  const [cCal, setCCal] = useState("");
+  const [cP, setCP] = useState("");
+  const [cF, setCF] = useState("");
+  const [cC, setCC] = useState("");
+  const [recent, setRecent] = useState<QuickProduct[]>(() => loadRecentProducts());
+  const [favorites, setFavorites] = useState<QuickProduct[]>(() => loadFavoriteProducts());
+  const [copyingYesterday, setCopyingYesterday] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [barcodeBusy, setBarcodeBusy] = useState(false);
+  const [okNote, setOkNote] = useState<string | null>(null);
 
   async function reload() {
     if (!getStoredToken()) {
@@ -157,13 +188,44 @@ export function DailyLog() {
     if (!selected) return null;
     const g = Number(grams);
     if (!g || g <= 0) return null;
+    if (overrideOpen) {
+      const product = {
+        ...selected,
+        calories: Number(ovCal) || 0,
+        proteins: Number(ovP) || 0,
+        fats: Number(ovF) || 0,
+        carbs: Number(ovC) || 0,
+      };
+      return previewKbju(product, g);
+    }
     return previewKbju(selected, g);
-  }, [grams, selected]);
+  }, [grams, ovC, ovCal, ovF, ovP, overrideOpen, selected]);
 
-  function pickProduct(p: NutritionProduct) {
+  function pickProduct(p: NutritionProduct, opts?: { grams?: number; meal?: MealId }) {
     setSelected(p);
     setQuery(p.name_ru);
     setSuggestions([]);
+    setOvCal(String(p.calories));
+    setOvP(String(p.proteins));
+    setOvF(String(p.fats));
+    setOvC(String(p.carbs));
+    setOverrideOpen(false);
+    if (opts?.grams && opts.grams > 0) setGrams(String(opts.grams));
+    if (opts?.meal) setMealType(opts.meal);
+  }
+
+  function pickQuick(q: QuickProduct) {
+    const meal =
+      q.lastMeal === "breakfast" ||
+      q.lastMeal === "lunch" ||
+      q.lastMeal === "dinner" ||
+      q.lastMeal === "snack"
+        ? q.lastMeal
+        : undefined;
+    pickProduct(productFromQuick(q), {
+      grams: q.lastGrams && q.lastGrams > 0 ? q.lastGrams : undefined,
+      meal,
+    });
   }
 
   async function submit() {
@@ -176,16 +238,29 @@ export function DailyLog() {
     setSaving(true);
     setError(null);
     try {
+      const useOv = overrideOpen;
       await addNutritionLog({
         productId: selected.id,
         quantityGrams: g,
         mealType,
         date: day,
+        caloriesPer100: useOv && ovCal !== "" ? Number(ovCal) : undefined,
+        proteinsPer100: useOv && ovP !== "" ? Number(ovP) : undefined,
+        fatsPer100: useOv && ovF !== "" ? Number(ovF) : undefined,
+        carbsPer100: useOv && ovC !== "" ? Number(ovC) : undefined,
       });
+      trackEvent("nutrition_logged", {
+        meal_type: mealType,
+        grams: g,
+        product_id: selected.id,
+        source: "manual",
+      });
+      setRecent(rememberRecentProduct(selected, { grams: g, mealType }));
       setQuery("");
       setSelected(null);
       setSuggestions([]);
       setGrams("100");
+      setOverrideOpen(false);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось добавить приём пищи");
@@ -193,6 +268,137 @@ export function DailyLog() {
       setSaving(false);
     }
   }
+
+  async function copyYesterday() {
+    if (copyingYesterday || saving) return;
+    if (!getStoredToken() || !isOnline()) {
+      setError("«Как вчера» доступно онлайн");
+      return;
+    }
+    setCopyingYesterday(true);
+    setError(null);
+    try {
+      const yDay = await fetchDailyNutrition(localYesterdayISO());
+      const entries = yesterdayEntries(yDay);
+      if (!entries.length) {
+        setError("Вчера записей нет");
+        return;
+      }
+      for (const e of entries) {
+        await addNutritionLog({
+          productId: e.product.id,
+          quantityGrams: e.quantityGrams,
+          mealType: e.mealType,
+          date: day,
+        });
+        rememberRecentProduct(e.product, {
+          grams: e.quantityGrams,
+          mealType: e.mealType,
+        });
+      }
+      trackEvent("nutrition_logged", {
+        meal_type: "mixed",
+        grams: entries.reduce((a, e) => a + e.quantityGrams, 0),
+        source: "copy_yesterday",
+        items: entries.length,
+      });
+      setRecent(loadRecentProducts());
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось скопировать вчера");
+    } finally {
+      setCopyingYesterday(false);
+    }
+  }
+
+  async function submitCustomProduct() {
+    if (saving) return;
+    const name = cName.trim();
+    const calories = Number(cCal);
+    const proteins = Number(cP);
+    const fats = Number(cF);
+    const carbs = Number(cC);
+    if (!name) {
+      setError("Укажите название продукта");
+      return;
+    }
+    if (![calories, proteins, fats, carbs].every((n) => Number.isFinite(n) && n >= 0)) {
+      setError("БЖУ и ккал должны быть числами ≥ 0 (на 100 г)");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const product = await createNutritionProduct({
+        nameRu: name,
+        calories,
+        proteins,
+        fats,
+        carbs,
+        category: "custom",
+      });
+      setCustomOpen(false);
+      setCName("");
+      setCCal("");
+      setCP("");
+      setCF("");
+      setCC("");
+      pickProduct(product);
+      setBrowseOpen(true);
+      // refresh catalog
+      const res = await searchProducts("", { limit: 40, category: category || undefined });
+      setCatalog(res.items);
+      setCatalogTotal(res.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать продукт");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const handleBarcodeDetected = useCallback(async (code: string) => {
+    const digits = String(code || "").replace(/\D/g, "");
+    if (digits.length < 8) return;
+    setBarcodeBusy(true);
+    setError(null);
+    setOkNote(null);
+    setScannerOpen(false);
+    try {
+      if (!getStoredToken() || !isOnline()) {
+        setError("Сканер штрихкода доступен онлайн");
+        return;
+      }
+      const res = await lookupBarcode(digits);
+      if (!res.found || !res.product) {
+        setError(
+          res.error === "invalid_barcode"
+            ? "Некорректный штрихкод"
+            : `Товар ${digits} не найден. Добавьте вручную или создайте свой продукт.`,
+        );
+        setQuery(digits);
+        setCustomOpen(true);
+        return;
+      }
+      // Only select product + suggested grams — user confirms grams, then taps «Добавить».
+      const gramsDefault =
+        res.serving_grams && res.serving_grams > 0 ? Math.round(res.serving_grams) : 100;
+      pickProduct(res.product, { grams: gramsDefault });
+      setBrowseOpen(false);
+      trackEvent("nutrition_barcode_selected", {
+        product_id: res.product.id,
+        barcode: digits,
+        grams_suggested: gramsDefault,
+        source: res.source || (res.created ? "openfoodfacts" : "local"),
+      });
+      setOkNote(
+        `Найден: ${res.product.name_ru}. Укажите граммы (сейчас ${gramsDefault} г) и нажмите «Добавить».`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось распознать штрихкод");
+    } finally {
+      setBarcodeBusy(false);
+    }
+  }, []);
 
   const totals = data?.totals ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
   const targets = data?.targets;
@@ -208,6 +414,9 @@ export function DailyLog() {
 
       {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {okNote ? (
+        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-link">{okNote}</div>
+      ) : null}
 
       <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-end justify-between gap-2">
@@ -242,7 +451,7 @@ export function DailyLog() {
         </div>
         {targets?.complete && targets.bmr && targets.tdee ? (
           <p className="mt-2 text-[11px] text-tg-hint">
-            BMR {targets.bmr} · TDEE {targets.tdee}
+            обмен {targets.bmr} · расход {targets.tdee}
             {targets.macros
               ? ` · цель Б/Ж/У ${targets.macros.proteins_g ?? "—"}/${targets.macros.fats_g ?? "—"}/${targets.macros.carbs_g ?? "—"} г`
               : ""}
@@ -277,7 +486,76 @@ export function DailyLog() {
       </div>
 
       <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
-        <p className="text-sm font-medium">Добавить продукт</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium">Добавить продукт</p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={barcodeBusy || saving || !isOnline()}
+              onClick={() => {
+                setError(null);
+                setOkNote(null);
+                setScannerOpen(true);
+              }}
+              className="text-xs font-medium text-tg-link disabled:opacity-50"
+            >
+              {barcodeBusy ? "Ищем…" : "📷 Сканер"}
+            </button>
+            <button
+              type="button"
+              disabled={copyingYesterday || saving}
+              onClick={() => void copyYesterday()}
+              className="text-xs text-tg-link disabled:opacity-50"
+            >
+              {copyingYesterday ? "Копируем…" : "Как вчера"}
+            </button>
+          </div>
+        </div>
+        <p className="text-[11px] text-tg-hint">
+          Сканер подставит продукт и предложит граммы (порция с упаковки или 100 г). Проверьте
+          граммы и нажмите «Добавить».
+        </p>
+
+        {favorites.length || recent.length ? (
+          <div className="space-y-2">
+            {favorites.length ? (
+              <div>
+                <p className="mb-1 text-[11px] text-tg-hint">Избранное</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {favorites.map((q) => (
+                    <button
+                      key={`fav-${q.id}`}
+                      type="button"
+                      onClick={() => pickQuick(q)}
+                      className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px]"
+                    >
+                      ★ {q.name_ru}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {recent.length ? (
+              <div>
+                <p className="mb-1 text-[11px] text-tg-hint">Недавние</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {recent.map((q) => (
+                    <button
+                      key={`rec-${q.id}`}
+                      type="button"
+                      onClick={() => pickQuick(q)}
+                      className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px]"
+                    >
+                      {q.name_ru}
+                      {q.lastGrams ? ` · ${q.lastGrams}г` : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           {MEALS.map((m) => (
             <button
@@ -391,11 +669,100 @@ export function DailyLog() {
           <input
             type="number"
             inputMode="decimal"
+            min={1}
+            step={1}
             value={grams}
             onChange={(e) => setGrams(e.target.value)}
             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
+        <div className="flex flex-wrap gap-1.5">
+          {[50, 100, 150, 200, 250].map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setGrams(String(g))}
+              className={[
+                "rounded-full px-2.5 py-1 text-[11px]",
+                String(g) === String(Number(grams) || "")
+                  ? "bg-tg-button text-tg-button-text"
+                  : "bg-tg-bg text-tg-hint",
+              ].join(" ")}
+            >
+              {g} г
+            </button>
+          ))}
+        </div>
+
+        {selected ? (
+          <div className="space-y-2 rounded-xl bg-tg-bg p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">{selected.name_ru}</p>
+              <button
+                type="button"
+                className="text-xs text-tg-link"
+                onClick={() => {
+                  const res = toggleFavoriteProduct(selected);
+                  setFavorites(res.favorites);
+                }}
+              >
+                {favorites.some((f) => f.id === selected.id) ? "★ В избранном" : "☆ В избранное"}
+              </button>
+              <button
+                type="button"
+                className="text-xs text-tg-link"
+                onClick={() => setOverrideOpen((v) => !v)}
+              >
+                {overrideOpen ? "Каталожные БЖУ" : "Изменить БЖУ / 100 г"}
+              </button>
+            </div>
+            {overrideOpen ? (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <label className="text-tg-hint">
+                  Ккал/100г
+                  <input
+                    value={ovCal}
+                    onChange={(e) => setOvCal(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="text-tg-hint">
+                  Белки
+                  <input
+                    value={ovP}
+                    onChange={(e) => setOvP(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="text-tg-hint">
+                  Жиры
+                  <input
+                    value={ovF}
+                    onChange={(e) => setOvF(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="text-tg-hint">
+                  Углеводы
+                  <input
+                    value={ovC}
+                    onChange={(e) => setOvC(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <p className="col-span-2 text-[10px] text-tg-hint">
+                  Меняет БЖУ только для этой записи (как на упаковке), не весь каталог.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-tg-hint">
+                На 100 г: {selected.calories} ккал · Б {selected.proteins} · Ж {selected.fats} · У{" "}
+                {selected.carbs}
+              </p>
+            )}
+          </div>
+        ) : null}
+
         {preview ? (
           <p className="text-xs text-tg-hint">
             ≈ {preview.calories} ккал · Б {preview.proteins} · Ж {preview.fats} · У {preview.carbs}
@@ -408,6 +775,13 @@ export function DailyLog() {
           className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
         >
           {saving ? "Сохраняем…" : "Добавить"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setCustomOpen(true)}
+          className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium"
+        >
+          + Свой продукт в общий каталог
         </button>
       </div>
 
@@ -437,6 +811,39 @@ export function DailyLog() {
           );
         })}
       </div>
+
+      {customOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Новый продукт</h3>
+              <button type="button" className="text-tg-hint" onClick={() => setCustomOpen(false)}>✕</button>
+            </div>
+            <p className="text-xs text-tg-hint">БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
+            <label className="block text-xs text-tg-hint">
+              Название
+              <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm" />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-xs text-tg-hint">Ккал<input value={cCal} onChange={(e) => setCCal(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Белки<input value={cP} onChange={(e) => setCP(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Жиры<input value={cF} onChange={(e) => setCF(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Углеводы<input value={cC} onChange={(e) => setCC(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+            </div>
+            <button type="button" disabled={saving} onClick={() => void submitCustomProduct()} className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60">
+              {saving ? "Сохраняем…" : "Создать и выбрать"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <BarcodeScannerModal
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => {
+          void handleBarcodeDetected(code);
+        }}
+      />
     </section>
   );
 }

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
+"""DEPRECATED — use rebuild_catalog_from_dataset.py instead."""
+raise SystemExit("DEPRECATED: use scripts/rebuild_catalog_from_dataset.py")
+
 """Apply local /exercise-gifs/<file>.gif paths to exercises.animation_url.
-
-Reads frontend/public/exercise-gifs/exercise-gifs-manifest.json
-(or regenerates via gen_exercise_gif_list.py).
-
-Only sets animation_url when the GIF file exists on disk (unless --force-paths).
 """
 from __future__ import annotations
 

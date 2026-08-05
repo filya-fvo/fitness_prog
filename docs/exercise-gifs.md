@@ -1,123 +1,61 @@
-# GIF техники упражнений — локальные файлы
+# Exercise GIFs
 
-## Как приложение показывает GIF
+## Source
 
-В карточке упражнения поле **nimation_url**:
+Media comes from **[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)**  
+© [Gym visual](https://gymvisual.com/) — keep attribution.
 
-1. Сначала **GIF** (nimation_url) + текст техники.
-2. По кнопке **«Видео инструкция»** — ideo_url (YouTube/mp4).
+- Metadata clone: `backups/exercises-dataset-src/`
+- Active GIFs: `frontend/public/exercise-gifs/`
+- Old local semantic GIFs archived under `backups/exercise-gifs-archive-*`
 
-Код: rontend/src/features/workout/components/ExerciseMediaPlayer.tsx.
+## How the app shows media
 
-**Внешний GIF API (Giphy и т.п.) отключён** — только ваши файлы или явный HTTPS URL.
+Field `animation_url` on exercise (e.g. `/exercise-gifs/0025-EIeI8Vf.gif`).  
+Player: `frontend/src/features/workout/components/ExerciseMediaPlayer.tsx`.
 
----
+## Rebuild catalog + GIFs + programs
 
-## Куда класть файлы
+Предпочтительно из корня (GIF + extras + video checklist):
 
-`
-frontend/public/exercise-gifs/
-  bench-press.gif
-  push-ups.gif
-  plank.gif
-  ...
-`
+```powershell
+cd C:\fitness_prog
+.\scripts\rebuild-content.cmd
+# с перекачкой GIF:
+.\scripts\rebuild-content.cmd --full-download
+```
 
-В БД:
+Вручную:
 
-`	ext
-animation_url = "/exercise-gifs/bench-press.gif"
-`
-
-Vite отдаёт public/ с корня →  
-https://<domain>/exercise-gifs/bench-press.gif.
-
-**Имена:** латиница, kebab-case, без пробелов.
-
-### Какие расширения можно класть
-
-| Расширение | Назначение |
-|------------|------------|
-| `.gif` | **основной** вариант для техники (анимация) |
-| `.webp` | анимация или статичный постер |
-| `.png` / `.jpg` / `.jpeg` | статичная картинка (не анимация) |
-| `.mp4` / YouTube | **не** сюда — в поле `video_url` |
-
-Скрипт `apply_local_exercise_gifs.py` сейчас ищет именно `*.gif` по манифесту.
-Если кладёте jpeg/png — либо переименуйте в ожидаемое `.gif`-имя после конвертации,
-либо пропишите `animation_url` вручную (админка / SQL).
-
----
-
-## Список имён файлов (100 упражнений)
-
-| Файл | Назначение |
-|------|------------|
-| rontend/public/exercise-gifs/FILENAMES.txt | только имена (ench-press.gif, …) |
-| rontend/public/exercise-gifs/EXERCISE_GIFS.txt | file + name_ru + мышца |
-| docs/exercise-gif-filenames.md | таблица Markdown |
-| rontend/public/exercise-gifs/exercise-gifs-manifest.json | id ↔ file для скрипта |
-
-Пересоздать список из БД:
-
-`powershell
+```powershell
 cd C:\fitness_prog\backend
-.\venv\Scripts\python.exe scripts\gen_exercise_gif_list.py
-`
+.\.venv\Scripts\python.exe scripts\rebuild_catalog_from_dataset.py
+# if GIFs already downloaded:
+.\.venv\Scripts\python.exe scripts\rebuild_catalog_from_dataset.py --skip-archive --skip-download
+.\.venv\Scripts\python.exe scripts\add_extra_programs.py
+.\.venv\Scripts\python.exe scripts\apply_video_urls.py --from-checklist
+```
 
-(или .\.venv\Scripts\python.exe если venv в backend)
+Pipeline:
 
----
+1. Archive previous `exercise-gifs/*`
+2. Map curated RU names to dataset EN exercises
+3. Download only needed GIFs from GitHub raw
+4. Write `scripts/seed_content/exercises.json` and regenerate `programs.json` (**сохраняет `video_url`** из seed/checklist)
+5. Upsert DB (soft-delete retired exercises/templates)
+6. Apply YouTube URLs from `docs/exercise-media-checklist.csv`
 
-## После того как файлы скачаны
+## Deprecated scripts
 
-`powershell
-cd C:\fitness_prog\backend
-.\venv\Scripts\python.exe scripts\apply_local_exercise_gifs.py
-`
+Do not run:
 
-Скрипт проставит nimation_url **только** для файлов, которые реально лежат в папке.
+- `gen_exercise_gif_list.py`
+- `apply_local_exercise_gifs.py`
+- `fix_exercise_gif_mapping.py`
 
-Проставить пути заранее (ещё без файлов):
+## Quality checks
 
-`powershell
-.\venv\Scripts\python.exe scripts\apply_local_exercise_gifs.py --force-paths
-`
-
----
-
-## Откуда брать GIF (вручную)
-
-| Источник | Заметки |
-|----------|---------|
-| Свои съёмки → ezgif / CapCut | лучший контроль |
-| YouTube → ezgif.com | обрезка + сжатие |
-| Стоки (Pexels и т.п.) | смотреть лицензию |
-| ExerciseDB / платные базы | скачать и положить локально |
-
-Не используем runtime Giphy/Tenor.
-
----
-
-## Правила качества
-
-- 3–6 секунд, loop.
-- Желательно **< 1.5 MB** (Telegram WebView).
-- Нейтральный фон, движение по центру.
-
----
-
-## Админка
-
-/admin → упражнение → nimation_url:
-
-- /exercise-gifs/bench-press.gif
-- или https://cdn.example.com/ex/squat.gif
-
----
-
-## Чеклист
-
-- [ ] Файлы в rontend/public/exercise-gifs/ по FILENAMES.txt
-- [ ] python scripts/apply_local_exercise_gifs.py
-- [ ] Проверка карточки упражнения в приложении
+```powershell
+.\venv\Scripts\python.exe -m pytest tests\test_catalog_seed.py -q
+.\venv\Scripts\python.exe scripts\_verify_catalog_quality.py
+```

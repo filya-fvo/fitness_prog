@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { analyzeProgress, sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
+import { trackEvent } from "@/lib/analytics";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
@@ -53,7 +54,7 @@ export function Chat() {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: `${result.report}\n\n_source: ${result.source}_`,
+            content: result.report,
           },
         ]);
       } else {
@@ -65,10 +66,14 @@ export function Chat() {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: `${result.reply}\n\n_source: ${result.source}_`,
+            content: result.reply,
           },
         ]);
       }
+      trackEvent("ai_message_sent", {
+        kind: trimmed.toLowerCase().includes("прогресс") ? "analyze" : "chat",
+        chars: trimmed.length,
+      });
       window.setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (err) {
       setError(err instanceof Error ? err.message : "AI недоступен");

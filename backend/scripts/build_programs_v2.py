@@ -461,6 +461,149 @@ def no_knee_female_c():
     ]
 
 
+# Home no-knee: no squats/lunges/jumps/step-ups/leg press/extensions.
+# Hip hinge + bridge + upper body + core (floor).
+
+
+def home_no_knee_male_a():
+    return [
+        ex("Жим гантелей лёжа", 4, "8-12", 75),
+        ex("Тяга гантели в наклоне", 4, "8-12", 75),
+        ex("Жим гантелей сидя", 3, "8-12", 70),
+        ex("Ягодичный мост", 4, "12-15", 55),
+        ex("Румынская тяга с гантелями", 3, "8-12", 80),
+        ex("Разгибания гантели из-за головы", 3, "10-15", 55),
+        ex("Планка", 3, "30-45с", 40),
+    ]
+
+
+def home_no_knee_male_b():
+    return [
+        ex("Жим гантелей на наклонной", 4, "8-12", 75),
+        ex("Австралийские подтягивания", 4, "6-12", 75),
+        ex("Разводка гантелей в стороны", 3, "10-15", 55),
+        ex("Ягодичный мост", 4, "12-20", 50),
+        ex("Сгибания гантелей на бицепс", 3, "8-12", 55),
+        ex("Французский жим гантели", 3, "8-12", 55),
+        ex("Мёртвый жук", 3, "8/стор", 40),
+    ]
+
+
+def home_no_knee_male_c():
+    return [
+        ex("Отжимания с возвышения", 3, "8-15", 60),
+        ex("Австралийские подтягивания", 4, "6-12", 75),
+        ex("Жим Арнольда", 3, "8-12", 70),
+        ex("Румынская тяга с гантелями", 3, "8-12", 80),
+        ex("Разводка в наклоне", 3, "10-15", 55),
+        ex("Молотковые сгибания", 3, "8-12", 55),
+        ex("Боковая планка", 3, "20-40с", 40),
+    ]
+
+
+def home_no_knee_female_a():
+    return [
+        ex("Ягодичный мост", 4, "12-20", 50),
+        ex("Румынская тяга с гантелями", 4, "10-15", 70),
+        ex("Жим гантелей лёжа", 3, "10-15", 70),
+        ex("Тяга гантели в наклоне", 3, "10-15", 70),
+        ex("Разводка гантелей в стороны", 3, "12-15", 50),
+        ex("Планка", 3, "25-40с", 40),
+        ex("Скручивания", 3, "12-15", 40),
+    ]
+
+
+def home_no_knee_female_b():
+    return [
+        ex("Ягодичный мост", 4, "15-20", 45),
+        ex("Жим гантелей сидя", 3, "10-15", 65),
+        ex("Тяга гантели в наклоне", 4, "10-15", 65),
+        ex("Разведение гантелей лёжа", 3, "12-15", 55),
+        ex("Сгибания гантелей на бицепс", 3, "10-15", 50),
+        ex("Разгибания гантели из-за головы", 3, "10-15", 50),
+        ex("Боковая планка", 3, "15-30с", 40),
+    ]
+
+
+def home_no_knee_female_c():
+    return [
+        ex("Румынская тяга с гантелями", 4, "10-15", 70),
+        ex("Ягодичный мост", 4, "12-20", 45),
+        ex("Отжимания с колен", 3, "8-15", 55),
+        ex("Тяга гантели в наклоне", 3, "10-15", 65),
+        ex("Разводка в наклоне", 3, "12-15", 50),
+        ex("Мёртвый жук", 3, "8/стор", 40),
+        ex("Русские скручивания", 3, "12-16", 40),
+    ]
+
+
+def home_no_knee_bw_a():
+    """Bodyweight-only home, knee-friendly (no lunges/jumps/high knees)."""
+    return [
+        ex("Отжимания с возвышения", 3, "8-15", 55),
+        ex("Австралийские подтягивания", 3, "6-12", 70),
+        ex("Ягодичный мост", 4, "15-20", 45),
+        ex("Планка", 3, "25-45с", 40),
+        ex("Птица-собака", 3, "8/стор", 40),
+        ex("Скручивания", 3, "12-15", 40),
+    ]
+
+
+def home_no_knee_bw_b():
+    return [
+        ex("Отжимания с колен", 3, "8-15", 55),
+        ex("Тяга резинки к поясу", 4, "12-15", 50),
+        ex("Ягодичный мост", 4, "15-20", 45),
+        ex("Боковая планка", 3, "15-30с", 40),
+        ex("Мёртвый жук", 3, "8/стор", 40),
+        ex("Планка с касанием плеч", 3, "8-12/стор", 40),
+    ]
+
+
+def home_no_knee_bw_c():
+    return [
+        ex("Отжимания узким хватом", 3, "6-12", 55),
+        ex("Австралийские подтягивания", 3, "6-12", 70),
+        ex("Ягодичный мост", 4, "12-20", 45),
+        ex("Удержание «лодочки»", 3, "20-40с", 40),
+        ex("Кошка-корова", 2, "8-10", 30),
+        ex("Скручивания", 3, "12-15", 40),
+    ]
+
+
+def home_db_female_a(sets=3, reps="10-15", rest=65):
+    return [
+        ex("Приседания с гантелью у груди", sets, reps, rest),
+        ex("Жим гантелей лёжа", sets, reps, rest),
+        ex("Тяга гантели в наклоне", sets, reps, rest),
+        ex("Ягодичный мост", sets, "12-20", 50),
+        ex("Разводка гантелей в стороны", sets, "12-15", 50),
+        ex("Планка", sets, "25-40с", 40),
+    ]
+
+
+def home_db_female_b(sets=3, reps="10-15", rest=65):
+    return [
+        ex("Румынская тяга с гантелями", sets, reps, rest),
+        ex("Жим гантелей сидя", sets, reps, rest),
+        ex("Выпады назад с гантелями", sets, "8-12/стор", rest),
+        ex("Сгибания гантелей на бицепс", sets, reps, 50),
+        ex("Разгибания гантели из-за головы", sets, reps, 50),
+        ex("Скручивания", sets, "12-15", 40),
+    ]
+
+
+def home_db_female_c(sets=3, reps="10-15", rest=65):
+    return [
+        ex("Болгарские выпады", sets, "8-12/стор", rest),
+        ex("Жим гантелей на наклонной", sets, reps, rest),
+        ex("Тяга гантели в наклоне", sets, reps, rest),
+        ex("Ягодичный мост", sets, "15-20", 45),
+        ex("Молотковые сгибания", sets, reps, 50),
+        ex("Боковая планка", sets, "15-30с", 40),
+    ]
+
+
 def no_spine_beg_male_a():
     return [
         ex("Жим ногами", 3, "10-15", 75),
@@ -599,6 +742,74 @@ def no_spine_int_female_c():
     ]
 
 
+def home_no_spine_a():
+    """Home spine-safe: no RDL / bent-over rows; floor press, band rows, bridges."""
+    return [
+        ex("Жим гантелей лёжа", 3, "8-12", 70),
+        ex("Тяга резинки к поясу", 3, "12-15", 60),
+        ex("Ягодичный мост", 3, "12-15", 50),
+        ex("Жим гантелей сидя", 3, "8-12", 65),
+        ex("Отжимания с возвышения", 3, "8-12", 55),
+        ex("Мёртвый жук", 3, "8/стор", 40),
+    ]
+
+
+def home_no_spine_b():
+    return [
+        ex("Жим гантелей на наклонной", 3, "8-12", 70),
+        ex("Тяга резинки к поясу", 3, "12-15", 60),
+        ex("Ягодичный мост", 3, "15-20", 45),
+        ex("Разводка гантелей в стороны", 3, "10-15", 50),
+        ex("Молотковые сгибания", 3, "10-15", 50),
+        ex("Планка", 3, "20-40с", 40),
+    ]
+
+
+def home_no_spine_c():
+    return [
+        ex("Отжимания от пола", 3, "8-15", 60),
+        ex("Тяга резинки к поясу", 3, "12-15", 60),
+        ex("Ягодичный мост", 3, "12-15", 50),
+        ex("Жим гантелей сидя", 3, "10-15", 60),
+        ex("Разгибания гантели из-за головы", 3, "10-15", 50),
+        ex("Скручивания", 3, "12-15", 40),
+    ]
+
+
+def outdoor_no_knee_a():
+    """Outdoor without squats/lunges/jumps."""
+    return [
+        ex("Отжимания от пола", 3, "8-15", 60),
+        ex("Австралийские подтягивания", 3, "6-12", 75),
+        ex("Ягодичный мост", 3, "12-15", 45),
+        ex("Планка", 3, "30-45с", 45),
+        ex("Отжимания узким хватом", 3, "6-12", 55),
+        ex("Боковая планка", 3, "20-40с", 40),
+    ]
+
+
+def outdoor_no_knee_b():
+    return [
+        ex("Отжимания с возвышения", 3, "8-15", 60),
+        ex("Австралийские подтягивания", 3, "6-12", 75),
+        ex("Ягодичный мост", 3, "15-20", 45),
+        ex("Медвежья походка", 3, "20-30с", 45),
+        ex("Планка с касанием плеч", 3, "8-12/стор", 40),
+        ex("Скручивания", 3, "12-15", 35),
+    ]
+
+
+def outdoor_no_knee_c():
+    return [
+        ex("Отжимания от пола", 3, "8-12", 60),
+        ex("Тяга резинки к поясу", 3, "12-15", 60),
+        ex("Ягодичный мост", 3, "12-15", 45),
+        ex("Птица-собака", 3, "8/стор", 40),
+        ex("Боковая планка", 3, "20-40с", 40),
+        ex("Мёртвый жук", 3, "8/стор", 40),
+    ]
+
+
 def home_bands_a():
     return [
         ex("Приседания со своим весом", 3, "12-15", 60),
@@ -632,36 +843,36 @@ def home_bands_c():
     ]
 
 
-def home_db_male_a():
+def home_db_male_a(sets=3, reps="8-12", rest=75):
     return [
-        ex("Приседания с гантелью у груди", 3, "8-12", 75),
-        ex("Жим гантелей лёжа", 3, "8-12", 75),
-        ex("Тяга гантели в наклоне", 3, "8-12", 75),
-        ex("Жим гантелей сидя", 3, "8-12", 70),
-        ex("Румынская тяга с гантелями", 3, "8-12", 75),
-        ex("Планка", 3, "30-45с", 45),
+        ex("Приседания с гантелью у груди", sets, reps, rest),
+        ex("Жим гантелей лёжа", sets, reps, rest),
+        ex("Тяга гантели в наклоне", sets, reps, rest),
+        ex("Жим гантелей сидя", sets, reps, rest - 5 if rest > 60 else rest),
+        ex("Румынская тяга с гантелями", sets, reps, rest),
+        ex("Планка", sets, "30-45с", 45),
     ]
 
 
-def home_db_male_b():
+def home_db_male_b(sets=3, reps="8-12", rest=75):
     return [
-        ex("Выпады назад с гантелями", 3, "8-12/стор", 70),
-        ex("Жим гантелей на наклонной", 3, "8-12", 75),
-        ex("Тяга гантели в наклоне", 3, "8-12", 75),
-        ex("Разводка гантелей в стороны", 3, "10-15", 55),
-        ex("Молотковые сгибания", 3, "8-12", 55),
-        ex("Французский жим гантели", 3, "8-12", 55),
+        ex("Выпады назад с гантелями", sets, "8-12/стор", rest - 5 if rest > 60 else rest),
+        ex("Жим гантелей на наклонной", sets, reps, rest),
+        ex("Тяга гантели в наклоне", sets, reps, rest),
+        ex("Разводка гантелей в стороны", sets, "10-15", 55),
+        ex("Молотковые сгибания", sets, reps, 55),
+        ex("Французский жим гантели", sets, reps, 55),
     ]
 
 
-def home_db_male_c():
+def home_db_male_c(sets=3, reps="8-12", rest=75):
     return [
-        ex("Болгарские выпады", 3, "8-12/стор", 75),
-        ex("Присед с жимом над головой", 3, "8-12", 75),
-        ex("Пуловер с гантелью", 3, "8-12", 60),
-        ex("Ягодичный мост", 3, "12-15", 45),
-        ex("Сгибания гантелей на бицепс", 3, "8-12", 55),
-        ex("Боковая планка", 3, "20-40с", 45),
+        ex("Болгарские выпады", sets, "8-12/стор", rest),
+        ex("Присед + жим гантелей", sets, reps, rest),
+        ex("Пуловер с гантелью", sets, reps, 60),
+        ex("Ягодичный мост", sets, "12-15", 45),
+        ex("Сгибания гантелей на бицепс", sets, reps, 55),
+        ex("Боковая планка", sets, "20-40с", 45),
     ]
 
 
@@ -1130,6 +1341,105 @@ def build_all() -> list[dict]:
             day(3, "No-knee C", "full", no_knee_female_c()),
         ],
     ))
+    # Home + no_knee
+    programs.append(prog(
+        name="М · Дом · Без нагрузки на колени · Гантели",
+        description=(
+            "Дом, без приседов/выпадов/прыжков. Гантели + вес тела: жимы, тяги, "
+            "ягодичный мост, румынская тяга, кор."
+        ),
+        level="beginner", workout_type="home_express",
+        sex=["male"], location="home",
+        equipment=["dumbbells", "bodyweight"], limitations=["no_knee"],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "No-knee home A", "full", home_no_knee_male_a()),
+            day(2, "No-knee home B", "full", home_no_knee_male_b()),
+            day(3, "No-knee home C", "full", home_no_knee_male_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Дом · Без нагрузки на колени · Гантели",
+        description=(
+            "Дом для женщин без нагрузки на колени: мост, hinge, верх с гантелями, кор. "
+            "Без приседов, выпадов и прыжков."
+        ),
+        level="beginner", workout_type="home_express",
+        sex=["female"], location="home",
+        equipment=["dumbbells", "bodyweight"], limitations=["no_knee"],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "No-knee home A", "full", home_no_knee_female_a()),
+            day(2, "No-knee home B", "full", home_no_knee_female_b()),
+            day(3, "No-knee home C", "full", home_no_knee_female_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="М · Дом · Без нагрузки на колени · Свой вес",
+        description="Дом без гантелей и без нагрузки на колени: отжимания, австралийские подтягивания, мост, кор.",
+        level="beginner", workout_type="home_express",
+        sex=["male"], location="home",
+        equipment=["bodyweight", "bands"], limitations=["no_knee"],
+        days_per_week=3, session_min=35,
+        schedule=[
+            day(1, "No-knee BW A", "full", home_no_knee_bw_a()),
+            day(2, "No-knee BW B", "full", home_no_knee_bw_b()),
+            day(3, "No-knee BW C", "full", home_no_knee_bw_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Дом · Без нагрузки на колени · Свой вес",
+        description="Дом, свой вес/резинка, без приседов и выпадов. Акцент: ягодичный мост и кор + верх.",
+        level="beginner", workout_type="home_express",
+        sex=["female"], location="home",
+        equipment=["bodyweight", "bands"], limitations=["no_knee"],
+        days_per_week=3, session_min=35,
+        schedule=[
+            day(1, "No-knee BW A", "full", home_no_knee_bw_a()),
+            day(2, "No-knee BW B", "full", home_no_knee_bw_b()),
+            day(3, "No-knee BW C", "full", home_no_knee_bw_c()),
+        ],
+    ))
+    # Home + dumbbells for women (men already have intermediate/advanced DB home)
+    programs.append(prog(
+        name="Ж · Дом · Новичок · Гантели",
+        description="Дом с гантелями для женщин: ноги/ягодицы + верх, 3 full body.",
+        level="beginner", workout_type="home_express",
+        sex=["female"], location="home",
+        equipment=["dumbbells", "bodyweight"], limitations=[],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "Home DB A", "full", home_db_female_a()),
+            day(2, "Home DB B", "full", home_db_female_b()),
+            day(3, "Home DB C", "full", home_db_female_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Дом · Опытный · Гантели",
+        description="Дом с гантелями, чуть выше объём/сложность (болгарские, RDL, жимы).",
+        level="intermediate", workout_type="home_express",
+        sex=["female"], location="home",
+        equipment=["dumbbells", "bodyweight"], limitations=[],
+        days_per_week=3, session_min=45,
+        schedule=[
+            day(1, "Home DB A", "full", home_db_female_a(sets=4, reps="8-12", rest=70)),
+            day(2, "Home DB B", "full", home_db_female_b(sets=4, reps="8-12", rest=70)),
+            day(3, "Home DB C", "full", home_db_female_c(sets=4, reps="8-12", rest=70)),
+        ],
+    ))
+    programs.append(prog(
+        name="М · Дом · Новичок · Гантели",
+        description="Дом с гантелями для мужчин-новичков, 3 full body (мягче, чем «Опытный · Гантели»).",
+        level="beginner", workout_type="home_express",
+        sex=["male"], location="home",
+        equipment=["dumbbells", "bodyweight"], limitations=[],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "Home DB A", "full", home_db_male_a(3, "8-12", 70)),
+            day(2, "Home DB B", "full", home_db_male_b(3, "8-12", 70)),
+            day(3, "Home DB C", "full", home_db_male_c(3, "8-12", 70)),
+        ],
+    ))
     programs.append(prog(
         name="М · Зал · Новичок · Без нагрузки на позвоночник",
         description="Новичок мужчина: машины и жимы, минимум осевой нагрузки на позвоночник (без становой/тяг в наклоне).",
@@ -1180,6 +1490,62 @@ def build_all() -> list[dict]:
             day(1, "Spine-safe A", "full", no_spine_int_female_a()),
             day(2, "Spine-safe B", "full", no_spine_int_female_b()),
             day(3, "Spine-safe C", "full", no_spine_int_female_c()),
+        ],
+    ))
+
+    # Home + no_spine
+    programs.append(prog(
+        name="М · Дом · Без нагрузки на позвоночник · Гантели",
+        description="Дом без становой и тяг в наклоне: жимы, резинка/горизонтальные тяги, мост, кор.",
+        level="beginner", workout_type="home_express",
+        sex=["male"], location="home",
+        equipment=["dumbbells", "bands", "bodyweight"], limitations=["no_spine"],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "Spine-safe home A", "full", home_no_spine_a()),
+            day(2, "Spine-safe home B", "full", home_no_spine_b()),
+            day(3, "Spine-safe home C", "full", home_no_spine_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Дом · Без нагрузки на позвоночник · Гантели",
+        description="Дом для женщин без осевой нагрузки на позвоночник: мост, жимы, резинка, кор.",
+        level="beginner", workout_type="home_express",
+        sex=["female"], location="home",
+        equipment=["dumbbells", "bands", "bodyweight"], limitations=["no_spine"],
+        days_per_week=3, session_min=40,
+        schedule=[
+            day(1, "Spine-safe home A", "full", home_no_spine_a()),
+            day(2, "Spine-safe home B", "full", home_no_spine_b()),
+            day(3, "Spine-safe home C", "full", home_no_spine_c()),
+        ],
+    ))
+
+    # Outdoor + no_knee
+    programs.append(prog(
+        name="М · Улица · Без нагрузки на колени",
+        description="Площадка без приседов, выпадов и прыжков: отжимания, австралийские, мост, кор.",
+        level="beginner", workout_type="conditioning",
+        sex=["male"], location="outdoor",
+        equipment=["bodyweight", "bands"], limitations=["no_knee"],
+        days_per_week=3, session_min=35,
+        schedule=[
+            day(1, "Outdoor no-knee A", "full", outdoor_no_knee_a()),
+            day(2, "Outdoor no-knee B", "full", outdoor_no_knee_b()),
+            day(3, "Outdoor no-knee C", "full", outdoor_no_knee_c()),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Улица · Без нагрузки на колени",
+        description="Улица без нагрузки на колени: верх + мост + кор, без прыжков и выпадов.",
+        level="beginner", workout_type="conditioning",
+        sex=["female"], location="outdoor",
+        equipment=["bodyweight", "bands"], limitations=["no_knee"],
+        days_per_week=3, session_min=35,
+        schedule=[
+            day(1, "Outdoor no-knee A", "full", outdoor_no_knee_a()),
+            day(2, "Outdoor no-knee B", "full", outdoor_no_knee_b()),
+            day(3, "Outdoor no-knee C", "full", outdoor_no_knee_c()),
         ],
     ))
 

@@ -54,10 +54,30 @@ def resolve_age(anthropometry: dict[str, Any], today: date | None = None) -> int
     return None
 
 
+def is_female_sex(sex: str | None) -> bool:
+    """Normalize sex labels (en/ru) for Mifflin–St Jeor and calorie floor."""
+    s = (sex or "").strip().lower().replace("ё", "е")
+    if not s:
+        return False
+    if s in {"f", "female", "woman", "w", "ж", "жен", "женский", "female_sex"}:
+        return True
+    # prefixes: "жен...", "female..."
+    if s.startswith("f") and "male" not in s:
+        # "f", "female", "fem" — but not "male"
+        if s == "f" or s.startswith("fem"):
+            return True
+    if s.startswith("ж"):
+        return True
+    return False
+
+
 def mifflin_st_jeor_bmr(*, sex: str, weight_kg: float, height_cm: float, age: int) -> float:
-    """BMR kcal/day. sex: male|female (default male if unknown)."""
-    s = (sex or "male").lower()
-    if s in {"f", "female", "woman", "ж", "жен", "женский"}:
+    """BMR kcal/day (Mifflin–St Jeor, 1990).
+
+    Men:   BMR = 10·W(kg) + 6.25·H(cm) − 5·A(y) + 5
+    Women: BMR = 10·W(kg) + 6.25·H(cm) − 5·A(y) − 161
+    """
+    if is_female_sex(sex):
         return 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age - 161.0
     return 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age + 5.0
 
@@ -148,14 +168,15 @@ def compute_energy_targets(
         }
 
     sex = str(anthro.get("sex") or g.get("sex") or "male")
+    female = is_female_sex(sex)
     activity = resolve_activity_level(g, anthro)
     factor = ACTIVITY_FACTORS[activity]
     bmr = mifflin_st_jeor_bmr(sex=sex, weight_kg=weight, height_cm=height, age=age)
     tdee = bmr * factor
     adj_pct = resolve_adjustment_pct(g)
     target = tdee * (1.0 + adj_pct / 100.0)
-    # safety floor
-    target = max(1200.0 if sex.lower().startswith("f") else 1500.0, target)
+    # safety floor (common clinical minimums; not part of Mifflin–St Jeor itself)
+    target = max(1200.0 if female else 1500.0, target)
     primary = str(g.get("primary_goal") or "maintain")
     macros = macro_split_grams(calories=target, weight_kg=weight, primary_goal=primary)
 

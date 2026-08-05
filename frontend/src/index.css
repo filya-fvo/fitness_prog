@@ -22,3 +22,14 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* P3 a11y: minimum touch targets (~44px) for primary controls */
+@layer utilities {
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .tap-target-x {
+    min-height: 44px;
+  }
+}

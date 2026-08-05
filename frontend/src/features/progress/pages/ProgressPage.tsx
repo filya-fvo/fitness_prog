@@ -2,14 +2,25 @@
 import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
+import { fetchExercises } from "@/api/exercises";
 import { fetchNutritionRange } from "@/api/nutrition";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
-import { cacheWorkouts, getPendingCount, readCachedWorkouts } from "@/db/syncQueue";
+import {
+  cacheExercises,
+  cacheWorkouts,
+  getPendingCount,
+  readCachedExercises,
+  readCachedWorkouts,
+} from "@/db/syncQueue";
 import { Calendar } from "@/features/progress/pages/Calendar";
 import { Charts } from "@/features/progress/pages/Charts";
 import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
-import type { Workout } from "@/types/workout";
+import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
+import { StrengthTrends } from "@/features/progress/pages/StrengthTrends";
+import { HabitsCheckin } from "@/components/HabitsCheckin";
+import type { Exercise, Workout } from "@/types/workout";
+import { computeBadges } from "@/utils/achievements";
 import { isOnline } from "@/utils/network";
 import {
   buildCalendarDays,
@@ -20,6 +31,7 @@ import {
   summarizeNutritionPeriods,
   type NutritionBalanceSummary,
 } from "@/utils/progress";
+import { buildLiftTrends } from "@/utils/strengthProgress";
 
 type NutritionRangeMode = "day" | "week";
 
@@ -28,6 +40,7 @@ export function ProgressPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [monthIndex, setMonthIndex] = useState(now.getMonth());
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +57,16 @@ export function ProgressPage() {
       setNutritionError(null);
       try {
         const cached = await readCachedWorkouts();
+        const cachedEx = await readCachedExercises();
         const queueCount = await getPendingCount();
-        if (!cancelled) setPending(queueCount);
+        if (!cancelled) {
+          setPending(queueCount);
+          if (cachedEx.length) setCatalog(cachedEx);
+        }
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range] = await Promise.all([
+          const [items, range, ex] = await Promise.all([
             fetchWorkoutHistory(),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
@@ -59,8 +76,13 @@ export function ProgressPage() {
               }
               return null;
             }),
+            fetchExercises({ pageSize: 200 }).catch(() => null),
           ]);
           await cacheWorkouts(items);
+          if (ex?.items?.length) {
+            await cacheExercises(ex.items);
+            if (!cancelled) setCatalog(ex.items);
+          }
           if (!cancelled) {
             setWorkouts(items);
             setSource("network");
@@ -99,6 +121,8 @@ export function ProgressPage() {
 
   const streak = useMemo(() => computeStreak(workouts), [workouts]);
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
+  const liftTrends = useMemo(() => buildLiftTrends(workouts, catalog, 6), [workouts, catalog]);
+  const badges = useMemo(() => computeBadges(workouts), [workouts]);
   const calendarDays = useMemo(
     () => buildCalendarDays(workouts, year, monthIndex),
     [workouts, year, monthIndex],
@@ -149,6 +173,10 @@ export function ProgressPage() {
       </p>
 
       <div className="space-y-3">
+        <HabitsCheckin />
+        <BadgesPanel badges={badges} />
+        <StrengthTrends trends={liftTrends} />
+
         <div className="rounded-2xl bg-tg-secondary p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">Сводка по питанию</p>

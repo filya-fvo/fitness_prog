@@ -110,10 +110,12 @@ export async function startProgramWorkout(input: {
   programId: string;
   dayIndex?: number;
   scheduledDate?: string;
+  weekPhase?: "light" | "medium" | "heavy" | null;
 }): Promise<Workout> {
   const { data } = await apiClient.post(`/programs/${input.programId}/start`, {
     day_index: input.dayIndex ?? 1,
     scheduled_date: input.scheduledDate ?? null,
+    week_phase: input.weekPhase ?? null,
   });
   return mapWorkout(workoutSchema.parse(data));
 }

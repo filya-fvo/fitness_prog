@@ -9,43 +9,44 @@ import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
   readCachedExercises,
+  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { trackEvent } from "@/lib/analytics";
 import { useWorkoutStore } from "@/store/workoutStore";
-import type { Exercise, LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
+import {
+  buildExerciseHistory,
+  draftsWithSuggestions,
+  resolveWeekPhase,
+} from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
 import {
   pickTodayDayIndex,
+  programLimitations,
   programSex,
-  recommendPrograms,
+  scorePrograms,
+  type ProgramScoreBreakdown,
 } from "@/utils/programRecommend";
 
-function draftsFromWorkout(workout: {
-  plan?: WorkoutPlan | Record<string, unknown> | null;
-  sets: { exercise_id: string; set_number: number; rest_time_sec: number | null }[];
-}): LocalSetDraft[] {
+function draftsFromWorkout(
+  workout: {
+    plan?: WorkoutPlan | Record<string, unknown> | null;
+    sets: { exercise_id: string; set_number: number; rest_time_sec: number | null }[];
+  },
+  history: Map<string, import("@/utils/loadProgression").ExerciseHistoryBest>,
+): LocalSetDraft[] {
   const plan = (workout.plan || {}) as WorkoutPlan;
   if (Array.isArray(plan.exercises) && plan.exercises.length) {
-    const drafts: LocalSetDraft[] = [];
-    for (const item of [...plan.exercises].sort((a, b) => a.order - b.order)) {
-      const sets = item.target_sets || 3;
-      for (let n = 1; n <= sets; n += 1) {
-        drafts.push({
-          exerciseId: item.exercise_id,
-          setNumber: n,
-          reps: "",
-          weight: "",
-          isCompleted: false,
-          restTimeSec: item.rest_sec ?? 60,
-        });
-      }
-    }
-    return drafts;
+    return draftsWithSuggestions({
+      exercises: plan.exercises,
+      history,
+      phase: resolveWeekPhase(null),
+    });
   }
-  return workout.sets.map((s) => ({
+  return (workout.sets || []).map((s) => ({
     exerciseId: s.exercise_id,
     setNumber: s.set_number,
     reps: "",
@@ -53,6 +54,31 @@ function draftsFromWorkout(workout: {
     isCompleted: false,
     restTimeSec: s.rest_time_sec ?? 60,
   }));
+}
+
+function profileLimits(goals: Record<string, unknown>): string[] {
+  const raw = goals.limitations;
+  if (Array.isArray(raw)) return raw.map((x) => String(x).toLowerCase());
+  if (typeof raw === "string" && raw.trim()) {
+    const s = raw.toLowerCase();
+    const out: string[] = [];
+    if (s.includes("no_knee") || s.includes("колен")) out.push("no_knee");
+    if (s.includes("no_spine") || s.includes("позвон") || s.includes("спин")) out.push("no_spine");
+    return out;
+  }
+  return [];
+}
+
+function limitationConflict(program: Program, userLimits: string[]): string | null {
+  if (!userLimits.length) return null;
+  const pLim = new Set(programLimitations(program));
+  const missing = userLimits.filter((l) => !pLim.has(l));
+  if (!missing.length) return null;
+  const labels: Record<string, string> = {
+    no_knee: "без нагрузки на колени",
+    no_spine: "без нагрузки на позвоночник",
+  };
+  return missing.map((m) => labels[m] || m).join(", ");
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -189,6 +215,7 @@ export function ProgramsPage() {
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [items, setItems] = useState<Program[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || "");
   const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || "");
   // male | female | "" (all). URL ?sex=male|female or default from profile after load.
@@ -199,6 +226,7 @@ export function ProgramsPage() {
     return "";
   });
   const [sexFilterTouched, setSexFilterTouched] = useState(() => Boolean(searchParams.get("sex")));
+  const [limitsOnly, setLimitsOnly] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(searchParams.get("id"));
   const [dayExercisesOpen, setDayExercisesOpen] = useState<Record<string, boolean>>({});
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
@@ -208,6 +236,7 @@ export function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const userJointLimits = useMemo(() => profileLimits(profileGoals), [profileGoals]);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,30 +312,48 @@ export function ProgramsPage() {
     setDetailExercise(resolved ?? placeholderExercise(row));
   }
 
-  const recommended = useMemo(
-    () =>
-      recommendPrograms(
-        items,
-        {
-          primaryGoal: String(profileGoals.primary_goal || ""),
-          level: String(profileGoals.level || ""),
-          daysPerWeek: Number(profileGoals.days_per_week) || undefined,
-          equipment: Array.isArray(profileGoals.equipment)
-            ? (profileGoals.equipment as string[])
-            : [],
-          sex: profileSex || String(profileGoals.sex || ""),
-          location: String(profileGoals.location || ""),
-          limitations: Array.isArray(profileGoals.limitations)
-            ? (profileGoals.limitations as string[])
-            : (profileGoals.limitations as string | null) || null,
-        },
-        8,
-      ),
-    [items, profileGoals, profileSex],
+  const recommendInput = useMemo(
+    () => ({
+      primaryGoal: String(profileGoals.primary_goal || ""),
+      level: String(profileGoals.level || ""),
+      daysPerWeek: Number(profileGoals.days_per_week) || undefined,
+      equipment: Array.isArray(profileGoals.equipment)
+        ? (profileGoals.equipment as string[])
+        : [],
+      sex: profileSex || String(profileGoals.sex || ""),
+      location: String(profileGoals.location || ""),
+      limitations: Array.isArray(profileGoals.limitations)
+        ? (profileGoals.limitations as string[])
+        : (profileGoals.limitations as string | null) || null,
+    }),
+    [profileGoals, profileSex],
   );
 
+  const recommendedScored = useMemo(
+    () => scorePrograms(items, recommendInput, 8),
+    [items, recommendInput],
+  );
+  const reasonsById = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const row of recommendedScored) m.set(row.program.id, row.reasons);
+    return m;
+  }, [recommendedScored]);
+
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return items.filter((p) => {
+      if (q) {
+        const hay = [
+          p.name,
+          p.description || "",
+          p.workout_type || "",
+          p.level || "",
+          p.target_level || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       if (typeFilter && p.workout_type !== typeFilter) return false;
       if (levelFilter) {
         const lvl = (p.level || p.target_level || "").toLowerCase();
@@ -323,9 +370,13 @@ export function ProgramsPage() {
           (pSex.includes("male") && pSex.includes("female"));
         if (!isUnisex && !pSex.includes(sexFilter)) return false;
       }
+      if (limitsOnly && userJointLimits.length) {
+        const pLim = new Set(programLimitations(p));
+        if (!userJointLimits.every((l) => pLim.has(l))) return false;
+      }
       return true;
     });
-  }, [items, levelFilter, typeFilter, sexFilter]);
+  }, [items, levelFilter, typeFilter, sexFilter, searchQuery, limitsOnly, userJointLimits]);
 
   const types = useMemo(() => {
     const set = new Set(items.map((p) => p.workout_type).filter(Boolean));
@@ -335,6 +386,25 @@ export function ProgramsPage() {
   async function startProgram(program: Program, dayIndex = 1) {
     const key = `${program.id}:${dayIndex}`;
     if (startingKey) return;
+
+    // P0.5: warn if profile has joint limits but program does not
+    try {
+      if (isOnline() && getStoredToken()) {
+        const profile = await fetchMyProfile().catch(() => null);
+        const goals = (profile?.goals as Record<string, unknown>) || {};
+        const conflict = limitationConflict(program, profileLimits(goals));
+        if (conflict) {
+          const ok = window.confirm(
+            `В профиле указано ограничение: ${conflict}.\n\n` +
+              `Программа «${program.name}» это не учитывает. Всё равно начать?`,
+          );
+          if (!ok) return;
+        }
+      }
+    } catch {
+      /* soft */
+    }
+
     setStartingKey(key);
     setError(null);
     try {
@@ -350,7 +420,16 @@ export function ProgramsPage() {
         dayIndex,
       });
       const clientId = crypto.randomUUID();
-      const drafts = draftsFromWorkout(workout);
+      let history = buildExerciseHistory(await readCachedWorkouts());
+      if (isOnline() && getStoredToken()) {
+        try {
+          const { fetchWorkoutHistory } = await import("@/api/workouts");
+          history = buildExerciseHistory(await fetchWorkoutHistory());
+        } catch {
+          /* keep cache */
+        }
+      }
+      const drafts = draftsFromWorkout(workout as Workout, history);
       await rememberWorkoutId(clientId, workout.id);
       await saveLocalSession({
         clientId,
@@ -376,11 +455,12 @@ export function ProgramsPage() {
     }
   }
 
-  function renderCard(program: Program, badge?: string) {
+  function renderCard(program: Program, badge?: string, why?: string[]) {
     const schedule = scheduleOf(program);
     const days = schedule.length;
     const open = expandedId === program.id;
     const todayIdx = pickTodayDayIndex(program);
+    const reasons = why?.length ? why : reasonsById.get(program.id) || [];
 
     return (
       <article key={`${badge || "all"}-${program.id}`} className="rounded-2xl bg-tg-secondary p-4">
@@ -393,6 +473,21 @@ export function ProgramsPage() {
                   {badge}
                 </span>
               ) : null}
+              {programLimitations(program).includes("no_knee") ? (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-700">
+                  без колен
+                </span>
+              ) : null}
+              {programLimitations(program).includes("no_spine") ? (
+                <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] text-sky-700">
+                  без спины
+                </span>
+              ) : null}
+              {userJointLimits.length > 0 && limitationConflict(program, userJointLimits) ? (
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-800">
+                  не под ограничение
+                </span>
+              ) : null}
             </div>
             <p className="mt-1 text-xs text-tg-hint">
               {TYPE_LABELS[program.workout_type] ?? program.workout_type}
@@ -401,6 +496,9 @@ export function ProgramsPage() {
                 : ""}
               {days ? ` · ${days} дн.` : ""}
             </p>
+            {reasons.length ? (
+              <p className="mt-1 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p>
+            ) : null}
           </div>
           <button
             type="button"
@@ -525,8 +623,8 @@ export function ProgramsPage() {
     );
   }
 
-  const topRecommended = recommended.slice(0, 2);
-  const topIds = new Set(topRecommended.map((p) => p.id));
+  const topRecommended: ProgramScoreBreakdown[] = recommendedScored.slice(0, 2);
+  const topIds = new Set(topRecommended.map((x) => x.program.id));
 
   return (
     <section>
@@ -536,9 +634,20 @@ export function ProgramsPage() {
       {!loading && topRecommended.length > 0 ? (
         <div className="mb-4 space-y-2">
           <p className="text-sm font-medium">Рекомендуем вам</p>
-          {topRecommended.map((p) => renderCard(p, "для вас"))}
+          {topRecommended.map((row) => renderCard(row.program, "для вас", row.reasons))}
         </div>
       ) : null}
+
+      <label className="mb-2 block text-xs text-tg-hint">
+        Поиск
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Поиск программы"
+          className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+        />
+      </label>
 
       <div className="mb-2 flex flex-wrap gap-2">
         {(
@@ -605,6 +714,18 @@ export function ProgramsPage() {
             {lvl === "" ? "Все уровни" : lvl}
           </button>
         ))}
+        {userJointLimits.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setLimitsOnly((v) => !v)}
+            className={[
+              "rounded-full px-3 py-1 text-xs",
+              limitsOnly ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+            ].join(" ")}
+          >
+            {limitsOnly ? "✓ Под мои ограничения" : "Под мои ограничения"}
+          </button>
+        ) : null}
       </div>
 
       {loading ? <p className="text-sm text-tg-hint">Загрузка программ…</p> : null}

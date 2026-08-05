@@ -26,9 +26,33 @@ class NutritionProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+
+
+class NutritionProductCreate(BaseModel):
+    """User-created product shared in global catalog."""
+
+    name_ru: str = Field(..., min_length=1, max_length=200)
+    calories: float = Field(..., ge=0, le=1200)
+    proteins: float = Field(..., ge=0, le=100)
+    fats: float = Field(..., ge=0, le=100)
+    carbs: float = Field(..., ge=0, le=100)
+    category: Optional[str] = Field(default="custom", max_length=80)
+    barcode: Optional[str] = None
+
+
 class NutritionProductListResponse(BaseModel):
     items: list[NutritionProductResponse]
     total: int
+
+
+class BarcodeLookupResponse(BaseModel):
+    found: bool
+    barcode: str
+    source: str | None = None
+    product: NutritionProductResponse | None = None
+    serving_grams: float | None = None
+    created: bool = False
+    error: str | None = None
 
 
 class NutritionLogCreate(BaseModel):
@@ -37,6 +61,11 @@ class NutritionLogCreate(BaseModel):
     meal_type: MealType
     # Avoid field name clashing with datetime.date under Python 3.14 + pydantic
     log_date: Optional[Date] = Field(default=None, alias="date")
+    # Optional per-log override of KBJU per 100g (package label differs from catalog)
+    calories_per_100: Optional[float] = Field(default=None, ge=0, le=1200)
+    proteins_per_100: Optional[float] = Field(default=None, ge=0, le=100)
+    fats_per_100: Optional[float] = Field(default=None, ge=0, le=100)
+    carbs_per_100: Optional[float] = Field(default=None, ge=0, le=100)
 
     model_config = {"populate_by_name": True}
 

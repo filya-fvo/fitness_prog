@@ -8,12 +8,17 @@ function extractYouTubeId(url: string | null | undefined): string | null {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtu.be")) {
-      return u.pathname.replace("/", "") || null;
+      return u.pathname.replace("/", "").split("/")[0] || null;
     }
     if (u.hostname.includes("youtube.com")) {
       if (u.pathname.startsWith("/embed/")) {
         return u.pathname.split("/")[2] || null;
       }
+      // Shorts: /shorts/<id>
+      if (u.pathname.startsWith("/shorts/")) {
+        return u.pathname.split("/")[2] || null;
+      }
+      // Live / other path forms sometimes carry ?v=
       return u.searchParams.get("v");
     }
   } catch {
@@ -51,10 +56,20 @@ type Props = {
     | "technique"
     | "common_mistakes"
     | "muscle_group"
+    | "tags"
   >;
   compact?: boolean;
   preferVideo?: boolean;
 };
+
+function hasGymVisualCredit(exercise: Props["exercise"]): boolean {
+  const tags = exercise.tags ?? [];
+  if (tags.some((t) => /gym\s*visual/i.test(t) || t === "gymvisual")) {
+    return true;
+  }
+  const blob = `${exercise.description ?? ""} ${exercise.media_source ?? ""}`;
+  return /gym\s*visual/i.test(blob);
+}
 
 export function ExerciseMediaPlayer({
   exercise,
@@ -72,6 +87,7 @@ export function ExerciseMediaPlayer({
   const ytId = useMemo(() => extractYouTubeId(exercise.video_url), [exercise.video_url]);
   const hasVideo = Boolean(exercise.video_url) && !videoFailed;
   const heightClass = compact ? "h-40" : "h-52";
+  const showGymVisual = hasGymVisualCredit(exercise);
 
   const techniqueText =
     exercise.technique ||
@@ -86,18 +102,30 @@ export function ExerciseMediaPlayer({
       {!showVideo ? (
         <div className="overflow-hidden rounded-xl bg-black/5">
           {showMedia ? (
-            <img
-              src={mediaUrl ?? undefined}
-              alt={exercise.name_ru}
-              className={`w-full bg-black/10 object-contain ${heightClass}`}
-              onError={() => setMediaFailed(true)}
-              onLoad={() =>
-                trackEvent("exercise_media_played", {
-                  exercise_id: exercise.id,
-                  source: mediaIsStatic ? "image" : "animation",
-                })
-              }
-            />
+            <div className="relative">
+              <img
+                src={mediaUrl ?? undefined}
+                alt={exercise.name_ru}
+                className={`w-full bg-black/10 object-contain ${heightClass}`}
+                onError={() => setMediaFailed(true)}
+                onLoad={() =>
+                  trackEvent("exercise_media_played", {
+                    exercise_id: exercise.id,
+                    source: mediaIsStatic ? "image" : "animation",
+                  })
+                }
+              />
+              {showGymVisual ? (
+                <a
+                  href="https://gymvisual.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="absolute bottom-1 right-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white/90"
+                >
+                  © Gym visual
+                </a>
+              ) : null}
+            </div>
           ) : null}
           {!showMedia ? (
             exercise.thumbnail_url ? (
@@ -121,6 +149,19 @@ export function ExerciseMediaPlayer({
               <p className="text-tg-hint">
                 <span className="font-medium text-tg-text">Частые ошибки: </span>
                 {exercise.common_mistakes}
+              </p>
+            ) : null}
+            {showGymVisual ? (
+              <p className="text-[11px] text-tg-hint">
+                Анимация: ©{" "}
+                <a
+                  href="https://gymvisual.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  Gym visual
+                </a>
               </p>
             ) : null}
           </div>

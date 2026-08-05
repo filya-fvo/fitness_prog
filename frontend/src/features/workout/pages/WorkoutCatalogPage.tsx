@@ -20,7 +20,14 @@ import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, Workout } from "@/types/workout";
 import { isOnline } from "@/utils/network";
-import { defaultSetTemplate, SET_TEMPLATES, type SetTemplate } from "@/utils/setTemplates";
+import {
+  defaultSetTemplate,
+  pickPresetExercises,
+  SET_TEMPLATES,
+  WORKOUT_DAY_PRESETS,
+  type SetTemplate,
+} from "@/utils/setTemplates";
+import { draftsWithSuggestions, resolveWeekPhase } from "@/utils/loadProgression";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -43,21 +50,21 @@ function makeLocalWorkout(userId: string): Workout {
 }
 
 function buildDrafts(exercises: Exercise[], template: SetTemplate): LocalSetDraft[] {
-  const drafts: LocalSetDraft[] = [];
-  for (const item of exercises) {
-    for (let n = 1; n <= template.sets; n += 1) {
-      drafts.push({
-        exerciseId: item.id,
-        setNumber: n,
-        reps: "",
-        weight: "",
-        isCompleted: false,
-        restTimeSec: template.restSec,
-      });
-    }
-  }
-  return drafts;
+  // Prefill set slots from template (fast log in ActiveWorkout).
+  return draftsWithSuggestions({
+    exercises: exercises.map((item, idx) => ({
+      exercise_id: item.id,
+      order: idx + 1,
+      target_sets: template.sets,
+      target_reps: template.reps,
+      rest_sec: template.restSec,
+      name_ru: item.name_ru,
+    })),
+    history: new Map(),
+    phase: resolveWeekPhase(null),
+  });
 }
+
 
 export function WorkoutCatalogPage() {
   const navigate = useNavigate();
@@ -73,6 +80,7 @@ export function WorkoutCatalogPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [templateId, setTemplateId] = useState(defaultSetTemplate().id);
   const [muscleFilter, setMuscleFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -137,13 +145,17 @@ export function WorkoutCatalogPage() {
     };
   }, [setCatalog]);
 
-  const visibleCatalog = useMemo(
-    () =>
-      muscleFilter
-        ? catalog.filter((item) => item.muscle_group === muscleFilter)
-        : catalog,
-    [catalog, muscleFilter],
-  );
+  const visibleCatalog = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return catalog.filter((item) => {
+      if (muscleFilter && item.muscle_group !== muscleFilter) return false;
+      if (!q) return true;
+      const hay = [item.name_ru, item.muscle_group, item.equipment || "", item.description || ""]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [catalog, muscleFilter, searchQuery]);
 
   const selectedExercises = useMemo(
     () => catalog.filter((item) => selectedIds.includes(item.id)),
@@ -280,6 +292,26 @@ export function WorkoutCatalogPage() {
       ) : null}
 
       <div className="mb-3 rounded-2xl bg-tg-secondary p-3">
+        <p className="mb-2 text-xs font-medium text-tg-hint">Быстрый день</p>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {WORKOUT_DAY_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => {
+                const ids = pickPresetExercises(catalog, preset);
+                setSelectedIds(ids);
+                setTemplateId(preset.templateId);
+                setMuscleFilter("");
+                setSearchQuery("");
+              }}
+              className="rounded-xl bg-tg-bg px-3 py-2 text-left"
+            >
+              <span className="block text-xs font-semibold">{preset.label}</span>
+              <span className="block text-[10px] text-tg-hint">{preset.hint}</span>
+            </button>
+          ))}
+        </div>
         <p className="mb-2 text-xs font-medium text-tg-hint">Шаблон подходов</p>
         <div className="flex flex-wrap gap-2">
           {SET_TEMPLATES.map((tpl) => (
@@ -305,6 +337,17 @@ export function WorkoutCatalogPage() {
             : " · выберите ≥1 упражнение (лучше ≥4)"}
         </p>
       </div>
+
+      <label className="mb-2 block text-xs text-tg-hint">
+        Поиск
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Поиск упражнения"
+          className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+        />
+      </label>
 
       <div className="mb-3 flex flex-wrap gap-2">
         <button

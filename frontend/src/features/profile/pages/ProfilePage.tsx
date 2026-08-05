@@ -61,6 +61,71 @@ const WEEKDAYS = [
 
 type TabId = "body" | "program" | "supplements" | "alerts";
 
+const SUPPLEMENT_SLOT_PRESETS: { id: string; label: string }[] = [
+  { id: "pre_workout", label: "До тренировки (−45 мин)" },
+  { id: "during_workout", label: "Во время тренировки" },
+  { id: "post_workout", label: "После тренировки (+30 мин)" },
+  { id: "09:00", label: "09:00" },
+  { id: "10:00", label: "10:00" },
+  { id: "12:00", label: "12:00" },
+  { id: "18:00", label: "18:00" },
+  { id: "21:00", label: "21:00" },
+  { id: "21:30", label: "21:30" },
+];
+
+type SuppDaysMode = "every" | "workout" | "rest";
+type SuppScheduleRow = { slot: string; days: SuppDaysMode };
+
+function normalizeSuppDays(raw: unknown): SuppDaysMode {
+  const v = String(raw || "every").trim().toLowerCase();
+  if (v === "workout" || v === "workout_day" || v === "training" || v === "train") return "workout";
+  if (
+    v === "rest" ||
+    v === "rest_day" ||
+    v === "off" ||
+    v === "non_workout" ||
+    v === "no_workout" ||
+    v === "recovery"
+  ) {
+    return "rest";
+  }
+  return "every";
+}
+
+function scheduleFromEntry(item: {
+  times?: string[];
+  schedule?: Array<{ slot?: string; days?: string }>;
+}): SuppScheduleRow[] {
+  const raw = item.schedule;
+  if (Array.isArray(raw) && raw.length) {
+    return raw
+      .map((r) => {
+        const slot = String(r.slot || "").trim();
+        const days = normalizeSuppDays(r.days);
+        return slot ? ({ slot, days } as SuppScheduleRow) : null;
+      })
+      .filter((x): x is SuppScheduleRow => Boolean(x));
+  }
+  return (item.times || [])
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .map((slot) => ({ slot, days: "every" as const }));
+}
+
+function formatScheduleLabel(rows: SuppScheduleRow[]): string {
+  if (!rows.length) return "";
+  return rows
+    .map((r) => {
+      const preset = SUPPLEMENT_SLOT_PRESETS.find((p) => p.id === r.slot);
+      const slot = preset?.label || r.slot;
+      if (r.days === "workout") return `${slot} (тренировка)`;
+      if (r.days === "rest") return `${slot} (без тренировки)`;
+      return slot;
+    })
+    .join(" · ");
+}
+
+
 function numOrEmpty(v: unknown): string {
   if (v == null || v === "") return "";
   return String(v);
@@ -227,6 +292,7 @@ export function ProfilePage() {
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramId, setActiveProgramId] = useState("");
+  const [programSearch, setProgramSearch] = useState("");
   const [programTypeFilter, setProgramTypeFilter] = useState("");
   const [programLevelFilter, setProgramLevelFilter] = useState("");
   const [programSexFilter, setProgramSexFilter] = useState("");
@@ -248,10 +314,19 @@ export function ProfilePage() {
   const [measEnabled, setMeasEnabled] = useState(true);
   const [measTime, setMeasTime] = useState("10:00");
   const [measInterval, setMeasInterval] = useState("14");
+  const [measWeekday, setMeasWeekday] = useState<number | null>(0);
   const [woEnabled, setWoEnabled] = useState(true);
   const [woTime, setWoTime] = useState("18:30");
   const [woDays, setWoDays] = useState<number[]>([0, 2, 4]);
   const [supEnabled, setSupEnabled] = useState(true);
+  const [catchUp, setCatchUp] = useState(true);
+  const [waterEnabled, setWaterEnabled] = useState(false);
+  const [waterDailyMl, setWaterDailyMl] = useState("2500");
+  const [waterIntervalMin, setWaterIntervalMin] = useState("120");
+  const [waterStart, setWaterStart] = useState("09:00");
+  const [waterEnd, setWaterEnd] = useState("21:00");
+  const [calEnabled, setCalEnabled] = useState(false);
+  const [calTimes, setCalTimes] = useState("14:00, 20:00");
 
   useEffect(() => {
     let cancelled = false;
@@ -352,7 +427,7 @@ export function ProfilePage() {
 
         setStack(sup.items || []);
         setCatalog(sup.catalog || []);
-        if (sup.catalog?.[0]) setPickerKey(sup.catalog[0].key);
+        setPickerKey("");
 
         if (nset?.settings) {
           const s = asRecord(nset.settings);
@@ -361,6 +436,12 @@ export function ProfilePage() {
           setMeasEnabled(meas.enabled !== false);
           setMeasTime(String(meas.time || "10:00"));
           setMeasInterval(String(meas.interval_days ?? 14));
+          const mwd = meas.weekday;
+          if (mwd === null || mwd === undefined || mwd === "") setMeasWeekday(null);
+          else {
+            const n = Number(mwd);
+            setMeasWeekday(Number.isFinite(n) ? n : 0);
+          }
           const wo = asRecord(s.workouts);
           setWoEnabled(wo.enabled !== false);
           setWoTime(String(wo.time || "18:30"));
@@ -368,6 +449,19 @@ export function ProfilePage() {
           setWoDays(days.filter((d) => d >= 0 && d <= 6));
           const su = asRecord(s.supplements);
           setSupEnabled(su.enabled !== false);
+          setCatchUp(s.catch_up !== false);
+          const water = asRecord(s.water);
+          setWaterEnabled(Boolean(water.enabled));
+          setWaterDailyMl(String(water.daily_ml ?? 2500));
+          setWaterIntervalMin(String(water.interval_minutes ?? 120));
+          setWaterStart(String(water.start_time || "09:00"));
+          setWaterEnd(String(water.end_time || "21:00"));
+          const cal = asRecord(s.calories);
+          setCalEnabled(Boolean(cal.enabled));
+          const times = Array.isArray(cal.times)
+            ? cal.times.map((x) => String(x)).join(", ")
+            : String(cal.times || "14:00, 20:00");
+          setCalTimes(times || "14:00, 20:00");
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Ошибка загрузки");
@@ -440,7 +534,14 @@ export function ProfilePage() {
   }, [programs]);
 
   const filteredPrograms = useMemo(() => {
+    const q = programSearch.trim().toLowerCase();
     return programs.filter((p) => {
+      if (q) {
+        const hay = [p.name, p.description || "", p.workout_type || "", p.level || ""]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       if (programTypeFilter && p.workout_type !== programTypeFilter) return false;
       if (programLevelFilter) {
         const lvl = (p.level || p.target_level || "").toLowerCase();
@@ -458,7 +559,7 @@ export function ProfilePage() {
       }
       return true;
     });
-  }, [programs, programTypeFilter, programLevelFilter, programSexFilter]);
+  }, [programs, programTypeFilter, programLevelFilter, programSexFilter, programSearch]);
 
   const exerciseById = useMemo(() => {
     const map = new Map<string, Exercise>();
@@ -568,17 +669,22 @@ export function ProfilePage() {
   }
 
   async function saveAlerts() {
-    if (saving) return;
     setSaving(true);
     setError(null);
     setOk(null);
     try {
+      const calTimesList = calTimes
+        .split(/[,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
       const settings = {
         timezone: tz,
+        catch_up: catchUp,
         measurements: {
           enabled: measEnabled,
           time: measTime,
           interval_days: Number(measInterval) || 14,
+          weekday: measWeekday,
         },
         workouts: {
           enabled: woEnabled,
@@ -587,6 +693,17 @@ export function ProfilePage() {
         },
         supplements: {
           enabled: supEnabled,
+        },
+        water: {
+          enabled: waterEnabled,
+          daily_ml: Number(waterDailyMl) || 2500,
+          interval_minutes: Number(waterIntervalMin) || 120,
+          start_time: waterStart || "09:00",
+          end_time: waterEnd || "21:00",
+        },
+        calories: {
+          enabled: calEnabled,
+          times: calTimesList.length ? calTimesList : ["14:00", "20:00"],
         },
       };
       await saveNotificationSettings(settings);
@@ -766,7 +883,7 @@ export function ProfilePage() {
               </select>
             </label>
             <label className="block text-xs text-tg-hint">
-              % к TDEE (минус = дефицит, плюс = профицит)
+              % к суточному расходу (минус = дефицит, плюс = профицит)
               <input
                 type="number"
                 value={adjPct}
@@ -777,14 +894,28 @@ export function ProfilePage() {
           </div>
 
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
-            <p className="font-medium">Расчёт (Mifflin–St Jeor)</p>
+            <p className="font-medium">Расчёт калорий</p>
             {preview.complete ? (
-              <ul className="mt-2 space-y-1 text-tg-hint">
-                <li>BMR: {preview.bmr} ккал</li>
-                <li>TDEE: {preview.tdee} ккал</li>
+              <ul className="mt-2 space-y-2 text-tg-hint">
                 <li>
-                  Цель:{" "}
-                  <span className="font-semibold text-tg-text">{preview.caloriesTarget} ккал</span>
+                  <span className="font-medium text-tg-text">Базовый обмен (BMR): {preview.bmr} ккал</span>
+                  <span className="mt-0.5 block text-xs">
+                    Сколько энергии нужно телу в покое — просто чтобы жить (дыхание, сердце, температура).
+                  </span>
+                </li>
+                <li>
+                  <span className="font-medium text-tg-text">Суточный расход (TDEE): {preview.tdee} ккал</span>
+                  <span className="mt-0.5 block text-xs">
+                    Базовый обмен + ваша активность (тренировки, ходьба, работа). Это «поддержка веса».
+                  </span>
+                </li>
+                <li>
+                  <span className="font-medium text-tg-text">
+                    Цель на день: {preview.caloriesTarget} ккал
+                  </span>
+                  <span className="mt-0.5 block text-xs">
+                    Сколько есть, чтобы идти к цели (похудение / набор / поддержание) с учётом % к расходу.
+                  </span>
                 </li>
               </ul>
             ) : (
@@ -847,6 +978,17 @@ export function ProfilePage() {
               </div>
             ) : null}
           </div>
+
+          <label className="block text-xs text-tg-hint">
+            Поиск
+            <input
+              type="search"
+              value={programSearch}
+              onChange={(e) => setProgramSearch(e.target.value)}
+              placeholder="Поиск программы"
+              className="mt-1 w-full rounded-xl border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            />
+          </label>
 
           <div className="flex flex-wrap gap-2">
             {(
@@ -1159,8 +1301,8 @@ export function ProfilePage() {
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
             <p className="font-medium">Мой стек добавок</p>
             <p className="mt-1 text-xs text-tg-hint">
-              Рекомендуемые можно удалить. Добавляйте из каталога или свою. У каждой — принцип
-              действия и дозировка.
+              По умолчанию стек пуст — добавьте сами из каталога (только добавки с доказанной
+              эффективностью) или свою. У каждой — принцип действия и дозировка.
             </p>
           </div>
 
@@ -1178,7 +1320,9 @@ export function ProfilePage() {
                         <p className="text-sm font-medium">{item.name_ru}</p>
                         <p className="text-xs text-tg-hint">
                           {item.dose || meta?.default_dose || "доза не указана"}
-                          {item.times?.length ? ` · ${item.times.join(", ")}` : ""}
+                          {scheduleFromEntry(item).length
+                            ? ` · ${formatScheduleLabel(scheduleFromEntry(item))}`
+                            : ""}
                         </p>
                       </div>
                       <div className="flex shrink-0 gap-2">
@@ -1241,22 +1385,155 @@ export function ProfilePage() {
                             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5"
                           />
                         </label>
-                        <label className="mt-1 block">
-                          Времена (через запятую: 10:00, pre_workout)
-                          <input
-                            value={(item.times || []).join(", ")}
-                            onChange={(e) => {
-                              const times = e.target.value
-                                .split(",")
-                                .map((s) => s.trim())
-                                .filter(Boolean);
+                        <div className="mt-2 space-y-2">
+                          <p className="text-xs font-medium text-tg-text">Напоминания</p>
+                          <p className="text-[11px] text-tg-hint">
+                            Можно несколько времён. Для каждого — каждый день, только в день
+                            тренировки или только в день без тренировки. Предустановки: до/после
+                            тренировки или точное время.
+                          </p>
+                          {scheduleFromEntry(item).map((row, idx) => (
+                            <div
+                              key={`${item.id}-sch-${idx}`}
+                              className="space-y-1 rounded-xl bg-tg-bg p-2"
+                            >
+                              <div className="grid grid-cols-1 gap-1">
+                                <label className="block text-[11px] text-tg-hint">
+                                  Когда
+                                  <select
+                                    value={
+                                      SUPPLEMENT_SLOT_PRESETS.some((p) => p.id === row.slot)
+                                        ? row.slot
+                                        : "__custom__"
+                                    }
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setStack((prev) =>
+                                        prev.map((x) => {
+                                          if (x.id !== item.id) return x;
+                                          const sch = scheduleFromEntry(x);
+                                          if (v === "__custom__") {
+                                            sch[idx] = { ...sch[idx], slot: "12:00" };
+                                          } else {
+                                            sch[idx] = { ...sch[idx], slot: v };
+                                          }
+                                          return {
+                                            ...x,
+                                            schedule: sch,
+                                            times: sch.map((s) => s.slot),
+                                          };
+                                        }),
+                                      );
+                                    }}
+                                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                  >
+                                    {SUPPLEMENT_SLOT_PRESETS.map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.label}
+                                      </option>
+                                    ))}
+                                    <option value="__custom__">Своё время…</option>
+                                  </select>
+                                </label>
+                                {!SUPPLEMENT_SLOT_PRESETS.some((p) => p.id === row.slot) ||
+                                /^\d{1,2}:\d{2}$/.test(row.slot) ? (
+                                  <label className="block text-[11px] text-tg-hint">
+                                    Время
+                                    <input
+                                      type="time"
+                                      value={
+                                        /^\d{1,2}:\d{2}$/.test(row.slot) ? row.slot : "12:00"
+                                      }
+                                      onChange={(e) => {
+                                        const slot = e.target.value;
+                                        setStack((prev) =>
+                                          prev.map((x) => {
+                                            if (x.id !== item.id) return x;
+                                            const sch = scheduleFromEntry(x);
+                                            sch[idx] = { ...sch[idx], slot };
+                                            return {
+                                              ...x,
+                                              schedule: sch,
+                                              times: sch.map((s) => s.slot),
+                                            };
+                                          }),
+                                        );
+                                      }}
+                                      className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                    />
+                                  </label>
+                                ) : null}
+                                <label className="block text-[11px] text-tg-hint">
+                                  В какие дни
+                                  <select
+                                    value={row.days}
+                                    onChange={(e) => {
+                                      const days = normalizeSuppDays(e.target.value);
+                                      setStack((prev) =>
+                                        prev.map((x) => {
+                                          if (x.id !== item.id) return x;
+                                          const sch = scheduleFromEntry(x);
+                                          sch[idx] = { ...sch[idx], days };
+                                          return {
+                                            ...x,
+                                            schedule: sch,
+                                            times: sch.map((s) => s.slot),
+                                          };
+                                        }),
+                                      );
+                                    }}
+                                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                  >
+                                    <option value="every">Каждый день</option>
+                                    <option value="workout">В день тренировки</option>
+                                    <option value="rest">В день без тренировки</option>
+                                  </select>
+                                </label>
+                              </div>
+                              <button
+                                type="button"
+                                className="text-[11px] text-red-500"
+                                onClick={() => {
+                                  setStack((prev) =>
+                                    prev.map((x) => {
+                                      if (x.id !== item.id) return x;
+                                      const sch = scheduleFromEntry(x).filter((_, i) => i !== idx);
+                                      return {
+                                        ...x,
+                                        schedule: sch,
+                                        times: sch.map((s) => s.slot),
+                                      };
+                                    }),
+                                  );
+                                }}
+                              >
+                                Удалить время
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            className="w-full rounded-lg bg-tg-bg px-2 py-1.5 text-xs text-tg-link"
+                            onClick={() => {
                               setStack((prev) =>
-                                prev.map((x) => (x.id === item.id ? { ...x, times } : x)),
+                                prev.map((x) => {
+                                  if (x.id !== item.id) return x;
+                                  const sch = [
+                                    ...scheduleFromEntry(x),
+                                    { slot: "10:00", days: "every" as const },
+                                  ];
+                                  return {
+                                    ...x,
+                                    schedule: sch,
+                                    times: sch.map((s) => s.slot),
+                                  };
+                                }),
                               );
                             }}
-                            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5"
-                          />
-                        </label>
+                          >
+                            + Ещё время
+                          </button>
+                        </div>
                       </div>
                     ) : null}
                   </li>
@@ -1287,11 +1564,14 @@ export function ProfilePage() {
               {unusedCatalog.length === 0 ? (
                 <option value="">Все из каталога уже добавлены</option>
               ) : (
-                unusedCatalog.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.name_ru}
-                  </option>
-                ))
+                <>
+                  <option value="">Выберите добавку…</option>
+                  {unusedCatalog.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.name_ru}
+                    </option>
+                  ))}
+                </>
               )}
             </select>
             {pickerKey && catalogByKey.get(pickerKey) ? (
@@ -1310,6 +1590,7 @@ export function ProfilePage() {
                   .then((r) => {
                     setStack(r.items);
                     setCatalog(r.catalog);
+                    setPickerKey("");
                     setOk("Добавка добавлена");
                   })
                   .catch((e) => setError(e instanceof Error ? e.message : "Ошибка"));
@@ -1363,9 +1644,9 @@ export function ProfilePage() {
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
             <p className="font-medium">Уведомления в Telegram-чат</p>
             <p className="mt-1 text-xs text-tg-hint">
-              Бот пришлёт сообщение в чат. Нужны: /start у бота, Redis + worker (
-              <code className="text-[10px]">arq app.tasks.notifications.WorkerSettings</code>
-              ), либо ручная проверка кнопкой ниже.
+              Напоминания приходят в чат с ботом. Один раз напишите боту /start, включите нужные
+              типы ниже и нажмите «Сохранить». Если сообщение не пришло вовремя — включите
+              «Догонять пропущенные».
             </p>
           </div>
 
@@ -1400,11 +1681,43 @@ export function ProfilePage() {
               Раз в N дней
               <input
                 type="number"
+                min={1}
                 value={measInterval}
                 onChange={(e) => setMeasInterval(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
+            <div>
+              <p className="text-xs text-tg-hint">День недели</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMeasWeekday(null)}
+                  className={[
+                    "rounded-full px-3 py-1 text-xs",
+                    measWeekday === null ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                  ].join(" ")}
+                >
+                  Любой
+                </button>
+                {WEEKDAYS.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setMeasWeekday(d.id)}
+                    className={[
+                      "rounded-full px-3 py-1 text-xs",
+                      measWeekday === d.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                    ].join(" ")}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-tg-hint">
+                Напоминание в выбранный день, не чаще чем раз в N дней.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
@@ -1444,6 +1757,102 @@ export function ProfilePage() {
             </div>
           </div>
 
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <label className="flex items-center justify-between text-sm">
+              <span>Вода</span>
+              <input
+                type="checkbox"
+                checked={waterEnabled}
+                onChange={(e) => setWaterEnabled(e.target.checked)}
+              />
+            </label>
+            <p className="text-xs text-tg-hint">
+              Бот напомнит пить воду. Отмечайте воду на Главной — литраж синхронизируется с
+              сервером.
+            </p>
+            <label className="block text-xs text-tg-hint">
+              Цель, мл / день
+              <input
+                type="number"
+                min={500}
+                step={100}
+                value={waterDailyMl}
+                onChange={(e) => setWaterDailyMl(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-xs text-tg-hint">
+              Как часто, минут
+              <input
+                type="number"
+                min={30}
+                step={15}
+                value={waterIntervalMin}
+                onChange={(e) => setWaterIntervalMin(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block text-xs text-tg-hint">
+                С
+                <input
+                  type="time"
+                  value={waterStart}
+                  onChange={(e) => setWaterStart(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs text-tg-hint">
+                До
+                <input
+                  type="time"
+                  value={waterEnd}
+                  onChange={(e) => setWaterEnd(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <label className="flex items-center justify-between text-sm">
+              <span>Калории (недобор / перебор)</span>
+              <input
+                type="checkbox"
+                checked={calEnabled}
+                onChange={(e) => setCalEnabled(e.target.checked)}
+              />
+            </label>
+            <p className="text-xs text-tg-hint">
+              В указанное время бот пришлёт: сколько съедено, цель и недобор/перебор. Несколько
+              времён — через запятую.
+            </p>
+            <label className="block text-xs text-tg-hint">
+              Время напоминаний
+              <input
+                value={calTimes}
+                onChange={(e) => setCalTimes(e.target.value)}
+                placeholder="14:00, 20:00"
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <label className="flex items-center justify-between text-sm">
+              <span>Догонять пропущенные</span>
+              <input
+                type="checkbox"
+                checked={catchUp}
+                onChange={(e) => setCatchUp(e.target.checked)}
+              />
+            </label>
+            <p className="mt-2 text-xs text-tg-hint">
+              Если напоминание не успело уйти вовремя, бот пришлёт его позже в тот же день — без
+              пачки дублей (для воды и калорий пришлёт одно сводное).
+            </p>
+          </div>
+
           <div className="rounded-2xl bg-tg-secondary p-4">
             <label className="flex items-center justify-between text-sm">
               <span>Приём добавок</span>
@@ -1454,8 +1863,8 @@ export function ProfilePage() {
               />
             </label>
             <p className="mt-2 text-xs text-tg-hint">
-              Времена берутся из вкладки «Добавки» (например 10:00 или pre_workout относительно
-              времени тренировки).
+              Расписание приёма настраивается во вкладке «Добавки»: время (или «до/после
+              тренировки») и правило — каждый день, день тренировки или день без тренировки.
             </p>
           </div>
 
@@ -1476,7 +1885,7 @@ export function ProfilePage() {
                 .catch((e) => setError(e instanceof Error ? e.message : "Ошибка dispatch"));
             }}
           >
-            Проверить сейчас (due window)
+            Проверить напоминания сейчас
           </button>
         </div>
       ) : null}
@@ -1484,13 +1893,12 @@ export function ProfilePage() {
       <Link to="/nutrition" className="mt-4 block text-center text-xs text-tg-link">
         К дневнику питания
       </Link>
-          {detailExercise ? (
+      {detailExercise ? (
         <ExerciseDetailModal
           exercise={detailExercise}
           onClose={() => setDetailExercise(null)}
         />
       ) : null}
-
-</section>
+    </section>
   );
 }

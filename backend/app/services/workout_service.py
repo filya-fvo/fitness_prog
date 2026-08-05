@@ -79,6 +79,41 @@ def resolve_week_phase_meta(started_at: date | None, today: date | None = None) 
     }
 
 
+
+def phase_meta_from_name(
+    phase: str,
+    *,
+    week_in_cycle: int | None = None,
+    cycle_index: int = 0,
+) -> dict[str, Any]:
+    """Build phase meta from explicit light|medium|heavy."""
+    key = (phase or "").strip().lower()
+    table = {
+        "light": (1, "Лёгкая", "3–4 до отказа", "10-15"),
+        "medium": (2, "Средняя", "1–2 до отказа", "8-12"),
+        "heavy": (3, "Тяжёлая", "в отказ", "6-8"),
+    }
+    if key not in table:
+        key = "medium"
+    wic, label, rir, reps = table[key]
+    return {
+        "week_phase": key,
+        "week_in_cycle": int(week_in_cycle or wic),
+        "week_label": label,
+        "week_rir": rir,
+        "target_reps": reps,
+        "cycle_index": max(0, int(cycle_index)),
+    }
+
+
+def next_phase_after_split_cycle(phase: str) -> str:
+    order = ["light", "medium", "heavy"]
+    key = (phase or "medium").strip().lower()
+    if key not in order:
+        key = "medium"
+    return order[(order.index(key) + 1) % len(order)]
+
+
 async def _load_exercises_map(
     session: AsyncSession,
     exercise_ids: list[uuid.UUID],
@@ -142,10 +177,19 @@ async def build_plan_from_program_day(
     *,
     program_started_at: date | None = None,
     today: date | None = None,
+    week_phase: str | None = None,
 ) -> dict[str, Any]:
     structure = program.structure or {}
     day = _extract_day_from_program(program, day_index)
-    phase = resolve_week_phase_meta(program_started_at, today)
+    if week_phase:
+        auto = resolve_week_phase_meta(program_started_at, today)
+        phase = phase_meta_from_name(
+            week_phase,
+            week_in_cycle=None,
+            cycle_index=int(auto.get("cycle_index") or 0),
+        )
+    else:
+        phase = resolve_week_phase_meta(program_started_at, today)
     raw_exercises = day.get("exercises") or []
     if not raw_exercises:
         raw_ids = day.get("exercise_ids") or []
@@ -318,6 +362,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             day_index,
             program_started_at=started_at,
             today=data.scheduled_date,
+            week_phase=getattr(data, "week_phase", None),
         )
     elif data.exercise_ids:
         plan = await _plan_from_exercise_ids(
@@ -358,6 +403,7 @@ async def start_program_workout(
     *,
     day_index: int = 1,
     scheduled_date: date | None = None,
+    week_phase: str | None = None,
 ) -> Workout:
     program = await session.scalar(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
@@ -369,6 +415,7 @@ async def start_program_workout(
         scheduled_date=scheduled_date or date.today(),
         program_id=program_id,
         day_index=day_index,
+        week_phase=week_phase,
     )
     return await create_workout(session, user, payload)
 

@@ -69,8 +69,15 @@ function normalizeLimitations(input: RecommendInput["limitations"]): string[] {
   return asStringArray(input);
 }
 
-export function recommendPrograms(programs: Program[], input: RecommendInput, limit = 6): Program[] {
-  if (!programs.length) return [];
+export type ProgramScoreBreakdown = {
+  program: Program;
+  score: number;
+  reasons: string[];
+};
+
+function scoreProgram(program: Program, input: RecommendInput): ProgramScoreBreakdown {
+  let score = 0;
+  const reasons: string[] = [];
 
   const goal = (input.primaryGoal || "maintain").toLowerCase();
   const level = (input.level || "beginner").toLowerCase();
@@ -81,67 +88,111 @@ export function recommendPrograms(programs: Program[], input: RecommendInput, li
   const limits = new Set(normalizeLimitations(input.limitations));
   const preferredTypes = GOAL_TYPES[goal] || GOAL_TYPES.maintain;
 
+  const pLevel = levelOf(program);
+  const pType = (program.workout_type || "").toLowerCase();
+  const pDays = programDays(program);
+  const pSex = programSex(program);
+  const pLoc = programLocation(program);
+  const pEq = programEquipment(program);
+  const pLim = new Set(programLimitations(program));
+
+  if (sex && pSex.length && !pSex.includes(sex) && !pSex.includes("any") && !pSex.includes("unisex")) {
+    return { program, score: -10_000, reasons: ["не подходит по полу"] };
+  }
+  if (location && pLoc && pLoc !== location) {
+    score -= 80;
+  }
+
+  if (limits.has("no_knee")) {
+    if (pLim.has("no_knee")) {
+      score += 120;
+      reasons.push("учитывает ограничение по коленям");
+    } else {
+      score -= 100;
+    }
+  } else if (pLim.has("no_knee")) score -= 25;
+
+  if (limits.has("no_spine")) {
+    if (pLim.has("no_spine")) {
+      score += 120;
+      reasons.push("учитывает ограничение по спине");
+    } else {
+      score -= 100;
+    }
+  } else if (pLim.has("no_spine")) score -= 25;
+
+  if (pLevel && pLevel === level) {
+    score += 45;
+    reasons.push(`уровень: ${LEVEL_LABELS[pLevel] || pLevel}`);
+  } else if (pLevel && level === "beginner" && pLevel === "intermediate") score += 8;
+  else if (pLevel && level === "advanced" && pLevel === "intermediate") score += 12;
+  else if (pLevel && level === "intermediate" && pLevel === "beginner") score += 5;
+  else if (pLevel && pLevel !== level) score -= 15;
+
+  const typeIdx = preferredTypes.indexOf(pType);
+  if (typeIdx >= 0) {
+    score += 28 - typeIdx * 4;
+    if (typeIdx === 0) reasons.push("тип под вашу цель");
+    else if (typeIdx <= 2) reasons.push("близкий тип под цель");
+  }
+
+  if (pDays > 0) {
+    const diff = Math.abs(pDays - days);
+    score += Math.max(0, 18 - diff * 5);
+    if (diff === 0) reasons.push(`${pDays} дн./нед. как у вас`);
+    else if (diff === 1) reasons.push(`~${pDays} дн./нед.`);
+  }
+
+  if (equipment.size && pEq.length) {
+    const overlap = pEq.filter((e) => equipment.has(e)).length;
+    score += overlap * 10;
+    const missing = pEq.filter((e) => !equipment.has(e) && e !== "bodyweight");
+    score -= missing.length * 12;
+    if (overlap > 0 && missing.length === 0) reasons.push("оборудование совпадает");
+    else if (overlap > 0) reasons.push("частично ваше оборудование");
+  } else if (equipment.size === 1 && equipment.has("bodyweight")) {
+    if (pLoc === "home" || pLoc === "outdoor" || pType === "home_express") score += 16;
+    if (pEq.includes("barbell") || pEq.includes("machines")) score -= 20;
+  }
+
+  if (location === "home" && (pLoc === "home" || pType === "home_express")) {
+    score += 35;
+    reasons.push("для дома");
+  }
+  if (location === "gym" && pLoc === "gym") {
+    score += 35;
+    reasons.push("для зала");
+  }
+  if (location === "outdoor" && pLoc === "outdoor") {
+    score += 35;
+    reasons.push("для улицы");
+  }
+  if (program.is_template) score += 2;
+
+  if (!reasons.length && score > 0) reasons.push("общее совпадение с анкетой");
+  return { program, score, reasons: reasons.slice(0, 4) };
+}
+
+export function scorePrograms(
+  programs: Program[],
+  input: RecommendInput,
+  limit = 6,
+): ProgramScoreBreakdown[] {
+  if (!programs.length) return [];
   const scored = programs
-    .map((program) => {
-      let score = 0;
-      const pLevel = levelOf(program);
-      const pType = (program.workout_type || "").toLowerCase();
-      const pDays = programDays(program);
-      const pSex = programSex(program);
-      const pLoc = programLocation(program);
-      const pEq = programEquipment(program);
-      const pLim = new Set(programLimitations(program));
-
-      if (sex && pSex.length && !pSex.includes(sex) && !pSex.includes("any") && !pSex.includes("unisex")) {
-        return { program, score: -10_000 };
-      }
-      if (location && pLoc && pLoc !== location) score -= 80;
-
-      if (limits.has("no_knee")) {
-        if (pLim.has("no_knee")) score += 120;
-        else score -= 100;
-      } else if (pLim.has("no_knee")) score -= 25;
-
-      if (limits.has("no_spine")) {
-        if (pLim.has("no_spine")) score += 120;
-        else score -= 100;
-      } else if (pLim.has("no_spine")) score -= 25;
-
-      if (pLevel && pLevel === level) score += 45;
-      else if (pLevel && level === "beginner" && pLevel === "intermediate") score += 8;
-      else if (pLevel && level === "advanced" && pLevel === "intermediate") score += 12;
-      else if (pLevel && level === "intermediate" && pLevel === "beginner") score += 5;
-      else if (pLevel && pLevel !== level) score -= 15;
-
-      const typeIdx = preferredTypes.indexOf(pType);
-      if (typeIdx >= 0) score += 28 - typeIdx * 4;
-
-      if (pDays > 0) {
-        const diff = Math.abs(pDays - days);
-        score += Math.max(0, 18 - diff * 5);
-      }
-
-      if (equipment.size && pEq.length) {
-        const overlap = pEq.filter((e) => equipment.has(e)).length;
-        score += overlap * 10;
-        const missing = pEq.filter((e) => !equipment.has(e) && e !== "bodyweight");
-        score -= missing.length * 12;
-      } else if (equipment.size === 1 && equipment.has("bodyweight")) {
-        if (pLoc === "home" || pLoc === "outdoor" || pType === "home_express") score += 16;
-        if (pEq.includes("barbell") || pEq.includes("machines")) score -= 20;
-      }
-
-      if (location === "home" && (pLoc === "home" || pType === "home_express")) score += 35;
-      if (location === "gym" && pLoc === "gym") score += 35;
-      if (location === "outdoor" && pLoc === "outdoor") score += 35;
-      if (program.is_template) score += 2;
-
-      return { program, score };
-    })
+    .map((p) => scoreProgram(p, input))
     .filter((x) => x.score > -5000);
-
   scored.sort((a, b) => b.score - a.score || a.program.name.localeCompare(b.program.name, "ru"));
-  const top = scored.slice(0, Math.max(1, limit)).map((x) => x.program);
+  const top = scored.slice(0, Math.max(1, limit));
+  return top.length ? top : programs.slice(0, Math.max(1, limit)).map((p) => scoreProgram(p, input));
+}
+
+export function explainProgramMatch(program: Program, input: RecommendInput): string[] {
+  return scoreProgram(program, input).reasons;
+}
+
+export function recommendPrograms(programs: Program[], input: RecommendInput, limit = 6): Program[] {
+  const top = scorePrograms(programs, input, limit).map((x) => x.program);
   return top.length ? top : programs.slice(0, Math.max(1, limit));
 }
 

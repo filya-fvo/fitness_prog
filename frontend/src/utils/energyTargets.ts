@@ -65,6 +65,31 @@ export function resolveActivity(input: EnergyInput): string {
   return "very_active";
 }
 
+/** Normalize sex labels (en/ru) for Mifflin–St Jeor and calorie floor. */
+export function isFemaleSex(sex?: string | null): boolean {
+  const s = String(sex || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("ё", "е");
+  if (!s) return false;
+  if (["f", "female", "woman", "w", "ж", "жен", "женский", "female_sex"].includes(s)) {
+    return true;
+  }
+  if (s.startsWith("fem")) return true;
+  if (s === "f") return true;
+  if (s.startsWith("ж")) return true;
+  return false;
+}
+
+/**
+ * Live BMR/TDEE/target preview (mirrors backend).
+ *
+ * Mifflin–St Jeor (1990):
+ *   Men:   10·W + 6.25·H − 5·A + 5
+ *   Women: 10·W + 6.25·H − 5·A − 161
+ * TDEE = BMR × activity factor (Harris–Benedict style multipliers).
+ * Target = TDEE × (1 + adjustment%/100), floored at 1200♀ / 1500♂ kcal.
+ */
 export function previewEnergyTargets(input: EnergyInput) {
   const weight = Number(input.weightKg);
   const height = Number(input.heightCm);
@@ -72,8 +97,7 @@ export function previewEnergyTargets(input: EnergyInput) {
   if (!(weight > 0) || !(height > 0) || age == null) {
     return { complete: false as const, reason: "incomplete" as const };
   }
-  const sex = (input.sex || "male").toLowerCase();
-  const female = sex.startsWith("f") || sex === "female" || sex === "ж";
+  const female = isFemaleSex(input.sex);
   const bmr = female
     ? 10 * weight + 6.25 * height - 5 * age - 161
     : 10 * weight + 6.25 * height - 5 * age + 5;
