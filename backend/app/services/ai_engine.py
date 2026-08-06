@@ -88,13 +88,14 @@ async def _call_llm(settings: Settings, system: str, user_prompt: str) -> str | 
     if not settings.llm_api_key:
         return None
     base = (settings.llm_base_url or "https://api.openai.com/v1").rstrip("/")
+    model = (settings.llm_model or "gpt-4o-mini").strip() or "gpt-4o-mini"
     url = f"{base}/chat/completions"
     headers = {
         "Authorization": f"Bearer {settings.llm_api_key}",
         "Content-Type": "application/json",
     }
     body = {
-        "model": "gpt-4o-mini",
+        "model": model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user_prompt},
@@ -106,8 +107,12 @@ async def _call_llm(settings: Settings, system: str, user_prompt: str) -> str | 
             resp = await client.post(url, headers=headers, json=body)
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
-    except Exception:
+            content = data["choices"][0]["message"]["content"]
+            return str(content).strip() if content is not None else None
+    except Exception as exc:
+        from loguru import logger
+
+        logger.warning("llm_call_failed model={} base={} err={}", model, base, exc)
         return None
 
 

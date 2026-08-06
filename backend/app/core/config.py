@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     r2_endpoint: str = ""
     llm_api_key: str = ""
     llm_base_url: str = ""
+    # OpenAI-compatible model id (Groq: llama-3.1-8b-instant, OpenAI: gpt-4o-mini, …)
+    llm_model: str = "gpt-4o-mini"
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
     sentry_dsn: str = ""
