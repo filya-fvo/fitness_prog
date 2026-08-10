@@ -37,13 +37,13 @@ export function computeBadges(workouts: Workout[]): Badge[] {
     {
       id: "streak_3",
       title: "Серия 3",
-      description: "Streak тренировок 3 дня",
+      description: "Серия тренировок 3 дня",
       earned: streak >= 3,
     },
     {
       id: "streak_7",
       title: "Неделя огня",
-      description: "Streak тренировок 7 дней",
+      description: "Серия тренировок 7 дней",
       earned: streak >= 7,
     },
     {

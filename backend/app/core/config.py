@@ -51,6 +51,24 @@ class Settings(BaseSettings):
     # How long to keep zipped day logs under logs/archive/
     log_archive_days: int = 30
 
+    # --- Email OTP login (browser) ---
+    # From-address / SMTP login (Mail.ru: full mailbox address).
+    smtp_from_email: str = "fil_fit_bot@mail.ru"
+    smtp_from_name: str = "Fil Fit"
+    smtp_host: str = "smtp.mail.ru"
+    smtp_port: int = 465
+    smtp_username: str = "fil_fit_bot@mail.ru"
+    # Mailbox password or Mail.ru app password. Empty → codes only logged in development.
+    smtp_password: str = ""
+    smtp_use_ssl: bool = True
+    # OTP policy
+    email_otp_ttl_minutes: int = 10
+    email_otp_length: int = 6
+    email_otp_max_attempts: int = 5
+    email_otp_resend_seconds: int = 60
+    # Dev helper: include plaintext code in API response when SMTP is not configured.
+    email_otp_dev_return_code: bool = True
+
     @property
     def admin_username_set(self) -> set[str]:
         return {

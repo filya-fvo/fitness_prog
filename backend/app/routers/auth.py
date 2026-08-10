@@ -1,23 +1,47 @@
-"""Authentication routes: Telegram initData -> JWT."""
+"""Authentication routes: Telegram initData / email OTP -> JWT."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.security import InitDataError
+from app.deps import get_current_user
+from app.models.user import User
 from app.schemas.auth import (
     AuthUserResponse,
+    EmailAuthResponse,
+    EmailLinkResponse,
+    EmailOtpRequest,
+    EmailOtpRequestResponse,
+    EmailOtpVerifyRequest,
     TelegramAuthRequest,
     TelegramAuthResponse,
 )
 from app.services.auth_service import authenticate_telegram
+from app.services.email_auth_service import (
+    request_link_code,
+    request_login_code,
+    verify_link_code,
+    verify_login_code,
+)
 from app.services.user_service import to_profile
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _user_response(profile) -> AuthUserResponse:
+    return AuthUserResponse(
+        id=profile.id,
+        telegram_id=profile.telegram_id,
+        username=profile.username,
+        auth_email=getattr(profile, "auth_email", None),
+        subscription_status=profile.subscription_status,
+        onboarding_completed=profile.onboarding_completed,
+    )
 
 
 @router.post(
@@ -46,11 +70,103 @@ async def auth_telegram(
     return TelegramAuthResponse(
         access_token=token,
         expires_in_days=settings.jwt_expire_days,
-        user=AuthUserResponse(
-            id=profile.id,
-            telegram_id=profile.telegram_id,
-            username=profile.username,
-            subscription_status=profile.subscription_status,
-            onboarding_completed=profile.onboarding_completed,
-        ),
+        user=_user_response(profile),
+    )
+
+
+@router.post(
+    "/email/request-code",
+    response_model=EmailOtpRequestResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Request email OTP for browser login",
+)
+async def auth_email_request_code(
+    body: EmailOtpRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> EmailOtpRequestResponse:
+    ip = request.client.host if request.client else None
+    result = await request_login_code(
+        session,
+        email_raw=str(body.email),
+        settings=settings,
+        request_ip=ip,
+    )
+    return EmailOtpRequestResponse(**result)
+
+
+@router.post(
+    "/email/verify",
+    response_model=EmailAuthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify email OTP and issue JWT",
+)
+async def auth_email_verify(
+    body: EmailOtpVerifyRequest,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> EmailAuthResponse:
+    user, token = await verify_login_code(
+        session,
+        email_raw=str(body.email),
+        code_raw=body.code,
+        settings=settings,
+    )
+    profile = to_profile(user)
+    return EmailAuthResponse(
+        access_token=token,
+        expires_in_days=settings.jwt_expire_days,
+        user=_user_response(profile),
+    )
+
+
+@router.post(
+    "/email/link/request-code",
+    response_model=EmailOtpRequestResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Request OTP to link email to current account",
+)
+async def auth_email_link_request_code(
+    body: EmailOtpRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    user: User = Depends(get_current_user),
+) -> EmailOtpRequestResponse:
+    ip = request.client.host if request.client else None
+    result = await request_link_code(
+        session,
+        user=user,
+        email_raw=str(body.email),
+        settings=settings,
+        request_ip=ip,
+    )
+    return EmailOtpRequestResponse(**result)
+
+
+@router.post(
+    "/email/link/verify",
+    response_model=EmailLinkResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify OTP and attach email to current account",
+)
+async def auth_email_link_verify(
+    body: EmailOtpVerifyRequest,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    user: User = Depends(get_current_user),
+) -> EmailLinkResponse:
+    linked = await verify_link_code(
+        session,
+        user=user,
+        email_raw=str(body.email),
+        code_raw=body.code,
+        settings=settings,
+    )
+    profile = to_profile(linked)
+    return EmailLinkResponse(
+        ok=True,
+        message="Почта привязана. Теперь можно входить через неё в браузере.",
+        user=_user_response(profile),
     )

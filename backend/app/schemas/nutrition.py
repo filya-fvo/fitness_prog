@@ -70,6 +70,17 @@ class NutritionLogCreate(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class NutritionLogUpdate(BaseModel):
+    """Partial update for an existing diary entry (grams / meal / optional KBJU override)."""
+
+    quantity_grams: Optional[Decimal] = Field(default=None, gt=0)
+    meal_type: Optional[MealType] = None
+    calories_per_100: Optional[float] = Field(default=None, ge=0, le=1200)
+    proteins_per_100: Optional[float] = Field(default=None, ge=0, le=100)
+    fats_per_100: Optional[float] = Field(default=None, ge=0, le=100)
+    carbs_per_100: Optional[float] = Field(default=None, ge=0, le=100)
+
+
 class NutritionLogResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

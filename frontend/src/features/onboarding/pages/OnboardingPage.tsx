@@ -14,6 +14,8 @@ import { hapticNotification } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
+  ageFromBirthDate,
+  birthYearFromDate,
   previewEnergyTargets,
 } from "@/utils/energyTargets";
 import { localDateKey } from "@/utils/loadProgression";
@@ -162,12 +164,14 @@ export function OnboardingPage() {
         limitations_note: limitationsNote.trim() || null,
         onboarding_completed: true,
       };
+      const ageFromBirth = ageFromBirthDate(birthDate);
       const anthropometry = {
         sex,
         weight_kg: Number(weight) || null,
         height_cm: Number(height) || null,
-        age: Number(age) || null,
+        age: ageFromBirth ?? (Number(age) || null),
         birth_date: birthDate || null,
+        birth_year: birthYearFromDate(birthDate),
         activity_level: activity,
         measurements: {},
       };
@@ -456,20 +460,48 @@ export function OnboardingPage() {
             <input
               type="date"
               value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              min="1920-01-01"
+              onChange={(e) => {
+                const v = e.target.value;
+                setBirthDate(v);
+                const next = ageFromBirthDate(v);
+                if (next != null) setAge(String(next));
+              }}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
           </label>
-          <label className="block text-xs text-tg-hint">
-            Возраст (если нет даты рождения)
-            <input
-              type="number"
-              inputMode="numeric"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-          </label>
+          {birthYearFromDate(birthDate) != null ? (
+            <p className="text-[11px] text-tg-hint">
+              Год рождения:{" "}
+              <span className="font-medium text-tg-text">{birthYearFromDate(birthDate)}</span>
+              {ageFromBirthDate(birthDate) != null
+                ? ` · полных лет: ${ageFromBirthDate(birthDate)}`
+                : ""}
+            </p>
+          ) : null}
+          {!birthDate ? (
+            <label className="block text-xs text-tg-hint">
+              Возраст (если нет даты рождения)
+              <input
+                type="number"
+                inputMode="numeric"
+                min={10}
+                max={100}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              />
+            </label>
+          ) : (
+            <button
+              type="button"
+              className="text-[11px] text-tg-link"
+              onClick={() => setBirthDate("")}
+            >
+              Указать возраст вручную (без даты)
+            </button>
+          )}
           <label className="block text-xs text-tg-hint">
             Активность
             <select

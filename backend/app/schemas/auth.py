@@ -19,6 +19,7 @@ class AuthUserResponse(BaseModel):
     id: uuid.UUID
     telegram_id: int | None = None
     username: str | None = None
+    auth_email: str | None = None
     subscription_status: str
     onboarding_completed: bool = False
 
@@ -31,4 +32,46 @@ class TelegramAuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in_days: int
+    user: AuthUserResponse
+
+
+class EmailOtpRequest(BaseModel):
+    """Body for POST /auth/email/request-code."""
+
+    email: str = Field(..., min_length=3, max_length=254)
+
+
+class EmailOtpVerifyRequest(BaseModel):
+    """Body for POST /auth/email/verify."""
+
+    email: str = Field(..., min_length=3, max_length=254)
+    code: str = Field(..., min_length=4, max_length=8)
+
+
+class EmailOtpRequestResponse(BaseModel):
+    ok: bool = True
+    email: str
+    expires_in_sec: int
+    resend_after_sec: int
+    delivery: str
+    message: str
+    # Present only in non-production when SMTP is not configured.
+    dev_code: str | None = None
+    dev_send_error: str | None = None
+
+
+class EmailAuthResponse(BaseModel):
+    """JWT session after email OTP verify."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in_days: int
+    user: AuthUserResponse
+
+
+class EmailLinkResponse(BaseModel):
+    """Result of attaching email to the current account."""
+
+    ok: bool = True
+    message: str = "Почта привязана"
     user: AuthUserResponse

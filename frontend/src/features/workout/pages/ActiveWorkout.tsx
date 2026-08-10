@@ -1,9 +1,8 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { sendAIChat } from "@/api/ai";
 import { fetchExercises } from "@/api/exercises";
-import { notifyTimerEnded } from "@/api/notifications";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { addWorkoutSet, completeWorkout, fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
@@ -18,8 +17,9 @@ import {
 } from "@/db/syncQueue";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
 import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
-import { RestTimer } from "@/features/workout/components/RestTimer";
+import { WorkoutElapsedClock } from "@/features/workout/components/WorkoutElapsedClock";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/lib/metrics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { hapticImpact, hapticNotification } from "@/lib/telegram";
+import { toast } from "@/store/toastStore";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 import { formatElapsed } from "@/utils/format";
@@ -80,12 +81,7 @@ export function ActiveWorkout() {
   const addDraftSet = useWorkoutStore((s) => s.addDraftSet);
   const removeDraftSet = useWorkoutStore((s) => s.removeDraftSet);
   const startRest = useWorkoutStore((s) => s.startRest);
-  const adjustRest = useWorkoutStore((s) => s.adjustRest);
-  const tickRest = useWorkoutStore((s) => s.tickRest);
-  const stopRest = useWorkoutStore((s) => s.stopRest);
   const setExerciseRest = useWorkoutStore((s) => s.setExerciseRest);
-  const isResting = useWorkoutStore((s) => s.isResting);
-  const restSecondsLeft = useWorkoutStore((s) => s.restSecondsLeft);
   const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
   const setDrafts = useWorkoutStore((s) => s.setDrafts);
@@ -104,7 +100,6 @@ export function ActiveWorkout() {
   const [summary, setSummary] = useState<string | null>(null);
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
   const [suggestNote, setSuggestNote] = useState<string | null>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
   const [elapsedFinalSec, setElapsedFinalSec] = useState<number | null>(null);
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [replaceQuery, setReplaceQuery] = useState("");
@@ -113,6 +108,9 @@ export function ActiveWorkout() {
   const [aiAssistLoading, setAiAssistLoading] = useState(false);
   const [aiAssistText, setAiAssistText] = useState<string | null>(null);
   const [aiAssistError, setAiAssistError] = useState<string | null>(null);
+  const [aiAssistMode, setAiAssistMode] = useState<
+    "replace" | "easier" | "no_equipment" | "technique"
+  >("replace");
   const [addSetOpen, setAddSetOpen] = useState(false);
   /** When set, AddSetModal edits this draft set instead of appending a new one. */
   const [editingSetNumber, setEditingSetNumber] = useState<number | null>(null);
@@ -120,7 +118,18 @@ export function ActiveWorkout() {
   const [lastCardioId, setLastCardioId] = useState<string | null>(null);
   const [lastCardioDur, setLastCardioDur] = useState<number | null>(null);
   const [lastCardioParams, setLastCardioParams] = useState<Record<string, string | number> | null>(null);
-  const restNotifySentRef = useRef(false);
+  /** Gym-first UI: large set + Done; extras behind «Ещё». Default on. */
+  const [simpleMode, setSimpleMode] = useState(() => {
+    try {
+      const raw = localStorage.getItem("fitness_workout_simple_mode");
+      if (raw === "0" || raw === "false") return false;
+    } catch {
+      /* ignore */
+    }
+    return true;
+  });
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
   const [restContext, setRestContext] = useState<{
     exerciseName: string;
     nextExerciseName: string | null;
@@ -202,10 +211,25 @@ export function ActiveWorkout() {
     let cancelled = false;
     void (async () => {
       try {
-        const result = await fetchExercises({ pageSize: 200 });
-        if (cancelled || !result.items.length) return;
-        setCatalog(result.items);
-        await cacheExercises(result.items);
+        const pages: Awaited<ReturnType<typeof fetchExercises>>[] = [];
+        const first = await fetchExercises({ pageSize: 200, page: 1 });
+        pages.push(first);
+        const maxPages = Math.min(5, Math.ceil((first.total || 0) / 200) || 1);
+        for (let page = 2; page <= maxPages; page += 1) {
+          const chunk = await fetchExercises({ pageSize: 200, page }).catch(() => null);
+          if (!chunk?.items?.length) break;
+          pages.push(chunk);
+          if (chunk.items.length < 200) break;
+        }
+        if (cancelled) return;
+        const map = new Map<string, (typeof first.items)[number]>();
+        for (const pg of pages) {
+          for (const it of pg.items) map.set(it.id, it);
+        }
+        const items = Array.from(map.values());
+        if (!items.length) return;
+        setCatalog(items);
+        await cacheExercises(items);
       } catch {
         /* soft */
       }
@@ -214,54 +238,6 @@ export function ActiveWorkout() {
       cancelled = true;
     };
   }, [setCatalog, workoutId]);
-
-  useEffect(() => {
-    if (!isResting) {
-      restNotifySentRef.current = false;
-      return;
-    }
-    const timer = window.setInterval(() => {
-      const before = useWorkoutStore.getState().restSecondsLeft;
-      tickRest();
-      if (before <= 1 && !restNotifySentRef.current) {
-        restNotifySentRef.current = true;
-        hapticImpact("medium");
-        hapticNotification("success");
-        const ctx = restContext;
-        const title = "Отдых завершён";
-        let text = "Ваш отдых завершён! Время продолжить тренировку 💪";
-        if (ctx) {
-          if (ctx.isLastSetOfExercise && ctx.nextExerciseName) {
-            text = `Отдых завершён! Дальше: ${ctx.nextExerciseName} 💪`;
-          } else if (ctx.isLastSetOfExercise && ctx.isLastExercise) {
-            text = "Отдых завершён! Это было последнее упражнение — можно завершать тренировку 🏁";
-          } else {
-            text = `Отдых завершён! Продолжайте: ${ctx.exerciseName} 💪`;
-          }
-        }
-        if (isOnline()) {
-          void notifyTimerEnded({
-            kind: "rest",
-            title,
-            text,
-            workoutId: useWorkoutStore.getState().serverWorkoutId || activeWorkout?.id,
-            startapp: "home",
-          }).catch(() => {
-            /* soft fail */
-          });
-        }
-      }
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [activeWorkout?.id, isResting, restContext, tickRest]);
-
-  // Workout elapsed clock — ticks while session is active
-  useEffect(() => {
-    if (booting || summary || !activeWorkout || activeWorkout.status === "completed") return;
-    setNowMs(Date.now());
-    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [activeWorkout, booting, summary]);
 
   // Ensure started_at exists so the clock has an anchor
   useEffect(() => {
@@ -316,19 +292,6 @@ export function ActiveWorkout() {
 
   const isLastExercise =
     exerciseIds.length > 0 && currentExerciseIndex >= exerciseIds.length - 1;
-
-  const workoutStartedAtMs = useMemo(() => {
-    const raw = activeWorkout?.started_at;
-    if (!raw) return null;
-    const t = Date.parse(raw);
-    return Number.isFinite(t) ? t : null;
-  }, [activeWorkout?.started_at]);
-
-  const elapsedSec = useMemo(() => {
-    if (elapsedFinalSec != null) return elapsedFinalSec;
-    if (workoutStartedAtMs == null) return 0;
-    return Math.max(0, Math.floor((nowMs - workoutStartedAtMs) / 1000));
-  }, [elapsedFinalSec, nowMs, workoutStartedAtMs]);
 
   const currentExerciseId = exerciseIds[currentExerciseIndex] ?? exerciseIds[0] ?? null;
   const currentExercise: Exercise | null = currentExerciseId
@@ -480,21 +443,57 @@ export function ActiveWorkout() {
     if (!currentExercise) return [] as Exercise[];
     const muscle = (currentExercise.muscle_group || "").toLowerCase();
     const equip = (currentExercise.equipment || "").toLowerCase();
-    const tags = new Set((currentExercise.tags || []).map((t) => t.toLowerCase()));
+    const tags = new Set((currentExercise.tags || []).map((tg) => tg.toLowerCase()));
+    const name = (currentExercise.name_ru || "").toLowerCase();
+
+    const RELATED: Record<string, string[]> = {
+      спина: ["спина", "задние дельты", "трапеции", "поясница"],
+      грудь: ["грудь", "трицепс", "передние дельты"],
+      ноги: ["ноги", "ягодицы", "бицепс бедра", "икры"],
+      плечи: ["плечи", "передние дельты", "средние дельты", "задние дельты", "трапеции"],
+      бицепс: ["бицепс", "предплечья", "спина"],
+      трицепс: ["трицепс", "грудь", "плечи"],
+      пресс: ["пресс", "кор", "core"],
+      ягодицы: ["ягодицы", "ноги", "бицепс бедра"],
+    };
+    const related = new Set((RELATED[muscle] || [muscle]).map((x) => x.toLowerCase()).filter(Boolean));
+
+    const KEYWORDS: Array<{ re: RegExp; boost: string[] }> = [
+      { re: /тяг|row|pulldown|pull-down|подтяг/, boost: ["тяг", "подтяг", "pulldown", "row", "блок", "пуловер", "pullover"] },
+      { re: /жим|press|bench/, boost: ["жим", "press", "развод", "push", "француз"] },
+      { re: /присед|squat|выпад|lunge/, boost: ["присед", "выпад", "squat", "lunge"] },
+      { re: /станова|deadlift|румын/, boost: ["станова", "румын", "deadlift"] },
+      { re: /пуловер|pullover/, boost: ["пуловер", "pullover", "тяг", "блок", "прямыми руками"] },
+      { re: /француз|skull|трицепс|triceps/, boost: ["француз", "разгиб", "блок", "узк", "skull"] },
+      { re: /махи|развод|fly|raise/, boost: ["махи", "развод", "fly", "raise"] },
+    ];
+    const nameBoosts = KEYWORDS.filter((k) => k.re.test(name)).flatMap((k) => k.boost);
+
     return catalog
       .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
       .map((ex) => {
         let score = 0;
-        if (muscle && (ex.muscle_group || "").toLowerCase() === muscle) score += 5;
-        if (equip && (ex.equipment || "").toLowerCase() === equip) score += 2;
-        for (const t of ex.tags || []) {
-          if (tags.has(t.toLowerCase())) score += 1;
+        const exMuscle = (ex.muscle_group || "").toLowerCase();
+        const exName = (ex.name_ru || "").toLowerCase();
+        const exEquip = (ex.equipment || "").toLowerCase();
+        if (muscle && exMuscle === muscle) score += 6;
+        else if (exMuscle && related.has(exMuscle)) score += 3;
+        if (equip && exEquip === equip) score += 2;
+        else if (equip && exEquip && (exEquip.includes(equip) || equip.includes(exEquip))) score += 1;
+        for (const tg of ex.tags || []) {
+          if (tags.has(tg.toLowerCase())) score += 1;
+        }
+        for (const b of nameBoosts) {
+          if (exName.includes(b)) score += 2;
+        }
+        if (/гантел|штан|barbell|dumbbell/.test(name) && /блок|cable|тренаж|machine|smith/.test(exName + " " + exEquip)) {
+          score += 1;
         }
         return { ex, score };
       })
-      .filter((x) => x.score > 0)
+      .filter((x) => x.score >= 3)
       .sort((a, b) => b.score - a.score || a.ex.name_ru.localeCompare(b.ex.name_ru, "ru"))
-      .slice(0, 8)
+      .slice(0, 16)
       .map((x) => x.ex);
   }, [catalog, currentExercise, occupiedExerciseIds]);
 
@@ -511,7 +510,7 @@ export function ActiveWorkout() {
           .toLowerCase();
         return hay.includes(q);
       })
-      .slice(0, 40);
+      .slice(0, 80);
   }, [catalog, currentExercise, occupiedExerciseIds, replaceMuscle, replaceQuery]);
 
   const replaceMuscleGroups = useMemo(() => {
@@ -540,36 +539,88 @@ export function ActiveWorkout() {
     [currentExerciseId, persistSession, replaceExercise],
   );
 
-  const askAiForCurrent = useCallback(async () => {
-    if (!currentExercise || aiAssistLoading) return;
-    if (!isOnline()) {
-      setAiAssistError("AI доступен только онлайн");
+  const askAiForCurrent = useCallback(
+    async (mode: "replace" | "easier" | "no_equipment" | "technique" = "replace") => {
+      if (!currentExercise || aiAssistLoading) return;
+      setAiAssistMode(mode);
+      if (!isOnline()) {
+        setAiAssistError("AI доступен только онлайн");
+        setAiAssistOpen(true);
+        return;
+      }
       setAiAssistOpen(true);
-      return;
+      setAiAssistLoading(true);
+      setAiAssistError(null);
+      setAiAssistText(null);
+      const alts = recommendedAlternatives
+        .slice(0, 6)
+        .map((e) => e.name_ru)
+        .join(", ");
+      const base =
+        `Сейчас в тренировке упражнение «${currentExercise.name_ru}» ` +
+        `(${currentExercise.muscle_group || "мышца ?"}${currentExercise.equipment ? `, ${currentExercise.equipment}` : ""}). `;
+      let task = "";
+      if (mode === "easier") {
+        task =
+          "Предложи 2–3 более лёгкие/регрессионные варианта (меньше нагрузка на суставы или проще техника). ";
+      } else if (mode === "no_equipment") {
+        task =
+          "Предложи 2–3 замены с минимальным инвентарём или с весом тела, если зал/тренажёр недоступен. ";
+      } else if (mode === "technique") {
+        task =
+          "Дай 4–6 коротких пунктов техники и 2 частые ошибки. Без воды. ";
+      } else {
+        task = "Предложи 2–3 безопасные замены из похожих движений. ";
+      }
+      const msg =
+        base +
+        task +
+        (alts && mode !== "technique" ? `Кандидаты из каталога: ${alts}. ` : "") +
+        (mode !== "technique"
+          ? "В ответе перечисли названия упражнений в кавычках «…», чтобы их можно было выбрать. "
+          : "") +
+        "Ответ на русском, коротко, для зала.";
+      try {
+        const result = await sendAIChat({ message: msg });
+        setAiAssistText(result.reply);
+      } catch (err) {
+        setAiAssistError(err instanceof Error ? err.message : "AI недоступен");
+      } finally {
+        setAiAssistLoading(false);
+      }
+    },
+    [aiAssistLoading, currentExercise, recommendedAlternatives],
+  );
+
+  /** Match catalog exercises mentioned in AI reply for one-tap replace. */
+  const aiSuggestedExercises = useMemo(() => {
+    if (!aiAssistText || !currentExercise) return [] as Exercise[];
+    const text = aiAssistText.toLowerCase();
+    const scored = catalog
+      .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
+      .map((ex) => {
+        const name = (ex.name_ru || "").trim();
+        if (name.length < 4) return { ex, score: 0 };
+        const n = name.toLowerCase();
+        let score = 0;
+        if (text.includes(n)) score += 5;
+        // partial: first 2 meaningful words
+        const words = n.split(/\s+/).filter((w) => w.length > 3).slice(0, 2);
+        if (words.length && words.every((w) => text.includes(w))) score += 2;
+        return { ex, score };
+      })
+      .filter((x) => x.score >= 5)
+      .sort((a, b) => b.score - a.score || a.ex.name_ru.localeCompare(b.ex.name_ru, "ru"));
+    const seen = new Set<string>();
+    const out: Exercise[] = [];
+    for (const row of scored) {
+      if (seen.has(row.ex.id)) continue;
+      seen.add(row.ex.id);
+      out.push(row.ex);
+      if (out.length >= 6) break;
     }
-    setAiAssistOpen(true);
-    setAiAssistLoading(true);
-    setAiAssistError(null);
-    setAiAssistText(null);
-    const alts = recommendedAlternatives
-      .slice(0, 5)
-      .map((e) => e.name_ru)
-      .join(", ");
-    const msg =
-      `Сейчас в тренировке упражнение «${currentExercise.name_ru}» ` +
-      `(${currentExercise.muscle_group || "мышца ?"}${currentExercise.equipment ? `, ${currentExercise.equipment}` : ""}). ` +
-      `Предложи 2–3 безопасные замены из похожих движений` +
-      (alts ? ` (кандидаты: ${alts})` : "") +
-      `. Кратко: почему и на что обратить внимание в технике. Ответ на русском, коротко.`;
-    try {
-      const result = await sendAIChat({ message: msg });
-      setAiAssistText(result.reply);
-    } catch (err) {
-      setAiAssistError(err instanceof Error ? err.message : "AI недоступен");
-    } finally {
-      setAiAssistLoading(false);
-    }
-  }, [aiAssistLoading, currentExercise, recommendedAlternatives]);
+    return out;
+  }, [aiAssistText, catalog, currentExercise, occupiedExerciseIds]);
 
   const applyRestForCurrentExercise = useCallback(
     (sec: number) => {
@@ -599,7 +650,7 @@ export function ActiveWorkout() {
     setOfflineNote(null);
     const finalElapsed = (() => {
       const started = activeWorkout.started_at ? Date.parse(activeWorkout.started_at) : NaN;
-      if (!Number.isFinite(started)) return elapsedSec;
+      if (!Number.isFinite(started)) return 0;
       return Math.max(0, Math.floor((Date.now() - started) / 1000));
     })();
     setElapsedFinalSec(finalElapsed);
@@ -708,7 +759,7 @@ export function ActiveWorkout() {
         duration_sec: finalElapsed,
       });
       setSummary(
-        `Готово. Время: ${formatElapsed(finalElapsed)}. Упражнений: ${exerciseIds.length}. Подходов: ${completedCount}/${drafts.length}. Тоннаж: ${tonnage.toFixed(1)} кг. Сложность (1–10): ${rpe}. Неделя: ${weekPhase.label}.`,
+        `Готово. Время: ${formatElapsed(finalElapsed)}. Упражнений: ${exerciseIds.length}. Подходов: ${completedCount}/${drafts.length}. Тоннаж: ${tonnage.toFixed(1)} кг. Оценка тяжести RPE (1–10): ${rpe}. Неделя: ${weekPhase.label}.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось завершить");
@@ -722,7 +773,6 @@ export function ActiveWorkout() {
     completedCount,
     completing,
     drafts,
-    elapsedSec,
     exerciseIds,
     notes,
     persistSession,
@@ -737,6 +787,7 @@ export function ActiveWorkout() {
   ]);
 
   const scrollToFinish = useCallback(() => {
+    setFinishOpen(true);
     // Jump to last exercise so the finish panel is in context, then scroll.
     if (exerciseIds.length > 0 && currentExerciseIndex < exerciseIds.length - 1) {
       setCurrentExerciseIndex(exerciseIds.length - 1);
@@ -746,6 +797,22 @@ export function ActiveWorkout() {
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   }, [currentExerciseIndex, exerciseIds.length, setCurrentExerciseIndex]);
+
+  function toggleSimpleMode() {
+    setSimpleMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("fitness_workout_simple_mode", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      if (!next) {
+        setMoreOpen(true);
+        setFinishOpen(true);
+      }
+      return next;
+    });
+  }
 
   useMainButton({
     text: completing ? "Сохраняем…" : "Завершить тренировку",
@@ -888,7 +955,13 @@ export function ActiveWorkout() {
       setActiveWorkout(nextWorkout);
       await persistSession(nextWorkout, nextDrafts);
       hapticImpact("light");
-      startRest(restTimeSec);
+      // Skip rest restart when correcting an already logged set.
+      if (!draft.isCompleted) {
+        startRest(restTimeSec);
+        toast(`Подход ${setNumber} · готово`);
+      } else {
+        toast(`Подход ${setNumber} обновлён`, "info");
+      }
 
       const msFromStart = msSinceWorkoutTimerStart();
       const completedSetsNow = nextDrafts.filter((d) => d.isCompleted).length;
@@ -946,9 +1019,11 @@ export function ActiveWorkout() {
         <Header title="Тренировка завершена" subtitle={weekPhase.label} />
         <div className="mb-3 rounded-2xl bg-tg-secondary p-4 text-center">
           <p className="text-xs text-tg-hint">Время тренировки</p>
-          <p className="mt-1 text-3xl font-semibold tabular-nums">
-            {formatElapsed(elapsedFinalSec ?? elapsedSec)}
-          </p>
+          <WorkoutElapsedClock
+            startedAt={null}
+            frozenSec={elapsedFinalSec ?? 0}
+            className="mt-1 text-3xl font-semibold tabular-nums"
+          />
         </div>
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm">{summary}</div>
         <button
@@ -975,27 +1050,39 @@ export function ActiveWorkout() {
     <section className="pb-24">
       <Header
         title={activeWorkout.title || "Активная тренировка"}
-        subtitle={`Упр. ${Math.min(currentExerciseIndex + 1, exerciseIds.length)}/${exerciseIds.length || 1} · ${weekPhase.label} (RIR ${weekPhase.rir})`}
+        subtitle={`Упр. ${Math.min(currentExerciseIndex + 1, exerciseIds.length)}/${exerciseIds.length || 1} · ${weekPhase.label} (запас повторений RIR ${weekPhase.rir})`}
       />
 
       <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary px-4 py-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-tg-hint">Таймер тренировки</p>
-          <p className="text-2xl font-semibold tabular-nums leading-none">{formatElapsed(elapsedSec)}</p>
+        <WorkoutElapsedClock
+          startedAt={activeWorkout.started_at}
+          frozenSec={elapsedFinalSec}
+          paused={activeWorkout.status === "completed"}
+          label="Таймер тренировки"
+        />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleSimpleMode}
+            className="rounded-full bg-tg-bg px-2.5 py-1.5 text-[11px] font-medium text-tg-hint"
+            title={simpleMode ? "Показать все настройки" : "Режим зала"}
+          >
+            {simpleMode ? "Зал" : "Полный"}
+          </button>
+          <button
+            type="button"
+            onClick={scrollToFinish}
+            disabled={completing}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-500/90 text-white shadow-md disabled:opacity-50"
+            aria-label="Завершить тренировку"
+            title="Завершить"
+          >
+            {/* stop: square in circle */}
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/90">
+              <span className="block h-3.5 w-3.5 rounded-[2px] bg-white" />
+            </span>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={scrollToFinish}
-          disabled={completing}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-500/90 text-white shadow-md disabled:opacity-50"
-          aria-label="Завершить тренировку"
-          title="Завершить"
-        >
-          {/* stop: square in circle */}
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/90">
-            <span className="block h-3.5 w-3.5 rounded-[2px] bg-white" />
-          </span>
-        </button>
       </div>
 
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -1056,13 +1143,15 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      <div className="mb-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
-        Неделя {weekPhase.weekInCycle}/3 · {weekPhase.label}: цель {weekPhase.defaultReps} повт.,{" "}
-        {weekPhase.rir}. Вес: −/+ 1 кг, тонко −/+ 100 г.
-        {hasReplacements
-          ? " Есть замены — вернуть исходные можно на Главной в блоке «Сегодня»."
-          : ""}
-      </div>
+      {!simpleMode ? (
+        <div className="mb-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
+          Неделя {weekPhase.weekInCycle}/3 · {weekPhase.label}: цель {weekPhase.defaultReps} повт.,{" "}
+          {weekPhase.rir}. Вес: −/+ 1 кг, тонко −/+ 100 г.
+          {hasReplacements
+            ? " Есть замены — вернуть исходные можно на Главной в блоке «Сегодня»."
+            : ""}
+        </div>
+      ) : null}
 
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {exerciseIds.map((id, idx) => {
@@ -1088,7 +1177,7 @@ export function ActiveWorkout() {
                     : "bg-tg-secondary",
               ].join(" ")}
             >
-              {idx + 1}. {name}
+              {simpleMode ? `${idx + 1}${done ? "✓" : ""}` : `${idx + 1}. ${name}`}
             </button>
           );
         })}
@@ -1129,100 +1218,153 @@ export function ActiveWorkout() {
                 type="button"
                 className="text-xs text-tg-link"
                 disabled={aiAssistLoading}
-                onClick={() => void askAiForCurrent()}
+                onClick={() => void askAiForCurrent("replace")}
               >
-                {aiAssistLoading ? "AI…" : "AI: замена"}
+                {aiAssistLoading ? "AI…" : "AI"}
               </button>
+              {simpleMode && !moreOpen ? (
+                <button
+                  type="button"
+                  className="text-xs text-tg-hint"
+                  onClick={() => setMoreOpen(true)}
+                >
+                  Ещё
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <ExerciseMediaPlayer exercise={currentExercise} compact />
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              disabled={aiAssistLoading}
+              onClick={() => void askAiForCurrent("replace")}
+              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+            >
+              Замена
+            </button>
+            <button
+              type="button"
+              disabled={aiAssistLoading}
+              onClick={() => void askAiForCurrent("easier")}
+              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+            >
+              Легче
+            </button>
+            <button
+              type="button"
+              disabled={aiAssistLoading}
+              onClick={() => void askAiForCurrent("no_equipment")}
+              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+            >
+              Без инвентаря
+            </button>
+            <button
+              type="button"
+              disabled={aiAssistLoading}
+              onClick={() => void askAiForCurrent("technique")}
+              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+            >
+              Техника
+            </button>
+          </div>
 
-          <div className="rounded-xl bg-tg-bg p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-tg-hint">Отдых между подходами</p>
-              <p className="text-sm font-semibold tabular-nums">
-                {Math.floor(currentRestSec / 60)}:{String(currentRestSec % 60).padStart(2, "0")}
+          {!simpleMode || moreOpen ? (
+            <ExerciseMediaPlayer exercise={currentExercise} compact />
+          ) : null}
+
+          {!simpleMode || moreOpen ? (
+            <div className="rounded-xl bg-tg-bg p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-tg-hint">Отдых между подходами</p>
+                <p className="text-sm font-semibold tabular-nums">
+                  {Math.floor(currentRestSec / 60)}:{String(currentRestSec % 60).padStart(2, "0")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
+                  onClick={() => applyRestForCurrentExercise(currentRestSec - 15)}
+                  aria-label="Уменьшить отдых на 15 секунд"
+                >
+                  −15
+                </button>
+                <button
+                  type="button"
+                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
+                  onClick={() => applyRestForCurrentExercise(currentRestSec - 30)}
+                  aria-label="Уменьшить отдых на 30 секунд"
+                >
+                  −30
+                </button>
+                <input
+                  type="number"
+                  min={15}
+                  max={600}
+                  step={15}
+                  value={currentRestSec}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) applyRestForCurrentExercise(n);
+                  }}
+                  className="h-9 min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-secondary px-2 text-center text-sm"
+                  aria-label="Отдых в секундах"
+                />
+                <button
+                  type="button"
+                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
+                  onClick={() => applyRestForCurrentExercise(currentRestSec + 30)}
+                  aria-label="Увеличить отдых на 30 секунд"
+                >
+                  +30
+                </button>
+                <button
+                  type="button"
+                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
+                  onClick={() => applyRestForCurrentExercise(currentRestSec + 15)}
+                  aria-label="Увеличить отдых на 15 секунд"
+                >
+                  +15
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {REST_PRESETS.map((sec) => {
+                  const label =
+                    sec < 60
+                      ? `${sec}с`
+                      : sec % 60 === 0
+                        ? `${sec / 60}м`
+                        : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+                  return (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => applyRestForCurrentExercise(sec)}
+                      className={[
+                        "rounded-full px-2.5 py-1 text-[11px]",
+                        currentRestSec === sec
+                          ? "bg-tg-button text-tg-button-text"
+                          : "bg-tg-secondary text-tg-hint",
+                      ].join(" ")}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[10px] text-tg-hint">
+                Применяется к незавершённым подходам этого упражнения.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                onClick={() => applyRestForCurrentExercise(currentRestSec - 15)}
-                aria-label="Уменьшить отдых на 15 секунд"
-              >
-                −15
-              </button>
-              <button
-                type="button"
-                className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                onClick={() => applyRestForCurrentExercise(currentRestSec - 30)}
-                aria-label="Уменьшить отдых на 30 секунд"
-              >
-                −30
-              </button>
-              <input
-                type="number"
-                min={15}
-                max={600}
-                step={15}
-                value={currentRestSec}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (Number.isFinite(n)) applyRestForCurrentExercise(n);
-                }}
-                className="h-9 min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-secondary px-2 text-center text-sm"
-                aria-label="Отдых в секундах"
-              />
-              <button
-                type="button"
-                className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                onClick={() => applyRestForCurrentExercise(currentRestSec + 30)}
-                aria-label="Увеличить отдых на 30 секунд"
-              >
-                +30
-              </button>
-              <button
-                type="button"
-                className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                onClick={() => applyRestForCurrentExercise(currentRestSec + 15)}
-                aria-label="Увеличить отдых на 15 секунд"
-              >
-                +15
-              </button>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {REST_PRESETS.map((sec) => {
-                const label =
-                  sec < 60
-                    ? `${sec}с`
-                    : sec % 60 === 0
-                      ? `${sec / 60}м`
-                      : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
-                return (
-                  <button
-                    key={sec}
-                    type="button"
-                    onClick={() => applyRestForCurrentExercise(sec)}
-                    className={[
-                      "rounded-full px-2.5 py-1 text-[11px]",
-                      currentRestSec === sec
-                        ? "bg-tg-button text-tg-button-text"
-                        : "bg-tg-secondary text-tg-hint",
-                    ].join(" ")}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1.5 text-[10px] text-tg-hint">
-              Применяется к незавершённым подходам этого упражнения.
+          ) : (
+            <p className="text-xs text-tg-hint">
+              Отдых {Math.floor(currentRestSec / 60)}:
+              {String(currentRestSec % 60).padStart(2, "0")} · после «Готово» таймер сам
             </p>
-          </div>
+          )}
 
-          {currentExercise.common_mistakes ? (
+          {(!simpleMode || moreOpen) && currentExercise.common_mistakes ? (
             <p className="text-xs text-tg-hint">Частые ошибки: {currentExercise.common_mistakes}</p>
           ) : null}
 
@@ -1231,17 +1373,23 @@ export function ActiveWorkout() {
               const key = `${draft.exerciseId}:${draft.setNumber}`;
               const dur = draft.durationSec;
               const ready = draftReadyToComplete(draft, currentLoadType);
+              const isFocus =
+                simpleMode &&
+                !draft.isCompleted &&
+                draft.setNumber ===
+                  (currentSets.find((d) => !d.isCompleted)?.setNumber ?? draft.setNumber);
               return (
                 <div
                   key={key}
                   className={[
                     "flex items-center justify-between rounded-xl bg-tg-bg px-3 py-2 text-sm",
                     draft.isCompleted ? "opacity-80" : "",
+                    isFocus ? "ring-2 ring-tg-button/40" : "",
                   ].join(" ")}
                 >
                   <div>
                     <p className="text-xs text-tg-hint">Подход {draft.setNumber}</p>
-                    <p className="font-medium">
+                    <p className={["font-medium", isFocus ? "text-base" : ""].join(" ")}>
                       {currentLoadType === "weight_reps"
                         ? `${draft.weight || "—"} кг × ${draft.reps || "—"}`
                         : currentLoadType === "reps_only"
@@ -1252,7 +1400,19 @@ export function ActiveWorkout() {
                   </div>
                   <div className="flex items-center gap-2">
                     {draft.isCompleted ? (
-                      <span className="text-xs text-tg-hint">✓</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-tg-hint">✓</span>
+                        <button
+                          type="button"
+                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          onClick={() => {
+                            setEditingSetNumber(draft.setNumber);
+                            setAddSetOpen(true);
+                          }}
+                        >
+                          Править
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <button
@@ -1263,7 +1423,7 @@ export function ActiveWorkout() {
                             setAddSetOpen(true);
                           }}
                         >
-                          Изменить
+                          Править
                         </button>
                         <button
                           type="button"
@@ -1276,13 +1436,16 @@ export function ActiveWorkout() {
                             }
                             void completeSet(draft.exerciseId, draft.setNumber);
                           }}
-                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-50"
+                          className={[
+                            "tap-target-x rounded-lg bg-tg-button px-3 font-semibold text-tg-button-text disabled:opacity-50",
+                            isFocus ? "min-h-[52px] px-5 text-sm" : "min-h-[44px] py-2 text-xs",
+                          ].join(" ")}
                         >
                           {savingKey === key ? "…" : "Готово"}
                         </button>
                       </>
                     )}
-                    {!draft.isCompleted && currentSets.length > 1 ? (
+                    {!draft.isCompleted && currentSets.length > 1 && (!simpleMode || moreOpen) ? (
                       <button
                         type="button"
                         className="text-[10px] text-tg-hint"
@@ -1371,24 +1534,58 @@ export function ActiveWorkout() {
             >
               Как прошлый
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingSetNumber(null);
-                setAddSetOpen(true);
-              }}
-              className="flex-1 rounded-full bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
-            >
-              Добавить +
-            </button>
+            {(!simpleMode || moreOpen) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSetNumber(null);
+                  setAddSetOpen(true);
+                }}
+                className="flex-1 rounded-full bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+              >
+                Добавить +
+              </button>
+            ) : null}
           </div>
+          {simpleMode && !moreOpen ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex-1 rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link"
+                onClick={() => setMoreOpen(true)}
+              >
+                Ещё: замена, отдых, медиа
+              </button>
+              {!isLastExercise ? (
+                <button
+                  type="button"
+                  className="rounded-xl bg-tg-bg px-3 py-2.5 text-xs text-tg-hint"
+                  onClick={() => {
+                    if (!window.confirm("Пропустить это упражнение и перейти к следующему?")) return;
+                    nextExercise();
+                    if (activeWorkout) {
+                      void persistSession(
+                        activeWorkout,
+                        drafts,
+                        Math.min(exerciseIds.length - 1, currentExerciseIndex + 1),
+                      );
+                    }
+                    toast("Упражнение пропущено", "info");
+                  }}
+                >
+                  Пропустить
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <p className="text-[11px] text-tg-hint">
             План: {plan.exercises.find((e) => e.exercise_id === currentExercise.id)?.target_sets ?? "—"}{" "}
-            подх. × {targetReps}. «Готово» — если поля заполнены; иначе «Изменить».
+            подх. × {targetReps}. «Готово» — если поля заполнены; иначе «Править».
           </p>
 
           {addSetOpen ? (
             <AddSetModal
+              key={`set-modal-${currentExercise.id}-${editingSetNumber ?? "new"}`}
               open={addSetOpen}
               exercise={currentExercise}
               defaultRestSec={currentRestSec}
@@ -1514,22 +1711,32 @@ export function ActiveWorkout() {
         </article>
       ) : null}
 
-      {isResting ? (
-        <RestTimer
-          isResting={isResting}
-          secondsLeft={restSecondsLeft}
-          onSkip={stopRest}
-          onAdjust={(delta) => adjustRest(delta)}
-        />
-      ) : null}
+      <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
 
       <div id="workout-finish-panel" className="mt-4 space-y-2">
-        <div className="rounded-xl bg-tg-secondary p-3">
+        {simpleMode && !finishOpen ? (
+          <button
+            type="button"
+            onClick={() => setFinishOpen(true)}
+            className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium"
+          >
+            Завершить · RPE и заметка
+          </button>
+        ) : null}
+        <div
+          className={[
+            "rounded-xl bg-tg-secondary p-3",
+            simpleMode && !finishOpen ? "hidden" : "",
+          ].join(" ")}
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-medium">Завершение тренировки</p>
-            <p className="text-sm font-semibold tabular-nums text-tg-hint">
-              {formatElapsed(elapsedSec)}
-            </p>
+            <WorkoutElapsedClock
+              startedAt={activeWorkout.started_at}
+              frozenSec={elapsedFinalSec}
+              paused={activeWorkout.status === "completed"}
+              className="text-sm font-semibold tabular-nums text-tg-hint"
+            />
           </div>
           {!isLastExercise ? (
             <p className="mb-2 text-xs text-tg-hint">
@@ -1538,11 +1745,11 @@ export function ActiveWorkout() {
             </p>
           ) : null}
           <label className="block text-sm font-medium text-tg-text">
-            Насколько тяжело было? (оценка 1–10)
+            Насколько тяжело было? (1–10)
           </label>
           <p className="mt-1 text-xs text-tg-hint">
-            Это субъективная оценка усилия всей тренировки. Нужна, чтобы видеть, как вы
-            переносите нагрузку, и не перетренироваться. 1 — очень легко, 10 — максимум,
+            Это субъективная оценка тяжести (RPE) всей тренировки. Нужна, чтобы видеть, как
+            вы переносите нагрузку, и не перетренироваться. 1 — очень легко, 10 — максимум,
             почти не смогли закончить.
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1580,7 +1787,7 @@ export function ActiveWorkout() {
               value={rpe}
               onChange={(e) => setRpe(Number(e.target.value) || 7)}
               className="min-w-0 flex-1"
-              aria-label="Оценка сложности тренировки от 1 до 10"
+              aria-label="Оценка тяжести RPE тренировки от 1 до 10"
             />
             <span className="w-8 text-center text-sm font-semibold tabular-nums">{rpe}</span>
           </div>
@@ -1589,27 +1796,29 @@ export function ActiveWorkout() {
             вес или объём на следующей неделе.
           </p>
         </div>
-        <label className="block text-xs text-tg-hint">
-          Заметки к тренировке
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Как самочувствие, что мешало, что получилось лучше…"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={completing}
-          onClick={() => void finishWorkout()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-current">
-            <span className="block h-2.5 w-2.5 rounded-[1px] bg-current" />
-          </span>
-          {completing ? "Сохраняем…" : "Завершить тренировку"}
-        </button>
+        <div className={simpleMode && !finishOpen ? "hidden" : "space-y-2"}>
+          <label className="block text-xs text-tg-hint">
+            Заметки к тренировке
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Как самочувствие, что мешало, что получилось лучше…"
+              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={completing}
+            onClick={() => void finishWorkout()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-current">
+              <span className="block h-2.5 w-2.5 rounded-[1px] bg-current" />
+            </span>
+            {completing ? "Сохраняем…" : "Завершить тренировку"}
+          </button>
+        </div>
       </div>
 
       {/* Always-visible floating stop control (duplicates header stop) */}
@@ -1745,7 +1954,15 @@ export function ActiveWorkout() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
           <div className="w-full max-w-lg rounded-2xl bg-tg-bg p-4 shadow-xl">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">AI · замена упражнения</p>
+              <p className="text-sm font-semibold">
+                {aiAssistMode === "easier"
+                  ? "AI · легче"
+                  : aiAssistMode === "no_equipment"
+                    ? "AI · без инвентаря"
+                    : aiAssistMode === "technique"
+                      ? "AI · техника"
+                      : "AI · замена"}
+              </p>
               <button
                 type="button"
                 className="text-sm text-tg-link"
@@ -1765,10 +1982,29 @@ export function ActiveWorkout() {
             ) : aiAssistText ? (
               <p className="whitespace-pre-wrap text-sm">{aiAssistText}</p>
             ) : null}
-            {recommendedAlternatives.length ? (
+            {aiSuggestedExercises.length ? (
               <div className="mt-3 space-y-2">
-                <p className="text-xs font-medium text-tg-hint">Быстрый выбор</p>
-                {recommendedAlternatives.slice(0, 4).map((ex) => (
+                <p className="text-xs font-medium text-tg-hint">Из ответа AI — нажмите, чтобы заменить</p>
+                {aiSuggestedExercises.map((ex) => (
+                  <button
+                    key={`ai-parsed-${ex.id}`}
+                    type="button"
+                    onClick={() => {
+                      applyReplace(ex);
+                      setAiAssistOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl bg-tg-button/15 px-3 py-2 text-left text-sm"
+                  >
+                    <span>{ex.name_ru}</span>
+                    <span className="text-xs text-tg-link">Заменить</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {recommendedAlternatives.length && aiAssistMode !== "technique" ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium text-tg-hint">Быстрый выбор из каталога</p>
+                {recommendedAlternatives.slice(0, 8).map((ex) => (
                   <button
                     key={`ai-alt-${ex.id}`}
                     type="button"
@@ -1784,6 +2020,31 @@ export function ActiveWorkout() {
                 ))}
               </div>
             ) : null}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {(
+                [
+                  ["replace", "Замена"],
+                  ["easier", "Легче"],
+                  ["no_equipment", "Без инвентаря"],
+                  ["technique", "Техника"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={aiAssistLoading}
+                  onClick={() => void askAiForCurrent(mode)}
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[11px]",
+                    aiAssistMode === mode
+                      ? "bg-tg-button text-tg-button-text"
+                      : "bg-tg-secondary text-tg-link",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               className="mt-3 w-full rounded-xl bg-tg-secondary px-3 py-2 text-sm"

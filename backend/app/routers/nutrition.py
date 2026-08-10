@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -17,6 +18,7 @@ from app.schemas.nutrition import (
     NutritionDayTotal,
     NutritionLogCreate,
     NutritionLogResponse,
+    NutritionLogUpdate,
     NutritionProductCreate,
     NutritionProductListResponse,
     NutritionProductResponse,
@@ -141,6 +143,37 @@ async def add_log(
         calculated_kbj=row.calculated_kbj or {},
         product=_product_resp(product) if product else None,
     )
+
+
+@router.put("/log/{log_id}", response_model=NutritionLogResponse)
+async def update_log(
+    log_id: uuid.UUID,
+    body: NutritionLogUpdate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> NutritionLogResponse:
+    row = await nutrition_service.update_log(session, user, log_id, body)
+    products = await nutrition_service.get_products_map(session, [row.product_id])
+    product = products.get(row.product_id)
+    return NutritionLogResponse(
+        id=row.id,
+        user_id=row.user_id,
+        date=row.date,
+        meal_type=row.meal_type,
+        product_id=row.product_id,
+        quantity_grams=float(row.quantity_grams),
+        calculated_kbj=row.calculated_kbj or {},
+        product=_product_resp(product) if product else None,
+    )
+
+
+@router.delete("/log/{log_id}", status_code=204)
+async def delete_log(
+    log_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    await nutrition_service.delete_log(session, user, log_id)
 
 
 @router.get("/daily", response_model=DailyNutritionResponse)

@@ -107,6 +107,15 @@ export function ExerciseMediaPlayer({
                 src={mediaUrl ?? undefined}
                 alt={exercise.name_ru}
                 className={`w-full bg-black/10 object-contain ${heightClass}`}
+                // Isolate animated GIF decode/paint from parent layout thrash.
+                style={{
+                  contentVisibility: "auto",
+                  contain: "paint",
+                  transform: "translateZ(0)",
+                  willChange: "auto",
+                }}
+                decoding="async"
+                loading="lazy"
                 onError={() => setMediaFailed(true)}
                 onLoad={() =>
                   trackEvent("exercise_media_played", {
@@ -122,7 +131,7 @@ export function ExerciseMediaPlayer({
                   rel="noreferrer"
                   className="absolute bottom-1 right-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white/90"
                 >
-                  © Gym visual
+                  © Gym Visual
                 </a>
               ) : null}
             </div>
@@ -160,7 +169,7 @@ export function ExerciseMediaPlayer({
                   rel="noreferrer"
                   className="underline"
                 >
-                  Gym visual
+                  Gym Visual
                 </a>
               </p>
             ) : null}

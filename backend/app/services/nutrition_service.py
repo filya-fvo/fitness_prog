@@ -13,10 +13,11 @@ from fastapi import HTTPException, status
 from loguru import logger
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.nutrition import NutritionLog, NutritionProduct
 from app.models.user import User
-from app.schemas.nutrition import NutritionLogCreate
+from app.schemas.nutrition import NutritionLogCreate, NutritionLogUpdate
 
 _BARCODE_RE = re.compile(r"^\d{8,14}$")
 
@@ -141,6 +142,105 @@ async def add_log(
     await session.commit()
     await session.refresh(row)
     return row
+
+
+async def get_user_log(
+    session: AsyncSession,
+    user: User,
+    log_id: uuid.UUID,
+) -> NutritionLog | None:
+    return await session.scalar(
+        select(NutritionLog).where(
+            NutritionLog.id == log_id,
+            NutritionLog.user_id == user.id,
+            NutritionLog.is_deleted.is_(False),
+        )
+    )
+
+
+async def update_log(
+    session: AsyncSession,
+    user: User,
+    log_id: uuid.UUID,
+    data: NutritionLogUpdate,
+) -> NutritionLog:
+    row = await get_user_log(session, user, log_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log not found")
+
+    product = await session.scalar(
+        select(NutritionProduct).where(
+            NutritionProduct.id == row.product_id,
+            NutritionProduct.is_deleted.is_(False),
+        )
+    )
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    if data.quantity_grams is not None:
+        row.quantity_grams = data.quantity_grams
+    if data.meal_type is not None:
+        row.meal_type = data.meal_type
+
+    prev = row.calculated_kbj if isinstance(row.calculated_kbj, dict) else {}
+    prev_ov = prev.get("per_100_override") if isinstance(prev.get("per_100_override"), dict) else {}
+
+    def _pick(new_val: float | None, key: str, fallback: Any) -> Any:
+        if new_val is not None:
+            return new_val
+        if key in prev_ov and prev_ov[key] is not None:
+            return prev_ov[key]
+        return fallback
+
+    # If any override field is sent, rebuild override snapshot; else keep previous override if any.
+    touch_override = any(
+        x is not None
+        for x in (
+            data.calories_per_100,
+            data.proteins_per_100,
+            data.fats_per_100,
+            data.carbs_per_100,
+        )
+    )
+    if touch_override or prev_ov:
+        cal = _pick(data.calories_per_100, "calories", product.calories)
+        prot = _pick(data.proteins_per_100, "proteins", product.proteins)
+        fat = _pick(data.fats_per_100, "fats", product.fats)
+        carb = _pick(data.carbs_per_100, "carbs", product.carbs)
+    else:
+        cal, prot, fat, carb = product.calories, product.proteins, product.fats, product.carbs
+
+    kbj = calc_kbju(
+        calories_per_100=cal,
+        proteins_per_100=prot,
+        fats_per_100=fat,
+        carbs_per_100=carb,
+        quantity_grams=row.quantity_grams,
+    )
+    if touch_override or prev_ov:
+        kbj["per_100_override"] = {
+            "calories": float(cal),
+            "proteins": float(prot),
+            "fats": float(fat),
+            "carbs": float(carb),
+        }
+    row.calculated_kbj = kbj
+    flag_modified(row, "calculated_kbj")
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def delete_log(
+    session: AsyncSession,
+    user: User,
+    log_id: uuid.UUID,
+) -> None:
+    row = await get_user_log(session, user, log_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log not found")
+    row.is_deleted = True
+    await session.commit()
 
 
 async def daily_summary(

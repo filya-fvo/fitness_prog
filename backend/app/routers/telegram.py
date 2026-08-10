@@ -14,11 +14,15 @@ from app.core.config import Settings, get_settings
 from app.services.telegram_bot import (
     TelegramBotError,
     extract_help_command,
+    extract_open_text_tap,
     extract_start_command,
+    extract_web_app_data,
     get_webhook_info,
     resolve_mini_app_url,
+    send_open_again,
     send_start_welcome,
     send_user_guide,
+    set_bot_commands,
     set_chat_menu_button,
     set_webhook,
 )
@@ -112,6 +116,14 @@ async def _ensure_menu_button(settings: Settings, chat_id: int) -> None:
         logger.warning("set_chat_menu_button_failed chat={} err={}", chat_id, exc)
 
 
+async def _ensure_bot_commands(settings: Settings) -> None:
+    """Register /start and /help in Telegram slash menu (best-effort)."""
+    try:
+        await set_bot_commands(settings)
+    except TelegramBotError as exc:
+        logger.warning("set_bot_commands_failed err={}", exc)
+
+
 @router.post("/webhook")
 async def telegram_webhook(
     request: Request,
@@ -136,6 +148,34 @@ async def telegram_webhook(
     if not isinstance(update, dict):
         return {"ok": True}
 
+    # Legacy Mini App sendData closes the app and delivers web_app_data here.
+    wad = extract_web_app_data(update)
+    if wad:
+        chat_id = wad["chat_id"]
+        logger.info(
+            "telegram_web_app_data chat_id={} user_id={} data_len={}",
+            chat_id,
+            wad.get("user_id"),
+            len(str(wad.get("data") or "")),
+        )
+        try:
+            await _ensure_menu_button(settings, chat_id)
+            await send_open_again(settings, chat_id=chat_id, reason="web_app_data")
+        except TelegramBotError as exc:
+            logger.error("telegram_web_app_data_reply_failed chat={} err={}", chat_id, exc)
+        return {"ok": True}
+
+    open_tap = extract_open_text_tap(update)
+    if open_tap:
+        chat_id = open_tap["chat_id"]
+        logger.info("telegram_open_text chat_id={} user_id={}", chat_id, open_tap.get("user_id"))
+        try:
+            await _ensure_menu_button(settings, chat_id)
+            await send_open_again(settings, chat_id=chat_id, reason="open_text")
+        except TelegramBotError as exc:
+            logger.error("telegram_open_text_reply_failed chat={} err={}", chat_id, exc)
+        return {"ok": True}
+
     help_cmd = extract_help_command(update)
     if help_cmd:
         chat_id = help_cmd["chat_id"]
@@ -147,6 +187,7 @@ async def telegram_webhook(
         )
         try:
             await _ensure_menu_button(settings, chat_id)
+            await _ensure_bot_commands(settings)
             await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
             _mark_guide_sent(help_cmd.get("user_id"), chat_id)
         except TelegramBotError as exc:
@@ -170,6 +211,7 @@ async def telegram_webhook(
     )
 
     try:
+        await _ensure_bot_commands(settings)
         await _ensure_menu_button(settings, chat_id)
         await send_start_welcome(
             settings,

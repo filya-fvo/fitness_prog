@@ -131,7 +131,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Альпинисты", ["mountain climber"], "кор", 2),
     # Cardio / conditioning
     ("Бёрпи", ["burpee"], "кардио", 3),
-    ("Бег на месте", ["run"], "кардио", 1),
+    ("Беговая дорожка", ["run", "treadmill"], "кардио", 1),
     ("Высокие колени", ["high knee against wall", "walking high knees lunge"], "кардио", 1),
     ("Прыжки на скакалке", ["jump rope"], "кардио", 2),
     ("Прыжки «звездой»", ["star jump (male)", "jack jump (male)"], "кардио", 1),

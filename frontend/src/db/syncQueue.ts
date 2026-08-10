@@ -42,8 +42,41 @@ export async function enqueueSync(
   });
 }
 
+const MAX_SYNC_ATTEMPTS = 5;
+
 export async function getPendingCount(): Promise<number> {
   return db.syncQueue.count();
+}
+
+/** Drop poison-pill items that failed too many times (unblocks the queue). */
+export async function dropFailedSyncItems(maxAttempts = MAX_SYNC_ATTEMPTS): Promise<number> {
+  const items = await db.syncQueue.toArray();
+  let removed = 0;
+  for (const item of items) {
+    if ((item.attempts || 0) >= maxAttempts) {
+      await db.syncQueue.delete(item.id);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+export async function clearSyncQueue(): Promise<number> {
+  const n = await db.syncQueue.count();
+  await db.syncQueue.clear();
+  return n;
+}
+
+export async function peekSyncQueue(): Promise<
+  Array<{ id: string; type: string; attempts: number; lastError: string | null }>
+> {
+  const items = await db.syncQueue.orderBy("createdAt").toArray();
+  return items.map((i) => ({
+    id: i.id,
+    type: i.type,
+    attempts: i.attempts,
+    lastError: i.lastError,
+  }));
 }
 
 export async function resolveServerWorkoutId(clientWorkoutId: string): Promise<string> {
@@ -131,15 +164,19 @@ export async function deleteLocalSession(clientId: string): Promise<void> {
 
 let flushing = false;
 
-export async function flushSyncQueue(): Promise<{ processed: number; failed: number }> {
+export async function flushSyncQueue(): Promise<{ processed: number; failed: number; dropped: number }> {
   if (flushing || !navigator.onLine) {
-    return { processed: 0, failed: 0 };
+    return { processed: 0, failed: 0, dropped: 0 };
   }
   flushing = true;
   let processed = 0;
   let failed = 0;
+  let dropped = 0;
 
   try {
+    // Unblock queue if old poison items are stuck
+    dropped = await dropFailedSyncItems(MAX_SYNC_ATTEMPTS);
+
     const items = await db.syncQueue.orderBy("createdAt").toArray();
     for (const item of items) {
       try {
@@ -149,18 +186,26 @@ export async function flushSyncQueue(): Promise<{ processed: number; failed: num
       } catch (err) {
         failed += 1;
         const message = err instanceof Error ? err.message : "sync failed";
+        const attempts = (item.attempts || 0) + 1;
+        if (attempts >= MAX_SYNC_ATTEMPTS) {
+          // Drop permanently failing op so the rest of the queue can proceed
+          await db.syncQueue.delete(item.id);
+          dropped += 1;
+          continue;
+        }
         await db.syncQueue.update(item.id, {
-          attempts: item.attempts + 1,
+          attempts,
           lastError: message,
         });
-        break;
+        // Don't freeze the whole queue forever on one bad item — try next
+        continue;
       }
     }
   } finally {
     flushing = false;
   }
 
-  return { processed, failed };
+  return { processed, failed, dropped };
 }
 
 async function processQueueItem(item: SyncQueueItem): Promise<void> {
@@ -244,5 +289,12 @@ export function startSyncListeners(): () => void {
   };
   window.addEventListener("online", onOnline);
   void flushSyncQueue();
-  return () => window.removeEventListener("online", onOnline);
+  // Periodic background flush while app is open (covers "online but queue stuck")
+  const timer = window.setInterval(() => {
+    if (navigator.onLine) void flushSyncQueue();
+  }, 20_000);
+  return () => {
+    window.removeEventListener("online", onOnline);
+    window.clearInterval(timer);
+  };
 }

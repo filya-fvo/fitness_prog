@@ -29,15 +29,46 @@ const GOAL_PCT: Record<string, number> = {
   maintain: 0,
 };
 
+/**
+ * Parse YYYY-MM-DD (or ISO datetime) as a local calendar date.
+ * Avoid `new Date("1990-05-01")` which is UTC midnight and can shift the day
+ * (and thus age/year) in timezones east of UTC.
+ */
+export function parseLocalDateInput(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (!y || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    const dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return dt;
+  }
+  const fallback = new Date(raw);
+  if (Number.isNaN(fallback.getTime())) return null;
+  return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
+}
+
 export function ageFromBirthDate(birthDate: string | null | undefined, today = new Date()): number | null {
-  if (!birthDate) return null;
-  const d = new Date(birthDate);
-  if (Number.isNaN(d.getTime())) return null;
+  const d = parseLocalDateInput(birthDate);
+  if (!d) return null;
   let age = today.getFullYear() - d.getFullYear();
   const m = today.getMonth() - d.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1;
   if (age < 10 || age > 100) return null;
   return age;
+}
+
+/** Birth year from YYYY-MM-DD (local parse). */
+export function birthYearFromDate(birthDate: string | null | undefined): number | null {
+  const d = parseLocalDateInput(birthDate);
+  if (!d) return null;
+  const y = d.getFullYear();
+  return y >= 1900 && y <= 2100 ? y : null;
 }
 
 export function resolveAge(input: EnergyInput): number | null {

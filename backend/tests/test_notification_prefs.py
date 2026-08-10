@@ -220,3 +220,38 @@ def test_supplement_schedule_rest_day_only() -> None:
     goals["notification_settings"]["workouts"]["days"] = [wd]
     due2 = due_notifications(goals, now=now, window_minutes=5)
     assert not any(d["kind"] == "supplement" for d in due2)
+
+def test_water_skips_when_daily_goal_met() -> None:
+    """No water pings after drunk_ml >= daily_ml (user report: 4500/4500 still got 19:00)."""
+    tz = timezone(timedelta(hours=3))
+    now = datetime(2026, 7, 20, 19, 0, tzinfo=tz)
+    goals = {
+        "notification_settings": {
+            "timezone": "Europe/Moscow",
+            "catch_up": False,
+            "workouts": {"enabled": False},
+            "measurements": {"enabled": False},
+            "supplements": {"enabled": False},
+            "water": {
+                "enabled": True,
+                "daily_ml": 4500,
+                "interval_minutes": 30,
+                "start_time": "09:00",
+                "end_time": "21:00",
+            },
+            "calories": {"enabled": False},
+        },
+        "water_log": {"2026-07-20": 4500},
+    }
+    due = due_notifications(goals, now=now, window_minutes=5)
+    assert not any(d["kind"] == "water" for d in due)
+
+    # Still under goal -> slot fires
+    goals["water_log"]["2026-07-20"] = 3000
+    due2 = due_notifications(goals, now=now, window_minutes=5)
+    water = [d for d in due2 if d["kind"] == "water"]
+    assert water
+    assert water[0]["meta"]["left_ml"] == 1500
+    assert "Осталось" in water[0]["text"]
+    assert "выполнена" not in water[0]["text"]
+

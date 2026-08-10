@@ -1,7 +1,8 @@
 /**
  * AI trainer chat — TZ §5 / §6.
  */
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { analyzeProgress, sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
@@ -14,31 +15,38 @@ const QUICK = [
   "Почему болят колени?",
   "Замени жим лёжа",
   "Проанализируй мой прогресс за месяц",
+  "Что есть после тренировки?",
+  "Разбор недели: объём и восстановление",
 ] as const;
 
 export function Chat() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Привет! Я AI-тренер. Спросите про технику, замену упражнений или прогресс. Лимит: 15 запросов/сутки.",
+        "Привет! Я AI-тренер. Спросите про технику, замену упражнений или прогресс. Лимит: 15 запросов/сутки. Это не медицинская консультация.",
     },
   ]);
   const [text, setText] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const prefiredRef = useRef(false);
 
-  async function send(message: string) {
+  const send = useCallback(async (message: string) => {
     const trimmed = message.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sendingRef.current) return;
     if (!getStoredToken()) {
-      setError("Нужна авторизация в Telegram");
+      setError("Нужна авторизация (Telegram или email)");
       return;
     }
+    sendingRef.current = true;
     setSending(true);
     setError(null);
     const userMsg: Msg = { id: crypto.randomUUID(), role: "user", content: trimmed };
@@ -58,7 +66,8 @@ export function Chat() {
           },
         ]);
       } else {
-        const result = await sendAIChat({ message: trimmed, sessionId });
+        const result = await sendAIChat({ message: trimmed, sessionId: sessionIdRef.current });
+        sessionIdRef.current = result.session_id;
         setSessionId(result.session_id);
         setRemaining(result.remaining_requests ?? null);
         setMessages((prev) => [
@@ -78,9 +87,24 @@ export function Chat() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "AI недоступен");
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (prefiredRef.current) return;
+    const q = (searchParams.get("q") || "").trim();
+    if (!q) return;
+    prefiredRef.current = true;
+    setSearchParams({}, { replace: true });
+    void send(q);
+  }, [searchParams, setSearchParams, send]);
+
+  // keep sessionId state in sync for UI if needed later
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   return (
     <section className="flex min-h-[70vh] flex-col">

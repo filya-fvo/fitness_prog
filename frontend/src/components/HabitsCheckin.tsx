@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getStoredToken } from "@/api/client";
 import { fetchWaterLog, saveWaterLog } from "@/api/notifications";
 import { trackEvent } from "@/lib/analytics";
+import { toast } from "@/store/toastStore";
 import {
   addWater,
   getHabitDay,
@@ -109,6 +110,12 @@ export function HabitsCheckin() {
                 const next = addWater(ml, today);
                 setDay(next);
                 void syncWater(next.waterMl);
+                const target = waterTargetMl;
+                toast(
+                  target != null
+                    ? `Вода ${next.waterMl} / ${target} мл`
+                    : `Вода ${next.waterMl} мл`,
+                );
                 trackEvent("habit_checked", {
                   source: "water",
                   water_ml: next.waterMl,
@@ -127,6 +134,7 @@ export function HabitsCheckin() {
               const next = saveHabitDay({ ...cur, waterMl: 0 });
               setDay(next);
               void syncWater(0);
+              toast("Вода сброшена", "info");
             }}
             className="tap-target-x min-h-[44px] rounded-full bg-tg-bg px-3 py-2 text-xs text-tg-hint"
           >

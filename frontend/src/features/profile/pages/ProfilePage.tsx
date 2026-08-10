@@ -22,12 +22,16 @@ import {
 } from "@/api/supplements";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
+import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { fetchExercises } from "@/api/exercises";
 import type { Exercise } from "@/types/workout";
+import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
   BODY_MEASURE_FIELDS,
+  ageFromBirthDate,
+  birthYearFromDate,
   previewEnergyTargets,
 } from "@/utils/energyTargets";
 import { isOnline } from "@/utils/network";
@@ -37,6 +41,7 @@ import {
   programSex,
   recommendPrograms,
 } from "@/utils/programRecommend";
+import { OTP_DRAFT_LINK_KEY, readOtpDraft } from "@/utils/otpDraft";
 
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
@@ -136,16 +141,16 @@ function asRecord(v: unknown): Record<string, unknown> {
 }
 
 const PROGRAM_TYPE_LABELS: Record<string, string> = {
-  full_body: "Full body",
-  full_body_alt: "Full body A/B",
+  full_body: "Всё тело",
+  full_body_alt: "Всё тело A/B",
   upper_lower: "Верх/низ",
-  push_pull_legs: "PPL",
+  push_pull_legs: "Жим/тяга/ноги",
   home_express: "Дома",
   strength: "Сила",
   hypertrophy: "Гипертрофия",
   mobility: "Мобильность",
   conditioning: "Кардио",
-  custom: "Custom",
+  custom: "Своя",
 };
 
 const PROGRAM_LEVEL_LABELS: Record<string, string> = {
@@ -273,11 +278,16 @@ function programMetaLine(program: Program): string {
 
 
 export function ProfilePage() {
-  const [tab, setTab] = useState<TabId>("body");
+  const setUser = useUserStore((s) => s.setUser);
+  const storeUser = useUserStore((s) => s.user);
+
+  // Prefer body tab if user is mid email-OTP (return from Mail app / WebView reload).
+  const [tab, setTab] = useState<TabId>(() => (readOtpDraft(OTP_DRAFT_LINK_KEY) ? "body" : "body"));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
 
   const [sex, setSex] = useState("male");
   const [weight, setWeight] = useState("");
@@ -327,6 +337,8 @@ export function ProfilePage() {
   const [waterEnd, setWaterEnd] = useState("21:00");
   const [calEnabled, setCalEnabled] = useState(false);
   const [calTimes, setCalTimes] = useState("14:00, 20:00");
+  /** Body tab: quick essentials vs full measures / advanced energy. */
+  const [bodyAdvanced, setBodyAdvanced] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -345,7 +357,8 @@ export function ProfilePage() {
           fetchExercises({ pageSize: 200 }).catch(() => ({ items: [] as Exercise[] })),
         ]);
         if (cancelled) return;
-
+setAuthEmail(p.auth_email ?? null);
+        
         const a = asRecord(p.anthropometry);
         const g = asRecord(p.goals);
         setProfileGoalsKeep(g);
@@ -356,8 +369,15 @@ export function ProfilePage() {
         }
         setWeight(numOrEmpty(a.weight_kg));
         setHeight(numOrEmpty(a.height_cm));
-        setAge(numOrEmpty(a.age));
-        setBirthDate(String(a.birth_date || "").slice(0, 10));
+        {
+          const bd = String(a.birth_date || "").slice(0, 10);
+          setBirthDate(bd);
+          const fromBirth = ageFromBirthDate(bd);
+          // Prefer live age from birth date; fall back to stored age
+          setAge(fromBirth != null ? String(fromBirth) : numOrEmpty(a.age));
+          // If user had birth_date but UI was in "quick" mode, surface advanced once
+          if (bd) setBodyAdvanced(true);
+        }
         setActivity(String(g.activity_level || a.activity_level || "moderate"));
         setPrimaryGoal(String(g.primary_goal || "maintain"));
         setAdjPct(
@@ -598,12 +618,15 @@ export function ProfilePage() {
         const n = Number(v);
         if (n > 0) measurements[k] = n;
       }
+      const ageFromBirth = ageFromBirthDate(birthDate);
+      const ageNum = ageFromBirth ?? (Number(age) || null);
       const anthropometry = {
         sex,
         weight_kg: Number(weight) || null,
         height_cm: Number(height) || null,
-        age: Number(age) || null,
+        age: ageNum,
         birth_date: birthDate || null,
+        birth_year: birthYearFromDate(birthDate),
         activity_level: activity,
         measurements,
         measurements_updated_at: new Date().toISOString(),
@@ -666,6 +689,41 @@ export function ProfilePage() {
     const res = await saveSupplementStack(next);
     setStack(res.items);
     setCatalog(res.catalog);
+  }
+
+  async function setSupplementRemindersEnabled(enabled: boolean) {
+    setSupEnabled(enabled);
+    setSaving(true);
+    setError(null);
+    setOk(null);
+    try {
+      const current = await fetchNotificationSettings().catch(() => null);
+      const base = (current?.settings as Record<string, unknown>) || {};
+      const prevSup = (base.supplements as Record<string, unknown>) || {};
+      const settings = {
+        ...base,
+        supplements: {
+          ...prevSup,
+          enabled,
+        },
+      };
+      await saveNotificationSettings(settings);
+      await updateMyProfile({
+        goals: {
+          notification_settings: settings,
+        },
+      });
+      setOk(
+        enabled
+          ? "Напоминания о добавках включены"
+          : "Напоминания о добавках выключены",
+      );
+    } catch (err) {
+      setSupEnabled(!enabled);
+      setError(err instanceof Error ? err.message : "Не удалось обновить напоминания");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveAlerts() {
@@ -763,6 +821,62 @@ export function ProfilePage() {
 
       {tab === "body" ? (
         <div className="space-y-4">
+          <div className="flex rounded-full bg-tg-secondary p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setBodyAdvanced(false)}
+              className={[
+                "flex-1 rounded-full px-3 py-1.5 font-medium",
+                !bodyAdvanced ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+              ].join(" ")}
+            >
+              Быстрый профиль
+            </button>
+            <button
+              type="button"
+              onClick={() => setBodyAdvanced(true)}
+              className={[
+                "flex-1 rounded-full px-3 py-1.5 font-medium",
+                bodyAdvanced ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+              ].join(" ")}
+            >
+              Расширенные
+            </button>
+          </div>
+
+          {bodyAdvanced ? (
+            <LinkEmailCard
+              currentEmail={authEmail}
+              onLinked={(u) => {
+                setAuthEmail(u.auth_email ?? null);
+                setUser({
+                  ...(storeUser || {
+                    id: u.id,
+                    subscription_status: u.subscription_status,
+                    onboarding_completed: u.onboarding_completed ?? false,
+                  }),
+                  ...u,
+                  auth_email: u.auth_email ?? null,
+                });
+                setOk(u.auth_email ? `Почта привязана: ${u.auth_email}` : "Почта привязана");
+              }}
+            />
+          ) : (
+            <div className="rounded-2xl bg-tg-secondary p-3 text-xs text-tg-hint">
+              Пол, вес, рост, цель и дни в неделю — достаточно для калорий и программ.
+              {authEmail ? (
+                <span className="mt-1 block text-tg-text">Почта: {authEmail}</span>
+              ) : (
+                <button
+                  type="button"
+                  className="mt-1 block text-tg-link"
+                  onClick={() => setBodyAdvanced(true)}
+                >
+                  Привязать email →
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="mb-2 text-sm font-medium">Пол</p>
@@ -810,41 +924,71 @@ export function ProfilePage() {
               <input
                 type="date"
                 value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                min="1920-01-01"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setBirthDate(v);
+                  const next = ageFromBirthDate(v);
+                  if (next != null) setAge(String(next));
+                }}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="block text-xs text-tg-hint">
-              Возраст (если нет даты рождения)
-              <input
-                type="number"
-                inputMode="numeric"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
+            {birthYearFromDate(birthDate) != null ? (
+              <p className="text-[11px] text-tg-hint">
+                Год рождения:{" "}
+                <span className="font-medium text-tg-text">{birthYearFromDate(birthDate)}</span>
+                {ageFromBirthDate(birthDate) != null
+                  ? ` · полных лет: ${ageFromBirthDate(birthDate)}`
+                  : ""}
+              </p>
+            ) : null}
+            {!birthDate ? (
+              <label className="block text-xs text-tg-hint">
+                Возраст
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={10}
+                  max={100}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                />
+              </label>
+            ) : (
+              <button
+                type="button"
+                className="text-[11px] text-tg-link"
+                onClick={() => setBirthDate("")}
+              >
+                Указать возраст вручную (без даты)
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <p className="text-sm font-medium">Замеры тела, см</p>
-            <div className="grid grid-cols-2 gap-2">
-              {BODY_MEASURE_FIELDS.map((f) => (
-                <label key={f.key} className="block text-xs text-tg-hint">
-                  {f.label}
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={measures[f.key] || ""}
-                    onChange={(e) =>
-                      setMeasures((prev) => ({ ...prev, [f.key]: e.target.value }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                  />
-                </label>
-              ))}
+          {bodyAdvanced ? (
+            <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+              <p className="text-sm font-medium">Замеры тела, см</p>
+              <div className="grid grid-cols-2 gap-2">
+                {BODY_MEASURE_FIELDS.map((f) => (
+                  <label key={f.key} className="block text-xs text-tg-hint">
+                    {f.label}
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={measures[f.key] || ""}
+                      onChange={(e) =>
+                        setMeasures((prev) => ({ ...prev, [f.key]: e.target.value }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
             <p className="text-sm font-medium">Цель и калории</p>
@@ -883,14 +1027,27 @@ export function ProfilePage() {
               </select>
             </label>
             <label className="block text-xs text-tg-hint">
-              % к суточному расходу (минус = дефицит, плюс = профицит)
+              Дней тренировок в неделю
               <input
                 type="number"
-                value={adjPct}
-                onChange={(e) => setAdjPct(e.target.value)}
+                min={1}
+                max={7}
+                value={daysPerWeek}
+                onChange={(e) => setDaysPerWeek(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
+            {bodyAdvanced ? (
+              <label className="block text-xs text-tg-hint">
+                % к суточному расходу (минус = дефицит, плюс = профицит)
+                <input
+                  type="number"
+                  value={adjPct}
+                  onChange={(e) => setAdjPct(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                />
+              </label>
+            ) : null}
           </div>
 
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
@@ -1304,6 +1461,39 @@ export function ProfilePage() {
               По умолчанию стек пуст — добавьте сами из каталога (только добавки с доказанной
               эффективностью) или свою. У каждой — принцип действия и дозировка.
             </p>
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-tg-bg px-3 py-2">
+              <div>
+                <p className="text-xs font-medium">
+                  Напоминания: {supEnabled ? "вкл" : "выкл"}
+                </p>
+                <p className="text-[11px] text-tg-hint">
+                  Время приёма — ниже у каждой добавки. Глобальный рубильник — здесь.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void setSupplementRemindersEnabled(!supEnabled)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
+                  supEnabled
+                    ? "bg-tg-button text-tg-button-text"
+                    : "bg-tg-secondary text-tg-hint",
+                ].join(" ")}
+              >
+                {supEnabled ? "Вкл" : "Выкл"}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="mt-2 text-xs text-tg-link"
+              onClick={() => {
+                setTab("alerts");
+                setOk(null);
+              }}
+            >
+              Все уведомления →
+            </button>
           </div>
 
           {stack.length === 0 ? (
@@ -1863,9 +2053,28 @@ export function ProfilePage() {
               />
             </label>
             <p className="mt-2 text-xs text-tg-hint">
-              Расписание приёма настраивается во вкладке «Добавки»: время (или «до/после
-              тренировки») и правило — каждый день, день тренировки или день без тренировки.
+              Расписание приёма — во вкладке «Добавки» (время и день тренировки/отдыха). Этот
+              переключатель включает/выключает все напоминания по стеку.
             </p>
+            {stack.length === 0 ? (
+              <p className="mt-2 text-xs text-amber-700">
+                Стек пуст — сначала добавьте добавки, иначе боту нечего напоминать.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-tg-hint">
+                В стеке: {stack.length}.{" "}
+                <button
+                  type="button"
+                  className="text-tg-link"
+                  onClick={() => {
+                    setTab("supplements");
+                    setOk(null);
+                  }}
+                >
+                  Настроить расписание →
+                </button>
+              </p>
+            )}
           </div>
 
           <button

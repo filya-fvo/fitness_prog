@@ -15,7 +15,7 @@ const TIMED_NAME_RE =
 const CARDIO_MACHINE_RE = /беговая|дорожк|эллипс|велотренаж|гребл|row|elliptical|treadmill|bike/i;
 
 const CARDIO_BODY_RE =
-  /бёрпи|берпи|альпинист|скакал|звезд|скейтер|бег на месте|высокие колени|jumping jack|burpee|mountain climber/i;
+  /бёрпи|берпи|альпинист|скакал|звезд|скейтер|высокие колени|jumping jack|burpee|mountain climber/i;
 
 const REPS_ONLY_RE = /подтягиван|отжиман|брусь|австралийск|diamond push|pull-up|push-up/i;
 
@@ -69,7 +69,7 @@ export function inferCardioMachineKind(
 export function defaultTimedSeconds(exercise: Pick<Exercise, "name_ru" | "muscle_group">): number {
   const name = (exercise.name_ru || "").toLowerCase();
   if (/планка|удержание|лодоч/.test(name)) return 45;
-  if (/бёрпи|берпи|альпинист|скакал|звезд|скейтер|бег на месте|высокие колени/.test(name)) {
+  if (/бёрпи|берпи|альпинист|скакал|звезд|скейтер|высокие колени/.test(name)) {
     return 60;
   }
   if ((exercise.muscle_group || "").toLowerCase() === "кардио") return 300;

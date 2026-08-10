@@ -1,9 +1,13 @@
 """Unit tests for Telegram helpers (/start, menu, keyboards)."""
 
+from app.core.config import Settings
 from app.services.telegram_bot import (
+    bot_commands_reply_keyboard,
     build_mini_app_open_url,
     extract_help_command,
+    extract_open_text_tap,
     extract_start_command,
+    extract_web_app_data,
     load_user_guide_bytes,
     mini_app_keyboard,
     open_web_app_keyboard,
@@ -59,6 +63,26 @@ def test_open_web_app_keyboard() -> None:
     assert btn["web_app"]["url"] == "https://example.ngrok-free.dev/?startapp=home"
 
 
+def test_bot_commands_reply_keyboard_has_start_help() -> None:
+    kb = bot_commands_reply_keyboard(None)
+    assert kb["resize_keyboard"] is True
+    assert kb["is_persistent"] is True
+    flat = [btn["text"] for row in kb["keyboard"] for btn in row]
+    assert "/start" in flat
+    assert "/help" in flat
+
+
+def test_bot_commands_reply_keyboard_includes_open_when_url() -> None:
+    settings = Settings(mini_app_url="https://example.ngrok-free.dev")
+    kb = bot_commands_reply_keyboard(settings)
+    first = kb["keyboard"][0][0]
+    assert first["text"] == "Open"
+    assert "web_app" in first
+    assert first["web_app"]["url"].startswith("https://example.ngrok-free.dev")
+    second_row = [b["text"] for b in kb["keyboard"][1]]
+    assert second_row == ["/start", "/help"]
+
+
 def test_start_welcome_uses_first_name_variable() -> None:
     a = start_welcome_text(first_name="Viacheslav")
     b = start_welcome_text(first_name="Anna")
@@ -70,18 +94,21 @@ def test_start_welcome_uses_first_name_variable() -> None:
     assert "/help" in a
 
 
-def test_start_welcome_has_no_browser_or_email_login() -> None:
+def test_start_welcome_mentions_email_link_and_no_raw_url() -> None:
     text = start_welcome_text(
         first_name="Rom",
         mini_app_url="https://example.ngrok-free.dev",
         include_guide_hint=True,
     )
+    # Mini App URL stays on the button, not in plain text
     assert "https://example.ngrok-free.dev" not in text
     assert "http" not in text.lower()
-    assert "email" not in text.lower()
     assert "docs/USER_GUIDE" not in text
     assert "Open" in text
     assert "/help" in text
+    # Browser email login is documented for users
+    assert "почт" in text.lower() or "email" in text.lower()
+    assert "Профиль" in text or "браузер" in text.lower()
 
 
 def test_start_welcome_points_to_help_not_next_message() -> None:
@@ -90,6 +117,35 @@ def test_start_welcome_points_to_help_not_next_message() -> None:
     assert "\u043f\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0435" in text or "/help" in text
     # should NOT say guide comes as next chat messages
     assert "\u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435\u043c" not in text
+
+
+def test_extract_web_app_data() -> None:
+    update = {
+        "message": {
+            "chat": {"id": 42},
+            "from": {"id": 7, "first_name": "A"},
+            "web_app_data": {"data": '{"event":"web_app_opened"}'},
+        }
+    }
+    got = extract_web_app_data(update)
+    assert got is not None
+    assert got["chat_id"] == 42
+    assert got["user_id"] == 7
+    assert "web_app_opened" in got["data"]
+
+
+def test_extract_open_text_tap() -> None:
+    update = {
+        "message": {
+            "chat": {"id": 1},
+            "from": {"id": 2},
+            "text": "Open",
+        }
+    }
+    got = extract_open_text_tap(update)
+    assert got is not None
+    assert got["chat_id"] == 1
+    assert extract_open_text_tap({"message": {"chat": {"id": 1}, "text": "hello"}}) is None
 
 
 def test_extract_start_command() -> None:

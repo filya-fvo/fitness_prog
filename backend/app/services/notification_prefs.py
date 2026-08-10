@@ -348,66 +348,35 @@ def due_notifications(
         end_t = parse_hhmm(str(wtr.get("end_time") or "21:00")) or time(21, 0)
         drunk = water_ml_for_day(goals, now.date())
         left = max(0, daily_ml - drunk)
-        water_marks = state.get("water_marks") or {}
-        if not isinstance(water_marks, dict):
-            water_marks = {}
-        pending_water: list[time] = []
-        for slot in water_slots(start_t, end_t, interval):
-            if not _time_due(now, slot, window_minutes, catch_up=use_catch_up):
-                continue
-            mark = f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}"
-            if water_marks.get(mark):
-                continue
-            pending_water.append(slot)
-        # Catch-up after downtime: one digest, mark all missed slots (no spam).
-        if use_catch_up and len(pending_water) > 1:
-            pending_water = [pending_water[-1]]
-            # still mark all missed via extra marks on the chosen item
-            all_missed = []
+        # Goal already met (e.g. 4500/4500) — skip remaining slots entirely.
+        # Previously we still sent "цель выполнена" at each due slot.
+        if left > 0:
+            water_marks = state.get("water_marks") or {}
+            if not isinstance(water_marks, dict):
+                water_marks = {}
+            pending_water: list[time] = []
             for slot in water_slots(start_t, end_t, interval):
-                if not _time_due(now, slot, window_minutes, catch_up=True):
+                if not _time_due(now, slot, window_minutes, catch_up=use_catch_up):
                     continue
                 mark = f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}"
-                if not water_marks.get(mark):
-                    all_missed.append(slot)
-            slot = pending_water[0]
-            liters = daily_ml / 1000
-            marks = [
-                f"water:{now.date().isoformat()}:{s.strftime('%H:%M')}" for s in all_missed
-            ]
-            due.append(
-                {
-                    "kind": "water",
-                    "title": "Напоминание о воде",
-                    "text": (
-                        f"Цель на день: <b>{liters:.1f} л</b> ({daily_ml} мл).\n"
-                        f"Уже отмечено: <b>{drunk} мл</b>. "
-                        + (
-                            f"Осталось ~<b>{left} мл</b>."
-                            if left > 0
-                            else "Цель на сегодня выполнена."
-                        )
-                        + f"\nПропущено слотов: {len(all_missed)} "
-                        f"(до {slot.strftime('%H:%M')}). Отметьте воду в приложении."
-                    ),
-                    "startapp": "home",
-                    "state_key": "water_mark",
-                    "state_value": marks[-1] if marks else f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}",
-                    "state_values": marks,
-                    "meta": {
-                        "daily_ml": daily_ml,
-                        "drunk_ml": drunk,
-                        "left_ml": left,
-                        "slot": slot.strftime("%H:%M"),
-                        "missed_slots": [s.strftime("%H:%M") for s in all_missed],
-                        "digest": True,
-                    },
-                }
-            )
-        else:
-            for slot in pending_water:
-                mark = f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}"
+                if water_marks.get(mark):
+                    continue
+                pending_water.append(slot)
+            # Catch-up after downtime: one digest, mark all missed slots (no spam).
+            if use_catch_up and len(pending_water) > 1:
+                pending_water = [pending_water[-1]]
+                all_missed = []
+                for slot in water_slots(start_t, end_t, interval):
+                    if not _time_due(now, slot, window_minutes, catch_up=True):
+                        continue
+                    mark = f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}"
+                    if not water_marks.get(mark):
+                        all_missed.append(slot)
+                slot = pending_water[0]
                 liters = daily_ml / 1000
+                marks = [
+                    f"water:{now.date().isoformat()}:{s.strftime('%H:%M')}" for s in all_missed
+                ]
                 due.append(
                     {
                         "kind": "water",
@@ -415,24 +384,51 @@ def due_notifications(
                         "text": (
                             f"Цель на день: <b>{liters:.1f} л</b> ({daily_ml} мл).\n"
                             f"Уже отмечено: <b>{drunk} мл</b>. "
-                            + (
-                                f"Осталось ~<b>{left} мл</b>."
-                                if left > 0
-                                else "Цель на сегодня выполнена."
-                            )
-                            + f"\nСлот: {slot.strftime('%H:%M')} · интервал {interval} мин."
+                            f"Осталось ~<b>{left} мл</b>."
+                            f"\nПропущено слотов: {len(all_missed)} "
+                            f"(до {slot.strftime('%H:%M')}). Отметьте воду в приложении."
                         ),
                         "startapp": "home",
                         "state_key": "water_mark",
-                        "state_value": mark,
+                        "state_value": marks[-1]
+                        if marks
+                        else f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}",
+                        "state_values": marks,
                         "meta": {
                             "daily_ml": daily_ml,
                             "drunk_ml": drunk,
                             "left_ml": left,
                             "slot": slot.strftime("%H:%M"),
+                            "missed_slots": [s.strftime("%H:%M") for s in all_missed],
+                            "digest": True,
                         },
                     }
                 )
+            else:
+                for slot in pending_water:
+                    mark = f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}"
+                    liters = daily_ml / 1000
+                    due.append(
+                        {
+                            "kind": "water",
+                            "title": "Напоминание о воде",
+                            "text": (
+                                f"Цель на день: <b>{liters:.1f} л</b> ({daily_ml} мл).\n"
+                                f"Уже отмечено: <b>{drunk} мл</b>. "
+                                f"Осталось ~<b>{left} мл</b>."
+                                f"\nСлот: {slot.strftime('%H:%M')} · интервал {interval} мин."
+                            ),
+                            "startapp": "home",
+                            "state_key": "water_mark",
+                            "state_value": mark,
+                            "meta": {
+                                "daily_ml": daily_ml,
+                                "drunk_ml": drunk,
+                                "left_ml": left,
+                                "slot": slot.strftime("%H:%M"),
+                            },
+                        }
+                    )
 
     ccfg = settings.get("calories") or {}
     if ccfg.get("enabled"):

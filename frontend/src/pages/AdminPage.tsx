@@ -6,6 +6,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import {
+  deleteAdminUser,
+  fetchAdminUsers,
+  resetAdminUser,
+  type AdminUser,
+} from "@/api/admin";
 import { apiClient, getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
@@ -50,12 +56,19 @@ const WORKOUT_TYPES = [
 
 export function AdminPage() {
   const user = useUserStore((s) => s.user);
+  const isAuthLoading = useUserStore((s) => s.isAuthLoading);
   const allowed = useMemo(() => isAdminUser(user?.username), [user?.username]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editingExId, setEditingExId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"users" | "content">("users");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [userQ, setUserQ] = useState("");
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [okNote, setOkNote] = useState<string | null>(null);
 
   const [exName, setExName] = useState("");
   const [exGroup, setExGroup] = useState("ноги");
@@ -90,11 +103,82 @@ export function AdminPage() {
   }
 
   useEffect(() => {
-    if (!allowed) return;
+    if (isAuthLoading || !allowed) return;
     void reload().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Ошибка загрузки");
     });
-  }, [allowed]);
+    void loadUsers("").catch(() => {
+      /* loadUsers sets error */
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, isAuthLoading]);
+
+  async function loadUsers(q = userQ) {
+    if (!getStoredToken()) {
+      setError("Нужен JWT (войдите через Telegram auth).");
+      return;
+    }
+    setUsersLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAdminUsers({ q: q.trim() || undefined, limit: 200 });
+      setUsers(res.items);
+      setUsersTotal(res.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось загрузить пользователей");
+      setUsers([]);
+      setUsersTotal(0);
+    } finally {
+      setUsersLoading(false);
+    }
+  }
+
+  async function onResetUser(u: AdminUser) {
+    const label = u.display_name || u.username || u.id;
+    if (!window.confirm(`Очистить профиль «${label}»?\nПользователь пройдёт анкету заново. Придёт уведомление.`)) {
+      return;
+    }
+    setBusy(true);
+    setOkNote(null);
+    setError(null);
+    try {
+      const res = await resetAdminUser(u.id, true);
+      setOkNote(
+        res.notified
+          ? `Профиль очищен, уведомление отправлено: ${label}`
+          : `Профиль очищен (уведомление не отправлено): ${label}`,
+      );
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось очистить профиль");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDeleteUser(u: AdminUser) {
+    const label = u.display_name || u.username || u.id;
+    if (!window.confirm(`УДАЛИТЬ пользователя «${label}»?\nДействие необратимо. Придёт уведомление.`)) {
+      return;
+    }
+    if (!window.confirm("Точно удалить? Повторное подтверждение.")) return;
+    setBusy(true);
+    setOkNote(null);
+    setError(null);
+    try {
+      const res = await deleteAdminUser(u.id, true);
+      setOkNote(
+        res.notified
+          ? `Удалён, уведомление отправлено: ${label}`
+          : `Удалён (уведомление не отправлено): ${label}`,
+      );
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function fillExerciseForm(item: Exercise) {
     setEditingExId(item.id);
@@ -204,7 +288,17 @@ export function AdminPage() {
       setBusy(false);
     }
   }
-if (!allowed) {
+
+  if (isAuthLoading) {
+    return (
+      <section>
+        <Header title="Админка" subtitle="Проверка доступа…" />
+        <p className="text-sm text-tg-hint">Авторизация…</p>
+      </section>
+    );
+  }
+
+  if (!allowed) {
     return (
       <section>
         <Header title="Админка" subtitle="Доступ ограничен" />
@@ -222,13 +316,122 @@ if (!allowed) {
     );
   }
 
-  
   return (
     <section>
-      <Header title="Админка" subtitle="CRUD + media / workout_type / level" />
+      <Header title="Админка" subtitle="Пользователи · каталог" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {okNote ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-hint">{okNote}</div> : null}
 
-      <div className="space-y-6">
+      <div className="mb-3 flex rounded-full bg-tg-secondary p-0.5 text-xs">
+        <button
+          type="button"
+          onClick={() => setTab("users")}
+          className={[
+            "flex-1 rounded-full px-3 py-2 font-medium",
+            tab === "users" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+          ].join(" ")}
+        >
+          Пользователи ({usersTotal || users.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("content")}
+          className={[
+            "flex-1 rounded-full px-3 py-2 font-medium",
+            tab === "content" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+          ].join(" ")}
+        >
+          Каталог
+        </button>
+      </div>
+
+      {tab === "users" ? (
+        <div className="mb-6 space-y-3 rounded-2xl bg-tg-secondary p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-medium">Зарегистрированные</h2>
+            <button
+              type="button"
+              disabled={usersLoading || busy}
+              onClick={() => void loadUsers()}
+              className="text-xs text-tg-link disabled:opacity-50"
+            >
+              {usersLoading ? "…" : "Обновить"}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={userQ}
+              onChange={(e) => setUserQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void loadUsers(userQ);
+              }}
+              placeholder="Поиск: фамилия, @логин, email, tg id"
+              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={usersLoading}
+              onClick={() => void loadUsers(userQ)}
+              className="shrink-0 rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text"
+            >
+              Найти
+            </button>
+          </div>
+          <p className="text-[11px] text-tg-hint">
+            Всего: {usersTotal}. Очистка — анкета заново + push. Удаление — soft-delete + push.
+          </p>
+          {usersLoading && !users.length ? (
+            <p className="text-sm text-tg-hint">Загрузка…</p>
+          ) : null}
+          {!usersLoading && users.length === 0 ? (
+            <p className="text-sm text-tg-hint">Пользователей нет</p>
+          ) : null}
+          <ul className="max-h-[28rem] space-y-2 overflow-y-auto">
+            {users.map((u) => (
+              <li key={u.id} className="rounded-xl bg-tg-bg px-3 py-2.5 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-snug">{u.display_name}</p>
+                    <p className="mt-0.5 text-[11px] text-tg-hint">
+                      {u.username ? `@${u.username.replace(/^@/, "")}` : "без логина"}
+                      {u.telegram_id != null ? ` · tg ${u.telegram_id}` : ""}
+                      {u.auth_email ? ` · ${u.auth_email}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-tg-hint">
+                      {u.onboarding_completed ? "анкета ✓" : "анкета не пройдена"}
+                      {` · ${u.subscription_status || "free"}`}
+                      {` · тр. ${u.completed_workouts}/${u.workouts_count}`}
+                      {u.level ? ` · ${u.level}` : ""}
+                      {u.primary_goal ? ` · ${u.primary_goal}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void onResetUser(u)}
+                      className="text-[11px] text-tg-link disabled:opacity-50"
+                    >
+                      Очистить
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || u.id === user?.id}
+                      onClick={() => void onDeleteUser(u)}
+                      className="text-[11px] text-red-500/90 disabled:opacity-40"
+                      title={u.id === user?.id ? "Нельзя удалить себя" : "Удалить"}
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className={tab === "content" ? "space-y-6" : "hidden"}>
         <div className="rounded-2xl bg-tg-secondary p-4">
           <h2 className="font-medium">
             Упражнения {editingExId ? "(редактирование)" : "(создание)"}
@@ -251,20 +454,20 @@ if (!allowed) {
               onChange={(e) => setExMediaSource(e.target.value)}
               className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             >
-              <option value="none">media_source: none</option>
-              <option value="youtube">youtube</option>
-              <option value="external">external</option>
+              <option value="none">источник медиа: нет</option>
+              <option value="youtube">YouTube</option>
+              <option value="external">внешнее</option>
             </select>
             <input
               value={exVideo}
               onChange={(e) => setExVideo(e.target.value)}
-              placeholder="video_url (YouTube / mp4)"
+              placeholder="ссылка на видео (YouTube / mp4)"
               className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
             <input
               value={exThumb}
               onChange={(e) => setExThumb(e.target.value)}
-              placeholder="thumbnail_url (optional)"
+              placeholder="превью (необязательно)"
               className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
             <div className="flex gap-2">
@@ -338,9 +541,9 @@ if (!allowed) {
               onChange={(e) => setProgLevel(e.target.value)}
               className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             >
-              <option value="beginner">beginner</option>
-              <option value="intermediate">intermediate</option>
-              <option value="advanced">advanced</option>
+              <option value="beginner">новичок</option>
+              <option value="intermediate">средний</option>
+              <option value="advanced">продвинутый</option>
             </select>
             <button
               type="button"
@@ -395,9 +598,9 @@ if (!allowed) {
                     }
                     className="rounded-lg border border-black/10 bg-tg-secondary px-2 py-1 text-xs"
                   >
-                    <option value="beginner">beginner</option>
-                    <option value="intermediate">intermediate</option>
-                    <option value="advanced">advanced</option>
+                    <option value="beginner">новичок</option>
+                    <option value="intermediate">средний</option>
+                    <option value="advanced">продвинутый</option>
                   </select>
                 </div>
               </li>

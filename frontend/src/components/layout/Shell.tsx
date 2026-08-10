@@ -7,7 +7,10 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithTelegram } from "@/api/auth";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
+import { EmailLoginForm } from "@/components/EmailLoginForm";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { ToastHost } from "@/components/ui/ToastHost";
 import { startSyncListeners } from "@/db/syncQueue";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
@@ -62,7 +65,7 @@ export function Shell() {
         }
 
         if (!isTelegramEnvironment()) {
-          // Browser outside Telegram: restore existing JWT if present (no email login).
+          // Browser outside Telegram: restore JWT or show email OTP form.
           if (hasSession() && isOnline()) {
             try {
               const profile = await fetchMyProfile();
@@ -71,6 +74,7 @@ export function Shell() {
                   id: profile.id,
                   telegram_id: profile.telegram_id ?? null,
                   username: profile.username ?? null,
+                  auth_email: profile.auth_email ?? null,
                   subscription_status: profile.subscription_status,
                   onboarding_completed: profile.onboarding_completed,
                 });
@@ -78,7 +82,7 @@ export function Shell() {
               }
               return;
             } catch {
-              // stale token
+              // stale token — fall through to email login UI
             }
           }
           if (!cancelled) {
@@ -132,11 +136,13 @@ export function Shell() {
   }, [authError, isAuthLoading, location.pathname, navigate, user]);
 
   const identity = user
-    ? user.username
-      ? `@${user.username}`
-      : user.telegram_id
-        ? `id ${user.telegram_id}`
-        : "account"
+    ? user.auth_email
+      ? user.auth_email
+      : user.username
+        ? `@${user.username.replace(/^@/, "")}`
+        : user.telegram_id
+          ? `id ${user.telegram_id}`
+          : "аккаунт"
     : "";
 
   return (
@@ -160,13 +166,19 @@ export function Shell() {
         ) : null}
 
         {!isAuthLoading && !isTelegramEnvironment() && !user ? (
-          <p className="mb-3 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint">
-            Откройте Mini App в Telegram для входа. Вход по email временно отключён.
-          </p>
+          <EmailLoginForm
+            onSuccess={(u) => {
+              setUser(u);
+              setAuthError(null);
+            }}
+          />
         ) : null}
+
+        {!isAuthLoading ? <OfflineBanner /> : null}
 
         <Outlet />
       </div>
+      <ToastHost />
       <BottomNavigation />
     </div>
   );

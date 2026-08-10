@@ -19,6 +19,7 @@ def to_profile(user: User) -> UserProfileResponse:
         id=user.id,
         telegram_id=user.telegram_id,
         username=user.username,
+        auth_email=getattr(user, "auth_email", None),
         anthropometry=user.anthropometry or {},
         goals=user.goals or {},
         subscription_status=user.subscription_status,

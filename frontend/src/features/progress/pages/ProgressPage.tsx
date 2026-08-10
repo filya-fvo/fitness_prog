@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { analyzeProgress } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchNutritionRange } from "@/api/nutrition";
@@ -15,6 +16,7 @@ import {
 } from "@/db/syncQueue";
 import { Calendar } from "@/features/progress/pages/Calendar";
 import { Charts } from "@/features/progress/pages/Charts";
+import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
 import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
 import { StrengthTrends } from "@/features/progress/pages/StrengthTrends";
@@ -32,6 +34,7 @@ import {
   type NutritionBalanceSummary,
 } from "@/utils/progress";
 import { buildLiftTrends } from "@/utils/strengthProgress";
+import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 
 type NutritionRangeMode = "day" | "week";
 
@@ -48,6 +51,9 @@ export function ProgressPage() {
   const [nutritionMode, setNutritionMode] = useState<NutritionRangeMode>("day");
   const [nutrition, setNutrition] = useState<NutritionBalanceSummary | null>(null);
   const [nutritionError, setNutritionError] = useState<string | null>(null);
+  const [weekAiBusy, setWeekAiBusy] = useState(false);
+  const [weekAiText, setWeekAiText] = useState<string | null>(null);
+  const [weekAiError, setWeekAiError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +134,26 @@ export function ProgressPage() {
     [workouts, year, monthIndex],
   );
   const completedCount = workouts.filter((w) => w.status === "completed").length;
+  const weekOverview = useMemo(() => buildWeeklyWorkoutOverview(workouts), [workouts]);
+
+  async function askWeekAi() {
+    if (weekAiBusy) return;
+    if (!getStoredToken() || !isOnline()) {
+      setWeekAiError("AI-разбор доступен онлайн после входа");
+      return;
+    }
+    setWeekAiBusy(true);
+    setWeekAiError(null);
+    setWeekAiText(null);
+    try {
+      const res = await analyzeProgress(7);
+      setWeekAiText(res.report);
+    } catch (err) {
+      setWeekAiError(err instanceof Error ? err.message : "AI недоступен");
+    } finally {
+      setWeekAiBusy(false);
+    }
+  }
 
   const nutritionSeries = useMemo(() => {
     if (!nutrition) return [];
@@ -154,26 +180,65 @@ export function ProgressPage() {
       {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
-      <div className="mb-3 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <p className="text-xs text-tg-hint">Streak тренировок</p>
-          <p className="mt-1 text-2xl font-semibold">{streak} дн.</p>
-          <p className="mt-1 text-[11px] text-tg-hint">Подряд с завершёнными тренировками</p>
+      {!loading && completedCount === 0 ? (
+        <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-semibold">Здесь появится ваш прогресс</p>
+          <p className="mt-1 text-sm text-tg-hint">
+            Закройте первую тренировку — откроются серия, графики и достижения.
+          </p>
+          <Link
+            to="/"
+            className="mt-3 block w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+          >
+            К сегодняшней тренировке
+          </Link>
         </div>
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <p className="text-xs text-tg-hint">Завершено</p>
-          <p className="mt-1 text-2xl font-semibold">{completedCount}</p>
-          <p className="mt-1 text-[11px] text-tg-hint">Всего завершённых тренировок</p>
+      ) : (
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs text-tg-hint">Серия тренировок</p>
+            <p className="mt-1 text-2xl font-semibold">{streak} дн.</p>
+            <p className="mt-1 text-[11px] text-tg-hint">Подряд с завершёнными тренировками</p>
+          </div>
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs text-tg-hint">Завершено</p>
+            <p className="mt-1 text-2xl font-semibold">{completedCount}</p>
+            <p className="mt-1 text-[11px] text-tg-hint">Всего завершённых тренировок</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <p className="mb-3 text-xs text-tg-hint">
-        Источник: {source === "network" ? "сервер" : "оффлайн-кэш"}
-        {pending > 0 ? ` · в очереди синхронизации: ${pending}` : ""}
-      </p>
+      {pending > 0 || source === "cache" ? (
+        <p className="mb-3 text-xs text-tg-hint">
+          {source === "cache" ? "Показаны сохранённые данные" : "Данные обновлены"}
+          {pending > 0 ? ` · ждёт сети: ${pending}` : ""}
+        </p>
+      ) : null}
 
       <div className="space-y-3">
-        <HabitsCheckin />
+        {completedCount > 0 ? <HabitsCheckin /> : null}
+        <WeeklyOverview
+          overview={weekOverview}
+          onAskAi={() => void askWeekAi()}
+          aiBusy={weekAiBusy}
+        />
+        {weekAiError ? (
+          <p className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{weekAiError}</p>
+        ) : null}
+        {weekAiText ? (
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">AI · разбор недели</p>
+              <button type="button" className="text-xs text-tg-hint" onClick={() => setWeekAiText(null)}>
+                Скрыть
+              </button>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-tg-hint">{weekAiText}</p>
+            <Link to="/ai" className="mt-2 inline-block text-xs text-tg-link">
+              Открыть чат с тренером →
+            </Link>
+          </div>
+        ) : null}
         <BadgesPanel badges={badges} />
         <StrengthTrends trends={liftTrends} />
 

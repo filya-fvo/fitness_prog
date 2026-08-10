@@ -29,7 +29,7 @@ export function MorePage() {
         {isAdmin ? (
           <Link to="/admin" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
             <p className="text-sm font-semibold">Админ</p>
-            <p className="mt-1 text-xs text-tg-hint">Контент и служебные действия</p>
+            <p className="mt-1 text-xs text-tg-hint">Пользователи, очистка/удаление, каталог</p>
           </Link>
         ) : null}
       </div>

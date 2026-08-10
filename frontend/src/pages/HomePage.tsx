@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
+import { fetchDailyNutrition } from "@/api/nutrition";
+import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { fetchWorkoutHistory } from "@/api/workouts";
@@ -37,7 +39,10 @@ import {
   phaseMetaFromName,
   readProgramCursor,
 } from "@/utils/programProgress";
-import { recommendPrograms } from "@/utils/programRecommend";
+import { toast } from "@/store/toastStore";
+import { getHabitDay } from "@/utils/habits";
+import { buildHomeTips } from "@/utils/homeTips";
+import { LEVEL_LABELS, recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
 
 function planHasReplacements(plan: WorkoutPlan | Record<string, unknown> | null | undefined): boolean {
@@ -108,6 +113,11 @@ export function HomePage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickDay, setPickDay] = useState(1);
   const [pickPhase, setPickPhase] = useState<WeekPhase>("medium");
+  const [completedCount, setCompletedCount] = useState(0);
+  const [todayCalories, setTodayCalories] = useState<number | null>(null);
+  const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
+  const [waterMl, setWaterMl] = useState(() => getHabitDay().waterMl);
+  const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -225,6 +235,7 @@ export function HomePage() {
           setPending(queue);
           setStreak(computeStreak(workouts));
           const completed = workouts.filter((w) => w.status === "completed");
+          setCompletedCount(completed.length);
           let latest: string | null = null;
           for (const w of completed) {
             const k = workoutDateKey(w);
@@ -239,6 +250,31 @@ export function HomePage() {
           } else {
             setDaysSinceLastWorkout(null);
           }
+          setWaterMl(getHabitDay().waterMl);
+        }
+
+        if (getStoredToken() && isOnline()) {
+          try {
+            const [daily, water] = await Promise.all([
+              fetchDailyNutrition().catch(() => null),
+              fetchWaterLog().catch(() => null),
+            ]);
+            if (!cancelled && daily) {
+              setTodayCalories(Number(daily.totals?.calories) || 0);
+              const t = daily.targets;
+              if (t?.complete && t.calories_target != null) {
+                setCalorieTarget(Number(t.calories_target));
+              }
+            }
+            if (!cancelled && water) {
+              if (water.daily_target_ml != null) setWaterTargetMl(water.daily_target_ml);
+              if (typeof water.ml === "number") {
+                setWaterMl(Math.max(getHabitDay().waterMl, water.ml));
+              }
+            }
+          } catch {
+            /* soft */
+          }
         }
       } catch {
         // ignore dashboard soft failures
@@ -249,6 +285,32 @@ export function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  const homeTips = useMemo(
+    () =>
+      buildHomeTips({
+        daysSinceLastWorkout,
+        completedWorkouts: completedCount,
+        streak,
+        hasProgram: Boolean(todayProgram),
+        canResume,
+        waterMl,
+        waterTargetMl,
+        todayCalories,
+        calorieTarget,
+      }),
+    [
+      calorieTarget,
+      canResume,
+      completedCount,
+      daysSinceLastWorkout,
+      streak,
+      todayCalories,
+      todayProgram,
+      waterMl,
+      waterTargetMl,
+    ],
+  );
 
   // Keep "has replacements" in sync when returning from active workout.
   useEffect(() => {
@@ -316,6 +378,7 @@ export function HomePage() {
       }
       setSessionHasReplacements(false);
       hapticNotification("success");
+      toast("Упражнения по умолчанию восстановлены");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось восстановить");
     } finally {
@@ -500,110 +563,174 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-medium">Сегодня</p>
-          {todayProgram ? (
-            <>
-              <p className="mt-1 text-base font-semibold">{todayProgram.name}</p>
-              <p className="mt-1 text-sm text-tg-hint">
-                {todayDayTitle}
-                {" · "}
-                {phaseMetaFromName(todayPhase).label}
-                {todayProgram.workout_type ? ` · ${todayProgram.workout_type}` : ""}
-                {todayProgram.level || todayProgram.target_level
-                  ? ` · ${todayProgram.level || todayProgram.target_level}`
-                  : ""}
-              </p>
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-tg-hint">
-              Выберите готовую программу или соберите свою в каталоге.
-              {!online ? " Сейчас оффлайн — сессия сохранится локально." : ""}
-            </p>
-          )}
-          {canResume && activeWorkout?.title ? (
-            <p className="mt-2 text-xs text-tg-hint">
-              В работе: {activeWorkout.title}
-              {hasReplacements ? " · есть замены упражнений" : ""}
-            </p>
-          ) : null}
-          {hasReplacements ? (
-            <button
-              type="button"
-              disabled={restoringDefaults}
-              onClick={() => void handleRestoreDefaults()}
-              className="mt-3 w-full rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link disabled:opacity-60"
-            >
-              {restoringDefaults
-                ? "Восстанавливаем…"
-                : "Восстановить упражнения по умолчанию"}
-            </button>
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs text-tg-hint">Streak</p>
-            <p className="mt-1 text-xl font-semibold">{streak} дн.</p>
-          </div>
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs text-tg-hint">Синхронизация</p>
-            <p className="mt-1 text-xl font-semibold">{pending}</p>
-            <p className="text-[10px] text-tg-hint">{online ? "онлайн" : "оффлайн"}</p>
-          </div>
-        </div>
-
-        <HabitsCheckin />
-
+        {/* Primary hero CTA first — review P0 */}
         {canResume ? (
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сейчас</p>
+            <p className="text-base font-semibold">
+              {activeWorkout?.title || "Тренировка в процессе"}
+            </p>
+            {hasReplacements ? (
+              <p className="text-xs text-tg-hint">Есть замены упражнений</p>
+            ) : null}
             <button
               type="button"
               onClick={() => navigate(`/workouts/active/${resumeId}`)}
-              className="block w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+              className="block w-full rounded-xl bg-tg-button px-4 py-3.5 text-center text-sm font-semibold text-tg-button-text"
             >
               Продолжить тренировку
             </button>
+            {hasReplacements ? (
+              <button
+                type="button"
+                disabled={restoringDefaults}
+                onClick={() => void handleRestoreDefaults()}
+                className="w-full rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link disabled:opacity-60"
+              >
+                {restoringDefaults
+                  ? "Восстанавливаем…"
+                  : "Восстановить упражнения по умолчанию"}
+              </button>
+            ) : null}
             <p className="text-center text-[11px] text-tg-hint">
               Чтобы выбрать другой день — сначала завершите текущую сессию.
             </p>
           </div>
         ) : todayProgram ? (
-          <div className="flex overflow-hidden rounded-xl bg-tg-button">
-            <button
-              type="button"
-              disabled={starting}
-              onClick={() => void startToday()}
-              className="min-w-0 flex-1 px-3 py-3 text-left text-sm font-semibold text-tg-button-text disabled:opacity-60"
-            >
-              {starting ? "Стартуем…" : `Начать: ${todayDayTitle}`}
-              <span className="mt-0.5 block text-[10px] font-normal opacity-80">
-                {phaseMetaFromName(todayPhase).label} неделя
-              </span>
-            </button>
-            <button
-              type="button"
-              disabled={starting}
-              aria-label="Выбрать день и неделю программы"
-              onClick={() => {
-                setPickDay(todayDay);
-                setPickPhase(todayPhase);
-                setPickerOpen(true);
-              }}
-              className="shrink-0 border-l border-black/10 px-4 py-3 text-lg font-semibold text-tg-button-text disabled:opacity-60"
-            >
-              ▾
-            </button>
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
+            <p className="text-base font-semibold">{todayProgram.name}</p>
+            <p className="text-sm text-tg-hint">
+              {todayDayTitle}
+              {" · "}
+              {phaseMetaFromName(todayPhase).label}
+              {todayProgram.workout_type ? ` · ${todayProgram.workout_type}` : ""}
+              {(() => {
+                const lvl = String(todayProgram.level || todayProgram.target_level || "");
+                return lvl ? ` · ${LEVEL_LABELS[lvl] ?? lvl}` : "";
+              })()}
+            </p>
+            <div className="flex overflow-hidden rounded-xl bg-tg-button">
+              <button
+                type="button"
+                disabled={starting}
+                onClick={() => void startToday()}
+                className="min-w-0 flex-1 px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text disabled:opacity-60"
+              >
+                {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
+                <span className="mt-0.5 block text-[10px] font-normal opacity-80">
+                  {phaseMetaFromName(todayPhase).label} неделя
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={starting}
+                aria-label="Выбрать день и неделю программы"
+                onClick={() => {
+                  setPickDay(todayDay);
+                  setPickPhase(todayPhase);
+                  setPickerOpen(true);
+                }}
+                className="shrink-0 border-l border-black/10 px-4 py-3 text-lg font-semibold text-tg-button-text disabled:opacity-60"
+              >
+                ▾
+              </button>
+            </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => navigate("/programs")}
-            className="block w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
-          >
-            Выбрать программу
-          </button>
+          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">С чего начать</p>
+            <p className="text-base font-semibold">Выберите программу на 10 минут</p>
+            <p className="text-sm text-tg-hint">
+              Готовый сплит под зал или дом — или соберите день из каталога.
+              {!online ? " Сейчас оффлайн — сессия сохранится на устройстве." : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/programs")}
+              className="block w-full rounded-xl bg-tg-button px-4 py-3.5 text-center text-sm font-semibold text-tg-button-text"
+            >
+              Выбрать программу
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/workouts")}
+              className="block w-full rounded-xl bg-tg-bg px-4 py-2.5 text-center text-sm font-medium"
+            >
+              Своя тренировка из каталога
+            </button>
+          </div>
         )}
+
+        <div className="rounded-2xl bg-tg-secondary p-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs text-tg-hint">Серия</p>
+              <p className="mt-1 text-xl font-semibold">{streak} дн.</p>
+            </div>
+            {!online ? (
+              <p className="text-right text-[11px] text-amber-600">
+                Оффлайн
+                {pending > 0 ? ` · сохраним ${pending} при сети` : " · изменения на устройстве"}
+              </p>
+            ) : pending > 0 ? (
+              <p className="text-right text-[11px] text-tg-hint">
+                Ждёт сети: {pending}
+              </p>
+            ) : (
+              <p className="text-right text-[11px] text-tg-hint">Сохранено</p>
+            )}
+          </div>
+        </div>
+
+        {homeTips.length ? (
+          <div className="space-y-2">
+            {homeTips.map((tip) => (
+              <div key={tip.id} className="rounded-2xl bg-tg-secondary px-4 py-3">
+                <p className="text-sm">{tip.text}</p>
+                {tip.ctaLabel && tip.ctaTo ? (
+                  <Link to={tip.ctaTo} className="mt-2 inline-block text-xs font-medium text-tg-link">
+                    {tip.ctaLabel} →
+                  </Link>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <HabitsCheckin />
+
+        {completedCount > 0 || canResume || todayProgram ? (
+          <div className="rounded-2xl border border-tg-button/20 bg-tg-secondary px-4 py-3">
+            <p className="text-sm font-semibold">Спросить тренера</p>
+            <p className="mt-0.5 text-xs text-tg-hint">
+              Замена, разбор недели или питание после тренировки
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Link
+                to="/ai?q=Замени%20упражнение%20при%20дискомфорте"
+                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
+              >
+                Замена
+              </Link>
+              <Link
+                to="/ai?q=Проанализируй%20мой%20прогресс%20за%20месяц"
+                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
+              >
+                Разбор недели
+              </Link>
+              <Link
+                to="/ai?q=Что%20есть%20после%20тренировки"
+                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
+              >
+                После тренировки
+              </Link>
+              <Link to="/ai" className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px]">
+                Открыть чат
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         {pickerOpen && todayProgram ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">

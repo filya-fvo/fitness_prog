@@ -113,6 +113,42 @@ export async function addNutritionLog(input: {
   return logSchema.parse(data);
 }
 
+export async function updateNutritionLog(
+  logId: string,
+  input: {
+    quantityGrams?: number;
+    mealType?: "breakfast" | "lunch" | "dinner" | "snack";
+    caloriesPer100?: number;
+    proteinsPer100?: number;
+    fatsPer100?: number;
+    carbsPer100?: number;
+  },
+): Promise<NutritionLog> {
+  const { data } = await apiClient.put(`/nutrition/log/${logId}`, {
+    quantity_grams: input.quantityGrams,
+    meal_type: input.mealType,
+    calories_per_100: input.caloriesPer100,
+    proteins_per_100: input.proteinsPer100,
+    fats_per_100: input.fatsPer100,
+    carbs_per_100: input.carbsPer100,
+  });
+  return logSchema.parse(data);
+}
+
+export async function deleteNutritionLog(logId: string): Promise<void> {
+  try {
+    await apiClient.delete(`/nutrition/log/${logId}`);
+  } catch (err) {
+    // Idempotent: already deleted / missing is OK for UI
+    const status =
+      err && typeof err === "object" && "response" in err
+        ? (err as { response?: { status?: number } }).response?.status
+        : undefined;
+    if (status === 404) return;
+    throw err;
+  }
+}
+
 export async function createNutritionProduct(input: {
   nameRu: string;
   calories: number;

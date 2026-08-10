@@ -52,6 +52,7 @@ MANUAL: dict[str, str] = {
     "ягодичный мост со штангой": "barbell-hip-thrust",
     "австралийские подтягивания": "australian-pull-ups",
     "арнольд-жим": "arnold-press",
+    "беговая дорожка": "running-in-place",
     "бег на месте": "running-in-place",
     "бёрпи": "burpees",
     "берпи": "burpees",

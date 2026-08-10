@@ -1,5 +1,5 @@
 /**
- * Auth API: send initData → JWT in localStorage (TZ §8).
+ * Auth API: Telegram initData or email OTP → JWT in localStorage (TZ §8).
  */
 import { z } from "zod";
 
@@ -10,6 +10,7 @@ const authUserSchema = z.object({
   id: z.string().uuid(),
   telegram_id: z.number().nullable().optional(),
   username: z.string().nullable().optional(),
+  auth_email: z.string().nullable().optional(),
   subscription_status: z.string(),
   onboarding_completed: z.boolean().optional().default(false),
 });
@@ -21,8 +22,20 @@ const authResponseSchema = z.object({
   user: authUserSchema,
 });
 
+const emailOtpRequestSchema = z.object({
+  ok: z.boolean(),
+  email: z.string().email(),
+  expires_in_sec: z.number(),
+  resend_after_sec: z.number(),
+  delivery: z.string(),
+  message: z.string(),
+  dev_code: z.string().optional().nullable(),
+  dev_send_error: z.string().optional().nullable(),
+});
+
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
+export type EmailOtpRequestResult = z.infer<typeof emailOtpRequestSchema>;
 
 export async function loginWithTelegram(initData?: string): Promise<AuthResponse> {
   const payload = initData ?? getInitData();
@@ -34,6 +47,44 @@ export async function loginWithTelegram(initData?: string): Promise<AuthResponse
   const parsed = authResponseSchema.parse(data);
   setStoredToken(parsed.access_token);
   return parsed;
+}
+
+export async function requestEmailLoginCode(email: string): Promise<EmailOtpRequestResult> {
+  const { data } = await apiClient.post("/auth/email/request-code", { email: email.trim() });
+  return emailOtpRequestSchema.parse(data);
+}
+
+export async function loginWithEmailCode(email: string, code: string): Promise<AuthResponse> {
+  const { data } = await apiClient.post("/auth/email/verify", {
+    email: email.trim(),
+    code: code.trim(),
+  });
+  const parsed = authResponseSchema.parse(data);
+  setStoredToken(parsed.access_token);
+  return parsed;
+}
+
+const emailLinkResultSchema = z.object({
+  ok: z.boolean(),
+  message: z.string(),
+  user: authUserSchema,
+});
+
+export type EmailLinkResult = z.infer<typeof emailLinkResultSchema>;
+
+/** Authenticated: send OTP to attach email to current account. */
+export async function requestEmailLinkCode(email: string): Promise<EmailOtpRequestResult> {
+  const { data } = await apiClient.post("/auth/email/link/request-code", { email: email.trim() });
+  return emailOtpRequestSchema.parse(data);
+}
+
+/** Authenticated: verify OTP and save auth_email on current user. */
+export async function verifyEmailLinkCode(email: string, code: string): Promise<EmailLinkResult> {
+  const { data } = await apiClient.post("/auth/email/link/verify", {
+    email: email.trim(),
+    code: code.trim(),
+  });
+  return emailLinkResultSchema.parse(data);
 }
 
 export function logout(): void {

@@ -24,6 +24,7 @@ import {
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
 import {
+  LEVEL_LABELS,
   pickTodayDayIndex,
   programLimitations,
   programSex,
@@ -82,16 +83,16 @@ function limitationConflict(program: Program, userLimits: string[]): string | nu
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  full_body: "Full body",
-  full_body_alt: "Full body A/B",
+  full_body: "Всё тело",
+  full_body_alt: "Всё тело A/B",
   upper_lower: "Верх/низ",
-  push_pull_legs: "PPL",
+  push_pull_legs: "Жим/тяга/ноги",
   home_express: "Дома",
   strength: "Сила",
   hypertrophy: "Гипертрофия",
   mobility: "Мобильность",
   conditioning: "Кардио",
-  custom: "Custom",
+  custom: "Своя",
 };
 
 function scheduleOf(program: Program): Array<Record<string, unknown>> {
@@ -628,7 +629,7 @@ export function ProgramsPage() {
 
   return (
     <section>
-      <Header title="Программы" subtitle="Готовые сеты: full body, split, PPL…" />
+      <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
       {!loading && topRecommended.length > 0 ? (
@@ -711,7 +712,7 @@ export function ProgramsPage() {
               levelFilter === lvl ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
             ].join(" ")}
           >
-            {lvl === "" ? "Все уровни" : lvl}
+            {lvl === "" ? "Все уровни" : (LEVEL_LABELS[lvl] ?? lvl)}
           </button>
         ))}
         {userJointLimits.length > 0 ? (

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   ageFromBirthDate,
+  birthYearFromDate,
   isFemaleSex,
+  parseLocalDateInput,
   previewEnergyTargets,
   resolveAdjustmentPct,
 } from "@/utils/energyTargets";
@@ -10,6 +12,20 @@ import {
 describe("energyTargets", () => {
   it("computes age from birth date", () => {
     expect(ageFromBirthDate("1996-07-22", new Date("2026-07-22"))).toBe(30);
+  });
+
+  it("parses YYYY-MM-DD as local calendar date (no UTC day shift)", () => {
+    const d = parseLocalDateInput("1990-05-01");
+    expect(d).not.toBeNull();
+    expect(d!.getFullYear()).toBe(1990);
+    expect(d!.getMonth()).toBe(4);
+    expect(d!.getDate()).toBe(1);
+    expect(birthYearFromDate("1990-05-01")).toBe(1990);
+  });
+
+  it("fills age before birthday this year", () => {
+    expect(ageFromBirthDate("2000-12-31", new Date("2026-01-01"))).toBe(25);
+    expect(ageFromBirthDate("2000-01-01", new Date("2026-01-01"))).toBe(26);
   });
 
   it("defaults deficit for lose_fat", () => {

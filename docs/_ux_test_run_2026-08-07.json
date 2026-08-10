@@ -1,0 +1,150 @@
+{
+  "started_at": "2026-08-07T15:19:51",
+  "api_base": "http://127.0.0.1:8001",
+  "frontend_base": "http://127.0.0.1:5173",
+  "steps": [
+    {
+      "name": "API health",
+      "ok": true,
+      "detail": "{\"status\":\"ok\"}",
+      "ms": 119,
+      "severity": "info"
+    },
+    {
+      "name": "Frontend reachable",
+      "ok": true,
+      "detail": "status=200",
+      "ms": 41,
+      "severity": "info"
+    },
+    {
+      "name": "Email OTP request (browser login)",
+      "ok": true,
+      "detail": "delivery=dev_log msg=SMTP не настроен или отправка не удалась. В development код смотрите в логах API.",
+      "ms": 14666,
+      "severity": "info"
+    },
+    {
+      "name": "Email OTP verify → JWT",
+      "ok": true,
+      "detail": "user_id=ae9e1198-0f27-4989-a69f-5c3cf07c34a1 onboarding=False",
+      "ms": 228,
+      "severity": "info"
+    },
+    {
+      "name": "GET /users/me",
+      "ok": true,
+      "detail": "auth_email=ux.test.74fa0d83@example.com sub=free",
+      "ms": 11,
+      "severity": "info"
+    },
+    {
+      "name": "Onboarding profile save",
+      "ok": true,
+      "detail": "onboarding_completed=True",
+      "ms": 15,
+      "severity": "info"
+    },
+    {
+      "name": "List programs",
+      "ok": true,
+      "detail": "count=38 first=Ж · Дом · Без нагрузки на колени · Гантели",
+      "ms": 39,
+      "severity": "info"
+    },
+    {
+      "name": "Exercises catalog",
+      "ok": true,
+      "detail": "page_items=50 total=112 treadmill=True pullover=Пуловер в блоке на спину french=Французский жим со штангой",
+      "ms": 100,
+      "severity": "info"
+    },
+    {
+      "name": "Start program workout",
+      "ok": true,
+      "detail": "status=201 workout_id=fe91fe4d-b39c-466f-8d89-7eab117140f0 title=No-knee home A · Лёгкая",
+      "ms": 113,
+      "severity": "info"
+    },
+    {
+      "name": "Log completed set",
+      "ok": true,
+      "detail": "status=201 body={\"id\":\"fc441a79-b6ba-47f7-b1c9-816293679c9b\",\"workout_id\":\"fe91fe4d-b39c-466f-8d89-7eab117140f0\",\"exercise_id\":\"085acd6f-63b4-4347-b5a4-ef24094dea1a\",\"set_number\":1,\"reps\":10,\"weig",
+      "ms": 30,
+      "severity": "info"
+    },
+    {
+      "name": "Complete workout",
+      "ok": true,
+      "detail": "status=200 status_field=completed",
+      "ms": 23,
+      "severity": "info"
+    },
+    {
+      "name": "Nutrition product search",
+      "ok": true,
+      "detail": "count=4 first=None",
+      "ms": 29,
+      "severity": "info"
+    },
+    {
+      "name": "Nutrition log entry",
+      "ok": false,
+      "detail": "status=404 {\"detail\":\"Not Found\"}",
+      "ms": 17,
+      "severity": "info"
+    },
+    {
+      "name": "Barcode lookup",
+      "ok": true,
+      "detail": "status=200 {\"found\":false,\"barcode\":\"4607025392541\",\"source\":null,\"product\":null,\"serving_grams\":null,\"created\":false,\"error\":\"not_found\"}",
+      "ms": 721,
+      "severity": "info"
+    },
+    {
+      "name": "AI chat",
+      "ok": true,
+      "detail": "keys=['session_id', 'reply', 'source', 'remaining_requests'] preview={'session_id': '9fa9d8b1-0e13-4b0f-ab94-4c1baf5816da', 'reply': 'Короткий ответ: заменить жим лёжа можно с помощью раскрытия грудного отдела у стены (мобильност",
+      "ms": 909,
+      "severity": "info"
+    },
+    {
+      "name": "Notification settings get/put",
+      "ok": true,
+      "detail": "get=200 put=200",
+      "ms": 34,
+      "severity": "info"
+    },
+    {
+      "name": "Supplements stack",
+      "ok": true,
+      "detail": "status=200 keys=['items', 'catalog']",
+      "ms": 14,
+      "severity": "info"
+    },
+    {
+      "name": "Link email to account",
+      "ok": true,
+      "detail": "req=200 ver_ok=True auth_email=ux.link.6b6853ac@example.com",
+      "ms": 14551,
+      "severity": "info"
+    },
+    {
+      "name": "Re-login linked email keeps same user",
+      "ok": true,
+      "detail": "same_user=True uid=ae9e1198-0f27-4989-a69f-5c3cf07c34a1",
+      "ms": 14229,
+      "severity": "info"
+    },
+    {
+      "name": "Workout history",
+      "ok": true,
+      "detail": "count~=1",
+      "ms": 24,
+      "severity": "info"
+    }
+  ],
+  "notes": [
+    "summary: total=20 failed_or_warn=1 hard_fail=0"
+  ]
+}

@@ -197,7 +197,7 @@ export function AddSetModal({
                       />
                     </label>
                     <label className="text-white/60">
-                      Каденс
+                      Каденс (об/мин)
                       <input
                         type="number"
                         value={cadence}
@@ -219,7 +219,7 @@ export function AddSetModal({
                       />
                     </label>
                     <label className="text-white/60">
-                      Темп /500м
+                      Темп /500 м
                       <input
                         type="number"
                         step={0.1}

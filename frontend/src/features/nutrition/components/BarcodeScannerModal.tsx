@@ -1,6 +1,9 @@
 /**
  * Barcode scanner for nutrition diary.
- * Uses BarcodeDetector when available; falls back to manual EAN entry.
+ *
+ * 1) Native BarcodeDetector (Chrome Android) when available
+ * 2) ZXing fallback (iOS Safari / Telegram WebView — no BarcodeDetector)
+ * 3) Manual EAN entry always available
  */
 import { useEffect, useRef, useState } from "react";
 
@@ -16,20 +19,91 @@ type BarcodeDetectorLike = {
 
 type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetectorLike;
 
+type ZxingControls = { stop: () => void };
+
+type ZxingReader = {
+  decodeFromStream: (
+    stream: MediaStream,
+    video: HTMLVideoElement | undefined,
+    cb: (result: { getText(): string } | undefined, err?: unknown) => void,
+  ) => Promise<ZxingControls>;
+  reset: () => void;
+};
+
 function getBarcodeDetector(): BarcodeDetectorCtor | null {
   const w = window as unknown as { BarcodeDetector?: BarcodeDetectorCtor };
   return typeof w.BarcodeDetector === "function" ? w.BarcodeDetector : null;
 }
 
+function normalizeCode(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return String(raw).replace(/\D/g, "");
+}
+
+async function openCameraStream(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("Камера недоступна в этом клиенте");
+  }
+
+  // iOS WebKit is picky: prefer simple facingMode string, then fall back.
+  const attempts: MediaStreamConstraints[] = [
+    {
+      audio: false,
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    },
+    {
+      audio: false,
+      video: { facingMode: "environment" },
+    },
+    {
+      audio: false,
+      video: true,
+    },
+  ];
+
+  let lastErr: unknown;
+  for (const constraints of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Не удалось открыть камеру");
+}
+
+/** ZXing BrowserMultiFormatReader — dynamic import so Android native path stays light. */
+async function createZxingReader(): Promise<ZxingReader | null> {
+  try {
+    const mod = await import("@zxing/browser");
+    const Reader = mod.BrowserMultiFormatReader;
+    if (!Reader) return null;
+    const reader = new Reader(undefined, {
+      delayBetweenScanAttempts: 250,
+      delayBetweenScanSuccess: 800,
+      tryPlayVideoTimeout: 8000,
+    });
+    return reader as unknown as ZxingReader;
+  } catch {
+    return null;
+  }
+}
+
 export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const zxingRef = useRef<ZxingReader | null>(null);
+  const zxingControlsRef = useRef<ZxingControls | null>(null);
   const lastCodeRef = useRef<string>("");
   const [manual, setManual] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [detectorSupported, setDetectorSupported] = useState(true);
+  const [engine, setEngine] = useState<"native" | "zxing" | "manual">("manual");
   const [hint, setHint] = useState("Наведите камеру на штрихкод");
 
   useEffect(() => {
@@ -40,76 +114,133 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
     setError(null);
     setCameraReady(false);
     setManual("");
-    setHint("Наведите камеру на штрихкод");
+    setEngine("manual");
+    setHint("Держите штрихкод ровно в рамке, 10–20 см от камеры");
 
     const Detector = getBarcodeDetector();
-    setDetectorSupported(Boolean(Detector));
 
-    async function start() {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setError("Камера недоступна в этом браузере. Введите код вручную.");
+    function emitCode(raw: string) {
+      const digits = normalizeCode(raw);
+      if (!digits || digits.length < 8) return;
+      if (digits === lastCodeRef.current) return;
+      lastCodeRef.current = digits;
+      onDetected(digits);
+    }
+
+    async function startNative(video: HTMLVideoElement, Ctor: BarcodeDetectorCtor) {
+      setEngine("native");
+      setHint("Автоскан · держите код в рамке");
+      const detector = new Ctor({
+        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
+      });
+
+      const tick = async () => {
+        if (cancelled) return;
+        if (video.readyState >= 2) {
+          try {
+            const codes = await detector.detect(video);
+            const raw = codes.find((c) => c.rawValue)?.rawValue;
+            if (raw) {
+              emitCode(raw);
+              return;
+            }
+          } catch {
+            // ignore frame errors
+          }
+        }
+        timerRef.current = window.setTimeout(() => {
+          void tick();
+        }, 250);
+      };
+      void tick();
+    }
+
+    async function startZxing(video: HTMLVideoElement, stream: MediaStream) {
+      setHint("Автоскан (iOS) · держите код в рамке, без блика");
+      const reader = await createZxingReader();
+      if (!reader || cancelled) {
+        setEngine("manual");
+        setHint("Автоскан недоступен — введите 8–13 цифр с упаковки");
         return;
       }
+      setEngine("zxing");
+      zxingRef.current = reader;
+
+      const controls = await reader.decodeFromStream(stream, video, (result) => {
+        if (cancelled) return;
+        if (result) {
+          try {
+            emitCode(result.getText());
+          } catch {
+            // ignore
+          }
+        }
+      });
+
+      if (cancelled) {
+        try {
+          controls.stop();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      zxingControlsRef.current = controls;
+    }
+
+    async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-        });
+        const stream = await openCameraStream();
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
         const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          await video.play();
-          setCameraReady(true);
-        }
-
-        if (!Detector) {
-          setHint("Автоскан недоступен — введите цифры с упаковки ниже");
+        if (!video) {
+          setError("Видеоэлемент недоступен");
           return;
         }
 
-        const detector = new Detector({
-          formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
-        });
+        // Critical for iOS: attributes before play
+        video.setAttribute("playsinline", "true");
+        video.setAttribute("webkit-playsinline", "true");
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = stream;
 
-        const tick = async () => {
-          if (cancelled) return;
-          const v = videoRef.current;
-          if (v && v.readyState >= 2) {
-            try {
-              const codes = await detector.detect(v);
-              const raw = codes.find((c) => c.rawValue)?.rawValue?.trim();
-              const digits = raw ? raw.replace(/\D/g, "") : "";
-              if (digits && digits.length >= 8 && digits !== lastCodeRef.current) {
-                lastCodeRef.current = digits;
-                onDetected(digits);
-                return;
-              }
-            } catch {
-              // ignore frame errors
-            }
-          }
-          rafRef.current = window.setTimeout(() => {
-            void tick();
-          }, 250) as unknown as number;
-        };
-        void tick();
+        try {
+          await video.play();
+        } catch {
+          await new Promise<void>((resolve) => {
+            const onMeta = () => {
+              video.removeEventListener("loadedmetadata", onMeta);
+              resolve();
+            };
+            video.addEventListener("loadedmetadata", onMeta);
+            window.setTimeout(resolve, 400);
+          });
+          await video.play().catch(() => {
+            /* still try detect path */
+          });
+        }
+        if (cancelled) return;
+        setCameraReady(true);
+
+        if (Detector) {
+          await startNative(video, Detector);
+          return;
+        }
+        await startZxing(video, stream);
       } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Не удалось открыть камеру";
+        const msg = err instanceof Error ? err.message : "Не удалось открыть камеру";
         setError(
-          /Permission|NotAllowed|denied/i.test(msg)
-            ? "Нет доступа к камере. Разрешите камеру в Telegram/браузере или введите код вручную."
+          /Permission|NotAllowed|denied|NotReadable|TrackStart/i.test(msg)
+            ? "Нет доступа к камере. В Telegram: настройки чата → камера, или введите код вручную."
             : msg,
         );
+        setEngine("manual");
+        setHint("Ручной ввод кода с упаковки");
       }
     }
 
@@ -117,10 +248,22 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
 
     return () => {
       cancelled = true;
-      if (rafRef.current != null) {
-        window.clearTimeout(rafRef.current);
-        rafRef.current = null;
+      if (timerRef.current != null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
+      try {
+        zxingControlsRef.current?.stop();
+      } catch {
+        // ignore
+      }
+      zxingControlsRef.current = null;
+      try {
+        zxingRef.current?.reset();
+      } catch {
+        // ignore
+      }
+      zxingRef.current = null;
       const stream = streamRef.current;
       streamRef.current = null;
       stream?.getTracks().forEach((t) => t.stop());
@@ -149,7 +292,7 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
         <div className="relative bg-black">
           <video
             ref={videoRef}
-            className="aspect-[3/4] w-full object-cover"
+            className="aspect-[3/4] w-full bg-black object-cover"
             playsInline
             muted
             autoPlay
@@ -166,13 +309,15 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
 
         <div className="space-y-2 p-4">
           {error ? <p className="text-xs text-red-300">{error}</p> : null}
-          {!detectorSupported ? (
-            <p className="text-[11px] text-white/50">
-              В этом клиенте нет автораспознавания — используйте ручной ввод EAN.
-            </p>
-          ) : null}
+          <p className="text-[11px] text-white/55">
+            {engine === "zxing"
+              ? "iPhone: автоскан через ZXing. Держите ровно, без блика; при необходимости введите код."
+              : engine === "native"
+                ? "Не пикает? Держите ровно, уберите блик, или введите код с упаковки (EAN-13 / UPC)."
+                : "Автоскан недоступен — введите 8–13 цифр с упаковки (EAN-13 / UPC)."}
+          </p>
           <label className="block text-xs text-white/70">
-            Или введите код вручную
+            Код вручную (если камера не считывает)
             <div className="mt-1 flex gap-2">
               <input
                 value={manual}

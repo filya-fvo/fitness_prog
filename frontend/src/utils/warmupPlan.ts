@@ -111,7 +111,7 @@ function scoreMobility(item: (typeof MOBILITY_POOL)[number], muscles: string[]):
 }
 
 export function findDefaultTreadmill(catalog: Exercise[]): Exercise | null {
-  const preferred = ["Беговая дорожка", "Бег на месте", "Эллипс", "Велотренажёр", "Гребля в тренажёре"];
+  const preferred = ["Беговая дорожка", "Эллипс", "Велотренажёр", "Гребля в тренажёре"];
   for (const name of preferred) {
     const hit = catalog.find((e) => e.name_ru === name);
     if (hit) return hit;
@@ -124,7 +124,7 @@ export function findDefaultTreadmill(catalog: Exercise[]): Exercise | null {
 }
 
 export function listCardioMachineOptions(catalog: Exercise[]): Exercise[] {
-  const names = new Set(["Эллипс", "Велотренажёр", "Гребля в тренажёре", "Бег на месте", "Беговая дорожка"]);
+  const names = new Set(["Эллипс", "Велотренажёр", "Гребля в тренажёре", "Беговая дорожка"]);
   const fromNames = catalog.filter((e) => names.has(e.name_ru));
   const fromType = catalog.filter((e) => inferLoadType(e) === "cardio_machine");
   const map = new Map<string, Exercise>();
@@ -156,9 +156,7 @@ export function buildWarmupPlan(input: {
       null;
     // Prefer treadmill name if present and no last preference
     if (!input.lastCardioExerciseId) {
-      const tread =
-        input.catalog.find((e) => /беговая|дорож/i.test(e.name_ru)) ||
-        input.catalog.find((e) => e.name_ru === "Бег на месте");
+      const tread = input.catalog.find((e) => /беговая|дорож/i.test(e.name_ru));
       if (tread) cardio = tread;
     }
     const duration = Math.max(

@@ -98,6 +98,18 @@ app/
 | Метод | Эндпоинт | Описание |
 |-------|----------|----------|
 | POST | `/auth/telegram` | Валидация `initData`, возврат JWT (30 дней) |
+| POST | `/auth/email/request-code` | OTP на email для входа в браузере (без JWT) |
+| POST | `/auth/email/verify` | Проверка OTP → JWT; пользователь ищется по `users.auth_email` |
+| POST | `/auth/email/link/request-code` | OTP для **привязки** email к текущему аккаунту (нужен JWT) |
+| POST | `/auth/email/link/verify` | Подтверждение привязки → пишет `users.auth_email` |
+
+**Браузерный вход (важно для агента):**
+- Telegram-пользователь сначала привязывает почту в UI: `Профиль → Тело → Почта для входа` (`LinkEmailCard`).
+- Затем в обычном браузере входит тем же email (форма `EmailLoginForm` в `Shell`, вне Telegram).
+- Письма шлёт SMTP (`SMTP_*` в `backend/.env`, from: `fil_fit_bot@mail.ru`).
+- Черновик шага «ввод кода» хранится в `localStorage` (`otpDraft.ts`), чтобы после ухода в почтовое приложение WebView не сбрасывал форму.
+- Бот `/start` (`start_welcome_text`) кратко объясняет привязку почты и вход в браузере; URL Mini App — только на кнопке Open, не в тексте.
+- Под полем сообщения бота — persistent reply keyboard: `/start`, `/help` (+ `Open` web_app, если задан `MINI_APP_URL`). Регистрируется в `bot_commands_reply_keyboard` / `set_bot_commands`; на `/start` и `/help` webhook вешает клавиатуру и slash-menu.
 
 ### Пользователи
 

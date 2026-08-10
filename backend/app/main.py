@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.core.sentry import init_sentry
+from app.routers import admin as admin_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import exercises as exercises_router
@@ -51,6 +52,7 @@ app.add_middleware(
 
 app.include_router(auth_router.router)
 app.include_router(users_router.router)
+app.include_router(admin_router.router)
 app.include_router(exercises_router.router)
 app.include_router(programs_router.router)
 app.include_router(workouts_router.router)

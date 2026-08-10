@@ -8,18 +8,24 @@ import { getStoredToken } from "@/api/client";
 import {
   addNutritionLog,
   createNutritionProduct,
+  deleteNutritionLog,
   fetchDailyNutrition,
   fetchProductCategories,
   lookupBarcode,
   previewKbju,
   searchProducts,
+  updateNutritionLog,
   type DailyNutrition,
+  type NutritionLog,
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
 import { BarcodeScannerModal } from "@/features/nutrition/components/BarcodeScannerModal";
 import { trackEvent } from "@/lib/analytics";
+import { confirmAction } from "@/lib/telegram";
+import { toast } from "@/store/toastStore";
 import { isOnline } from "@/utils/network";
+import { MEAL_TEMPLATES } from "@/utils/mealTemplates";
 import {
   loadFavoriteProducts,
   loadRecentProducts,
@@ -60,7 +66,30 @@ const CATEGORY_LABELS: Record<string, string> = {
 type MealId = (typeof MEALS)[number]["id"];
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dayNum = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dayNum}`;
+}
+
+function shiftISODate(iso: string, deltaDays: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  dt.setDate(dt.getDate() + deltaDays);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+function formatDayLabel(iso: string): string {
+  const today = todayISO();
+  if (iso === today) return "сегодня";
+  if (iso === shiftISODate(today, -1)) return "вчера";
+  if (iso === shiftISODate(today, 1)) return "завтра";
+  const [, m, d] = iso.split("-");
+  return `${d}.${m}`;
 }
 
 function categoryLabel(cat: string | null | undefined): string {
@@ -69,7 +98,7 @@ function categoryLabel(cat: string | null | undefined): string {
 }
 
 export function DailyLog() {
-  const [day] = useState(todayISO());
+  const [day, setDay] = useState(todayISO);
   const [data, setData] = useState<DailyNutrition | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +113,11 @@ export function DailyLog() {
   const [selected, setSelected] = useState<NutritionProduct | null>(null);
   const [grams, setGrams] = useState("100");
   const [saving, setSaving] = useState(false);
-  const [browseOpen, setBrowseOpen] = useState(true);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
+  const [editGrams, setEditGrams] = useState("100");
+  const [editMeal, setEditMeal] = useState<MealId>("breakfast");
+  const [editBusy, setEditBusy] = useState(false);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [ovCal, setOvCal] = useState("");
   const [ovP, setOvP] = useState("");
@@ -106,7 +139,8 @@ export function DailyLog() {
   async function reload() {
     if (!getStoredToken()) {
       setLoading(false);
-      setError("Нужна авторизация для дневника питания");
+      setError(null);
+      setData(null);
       return;
     }
     setLoading(true);
@@ -210,8 +244,20 @@ export function DailyLog() {
     setOvF(String(p.fats));
     setOvC(String(p.carbs));
     setOverrideOpen(false);
+    setOkNote(null);
     if (opts?.grams && opts.grams > 0) setGrams(String(opts.grams));
     if (opts?.meal) setMealType(opts.meal);
+  }
+
+  /** Drop draft selection before «Добавить» (unsaved product). */
+  function clearSelectedDraft() {
+    setSelected(null);
+    setQuery("");
+    setSuggestions([]);
+    setGrams("100");
+    setOverrideOpen(false);
+    setOkNote(null);
+    setError(null);
   }
 
   function pickQuick(q: QuickProduct) {
@@ -226,6 +272,31 @@ export function DailyLog() {
       grams: q.lastGrams && q.lastGrams > 0 ? q.lastGrams : undefined,
       meal,
     });
+  }
+
+  async function applyMealTemplate(templateId: string) {
+    const t = MEAL_TEMPLATES.find((x) => x.id === templateId);
+    if (!t || !getStoredToken() || !isOnline()) {
+      setError("Шаблоны доступны онлайн после входа");
+      return;
+    }
+    setError(null);
+    try {
+      const res = await searchProducts(t.query, { limit: 5 });
+      const product = res.items[0];
+      if (!product) {
+        setError(`Не нашли «${t.query}» в каталоге — введите вручную`);
+        setQuery(t.query);
+        setMealType(t.meal);
+        return;
+      }
+      pickProduct(product, { grams: t.grams, meal: t.meal });
+      setBrowseOpen(false);
+      setOkNote(`${t.label}: ${product.name_ru}, ${t.grams} г. Проверьте и нажмите «Добавить».`);
+      toast(`${t.label} · проверьте граммы`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось применить шаблон");
+    }
   }
 
   async function submit() {
@@ -262,10 +333,94 @@ export function DailyLog() {
       setGrams("100");
       setOverrideOpen(false);
       await reload();
+      const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
+      toast(`Добавлено · ${selected.name_ru} · ${g} г · ${mealLabel}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось добавить приём пищи");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveEditLog() {
+    if (!editingLog || editBusy) return;
+    const g = Number(editGrams);
+    if (!g || g <= 0) {
+      setError("Укажите граммовку > 0");
+      return;
+    }
+    setEditBusy(true);
+    setError(null);
+    try {
+      await updateNutritionLog(editingLog.id, {
+        quantityGrams: g,
+        mealType: editMeal,
+      });
+      setEditingLog(null);
+      await reload();
+      toast(`Обновлено · ${g} г`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить запись");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function removeLog(item: NutritionLog) {
+    if (editBusy || saving) return;
+    const name = item.product?.name_ru ?? "запись";
+    // window.confirm often fails silently inside Telegram WebView on mobile
+    const ok = await confirmAction(`Удалить «${name}»?`);
+    if (!ok) return;
+    setEditBusy(true);
+    setError(null);
+    try {
+      await deleteNutritionLog(item.id);
+      if (editingLog?.id === item.id) setEditingLog(null);
+      // Optimistic UI so the row disappears even if reload is slow/offline-ish
+      setData((prev) => {
+        if (!prev) return prev;
+        const meals: DailyNutrition["meals"] = {};
+        for (const [mealKey, list] of Object.entries(prev.meals || {})) {
+          meals[mealKey] = (list || []).filter((row) => row.id !== item.id);
+        }
+        const kcal = Number(item.calculated_kbj?.calories ?? 0) || 0;
+        const p = Number(item.calculated_kbj?.proteins ?? 0) || 0;
+        const f = Number(item.calculated_kbj?.fats ?? 0) || 0;
+        const c = Number(item.calculated_kbj?.carbs ?? 0) || 0;
+        return {
+          ...prev,
+          meals,
+          totals: {
+            calories: Math.max(0, Number(prev.totals.calories || 0) - kcal),
+            proteins: Math.max(0, Number(prev.totals.proteins || 0) - p),
+            fats: Math.max(0, Number(prev.totals.fats || 0) - f),
+            carbs: Math.max(0, Number(prev.totals.carbs || 0) - c),
+          },
+        };
+      });
+      await reload();
+      toast("Запись удалена", "info");
+    } catch (err) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? String(
+              (err as { response?: { data?: { detail?: string }; status?: number } }).response
+                ?.data?.detail ||
+                (err as { response?: { status?: number } }).response?.status ||
+                "",
+            )
+          : "";
+      setError(
+        err instanceof Error
+          ? err.message
+          : msg
+            ? `Не удалось удалить (${msg})`
+            : "Не удалось удалить",
+      );
+      await reload();
+    } finally {
+      setEditBusy(false);
     }
   }
 
@@ -407,10 +562,40 @@ export function DailyLog() {
   const calPct = Math.min(100, Math.round((totals.calories / Math.max(1, calorieGoal)) * 100));
   const remaining = Math.round(calorieGoal - totals.calories);
   const adj = targets?.calorie_adjustment_pct;
+  const isAuthed = Boolean(getStoredToken());
+  const isToday = day === todayISO();
 
   return (
     <section>
-      <Header title="Питание" subtitle={`Дневник · ${day}`} />
+      <Header title="Питание" subtitle={`Дневник · ${formatDayLabel(day)}`} />
+
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-tg-secondary px-2 py-2">
+        <button
+          type="button"
+          aria-label="Предыдущий день"
+          onClick={() => setDay((d) => shiftISODate(d, -1))}
+          className="tap-target-x min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg font-semibold"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          onClick={() => setDay(todayISO())}
+          className="min-w-0 flex-1 px-2 text-center text-sm font-semibold"
+        >
+          {formatDayLabel(day)}
+          <span className="mt-0.5 block text-[11px] font-normal text-tg-hint">{day}</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Следующий день"
+          disabled={isToday}
+          onClick={() => setDay((d) => shiftISODate(d, 1))}
+          className="tap-target-x min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg font-semibold disabled:opacity-40"
+        >
+          ›
+        </button>
+      </div>
 
       {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -418,10 +603,22 @@ export function DailyLog() {
         <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-link">{okNote}</div>
       ) : null}
 
+      {!isAuthed ? (
+        <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-semibold">Войдите, чтобы вести дневник</p>
+          <p className="mt-1 text-sm text-tg-hint">
+            В Telegram — через Mini App. В браузере — по email вверху экрана. После входа откроются
+            каталог, сканер и история приёмов.
+          </p>
+        </div>
+      ) : null}
+
       <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-end justify-between gap-2">
           <div>
-            <p className="text-xs text-tg-hint">Калории сегодня</p>
+            <p className="text-xs text-tg-hint">
+              Калории {isToday ? "сегодня" : formatDayLabel(day)}
+            </p>
             <p className="text-2xl font-semibold">{totals.calories.toFixed(0)}</p>
           </div>
           <div className="text-right text-xs text-tg-hint">
@@ -515,6 +712,24 @@ export function DailyLog() {
           Сканер подставит продукт и предложит граммы (порция с упаковки или 100 г). Проверьте
           граммы и нажмите «Добавить».
         </p>
+
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-tg-hint">Быстрые шаблоны</p>
+          <div className="flex flex-wrap gap-1.5">
+            {MEAL_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                disabled={saving || !isOnline() || !getStoredToken()}
+                onClick={() => void applyMealTemplate(t.id)}
+                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] disabled:opacity-50"
+                title={t.blurb}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {favorites.length || recent.length ? (
           <div className="space-y-2">
@@ -635,7 +850,13 @@ export function DailyLog() {
             </div>
             <ul className="max-h-56 overflow-auto rounded-lg bg-tg-bg">
               {catalog.length === 0 ? (
-                <li className="px-3 py-2 text-xs text-tg-hint">Нет продуктов</li>
+                <li className="px-3 py-2 text-xs text-tg-hint">
+                  {!getStoredToken()
+                    ? "Войдите, чтобы открыть каталог"
+                    : !isOnline()
+                      ? "Каталог доступен онлайн"
+                      : "Нет продуктов по фильтру"}
+                </li>
               ) : (
                 catalog.map((p) => (
                   <li key={p.id}>
@@ -696,8 +917,20 @@ export function DailyLog() {
 
         {selected ? (
           <div className="space-y-2 rounded-xl bg-tg-bg p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">{selected.name_ru}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] text-tg-hint">Выбрано · ещё не в дневнике</p>
+                <p className="text-sm font-medium">{selected.name_ru}</p>
+              </div>
+              <button
+                type="button"
+                onClick={clearSelectedDraft}
+                className="shrink-0 rounded-lg bg-tg-secondary px-2.5 py-1 text-[11px] font-medium text-tg-hint"
+              >
+                Убрать
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className="text-xs text-tg-link"
@@ -768,14 +1001,26 @@ export function DailyLog() {
             ≈ {preview.calories} ккал · Б {preview.proteins} · Ж {preview.fats} · У {preview.carbs}
           </p>
         ) : null}
-        <button
-          type="button"
-          disabled={!selected || saving}
-          onClick={() => void submit()}
-          className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
-        >
-          {saving ? "Сохраняем…" : "Добавить"}
-        </button>
+        <div className="flex gap-2">
+          {selected ? (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={clearSelectedDraft}
+              className="shrink-0 rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium disabled:opacity-50"
+            >
+              Отмена
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={!selected || saving}
+            onClick={() => void submit()}
+            className="min-w-0 flex-1 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+          >
+            {saving ? "Сохраняем…" : "Добавить"}
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => setCustomOpen(true)}
@@ -796,13 +1041,45 @@ export function DailyLog() {
               ) : (
                 <ul className="mt-2 space-y-2">
                   {items.map((item) => (
-                    <li key={item.id} className="text-sm">
-                      <span className="font-medium">
-                        {item.product?.name_ru ?? "Продукт"} · {item.quantity_grams}г
-                      </span>
-                      <span className="ml-2 text-xs text-tg-hint">
-                        {Number(item.calculated_kbj.calories ?? 0).toFixed(0)} ккал
-                      </span>
+                    <li
+                      key={item.id}
+                      className="flex items-start justify-between gap-2 rounded-xl bg-tg-bg/60 px-2 py-2 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {item.product?.name_ru ?? "Продукт"} · {item.quantity_grams}г
+                        </p>
+                        <p className="text-xs text-tg-hint">
+                          {Number(item.calculated_kbj.calories ?? 0).toFixed(0)} ккал
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          disabled={editBusy}
+                          onClick={() => {
+                            setEditingLog(item);
+                            setEditGrams(String(item.quantity_grams));
+                            setEditMeal(
+                              (item.meal_type as MealId) in
+                                { breakfast: 1, lunch: 1, dinner: 1, snack: 1 }
+                                ? (item.meal_type as MealId)
+                                : m.id,
+                            );
+                          }}
+                          className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] font-medium text-tg-link disabled:opacity-50"
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          type="button"
+                          disabled={editBusy}
+                          onClick={() => void removeLog(item)}
+                          className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] text-tg-hint disabled:opacity-50"
+                        >
+                          Удалить
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -811,6 +1088,68 @@ export function DailyLog() {
           );
         })}
       </div>
+
+      {editingLog ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Изменить запись</h3>
+              <button
+                type="button"
+                className="text-tg-hint"
+                onClick={() => setEditingLog(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm font-medium">
+              {editingLog.product?.name_ru ?? "Продукт"}
+            </p>
+            <label className="block text-xs text-tg-hint">
+              Граммы
+              <input
+                value={editGrams}
+                onChange={(e) => setEditGrams(e.target.value)}
+                inputMode="decimal"
+                className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {MEALS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setEditMeal(m.id)}
+                  className={[
+                    "rounded-full px-3 py-1 text-xs",
+                    editMeal === m.id
+                      ? "bg-tg-button text-tg-button-text"
+                      : "bg-tg-secondary",
+                  ].join(" ")}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={editBusy}
+              onClick={() => void saveEditLog()}
+              className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            >
+              {editBusy ? "Сохраняем…" : "Сохранить"}
+            </button>
+            <button
+              type="button"
+              disabled={editBusy}
+              onClick={() => void removeLog(editingLog)}
+              className="w-full rounded-xl bg-tg-secondary px-4 py-2.5 text-sm text-tg-hint disabled:opacity-60"
+            >
+              Удалить запись
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {customOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">

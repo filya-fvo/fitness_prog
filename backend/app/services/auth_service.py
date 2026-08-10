@@ -38,12 +38,37 @@ async def authenticate_telegram(
         user = User(
             telegram_id=tg_user.id,
             username=tg_user.username,
+            anthropometry={
+                k: v
+                for k, v in {
+                    "first_name": tg_user.first_name,
+                    "last_name": tg_user.last_name,
+                    "tg_first_name": tg_user.first_name,
+                    "tg_last_name": tg_user.last_name,
+                    "language_code": tg_user.language_code,
+                }.items()
+                if v
+            },
         )
         session.add(user)
     else:
-        # Keep username in sync with Telegram
+        # Keep username + TG name in sync with Telegram
         if tg_user.username is not None:
             user.username = tg_user.username
+        anthro = dict(user.anthropometry or {}) if isinstance(user.anthropometry, dict) else {}
+        if tg_user.first_name:
+            anthro["first_name"] = tg_user.first_name
+            anthro["tg_first_name"] = tg_user.first_name
+        if tg_user.last_name:
+            anthro["last_name"] = tg_user.last_name
+            anthro["tg_last_name"] = tg_user.last_name
+        if tg_user.language_code:
+            anthro["language_code"] = tg_user.language_code
+        if anthro != (user.anthropometry or {}):
+            from sqlalchemy.orm.attributes import flag_modified
+
+            user.anthropometry = anthro
+            flag_modified(user, "anthropometry")
 
     await session.commit()
     await session.refresh(user)

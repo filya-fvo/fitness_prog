@@ -29,7 +29,13 @@ export type TelegramWebApp = {
   themeParams?: TelegramThemeParams;
   ready: () => void;
   expand: () => void;
+  /**
+   * Closes the Mini App and sends data to the bot.
+   * Do NOT use for analytics — only for intentional form submit flows.
+   */
   sendData?: (data: string) => void;
+  showConfirm?: (message: string, callback: (ok: boolean) => void) => void;
+  showAlert?: (message: string, callback?: () => void) => void;
   HapticFeedback?: {
     impactOccurred: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void;
     notificationOccurred: (type: "error" | "success" | "warning") => void;
@@ -204,4 +210,22 @@ export function hapticImpact(style: "light" | "medium" | "heavy" = "light"): voi
 
 export function hapticNotification(type: "error" | "success" | "warning" = "success"): void {
   getTelegramWebApp()?.HapticFeedback?.notificationOccurred(type);
+}
+
+/**
+ * Confirm dialog that works inside Telegram Mini App WebView.
+ * window.confirm is unreliable / blocked on many mobile TG clients.
+ */
+export function confirmAction(message: string): Promise<boolean> {
+  const wa = getTelegramWebApp();
+  if (wa && typeof wa.showConfirm === "function") {
+    return new Promise((resolve) => {
+      try {
+        wa.showConfirm!(message, (ok) => resolve(Boolean(ok)));
+      } catch {
+        resolve(window.confirm(message));
+      }
+    });
+  }
+  return Promise.resolve(window.confirm(message));
 }

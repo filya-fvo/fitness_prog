@@ -37,6 +37,7 @@ export default defineConfig({
                 "/supplements",
                 "/feedback",
                 "/telegram",
+                "/admin",
               ].some((p) => url.pathname.startsWith(p)),
             handler: "NetworkOnly",
           },
@@ -82,6 +83,8 @@ export default defineConfig({
         "/ai": { ...toApi },
         "/notifications": { ...toApi },
         "/feedback": { ...toApi },
+        // Admin CRM (users list/reset/delete) — same-origin via Vite proxy
+        "/admin": { ...toApi },
         // Telegram webhook must always hit API (no HTML bypass needed for POST)
         "/telegram": { target, changeOrigin: true },
         "/health": { ...toApi },

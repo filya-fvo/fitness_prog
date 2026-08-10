@@ -214,26 +214,28 @@ def start_welcome_text(
     include_guide_hint: bool = True,
 ) -> str:
     """Short /start greeting. first_name is taken from Telegram profile (variable)."""
-    _ = mini_app_url  # API compatibility; not shown (no browser/email login)
+    _ = mini_app_url  # API compatibility; URL is on the Open button, not in text
     _ = include_guide_hint  # always the same short text
     name = (first_name or "").strip()
-    hello = f"\u041f\u0440\u0438\u0432\u0435\u0442, {name}!" if name else "\u041f\u0440\u0438\u0432\u0435\u0442!"
+    hello = f"Привет, {name}!" if name else "Привет!"
     lines = [
         hello,
         "",
-        "\u042d\u0442\u043e <b>Fitness Mini App</b> \u2014 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438, \u043f\u0438\u0442\u0430\u043d\u0438\u0435, \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438 AI-\u0442\u0440\u0435\u043d\u0435\u0440.",
+        "Это <b>Fitness Mini App</b> — программы, тренировки, питание, прогресс и AI-тренер.",
         "",
-        "\u0427\u0442\u043e\u0431\u044b \u043d\u0430\u0447\u0430\u0442\u044c \u2014 \u043d\u0430\u0436\u043c\u0438\u0442\u0435 <b>Open</b> \u043d\u0438\u0436\u0435 \u0438\u043b\u0438 \u0441\u0438\u043d\u044e\u044e \u043a\u043d\u043e\u043f\u043a\u0443 \u043c\u0435\u043d\u044e.",
+        "Чтобы начать — нажмите <b>Open</b> ниже или синюю кнопку меню.",
         "",
-        "\u0412\u0445\u043e\u0434 \u0442\u043e\u043b\u044c\u043a\u043e \u0447\u0435\u0440\u0435\u0437 Telegram Mini App (\u043a\u043d\u043e\u043f\u043a\u0430 Open).",
+        "• Первый вход: короткая анкета (цель, уровень, тело).",
+        "• <b>Главная → Сегодня</b> — старт/продолжение тренировки.",
+        "• В тренировке: подходы, отдых, замена упражнений, GIF/видео.",
+        "• Вернуть упражнения программы: <b>Главная → Сегодня → Восстановить…</b>",
+        "• Питание, прогресс, AI — в нижнем меню.",
         "",
-        "\u2022 \u041f\u0435\u0440\u0432\u044b\u0439 \u0432\u0445\u043e\u0434: \u043a\u043e\u0440\u043e\u0442\u043a\u0430\u044f \u0430\u043d\u043a\u0435\u0442\u0430 (\u0446\u0435\u043b\u044c, \u0443\u0440\u043e\u0432\u0435\u043d\u044c, \u0442\u0435\u043b\u043e).",
-        "\u2022 <b>\u0413\u043b\u0430\u0432\u043d\u0430\u044f \u2192 \u0421\u0435\u0433\u043e\u0434\u043d\u044f</b> \u2014 \u0441\u0442\u0430\u0440\u0442/\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0435\u043d\u0438\u0435 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438.",
-        "\u2022 \u0412 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0435: \u043f\u043e\u0434\u0445\u043e\u0434\u044b, \u043e\u0442\u0434\u044b\u0445, \u0437\u0430\u043c\u0435\u043d\u0430 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439, GIF/\u0432\u0438\u0434\u0435\u043e.",
-        "\u2022 \u0412\u0435\u0440\u043d\u0443\u0442\u044c \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b: <b>\u0413\u043b\u0430\u0432\u043d\u0430\u044f \u2192 \u0421\u0435\u0433\u043e\u0434\u043d\u044f \u2192 \u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c\u2026</b>",
-        "\u2022 \u041f\u0438\u0442\u0430\u043d\u0438\u0435, \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441, AI \u2014 \u0432 \u043d\u0438\u0436\u043d\u0435\u043c \u043c\u0435\u043d\u044e.",
+        "<b>Вход в браузере по почте</b> (тот же аккаунт):",
+        "1) В Mini App: <b>Профиль → Тело → Почта для входа</b> — привяжите email кодом из письма.",
+        "2) Откройте приложение в браузере и войдите этим email + кодом.",
         "",
-        "\u041f\u043e\u043b\u043d\u0430\u044f \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f \u043f\u0440\u0438\u0434\u0451\u0442 \u043f\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0435 <b>/help</b>.",
+        "Полная инструкция — команда <b>/help</b>.",
     ]
     return "\n".join(lines)
 
@@ -278,6 +280,43 @@ def open_app_markup(settings: Settings) -> dict[str, Any] | None:
     return markup
 
 
+def bot_commands_reply_keyboard(settings: Settings | None = None) -> dict[str, Any]:
+    """
+    Persistent reply keyboard under the message field.
+
+    Buttons send plain text commands so users can tap /start and /help
+    instead of typing them. Optional Open web_app row when Mini App URL is set.
+    """
+    rows: list[list[dict[str, Any]]] = []
+    mini_url = ""
+    if settings is not None:
+        mini_url = (resolve_mini_app_url(settings) or "").strip().rstrip("/")
+    if mini_url.startswith("https://"):
+        open_url = build_mini_app_open_url(mini_url, startapp="home") or mini_url
+        rows.append([{"text": "Open", "web_app": {"url": open_url}}])
+    rows.append([{"text": "/start"}, {"text": "/help"}])
+    return {
+        "keyboard": rows,
+        "resize_keyboard": True,
+        "is_persistent": True,
+        "input_field_placeholder": "Команда или сообщение…",
+    }
+
+
+async def set_bot_commands(settings: Settings) -> dict[str, Any]:
+    """Register slash-menu commands (appears when user types /)."""
+    return await bot_api(
+        settings,
+        "setMyCommands",
+        {
+            "commands": [
+                {"command": "start", "description": "Приветствие и открыть приложение"},
+                {"command": "help", "description": "Полная инструкция (файл)"},
+            ]
+        },
+    )
+
+
 async def send_user_guide(
     settings: Settings,
     *,
@@ -295,7 +334,12 @@ async def send_user_guide(
         "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 Telegram "
         "\u0438\u043b\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435 \u043d\u0430 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e."
     )
-    markup = open_app_markup(settings) if with_open_button else None
+    # Prefer inline Open on the document when requested; reply keyboard is set by /start.
+    markup: dict[str, Any] | None
+    if with_open_button:
+        markup = open_app_markup(settings) or bot_commands_reply_keyboard(settings)
+    else:
+        markup = bot_commands_reply_keyboard(settings)
     return await send_document(
         settings,
         chat_id=chat_id,
@@ -313,13 +357,24 @@ async def send_start_welcome(
     first_name: str | None = None,
     send_full_guide: bool = False,
 ) -> dict[str, Any]:
-    """Reply to /start with short welcome + Open. Optionally attach guide file."""
+    """Reply to /start with short welcome + Open (inline) + reply keyboard (/start, /help)."""
     text = start_welcome_text(first_name=first_name)
+    # Inline Open is the most reliable Mini App entry on mobile + desktop.
+    # Reply keyboard cannot be combined with inline_keyboard on the same message,
+    # so we send Open inline first, then attach the persistent /start+/help keyboard.
+    inline_open = open_app_markup(settings)
     result = await send_message(
         settings,
         chat_id=chat_id,
         text=text,
-        reply_markup=open_app_markup(settings),
+        reply_markup=inline_open,
+    )
+    # Persistent reply keyboard under the composer (Open + /start + /help when URL set).
+    await send_message(
+        settings,
+        chat_id=chat_id,
+        text="Кнопки под полем ввода: <b>Open</b>, /start, /help",
+        reply_markup=bot_commands_reply_keyboard(settings),
     )
     if send_full_guide:
         await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
@@ -486,3 +541,77 @@ def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
 def extract_help_command(update: dict[str, Any]) -> dict[str, Any] | None:
     """If update is /help — return chat/user info (resend user guide)."""
     return extract_bot_command(update, "help")
+
+
+def extract_web_app_data(update: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    Message with web_app_data (Mini App called WebApp.sendData and closed).
+
+    Older app builds sent analytics via sendData — that closes the Mini App and
+    posts a system notice. Reply with a fresh Open button so the user can reopen.
+    """
+    message = update.get("message") or update.get("edited_message")
+    if not isinstance(message, dict):
+        return None
+    wad = message.get("web_app_data")
+    if not isinstance(wad, dict):
+        return None
+    chat = message.get("chat") or {}
+    user = message.get("from") or {}
+    if not isinstance(chat, dict) or chat.get("id") is None:
+        return None
+    return {
+        "chat_id": int(chat["id"]),
+        "user_id": int(user["id"]) if user.get("id") is not None else None,
+        "first_name": user.get("first_name"),
+        "username": user.get("username"),
+        "data": str(wad.get("data") or ""),
+    }
+
+
+def extract_open_text_tap(update: dict[str, Any]) -> dict[str, Any] | None:
+    """Plain-text 'Open' / 'Открыть' from reply keyboard without web_app (misconfigured)."""
+    message = update.get("message") or update.get("edited_message")
+    if not isinstance(message, dict):
+        return None
+    text = str(message.get("text") or "").strip().lower()
+    if text not in {"open", "открыть", "открыть приложение"}:
+        return None
+    chat = message.get("chat") or {}
+    user = message.get("from") or {}
+    if not isinstance(chat, dict) or chat.get("id") is None:
+        return None
+    return {
+        "chat_id": int(chat["id"]),
+        "user_id": int(user["id"]) if user.get("id") is not None else None,
+        "first_name": user.get("first_name"),
+        "username": user.get("username"),
+    }
+
+
+async def send_open_again(
+    settings: Settings,
+    *,
+    chat_id: int,
+    reason: str = "reopen",
+) -> dict[str, Any]:
+    """Send a short prompt with inline Open + refresh reply keyboard."""
+    _ = reason
+    markup = open_app_markup(settings)
+    text = (
+        "Откройте приложение кнопкой <b>Open</b> ниже "
+        "или синей кнопкой меню рядом с полем ввода."
+    )
+    result = await send_message(
+        settings,
+        chat_id=chat_id,
+        text=text,
+        reply_markup=markup,
+    )
+    await send_message(
+        settings,
+        chat_id=chat_id,
+        text="Кнопки: <b>Open</b>, /start, /help",
+        reply_markup=bot_commands_reply_keyboard(settings),
+    )
+    return result

@@ -1,9 +1,11 @@
 /**
- * Telegram analytics helpers (TZ §12).
- * Prefer WebApp.sendData when available; also keep a local event buffer for debugging.
+ * Analytics helpers (TZ §12).
+ *
+ * IMPORTANT: never call Telegram.WebApp.sendData from here.
+ * sendData closes the Mini App and posts "Data from the Open button was
+ * transferred to the bot" — that broke Open from reply keyboard / menu.
+ * Events stay in a local buffer (and console in DEV).
  */
-
-import { getTelegramWebApp } from "@/lib/telegram";
 
 export type AnalyticsEventName =
   | "web_app_opened"
@@ -37,27 +39,9 @@ function pushLocal(event: string, payload: AnalyticsPayload): void {
   }
 }
 
-/** Send analytics event to Telegram host (and local buffer). */
+/** Record analytics event locally (does not close Telegram Mini App). */
 export function trackEvent(event: AnalyticsEventName, payload: AnalyticsPayload = {}): void {
-  const body = {
-    event,
-    ...payload,
-    ts: Date.now(),
-  };
   pushLocal(event, payload);
-
-  const wa = getTelegramWebApp() as
-    | (ReturnType<typeof getTelegramWebApp> & { sendData?: (data: string) => void })
-    | null;
-
-  try {
-    // Telegram.WebApp.sendData only works when opened via KeyboardButton web_app
-    if (wa && typeof wa.sendData === "function") {
-      wa.sendData(JSON.stringify(body));
-    }
-  } catch {
-    // non-fatal outside supported contexts
-  }
 
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console

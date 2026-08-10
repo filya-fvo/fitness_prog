@@ -101,7 +101,7 @@ GROUPS: dict[str, list[tuple[str, str, int, str]]] = {
         ("Гребля в тренажёре", "machine", 2, "gym"),
         ("Велотренажёр", "machine", 1, "gym"),
         ("Эллипс", "machine", 1, "gym"),
-        ("Бег на месте", "bodyweight", 1, "home"),
+        ("Беговая дорожка", "machine", 1, "gym"),
         ("Скейтер-прыжки", "bodyweight", 2, "home"),
         ("Махи гирей", "kettlebell", 3, "gym"),
     ],

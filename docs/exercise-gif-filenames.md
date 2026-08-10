@@ -15,7 +15,7 @@
 |------|---------|--------|
 | `australian-pull-ups.gif` | Австралийские подтягивания | спина |
 | `mountain-climbers.gif` | Альпинисты | кор |
-| `running-in-place.gif` | Бег на месте | кардио |
+| `running-in-place.gif` | Беговая дорожка | кардио |
 | `burpees.gif` | Бёрпи | кардио |
 | `side-plank.gif` | Боковая планка | кор |
 | `lateral-lunges.gif` | Боковые выпады | ноги |

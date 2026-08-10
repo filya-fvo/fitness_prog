@@ -1,0 +1,61 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "tsc-i18n",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit"
+		},
+		{
+			"label": "typecheck",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit",
+			"group": "build"
+		},
+		{
+			"label": "tsc-noemit-i18n",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit"
+		},
+		{
+			"label": "frontend-tsc",
+			"type": "shell",
+			"command": "node .\\node_modules\\typescript\\bin\\tsc --noEmit"
+		},
+		{
+			"label": "tsc-check",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit; echo EXIT:$LASTEXITCODE"
+		},
+		{
+			"label": "run-tsc",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit; Write-Output \"EXIT:$LASTEXITCODE\""
+		},
+		{
+			"label": "tsc-p1",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit; echo EXIT:$LASTEXITCODE"
+		},
+		{
+			"label": "verify-final-ux",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit; echo TSC:$LASTEXITCODE; node node_modules/vitest/vitest.mjs run src/utils/homeTips.test.ts --reporter=dot; echo VITEST:$LASTEXITCODE"
+		},
+		{
+			"label": "tsc-final",
+			"type": "shell",
+			"command": "node node_modules/typescript/bin/tsc --noEmit; Write-Output \"TSC=$LASTEXITCODE\""
+		},
+		{
+			"label": "tsc-check",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/typescript/bin/tsc",
+				"--noEmit"
+			],
+			"group": "test"
+		}
+	]
+}
