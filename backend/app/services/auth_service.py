@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -26,6 +26,13 @@ async def authenticate_telegram(
         raise
 
     tg_user = validated.user
+    # Serialize first login for the same Telegram account. Without this lock,
+    # two simultaneous WebView requests can both observe no user and race on
+    # the unique users.telegram_id constraint.
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(:telegram_id)"),
+        {"telegram_id": tg_user.id},
+    )
     result = await session.execute(
         select(User).where(
             User.telegram_id == tg_user.id,

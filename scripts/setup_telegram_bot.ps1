@@ -132,8 +132,7 @@ if (-not $SkipWebhook) {
 
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
-Write-Host "  1) Backend + frontend + Tailscale Funnel must be running (start-all.cmd)"
-Write-Host "  2) Restart backend so it reloads MINI_APP_URL: dev.cmd restart-backend"
-Write-Host "  3) In Telegram: open @bot -> /start -> expect welcome + Open"
-Write-Host "  4) Blue Open near message field / chat list should open Mini App"
+Write-Host "  1) The production app + Tailscale Funnel must be running (start-all.cmd)"
+Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
+Write-Host "  3) Blue Open near message field / chat list should open Mini App"
 Write-Host ""

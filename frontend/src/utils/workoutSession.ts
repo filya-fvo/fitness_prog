@@ -77,3 +77,36 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
 
   return drafts;
 }
+
+/**
+ * A planned exercise is complete once every planned slot is complete.
+ * Extra user-added sets must not block the automatic move to the next exercise.
+ */
+export function isPlannedExerciseComplete(
+  drafts: LocalSetDraft[],
+  exerciseId: string,
+  targetSets?: number | null,
+): boolean {
+  const exerciseDrafts = drafts.filter((draft) => draft.exerciseId === exerciseId);
+  const plannedCount = Number.isFinite(targetSets) ? Math.max(0, Math.trunc(targetSets || 0)) : 0;
+
+  if (plannedCount <= 0) {
+    return exerciseDrafts.length > 0 && exerciseDrafts.every((draft) => draft.isCompleted);
+  }
+
+  for (let setNumber = 1; setNumber <= plannedCount; setNumber += 1) {
+    if (!exerciseDrafts.some((draft) => draft.setNumber === setNumber && draft.isCompleted)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** A completed set starts rest only when there was no timer at submit time. */
+export function shouldStartRestAfterSet(input: {
+  setWasCompleted: boolean;
+  restWasActiveAtSubmit: boolean;
+  restIsActiveNow: boolean;
+}): boolean {
+  return !input.setWasCompleted && !input.restWasActiveAtSubmit && !input.restIsActiveNow;
+}

@@ -701,14 +701,16 @@ export function DailyLog() {
         </Link>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setAddPanelOpen((value) => !value)}
-        aria-expanded={addPanelOpen}
-        className="sticky bottom-20 z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
-      >
-        {addPanelOpen ? "Закрыть добавление" : "+ Добавить продукт"}
-      </button>
+      {!addPanelOpen ? (
+        <button
+          type="button"
+          onClick={() => setAddPanelOpen(true)}
+          aria-expanded={false}
+          className="sticky bottom-20 z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
+        >
+          + Добавить продукт
+        </button>
+      ) : null}
 
       {addPanelOpen ? <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-center justify-between gap-2">
@@ -1048,6 +1050,13 @@ export function DailyLog() {
             {saving ? "Сохраняем…" : "Добавить и продолжить"}
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => setAddPanelOpen(false)}
+          className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium text-tg-hint"
+        >
+          Закрыть добавление
+        </button>
         <button
           type="button"
           onClick={() => setCustomOpen(true)}

@@ -3,15 +3,19 @@
 import pytest
 
 from app.core.config import Settings
+from app.routers.telegram import _telegram_actor_is_admin
 from app.services import telegram_bot
 from app.services.telegram_bot import (
+    admin_guide_path,
     bot_commands_reply_keyboard,
     build_mini_app_open_url,
+    extract_admin_command,
     extract_help_command,
     extract_callback_query,
     extract_open_text_tap,
     extract_start_command,
     extract_web_app_data,
+    load_admin_guide_bytes,
     load_user_guide_bytes,
     mini_app_keyboard,
     open_web_app_keyboard,
@@ -179,15 +183,14 @@ def test_start_welcome_uses_first_name_variable() -> None:
     assert "/help" in a
 
 
-def test_start_welcome_mentions_email_link_and_no_raw_url() -> None:
+def test_start_welcome_mentions_email_link_and_browser_url() -> None:
     text = start_welcome_text(
         first_name="Rom",
         mini_app_url="https://fitness-pc.example.ts.net",
         include_guide_hint=True,
     )
-    # Mini App URL stays on the button, not in plain text
-    assert "https://fitness-pc.example.ts.net" not in text
-    assert "http" not in text.lower()
+    assert "https://fitness-pc.example.ts.net" in text
+    assert "обычном браузере" in text
     assert "docs/USER_GUIDE" not in text
     assert "Open" in text
     assert "/help" in text
@@ -264,6 +267,15 @@ def test_user_guide_file_exists_and_loads() -> None:
     assert "\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f" in text or "Инструкция" in text
 
 
+def test_admin_guide_file_exists_and_loads() -> None:
+    assert admin_guide_path().is_file()
+    filename, data = load_admin_guide_bytes()
+    assert "Admin" in filename
+    text = data.decode("utf-8")
+    assert "инструкция администратора" in text.lower()
+    assert "start_all_comand.bat" in text
+
+
 def test_extract_help_command() -> None:
     update = {
         "update_id": 2,
@@ -278,3 +290,63 @@ def test_extract_help_command() -> None:
     assert got is not None
     assert got["chat_id"] == 42
     assert extract_help_command({"message": {"text": "/start", "chat": {"id": 1}}}) is None
+
+
+def test_extract_hidden_admin_command() -> None:
+    update = {
+        "message": {
+            "text": "/admin",
+            "chat": {"id": 42, "type": "private"},
+            "from": {"id": 42, "username": "Owner"},
+        }
+    }
+    got = extract_admin_command(update)
+    assert got is not None
+    assert got["user_id"] == 42
+    assert got["username"] == "Owner"
+
+
+@pytest.mark.asyncio
+async def test_admin_command_is_not_published_in_telegram_menu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_bot_api(
+        _settings: Settings,
+        method: str,
+        payload: dict[str, object] | None = None,
+        **_kwargs: object,
+    ) -> dict[str, object]:
+        captured["method"] = method
+        captured["payload"] = payload or {}
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram_bot, "bot_api", fake_bot_api)
+    await telegram_bot.set_bot_commands(Settings(bot_token="test-token"))
+    assert captured["method"] == "setMyCommands"
+    commands = captured["payload"]["commands"]  # type: ignore[index]
+    assert [item["command"] for item in commands] == ["start", "help"]  # type: ignore[index]
+
+
+def test_hidden_admin_command_authorization() -> None:
+    settings = Settings(
+        admin_telegram_ids="42",
+        admin_telegram_usernames="Owner",
+    )
+    assert _telegram_actor_is_admin(
+        settings,
+        {"chat_id": 42, "user_id": 42, "username": "someone"},
+    )
+    assert _telegram_actor_is_admin(
+        settings,
+        {"chat_id": 7, "user_id": 7, "username": "owner"},
+    )
+    assert not _telegram_actor_is_admin(
+        settings,
+        {"chat_id": -100123, "user_id": 42, "username": "Owner"},
+    )
+    assert not _telegram_actor_is_admin(
+        settings,
+        {"chat_id": 99, "user_id": 99, "username": "stranger"},
+    )

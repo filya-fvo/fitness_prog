@@ -22,11 +22,17 @@ DEPRECATED_ALIASES = {
     "Жим штанги узким хватом",
 }
 
-# Reuse closest existing GIFs so UI is not empty until dedicated media is added.
+# Each GIF below is tied to the exact source-dataset exercise ID.
 GIF_CABLE_ROW = "/exercise-gifs/0861-fUBheHs.gif"
 GIF_CABLE_PUSH = "/exercise-gifs/0201-3ZflifB.gif"
 GIF_DB_SKULL = "/exercise-gifs/0351-mpKZGWz.gif"
-GIF_LAT_PD = "/exercise-gifs/2330-LEprlgG.gif"
+GIF_CABLE_PULLOVER = "/exercise-gifs/0238-x69MAlq.gif"
+GIF_UNDERHAND_PULLDOWN = "/exercise-gifs/0245-xBYcQHj.gif"
+GIF_BARBELL_SKULL = "/exercise-gifs/0061-iZop9xO.gif"
+GIF_EZ_SKULL = "/exercise-gifs/1748-6CKUx7o.gif"
+GIF_STANDING_BARBELL_EXTENSION = "/exercise-gifs/0109-dZl9Q27.gif"
+GIF_CABLE_OVERHEAD_EXTENSION = "/exercise-gifs/0194-2IxROQ1.gif"
+GIF_ROPE_PUSHDOWN = "/exercise-gifs/0200-dU605di.gif"
 GIF_DB_FLY = "/exercise-gifs/0308-yz9nUhF.gif"
 GIF_CABLE_DECLINE_FLY = "/exercise-gifs/0158-7saC5zz.gif"
 GIF_DB_INCLINE_PRESS = "/exercise-gifs/0314-ns0SIbU.gif"
@@ -96,9 +102,9 @@ NEW_ITEMS: list[dict] = [
             "Пуловер в блоке на спину (straight-arm pulldown / cable pullover). "
             "Цель: широчайшие. Оборудование: блок/кроссовер."
         ),
-        animation_url=GIF_LAT_PD,
+        animation_url=GIF_CABLE_PULLOVER,
         common_mistakes="Сгибание локтей как в тяге; работа бицепсом; сильный прогиб поясницы; рывки.",
-        tags=["curated", "manual_add", "replacement", "cable", "pullover", "спина"],
+        tags=["gymvisual", "ds:0238", "curated", "manual_add", "replacement", "cable", "pullover", "спина"],
     ),
     ex(
         "Французский жим со штангой",
@@ -111,9 +117,9 @@ NEW_ITEMS: list[dict] = [
         "4. Разгибанием локтей верните штангу вверх, не разводя локти в стороны.\n"
         "5. Работайте в контролируемой амплитуде.",
         description="Французский жим со штангой (skull crusher). Цель: трицепс. Оборудование: штанга.",
-        animation_url=GIF_DB_SKULL,
+        animation_url=GIF_BARBELL_SKULL,
         common_mistakes="Разведение локтей; слишком большой вес; удар грифом по лбу; отрыв поясницы.",
-        tags=["curated", "manual_add", "replacement", "barbell", "трицепс", "french press"],
+        tags=["gymvisual", "ds:0061", "curated", "manual_add", "replacement", "barbell", "трицепс", "french press"],
     ),
     ex(
         "Французский жим EZ-грифом",
@@ -126,8 +132,8 @@ NEW_ITEMS: list[dict] = [
         "4. Разогните локти и вернитесь в старт.\n"
         "5. EZ-хват снижает нагрузку на запястья.",
         description="Французский жим с EZ-грифом — комфортнее для запястий, чем прямой гриф.",
-        animation_url=GIF_DB_SKULL,
-        tags=["curated", "manual_add", "replacement", "barbell", "трицепс"],
+        animation_url=GIF_EZ_SKULL,
+        tags=["gymvisual", "ds:1748", "curated", "manual_add", "replacement", "barbell", "трицепс"],
     ),
     ex(
         "Французский жим стоя со штангой",
@@ -140,8 +146,8 @@ NEW_ITEMS: list[dict] = [
         "4. Разогните руки вверх до полного разгибания без клика в локтях.\n"
         "5. Держите корпус стабильным, не прогибайтесь чрезмерно.",
         description="Французский жим стоя со штангой. Длинная голова трицепса.",
-        animation_url=GIF_DB_SKULL,
-        tags=["curated", "manual_add", "replacement", "barbell", "трицепс"],
+        animation_url=GIF_STANDING_BARBELL_EXTENSION,
+        tags=["gymvisual", "ds:0109", "curated", "manual_add", "replacement", "barbell", "трицепс"],
     ),
     ex(
         "Разгибания из-за головы на блоке",
@@ -154,8 +160,8 @@ NEW_ITEMS: list[dict] = [
         "4. Медленно вернитесь в растянутое положение.\n"
         "5. Не разводите локти в стороны.",
         description="Overhead cable triceps extension — замена французскому жиму.",
-        animation_url=GIF_CABLE_PUSH,
-        tags=["curated", "manual_add", "replacement", "cable", "трицепс"],
+        animation_url=GIF_CABLE_OVERHEAD_EXTENSION,
+        tags=["gymvisual", "ds:0194", "curated", "manual_add", "replacement", "cable", "трицепс"],
     ),
     ex(
         "Жим вниз на блоке канатом",
@@ -168,8 +174,8 @@ NEW_ITEMS: list[dict] = [
         "4. Контролируемо вернитесь вверх.\n"
         "5. Не раскачивайте корпус.",
         description="Классические разгибания на блоке канатом для трицепса.",
-        animation_url=GIF_CABLE_PUSH,
-        tags=["curated", "manual_add", "replacement", "cable", "трицепс"],
+        animation_url=GIF_ROPE_PUSHDOWN,
+        tags=["gymvisual", "ds:0200", "curated", "manual_add", "replacement", "cable", "трицепс"],
     ),
     ex(
         "Тяга нижнего блока к поясу",
@@ -196,8 +202,8 @@ NEW_ITEMS: list[dict] = [
         "4. Сожмите лопатки внизу, затем контролируемо вернитесь вверх.\n"
         "5. Не отклоняйтесь сильно назад.",
         description="Подтягивающий паттерн на блоке обратным хватом.",
-        animation_url=GIF_LAT_PD,
-        tags=["curated", "manual_add", "replacement", "cable", "спина"],
+        animation_url=GIF_UNDERHAND_PULLDOWN,
+        tags=["gymvisual", "ds:0245", "curated", "manual_add", "replacement", "cable", "спина"],
     ),
     ex(
         "Разводка гантелей лёжа",
@@ -225,7 +231,7 @@ NEW_ITEMS: list[dict] = [
         "5. Не округляйте плечи вперёд чрезмерно.",
         description="Сведение на кроссовере — изоляция груди.",
         animation_url=GIF_CABLE_DECLINE_FLY,
-        tags=["curated", "manual_add", "replacement", "cable", "грудь"],
+        tags=["gymvisual", "ds:0158", "curated", "manual_add", "replacement", "cable", "грудь"],
     ),
     ex(
         "Жим гантелей на наклонной скамье",
@@ -253,7 +259,7 @@ NEW_ITEMS: list[dict] = [
         "5. Не раскачивайте корпус.",
         description="Средняя дельта, классические боковые махи.",
         animation_url=GIF_DB_LATERAL_RAISE,
-        tags=["curated", "manual_add", "replacement", "плечи"],
+        tags=["gymvisual", "ds:0334", "curated", "manual_add", "replacement", "плечи"],
     ),
     ex(
         "Тяга штанги в наклоне",
@@ -267,7 +273,7 @@ NEW_ITEMS: list[dict] = [
         "5. Не округляйте поясницу.",
         description="Базовая тяга штанги в наклоне для толщины спины.",
         animation_url="/exercise-gifs/0027-eZyBC3j.gif",
-        tags=["curated", "manual_add", "replacement", "barbell", "спина"],
+        tags=["gymvisual", "ds:0027", "curated", "manual_add", "replacement", "barbell", "спина"],
     ),
     ex(
         "Подтягивания обратным хватом",
@@ -281,7 +287,7 @@ NEW_ITEMS: list[dict] = [
         "5. При необходимости используйте резину или гравитрон.",
         description="Подтягивания супинированным хватом — спина + бицепс.",
         animation_url=GIF_REVERSE_GRIP_PULL_UP,
-        tags=["curated", "manual_add", "replacement", "спина"],
+        tags=["gymvisual", "ds:0674", "curated", "manual_add", "replacement", "спина"],
     ),
     ex(
         "Пуловер с гантелью лёжа поперёк скамьи",
@@ -295,7 +301,7 @@ NEW_ITEMS: list[dict] = [
         "5. Не проваливайте таз слишком низко.",
         description="Классический пуловер поперёк скамьи — вариант с акцентом на спину/растяжение.",
         animation_url="/exercise-gifs/0375-9XjtHvS.gif",
-        tags=["curated", "manual_add", "replacement", "pullover", "спина"],
+        tags=["gymvisual", "ds:0375", "curated", "manual_add", "replacement", "pullover", "спина"],
     ),
     ex(
         "Жим штанги узким хватом",

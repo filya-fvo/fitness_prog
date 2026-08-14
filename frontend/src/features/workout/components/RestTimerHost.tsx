@@ -34,12 +34,14 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
   const stopRest = useWorkoutStore((s) => s.stopRest);
   const adjustRest = useWorkoutStore((s) => s.adjustRest);
   const restNotifySentRef = useRef(false);
-  const serverScheduledRef = useRef(false);
+  const serverScheduledEndRef = useRef<number | null>(null);
+  const serverSchedulingEndRef = useRef<number | null>(null);
   const ctxRef = useRef(restContext);
   ctxRef.current = restContext;
 
   const cancelServerTimer = () => {
-    serverScheduledRef.current = false;
+    serverScheduledEndRef.current = null;
+    serverSchedulingEndRef.current = null;
     void cancelTimerNotification(
       useWorkoutStore.getState().serverWorkoutId || workoutId || undefined,
     ).catch(() => undefined);
@@ -49,7 +51,9 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
     if (!isResting) return;
     restNotifySentRef.current = false;
     const update = () => {
-      const before = useWorkoutStore.getState().restSecondsLeft;
+      const stateBeforeSync = useWorkoutStore.getState();
+      const before = stateBeforeSync.restSecondsLeft;
+      const finishingEnd = stateBeforeSync.restEndsAtMs;
       syncRest();
       if (before <= 1 && !restNotifySentRef.current) {
         restNotifySentRef.current = true;
@@ -68,7 +72,7 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
             text = `Отдых завершён! Продолжайте: ${ctx.exerciseName} 💪`;
           }
         }
-        if (isOnline() && !serverScheduledRef.current) {
+        if (isOnline() && serverScheduledEndRef.current !== finishingEnd) {
           void notifyTimerEnded({
             kind: "rest",
             title,
@@ -96,6 +100,12 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
 
   useEffect(() => {
     if (!isResting || !restEndsAtMs || !isOnline()) return;
+    if (
+      serverScheduledEndRef.current === restEndsAtMs ||
+      serverSchedulingEndRef.current === restEndsAtMs
+    ) {
+      return;
+    }
     const seconds = Math.max(1, Math.ceil((restEndsAtMs - Date.now()) / 1000));
     const ctx = ctxRef.current;
     let text = ctx?.nextExerciseName && ctx.isLastSetOfExercise
@@ -104,15 +114,32 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
     if (ctx?.isLastSetOfExercise && ctx.isLastExercise) {
       text = "Отдых завершён! Это последнее упражнение — можно завершать тренировку 🏁";
     }
-    serverScheduledRef.current = false;
+    const scheduledEnd = restEndsAtMs;
+    // Set synchronously: React StrictMode runs effects twice in development.
+    serverSchedulingEndRef.current = scheduledEnd;
     void scheduleTimerNotification({
       seconds,
       title: "Отдых завершён",
       text,
       workoutId: useWorkoutStore.getState().serverWorkoutId || workoutId || undefined,
     })
-      .then(() => { serverScheduledRef.current = true; })
-      .catch(() => { serverScheduledRef.current = false; });
+      .then(() => {
+        const current = useWorkoutStore.getState();
+        if (current.isResting && current.restEndsAtMs === scheduledEnd) {
+          serverScheduledEndRef.current = scheduledEnd;
+        }
+        if (serverSchedulingEndRef.current === scheduledEnd) {
+          serverSchedulingEndRef.current = null;
+        }
+      })
+      .catch(() => {
+        if (useWorkoutStore.getState().restEndsAtMs === scheduledEnd) {
+          serverScheduledEndRef.current = null;
+        }
+        if (serverSchedulingEndRef.current === scheduledEnd) {
+          serverSchedulingEndRef.current = null;
+        }
+      });
   }, [isResting, restEndsAtMs, workoutId]);
 
   if (!isResting) return null;

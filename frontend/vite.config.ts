@@ -21,7 +21,18 @@ export default defineConfig({
         start_url: "/",
       },
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,gif,woff2}"],
+        // Precache only the application shell. Exercise GIFs, barcode scanner,
+        // and route chunks are downloaded when the user opens that feature.
+        globPatterns: [
+          "index.html",
+          "manifest.webmanifest",
+          "assets/index-*.js",
+          "assets/index-*.css",
+          "assets/vendor-react-*.js",
+          "assets/vendor-storage-*.js",
+          "assets/virtual_pwa-register-*.js",
+          "assets/workbox-window*.js",
+        ],
       },
       devOptions: {
         enabled: false,

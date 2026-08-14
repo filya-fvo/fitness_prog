@@ -31,7 +31,7 @@ docs/       TZ, ops runbook, QA checklists
 C:\fitness_prog\start-all.cmd
 ```
 
-Поднимает backend `:8001` + frontend `:5173` + постоянный HTTPS через Tailscale Funnel и обновляет кнопку Telegram **Open**.
+Собирает frontend и поднимает единое приложение FastAPI `:8001` + постоянный HTTPS через Tailscale Funnel, затем обновляет кнопку Telegram **Open**. Vite `:5173` используется только в режиме разработки через `dev-local.cmd`.
 
 Р СћР С•РЎвЂЎР ВµРЎвЂЎР Р…Р С•: [scripts/dev.cmd](scripts/dev.cmd) (`start`, `restart-backend`, `status`РІР‚В¦).
 

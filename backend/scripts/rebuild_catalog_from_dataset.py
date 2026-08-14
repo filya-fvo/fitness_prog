@@ -89,6 +89,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Сведение рук в тренажёре «бабочка»", ["lever seated fly"], "грудь", 2),
     ("Разведение гантелей лёжа", ["dumbbell fly"], "грудь", 2),
     ("Сведение рук в кроссовере", ["cable middle fly", "cable standing fly"], "грудь", 2),
+    ("Кроссовер на верхних блоках", ["cable decline fly"], "грудь", 2),
     ("Отжимания от пола", ["push-up"], "грудь", 2),
     ("Отжимания с колен", ["kneeling push-up (male)"], "грудь", 1),
     ("Отжимания с возвышения", ["incline push-up"], "грудь", 1),
@@ -99,13 +100,17 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Австралийские подтягивания", ["inverted row"], "спина", 2),
     ("Тяга штанги в наклоне", ["barbell bent over row"], "спина", 3),
     ("Тяга гантели в наклоне", ["dumbbell one arm bent-over row"], "спина", 2),
-    ("Тяга верхнего блока", ["cable lat pulldown full range of motion", "cable bar lateral pulldown", "cable straight arm pull down"], "спина", 2),
+    ("Тяга верхнего блока", ["cable bar lateral pulldown", "cable pulldown (pro lat bar)"], "спина", 2),
+    ("Тяга верхнего блока обратным хватом", ["cable underhand pulldown"], "спина", 2),
     ("Тяга горизонтального блока", ["cable seated row"], "спина", 2),
     ("Тяга с упором грудью в тренажёре", ["lever seated row", "lever high row"], "спина", 2),
     ("Тяга верхнего блока нейтральным хватом", ["twin handle parallel grip lat pulldown", "cable lateral pulldown with v-bar"], "спина", 2),
     ("Тяга Т-грифа", ["lever reverse t-bar row", "lever t-bar row"], "спина", 3),
     ("Тяга резинки к поясу", ["resistance band seated straight back row", "band one arm standing low row"], "спина", 1),
     ("Пуловер с гантелью", ["dumbbell pullover"], "спина", 2),
+    ("Пуловер с гантелью лёжа поперёк скамьи", ["dumbbell pullover"], "спина", 2),
+    ("Пуловер в блоке на спину", ["cable straight arm pulldown"], "спина", 2),
+    ("Подтягивания обратным хватом", ["reverse grip pull-up"], "спина", 3),
     ("Гиперэкстензия", ["hyperextension", "back extension 45 degrees"], "спина", 2),
     ("Тяга к лицу", ["cable rear delt row (with rope)", "cable standing rear delt row (with rope)"], "спина", 2),
     # Shoulders
@@ -114,6 +119,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Жим вверх в тренажёре сидя", ["lever shoulder press"], "плечи", 2),
     ("Жим Арнольда", ["dumbbell arnold press"], "плечи", 3),
     ("Разводка гантелей в стороны", ["dumbbell lateral raise"], "плечи", 2),
+    ("Махи гантелями в стороны", ["dumbbell lateral raise"], "плечи", 2),
     ("Отведение руки в сторону на блоке", ["cable lateral raise"], "плечи", 2),
     ("Разводка в наклоне", ["dumbbell rear delt raise", "dumbbell bent over reverse fly"], "плечи", 2),
     ("Подъёмы гантелей перед собой", ["dumbbell front raise"], "плечи", 2),
@@ -130,10 +136,15 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Разгибания на блоке", ["cable pushdown", "cable triceps pushdown (v-bar)"], "трицепс", 2),
     ("Разгибания гантели из-за головы", ["dumbbell seated triceps extension", "dumbbell standing triceps extension"], "трицепс", 2),
     ("Французский жим гантели", ["dumbbell lying triceps extension"], "трицепс", 2),
+    ("Французский жим со штангой", ["barbell lying triceps extension"], "трицепс", 3),
+    ("Французский жим EZ-грифом", ["ez bar lying close grip triceps extension behind head"], "трицепс", 2),
+    ("Французский жим стоя со штангой", ["barbell standing overhead triceps extension"], "трицепс", 3),
+    ("Разгибания из-за головы на блоке", ["cable overhead triceps extension (rope attachment)"], "трицепс", 2),
+    ("Жим вниз на блоке канатом", ["cable pushdown (with rope attachment)"], "трицепс", 2),
     # Core
     ("Планка", ["weighted front plank", "power point plank"], "кор", 2),
     ("Боковая планка", ["bodyweight incline side plank", "side plank hip adduction"], "кор", 2),
-    ("Планка с касанием плеч", ["kneeling plank tap shoulder (male)", "shoulder tap"], "кор", 2),
+    ("Планка с касанием плеч", ["shoulder tap", "kneeling plank tap shoulder (male)"], "кор", 2),
     ("Скручивания", ["crunch floor"], "кор", 1),
     ("Скручивания на верхнем блоке", ["cable kneeling crunch"], "кор", 2),
     ("Велосипед", ["air bike", "band bicycle crunch"], "кор", 2),
@@ -147,7 +158,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Альпинисты", ["mountain climber"], "кор", 2),
     # Cardio / conditioning
     ("Бёрпи", ["burpee"], "кардио", 3),
-    ("Беговая дорожка", ["run", "treadmill"], "кардио", 1),
+    ("Беговая дорожка", ["walking on incline treadmill"], "кардио", 1),
     ("Высокие колени", ["high knee against wall", "walking high knees lunge"], "кардио", 1),
     ("Прыжки на скакалке", ["jump rope"], "кардио", 2),
     ("Прыжки «звездой»", ["star jump (male)", "jack jump (male)"], "кардио", 1),
@@ -175,6 +186,23 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Наклоны к носкам", ["basic toe touch (male)", "hamstring stretch"], "мобильность", 1),
     ("Мировая растяжка", ["world greatest stretch"], "мобильность", 1),
 ]
+
+# The source dataset has no sufficiently accurate animation for these movements.
+# Showing no GIF is safer than teaching a different exercise or equipment variant.
+NO_EXACT_GIF = {
+    "Приседания со своим весом",
+    "Планка",
+    "Боковая планка",
+    "Птица-собака",
+    "Удержание «лодочки»",
+    "Высокие колени",
+    "Присед + жим гантелей",
+    "Кошка-корова",
+    "Мобилизация плеч с резинкой",
+    "Поза голубя",
+    "Раскрытие грудного отдела у стены",
+    "Растяжка грудных у дверного проёма",
+}
 
 MUSCLE_MAP = {
     "chest": "грудь",
@@ -424,7 +452,8 @@ def build_seed_rows(
         }
         entry["gif_ok"] = gif_ok
         report.append(entry)
-        if not gif_ok:
+        suppress_gif = name_ru in NO_EXACT_GIF
+        if not gif_ok and not suppress_gif:
             print("NOGIF", name_ru, "<-", ds.get("name"), gif_url)
 
         muscle = muscle_from_ds(ds, muscle_fb)
@@ -441,6 +470,8 @@ def build_seed_rows(
         ):
             if "load:timed" not in tags:
                 tags.append("load:timed")
+        if suppress_gif:
+            tags.append("media:no-exact-gif")
         if muscle_fb == "кардио":
             if "эллипс" in low or "велотренаж" in low:
                 tags.append("load:cardio_machine")
@@ -464,7 +495,7 @@ def build_seed_rows(
             "common_mistakes": None,
             "difficulty": difficulty,
             "video_url": prev_video,
-            "animation_url": f"/exercise-gifs/{fname}" if gif_ok else None,
+            "animation_url": f"/exercise-gifs/{fname}" if gif_ok and not suppress_gif else None,
             "thumbnail_url": None,
             "media_duration_sec": None,
             "media_source": prev_media,
@@ -623,9 +654,13 @@ def quality_checks(seed_rows: list[dict], programs: list[dict], report: list[dic
     names = {r["name_ru"] for r in seed_rows}
     if len(seed_rows) < 70:
         errors.append(f"too_few_exercises:{len(seed_rows)}")
-    no_gif = [r["name_ru"] for r in seed_rows if not r.get("animation_url")]
+    no_gif = [
+        r["name_ru"]
+        for r in seed_rows
+        if not r.get("animation_url") and r["name_ru"] not in NO_EXACT_GIF
+    ]
     if no_gif:
-        errors.append(f"no_gif:{len(no_gif)}:{','.join(no_gif[:10])}")
+        errors.append(f"unexpected_no_gif:{len(no_gif)}:{','.join(no_gif[:10])}")
     miss_match = [x["name_ru"] for x in report if not x.get("matched")]
     if miss_match:
         errors.append(f"unmatched:{miss_match}")

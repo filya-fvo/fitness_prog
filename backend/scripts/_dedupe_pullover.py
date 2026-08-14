@@ -61,6 +61,11 @@ def patch_seed() -> None:
             for t in ("curated", "manual_add", "replacement", "cable", "pullover", "спина"):
                 if t not in tags:
                     tags.append(t)
+            if "gymvisual" not in tags:
+                tags.append("gymvisual")
+            if "ds:0238" not in tags:
+                tags.append("ds:0238")
+            row["animation_url"] = "/exercise-gifs/0238-x69MAlq.gif"
             row["tags"] = tags
         kept.append(row)
     SEED.write_text(json.dumps(kept, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -105,9 +110,9 @@ async def patch_db() -> None:
                     "Сгибание локтей как в тяге; работа бицепсом; сильный прогиб поясницы; рывки."
                 ),
                 difficulty=2,
-                animation_url="/exercise-gifs/2330-LEprlgG.gif",
+                animation_url="/exercise-gifs/0238-x69MAlq.gif",
                 media_source="none",
-                tags=["curated", "manual_add", "replacement", "cable", "pullover", "спина"],
+                tags=["gymvisual", "ds:0238", "curated", "manual_add", "replacement", "cable", "pullover", "спина"],
             )
             session.add(canon)
             print("created canonical")
@@ -129,6 +134,17 @@ async def patch_db() -> None:
             canon.common_mistakes = (
                 "Сгибание локтей как в тяге; работа бицепсом; сильный прогиб поясницы; рывки."
             )
+            canon.animation_url = "/exercise-gifs/0238-x69MAlq.gif"
+            canon.tags = [
+                "gymvisual",
+                "ds:0238",
+                "curated",
+                "manual_add",
+                "replacement",
+                "cable",
+                "pullover",
+                "спина",
+            ]
 
         soft = 0
         for it in items:

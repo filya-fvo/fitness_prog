@@ -68,7 +68,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0514-LIlE5Tn.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -76,7 +76,8 @@
       "gymvisual",
       "ds:0514",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -703,6 +704,8 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0027",
       "curated",
       "manual_add",
       "replacement",
@@ -739,13 +742,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/0150-eYnzaCm.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
       "gymvisual",
-      "ds:2330",
+      "ds:0150",
       "© Gym Visual",
       "curated"
     ]
@@ -1219,7 +1222,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/2135-VBAWRPG.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1228,7 +1231,8 @@
       "ds:2135",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1240,7 +1244,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/3544-5VXmnV5.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1249,7 +1253,8 @@
       "ds:3544",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1261,13 +1266,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/3239-h1ezqSu.gif",
+    "animation_url": "/exercise-gifs/3699-yRpV5TC.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
       "gymvisual",
-      "ds:3239",
+      "ds:3699",
       "© Gym Visual",
       "curated",
       "load:timed"
@@ -1383,7 +1388,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0464-CosupLu.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1392,7 +1397,8 @@
       "ds:0464",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1404,7 +1410,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/1014-H6ETwO9.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1413,7 +1419,8 @@
       "ds:1014",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1466,13 +1473,13 @@
     "common_mistakes": "Слишком высокая скорость сразу; удержание поручней всем весом; взгляд в телефон под ногами.",
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0685-oLrKqDH.gif",
+    "animation_url": "/exercise-gifs/3666-rjiM4L3.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
       "gymvisual",
-      "ds:0685",
+      "ds:3666",
       "© Gym Visual",
       "curated",
       "load:timed",
@@ -1490,7 +1497,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/3636-ealLwvX.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1499,7 +1506,8 @@
       "ds:3636",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1677,7 +1685,7 @@
     "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0550-yWxMvB5.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1685,7 +1693,8 @@
       "gymvisual",
       "ds:0550",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1777,7 +1786,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/1363-JbC2iaV.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1786,7 +1795,8 @@
       "ds:1363",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1819,7 +1829,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/1022-tc5dYrf.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1828,7 +1838,8 @@
       "ds:1022",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1840,7 +1851,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1849,7 +1860,8 @@
       "ds:2567",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1903,7 +1915,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1912,7 +1924,8 @@
       "ds:1167",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1924,7 +1937,7 @@
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": "/exercise-gifs/1167-3uj0Ozg.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1933,7 +1946,8 @@
       "ds:1167",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -1987,11 +2001,13 @@
     "common_mistakes": "Сгибание локтей как в тяге; работа бицепсом; сильный прогиб поясницы; рывки.",
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/0238-x69MAlq.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0238",
       "curated",
       "manual_add",
       "replacement",
@@ -2009,11 +2025,13 @@
     "common_mistakes": "Разведение локтей; слишком большой вес; удар грифом по лбу; отрыв поясницы.",
     "difficulty": 3,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0061-iZop9xO.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0061",
       "curated",
       "manual_add",
       "replacement",
@@ -2031,11 +2049,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/1748-6CKUx7o.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:1748",
       "curated",
       "manual_add",
       "replacement",
@@ -2052,11 +2072,13 @@
     "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0109-dZl9Q27.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0109",
       "curated",
       "manual_add",
       "replacement",
@@ -2073,11 +2095,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "animation_url": "/exercise-gifs/0194-2IxROQ1.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0194",
       "curated",
       "manual_add",
       "replacement",
@@ -2094,11 +2118,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "animation_url": "/exercise-gifs/0200-dU605di.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0200",
       "curated",
       "manual_add",
       "replacement",
@@ -2115,11 +2141,13 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/0245-xBYcQHj.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0245",
       "curated",
       "manual_add",
       "replacement",
@@ -2141,6 +2169,8 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0158",
       "curated",
       "manual_add",
       "replacement",
@@ -2162,6 +2192,8 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0334",
       "curated",
       "manual_add",
       "replacement",
@@ -2182,6 +2214,8 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0674",
       "curated",
       "manual_add",
       "replacement",
@@ -2202,6 +2236,8 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:0375",
       "curated",
       "manual_add",
       "replacement",

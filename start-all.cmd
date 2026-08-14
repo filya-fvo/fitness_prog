@@ -1,12 +1,12 @@
 @echo off
 REM ============================================
-REM  FULL START: backend + frontend + Tailscale Funnel
+REM  PRODUCTION PUBLISH: built frontend + API on :8001 + Tailscale Funnel
 REM  Double-click this file or run from terminal
 REM ============================================
 cd /d "%~dp0"
 echo.
-echo  Starting fitness_prog (backend + frontend + Tailscale Funnel + Telegram Open)...
-echo  Close the extra PowerShell windows to stop individual services.
+echo  Building and publishing fitness_prog (single app :8001 + Tailscale Funnel)...
+echo  Close the backend PowerShell window to stop the application.
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-all.ps1" %*
 echo.

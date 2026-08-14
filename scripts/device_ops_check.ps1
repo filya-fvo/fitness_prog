@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 param(
   [string]$ApiBase = "http://127.0.0.1:8001",
-  [string]$FeBase = "http://127.0.0.1:5173",
+  [string]$FeBase = "http://127.0.0.1:8001",
   [long]$TelegramChatId = 0
 )
 
@@ -44,7 +44,8 @@ $token = Read-DotEnvValue $BackendEnv "BOT_TOKEN"
 $mini = Read-DotEnvValue $BackendEnv "MINI_APP_URL"
 $user = Read-DotEnvValue $BackendEnv "BOT_USERNAME"
 $smtpHost = Read-DotEnvValue $BackendEnv "SMTP_HOST"
-$smtpUser = Read-DotEnvValue $BackendEnv "SMTP_USER"
+$smtpUser = Read-DotEnvValue $BackendEnv "SMTP_USERNAME"
+if (-not $smtpUser) { $smtpUser = Read-DotEnvValue $BackendEnv "SMTP_USER" }
 $smtpPass = Read-DotEnvValue $BackendEnv "SMTP_PASSWORD"
 $whSecret = Read-DotEnvValue $BackendEnv "TELEGRAM_WEBHOOK_SECRET"
 
@@ -56,7 +57,7 @@ if ($mini -and $mini.StartsWith("https://") -and $mini -notmatch "(?i)ngrok") {
   Bad "MINI_APP_URL must be HTTPS and must not use ngrok"
 }
 if ($smtpHost -and $smtpUser -and $smtpPass) { Ok "SMTP host/user/pass present" } else { Info "SMTP incomplete - OTP may use dev_log" }
-if ($whSecret) { Ok "TELEGRAM_WEBHOOK_SECRET set" } else { Info "webhook secret empty (ok for local)" }
+if ($whSecret) { Ok "TELEGRAM_WEBHOOK_SECRET set" } else { Bad "TELEGRAM_WEBHOOK_SECRET empty for public Funnel" }
 
 Sec "Tailscale Funnel"
 $savedPublic = Read-DotEnvValue $UrlsFile "FRONTEND_PUBLIC_URL"

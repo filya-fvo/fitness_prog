@@ -67,6 +67,27 @@ function Get-RedisEndpoint {
 
 Info "Root: $Root"
 
+# Re-running the full launcher must not create duplicate ARQ workers.
+$workerRunning = $false
+try {
+  $workerRunning = @(
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+      Where-Object {
+        $_.Name -and $_.CommandLine -and
+        ($_.Name -match "python|arq") -and
+        ($_.CommandLine -match "WorkerSettings|tasks\.notifications")
+      }
+  ).Count -gt 0
+} catch { }
+if (-not $workerRunning) {
+  $workerLog = Join-Path $Root ("logs\worker-" + (Get-Date -Format "yyyy-MM-dd") + ".log")
+  $workerRunning = (Test-Path $workerLog) -and (((Get-Date) - (Get-Item $workerLog).LastWriteTime).TotalMinutes -lt 2)
+}
+if ($workerRunning) {
+  Ok "Notification worker is already active"
+  exit 0
+}
+
 if (-not (Test-Path $Arq)) {
   Die "arq not found: $Arq. Install backend deps first."
 }

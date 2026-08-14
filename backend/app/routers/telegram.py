@@ -19,6 +19,7 @@ from app.services.telegram_bot import (
     TelegramBotError,
     answer_callback_query,
     edit_message_text,
+    extract_admin_command,
     extract_callback_query,
     extract_help_command,
     extract_open_text_tap,
@@ -26,6 +27,7 @@ from app.services.telegram_bot import (
     extract_web_app_data,
     get_webhook_info,
     resolve_mini_app_url,
+    send_admin_guide,
     send_open_again,
     send_start_welcome,
     send_user_guide,
@@ -138,6 +140,18 @@ async def _ensure_bot_commands(settings: Settings) -> None:
         logger.warning("set_bot_commands_failed err={}", exc)
 
 
+def _telegram_actor_is_admin(settings: Settings, command: dict[str, Any]) -> bool:
+    """Authorize the hidden command using Telegram's signed webhook identity."""
+    user_id = command.get("user_id")
+    chat_id = command.get("chat_id")
+    if not isinstance(user_id, int) or chat_id != user_id:
+        return False
+    if user_id in settings.admin_telegram_id_set:
+        return True
+    username = str(command.get("username") or "").strip().lstrip("@").lower()
+    return bool(username and username in settings.admin_username_set)
+
+
 @router.post("/webhook")
 async def telegram_webhook(
     request: Request,
@@ -150,6 +164,7 @@ async def telegram_webhook(
     - /start → short welcome (name from Telegram) + Open button
       On first /start also sends the full guide as a downloadable file
     - /help → full user guide as a Markdown file (open/save in Telegram)
+    - /admin → unlisted admin runbook, only for configured Telegram admins
     Always returns 200 so Telegram does not retry forever on user errors.
     """
     _verify_secret(settings, x_telegram_bot_api_secret_token)
@@ -193,6 +208,31 @@ async def telegram_webhook(
             await send_open_again(settings, chat_id=chat_id, reason="open_text")
         except TelegramBotError as exc:
             logger.error("telegram_open_text_reply_failed chat={} err={}", chat_id, exc)
+        return {"ok": True}
+
+    admin_cmd = extract_admin_command(update)
+    if admin_cmd:
+        if not _telegram_actor_is_admin(settings, admin_cmd):
+            logger.warning(
+                "telegram_admin_denied chat_id={} user_id={} username={}",
+                admin_cmd.get("chat_id"),
+                admin_cmd.get("user_id"),
+                admin_cmd.get("username"),
+            )
+            return {"ok": True}
+        logger.info(
+            "telegram_admin_guide chat_id={} user_id={}",
+            admin_cmd["chat_id"],
+            admin_cmd.get("user_id"),
+        )
+        try:
+            await send_admin_guide(settings, chat_id=admin_cmd["chat_id"])
+        except TelegramBotError as exc:
+            logger.error(
+                "telegram_admin_guide_failed chat={} err={}",
+                admin_cmd["chat_id"],
+                exc,
+            )
         return {"ok": True}
 
     help_cmd = extract_help_command(update)

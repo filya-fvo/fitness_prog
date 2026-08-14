@@ -19,7 +19,12 @@ const apiPrefixes = [
   "/auth", "/exercises", "/programs", "/workouts", "/users", "/health",
   "/nutrition", "/ai", "/notifications", "/supplements", "/feedback", "/telegram", "/admin",
 ];
-registerRoute(({ url }) => apiPrefixes.some((prefix) => url.pathname.startsWith(prefix)), new NetworkOnly());
+registerRoute(
+  ({ request, url }) =>
+    request.mode !== "navigate" &&
+    apiPrefixes.some((prefix) => url.pathname.startsWith(prefix)),
+  new NetworkOnly(),
+);
 registerRoute(new NavigationRoute(createHandlerBoundToURL("index.html")));
 
 self.addEventListener("push", (event: PushEvent) => {

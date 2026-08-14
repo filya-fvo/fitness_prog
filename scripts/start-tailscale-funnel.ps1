@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 param(
-  [int]$Port = 5173,
+  [int]$Port = 8001,
   [string]$OutputFile = ""
 )
 

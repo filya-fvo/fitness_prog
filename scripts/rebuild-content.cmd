@@ -24,6 +24,10 @@ if /I "%~1"=="--full-download" (
 )
 if errorlevel 1 exit /b %ERRORLEVEL%
 
+echo === Apply curated replacement descriptions ===
+"%PY%" backend\scripts\_add_replacement_exercises.py
+if errorlevel 1 exit /b %ERRORLEVEL%
+
 echo === Seed programs extras ===
 "%PY%" backend\scripts\add_extra_programs.py
 if errorlevel 1 exit /b %ERRORLEVEL%

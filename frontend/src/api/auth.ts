@@ -39,16 +39,32 @@ export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type EmailOtpRequestResult = z.infer<typeof emailOtpRequestSchema>;
 
+let telegramLoginInFlight: { payload: string; request: Promise<AuthResponse> } | null = null;
+
 export async function loginWithTelegram(initData?: string): Promise<AuthResponse> {
   const payload = initData ?? getInitData();
   if (!payload) {
     throw new Error("Telegram initData is empty. Open the app inside Telegram.");
   }
 
-  const { data } = await apiClient.post("/auth/telegram", { init_data: payload });
-  const parsed = authResponseSchema.parse(data);
-  setStoredToken(parsed.access_token);
-  return parsed;
+  if (telegramLoginInFlight?.payload === payload) {
+    return telegramLoginInFlight.request;
+  }
+
+  const request = apiClient
+    .post("/auth/telegram", { init_data: payload })
+    .then(({ data }) => {
+      const parsed = authResponseSchema.parse(data);
+      setStoredToken(parsed.access_token);
+      return parsed;
+    })
+    .finally(() => {
+      if (telegramLoginInFlight?.request === request) {
+        telegramLoginInFlight = null;
+      }
+    });
+  telegramLoginInFlight = { payload, request };
+  return request;
 }
 
 export async function requestEmailLoginCode(email: string): Promise<EmailOtpRequestResult> {

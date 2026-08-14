@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode
@@ -296,9 +297,11 @@ def start_welcome_text(
     include_guide_hint: bool = True,
 ) -> str:
     """Short /start greeting. first_name is taken from Telegram profile (variable)."""
-    _ = mini_app_url  # API compatibility; URL is on the Open button, not in text
     _ = include_guide_hint  # always the same short text
     name = (first_name or "").strip()
+    browser_url = (mini_app_url or "").strip().rstrip("/")
+    if not browser_url.startswith("https://") or "ngrok" in browser_url.lower():
+        browser_url = ""
     hello = f"Привет, {name}!" if name else "Привет!"
     lines = [
         hello,
@@ -316,9 +319,18 @@ def start_welcome_text(
         "<b>Вход в браузере по почте</b> (тот же аккаунт):",
         "1) Можно сразу открыть приложение в браузере и зарегистрироваться по email + коду из письма.",
         "2) Если позже войти через Telegram и подтвердить ту же почту, приложение предложит безопасно объединить данные.",
-        "",
-        "Полная инструкция — команда <b>/help</b>.",
     ]
+    if browser_url:
+        escaped_browser_url = escape(browser_url, quote=True)
+        lines.extend(
+            [
+                "",
+                "🌐 <b>Открыть сайт в обычном браузере:</b>",
+                f'<a href="{escaped_browser_url}">{escaped_browser_url}</a>',
+                "На сайте можно войти или зарегистрироваться по электронной почте.",
+            ]
+        )
+    lines.extend(["", "Полная инструкция — команда <b>/help</b>."])
     return "\n".join(lines)
 
 
@@ -326,6 +338,11 @@ def user_guide_path() -> Path:
     """Path to docs/USER_GUIDE.md (repo root / docs)."""
     # backend/app/services/telegram_bot.py -> repo root
     return Path(__file__).resolve().parents[3] / "docs" / "USER_GUIDE.md"
+
+
+def admin_guide_path() -> Path:
+    """Path to the private local deployment guide sent only to bot admins."""
+    return Path(__file__).resolve().parents[3] / "docs" / "LOCAL_ADMIN_GUIDE.md"
 
 
 def load_user_guide_bytes() -> tuple[str, bytes]:
@@ -340,6 +357,18 @@ def load_user_guide_bytes() -> tuple[str, bytes]:
     except UnicodeDecodeError as exc:
         raise TelegramBotError(f"User guide is not valid UTF-8: {exc}") from exc
     return "Fitness_Mini_App_Instrukciya.md", data
+
+
+def load_admin_guide_bytes() -> tuple[str, bytes]:
+    """Load the administrator runbook as UTF-8 Markdown."""
+    path = admin_guide_path()
+    if not path.is_file():
+        raise TelegramBotError(f"Admin guide not found: {path}")
+    try:
+        data = path.read_text(encoding="utf-8-sig").encode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise TelegramBotError(f"Admin guide is not valid UTF-8: {exc}") from exc
+    return "Fitness_Mini_App_Admin_Instrukciya.md", data
 
 
 def open_app_markup(settings: Settings) -> dict[str, Any] | None:
@@ -425,6 +454,25 @@ async def send_user_guide(
     )
 
 
+async def send_admin_guide(
+    settings: Settings,
+    *,
+    chat_id: int,
+) -> dict[str, Any]:
+    """Send the private operations guide after the webhook authorized /admin."""
+    filename, content = load_admin_guide_bytes()
+    return await send_document(
+        settings,
+        chat_id=chat_id,
+        filename=filename,
+        content=content,
+        caption=(
+            "🔐 <b>Инструкция администратора Fitness Mini App</b>\n"
+            "Запуск, Tailscale Funnel, Telegram, проверки и диагностика."
+        ),
+    )
+
+
 async def send_start_welcome(
     settings: Settings,
     *,
@@ -433,7 +481,10 @@ async def send_start_welcome(
     send_full_guide: bool = False,
 ) -> dict[str, Any]:
     """Reply to /start with short welcome + Open (inline) + reply keyboard (/start, /help)."""
-    text = start_welcome_text(first_name=first_name)
+    text = start_welcome_text(
+        first_name=first_name,
+        mini_app_url=resolve_mini_app_url(settings),
+    )
     # Inline Open is the most reliable Mini App entry on mobile + desktop.
     # Reply keyboard cannot be combined with inline_keyboard on the same message,
     # so we send Open inline first, then attach the persistent /start+/help keyboard.
@@ -612,6 +663,11 @@ def extract_start_command(update: dict[str, Any]) -> dict[str, Any] | None:
 def extract_help_command(update: dict[str, Any]) -> dict[str, Any] | None:
     """If update is /help — return chat/user info (resend user guide)."""
     return extract_bot_command(update, "help")
+
+
+def extract_admin_command(update: dict[str, Any]) -> dict[str, Any] | None:
+    """If update is the intentionally unlisted /admin command, return actor info."""
+    return extract_bot_command(update, "admin")
 
 
 def extract_web_app_data(update: dict[str, Any]) -> dict[str, Any] | None:

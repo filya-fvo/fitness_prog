@@ -56,7 +56,11 @@ import {
 } from "@/utils/exerciseAlternatives";
 import { advanceCursorAfterWorkout, cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
 import { buildWarmupPlan } from "@/utils/warmupPlan";
-import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
+import {
+  draftsFromWorkoutSnapshot,
+  isPlannedExerciseComplete,
+  shouldStartRestAfterSet,
+} from "@/utils/workoutSession";
 import { fetchPrograms } from "@/api/programs";
 import { toUserMessage } from "@/utils/errors";
 import { enumLabel, programDayLabel } from "@/utils/localization";
@@ -82,6 +86,25 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan & {
     warmup_pending: Boolean(plan.warmup_pending),
     warmup_location: plan.warmup_location,
   };
+}
+
+const AUTO_ADVANCE_STORAGE_KEY = "fitness_auto_advance_exercises";
+
+function readCachedAutoAdvance(): boolean {
+  try {
+    const value = localStorage.getItem(AUTO_ADVANCE_STORAGE_KEY);
+    return value === "1" || value === "true";
+  } catch {
+    return false;
+  }
+}
+
+function cacheAutoAdvance(value: boolean): void {
+  try {
+    localStorage.setItem(AUTO_ADVANCE_STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    // The server profile remains authoritative when storage is unavailable.
+  }
 }
 
 export function ActiveWorkout() {
@@ -140,7 +163,7 @@ export function ActiveWorkout() {
   const [lastCardioId, setLastCardioId] = useState<string | null>(null);
   const [lastCardioDur, setLastCardioDur] = useState<number | null>(null);
   const [lastCardioParams, setLastCardioParams] = useState<Record<string, string | number> | null>(null);
-  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(false);
+  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(readCachedAutoAdvance);
   const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
   const completingSetsRef = useRef(new Set<string>());
   /** Gym-first UI: large set + Done; extras behind «Ещё». Default on. */
@@ -194,7 +217,9 @@ export function ActiveWorkout() {
           const profile = await fetchMyProfile();
           const g = (profile.goals as Record<string, unknown>) || {};
           if (!cancelled) {
-            setAutoAdvanceExercises(Boolean(g.auto_advance_exercises));
+            const autoAdvance = Boolean(g.auto_advance_exercises);
+            setAutoAdvanceExercises(autoAdvance);
+            cacheAutoAdvance(autoAdvance);
             setLastCardioId(
               g.last_warmup_cardio_exercise_id
                 ? String(g.last_warmup_cardio_exercise_id)
@@ -1070,6 +1095,7 @@ export function ActiveWorkout() {
     }>,
   ) {
     if (!activeWorkout) return;
+    const restWasActiveAtSubmit = useWorkoutStore.getState().isResting;
     let setNumber = setNumberInput;
     // Always read latest drafts from store (modal apply must not race with stale closure).
     const liveDrafts = useWorkoutStore.getState().drafts;
@@ -1220,21 +1246,30 @@ export function ActiveWorkout() {
       setActiveWorkout(nextWorkout);
       await persistSession(nextWorkout, nextDrafts);
       hapticImpact("light");
-      const allCurrentDone = nextDrafts
-        .filter((d) => d.exerciseId === exerciseId)
-        .every((d) => d.isCompleted);
-      setRestContext({
-        exerciseName: currentExercise?.name_ru || "упражнение",
-        nextExerciseName:
-          allCurrentDone && currentExerciseIndex < exerciseIds.length - 1
-            ? exerciseMap.get(exerciseIds[currentExerciseIndex + 1])?.name_ru || null
-            : null,
-        isLastSetOfExercise: allCurrentDone,
-        isLastExercise: currentExerciseIndex >= exerciseIds.length - 1,
+      const targetSets = Number(
+        plan.exercises.find((item) => item.exercise_id === exerciseId)?.target_sets,
+      ) || null;
+      const plannedWasComplete = isPlannedExerciseComplete(baseDrafts, exerciseId, targetSets);
+      const plannedIsComplete = isPlannedExerciseComplete(nextDrafts, exerciseId, targetSets);
+      const shouldStartRest = shouldStartRestAfterSet({
+        setWasCompleted: draft.isCompleted,
+        restWasActiveAtSubmit,
+        restIsActiveNow: useWorkoutStore.getState().isResting,
       });
-      // Skip rest restart when correcting an already logged set.
-      if (!draft.isCompleted) {
+      if (shouldStartRest) {
+        setRestContext({
+          exerciseName: exerciseMap.get(exerciseId)?.name_ru || "упражнение",
+          nextExerciseName:
+            plannedIsComplete && currentExerciseIndex < exerciseIds.length - 1
+              ? exerciseMap.get(exerciseIds[currentExerciseIndex + 1])?.name_ru || null
+              : null,
+          isLastSetOfExercise: plannedIsComplete,
+          isLastExercise: currentExerciseIndex >= exerciseIds.length - 1,
+        });
         startRest(restTimeSec);
+      }
+      // Correcting an old set or logging while another rest is running must not change its deadline.
+      if (!draft.isCompleted) {
         toast(`Подход ${setNumber} · готово`);
       } else {
         toast(`Подход ${setNumber} обновлён`, "info");
@@ -1262,13 +1297,17 @@ export function ActiveWorkout() {
         /* soft */
       }
 
-      if (allCurrentDone && currentExerciseIndex < exerciseIds.length - 1) {
+      if (
+        plannedIsComplete &&
+        !plannedWasComplete &&
+        currentExerciseIndex < exerciseIds.length - 1
+      ) {
         trackEvent("workout_exercise_completed", {
           exercise_id: exerciseId,
           index: currentExerciseIndex + 1,
           total: exerciseIds.length,
         });
-        if (autoAdvanceExercises) setAutoAdvanceCountdown(3);
+        if (autoAdvanceExercises) setAutoAdvanceCountdown((value) => value ?? 3);
       }
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить подход"));

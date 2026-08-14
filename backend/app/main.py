@@ -1,8 +1,11 @@
 """FastAPI application entrypoint."""
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -10,6 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.core.sentry import init_sentry
+from app.frontend import register_frontend
 from app.routers import admin as admin_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
@@ -49,6 +53,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 
 app.include_router(auth_router.router)
 app.include_router(users_router.router)
@@ -109,3 +114,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 async def health() -> dict[str, str]:
     """Liveness probe used by CI and local checks."""
     return {"status": "ok"}
+
+
+# The public local-production mode uses one process and one Tailscale Funnel:
+# FastAPI serves both the JSON API and the pre-built Vite application.
+register_frontend(app, Path(__file__).resolve().parents[2] / "frontend" / "dist")

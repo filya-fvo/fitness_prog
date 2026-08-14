@@ -719,6 +719,14 @@ setAuthEmail(p.auth_email ?? null);
       } else {
         await enqueueProfileUpdate({ anthropometry, goals });
       }
+      try {
+        localStorage.setItem(
+          "fitness_auto_advance_exercises",
+          autoAdvanceExercises ? "1" : "0",
+        );
+      } catch {
+        // The queued/server profile remains authoritative when storage is unavailable.
+      }
       setOk("Профиль сохранён.");
       setDirtyTabs((current) => {
         const next = new Set(current);

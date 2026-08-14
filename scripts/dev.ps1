@@ -18,7 +18,7 @@
     C:\fitness_prog\scripts\dev.cmd restart-backend
 
 .NOTES
-  Ports: API 8001, Vite 5173
+  Ports: production app/API 8001, development Vite 5173
   Windows: use 127.0.0.1 in DATABASE_URL (not localhost)
   npm: use npm.cmd under PowerShell execution policy
 #>
@@ -215,8 +215,8 @@ function Get-FitnessStatus {
   Write-Host "Root: $script:Root"
 
   foreach ($pair in @(
-      @{ Name = "backend "; Port = $script:BackendPort; Url = "http://127.0.0.1:$script:BackendPort/docs" },
-      @{ Name = "frontend"; Port = $script:FrontendPort; Url = "http://127.0.0.1:$script:FrontendPort" }
+      @{ Name = "app/api "; Port = $script:BackendPort; Url = "http://127.0.0.1:$script:BackendPort"; Optional = $false },
+      @{ Name = "dev Vite"; Port = $script:FrontendPort; Url = "http://127.0.0.1:$script:FrontendPort"; Optional = $true }
     )) {
     $pids = Get-FitnessPortPids -Port $pair.Port
     $reachable = $false
@@ -228,6 +228,8 @@ function Get-FitnessStatus {
       Write-Host ("  {0} :{1} LISTEN pids={2}  {3}" -f $pair.Name, $pair.Port, ($pids -join ","), $pair.Url) -ForegroundColor Green
     } elseif ($reachable) {
       Write-Host ("  {0} :{1} UP (PID requires elevation)  {2}" -f $pair.Name, $pair.Port, $pair.Url) -ForegroundColor Green
+    } elseif ($pair.Optional) {
+      Write-Host ("  {0} :{1} OFF (normal in production)" -f $pair.Name, $pair.Port) -ForegroundColor DarkGray
     } else {
       Write-Host ("  {0} :{1} DOWN" -f $pair.Name, $pair.Port) -ForegroundColor DarkYellow
     }
@@ -289,7 +291,9 @@ fitness_prog - local commands
 START
   Start-Backend [-Reload]     uvicorn 127.0.0.1:8001
   Start-Frontend              vite 0.0.0.0:5173
-  start-all.cmd               backend + frontend + Tailscale Funnel + Telegram
+  start-all.cmd               production build + app :8001 + Funnel + Telegram
+  dev-local.cmd               backend reload + Vite :5173 (supervisor paused)
+  publish-local.cmd           build/publish + supervisor resume
   Start-Worker                arq reminders (Redis)
   Start-FitnessStack [-WithNgrok] [-Reload]
 
@@ -323,7 +327,7 @@ RAW copy-paste
 
 NOTES
   - DATABASE_URL: use 127.0.0.1 not localhost (Windows)
-  - Telegram WebApp URL = Tailscale Funnel HTTPS (API via Vite proxy same origin)
+  - Telegram WebApp URL = Tailscale Funnel HTTPS (FastAPI serves UI and API on :8001)
   - Profile / calorie targets need backend restart after pulling energy code
   - Kill stuck port: Stop-FitnessPort -Port 8001
 

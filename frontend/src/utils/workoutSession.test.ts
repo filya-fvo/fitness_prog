@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { Workout } from "@/types/workout";
-import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
+import {
+  draftsFromWorkoutSnapshot,
+  isPlannedExerciseComplete,
+  shouldStartRestAfterSet,
+} from "@/utils/workoutSession";
 
 function workoutFixture(overrides: Partial<Workout> = {}): Workout {
   return {
@@ -102,5 +106,45 @@ describe("draftsFromWorkoutSnapshot", () => {
         restTimeSec: 60,
       }),
     ]);
+  });
+});
+
+describe("active workout completion rules", () => {
+  const drafts = [
+    { exerciseId: "exercise-1", setNumber: 1, reps: "10", weight: "40", isCompleted: true, restTimeSec: 90 },
+    { exerciseId: "exercise-1", setNumber: 2, reps: "10", weight: "40", isCompleted: true, restTimeSec: 90 },
+    { exerciseId: "exercise-1", setNumber: 3, reps: "10", weight: "40", isCompleted: true, restTimeSec: 90 },
+    { exerciseId: "exercise-1", setNumber: 4, reps: "", weight: "", isCompleted: false, restTimeSec: 90 },
+  ];
+
+  it("does not let an extra unfinished set block completion of planned sets", () => {
+    expect(isPlannedExerciseComplete(drafts, "exercise-1", 3)).toBe(true);
+  });
+
+  it("requires every planned slot to be completed", () => {
+    expect(
+      isPlannedExerciseComplete(
+        drafts.map((draft) => draft.setNumber === 2 ? { ...draft, isCompleted: false } : draft),
+        "exercise-1",
+        3,
+      ),
+    ).toBe(false);
+  });
+
+  it("does not restart a timer that was active when a set was submitted", () => {
+    expect(
+      shouldStartRestAfterSet({
+        setWasCompleted: false,
+        restWasActiveAtSubmit: true,
+        restIsActiveNow: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldStartRestAfterSet({
+        setWasCompleted: false,
+        restWasActiveAtSubmit: false,
+        restIsActiveNow: false,
+      }),
+    ).toBe(true);
   });
 });

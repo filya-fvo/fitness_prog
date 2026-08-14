@@ -9,15 +9,28 @@ SEED = Path(__file__).resolve().parents[1] / "scripts" / "seed_content"
 GIFS = Path(__file__).resolve().parents[2] / "frontend" / "public" / "exercise-gifs"
 
 
-def test_exercises_seed_has_gifs_and_unique_names() -> None:
+def test_exercises_seed_has_traceable_media_and_unique_names() -> None:
     rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
+    dataset = json.loads(
+        (Path(__file__).resolve().parents[2] / "backups" / "exercises-dataset-src" / "data" / "exercises.json")
+        .read_text(encoding="utf-8")
+    )
+    dataset_by_id = {str(row["id"]): row for row in dataset}
     assert len(rows) >= 80
     names = [r["name_ru"] for r in rows]
     assert len(names) == len(set(names))
     missing = []
     for r in rows:
         au = r.get("animation_url") or ""
+        tags = {str(tag) for tag in (r.get("tags") or [])}
+        if not au:
+            assert "media:no-exact-gif" in tags, r["name_ru"]
+            continue
         assert au.startswith("/exercise-gifs/"), r["name_ru"]
+        source_ids = [tag[3:] for tag in tags if tag.startswith("ds:")]
+        assert len(source_ids) == 1, f"untraceable gif: {r['name_ru']}"
+        source = dataset_by_id[source_ids[0]]
+        assert Path(au).name == Path(source["gif_url"]).name, r["name_ru"]
         fp = GIFS / Path(au).name
         if not fp.is_file() or fp.stat().st_size < 500:
             missing.append(r["name_ru"])
@@ -50,6 +63,41 @@ def test_programs_only_reference_known_exercises() -> None:
                 if name not in exercises:
                     bad.append(f"{p.get('name')}:{name}")
     assert not bad, bad[:20]
+
+
+def test_serious_programs_cover_both_sexes_and_requested_splits() -> None:
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    names = [p["name"] for p in programs]
+    assert len(names) == len(set(names))
+
+    titles = {
+        "Опытный · Антагонисты 3 дня": 3,
+        "Продвинутый · Сплит 5 дней": 5,
+        "Продвинутый · Чередование акцентов": 4,
+        "Опытный · Тяни/Жми 4 дня": 4,
+        "Опытный · Только тренажёры 4 дня": 4,
+        "Новичок · Full Body 2 дня": 2,
+        "Продвинутый · Powerbuilding 4 дня": 4,
+    }
+    by_name = {p["name"]: p for p in programs}
+    for prefix, sex in (("М", "male"), ("Ж", "female")):
+        for title, days in titles.items():
+            program = by_name[f"{prefix} · Зал · {title}"]
+            structure = program["structure"]
+            assert structure["sex"] == [sex]
+            assert structure["days_per_week"] == days
+            assert len(structure["schedule"]) == days
+
+    for prefix in ("М", "Ж"):
+        machine_only = by_name[f"{prefix} · Зал · Опытный · Только тренажёры 4 дня"]
+        assert machine_only["structure"]["equipment"] == ["machines"]
+
+        alternating = by_name[f"{prefix} · Зал · Продвинутый · Чередование акцентов"]
+        focuses = [day["focus"] for day in alternating["structure"]["schedule"]]
+        assert focuses == [
+            "chest_emphasis", "legs_emphasis", "back_emphasis", "shoulders_emphasis",
+        ]
+        assert "3–6" in alternating["description"]
 
 
 def test_shoulder_sensitive_program_matrix_and_exercises() -> None:
