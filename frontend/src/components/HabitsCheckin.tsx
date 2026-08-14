@@ -1,10 +1,11 @@
 /**
  * Daily habits check-in: water, weight, sleep (local + water sync to server).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import { fetchWaterLog, saveWaterLog } from "@/api/notifications";
+import { DecimalInput } from "@/components/DecimalInput";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "@/store/toastStore";
 import {
@@ -24,7 +25,7 @@ export function HabitsCheckin() {
   const [sleep, setSleep] = useState(day.sleepHours != null ? String(day.sleepHours) : "");
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
   const [syncingWater, setSyncingWater] = useState(false);
-  const streak = useMemo(() => habitStreak(), [day]);
+  const streak = habitStreak();
 
   useEffect(() => {
     if (!getStoredToken() || !isOnline()) return;
@@ -145,22 +146,20 @@ export function HabitsCheckin() {
       <div className="grid grid-cols-2 gap-2">
         <label className="text-xs text-tg-hint">
           Вес, кг
-          <input
+          <DecimalInput
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
+            onValueChange={setWeight}
             onBlur={() => saveMeta()}
-            inputMode="decimal"
             placeholder="—"
             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5 text-sm"
           />
         </label>
         <label className="text-xs text-tg-hint">
           Сон, ч
-          <input
+          <DecimalInput
             value={sleep}
-            onChange={(e) => setSleep(e.target.value)}
+            onValueChange={setSleep}
             onBlur={() => saveMeta()}
-            inputMode="decimal"
             placeholder="—"
             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5 text-sm"
           />

@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { DecimalInput } from "@/components/DecimalInput";
 import type { Exercise } from "@/types/workout";
 import { formatDurationLabel } from "@/utils/exerciseLoadType";
 import {
@@ -46,6 +48,7 @@ export function WarmupPanel({
   const [speed, setSpeed] = useState(Number(lp.speed) || 6);
   const [incline, setIncline] = useState(Number(lp.incline) || 1);
   const [resistance, setResistance] = useState(Number(lp.resistance) || 5);
+  const [mediaOpenId, setMediaOpenId] = useState<string | null>(null);
 
   const remaining = steps.filter((s) => !s.done && !s.skipped);
   const allDone = remaining.length === 0;
@@ -93,7 +96,12 @@ export function WarmupPanel({
       </div>
 
       <ul className="space-y-2">
-        {steps.map((step) => (
+        {steps.map((step) => {
+          const mediaExercise = catalog.find(
+            (exercise) =>
+              exercise.id === (step.kind === "cardio" ? cardioId : step.exerciseId),
+          );
+          return (
           <li
             key={step.id}
             className={[
@@ -141,39 +149,50 @@ export function WarmupPanel({
                     <div className="grid grid-cols-3 gap-2">
                       <label className="text-[11px] text-tg-hint">
                         Скор.
-                        <input
-                          type="number"
+                        <DecimalInput
                           step={0.1}
                           value={speed}
-                          onChange={(e) => setSpeed(Number(e.target.value) || 0)}
+                          onValueChange={(value) => setSpeed(Number(value) || 0)}
                           className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
                         />
                       </label>
                       <label className="text-[11px] text-tg-hint">
                         Накл.
-                        <input
-                          type="number"
+                        <DecimalInput
                           step={0.5}
                           value={incline}
-                          onChange={(e) => setIncline(Number(e.target.value) || 0)}
+                          onValueChange={(value) => setIncline(Number(value) || 0)}
                           className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
                         />
                       </label>
                       <label className="text-[11px] text-tg-hint">
                         Ур.
-                        <input
-                          type="number"
+                        <DecimalInput
                           value={resistance}
-                          onChange={(e) => setResistance(Number(e.target.value) || 0)}
+                          onValueChange={(value) => setResistance(Number(value) || 0)}
                           className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
                         />
                       </label>
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-1 text-[11px] text-tg-hint">
-                    ~{formatDurationLabel(step.durationSec)}
-                  </p>
+                  <div className="mt-1 flex items-center gap-3">
+                    <p className="text-[11px] text-tg-hint">
+                      ~{formatDurationLabel(step.durationSec)}
+                    </p>
+                    {mediaExercise?.animation_url || mediaExercise?.thumbnail_url ? (
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-tg-link"
+                        aria-expanded={mediaOpenId === step.id}
+                        onClick={() =>
+                          setMediaOpenId((current) => (current === step.id ? null : step.id))
+                        }
+                      >
+                        {mediaOpenId === step.id ? "Скрыть анимацию" : "Показать анимацию"}
+                      </button>
+                    ) : null}
+                  </div>
                 )}
               </div>
               <div className="flex shrink-0 flex-col gap-1">
@@ -203,8 +222,14 @@ export function WarmupPanel({
                 )}
               </div>
             </div>
+            {mediaExercise && mediaOpenId === step.id ? (
+              <div className="mt-2">
+                <ExerciseMediaPlayer exercise={mediaExercise} mediaOnly preview />
+              </div>
+            ) : null}
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <button

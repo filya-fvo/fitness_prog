@@ -20,12 +20,38 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
       - key: CORS_ORIGINS
         sync: false
       - key: REDIS_URL
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: WEB_PUSH_VAPID_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_VAPID_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_VAPID_SUBJECT
+        sync: false
+      - key: AI_PROVIDER
+        value: groq
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: qwen/qwen3.6-27b
+      - key: LLM_FALLBACK_MODELS
+        value: openai/gpt-oss-120b,llama-3.3-70b-versatile,openai/gpt-oss-20b,llama-3.1-8b-instant
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: OPENAI_MODEL
+        value: gpt-5-nano
+      - key: AI_DAILY_LIMIT
+        value: 10
 
   - type: worker
     name: fitness-worker
@@ -57,3 +83,18 @@ services:
           name: fitness-api
           type: web
           envVarKey: JWT_SECRET
+      - key: WEB_PUSH_VAPID_PUBLIC_KEY
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: WEB_PUSH_VAPID_PUBLIC_KEY
+      - key: WEB_PUSH_VAPID_PRIVATE_KEY
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: WEB_PUSH_VAPID_PRIVATE_KEY
+      - key: WEB_PUSH_VAPID_SUBJECT
+        fromService:
+          name: fitness-api
+          type: web
+          envVarKey: WEB_PUSH_VAPID_SUBJECT

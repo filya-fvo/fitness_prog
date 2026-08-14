@@ -84,6 +84,20 @@ describe("programRecommend", () => {
         schedule: [{}, {}, {}],
       },
     }),
+    prog({
+      id: "8",
+      name: "M Gym Shoulder Sensitive",
+      workout_type: "full_body",
+      level: "beginner",
+      structure: {
+        sex: ["male"],
+        location: "gym",
+        equipment: ["machines", "dumbbells"],
+        limitations: ["shoulder_sensitive"],
+        days_per_week: 3,
+        schedule: [{}, {}, {}],
+      },
+    }),
   ];
 
   it("prefers male home bodyweight beginner", () => {
@@ -121,6 +135,35 @@ describe("programRecommend", () => {
       limitations: ["no_knee"],
     });
     expect(top[0]?.name).toBe("M Gym No Knee");
+  });
+
+  it("recognizes a shoulder limitation and prefers a matching plan", () => {
+    const top = recommendPrograms(catalog, {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["machines", "dumbbells"],
+      sex: "male",
+      location: "gym",
+      limitations: "боль в плече",
+    });
+    expect(top[0]?.name).toBe("M Gym Shoulder Sensitive");
+  });
+
+  it("does not recommend a shoulder-specific plan without that limitation", () => {
+    const top = recommendPrograms(catalog, {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["machines", "dumbbells"],
+      sex: "male",
+      location: "gym",
+      limitations: [],
+    });
+    expect(top[0]?.name).not.toBe("M Gym Shoulder Sensitive");
+    expect(top.slice(0, 4).map((program) => program.name)).not.toContain(
+      "M Gym Shoulder Sensitive",
+    );
   });
 
   it("explains why a program matches", () => {

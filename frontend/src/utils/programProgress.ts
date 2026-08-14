@@ -4,6 +4,7 @@
  */
 
 import type { Program } from "@/types/workout";
+import { programDayLabel } from "@/utils/localization";
 import { programDays } from "@/utils/programRecommend";
 import {
   WEEK_PHASES,
@@ -137,9 +138,58 @@ export function listProgramDays(program: Program): Array<{ dayIndex: number; tit
     let title = `День ${i}`;
     if (raw && typeof raw === "object") {
       const d = raw as Record<string, unknown>;
-      title = String(d.name || d.title || d.workout_type || title);
+      title = programDayLabel(String(d.name || d.title || d.workout_type || title), i);
     }
     out.push({ dayIndex: i, title });
   }
   return out;
+}
+
+export type ProgramDayExerciseRow = {
+  key: string;
+  name: string;
+  exerciseId?: string;
+  sets?: string;
+  reps?: string;
+};
+
+/** Exercises of one program day, suitable for a read-only plan preview. */
+export function listProgramDayExercises(
+  program: Program,
+  dayIndex: number,
+): ProgramDayExerciseRow[] {
+  const structure = (program.structure || {}) as Record<string, unknown>;
+  const rawSchedule = structure.schedule || structure.days || [];
+  if (!Array.isArray(rawSchedule)) return [];
+  const rawDay =
+    rawSchedule.find((raw) => {
+      if (!raw || typeof raw !== "object") return false;
+      const day = raw as Record<string, unknown>;
+      return Number(day.day_index ?? day.day) === dayIndex;
+    }) ?? rawSchedule[dayIndex - 1];
+  if (!rawDay || typeof rawDay !== "object") return [];
+  const day = rawDay as Record<string, unknown>;
+  const exercises = Array.isArray(day.exercises) ? day.exercises : [];
+  return exercises.map((raw, index) => {
+    const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+    const exerciseId = item.exercise_id ?? item.id;
+    const name = String(
+      item.exercise_name || item.name_ru || item.name || item.title || `Упражнение ${index + 1}`,
+    );
+    return {
+      key: String(exerciseId || `${name}-${index}`),
+      name,
+      exerciseId: exerciseId != null ? String(exerciseId) : undefined,
+      sets: item.sets != null
+        ? String(item.sets)
+        : item.target_sets != null
+          ? String(item.target_sets)
+          : undefined,
+      reps: item.reps != null
+        ? String(item.reps)
+        : item.target_reps != null
+          ? String(item.target_reps)
+          : undefined,
+    };
+  });
 }

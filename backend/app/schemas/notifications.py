@@ -35,3 +35,10 @@ class TimerNotifyResponse(BaseModel):
     ok: bool
     detail: str | None = None
 
+
+class TimerScheduleRequest(BaseModel):
+    seconds: int = Field(..., ge=1, le=3600)
+    title: str = Field(default="Отдых завершён", min_length=1, max_length=120)
+    text: str = Field(..., min_length=1, max_length=500)
+    workout_id: uuid.UUID | None = None
+

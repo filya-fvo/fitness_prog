@@ -1,9 +1,13 @@
 """Barcode normalize + Open Food Facts mapping helpers."""
 
+import pytest
+
 from app.services.nutrition_service import (
     _num,
     is_valid_barcode,
+    list_categories,
     normalize_barcode,
+    search_products,
 )
 
 
@@ -23,3 +27,41 @@ def test_num_helper() -> None:
     assert _num("12.5") == 12.5
     assert _num(None) == 0.0
     assert _num("x", default=3.0) == 3.0
+
+
+class _Rows:
+    def __init__(self, values: list) -> None:
+        self.values = values
+
+    def all(self) -> list:
+        return self.values
+
+
+@pytest.mark.asyncio
+async def test_barcode_category_filters_products_with_barcode() -> None:
+    statements = []
+
+    class Session:
+        async def scalar(self, statement):
+            statements.append(statement)
+            return 0
+
+        async def scalars(self, statement):
+            statements.append(statement)
+            return _Rows([])
+
+    await search_products(Session(), q="", category="barcode")
+    sql = "\n".join(str(statement) for statement in statements)
+    assert "nutrition_products.barcode IS NOT NULL" in sql
+
+
+@pytest.mark.asyncio
+async def test_categories_include_virtual_barcode_filter() -> None:
+    class Session:
+        async def scalars(self, statement):
+            return _Rows(["custom", "dairy"])
+
+        async def scalar(self, statement):
+            return 2
+
+    assert await list_categories(Session()) == ["custom", "dairy", "barcode"]

@@ -2,11 +2,12 @@
  * Profile: body metrics, active program, supplements, notification schedule.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import {
   dispatchMyDueNotifications,
+  fetchPushConfig,
   fetchNotificationSettings,
   saveNotificationSettings,
 } from "@/api/notifications";
@@ -15,13 +16,19 @@ import {
   addCustomSupplement,
   addSupplementFromCatalog,
   fetchSupplementStack,
+  fetchTodaySupplementIntakes,
+  markSupplementIntake,
+  markSupplementIntakeGroup,
   removeSupplement,
   saveSupplementStack,
   type SupplementCatalogItem,
   type SupplementEntry,
+  type SupplementIntakeDay,
 } from "@/api/supplements";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
+import { DecimalInput } from "@/components/DecimalInput";
+import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { fetchExercises } from "@/api/exercises";
@@ -42,6 +49,16 @@ import {
   recommendPrograms,
 } from "@/utils/programRecommend";
 import { OTP_DRAFT_LINK_KEY, readOtpDraft } from "@/utils/otpDraft";
+import { toUserMessage } from "@/utils/errors";
+import { programDayLabel, subscriptionLabel } from "@/utils/localization";
+import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
+import { confirmAction } from "@/lib/telegram";
+import {
+  currentWebPushEnabled,
+  disableWebPush,
+  enableWebPush,
+  webPushSupported,
+} from "@/utils/webPush";
 
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
@@ -54,6 +71,12 @@ const GOAL_OPTIONS = [
   { id: "maintain", label: "Поддержание" },
 ] as const;
 
+const JOINT_LIMIT_OPTIONS = [
+  { id: "no_knee", label: "Без нагрузки на колени" },
+  { id: "no_spine", label: "Без нагрузки на позвоночник" },
+  { id: "shoulder_sensitive", label: "Щадящая нагрузка на плечевые суставы" },
+] as const;
+
 const WEEKDAYS = [
   { id: 0, label: "Пн" },
   { id: 1, label: "Вт" },
@@ -64,7 +87,13 @@ const WEEKDAYS = [
   { id: 6, label: "Вс" },
 ] as const;
 
-type TabId = "body" | "program" | "supplements" | "alerts";
+type TabId = "body" | "program" | "supplements" | "alerts" | "account";
+
+const PROFILE_TABS: readonly TabId[] = ["body", "program", "supplements", "alerts", "account"];
+
+function profileTabFromQuery(value: string | null): TabId {
+  return PROFILE_TABS.includes(value as TabId) ? value as TabId : "body";
+}
 
 const SUPPLEMENT_SLOT_PRESETS: { id: string; label: string }[] = [
   { id: "pre_workout", label: "До тренировки (−45 мин)" },
@@ -278,11 +307,15 @@ function programMetaLine(program: Program): string {
 
 
 export function ProfilePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const setUser = useUserStore((s) => s.setUser);
   const storeUser = useUserStore((s) => s.user);
 
   // Prefer body tab if user is mid email-OTP (return from Mail app / WebView reload).
-  const [tab, setTab] = useState<TabId>(() => (readOtpDraft(OTP_DRAFT_LINK_KEY) ? "body" : "body"));
+  const [tab, setTab] = useState<TabId>(() =>
+    readOtpDraft(OTP_DRAFT_LINK_KEY) ? "account" : profileTabFromQuery(searchParams.get("section")),
+  );
+  const [dirtyTabs, setDirtyTabs] = useState<Set<TabId>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,6 +352,9 @@ export function ProfilePage() {
   const [customName, setCustomName] = useState("");
   const [customDose, setCustomDose] = useState("");
   const [detailKey, setDetailKey] = useState<string | null>(null);
+  const [intakes, setIntakes] = useState<SupplementIntakeDay | null>(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushAvailable, setPushAvailable] = useState(false);
 
   const [tz, setTz] = useState("Europe/Moscow");
   const [measEnabled, setMeasEnabled] = useState(true);
@@ -339,6 +375,7 @@ export function ProfilePage() {
   const [calTimes, setCalTimes] = useState("14:00, 20:00");
   /** Body tab: quick essentials vs full measures / advanced energy. */
   const [bodyAdvanced, setBodyAdvanced] = useState(false);
+  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -349,12 +386,14 @@ export function ProfilePage() {
         return;
       }
       try {
-        const [p, prog, sup, nset, exCatalog] = await Promise.all([
+        const [p, prog, sup, nset, exCatalog, todayIntakes, pushConfig] = await Promise.all([
           fetchMyProfile(),
           fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] as Program[] })),
           fetchSupplementStack().catch(() => ({ items: [], catalog: [] })),
           fetchNotificationSettings().catch(() => null),
           fetchExercises({ pageSize: 200 }).catch(() => ({ items: [] as Exercise[] })),
+          fetchTodaySupplementIntakes().catch(() => null),
+          fetchPushConfig().catch(() => null),
         ]);
         if (cancelled) return;
 setAuthEmail(p.auth_email ?? null);
@@ -362,6 +401,7 @@ setAuthEmail(p.auth_email ?? null);
         const a = asRecord(p.anthropometry);
         const g = asRecord(p.goals);
         setProfileGoalsKeep(g);
+        setAutoAdvanceExercises(Boolean(g.auto_advance_exercises));
         const sexFromProfile = String(a.sex || g.sex || "male").toLowerCase();
         setSex(sexFromProfile === "female" ? "female" : "male");
         if (sexFromProfile === "male" || sexFromProfile === "female") {
@@ -407,9 +447,9 @@ setAuthEmail(p.auth_email ?? null);
             {
               primaryGoal: String(g.primary_goal || "maintain"),
               level: String(g.level || "beginner"),
-              daysPerWeek: Number(g.days_per_week) || Number(daysPerWeek) || 3,
+              daysPerWeek: Number(g.days_per_week) || 3,
               equipment: Array.isArray(g.equipment) ? (g.equipment as string[]) : [],
-              sex: String(a.sex || g.sex || sex || ""),
+              sex: sexFromProfile,
               location: String(g.location || ""),
               limitations: Array.isArray(g.limitations)
                 ? (g.limitations as string[])
@@ -448,6 +488,14 @@ setAuthEmail(p.auth_email ?? null);
         setStack(sup.items || []);
         setCatalog(sup.catalog || []);
         setPickerKey("");
+        setIntakes(todayIntakes);
+        const browserPushAvailable = Boolean(pushConfig?.enabled && webPushSupported());
+        setPushAvailable(browserPushAvailable);
+        setPushEnabled(
+          browserPushAvailable
+            ? await currentWebPushEnabled().catch(() => false)
+            : false,
+        );
 
         if (nset?.settings) {
           const s = asRecord(nset.settings);
@@ -484,7 +532,7 @@ setAuthEmail(p.auth_email ?? null);
           setCalTimes(times || "14:00, 20:00");
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Ошибка загрузки");
+        if (!cancelled) setError(toUserMessage(err, "Не удалось загрузить профиль"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -510,6 +558,16 @@ setAuthEmail(p.auth_email ?? null);
       }),
     [activity, adjPct, age, birthDate, daysPerWeek, height, primaryGoal, sex, weight],
   );
+
+  const intakeGroups = useMemo(() => {
+    const groups = new Map<string, NonNullable<typeof intakes>["items"]>();
+    for (const item of intakes?.items ?? []) {
+      const group = groups.get(item.scheduled_at) ?? [];
+      group.push(item);
+      groups.set(item.scheduled_at, group);
+    }
+    return [...groups.entries()];
+  }, [intakes]);
 
   const catalogByKey = useMemo(() => {
     const map = new Map<string, SupplementCatalogItem>();
@@ -603,7 +661,8 @@ setAuthEmail(p.auth_email ?? null);
     setActiveProgramId(recommendedProgram.id);
     setExpandedProgramId(recommendedProgram.id);
     setAutoAssignedProgram(true);
-    setOk(`Рекомендуем: ${recommendedProgram.name}`);
+    setDirtyTabs((current) => new Set(current).add("program"));
+    setOk(`Рекомендуем: ${programDayLabel(recommendedProgram.name)}`);
   }
 
   
@@ -613,6 +672,19 @@ setAuthEmail(p.auth_email ?? null);
     setError(null);
     setOk(null);
     try {
+      const weightNum = Number(weight);
+      const heightNum = Number(height);
+      const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
+      if (
+        weightNum < 20 ||
+        weightNum > 500 ||
+        heightNum < 80 ||
+        heightNum > 250 ||
+        resolvedAge < 10 ||
+        resolvedAge > 100
+      ) {
+        throw new Error("Проверьте вес, рост и возраст: значения вне допустимого диапазона");
+      }
       const measurements: Record<string, number> = {};
       for (const [k, v] of Object.entries(measures)) {
         const n = Number(v);
@@ -639,15 +711,22 @@ setAuthEmail(p.auth_email ?? null);
         days_per_week: Number(daysPerWeek) || 3,
         active_program_id: activeProgramId || null,
         sex,
+        auto_advance_exercises: autoAdvanceExercises,
       };
       if (isOnline() && getStoredToken()) {
         await updateMyProfile({ anthropometry, goals });
+        await clearQueuedProfileUpdate();
       } else {
-        localStorage.setItem("fitness_profile_draft", JSON.stringify({ anthropometry, goals }));
+        await enqueueProfileUpdate({ anthropometry, goals });
       }
       setOk("Профиль сохранён.");
+      setDirtyTabs((current) => {
+        const next = new Set(current);
+        next.delete("body");
+        return next;
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить");
+      setError(toUserMessage(err, "Не удалось сохранить профиль"));
     } finally {
       setSaving(false);
     }
@@ -674,11 +753,16 @@ setAuthEmail(p.auth_email ?? null);
       setAutoAssignedProgram(false);
       setOk(
         activeProgram
-          ? `Активная программа: ${activeProgram.name}`
+          ? `Активная программа: ${programDayLabel(activeProgram.name)}`
           : "Активная программа сброшена",
       );
+      setDirtyTabs((current) => {
+        const next = new Set(current);
+        next.delete("program");
+        return next;
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить программу");
+      setError(toUserMessage(err, "Не удалось сохранить программу"));
     } finally {
       setSaving(false);
     }
@@ -689,6 +773,7 @@ setAuthEmail(p.auth_email ?? null);
     const res = await saveSupplementStack(next);
     setStack(res.items);
     setCatalog(res.catalog);
+    setIntakes(await fetchTodaySupplementIntakes());
   }
 
   async function setSupplementRemindersEnabled(enabled: boolean) {
@@ -720,7 +805,7 @@ setAuthEmail(p.auth_email ?? null);
       );
     } catch (err) {
       setSupEnabled(!enabled);
-      setError(err instanceof Error ? err.message : "Не удалось обновить напоминания");
+      setError(toUserMessage(err, "Не удалось обновить напоминания"));
     } finally {
       setSaving(false);
     }
@@ -774,8 +859,13 @@ setAuthEmail(p.auth_email ?? null);
         },
       });
       setOk("Уведомления сохранены. Бот пришлёт сообщения в чат по расписанию.");
+      setDirtyTabs((current) => {
+        const next = new Set(current);
+        next.delete("alerts");
+        return next;
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить уведомления");
+      setError(toUserMessage(err, "Не удалось сохранить уведомления"));
     } finally {
       setSaving(false);
     }
@@ -786,18 +876,73 @@ setAuthEmail(p.auth_email ?? null);
   }
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: "body", label: "Тело" },
+    { id: "body", label: "Тело и цели" },
     { id: "program", label: "Программа" },
-    { id: "supplements", label: "Добавки" },
+    { id: "supplements", label: "Питание и добавки" },
     { id: "alerts", label: "Уведомления" },
+    { id: "account", label: "Аккаунт" },
   ];
 
+  function selectTab(nextTab: TabId) {
+    setTab(nextTab);
+    setSearchParams(nextTab === "body" ? {} : { section: nextTab }, { replace: true });
+    setOk(null);
+    setError(null);
+  }
+
+  async function chooseProgram(program: Program) {
+    const mismatches = compareProgramToProfile(program, {
+      primaryGoal,
+      level: String(profileGoalsKeep.level || ""),
+      daysPerWeek: Number(daysPerWeek) || undefined,
+      equipment: Array.isArray(profileGoalsKeep.equipment) ? profileGoalsKeep.equipment as string[] : [],
+      sex,
+      location: String(profileGoalsKeep.location || ""),
+      limitations: profileGoalsKeep.limitations as string[] | string | null,
+    });
+    if (mismatches.length) {
+      const important = mismatches.some((item) => item.critical);
+      const accepted = await confirmAction(
+        `${important ? "Важно: программа не учитывает ограничение здоровья." : "Программа отличается от вашей анкеты."}\n\n${programMismatchSummary(mismatches)}.\n\nВсё равно выбрать?`,
+      );
+      if (!accepted) return;
+    }
+    setActiveProgramId(program.id);
+    setAutoAssignedProgram(false);
+    markDirty("program");
+  }
+
+  function markDirty(target: TabId = tab) {
+    setDirtyTabs((current) => new Set(current).add(target));
+  }
+
+  const rawJointLimits = profileGoalsKeep.limitations;
+  const selectedJointLimits = Array.isArray(rawJointLimits)
+    ? rawJointLimits.map((item) => String(item).toLowerCase())
+    : JOINT_LIMIT_OPTIONS.filter(({ id, label }) => {
+        const text = String(rawJointLimits || "").toLowerCase();
+        return text.includes(id) || text.includes(label.toLowerCase());
+      }).map(({ id }) => id);
+
+  function toggleJointLimit(id: string) {
+    const next = selectedJointLimits.includes(id)
+      ? selectedJointLimits.filter((item) => item !== id)
+      : [...selectedJointLimits, id];
+    setProfileGoalsKeep((current) => ({ ...current, limitations: next }));
+    markDirty("body");
+  }
+
   return (
-    <section>
-      <Header title="Профиль" subtitle="Замеры, программа, добавки, напоминания" />
+    <section className="mx-auto max-w-4xl" onChangeCapture={() => setDirtyTabs((current) => new Set(current).add(tab))}>
+      <Header title="Профиль" subtitle="Тело и цели, программа, питание, уведомления и аккаунт" />
       {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {ok ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-link">{ok}</div> : null}
+      {dirtyTabs.has(tab) ? (
+        <div role="status" className="mb-3 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-800">
+          Есть несохранённые изменения в этом разделе.
+        </div>
+      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {tabs.map((t) => (
@@ -805,9 +950,7 @@ setAuthEmail(p.auth_email ?? null);
             key={t.id}
             type="button"
             onClick={() => {
-              setTab(t.id);
-              setOk(null);
-              setError(null);
+              selectTab(t.id);
             }}
             className={[
               "rounded-full px-3 py-1.5 text-xs font-medium",
@@ -821,46 +964,20 @@ setAuthEmail(p.auth_email ?? null);
 
       {tab === "body" ? (
         <div className="space-y-4">
-          <div className="flex rounded-full bg-tg-secondary p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setBodyAdvanced(false)}
-              className={[
-                "flex-1 rounded-full px-3 py-1.5 font-medium",
-                !bodyAdvanced ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
-              ].join(" ")}
-            >
-              Быстрый профиль
-            </button>
-            <button
-              type="button"
-              onClick={() => setBodyAdvanced(true)}
-              className={[
-                "flex-1 rounded-full px-3 py-1.5 font-medium",
-                bodyAdvanced ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
-              ].join(" ")}
-            >
-              Расширенные
-            </button>
-          </div>
+          <button
+            type="button"
+            aria-expanded={bodyAdvanced}
+            onClick={() => setBodyAdvanced((value) => !value)}
+            className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+          >
+            {bodyAdvanced ? "Скрыть дополнительные параметры" : "Дополнительные параметры тела и калорий"}
+          </button>
 
           {bodyAdvanced ? (
-            <LinkEmailCard
-              currentEmail={authEmail}
-              onLinked={(u) => {
-                setAuthEmail(u.auth_email ?? null);
-                setUser({
-                  ...(storeUser || {
-                    id: u.id,
-                    subscription_status: u.subscription_status,
-                    onboarding_completed: u.onboarding_completed ?? false,
-                  }),
-                  ...u,
-                  auth_email: u.auth_email ?? null,
-                });
-                setOk(u.auth_email ? `Почта привязана: ${u.auth_email}` : "Почта привязана");
-              }}
-            />
+            <div className="rounded-2xl bg-tg-secondary p-3 text-xs text-tg-hint">
+              Здесь доступны дата рождения, замеры и подробный расчёт калорий. Почта и подписка перенесены в раздел{" "}
+              <button type="button" className="font-medium text-tg-link" onClick={() => selectTab("account")}>«Аккаунт»</button>.
+            </div>
           ) : (
             <div className="rounded-2xl bg-tg-secondary p-3 text-xs text-tg-hint">
               Пол, вес, рост, цель и дни в неделю — достаточно для калорий и программ.
@@ -872,7 +989,7 @@ setAuthEmail(p.auth_email ?? null);
                   className="mt-1 block text-tg-link"
                   onClick={() => setBodyAdvanced(true)}
                 >
-                  Привязать email →
+                  Привязать электронную почту →
                 </button>
               )}
             </div>
@@ -885,7 +1002,10 @@ setAuthEmail(p.auth_email ?? null);
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => setSex(o.id)}
+                  onClick={() => {
+                    setSex(o.id);
+                    markDirty("body");
+                  }}
                   className={[
                     "flex-1 rounded-xl px-3 py-2 text-sm",
                     sex === o.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
@@ -901,21 +1021,21 @@ setAuthEmail(p.auth_email ?? null);
             <p className="text-sm font-medium">Базовые данные</p>
             <label className="block text-xs text-tg-hint">
               Вес, кг
-              <input
-                type="number"
-                inputMode="decimal"
+              <DecimalInput
+                min={20}
+                max={500}
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onValueChange={setWeight}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
             <label className="block text-xs text-tg-hint">
               Рост, см
-              <input
-                type="number"
-                inputMode="numeric"
+              <DecimalInput
+                min={80}
+                max={250}
                 value={height}
-                onChange={(e) => setHeight(e.target.value)}
+                onValueChange={setHeight}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
@@ -975,12 +1095,10 @@ setAuthEmail(p.auth_email ?? null);
                 {BODY_MEASURE_FIELDS.map((f) => (
                   <label key={f.key} className="block text-xs text-tg-hint">
                     {f.label}
-                    <input
-                      type="number"
-                      inputMode="decimal"
+                    <DecimalInput
                       value={measures[f.key] || ""}
-                      onChange={(e) =>
-                        setMeasures((prev) => ({ ...prev, [f.key]: e.target.value }))
+                      onValueChange={(value) =>
+                        setMeasures((prev) => ({ ...prev, [f.key]: value }))
                       }
                       className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
                     />
@@ -999,6 +1117,7 @@ setAuthEmail(p.auth_email ?? null);
                   type="button"
                   onClick={() => {
                     setPrimaryGoal(g.id);
+                    markDirty("body");
                     if (g.id === "lose_fat") setAdjPct("-15");
                     else if (g.id === "gain_muscle") setAdjPct("10");
                     else setAdjPct("0");
@@ -1037,13 +1156,60 @@ setAuthEmail(p.auth_email ?? null);
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
             </label>
+            <div className="pt-1">
+              <p className="text-xs text-tg-hint">Ограничения для подбора программ</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {JOINT_LIMIT_OPTIONS.map((option) => {
+                  const selected = selectedJointLimits.includes(option.id);
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleJointLimit(option.id)}
+                      className={[
+                        "rounded-full px-3 py-2 text-left text-xs",
+                        selected ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                      ].join(" ")}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedJointLimits.includes("shoulder_sensitive") ? (
+                <p className="mt-2 text-xs leading-5 text-tg-hint">
+                  Выполняйте только безболезненные движения. Это не лечебная программа;
+                  при травме согласуйте нагрузку со специалистом.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-tg-bg p-3">
+              <div>
+                <p className="text-sm font-medium">Автопереход между упражнениями</p>
+                <p className="mt-0.5 text-xs text-tg-hint">
+                  После последнего планового подхода появится отсчёт 3 секунды с отменой.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoAdvanceExercises}
+                onClick={() => setAutoAdvanceExercises((value) => !value)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-2 text-xs font-semibold",
+                  autoAdvanceExercises ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint",
+                ].join(" ")}
+              >
+                {autoAdvanceExercises ? "Вкл" : "Выкл"}
+              </button>
+            </div>
             {bodyAdvanced ? (
               <label className="block text-xs text-tg-hint">
                 % к суточному расходу (минус = дефицит, плюс = профицит)
-                <input
-                  type="number"
+                <DecimalInput
                   value={adjPct}
-                  onChange={(e) => setAdjPct(e.target.value)}
+                  onValueChange={setAdjPct}
                   className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
                 />
               </label>
@@ -1055,13 +1221,13 @@ setAuthEmail(p.auth_email ?? null);
             {preview.complete ? (
               <ul className="mt-2 space-y-2 text-tg-hint">
                 <li>
-                  <span className="font-medium text-tg-text">Базовый обмен (BMR): {preview.bmr} ккал</span>
+                  <span className="font-medium text-tg-text">Энергия в покое: {preview.bmr} ккал</span>
                   <span className="mt-0.5 block text-xs">
                     Сколько энергии нужно телу в покое — просто чтобы жить (дыхание, сердце, температура).
                   </span>
                 </li>
                 <li>
-                  <span className="font-medium text-tg-text">Суточный расход (TDEE): {preview.tdee} ккал</span>
+                  <span className="font-medium text-tg-text">Общий суточный расход: {preview.tdee} ккал</span>
                   <span className="mt-0.5 block text-xs">
                     Базовый обмен + ваша активность (тренировки, ходьба, работа). Это «поддержка веса».
                   </span>
@@ -1101,7 +1267,7 @@ setAuthEmail(p.auth_email ?? null);
             </p>
             {activeProgram ? (
               <p className="mt-2 text-tg-link">
-                Сейчас: {activeProgram.name}
+                Сейчас: {programDayLabel(activeProgram.name)}
                 {autoAssignedProgram ? " (авто)" : ""}
               </p>
             ) : (
@@ -1110,7 +1276,7 @@ setAuthEmail(p.auth_email ?? null);
             {recommendedProgram ? (
               <div className="mt-3 rounded-xl bg-tg-bg p-3">
                 <p className="text-xs text-tg-hint">Рекомендуем сейчас</p>
-                <p className="mt-1 text-sm font-medium">{recommendedProgram.name}</p>
+                <p className="mt-1 text-sm font-medium">{programDayLabel(recommendedProgram.name)}</p>
                 <p className="mt-0.5 text-xs text-tg-hint">{programMetaLine(recommendedProgram)}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
@@ -1230,6 +1396,7 @@ setAuthEmail(p.auth_email ?? null);
               onClick={() => {
                 setActiveProgramId("");
                 setAutoAssignedProgram(false);
+                markDirty("program");
               }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
@@ -1250,6 +1417,15 @@ setAuthEmail(p.auth_email ?? null);
               const open = expandedProgramId === p.id;
               const schedule = scheduleOfProgram(p);
               const isRec = recommendedIds.has(p.id);
+              const mismatches = compareProgramToProfile(p, {
+                primaryGoal,
+                level: String(profileGoalsKeep.level || ""),
+                daysPerWeek: Number(daysPerWeek) || undefined,
+                equipment: Array.isArray(profileGoalsKeep.equipment) ? profileGoalsKeep.equipment as string[] : [],
+                sex,
+                location: String(profileGoalsKeep.location || ""),
+                limitations: profileGoalsKeep.limitations as string[] | string | null,
+              });
               return (
                 <article
                   key={p.id}
@@ -1262,13 +1438,10 @@ setAuthEmail(p.auth_email ?? null);
                     <button
                       type="button"
                       className="min-w-0 flex-1 text-left"
-                      onClick={() => {
-                        setActiveProgramId(p.id);
-                        setAutoAssignedProgram(false);
-                      }}
+                      onClick={() => void chooseProgram(p)}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{p.name}</span>
+                        <span className="font-medium">{programDayLabel(p.name)}</span>
                         {isRec ? (
                           <span
                             className={[
@@ -1300,6 +1473,11 @@ setAuthEmail(p.auth_email ?? null);
                           {p.description}
                         </span>
                       ) : null}
+                      {mismatches.length ? (
+                        <span className={selected ? "mt-1 block text-xs opacity-90" : "mt-1 block text-xs text-amber-700"}>
+                          Отличается от анкеты: {programMismatchSummary(mismatches)}
+                        </span>
+                      ) : null}
                     </button>
                     <button
                       type="button"
@@ -1327,7 +1505,7 @@ setAuthEmail(p.auth_email ?? null);
                       ) : (
                         schedule.map((day, idx) => {
                           const dayIndex = Number(day.day_index ?? day.day ?? idx + 1) || idx + 1;
-                          const name = String(day.name || day.title || `День ${dayIndex}`);
+                          const name = programDayLabel(String(day.name || day.title || ""), dayIndex);
                           const rows = dayExerciseRowsProfile(day);
                           const dayKey = `${p.id}:${dayIndex}`;
                           const listOpen = Boolean(programDayOpen[dayKey]);
@@ -1419,10 +1597,7 @@ setAuthEmail(p.auth_email ?? null);
                       )}
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveProgramId(p.id);
-                          setAutoAssignedProgram(false);
-                        }}
+                        onClick={() => void chooseProgram(p)}
                         className={[
                           "mt-1 w-full rounded-lg px-3 py-2 text-xs font-semibold",
                           selected
@@ -1456,6 +1631,105 @@ setAuthEmail(p.auth_email ?? null);
       {tab === "supplements" ? (
         <div className="space-y-3">
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
+            <div>
+              <p className="font-medium">Сегодня</p>
+              <p className="text-xs text-tg-hint">
+                {intakes?.total
+                  ? `Принято ${intakes.taken} из ${intakes.total}`
+                  : "На сегодня приёмов нет"}
+              </p>
+            </div>
+            {intakeGroups.length ? (
+              <div className="mt-3 space-y-3">
+                {intakeGroups.map(([scheduledAt, items]) => {
+                  const pending = items.filter((item) => item.status === "pending");
+                  return (
+                    <section key={scheduledAt}>
+                      <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                        <p className="text-xs font-medium text-tg-hint">
+                          {new Date(scheduledAt).toLocaleTimeString("ru-RU", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                        {pending.length > 1 ? (
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-tg-link"
+                            onClick={() => {
+                              void markSupplementIntakeGroup(pending[0].id, "taken")
+                                .then(() => fetchTodaySupplementIntakes())
+                                .then(setIntakes)
+                                .catch((e) => setError(toUserMessage(e, "Не удалось отметить приёмы")));
+                            }}
+                          >
+                            Принял всё в {new Date(scheduledAt).toLocaleTimeString("ru-RU", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </button>
+                        ) : null}
+                      </div>
+                      <ul className="space-y-2">
+                        {items.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-2 rounded-xl bg-tg-bg p-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium">{item.name_ru}</p>
+                      <p className="text-[11px] text-tg-hint">
+                        {item.dose || "Дозировка не указана"}
+                      </p>
+                    </div>
+                    {item.status === "pending" ? (
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-tg-button px-2 py-2 text-xs text-tg-button-text"
+                          onClick={() => {
+                            void markSupplementIntake(item.id, "taken")
+                              .then(() => fetchTodaySupplementIntakes())
+                              .then(setIntakes)
+                              .catch((e) => setError(toUserMessage(e, "Не удалось отметить приём")));
+                          }}
+                        >
+                          Принял
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg bg-tg-secondary px-2 py-2 text-xs text-tg-hint"
+                          onClick={() => {
+                            void markSupplementIntake(item.id, "skipped")
+                              .then(() => fetchTodaySupplementIntakes())
+                              .then(setIntakes)
+                              .catch((e) => setError(toUserMessage(e, "Не удалось отметить приём")));
+                          }}
+                        >
+                          Пропуск
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs text-tg-link"
+                        onClick={() => {
+                          void markSupplementIntake(item.id, "pending")
+                            .then(() => fetchTodaySupplementIntakes())
+                            .then(setIntakes)
+                            .catch((e) => setError(toUserMessage(e, "Не удалось отменить отметку")));
+                        }}
+                      >
+                        {item.status === "taken" ? "✅ Принято" : "⏭ Пропущено"}
+                      </button>
+                    )}
+                  </li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
             <p className="font-medium">Мой стек добавок</p>
             <p className="mt-1 text-xs text-tg-hint">
               По умолчанию стек пуст — добавьте сами из каталога (только добавки с доказанной
@@ -1488,7 +1762,7 @@ setAuthEmail(p.auth_email ?? null);
               type="button"
               className="mt-2 text-xs text-tg-link"
               onClick={() => {
-                setTab("alerts");
+                selectTab("alerts");
                 setOk(null);
               }}
             >
@@ -1528,12 +1802,13 @@ setAuthEmail(p.auth_email ?? null);
                           className="text-xs text-red-500"
                           onClick={() => {
                             void removeSupplement(item.id)
-                              .then((r) => {
+                              .then(async (r) => {
                                 setStack(r.items);
+                                setIntakes(await fetchTodaySupplementIntakes());
                                 setOk(`Удалено: ${item.name_ru}`);
                               })
                               .catch((e) =>
-                                setError(e instanceof Error ? e.message : "Ошибка удаления"),
+                                setError(toUserMessage(e, "Не удалось удалить добавку")),
                               );
                           }}
                         >
@@ -1738,7 +2013,7 @@ setAuthEmail(p.auth_email ?? null);
             onClick={() => {
               void persistStack(stack)
                 .then(() => setOk("Стек добавок сохранён"))
-                .catch((e) => setError(e instanceof Error ? e.message : "Ошибка"));
+                .catch((e) => setError(toUserMessage(e, "Не удалось сохранить добавки")));
             }}
           >
             Сохранить дозы и время
@@ -1777,13 +2052,14 @@ setAuthEmail(p.auth_email ?? null);
               className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm text-tg-button-text disabled:opacity-50"
               onClick={() => {
                 void addSupplementFromCatalog(pickerKey)
-                  .then((r) => {
+                  .then(async (r) => {
                     setStack(r.items);
                     setCatalog(r.catalog);
+                    setIntakes(await fetchTodaySupplementIntakes());
                     setPickerKey("");
                     setOk("Добавка добавлена");
                   })
-                  .catch((e) => setError(e instanceof Error ? e.message : "Ошибка"));
+                  .catch((e) => setError(toUserMessage(e, "Не удалось добавить добавку")));
               }}
             >
               Добавить выбранную
@@ -1814,13 +2090,14 @@ setAuthEmail(p.auth_email ?? null);
                   dose: customDose,
                   times: ["10:00"],
                 })
-                  .then((r) => {
+                  .then(async (r) => {
                     setStack(r.items);
+                    setIntakes(await fetchTodaySupplementIntakes());
                     setCustomName("");
                     setCustomDose("");
                     setOk("Своя добавка добавлена");
                   })
-                  .catch((e) => setError(e instanceof Error ? e.message : "Ошибка"));
+                  .catch((e) => setError(toUserMessage(e, "Не удалось создать добавку")));
               }}
             >
               Добавить свою
@@ -2067,7 +2344,7 @@ setAuthEmail(p.auth_email ?? null);
                   type="button"
                   className="text-tg-link"
                   onClick={() => {
-                    setTab("supplements");
+                    selectTab("supplements");
                     setOk(null);
                   }}
                 >
@@ -2075,6 +2352,43 @@ setAuthEmail(p.auth_email ?? null);
                 </button>
               </p>
             )}
+          </div>
+
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Уведомления в браузере</p>
+                <p className="mt-1 text-xs text-tg-hint">
+                  Работают без Telegram. На iPhone приложение нужно добавить на экран «Домой».
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!pushAvailable || saving}
+                className={[
+                  "shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-50",
+                  pushEnabled ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-link",
+                ].join(" ")}
+                onClick={() => {
+                  setSaving(true);
+                  const operation = pushEnabled ? disableWebPush() : enableWebPush();
+                  void operation
+                    .then(() => {
+                      setPushEnabled(!pushEnabled);
+                      setOk(pushEnabled ? "Уведомления браузера выключены" : "Уведомления браузера включены");
+                    })
+                    .catch((e) => setError(toUserMessage(e, "Не удалось изменить уведомления браузера")))
+                    .finally(() => setSaving(false));
+                }}
+              >
+                {pushEnabled ? "Включены" : "Включить"}
+              </button>
+            </div>
+            {!pushAvailable ? (
+              <p className="mt-2 text-xs text-amber-700">
+                Фоновые уведомления недоступны в этом браузере или ещё не настроены администратором.
+              </p>
+            ) : null}
           </div>
 
           <button
@@ -2091,11 +2405,47 @@ setAuthEmail(p.auth_email ?? null);
             onClick={() => {
               void dispatchMyDueNotifications()
                 .then((r) => setOk(`Проверка: отправлено ${r.sent}`))
-                .catch((e) => setError(e instanceof Error ? e.message : "Ошибка dispatch"));
+                .catch((e) => setError(toUserMessage(e, "Не удалось проверить напоминания")));
             }}
           >
             Проверить напоминания сейчас
           </button>
+        </div>
+      ) : null}
+
+      {tab === "account" ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <p className="text-sm font-semibold">Аккаунт</p>
+            <p className="mt-2 break-all text-sm">
+              {authEmail || (storeUser?.username ? `@${storeUser.username.replace(/^@/, "")}` : "Telegram-аккаунт")}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-tg-bg px-2.5 py-1">
+                Тариф: {subscriptionLabel(storeUser?.subscription_status)}
+              </span>
+              {storeUser?.telegram_id ? <span className="rounded-full bg-tg-bg px-2.5 py-1">Telegram подключён</span> : null}
+            </div>
+          </div>
+          <LinkEmailCard
+            currentEmail={authEmail}
+            onLinked={(u) => {
+              setAuthEmail(u.auth_email ?? null);
+              setUser({
+                ...(storeUser || {
+                  id: u.id,
+                  subscription_status: u.subscription_status,
+                  onboarding_completed: u.onboarding_completed ?? false,
+                }),
+                ...u,
+                auth_email: u.auth_email ?? null,
+              });
+              setOk(u.auth_email ? `Почта привязана: ${u.auth_email}` : "Почта привязана");
+            }}
+          />
+          <p className="rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
+            Статус аккаунта показывается только здесь и в разделе «Ещё», чтобы не занимать место на основных экранах.
+          </p>
         </div>
       ) : null}
 

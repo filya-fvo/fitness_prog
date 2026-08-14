@@ -1,4 +1,5 @@
 import type { Exercise } from "@/types/workout";
+import { enumLabel } from "@/utils/localization";
 
 type ExerciseCardProps = {
   exercise: Exercise;
@@ -36,8 +37,8 @@ export function ExerciseCard({
           <button type="button" onClick={openDetail} className="w-full text-left">
             <p className="text-sm font-medium leading-snug text-tg-text">{exercise.name_ru}</p>
             <p className="mt-0.5 text-[11px] leading-snug text-tg-hint">
-              {exercise.muscle_group}
-              {exercise.equipment ? ` · ${exercise.equipment}` : ""}
+              {enumLabel(exercise.muscle_group)}
+              {exercise.equipment ? ` · ${enumLabel(exercise.equipment)}` : ""}
             </p>
           </button>
           {technique ? (
@@ -55,8 +56,8 @@ export function ExerciseCard({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-          <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] text-tg-hint">
-            {exercise.difficulty}/5
+          <span title="Сложность техники: 1 — легко, 5 — сложно" className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] text-tg-hint">
+            Сложность: {exercise.difficulty}/5
           </span>
           {onOpenDetail ? (
             <button

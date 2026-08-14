@@ -6,28 +6,39 @@ import hashlib
 import hmac
 import re
 import secrets
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from loguru import logger
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.security import create_access_token
 from app.models.email_otp import EmailOtpCode
 from app.models.user import User
+from app.services.account_merge import MergePreference, merge_accounts, merge_preview
 from app.services.email_service import send_login_otp_email
 
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
+
+
+@dataclass(slots=True)
+class LinkVerificationResult:
+    user: User | None
+    merge_required: bool = False
+    preview: dict | None = None
+    merged_from_user_ids: list = field(default_factory=list)
+    merge_preference: MergePreference | None = None
 
 
 def normalize_email(raw: str) -> str:
     email = (raw or "").strip().lower()
     if not email or not _EMAIL_RE.match(email) or len(email) > 254:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Некорректный email",
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Некорректный адрес электронной почты",
         )
     return email
 
@@ -58,6 +69,27 @@ async def _issue_otp(
     """Create OTP row and send email."""
     now = datetime.now(UTC)
     resend_sec = max(15, int(settings.email_otp_resend_seconds))
+
+    # Serialize requests for the same email/purpose across API workers.
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))"),
+        {"lock_key": f"email-otp:{purpose}:{email}"},
+    )
+
+    if request_ip:
+        recent_from_ip = await session.scalar(
+            select(func.count())
+            .select_from(EmailOtpCode)
+            .where(
+                EmailOtpCode.request_ip == request_ip[:64],
+                EmailOtpCode.created_at >= now - timedelta(hours=1),
+            )
+        )
+        if int(recent_from_ip or 0) >= max(1, settings.email_otp_ip_hourly_limit):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Слишком много запросов кода. Повторите позже.",
+            )
 
     recent = await session.scalar(
         select(EmailOtpCode)
@@ -97,6 +129,15 @@ async def _issue_otp(
     except Exception as exc:
         send_error = str(exc)
         logger.warning("email_otp_send_error email={} purpose={} err={}", email, purpose, send_error)
+
+    if not sent and settings.environment == "production":
+        # Do not report a delivery that did not happen or block an immediate retry.
+        await session.delete(row)
+        await session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Не удалось отправить код. Повторите позже.",
+        )
 
     if settings.environment != "production":
         logger.info("email_otp_dev email={} purpose={} code={} sent={}", email, purpose, code, sent)
@@ -159,18 +200,6 @@ async def request_link_code(
             detail="Эта почта уже привязана к вашему аккаунту",
         )
 
-    owner = await session.scalar(
-        select(User).where(
-            func.lower(User.auth_email) == email,
-            User.is_deleted.is_(False),
-        )
-    )
-    if owner is not None and owner.id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Эта почта уже привязана к другому аккаунту",
-        )
-
     return await _issue_otp(
         session,
         email=email,
@@ -200,6 +229,7 @@ async def _load_valid_otp(
         )
         .order_by(EmailOtpCode.created_at.desc())
         .limit(1)
+        .with_for_update()
     )
     if row is None:
         raise HTTPException(
@@ -247,7 +277,7 @@ async def verify_login_code(
     code = re.sub(r"\s+", "", (code_raw or "").strip())
     if not code.isdigit() or not (4 <= len(code) <= 8):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Некорректный код",
         )
 
@@ -266,12 +296,7 @@ async def verify_login_code(
         )
     )
     if user is None:
-        # New browser-only account. Telegram users should link email in Profile first.
-        user = User(
-            telegram_id=None,
-            username=email.split("@", 1)[0][:64] or None,
-            auth_email=email,
-        )
+        user = User(auth_email=email, anthropometry={}, goals={})
         session.add(user)
     else:
         user.auth_email = email
@@ -296,13 +321,14 @@ async def verify_link_code(
     email_raw: str,
     code_raw: str,
     settings: Settings,
-) -> User:
+    merge_preference: MergePreference | None = None,
+) -> LinkVerificationResult:
     """Verify link OTP and attach email to the current authenticated user."""
     email = normalize_email(email_raw)
     code = re.sub(r"\s+", "", (code_raw or "").strip())
     if not code.isdigit() or not (4 <= len(code) <= 8):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Некорректный код",
         )
 
@@ -326,13 +352,39 @@ async def verify_link_code(
         )
     )
     if owner is not None and owner.id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Эта почта уже привязана к другому аккаунту",
+        if user.telegram_id is None or owner.telegram_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Эта почта уже связана с другим Telegram-аккаунтом; автоматическое объединение запрещено",
+            )
+        if merge_preference is None:
+            preview = await merge_preview(session, email_user=owner, telegram_user=user)
+            await session.rollback()
+            return LinkVerificationResult(user=None, merge_required=True, preview=preview)
+        try:
+            merged = await merge_accounts(
+                session,
+                email_user=owner,
+                telegram_user=user,
+                preference=merge_preference,
+            )
+        except ValueError as exc:
+            await session.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        logger.info(
+            "auth_accounts_merged target={} source={} preference={}",
+            merged.user.id,
+            owner.id,
+            merge_preference,
+        )
+        return LinkVerificationResult(
+            user=merged.user,
+            merged_from_user_ids=merged.merged_from_user_ids,
+            merge_preference=merge_preference,
         )
 
     user.auth_email = email
     await session.commit()
     await session.refresh(user)
     logger.info("auth_email_linked user_id={} email={}", user.id, email)
-    return user
+    return LinkVerificationResult(user=user)

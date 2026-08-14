@@ -34,7 +34,7 @@ async def get_current_user(
     except (JWTError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Сессия недействительна или истекла",
         ) from exc
 
     result = await session.execute(
@@ -44,7 +44,7 @@ async def get_current_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Пользователь не найден",
         )
     return user
 
@@ -71,6 +71,6 @@ async def require_admin(
     if not user_is_admin(user, settings):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
+            detail="Требуются права администратора",
         )
     return user

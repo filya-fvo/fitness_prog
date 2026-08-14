@@ -27,6 +27,7 @@ function asStringArray(value: unknown): string[] {
     if (s.includes("no_spine") || s.includes("позвон") || s.includes("поясниц") || s.includes("спин")) {
       codes.push("no_spine");
     }
+    if (s.includes("shoulder_sensitive") || s.includes("плеч")) codes.push("shoulder_sensitive");
     if (codes.length) return codes;
     return s.split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);
   }
@@ -103,23 +104,25 @@ function scoreProgram(program: Program, input: RecommendInput): ProgramScoreBrea
     score -= 80;
   }
 
-  if (limits.has("no_knee")) {
-    if (pLim.has("no_knee")) {
-      score += 120;
-      reasons.push("учитывает ограничение по коленям");
-    } else {
-      score -= 100;
+  const limitationReasons: Record<string, string> = {
+    no_knee: "учитывает ограничение по коленям",
+    no_spine: "учитывает ограничение по спине",
+    shoulder_sensitive: "учитывает щадящую нагрузку на плечи",
+  };
+  for (const [limitation, reason] of Object.entries(limitationReasons)) {
+    if (limits.has(limitation)) {
+      if (pLim.has(limitation)) {
+        score += 120;
+        reasons.push(reason);
+      } else {
+        score -= 100;
+      }
+    } else if (pLim.has(limitation)) {
+      // A limitation-specific plan is intentionally unbalanced and should not
+      // outrank a regular plan unless the user explicitly selected that limitation.
+      score -= 250;
     }
-  } else if (pLim.has("no_knee")) score -= 25;
-
-  if (limits.has("no_spine")) {
-    if (pLim.has("no_spine")) {
-      score += 120;
-      reasons.push("учитывает ограничение по спине");
-    } else {
-      score -= 100;
-    }
-  } else if (pLim.has("no_spine")) score -= 25;
+  }
 
   if (pLevel && pLevel === level) {
     score += 45;
@@ -211,6 +214,7 @@ export const LOCATION_LABELS: Record<string, string> = {
 export const LIMITATION_LABELS: Record<string, string> = {
   no_knee: "Без нагрузки на колени",
   no_spine: "Без нагрузки на позвоночник",
+  shoulder_sensitive: "Щадящая нагрузка на плечи",
 };
 
 export const LEVEL_LABELS: Record<string, string> = {

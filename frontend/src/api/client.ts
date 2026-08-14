@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// Empty/same-origin works with Vite dev proxy + single ngrok tunnel.
+// Empty/same-origin works with Vite dev proxy + a single Tailscale Funnel.
 // For split hosts set VITE_API_URL=https://api.example.com
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 

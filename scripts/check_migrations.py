@@ -17,6 +17,14 @@ REQUIRED_FILES = [
     "20260721000006_nutrition.sql",
     "20260721000007_ai_conversations.sql",
     "20260721000008_updated_at_triggers.sql",
+    "20260722000009_production_upgrade_p0.sql",
+    "20260726000010_email_auth.sql",
+    "20260810000011_workout_set_details.sql",
+    "20260811000012_openai_user_conversations.sql",
+    "20260812000013_supplement_intakes_web_push.sql",
+    "20260812000014_workout_set_weight_mode.sql",
+    "20260813000015_workout_idempotency.sql",
+    "20260813000016_account_merge.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -28,6 +36,9 @@ REQUIRED_TABLES = [
     "nutrition_products",
     "nutrition_logs",
     "ai_conversations",
+    "email_otp_codes",
+    "supplement_intakes",
+    "web_push_subscriptions",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -39,6 +50,11 @@ REQUIRED_SNIPPETS = [
     "updated_at",
     "is_deleted",
     "set_updated_at",
+    "machine_params JSONB",
+    "weight_mode TEXT",
+    "client_workout_id UUID",
+    "uq_workouts_user_client_id",
+    "merged_into_user_id UUID",
 ]
 
 

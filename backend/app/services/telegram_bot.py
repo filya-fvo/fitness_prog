@@ -16,13 +16,22 @@ class TelegramBotError(Exception):
     """Raised when Telegram Bot API call fails or bot is misconfigured."""
 
 
+TELEGRAM_ALLOWED_UPDATES = ["message", "callback_query"]
+
+
 def _token_ready(settings: Settings) -> bool:
     return bool(settings.bot_token) and not settings.bot_token.startswith("replace_with")
 
 
 def resolve_mini_app_url(settings: Settings) -> str:
     """HTTPS URL of the Mini App front (Menu Button / web_app)."""
-    return (settings.mini_app_url or "").strip().rstrip("/")
+    value = (settings.mini_app_url or "").strip().rstrip("/")
+    if not value:
+        return ""
+    if not value.startswith("https://") or "ngrok" in value.lower():
+        logger.error("unsafe_mini_app_url_rejected")
+        return ""
+    return value
 
 
 async def bot_api(
@@ -68,6 +77,79 @@ async def send_message(
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
     return await bot_api(settings, "sendMessage", payload)
+
+
+async def answer_callback_query(
+    settings: Settings,
+    *,
+    callback_query_id: str,
+    text: str = "",
+) -> dict[str, Any]:
+    return await bot_api(
+        settings,
+        "answerCallbackQuery",
+        {"callback_query_id": callback_query_id, "text": text[:200]},
+    )
+
+
+async def edit_message_text(
+    settings: Settings,
+    *,
+    chat_id: int,
+    message_id: int,
+    text: str,
+    reply_markup: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
+    return await bot_api(settings, "editMessageText", payload)
+
+
+def supplement_intake_keyboard(intakes: list[tuple[str, str]]) -> dict[str, Any]:
+    rows: list[list[dict[str, str]]] = []
+    for intake_id, name in intakes:
+        short_name = name.strip()[:24] or "Добавка"
+        rows.append(
+            [
+                {"text": f"✅ {short_name}", "callback_data": f"si:t:{intake_id}"},
+                {"text": "Пропуск", "callback_data": f"si:s:{intake_id}"},
+            ]
+        )
+    if len(intakes) > 1:
+        rows.append([{"text": "✅ Принял всё", "callback_data": f"si:a:{intakes[0][0]}"}])
+    if intakes:
+        rows.append([{"text": "⏰ Через 30 минут", "callback_data": f"si:z:{intakes[0][0]}"}])
+    return {"inline_keyboard": rows}
+
+
+def extract_callback_query(update: dict[str, Any]) -> dict[str, Any] | None:
+    query = update.get("callback_query")
+    if not isinstance(query, dict):
+        return None
+    message = query.get("message")
+    sender = query.get("from")
+    if not isinstance(message, dict) or not isinstance(sender, dict):
+        return None
+    chat = message.get("chat")
+    if not isinstance(chat, dict):
+        return None
+    try:
+        return {
+            "id": str(query["id"]),
+            "data": str(query.get("data") or ""),
+            "user_id": int(sender["id"]),
+            "chat_id": int(chat["id"]),
+            "message_id": int(message["message_id"]),
+        }
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 async def send_document(
@@ -117,13 +199,13 @@ def build_mini_app_open_url(
     """
     Build HTTPS Mini App URL opened by web_app buttons.
 
-    Prefer real public front (ngrok/prod) over t.me/.../app Direct Links:
+    Prefer the configured permanent public front over t.me/.../app Direct Links:
     Direct Links only work after BotFather Main Mini App / short name setup.
     startapp is passed as query so the SPA can route even when
     initDataUnsafe.start_param is empty (common for web_app URL buttons).
     """
     base = (mini_app_url or "").strip().rstrip("/")
-    if not base:
+    if not base.startswith("https://") or "ngrok" in base.lower():
         return ""
     # Map logical targets to SPA paths (React Router)
     path = "/"
@@ -187,7 +269,7 @@ def mini_app_keyboard(
     """
     Inline keyboard into Mini App.
 
-    Prefer web_app + MINI_APP_URL (works with ngrok without BotFather Direct Link).
+    Prefer web_app + MINI_APP_URL without depending on BotFather Direct Links.
     Fallback: t.me deep link (needs Main Mini App configured in BotFather).
     """
     web = open_web_app_keyboard(
@@ -232,8 +314,8 @@ def start_welcome_text(
         "• Питание, прогресс, AI — в нижнем меню.",
         "",
         "<b>Вход в браузере по почте</b> (тот же аккаунт):",
-        "1) В Mini App: <b>Профиль → Тело → Почта для входа</b> — привяжите email кодом из письма.",
-        "2) Откройте приложение в браузере и войдите этим email + кодом.",
+        "1) Можно сразу открыть приложение в браузере и зарегистрироваться по email + коду из письма.",
+        "2) Если позже войти через Telegram и подтвердить ту же почту, приложение предложит безопасно объединить данные.",
         "",
         "Полная инструкция — команда <b>/help</b>.",
     ]
@@ -270,13 +352,6 @@ def open_app_markup(settings: Settings) -> dict[str, Any] | None:
             button_text="Open",
             startapp="home",
         )
-    if markup is None and settings.bot_username:
-        username = settings.bot_username.lstrip("@")
-        markup = {
-            "inline_keyboard": [
-                [{"text": "Open", "url": f"https://t.me/{username}/app"}],
-            ],
-        }
     return markup
 
 
@@ -393,9 +468,10 @@ async def set_chat_menu_button(
 
     chat_id=None -> default for all users.
     """
-    url = (mini_app_url or resolve_mini_app_url(settings) or "").strip().rstrip("/")
-    if not url.startswith("https://"):
-        raise TelegramBotError("MINI_APP_URL must be https:// for Menu Button")
+    raw_url = (mini_app_url or resolve_mini_app_url(settings) or "").strip().rstrip("/")
+    url = build_mini_app_open_url(raw_url)
+    if not url:
+        raise TelegramBotError("MINI_APP_URL must be safe HTTPS and must not use ngrok")
 
     menu_button: dict[str, Any] = {
         "type": "web_app",
@@ -417,11 +493,14 @@ async def set_webhook(
 ) -> dict[str, Any]:
     """Register Telegram webhook for /start and other updates."""
     url = webhook_url.strip()
-    if not url.startswith("https://"):
-        raise TelegramBotError("webhook_url must be https://")
+    if not url.startswith("https://") or "ngrok" in url.lower():
+        raise TelegramBotError("webhook_url must be safe HTTPS and must not use ngrok")
     payload: dict[str, Any] = {
         "url": url,
-        "allowed_updates": ["message"],
+        # Inline supplement buttons arrive as callback_query updates. Telegram
+        # keeps the previous allowed_updates value when the field is omitted,
+        # so always register the complete list explicitly.
+        "allowed_updates": TELEGRAM_ALLOWED_UPDATES,
         "drop_pending_updates": drop_pending,
     }
     token = secret_token if secret_token is not None else settings.telegram_webhook_secret
@@ -477,17 +556,9 @@ async def send_app_notification(
             button_text="Open",
             startapp=target,
         )
-    if markup is None and settings.bot_username:
-        markup = mini_app_keyboard(
-            bot_username=settings.bot_username,
-            startapp=target,
-            button_text="Open",
-            mini_app_url=mini_url,
-        )
-
     if markup is None:
         logger.warning(
-            "notification_without_open_button telegram_id={} reason=no_MINI_APP_URL_or_bot_username",
+            "notification_without_open_button telegram_id={} reason=no_safe_MINI_APP_URL",
             telegram_id,
         )
 

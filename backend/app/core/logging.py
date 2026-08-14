@@ -23,6 +23,14 @@ from loguru import logger
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _DEFAULT_LOG_DIR = _REPO_ROOT / "logs"
 _DATE_IN_NAME = re.compile(r"(20\d{2}-\d{2}-\d{2})")
+_TELEGRAM_BOT_TOKEN = re.compile(r"(api\.telegram\.org/bot)[^/\s\"']+")
+_BEARER_TOKEN = re.compile(r"(?i)(authorization[=:]\s*bearer\s+)[^\s,;\"']+")
+
+
+def redact_log_secrets(message: str) -> str:
+    """Mask credentials that may appear in third-party HTTP client log messages."""
+    safe = _TELEGRAM_BOT_TOKEN.sub(r"\1[REDACTED]", str(message))
+    return _BEARER_TOKEN.sub(r"\1[REDACTED]", safe)
 
 
 class InterceptHandler(logging.Handler):
@@ -37,7 +45,10 @@ class InterceptHandler(logging.Handler):
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level,
+            redact_log_secrets(record.getMessage()),
+        )
 
 
 def resolve_log_dir(log_dir: str | Path | None = None) -> Path:

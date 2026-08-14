@@ -39,6 +39,10 @@ test.describe("P3 funnel path", () => {
     await expect(page.getByText(/Онбординг|цель|Шаг|уровень/i).first()).toBeVisible({
       timeout: 10_000,
     });
+    const nextButton = page.getByRole("button", { name: "Далее" });
+    await expect(nextButton).toBeVisible();
+    await nextButton.click();
+    await expect(page.getByText("Уровень", { exact: true })).toBeVisible();
 
     await page.goto("/");
     await expect(
@@ -72,5 +76,24 @@ test.describe("P3 funnel path", () => {
     // Either diary UI or auth gate — both are valid SPA shells
     expect(body).toMatch(/Питание|Дневник|Калории|авторизац|Telegram|Как вчера|Добавить/i);
     expect(body).not.toMatch(/Not authenticated/i);
+  });
+
+  test("primary touch targets are at least 44px high", async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto("/more");
+    await expect(page.getByRole("navigation", { name: "Основная навигация" })).toBeVisible();
+
+    const undersized = await page.locator("button, nav a").evaluateAll((elements) =>
+      elements
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && rect.height < 43.5;
+        })
+        .map((element) => ({
+          text: element.getAttribute("aria-label") || element.textContent?.trim() || element.tagName,
+          height: element.getBoundingClientRect().height,
+        })),
+    );
+    expect(undersized).toEqual([]);
   });
 });

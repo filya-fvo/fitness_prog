@@ -1,10 +1,11 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import { useRef } from "react";
 import { sendAIChat } from "@/api/ai";
+import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { addWorkoutSet, completeWorkout, fetchWorkoutHistory } from "@/api/workouts";
+import { addWorkoutSet, completeWorkout, deleteWorkout, fetchWorkout, fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
@@ -12,8 +13,10 @@ import {
   enqueueSync,
   flushSyncQueue,
   readCachedWorkouts,
+  removeCachedWorkout,
   resolveServerWorkoutId,
   saveLocalSession,
+  syncWorkoutPlan,
 } from "@/db/syncQueue";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
@@ -21,6 +24,7 @@ import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
 import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
 import { WorkoutElapsedClock } from "@/features/workout/components/WorkoutElapsedClock";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { trackEvent } from "@/lib/analytics";
 import {
   markWorkoutTimerStart,
@@ -28,8 +32,9 @@ import {
   summarizeFunnel,
 } from "@/lib/metrics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
-import { hapticImpact, hapticNotification } from "@/lib/telegram";
+import { confirmAction, hapticImpact, hapticNotification } from "@/lib/telegram";
 import { toast } from "@/store/toastStore";
+import { useUserStore } from "@/store/userStore";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 import { formatElapsed } from "@/utils/format";
@@ -44,9 +49,17 @@ import {
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
 import { inferLoadType, formatDurationLabel, defaultTimedSeconds } from "@/utils/exerciseLoadType";
+import {
+  buildBulkReplacementPlan,
+  equipmentGroup,
+  type BulkReplacementPlan,
+} from "@/utils/exerciseAlternatives";
 import { advanceCursorAfterWorkout, cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
 import { buildWarmupPlan } from "@/utils/warmupPlan";
+import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
 import { fetchPrograms } from "@/api/programs";
+import { toUserMessage } from "@/utils/errors";
+import { enumLabel, programDayLabel } from "@/utils/localization";
 
 function asPlan(raw: Workout["plan"]): WorkoutPlan & {
   warmup_pending?: boolean;
@@ -62,6 +75,9 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan & {
     week_in_cycle: plan.week_in_cycle ?? null,
     week_label: plan.week_label ?? null,
     week_rir: plan.week_rir ?? null,
+    location: plan.location ?? null,
+    equipment: Array.isArray(plan.equipment) ? plan.equipment : [],
+    limitations: Array.isArray(plan.limitations) ? plan.limitations : [],
     exercises: Array.isArray(plan.exercises) ? plan.exercises : [],
     warmup_pending: Boolean(plan.warmup_pending),
     warmup_location: plan.warmup_location,
@@ -71,6 +87,9 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan & {
 export function ActiveWorkout() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const navigate = useNavigate();
+  const isAuthLoading = useUserStore((s) => s.isAuthLoading);
+  const authenticatedUserId = useUserStore((s) => s.user?.id);
+  const canAttemptServerRestore = Boolean(authenticatedUserId) && !isAuthLoading;
 
   const catalog = useWorkoutStore((s) => s.catalog);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
@@ -90,6 +109,7 @@ export function ActiveWorkout() {
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
   const resetSession = useWorkoutStore((s) => s.resetSession);
   const replaceExercise = useWorkoutStore((s) => s.replaceExercise);
+  const replaceExercises = useWorkoutStore((s) => s.replaceExercises);
 
   const [booting, setBooting] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -104,6 +124,8 @@ export function ActiveWorkout() {
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [replaceQuery, setReplaceQuery] = useState("");
   const [replaceMuscle, setReplaceMuscle] = useState("");
+  const [bulkReplacementPlan, setBulkReplacementPlan] =
+    useState<BulkReplacementPlan | null>(null);
   const [aiAssistOpen, setAiAssistOpen] = useState(false);
   const [aiAssistLoading, setAiAssistLoading] = useState(false);
   const [aiAssistText, setAiAssistText] = useState<string | null>(null);
@@ -118,6 +140,9 @@ export function ActiveWorkout() {
   const [lastCardioId, setLastCardioId] = useState<string | null>(null);
   const [lastCardioDur, setLastCardioDur] = useState<number | null>(null);
   const [lastCardioParams, setLastCardioParams] = useState<Record<string, string | number> | null>(null);
+  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(false);
+  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
+  const completingSetsRef = useRef(new Set<string>());
   /** Gym-first UI: large set + Done; extras behind «Ещё». Default on. */
   const [simpleMode, setSimpleMode] = useState(() => {
     try {
@@ -130,6 +155,13 @@ export function ActiveWorkout() {
   });
   const [moreOpen, setMoreOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
+  const finishDialogRef = useModalAccessibility(finishOpen, () => setFinishOpen(false));
+  const bulkReplaceDialogRef = useModalAccessibility(
+    Boolean(bulkReplacementPlan),
+    () => setBulkReplacementPlan(null),
+  );
+  const replaceDialogRef = useModalAccessibility(replaceOpen, () => setReplaceOpen(false));
+  const aiAssistDialogRef = useModalAccessibility(aiAssistOpen, () => setAiAssistOpen(false));
   const [restContext, setRestContext] = useState<{
     exerciseName: string;
     nextExerciseName: string | null;
@@ -162,6 +194,7 @@ export function ActiveWorkout() {
           const profile = await fetchMyProfile();
           const g = (profile.goals as Record<string, unknown>) || {};
           if (!cancelled) {
+            setAutoAdvanceExercises(Boolean(g.auto_advance_exercises));
             setLastCardioId(
               g.last_warmup_cardio_exercise_id
                 ? String(g.last_warmup_cardio_exercise_id)
@@ -182,28 +215,77 @@ export function ActiveWorkout() {
       if (state.activeWorkout && matches) {
         return;
       }
-      const session = await findResumableSession();
+      const session = authenticatedUserId
+        ? await findResumableSession(authenticatedUserId)
+        : null;
       if (
         session &&
         (session.clientId === routeId || session.serverId === routeId || session.workout.id === routeId)
       ) {
-        await restoreSessionIntoStore(session);
+        await restoreSessionIntoStore(session, authenticatedUserId);
         if (!cancelled) {
           setBooting(false);
           markWorkoutTimerStart();
         }
         return;
       }
+
+      // Telegram auth is bootstrapped by Shell in parallel with this route.
+      // Wait for it before deciding that a server-only deep link is unavailable.
+      if (!canAttemptServerRestore) {
+        return;
+      }
+
+      if (isOnline() && getStoredToken()) {
+        try {
+          const remoteWorkout = await fetchWorkout(routeId);
+          const remoteDrafts = draftsFromWorkoutSnapshot(remoteWorkout);
+          useWorkoutStore.getState().hydrateSession({
+            clientId: remoteWorkout.id,
+            serverId: remoteWorkout.id,
+            workout: remoteWorkout,
+            drafts: remoteDrafts,
+            currentExerciseIndex: 0,
+          });
+
+          if (remoteWorkout.status === "completed") {
+            setElapsedFinalSec(remoteWorkout.duration_sec ?? 0);
+            setSummary("Эта тренировка уже завершена. Результаты сохранены в прогрессе.");
+          } else if (remoteWorkout.status !== "skipped") {
+            await saveLocalSession({
+              clientId: remoteWorkout.id,
+              serverId: remoteWorkout.id,
+              workout: remoteWorkout,
+              drafts: remoteDrafts,
+              currentExerciseIndex: 0,
+            });
+          }
+
+          if (!cancelled) {
+            setBooting(false);
+            setError(null);
+            markWorkoutTimerStart();
+            trackEvent("workout_session_restored", { source: "server" });
+          }
+          return;
+        } catch {
+          if (!cancelled) {
+            setError("Не удалось открыть тренировку. Возможно, ссылка устарела или сессия недоступна.");
+          }
+        }
+      } else if (!cancelled) {
+        setError("Нет локальной копии тренировки. Подключитесь к интернету и откройте ссылку снова.");
+      }
+
       if (!cancelled) {
         setBooting(false);
-        navigate("/workouts", { replace: true });
       }
     }
     void boot();
     return () => {
       cancelled = true;
     };
-  }, [navigate, workoutId]);
+  }, [authenticatedUserId, canAttemptServerRestore, navigate, workoutId]);
 
   // Refresh exercise catalog (GIF URLs etc.) so IndexedDB cache is not stale.
   useEffect(() => {
@@ -431,6 +513,17 @@ export function ActiveWorkout() {
     [currentExerciseIndex, drafts, stableClientId],
   );
 
+  const persistPlanReplacement = useCallback(
+    async (workout: Workout, nextDrafts = drafts, exerciseIndex = currentExerciseIndex) => {
+      await persistSession(workout, nextDrafts, exerciseIndex);
+      await syncWorkoutPlan({
+        clientWorkoutId: useWorkoutStore.getState().clientWorkoutId ?? stableClientId,
+        plan: asPlan(workout.plan),
+      });
+    },
+    [currentExerciseIndex, drafts, persistSession, stableClientId],
+  );
+
   const hasReplacements = useMemo(() => {
     return plan.exercises.some(
       (e) => e.original_exercise_id && e.original_exercise_id !== e.exercise_id,
@@ -533,18 +626,84 @@ export function ActiveWorkout() {
       hapticImpact("light");
       const next = useWorkoutStore.getState();
       if (next.activeWorkout) {
-        void persistSession(next.activeWorkout, next.drafts, next.currentExerciseIndex);
+        void persistPlanReplacement(next.activeWorkout, next.drafts, next.currentExerciseIndex);
       }
     },
-    [currentExerciseId, persistSession, replaceExercise],
+    [currentExerciseId, persistPlanReplacement, replaceExercise],
   );
+
+  const prepareBulkReplacement = useCallback(() => {
+    if (!plan.exercises.length || !catalog.length) {
+      setError("Каталог упражнений ещё не загружен.");
+      return;
+    }
+    const completedExerciseIds = new Set([
+      ...drafts.filter((draft) => draft.isCompleted).map((draft) => draft.exerciseId),
+      ...(activeWorkout?.sets || [])
+        .filter((setRow) => setRow.is_completed)
+        .map((setRow) => setRow.exercise_id),
+    ]);
+    const allowedEquipment = new Set((plan.equipment || []).filter(Boolean));
+    if (!allowedEquipment.size) {
+      for (const item of plan.exercises) {
+        const exercise = exerciseMap.get(item.exercise_id);
+        if (exercise) allowedEquipment.add(equipmentGroup(exercise));
+      }
+    }
+    const limitations = new Set((plan.limitations || []).filter(Boolean));
+    const title = (plan.title || "").toLowerCase();
+    if (/no-knee|колен/.test(title)) limitations.add("no_knee");
+    if (/spine-safe|позвоноч/.test(title)) limitations.add("no_spine");
+    if (/shoulder-safe|щадящ.*плеч/.test(title)) limitations.add("shoulder_sensitive");
+
+    const preview = buildBulkReplacementPlan({
+      planExercises: plan.exercises,
+      catalog,
+      completedExerciseIds,
+      allowedEquipment,
+      limitations,
+    });
+    if (!preview.replacements.length) {
+      setError("Для незавершённых упражнений не найдено достаточно близких безопасных замен.");
+      return;
+    }
+    setError(null);
+    setBulkReplacementPlan(preview);
+  }, [activeWorkout?.sets, catalog, drafts, exerciseMap, plan]);
+
+  const applyBulkReplacement = useCallback(() => {
+    if (!bulkReplacementPlan) return;
+    const count = replaceExercises(
+      bulkReplacementPlan.replacements.map((item) => ({
+        fromExerciseId: item.fromExercise.id,
+        toExercise: item.toExercise,
+      })),
+    );
+    setBulkReplacementPlan(null);
+    if (!count) {
+      setError("Массовая замена не применена: состав тренировки уже изменился.");
+      return;
+    }
+    const next = useWorkoutStore.getState();
+    if (next.activeWorkout) {
+      void persistPlanReplacement(next.activeWorkout, next.drafts, next.currentExerciseIndex);
+    }
+    setError(null);
+    hapticNotification("success");
+    toast(`Заменено упражнений: ${count}`);
+    trackEvent("workout_exercises_bulk_replaced", {
+      replaced: count,
+      completed_skipped: bulkReplacementPlan.completedSkipped,
+      no_equivalent_skipped: bulkReplacementPlan.noEquivalentSkipped,
+    });
+  }, [bulkReplacementPlan, persistPlanReplacement, replaceExercises]);
 
   const askAiForCurrent = useCallback(
     async (mode: "replace" | "easier" | "no_equipment" | "technique" = "replace") => {
       if (!currentExercise || aiAssistLoading) return;
       setAiAssistMode(mode);
       if (!isOnline()) {
-        setAiAssistError("AI доступен только онлайн");
+        setAiAssistError("ИИ-помощник доступен только онлайн");
         setAiAssistOpen(true);
         return;
       }
@@ -584,7 +743,7 @@ export function ActiveWorkout() {
         const result = await sendAIChat({ message: msg });
         setAiAssistText(result.reply);
       } catch (err) {
-        setAiAssistError(err instanceof Error ? err.message : "AI недоступен");
+        setAiAssistError(toUserMessage(err, "ИИ-тренер временно недоступен"));
       } finally {
         setAiAssistLoading(false);
       }
@@ -759,10 +918,10 @@ export function ActiveWorkout() {
         duration_sec: finalElapsed,
       });
       setSummary(
-        `Готово. Время: ${formatElapsed(finalElapsed)}. Упражнений: ${exerciseIds.length}. Подходов: ${completedCount}/${drafts.length}. Тоннаж: ${tonnage.toFixed(1)} кг. Оценка тяжести RPE (1–10): ${rpe}. Неделя: ${weekPhase.label}.`,
+        `Готово. Время: ${formatElapsed(finalElapsed)}. Упражнений: ${exerciseIds.length}. Подходов: ${completedCount}/${drafts.length}. Объём нагрузки: ${tonnage.toFixed(1)} кг (вес × повторы). Субъективная тяжесть: ${rpe}/10 (RPE). Неделя: ${weekPhase.label}.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось завершить");
+      setError(toUserMessage(err, "Не удалось завершить тренировку"));
       setElapsedFinalSec(null);
     } finally {
       setCompleting(false);
@@ -786,17 +945,43 @@ export function ActiveWorkout() {
     weekPhase.phase,
   ]);
 
-  const scrollToFinish = useCallback(() => {
+  const openFinishDialog = useCallback(() => {
     setFinishOpen(true);
-    // Jump to last exercise so the finish panel is in context, then scroll.
-    if (exerciseIds.length > 0 && currentExerciseIndex < exerciseIds.length - 1) {
-      setCurrentExerciseIndex(exerciseIds.length - 1);
+  }, []);
+
+  const discardWorkout = useCallback(async () => {
+    if (!activeWorkout || completing) return;
+    const confirmed = await confirmAction(
+      "Отменить и удалить эту тренировку? Подходы не попадут в прогресс, а день программы не изменится.",
+    );
+    if (!confirmed) return;
+    setCompleting(true);
+    setError(null);
+    const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
+    try {
+      if (isOnline()) {
+        try {
+          await flushSyncQueue();
+          const workoutId = await apiWorkoutId();
+          await deleteWorkout(workoutId);
+          await removeCachedWorkout(workoutId);
+        } catch {
+          await enqueueSync({ type: "delete_workout", clientWorkoutId: clientId, payload: {} });
+        }
+      } else {
+        await enqueueSync({ type: "delete_workout", clientWorkoutId: clientId, payload: {} });
+      }
+      await removeCachedWorkout(clientId);
+      await deleteLocalSession(clientId);
+      resetSession();
+      hapticNotification("success");
+      navigate("/workouts", { replace: true });
+    } catch (err) {
+      setError(toUserMessage(err, "Не удалось отменить тренировку"));
+    } finally {
+      setCompleting(false);
     }
-    window.setTimeout(() => {
-      const el = document.getElementById("workout-finish-panel");
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-  }, [currentExerciseIndex, exerciseIds.length, setCurrentExerciseIndex]);
+  }, [activeWorkout, apiWorkoutId, completing, navigate, resetSession, stableClientId]);
 
   function toggleSimpleMode() {
     setSimpleMode((prev) => {
@@ -808,7 +993,6 @@ export function ActiveWorkout() {
       }
       if (!next) {
         setMoreOpen(true);
-        setFinishOpen(true);
       }
       return next;
     });
@@ -817,13 +1001,60 @@ export function ActiveWorkout() {
   useMainButton({
     text: completing ? "Сохраняем…" : "Завершить тренировку",
     visible: Boolean(
-      activeWorkout && activeWorkout.status !== "completed" && !booting && !summary,
+      activeWorkout &&
+        activeWorkout.status !== "completed" &&
+        !booting &&
+        !summary &&
+        !aiAssistOpen &&
+        !replaceOpen &&
+        !bulkReplacementPlan &&
+        !finishOpen &&
+        !addSetOpen,
     ),
     enabled: !completing,
-    onClick: () => {
-      void finishWorkout();
-    },
+    onClick: openFinishDialog,
   });
+
+  useEffect(() => {
+    if (!aiAssistOpen) return;
+    window.requestAnimationFrame(() => {
+      aiAssistDialogRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    });
+  }, [aiAssistDialogRef, aiAssistMode, aiAssistOpen, aiAssistText]);
+
+  useEffect(() => {
+    setMoreOpen(false);
+    setAutoAdvanceCountdown(null);
+  }, [currentExerciseId]);
+
+  useEffect(() => {
+    if (autoAdvanceCountdown == null) return;
+    if (autoAdvanceCountdown <= 0) {
+      setAutoAdvanceCountdown(null);
+      const state = useWorkoutStore.getState();
+      state.nextExercise();
+      const next = useWorkoutStore.getState();
+      if (next.activeWorkout) {
+        void persistSession(next.activeWorkout, next.drafts, next.currentExerciseIndex);
+      }
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setAutoAdvanceCountdown((value) => (value == null ? null : value - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [autoAdvanceCountdown, persistSession]);
+
+  useEffect(() => {
+    if (!activeWorkout || ["completed", "skipped"].includes(activeWorkout.status)) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [activeWorkout]);
 
   async function completeSet(
     exerciseId: string,
@@ -831,6 +1062,7 @@ export function ActiveWorkout() {
     overrides?: Partial<{
       reps: string;
       weight: string;
+      weightMode: "total" | "per_hand" | null;
       durationSec: number | null;
       restTimeSec: number;
       note: string | null;
@@ -847,6 +1079,7 @@ export function ActiveWorkout() {
       addDraftSet(exerciseId, {
         reps: overrides.reps,
         weight: overrides.weight,
+        weightMode: overrides.weightMode,
         durationSec: overrides.durationSec,
         restTimeSec: overrides.restTimeSec,
         note: overrides.note,
@@ -864,6 +1097,7 @@ export function ActiveWorkout() {
       updateDraft(exerciseId, draft.setNumber, {
         reps: overrides.reps ?? draft.reps,
         weight: overrides.weight ?? draft.weight,
+        weightMode: overrides.weightMode ?? draft.weightMode,
         durationSec: overrides.durationSec ?? draft.durationSec,
         restTimeSec: overrides.restTimeSec ?? draft.restTimeSec,
         note: overrides.note ?? draft.note,
@@ -878,12 +1112,23 @@ export function ActiveWorkout() {
       setNumber = draft.setNumber;
     }
     const key = `${exerciseId}:${setNumber}`;
+    if (completingSetsRef.current.has(key)) return;
+    completingSetsRef.current.add(key);
     setSavingKey(key);
     setError(null);
     setOfflineNote(null);
 
     const reps = draft.reps ? Number(draft.reps) : null;
     const weight = draft.weight ? Number(draft.weight) : null;
+    const exerciseForSet = exerciseMap.get(exerciseId);
+    const resolvedWeightMode =
+      overrides?.weightMode ??
+      draft.weightMode ??
+      (/гантел|dumbbell/i.test(
+        `${exerciseForSet?.name_ru || ""} ${exerciseForSet?.equipment || ""}`,
+      )
+        ? "per_hand"
+        : "total");
     const restTimeSec = draft.restTimeSec || 60;
     const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
 
@@ -899,7 +1144,11 @@ export function ActiveWorkout() {
             setNumber,
             reps,
             weight,
+            weightMode: resolvedWeightMode,
             restTimeSec,
+            durationSec: overrides?.durationSec ?? draft.durationSec ?? null,
+            note: overrides?.note ?? draft.note ?? null,
+            machineParams: overrides?.machineParams ?? draft.machineParams ?? null,
             isCompleted: true,
           });
         } catch {
@@ -911,7 +1160,18 @@ export function ActiveWorkout() {
         await enqueueSync({
           type: "add_set",
           clientWorkoutId: clientId,
-          payload: { exerciseId, setNumber, reps, weight, restTimeSec, isCompleted: true },
+          payload: {
+            exerciseId,
+            setNumber,
+            reps,
+            weight,
+            weightMode: resolvedWeightMode,
+            restTimeSec,
+            durationSec: overrides?.durationSec ?? draft.durationSec ?? null,
+            note: overrides?.note ?? draft.note ?? null,
+            machineParams: overrides?.machineParams ?? draft.machineParams ?? null,
+            isCompleted: true,
+          },
         });
         setOfflineNote("Подход сохранён локально (очередь синхронизации).");
       }
@@ -924,6 +1184,7 @@ export function ActiveWorkout() {
               isCompleted: true,
               reps: draft.reps,
               weight: draft.weight,
+              weightMode: resolvedWeightMode,
               durationSec: draft.durationSec,
               note: draft.note,
               machineParams: draft.machineParams,
@@ -940,8 +1201,12 @@ export function ActiveWorkout() {
         set_number: setNumber,
         reps,
         weight,
+        weight_mode: resolvedWeightMode,
         is_completed: true,
         rest_time_sec: restTimeSec,
+        duration_sec: overrides?.durationSec ?? draft.durationSec ?? null,
+        note: overrides?.note ?? draft.note ?? null,
+        machine_params: overrides?.machineParams ?? draft.machineParams ?? null,
       };
       const nextWorkout: Workout = {
         ...activeWorkout,
@@ -955,6 +1220,18 @@ export function ActiveWorkout() {
       setActiveWorkout(nextWorkout);
       await persistSession(nextWorkout, nextDrafts);
       hapticImpact("light");
+      const allCurrentDone = nextDrafts
+        .filter((d) => d.exerciseId === exerciseId)
+        .every((d) => d.isCompleted);
+      setRestContext({
+        exerciseName: currentExercise?.name_ru || "упражнение",
+        nextExerciseName:
+          allCurrentDone && currentExerciseIndex < exerciseIds.length - 1
+            ? exerciseMap.get(exerciseIds[currentExerciseIndex + 1])?.name_ru || null
+            : null,
+        isLastSetOfExercise: allCurrentDone,
+        isLastExercise: currentExerciseIndex >= exerciseIds.length - 1,
+      });
       // Skip rest restart when correcting an already logged set.
       if (!draft.isCompleted) {
         startRest(restTimeSec);
@@ -985,21 +1262,18 @@ export function ActiveWorkout() {
         /* soft */
       }
 
-      const allCurrentDone = nextDrafts
-        .filter((d) => d.exerciseId === exerciseId)
-        .every((d) => d.isCompleted);
       if (allCurrentDone && currentExerciseIndex < exerciseIds.length - 1) {
-        nextExercise();
-        await persistSession(nextWorkout, nextDrafts, currentExerciseIndex + 1);
         trackEvent("workout_exercise_completed", {
           exercise_id: exerciseId,
           index: currentExerciseIndex + 1,
           total: exerciseIds.length,
         });
+        if (autoAdvanceExercises) setAutoAdvanceCountdown(3);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить подход");
+      setError(toUserMessage(err, "Не удалось сохранить подход"));
     } finally {
+      completingSetsRef.current.delete(key);
       setSavingKey(null);
     }
   }
@@ -1041,7 +1315,28 @@ export function ActiveWorkout() {
     return (
       <section>
         <Header title="Тренировка" />
-        <p className="text-sm text-tg-hint">Сессия не найдена.</p>
+        <div className="rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-medium">Сессия не найдена</p>
+          <p className="mt-1 text-sm text-tg-hint">
+            {error || "Откройте каталог или вернитесь на главную."}
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="tap-target-x flex-1 rounded-xl bg-tg-bg px-3 py-2 text-sm"
+            >
+              На главную
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/workouts")}
+              className="tap-target-x flex-1 rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text"
+            >
+              В каталог
+            </button>
+          </div>
+        </div>
       </section>
     );
   }
@@ -1049,9 +1344,13 @@ export function ActiveWorkout() {
   return (
     <section className="pb-24">
       <Header
-        title={activeWorkout.title || "Активная тренировка"}
-        subtitle={`Упр. ${Math.min(currentExerciseIndex + 1, exerciseIds.length)}/${exerciseIds.length || 1} · ${weekPhase.label} (запас повторений RIR ${weekPhase.rir})`}
+        title={programDayLabel(activeWorkout.title, Number(plan.day_index) || undefined)}
+        subtitle={`Упр. ${Math.min(currentExerciseIndex + 1, exerciseIds.length)}/${exerciseIds.length || 1} · ${weekPhase.label} · запас ${weekPhase.rir} повт. (RIR)`}
       />
+      <p className="mb-3 text-xs text-tg-hint">
+        Сессия сохраняется автоматически: можно выйти и продолжить позже с главной. RIR — сколько
+        повторов осталось бы выполнить до отказа.
+      </p>
 
       <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary px-4 py-3">
         <WorkoutElapsedClock
@@ -1071,7 +1370,7 @@ export function ActiveWorkout() {
           </button>
           <button
             type="button"
-            onClick={scrollToFinish}
+            onClick={openFinishDialog}
             disabled={completing}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-500/90 text-white shadow-md disabled:opacity-50"
             aria-label="Завершить тренировку"
@@ -1153,6 +1452,21 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
+      {plan.exercises.length > 1 && activeWorkout?.status !== "completed" ? (
+        <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-tg-secondary px-3 py-2">
+          <p className="text-[11px] text-tg-hint">
+            Хотите другой набор, сохранив структуру дня?
+          </p>
+          <button
+            type="button"
+            onClick={prepareBulkReplacement}
+            className="shrink-0 rounded-lg bg-tg-bg px-3 py-2 text-xs font-medium text-tg-link"
+          >
+            Заменить всё
+          </button>
+        </div>
+      ) : null}
+
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {exerciseIds.map((id, idx) => {
           const name =
@@ -1188,6 +1502,11 @@ export function ActiveWorkout() {
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="font-medium">{currentExercise.name_ru}</h2>
+              <p className="mt-0.5 text-xs font-medium text-tg-link">
+                {currentExercise.muscle_group
+                  ? enumLabel(currentExercise.muscle_group)
+                  : "Группа мышц не указана"}
+              </p>
               <p className="mt-1 text-xs text-tg-hint">
                 {currentLoadType === "timed" || currentLoadType === "cardio_machine"
                   ? "Формат: по времени"
@@ -1220,7 +1539,7 @@ export function ActiveWorkout() {
                 disabled={aiAssistLoading}
                 onClick={() => void askAiForCurrent("replace")}
               >
-                {aiAssistLoading ? "AI…" : "AI"}
+                {aiAssistLoading ? "ИИ…" : "ИИ"}
               </button>
               {simpleMode && !moreOpen ? (
                 <button
@@ -1268,6 +1587,20 @@ export function ActiveWorkout() {
               Техника
             </button>
           </div>
+
+          {simpleMode && !moreOpen ? (
+            <div className="relative overflow-hidden rounded-xl">
+              <ExerciseMediaPlayer exercise={currentExercise} compact mediaOnly preview />
+              <button
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                className="tap-target-x absolute right-2 top-2 rounded-lg bg-black/65 px-3 py-2 text-xs font-medium text-white"
+                aria-label={`Развернуть медиа и технику: ${currentExercise.name_ru}`}
+              >
+                Медиа и техника
+              </button>
+            </div>
+          ) : null}
 
           {!simpleMode || moreOpen ? (
             <ExerciseMediaPlayer exercise={currentExercise} compact />
@@ -1391,7 +1724,7 @@ export function ActiveWorkout() {
                     <p className="text-xs text-tg-hint">Подход {draft.setNumber}</p>
                     <p className={["font-medium", isFocus ? "text-base" : ""].join(" ")}>
                       {currentLoadType === "weight_reps"
-                        ? `${draft.weight || "—"} кг × ${draft.reps || "—"}`
+                        ? `${draft.weight || "—"} кг${draft.weightMode === "per_hand" ? " на гантель" : ""} × ${draft.reps || "—"}`
                         : currentLoadType === "reps_only"
                           ? `${draft.reps || "—"} повт.`
                           : formatDurationLabel(Number(dur) || 0)}
@@ -1492,6 +1825,7 @@ export function ActiveWorkout() {
                   updateDraft(open.exerciseId, open.setNumber, {
                     reps: done.reps,
                     weight: done.weight,
+                    weightMode: done.weightMode,
                     durationSec: done.durationSec,
                     restTimeSec: done.restTimeSec,
                     machineParams: done.machineParams,
@@ -1499,6 +1833,7 @@ export function ActiveWorkout() {
                   void completeSet(open.exerciseId, open.setNumber, {
                     reps: done.reps,
                     weight: done.weight,
+                    weightMode: done.weightMode,
                     durationSec: done.durationSec,
                     restTimeSec: done.restTimeSec,
                     machineParams: done.machineParams,
@@ -1509,6 +1844,7 @@ export function ActiveWorkout() {
                   addDraftSet(currentExercise.id, {
                     reps: done.reps,
                     weight: done.weight,
+                    weightMode: done.weightMode,
                     durationSec: done.durationSec,
                     restTimeSec: done.restTimeSec,
                     machineParams: done.machineParams,
@@ -1520,6 +1856,7 @@ export function ActiveWorkout() {
                     void completeSet(created.exerciseId, created.setNumber, {
                       reps: done.reps,
                       weight: done.weight,
+                      weightMode: done.weightMode,
                       durationSec: done.durationSec,
                       restTimeSec: done.restTimeSec,
                       machineParams: done.machineParams,
@@ -1560,8 +1897,8 @@ export function ActiveWorkout() {
                 <button
                   type="button"
                   className="rounded-xl bg-tg-bg px-3 py-2.5 text-xs text-tg-hint"
-                  onClick={() => {
-                    if (!window.confirm("Пропустить это упражнение и перейти к следующему?")) return;
+                  onClick={() => void (async () => {
+                    if (!await confirmAction("Пропустить это упражнение и перейти к следующему?")) return;
                     nextExercise();
                     if (activeWorkout) {
                       void persistSession(
@@ -1571,7 +1908,7 @@ export function ActiveWorkout() {
                       );
                     }
                     toast("Упражнение пропущено", "info");
-                  }}
+                  })()}
                 >
                   Пропустить
                 </button>
@@ -1629,6 +1966,7 @@ export function ActiveWorkout() {
                   updateDraft(currentExercise.id, targetSet, {
                     reps: vals.reps,
                     weight: vals.weight,
+                    weightMode: vals.weightMode,
                     durationSec: vals.durationSec,
                     note: vals.note,
                     machineParams: vals.machineParams,
@@ -1639,6 +1977,7 @@ export function ActiveWorkout() {
                   void completeSet(currentExercise.id, targetSet, {
                     reps: vals.reps,
                     weight: vals.weight,
+                    weightMode: vals.weightMode,
                     durationSec: vals.durationSec,
                     note: vals.note,
                     machineParams: vals.machineParams,
@@ -1650,6 +1989,7 @@ export function ActiveWorkout() {
                 addDraftSet(currentExercise.id, {
                   reps: vals.reps,
                   weight: vals.weight,
+                  weightMode: vals.weightMode,
                   durationSec: vals.durationSec,
                   note: vals.note,
                   machineParams: vals.machineParams,
@@ -1664,6 +2004,7 @@ export function ActiveWorkout() {
                   void completeSet(created.exerciseId, created.setNumber, {
                     reps: vals.reps,
                     weight: vals.weight,
+                    weightMode: vals.weightMode,
                     durationSec: vals.durationSec,
                     note: vals.note,
                     machineParams: vals.machineParams,
@@ -1713,136 +2054,204 @@ export function ActiveWorkout() {
 
       <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
 
-      <div id="workout-finish-panel" className="mt-4 space-y-2">
-        {simpleMode && !finishOpen ? (
+      {autoAdvanceCountdown != null ? (
+        <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl bg-[#1a1a1e] p-4 text-white shadow-2xl">
+          <p className="text-sm font-semibold">Упражнение выполнено</p>
+          <p className="mt-1 text-xs text-white/70">
+            Переход к следующему через {autoAdvanceCountdown} сек.
+          </p>
           <button
             type="button"
-            onClick={() => setFinishOpen(true)}
-            className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium"
+            className="mt-3 w-full rounded-xl bg-white/10 px-3 py-2 text-sm font-medium"
+            onClick={() => setAutoAdvanceCountdown(null)}
           >
-            Завершить · RPE и заметка
-          </button>
-        ) : null}
-        <div
-          className={[
-            "rounded-xl bg-tg-secondary p-3",
-            simpleMode && !finishOpen ? "hidden" : "",
-          ].join(" ")}
-        >
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">Завершение тренировки</p>
-            <WorkoutElapsedClock
-              startedAt={activeWorkout.started_at}
-              frozenSec={elapsedFinalSec}
-              paused={activeWorkout.status === "completed"}
-              className="text-sm font-semibold tabular-nums text-tg-hint"
-            />
-          </div>
-          {!isLastExercise ? (
-            <p className="mb-2 text-xs text-tg-hint">
-              Упр. {Math.min(currentExerciseIndex + 1, exerciseIds.length || 1)} из{" "}
-              {exerciseIds.length || 1}. Можно завершить досрочно.
-            </p>
-          ) : null}
-          <label className="block text-sm font-medium text-tg-text">
-            Насколько тяжело было? (1–10)
-          </label>
-          <p className="mt-1 text-xs text-tg-hint">
-            Это субъективная оценка тяжести (RPE) всей тренировки. Нужна, чтобы видеть, как
-            вы переносите нагрузку, и не перетренироваться. 1 — очень легко, 10 — максимум,
-            почти не смогли закончить.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(
-              [
-                [1, "Очень легко"],
-                [3, "Легко"],
-                [5, "Средне"],
-                [7, "Тяжело"],
-                [9, "Очень тяжело"],
-                [10, "На пределе"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setRpe(value)}
-                className={[
-                  "rounded-full px-2.5 py-1 text-[11px]",
-                  rpe === value
-                    ? "bg-tg-button text-tg-button-text"
-                    : "bg-tg-bg text-tg-hint",
-                ].join(" ")}
-              >
-                {value} · {label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={rpe}
-              onChange={(e) => setRpe(Number(e.target.value) || 7)}
-              className="min-w-0 flex-1"
-              aria-label="Оценка тяжести RPE тренировки от 1 до 10"
-            />
-            <span className="w-8 text-center text-sm font-semibold tabular-nums">{rpe}</span>
-          </div>
-          <p className="mt-1 text-[10px] text-tg-hint">
-            Подсказка: комфортная рабочая тренировка обычно 6–8. Если часто 9–10 — снизьте
-            вес или объём на следующей неделе.
-          </p>
-        </div>
-        <div className={simpleMode && !finishOpen ? "hidden" : "space-y-2"}>
-          <label className="block text-xs text-tg-hint">
-            Заметки к тренировке
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              placeholder="Как самочувствие, что мешало, что получилось лучше…"
-              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={completing}
-            onClick={() => void finishWorkout()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-          >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-current">
-              <span className="block h-2.5 w-2.5 rounded-[1px] bg-current" />
-            </span>
-            {completing ? "Сохраняем…" : "Завершить тренировку"}
+            Отмена — добавить ещё подход
           </button>
         </div>
-      </div>
+      ) : null}
 
-      {/* Always-visible floating stop control (duplicates header stop) */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 mx-auto flex w-full max-w-lg justify-end px-4">
-        <button
-          type="button"
-          onClick={scrollToFinish}
-          disabled={completing}
-          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-white shadow-lg disabled:opacity-50"
-          aria-label="Стоп — завершить тренировку"
-          title="Завершить"
-        >
-          <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white">
-            <span className="block h-4 w-4 rounded-[2px] bg-white" />
-          </span>
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={completing}
+        onClick={openFinishDialog}
+        className="mt-4 w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium disabled:opacity-60"
+      >
+        Завершить тренировку
+      </button>
+      <button
+        type="button"
+        disabled={completing}
+        onClick={() => void discardWorkout()}
+        className="mt-2 w-full rounded-xl px-4 py-3 text-sm text-red-700 disabled:opacity-60"
+      >
+        Отменить и удалить тренировку
+      </button>
+
+      {finishOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-3 sm:items-center">
+          <div
+            ref={finishDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="finish-workout-title"
+            tabIndex={-1}
+            className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-black/5 px-4 py-3">
+              <div>
+                <p id="finish-workout-title" className="text-base font-semibold">
+                  Завершить тренировку
+                </p>
+                <WorkoutElapsedClock
+                  startedAt={activeWorkout.started_at}
+                  frozenSec={elapsedFinalSec}
+                  paused={activeWorkout.status === "completed"}
+                  className="text-xs tabular-nums text-tg-hint"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setFinishOpen(false)}
+                className="min-h-11 px-2 text-sm text-tg-link"
+              >
+                Отмена
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              {!isLastExercise ? (
+                <p className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800">
+                  Выполнено упражнений: {Math.min(currentExerciseIndex + 1, exerciseIds.length)} из{" "}
+                  {exerciseIds.length}. Тренировку можно завершить досрочно.
+                </p>
+              ) : null}
+              <div>
+                <label className="block text-sm font-medium">Субъективная тяжесть тренировки (RPE), 1–10</label>
+                <p className="mt-1 text-xs text-tg-hint">
+                  1 — очень легко, 10 — предельная нагрузка. Обычная рабочая тренировка — 6–8.
+                </p>
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRpe(value)}
+                      className={[
+                        "min-h-11 rounded-xl text-sm font-semibold",
+                        rpe === value
+                          ? "bg-tg-button text-tg-button-text"
+                          : "bg-tg-secondary text-tg-text",
+                      ].join(" ")}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="block text-sm font-medium">
+                Заметки
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  rows={4}
+                  placeholder="Самочувствие, техника, что изменить в следующий раз…"
+                  className="mt-2 w-full resize-none rounded-xl border border-black/10 bg-tg-secondary px-3 py-3 text-sm"
+                />
+              </label>
+            </div>
+            <div className="border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <button
+                type="button"
+                disabled={completing}
+                onClick={() => void finishWorkout()}
+                className="w-full rounded-xl bg-tg-button px-4 py-3.5 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+              >
+                {completing ? "Сохраняем…" : `Завершить · тяжесть ${rpe}/10`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {bulkReplacementPlan ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+          <div
+            ref={bulkReplaceDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-replace-title"
+            tabIndex={-1}
+            className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+          >
+            <div className="border-b border-black/5 px-4 py-3">
+              <p id="bulk-replace-title" className="text-sm font-semibold">
+                Заменить все подходящие упражнения?
+              </p>
+              <p className="mt-1 text-xs text-tg-hint">
+                Структура, подходы, повторы и отдых сохранятся. Рабочий вес будет очищен.
+                Исходный набор можно вернуть с главного экрана.
+              </p>
+            </div>
+            <div className="max-h-[58vh] space-y-2 overflow-y-auto p-4">
+              {bulkReplacementPlan.replacements.map((item) => (
+                <div
+                  key={item.fromExercise.id}
+                  className="rounded-xl bg-tg-secondary px-3 py-2"
+                >
+                  <p className="text-xs text-tg-hint">{item.fromExercise.name_ru}</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    → {item.toExercise.name_ru}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-tg-hint">
+                    {enumLabel(item.toExercise.muscle_group)}
+                    {item.toExercise.equipment ? ` · ${enumLabel(item.toExercise.equipment)}` : ""}
+                  </p>
+                </div>
+              ))}
+              {bulkReplacementPlan.completedSkipped ? (
+                <p className="text-xs text-tg-hint">
+                  Выполненные упражнения не меняются: {bulkReplacementPlan.completedSkipped}.
+                </p>
+              ) : null}
+              {bulkReplacementPlan.noEquivalentSkipped ? (
+                <p className="text-xs text-tg-hint">
+                  Оставлены без изменений — нет достаточно близкой замены:{" "}
+                  {bulkReplacementPlan.noEquivalentSkipped}.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex gap-2 border-t border-black/5 p-4">
+              <button
+                type="button"
+                onClick={() => setBulkReplacementPlan(null)}
+                className="flex-1 rounded-xl bg-tg-secondary px-4 py-3 text-sm"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={applyBulkReplacement}
+                className="flex-1 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+              >
+                Заменить {bulkReplacementPlan.replacements.length}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {replaceOpen && currentExercise ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl">
+          <div
+            ref={replaceDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="replace-exercise-title"
+            tabIndex={-1}
+            className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+          >
             <div className="flex items-center justify-between border-b border-black/5 px-4 py-3">
               <div>
-                <p className="text-sm font-semibold">Замена упражнения</p>
+                <p id="replace-exercise-title" className="text-sm font-semibold">Замена упражнения</p>
                 <p className="text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
               </div>
               <button
@@ -1868,8 +2277,8 @@ export function ActiveWorkout() {
                         <span>
                           <span className="block text-sm font-medium">{ex.name_ru}</span>
                           <span className="block text-[11px] text-tg-hint">
-                            {ex.muscle_group}
-                            {ex.equipment ? ` · ${ex.equipment}` : ""}
+                            {enumLabel(ex.muscle_group)}
+                            {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
                           </span>
                         </span>
                         <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
@@ -1936,8 +2345,8 @@ export function ActiveWorkout() {
                       <span>
                         <span className="block text-sm font-medium">{ex.name_ru}</span>
                         <span className="block text-[11px] text-tg-hint">
-                          {ex.muscle_group}
-                          {ex.equipment ? ` · ${ex.equipment}` : ""}
+                          {enumLabel(ex.muscle_group)}
+                          {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
                         </span>
                       </span>
                       <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
@@ -1951,17 +2360,24 @@ export function ActiveWorkout() {
       ) : null}
 
       {aiAssistOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="w-full max-w-lg rounded-2xl bg-tg-bg p-4 shadow-xl">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 p-3 sm:items-center">
+          <div
+            ref={aiAssistDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-assist-title"
+            tabIndex={-1}
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg touch-pan-y overflow-y-auto overscroll-contain rounded-2xl bg-tg-bg p-4 shadow-xl [overflow-anchor:none]"
+          >
+            <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-2 flex items-center justify-between gap-2 rounded-t-2xl bg-tg-bg px-4 pb-2 pt-4">
+              <p id="ai-assist-title" className="text-sm font-semibold">
                 {aiAssistMode === "easier"
-                  ? "AI · легче"
+                  ? "ИИ · легче"
                   : aiAssistMode === "no_equipment"
-                    ? "AI · без инвентаря"
+                    ? "ИИ · без инвентаря"
                     : aiAssistMode === "technique"
-                      ? "AI · техника"
-                      : "AI · замена"}
+                      ? "ИИ · техника"
+                      : "ИИ · замена"}
               </p>
               <button
                 type="button"
@@ -1972,7 +2388,10 @@ export function ActiveWorkout() {
               </button>
             </div>
             {currentExercise ? (
-              <p className="mb-2 text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
+              <div className="mb-3 space-y-2">
+                <p className="text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
+                <ExerciseMediaPlayer exercise={currentExercise} compact mediaOnly />
+              </div>
             ) : null}
             {aiAssistError ? (
               <p className="mb-2 text-sm text-amber-800">{aiAssistError}</p>
@@ -1984,7 +2403,7 @@ export function ActiveWorkout() {
             ) : null}
             {aiSuggestedExercises.length ? (
               <div className="mt-3 space-y-2">
-                <p className="text-xs font-medium text-tg-hint">Из ответа AI — нажмите, чтобы заменить</p>
+                <p className="text-xs font-medium text-tg-hint">Из ответа ИИ — нажмите, чтобы заменить</p>
                 {aiSuggestedExercises.map((ex) => (
                   <button
                     key={`ai-parsed-${ex.id}`}

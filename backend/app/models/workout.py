@@ -26,6 +26,9 @@ class Workout(Base, TimestampSoftDeleteMixin):
     """Single scheduled/completed workout instance for a user."""
 
     __tablename__ = "workouts"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_workout_id", name="uq_workouts_user_client_id"),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -36,6 +39,11 @@ class Workout(Base, TimestampSoftDeleteMixin):
     program_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("programs.id"),
+        nullable=True,
+        index=True,
+    )
+    client_workout_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
         nullable=True,
         index=True,
     )
@@ -86,7 +94,11 @@ class WorkoutSet(Base, TimestampSoftDeleteMixin):
     set_number: Mapped[int] = mapped_column(Integer, nullable=False)
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
+    weight_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     rest_time_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    machine_params: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     workout: Mapped[Workout] = relationship("Workout", back_populates="sets")

@@ -1,6 +1,10 @@
 import { memo, useEffect, useRef } from "react";
 
-import { notifyTimerEnded } from "@/api/notifications";
+import {
+  cancelTimerNotification,
+  notifyTimerEnded,
+  scheduleTimerNotification,
+} from "@/api/notifications";
 import { RestTimer } from "@/features/workout/components/RestTimer";
 import { hapticImpact, hapticNotification } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
@@ -25,21 +29,28 @@ type Props = {
 export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutId }: Props) {
   const isResting = useWorkoutStore((s) => s.isResting);
   const restSecondsLeft = useWorkoutStore((s) => s.restSecondsLeft);
-  const tickRest = useWorkoutStore((s) => s.tickRest);
+  const restEndsAtMs = useWorkoutStore((s) => s.restEndsAtMs);
+  const syncRest = useWorkoutStore((s) => s.syncRest);
   const stopRest = useWorkoutStore((s) => s.stopRest);
   const adjustRest = useWorkoutStore((s) => s.adjustRest);
   const restNotifySentRef = useRef(false);
+  const serverScheduledRef = useRef(false);
   const ctxRef = useRef(restContext);
   ctxRef.current = restContext;
 
+  const cancelServerTimer = () => {
+    serverScheduledRef.current = false;
+    void cancelTimerNotification(
+      useWorkoutStore.getState().serverWorkoutId || workoutId || undefined,
+    ).catch(() => undefined);
+  };
+
   useEffect(() => {
-    if (!isResting) {
-      restNotifySentRef.current = false;
-      return;
-    }
-    const timer = window.setInterval(() => {
+    if (!isResting) return;
+    restNotifySentRef.current = false;
+    const update = () => {
       const before = useWorkoutStore.getState().restSecondsLeft;
-      tickRest();
+      syncRest();
       if (before <= 1 && !restNotifySentRef.current) {
         restNotifySentRef.current = true;
         hapticImpact("medium");
@@ -57,7 +68,7 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
             text = `Отдых завершён! Продолжайте: ${ctx.exerciseName} 💪`;
           }
         }
-        if (isOnline()) {
+        if (isOnline() && !serverScheduledRef.current) {
           void notifyTimerEnded({
             kind: "rest",
             title,
@@ -69,9 +80,40 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
           });
         }
       }
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [isResting, tickRest, workoutId]);
+    };
+    update();
+    const timer = window.setInterval(update, 250);
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("focus", update);
+    window.addEventListener("pageshow", update);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("focus", update);
+      window.removeEventListener("pageshow", update);
+    };
+  }, [isResting, syncRest, workoutId]);
+
+  useEffect(() => {
+    if (!isResting || !restEndsAtMs || !isOnline()) return;
+    const seconds = Math.max(1, Math.ceil((restEndsAtMs - Date.now()) / 1000));
+    const ctx = ctxRef.current;
+    let text = ctx?.nextExerciseName && ctx.isLastSetOfExercise
+      ? `Отдых завершён! Дальше: ${ctx.nextExerciseName} 💪`
+      : `Отдых завершён! Продолжайте: ${ctx?.exerciseName || "тренировку"} 💪`;
+    if (ctx?.isLastSetOfExercise && ctx.isLastExercise) {
+      text = "Отдых завершён! Это последнее упражнение — можно завершать тренировку 🏁";
+    }
+    serverScheduledRef.current = false;
+    void scheduleTimerNotification({
+      seconds,
+      title: "Отдых завершён",
+      text,
+      workoutId: useWorkoutStore.getState().serverWorkoutId || workoutId || undefined,
+    })
+      .then(() => { serverScheduledRef.current = true; })
+      .catch(() => { serverScheduledRef.current = false; });
+  }, [isResting, restEndsAtMs, workoutId]);
 
   if (!isResting) return null;
 
@@ -79,8 +121,14 @@ export const RestTimerHost = memo(function RestTimerHost({ restContext, workoutI
     <RestTimer
       isResting={isResting}
       secondsLeft={restSecondsLeft}
-      onSkip={stopRest}
-      onAdjust={(delta) => adjustRest(delta)}
+      onSkip={() => {
+        stopRest();
+        cancelServerTimer();
+      }}
+      onAdjust={(delta) => {
+        adjustRest(delta);
+        // The updated absolute end time triggers a replacement job in the effect.
+      }}
     />
   );
 });

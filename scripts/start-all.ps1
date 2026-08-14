@@ -1,7 +1,8 @@
 #Requires -Version 5.1
-# Full local launch: backend + frontend + ngrok + Telegram Open button.
+# Full local launch: backend + frontend + Tailscale Funnel + Telegram Open button.
 # Entry point: C:\fitness_prog\start-all.cmd
 param(
+  [switch]$SkipTunnel,
   [switch]$SkipNgrok,
   [switch]$SkipTelegram,
   [switch]$Reload
@@ -20,9 +21,8 @@ $BackendPort = 8001
 $FrontendPort = 5173
 $Uvicorn = Join-Path $BackendDir ".venv\Scripts\uvicorn.exe"
 $SetupTg = Join-Path $ScriptsDir "setup_telegram_bot.ps1"
-$NgrokYml = Join-Path $ScriptsDir "ngrok.yml"
-$NgrokYmlExample = Join-Path $ScriptsDir "ngrok.yml.example"
-$UrlsOut = Join-Path $ScriptsDir "ngrok-urls.local.env"
+$StartTailscale = Join-Path $ScriptsDir "start-tailscale-funnel.ps1"
+$UrlsOut = Join-Path $ScriptsDir "tailscale-url.local.env"
 $DevPs1 = Join-Path $ScriptsDir "dev.ps1"
 
 function Info([string]$m) { Write-Host "[start-all] $m" -ForegroundColor Cyan }
@@ -87,46 +87,6 @@ function Wait-Http([string]$Url, [int]$TimeoutSec = 40) {
   return $false
 }
 
-function Wait-NgrokHttps([int]$TimeoutSec = 50) {
-  $deadline = (Get-Date).AddSeconds($TimeoutSec)
-  while ((Get-Date) -lt $deadline) {
-    try {
-      $t = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -TimeoutSec 2
-      foreach ($tunnel in @($t.tunnels)) {
-        if ($tunnel.public_url -like "https://*") {
-          return [string]$tunnel.public_url
-        }
-      }
-    } catch { }
-    Start-Sleep -Milliseconds 700
-  }
-  return ""
-}
-
-function Ensure-NgrokConfig {
-  if (-not (Test-Path -LiteralPath $NgrokYml)) {
-    if (Test-Path -LiteralPath $NgrokYmlExample) {
-      Copy-Item -LiteralPath $NgrokYmlExample -Destination $NgrokYml -Force
-      Info "Created scripts\ngrok.yml from example"
-    } else {
-      $content = @(
-        'version: "2"'
-        "tunnels:"
-        "  frontend:"
-        "    addr: 5173"
-        "    proto: http"
-      ) -join "`r`n"
-      Set-Content -LiteralPath $NgrokYml -Value $content -Encoding ascii
-    }
-  }
-  $raw = Get-Content -LiteralPath $NgrokYml -Raw
-  if ($raw -match "(?m)^\s*authtoken\s*:") {
-    $raw2 = [regex]::Replace($raw, "(?m)^\s*authtoken\s*:.*(\r?\n)?", "")
-    Set-Content -LiteralPath $NgrokYml -Value $raw2 -Encoding ascii
-    Warn "Removed authtoken from ngrok.yml (use NGROK_AUTHTOKEN in .env)"
-  }
-}
-
 function Start-PsWindow([string]$Title, [string]$Command) {
   $full = "Write-Host '=== $Title ===' -ForegroundColor Green; $Command"
   Start-Process -FilePath "powershell.exe" -ArgumentList @(
@@ -180,7 +140,7 @@ if (Test-Path -LiteralPath $PyExe) {
 }
 
 # --- backend ---
-if ((Get-ListenPids $BackendPort).Count -gt 0) {
+if ((Get-ListenPids $BackendPort).Count -gt 0 -or (Wait-Http "http://127.0.0.1:$BackendPort/health" 2)) {
   Ok "Backend already on :$BackendPort"
 } else {
   Info "Starting backend (uvicorn :$BackendPort)..."
@@ -196,7 +156,7 @@ if (-not (Wait-Http "http://127.0.0.1:$BackendPort/docs" 45)) {
 Ok "Backend OK  http://127.0.0.1:$BackendPort/docs"
 
 # --- frontend ---
-if ((Get-ListenPids $FrontendPort).Count -gt 0) {
+if ((Get-ListenPids $FrontendPort).Count -gt 0 -or (Wait-Http "http://127.0.0.1:$FrontendPort" 2)) {
   Ok "Frontend already on :$FrontendPort"
 } else {
   Info "Starting frontend (Vite :$FrontendPort)..."
@@ -211,54 +171,37 @@ if (-not (Wait-Http "http://127.0.0.1:$FrontendPort" 55)) {
 }
 
 $publicUrl = ""
+$skipPublicTunnel = $SkipTunnel -or $SkipNgrok
 
-# --- ngrok ---
-if (-not $SkipNgrok) {
-  $ngrokCmd = Get-Command ngrok -ErrorAction SilentlyContinue
-  if (-not $ngrokCmd) {
-    Warn "ngrok not in PATH - skip tunnel. Browser: http://127.0.0.1:$FrontendPort"
+# --- public HTTPS through Tailscale Funnel ---
+if (-not $skipPublicTunnel) {
+  if (-not (Test-Path -LiteralPath $StartTailscale)) {
+    Warn "scripts\start-tailscale-funnel.ps1 not found - skip tunnel"
   } else {
-    Ensure-NgrokConfig
-    $token = Get-EnvVal "NGROK_AUTHTOKEN"
-    if (-not $token) {
-      Warn "NGROK_AUTHTOKEN empty in .env - ngrok may fail if not already logged in"
-    }
-
     try {
-      $existing = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -TimeoutSec 2
-      foreach ($tunnel in @($existing.tunnels)) {
-        if ($tunnel.public_url -like "https://*") {
-          $publicUrl = [string]$tunnel.public_url
-          break
-        }
+      $saved = Read-DotEnv $UrlsOut
+      if ($saved["TUNNEL_PROVIDER"] -eq "tailscale" -and $saved["FRONTEND_PUBLIC_URL"] -like "https://*.ts.net") {
+        $publicUrl = [string]$saved["FRONTEND_PUBLIC_URL"]
+        Info "Using saved Tailscale Funnel: $publicUrl"
+      } else {
+        Info "Configuring Tailscale Funnel -> :$FrontendPort (one-time UAC prompt)..."
+        $arguments = @(
+          "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $StartTailscale,
+          "-Port", [string]$FrontendPort, "-OutputFile", $UrlsOut
+        )
+        $funnel = Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Verb RunAs -Wait -PassThru
+        if ($funnel.ExitCode -ne 0) { throw "setup exited with code $($funnel.ExitCode)" }
+        $saved = Read-DotEnv $UrlsOut
+        $publicUrl = [string]$saved["FRONTEND_PUBLIC_URL"]
       }
     } catch {
+      Warn "Tailscale Funnel not ready: $($_.Exception.Message)"
+      Warn "Open Tailscale, log in once, then run start-all.cmd again."
       $publicUrl = ""
     }
 
-    if (-not $publicUrl) {
-      Info "Starting ngrok -> :$FrontendPort ..."
-      $tokenEsc = $token -replace "'", "''"
-      $ng = @(
-        "`$env:NGROK_AUTHTOKEN = '$tokenEsc'"
-        "if (`$env:NGROK_AUTHTOKEN) { ngrok config add-authtoken `$env:NGROK_AUTHTOKEN 2>`$null | Out-Null }"
-        "ngrok start --config '$NgrokYml' frontend"
-      ) -join "; "
-      Start-PsWindow "NGROK frontend :$FrontendPort" $ng
-      $publicUrl = Wait-NgrokHttps 55
-    }
-
-    if ($publicUrl) {
+    if ($publicUrl -like "https://*") {
       Ok "Public HTTPS: $publicUrl"
-      $stamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-      $urlText = @(
-        "FRONTEND_PUBLIC_URL=$publicUrl"
-        "BACKEND_PUBLIC_URL=$publicUrl"
-        "VITE_API_URL="
-        "UpdatedAt=$stamp"
-      ) -join "`r`n"
-      Set-Content -LiteralPath $UrlsOut -Value $urlText -Encoding utf8
-
       $beEnv = Join-Path $BackendDir ".env"
       if (Test-Path -LiteralPath $beEnv) {
         $raw = Get-Content -LiteralPath $beEnv -Raw
@@ -282,17 +225,18 @@ if (-not $SkipNgrok) {
         }
       }
     } else {
-      Warn "ngrok HTTPS URL not detected. Open http://127.0.0.1:4040"
+      Warn "Tailscale HTTPS URL not detected. Local app remains available."
     }
   }
 }
 
 # --- telegram ---
-if ((-not $SkipTelegram) -and (-not $SkipNgrok) -and $publicUrl) {
+if ((-not $SkipTelegram) -and (-not $skipPublicTunnel) -and $publicUrl) {
   if (Test-Path -LiteralPath $SetupTg) {
     Info "Configuring Telegram Menu Button Open + /start webhook..."
     try {
       & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SetupTg -MiniAppUrl $publicUrl
+      if ($LASTEXITCODE -ne 0) { throw "setup_telegram_bot.ps1 exited with code $LASTEXITCODE" }
       Ok "Telegram setup done"
     } catch {
       Warn "Telegram setup failed: $($_.Exception.Message)"
@@ -313,7 +257,7 @@ Write-Host "  Local front : http://127.0.0.1:$FrontendPort"
 Write-Host "  Local API   : http://127.0.0.1:$BackendPort/docs"
 if ($publicUrl) {
   Write-Host "  Telegram URL: $publicUrl" -ForegroundColor Green
-  Write-Host "  ngrok UI    : http://127.0.0.1:4040"
+  Write-Host "  Tunnel      : Tailscale Funnel (stable HTTPS, no warning page)"
   Write-Host ""
   Write-Host "  Telegram: open @$bot -> /start -> Open" -ForegroundColor Green
 } else {

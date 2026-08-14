@@ -18,7 +18,7 @@ from app.models.email_otp import EmailOtpCode
 from app.models.nutrition import NutritionLog
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
-from app.schemas.admin import AdminUserRow
+from app.schemas.admin import AdminResetScope, AdminUserRow
 from app.services.telegram_bot import TelegramBotError, send_app_notification
 
 
@@ -142,7 +142,7 @@ async def get_user_or_404(session: AsyncSession, user_id: uuid.UUID) -> User:
     )
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return user
 
 
@@ -174,6 +174,108 @@ async def _delete_user_owned_rows(session: AsyncSession, user_id: uuid.UUID) -> 
     return stats
 
 
+async def _delete_workout_rows(session: AsyncSession, user_id: uuid.UUID) -> dict[str, int]:
+    stats: dict[str, int] = {}
+    workout_ids = list(
+        (await session.execute(select(Workout.id).where(Workout.user_id == user_id))).scalars().all()
+    )
+    if workout_ids:
+        result = await session.execute(
+            delete(WorkoutSet).where(WorkoutSet.workout_id.in_(workout_ids))
+        )
+        stats["workout_sets"] = int(result.rowcount or 0)
+    else:
+        stats["workout_sets"] = 0
+    result = await session.execute(delete(Workout).where(Workout.user_id == user_id))
+    stats["workouts"] = int(result.rowcount or 0)
+    return stats
+
+
+async def _delete_nutrition_rows(session: AsyncSession, user_id: uuid.UUID) -> dict[str, int]:
+    result = await session.execute(delete(NutritionLog).where(NutritionLog.user_id == user_id))
+    return {"nutrition_logs": int(result.rowcount or 0)}
+
+
+def _clear_measurements(user: User) -> dict[str, int]:
+    anthropometry = dict(user.anthropometry or {})
+    measurements = anthropometry.pop("measurements", None)
+    anthropometry.pop("measurements_updated_at", None)
+    user.anthropometry = anthropometry
+    flag_modified(user, "anthropometry")
+
+    goals = dict(user.goals or {})
+    state = dict(goals.get("notification_state") or {})
+    state.pop("last_measurement_date", None)
+    state.pop("last_measurement_mark", None)
+    if state:
+        goals["notification_state"] = state
+    else:
+        goals.pop("notification_state", None)
+    user.goals = goals
+    flag_modified(user, "goals")
+    return {"measurements": len(measurements) if isinstance(measurements, dict) else 0}
+
+
+async def clear_user_data(
+    session: AsyncSession,
+    user: User,
+    *,
+    scope: AdminResetScope,
+    settings: Settings,
+    notify: bool = True,
+) -> dict[str, Any]:
+    """Clear one data domain without resetting the rest of the profile."""
+    if scope == "all":
+        return await reset_user_profile(session, user, settings=settings, notify=notify)
+
+    if scope == "workouts":
+        stats = await _delete_workout_rows(session, user.id)
+        title = "История тренировок очищена"
+        text = "Администратор очистил тренировки и подходы. Анкета и выбранная программа сохранены."
+    elif scope == "nutrition":
+        stats = await _delete_nutrition_rows(session, user.id)
+        goals = dict(user.goals or {})
+        water = goals.pop("water_log", None)
+        stats["water_days"] = len(water) if isinstance(water, dict) else 0
+        user.goals = goals
+        flag_modified(user, "goals")
+        title = "Дневник питания очищен"
+        text = "Администратор очистил дневник питания и воду. Профиль и цели сохранены."
+    else:
+        stats = _clear_measurements(user)
+        title = "Замеры очищены"
+        text = "Администратор очистил замеры тела. Анкета, рост, вес и остальные настройки сохранены."
+
+    goals = dict(user.goals or {})
+    goals["data_reset_at"] = datetime.now(timezone.utc).isoformat()
+    goals["data_reset_scope"] = scope
+    user.goals = goals
+    flag_modified(user, "goals")
+    await session.commit()
+    await session.refresh(user)
+
+    notified = False
+    if notify and user.telegram_id is not None:
+        try:
+            await send_app_notification(
+                settings,
+                telegram_id=int(user.telegram_id),
+                title=title,
+                text=text,
+                startapp="home",
+            )
+            notified = True
+        except TelegramBotError as exc:
+            logger.warning(
+                "admin_scoped_reset_notify_failed user={} scope={} err={}",
+                user.id,
+                scope,
+                exc,
+            )
+
+    return {"stats": stats, "notified": notified, "scope": scope}
+
+
 def _preserve_identity_anthropometry(user: User) -> dict[str, Any]:
     """Keep Telegram name fields after profile wipe."""
     a = user.anthropometry if isinstance(user.anthropometry, dict) else {}
@@ -196,6 +298,7 @@ async def reset_user_profile(
     Keeps telegram_id / username / auth_email / TG name.
     """
     stats = await _delete_user_owned_rows(session, user.id)
+    user.openai_conversation_id = None
 
     identity = _preserve_identity_anthropometry(user)
     user.anthropometry = identity
@@ -249,6 +352,7 @@ async def delete_user(
         )
 
     stats = await _delete_user_owned_rows(session, user.id)
+    user.openai_conversation_id = None
     tg_id = user.telegram_id
     uname = user.username
 

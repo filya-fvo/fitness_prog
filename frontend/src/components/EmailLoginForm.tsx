@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import { loginWithEmailCode, requestEmailLoginCode, type AuthUser } from "@/api/auth";
+import { adoptMergedLocalData } from "@/db/accountMerge";
 import {
   clearOtpDraft,
   OTP_DRAFT_LOGIN_KEY,
   readOtpDraft,
   writeOtpDraft,
 } from "@/utils/otpDraft";
+import { toUserMessage } from "@/utils/errors";
 
 type Props = {
   onSuccess: (user: AuthUser) => void;
@@ -69,7 +71,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
     setDevCode(null);
     const value = email.trim();
     if (!value.includes("@")) {
-      setError("Введите корректный email");
+      setError("Введите корректный адрес электронной почты");
       return;
     }
     setBusy(true);
@@ -88,7 +90,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
     } catch (err) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : "Не удалось отправить код");
+        toUserMessage(err, "Не удалось отправить код");
       setError(typeof msg === "string" ? msg : "Не удалось отправить код");
     } finally {
       setBusy(false);
@@ -101,12 +103,13 @@ export function EmailLoginForm({ onSuccess }: Props) {
     setBusy(true);
     try {
       const res = await loginWithEmailCode(email.trim(), code.trim());
+      await adoptMergedLocalData(res.user);
       clearOtpDraft(OTP_DRAFT_LOGIN_KEY);
       onSuccess(res.user);
     } catch (err) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : "Неверный код");
+        toUserMessage(err, "Не удалось подтвердить код");
       setError(typeof msg === "string" ? msg : "Неверный код");
     } finally {
       setBusy(false);
@@ -115,15 +118,15 @@ export function EmailLoginForm({ onSuccess }: Props) {
 
   return (
     <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
-      <p className="text-sm font-semibold">Вход по email</p>
+      <p className="text-sm font-semibold">Вход или регистрация по электронной почте</p>
       <p className="mt-1 text-xs text-tg-hint">
-        Для браузера (вне Telegram). Код придёт с адреса fil_fit_bot@mail.ru.
+        Если аккаунта ещё нет, он будет создан после подтверждения кода. Код придёт с адреса fil_fit_bot@mail.ru.
       </p>
 
       {step === "email" ? (
         <form className="mt-3 space-y-2" onSubmit={(e) => void onRequestCode(e)}>
           <label className="block text-xs text-tg-hint">
-            Email
+            Электронная почта
             <input
               type="email"
               autoComplete="email"
@@ -165,7 +168,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
             disabled={busy || code.length < 4}
             className="w-full rounded-xl bg-tg-button px-3 py-2.5 text-sm font-semibold text-tg-button-text disabled:opacity-60"
           >
-            {busy ? "Проверяем…" : "Войти"}
+            {busy ? "Проверяем…" : "Войти или зарегистрироваться"}
           </button>
           <div className="flex items-center justify-between gap-2 text-xs">
             <button
@@ -180,7 +183,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
                 setError(null);
               }}
             >
-              Изменить email
+              Изменить адрес
             </button>
             <button
               type="button"

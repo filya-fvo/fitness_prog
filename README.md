@@ -18,6 +18,7 @@ docs/       TZ, ops runbook, QA checklists
 - [docs/production-upgrade-tz.md](docs/production-upgrade-tz.md) РІР‚вЂќ production upgrade TZ v2.1
 - [docs/production-upgrade-instruction.md](docs/production-upgrade-instruction.md) РІР‚вЂќ P0РІР‚вЂњP3 agent workflow
 - [docs/ops-runbook.md](docs/ops-runbook.md) РІР‚вЂќ deploy / backup / BotFather
+- [docs/ADMIN_AI_MODEL_RUNBOOK.md](docs/ADMIN_AI_MODEL_RUNBOOK.md) — замена модели OpenAI, проверка и откат
 - [docs/PROD_CHECKLIST.md](docs/PROD_CHECKLIST.md) РІР‚вЂќ go-live checklist
 
 ## Local run
@@ -30,7 +31,7 @@ docs/       TZ, ops runbook, QA checklists
 C:\fitness_prog\start-all.cmd
 ```
 
-Р СџР С•Р Т‘Р Р…Р С‘Р СР В°Р ВµРЎвЂљ backend `:8001` + frontend `:5173` + ngrok + Telegram Р С”Р Р…Р С•Р С—Р С”РЎС“ **Open**.
+Поднимает backend `:8001` + frontend `:5173` + постоянный HTTPS через Tailscale Funnel и обновляет кнопку Telegram **Open**.
 
 Р СћР С•РЎвЂЎР ВµРЎвЂЎР Р…Р С•: [scripts/dev.cmd](scripts/dev.cmd) (`start`, `restart-backend`, `status`РІР‚В¦).
 

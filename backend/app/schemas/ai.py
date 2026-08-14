@@ -16,17 +16,20 @@ class AIChatRequest(BaseModel):
 class AIChatResponse(BaseModel):
     session_id: uuid.UUID
     reply: str
-    source: str  # rule | llm | cache
+    source: str  # groq | openai | rule
     remaining_requests: int | None = None
 
 
 class AIAnalyzeRequest(BaseModel):
     days: int = Field(default=14, ge=1, le=60)
+    session_id: uuid.UUID | None = None
+    message: str | None = Field(default=None, min_length=1, max_length=4000)
 
 
 class AIAnalyzeResponse(BaseModel):
     report: str
     source: str
+    session_id: uuid.UUID | None = None
     remaining_requests: int | None = None
 
 
@@ -37,3 +40,8 @@ class AIMessageResponse(BaseModel):
     timestamp: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AIHistoryResponse(BaseModel):
+    session_id: uuid.UUID | None = None
+    messages: list[AIMessageResponse] = Field(default_factory=list)

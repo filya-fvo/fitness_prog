@@ -6,10 +6,17 @@ import Dexie, { type Table } from "dexie";
 
 import type { Exercise, LocalSetDraft, Workout } from "@/types/workout";
 
-export type SyncOpType = "create_workout" | "add_set" | "complete_workout";
+export type SyncOpType =
+  | "create_workout"
+  | "update_plan"
+  | "add_set"
+  | "complete_workout"
+  | "delete_workout"
+  | "update_profile";
 
 export type SyncQueueItem = {
   id: string;
+  ownerUserId: string;
   type: SyncOpType;
   /** Client-side workout id (may differ from server after sync). */
   clientWorkoutId: string;
@@ -21,12 +28,14 @@ export type SyncQueueItem = {
 
 export type WorkoutIdMap = {
   clientId: string;
+  ownerUserId: string;
   serverId: string;
   updatedAt: number;
 };
 
 export type LocalWorkoutSession = {
   clientId: string;
+  ownerUserId: string;
   serverId: string | null;
   workout: Workout;
   drafts: LocalSetDraft[];
@@ -56,6 +65,14 @@ class FitnessDB extends Dexie {
       sessions: "clientId, serverId, updatedAt",
       syncQueue: "id, type, clientWorkoutId, createdAt",
       workoutIdMap: "clientId, serverId",
+      meta: "key",
+    });
+    this.version(2).stores({
+      exercises: "id, muscle_group, name_ru",
+      workouts: "id, user_id, scheduled_date, status, completed_at",
+      sessions: "clientId, ownerUserId, [ownerUserId+updatedAt], serverId, updatedAt",
+      syncQueue: "id, ownerUserId, [ownerUserId+createdAt], type, clientWorkoutId, createdAt",
+      workoutIdMap: "clientId, ownerUserId, serverId",
       meta: "key",
     });
   }

@@ -35,7 +35,8 @@ import {
   phaseMetaFromName,
   readProgramCursor,
 } from "@/utils/programProgress";
-import { LEVEL_LABELS } from "@/utils/programRecommend";
+import { enumLabel, programDayLabel } from "@/utils/localization";
+import { toUserMessage } from "@/utils/errors";
 
 function draftsFromWorkout(workout: {
   plan?: WorkoutPlan | Record<string, unknown> | null;
@@ -96,7 +97,7 @@ export function TrainHubPage() {
     `День ${dayIndex}`;
   const levelLabel = (() => {
     const lvl = String(program?.level || program?.target_level || "");
-    return lvl ? LEVEL_LABELS[lvl] ?? lvl : "";
+    return lvl ? enumLabel(lvl) : "";
   })();
 
   useEffect(() => {
@@ -146,7 +147,7 @@ export function TrainHubPage() {
           }
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Не удалось загрузить");
+        if (!cancelled) setError(toUserMessage(err, "Не удалось загрузить тренировки"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -255,7 +256,7 @@ export function TrainHubPage() {
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось стартовать");
+      setError(toUserMessage(err, "Не удалось начать тренировку"));
     } finally {
       setStarting(false);
     }
@@ -285,7 +286,7 @@ export function TrainHubPage() {
         ) : program ? (
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Моя программа</p>
-            <p className="mt-1 text-base font-semibold">{program.name}</p>
+            <p className="mt-1 text-base font-semibold">{programDayLabel(program.name)}</p>
             <p className="mt-1 text-sm text-tg-hint">
               {dayTitle} · {phaseMetaFromName(weekPhase).label}
               {levelLabel ? ` · ${levelLabel}` : ""}

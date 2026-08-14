@@ -1,6 +1,26 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useWorkoutStore } from "@/store/workoutStore";
+import type { Exercise } from "@/types/workout";
+
+function testExercise(id: string, name: string): Exercise {
+  return {
+    id,
+    name_ru: name,
+    muscle_group: "грудь",
+    equipment: "гантели",
+    description: null,
+    technique: null,
+    common_mistakes: null,
+    difficulty: 2,
+    video_url: null,
+    animation_url: null,
+    thumbnail_url: null,
+    media_duration_sec: null,
+    media_source: "none",
+    tags: [],
+  };
+}
 
 describe("workoutStore", () => {
   beforeEach(() => {
@@ -214,6 +234,85 @@ describe("workoutStore", () => {
     ).exercises[0];
     expect(planEx2?.exercise_id).toBe("e1");
     expect(planEx2?.original_exercise_id).toBeFalsy();
+  });
+
+  it("bulk-replaces only incomplete exercises and fully restores draft weights", () => {
+    const store = useWorkoutStore.getState();
+    store.hydrateSession({
+      clientId: "bulk-client",
+      serverId: null,
+      workout: {
+        id: "bulk-client",
+        user_id: "u1",
+        program_id: "p1",
+        scheduled_date: "2026-08-10",
+        status: "planned",
+        ai_notes: null,
+        rpe: null,
+        started_at: null,
+        completed_at: null,
+        sets: [
+          {
+            id: "server-set-1",
+            workout_id: "bulk-client",
+            exercise_id: "e1",
+            set_number: 1,
+            reps: 10,
+            weight: 80,
+            is_completed: false,
+            rest_time_sec: 90,
+            machine_params: { seat: 4 },
+          },
+        ],
+        plan: {
+          exercises: [
+            { exercise_id: "e1", order: 1, target_sets: 1 },
+            { exercise_id: "e2", order: 2, target_sets: 1 },
+          ],
+        },
+      },
+      drafts: [
+        {
+          exerciseId: "e1",
+          setNumber: 1,
+          reps: "10",
+          weight: "80",
+          isCompleted: false,
+          restTimeSec: 90,
+        },
+        {
+          exerciseId: "e2",
+          setNumber: 1,
+          reps: "12",
+          weight: "20",
+          isCompleted: true,
+          restTimeSec: 60,
+        },
+      ],
+    });
+
+    const count = useWorkoutStore.getState().replaceExercises([
+      { fromExerciseId: "e1", toExercise: testExercise("e3", "Жим гантелей") },
+      { fromExerciseId: "e2", toExercise: testExercise("e4", "Жим в тренажёре") },
+    ]);
+
+    expect(count).toBe(1);
+    let state = useWorkoutStore.getState();
+    expect(state.drafts[0]?.exerciseId).toBe("e3");
+    expect(state.drafts[0]?.weight).toBe("");
+    expect(state.drafts[1]?.exerciseId).toBe("e2");
+    expect(state.drafts[1]?.weight).toBe("20");
+    expect(state.activeWorkout?.sets[0]?.exercise_id).toBe("e3");
+    expect(state.activeWorkout?.sets[0]?.weight).toBeNull();
+    expect(state.activeWorkout?.sets[0]?.machine_params).toBeNull();
+
+    expect(state.restoreDefaultExercises()).toBe(true);
+    state = useWorkoutStore.getState();
+    expect(state.drafts[0]?.exerciseId).toBe("e1");
+    expect(state.drafts[0]?.weight).toBe("80");
+    expect(state.activeWorkout?.sets[0]?.exercise_id).toBe("e1");
+    expect(state.activeWorkout?.sets[0]?.weight).toBe(80);
+    expect(state.activeWorkout?.sets[0]?.machine_params).toEqual({ seat: 4 });
   });
 
   it("remaps client workout id to server id", () => {

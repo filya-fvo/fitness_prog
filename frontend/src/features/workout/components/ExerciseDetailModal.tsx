@@ -1,5 +1,7 @@
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise } from "@/types/workout";
+import { enumLabel, visibleExerciseTags } from "@/utils/localization";
 
 type Props = {
   exercise: Exercise;
@@ -14,6 +16,9 @@ export function ExerciseDetailModal({
   onClose,
   onToggleSelect,
 }: Props) {
+  const dialogRef = useModalAccessibility(true, onClose);
+  const visibleTags = visibleExerciseTags(exercise.tags);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center"
@@ -23,6 +28,8 @@ export function ExerciseDetailModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -30,10 +37,11 @@ export function ExerciseDetailModal({
           <div>
             <h2 className="text-lg font-semibold text-tg-text">{exercise.name_ru}</h2>
             <p className="mt-1 text-xs text-tg-hint">
-              {exercise.muscle_group}
-              {exercise.equipment ? ` · ${exercise.equipment}` : ""}
+              {enumLabel(exercise.muscle_group)}
+              {exercise.equipment ? ` · ${enumLabel(exercise.equipment)}` : ""}
               {` · сложность ${exercise.difficulty}/5`}
             </p>
+            <p className="mt-0.5 text-[11px] text-tg-hint">Сложность техники: 1 — легко, 5 — сложно</p>
           </div>
           <button type="button" className="text-sm text-tg-link" onClick={onClose}>
             Закрыть
@@ -49,9 +57,9 @@ export function ExerciseDetailModal({
           </div>
         ) : null}
 
-        {exercise.tags?.length ? (
+        {visibleTags.length ? (
           <div className="mt-3 flex flex-wrap gap-1">
-            {exercise.tags.map((t) => (
+            {visibleTags.map((t) => (
               <span
                 key={t}
                 className="rounded-full bg-tg-secondary px-2 py-0.5 text-[11px] text-tg-hint"

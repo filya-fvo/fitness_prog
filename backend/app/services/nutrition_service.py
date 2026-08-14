@@ -64,7 +64,10 @@ async def search_products(
         count_q = count_q.where(filt)
 
     cat = (category or "").strip()
-    if cat:
+    if cat == "barcode":
+        query = query.where(NutritionProduct.barcode.is_not(None))
+        count_q = count_q.where(NutritionProduct.barcode.is_not(None))
+    elif cat:
         query = query.where(NutritionProduct.category == cat)
         count_q = count_q.where(NutritionProduct.category == cat)
 
@@ -86,7 +89,18 @@ async def list_categories(session: AsyncSession) -> list[str]:
         .distinct()
         .order_by(NutritionProduct.category.asc())
     )
-    return [str(c) for c in rows.all() if c]
+    categories = [str(c) for c in rows.all() if c]
+    has_barcodes = await session.scalar(
+        select(func.count())
+        .select_from(NutritionProduct)
+        .where(
+            NutritionProduct.is_deleted.is_(False),
+            NutritionProduct.barcode.is_not(None),
+        )
+    )
+    if has_barcodes and "barcode" not in categories:
+        categories.append("barcode")
+    return categories
 
 
 async def add_log(
@@ -101,7 +115,7 @@ async def add_log(
         )
     )
     if product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     cal = data.calories_per_100 if data.calories_per_100 is not None else product.calories
     prot = data.proteins_per_100 if data.proteins_per_100 is not None else product.proteins
@@ -166,7 +180,7 @@ async def update_log(
 ) -> NutritionLog:
     row = await get_user_log(session, user, log_id)
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запись дневника не найдена")
 
     product = await session.scalar(
         select(NutritionProduct).where(
@@ -175,7 +189,7 @@ async def update_log(
         )
     )
     if product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     if data.quantity_grams is not None:
         row.quantity_grams = data.quantity_grams
@@ -238,7 +252,7 @@ async def delete_log(
 ) -> None:
     row = await get_user_log(session, user, log_id)
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Log not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запись дневника не найдена")
     row.is_deleted = True
     await session.commit()
 
@@ -474,7 +488,7 @@ async def create_product(
 ) -> NutritionProduct:
     name = (name_ru or "").strip()
     if not name:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="name_ru required")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Укажите название продукта")
     code = normalize_barcode(barcode) or None
     if code:
         existing = await get_product_by_barcode(session, code)

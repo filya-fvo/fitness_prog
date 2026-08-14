@@ -57,7 +57,7 @@ async def get_exercise(
 ) -> ExerciseResponse:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
     return ExerciseResponse.model_validate(exercise)
 
 
@@ -81,7 +81,7 @@ async def update_exercise(
 ) -> ExerciseResponse:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
     updated = await exercise_service.update_exercise(session, exercise, body)
     return ExerciseResponse.model_validate(updated)
 
@@ -94,5 +94,5 @@ async def delete_exercise(
 ) -> None:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
     await exercise_service.soft_delete_exercise(session, exercise)

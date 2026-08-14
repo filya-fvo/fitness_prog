@@ -30,7 +30,7 @@ async def shift_future_workouts(
     if days < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="days must be >= 0",
+            detail="Количество дней не может быть отрицательным",
         )
 
     start = from_date or date.today()
@@ -74,11 +74,11 @@ async def mark_skipped_and_shift(
     )
     workout = result.scalar_one_or_none()
     if workout is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тренировка не найдена")
     if workout.status == "completed":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot skip a completed workout",
+            detail="Завершённую тренировку нельзя отметить пропущенной",
         )
 
     skip_date = workout.scheduled_date

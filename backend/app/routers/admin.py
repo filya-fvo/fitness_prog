@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import require_admin
 from app.models.user import User
-from app.schemas.admin import AdminActionResponse, AdminUserListResponse
+from app.schemas.admin import AdminActionResponse, AdminClearRequest, AdminUserListResponse
 from app.services import admin_users
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -32,21 +32,49 @@ async def admin_list_users(
 @router.post("/users/{user_id}/reset", response_model=AdminActionResponse)
 async def admin_reset_user(
     user_id: uuid.UUID,
-    notify: bool = Query(default=True),
+    _: User = Depends(require_admin),
+) -> AdminActionResponse:
+    del user_id
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Устаревший полный сброс отключён. Обновите приложение и используйте выборочную очистку.",
+    )
+
+
+@router.post("/users/{user_id}/clear", response_model=AdminActionResponse)
+async def admin_clear_user_data(
+    user_id: uuid.UUID,
+    body: AdminClearRequest,
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
     _: User = Depends(require_admin),
 ) -> AdminActionResponse:
+    """Clear an explicitly selected data domain; body is required for safety."""
+    if body.scope == "all" and not body.confirm_full_reset:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Для полного сброса требуется явное подтверждение",
+        )
     user = await admin_users.get_user_or_404(session, user_id)
-    meta = await admin_users.reset_user_profile(
-        session, user, settings=settings, notify=notify
+    meta = await admin_users.clear_user_data(
+        session,
+        user,
+        scope=body.scope,
+        settings=settings,
+        notify=body.notify,
     )
+    details = {
+        "all": "Профиль очищен. Пользователю нужно заново пройти анкету.",
+        "workouts": "Тренировки и подходы очищены. Профиль и программа сохранены.",
+        "nutrition": "Дневник питания и вода очищены. Профиль сохранён.",
+        "measurements": "Замеры тела очищены. Остальные данные профиля сохранены.",
+    }
     return AdminActionResponse(
         ok=True,
         user_id=user_id,
-        action="reset",
+        action=f"clear_{body.scope}",
         notified=bool(meta.get("notified")),
-        detail="Профиль очищен. Пользователю нужно заново пройти анкету.",
+        detail=details[body.scope],
         meta=meta,
     )
 
@@ -72,6 +100,6 @@ async def admin_delete_user(
         user_id=user_id,
         action="delete",
         notified=bool(meta.get("notified")),
-        detail="Пользователь удалён (soft-delete).",
+        detail="Пользователь перемещён в архив.",
         meta=meta,
     )

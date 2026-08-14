@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import json
 from pathlib import Path
 from typing import Any
@@ -11,8 +12,14 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from app.core.config import Settings, get_settings
+from app.core.database import AsyncSessionLocal
+from app.models.user import User
+from app.services import supplement_intakes
 from app.services.telegram_bot import (
     TelegramBotError,
+    answer_callback_query,
+    edit_message_text,
+    extract_callback_query,
     extract_help_command,
     extract_open_text_tap,
     extract_start_command,
@@ -25,7 +32,9 @@ from app.services.telegram_bot import (
     set_bot_commands,
     set_chat_menu_button,
     set_webhook,
+    supplement_intake_keyboard,
 )
+from sqlalchemy import select
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
@@ -55,9 +64,14 @@ def _verify_secret(
 ) -> None:
     expected = (settings.telegram_webhook_secret or "").strip()
     if not expected:
+        if settings.environment == "production":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Секретный ключ webhook Telegram не настроен",
+            )
         return
-    if (x_telegram_bot_api_secret_token or "") != expected:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="bad secret")
+    if not hmac.compare_digest(x_telegram_bot_api_secret_token or "", expected):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Неверный секретный ключ")
 
 
 def _load_guide_sent() -> dict[str, Any]:
@@ -148,6 +162,11 @@ async def telegram_webhook(
     if not isinstance(update, dict):
         return {"ok": True}
 
+    callback = extract_callback_query(update)
+    if callback and callback["data"].startswith("si:"):
+        await _handle_supplement_callback(settings, callback)
+        return {"ok": True}
+
     # Legacy Mini App sendData closes the app and delivers web_app_data here.
     wad = extract_web_app_data(update)
     if wad:
@@ -227,6 +246,92 @@ async def telegram_webhook(
     return {"ok": True}
 
 
+async def _handle_supplement_callback(settings: Settings, callback: dict[str, Any]) -> None:
+    parts = callback["data"].split(":", 2)
+    if len(parts) != 3:
+        await answer_callback_query(
+            settings, callback_query_id=callback["id"], text="Некорректная кнопка"
+        )
+        return
+    action, raw_id = parts[1], parts[2]
+    try:
+        import uuid
+
+        intake_id = uuid.UUID(raw_id)
+    except ValueError:
+        await answer_callback_query(
+            settings, callback_query_id=callback["id"], text="Приём не найден"
+        )
+        return
+
+    async with AsyncSessionLocal() as session:
+        user = await session.scalar(
+            select(User).where(
+                User.telegram_id == callback["user_id"],
+                User.is_deleted.is_(False),
+            )
+        )
+        if user is None:
+            await answer_callback_query(
+                settings, callback_query_id=callback["id"], text="Аккаунт не найден"
+            )
+            return
+        if action == "a":
+            rows = await supplement_intakes.mark_group(
+                session, user, intake_id, status="taken", source="telegram"
+            )
+            answer = "Все добавки отмечены"
+        elif action in {"t", "s"}:
+            row = await supplement_intakes.mark_intake(
+                session,
+                user,
+                intake_id,
+                status="taken" if action == "t" else "skipped",
+                source="telegram",
+            )
+            rows = [row] if row is not None else []
+            answer = "Отмечено: принято" if action == "t" else "Отмечено: пропущено"
+        elif action == "z":
+            rows = await supplement_intakes.snooze_group(session, user, intake_id, minutes=30)
+            answer = "Напомню через 30 минут"
+        else:
+            rows = []
+            answer = "Неизвестное действие"
+
+    await answer_callback_query(settings, callback_query_id=callback["id"], text=answer)
+    if not rows:
+        return
+    async with AsyncSessionLocal() as session:
+        user = await session.scalar(
+            select(User).where(User.telegram_id == callback["user_id"], User.is_deleted.is_(False))
+        )
+        current = (
+            await supplement_intakes.intake_group(session, user, intake_id) if user is not None else []
+        )
+    icons = {"taken": "✅", "skipped": "⏭", "pending": "⏳"}
+    lines = [
+        f"{icons.get(row.status, '•')} <b>{row.name_ru}</b>"
+        + (f" — {row.dose}" if row.dose else "")
+        for row in current
+    ]
+    pending = [(str(row.id), row.name_ru) for row in current if row.status == "pending"]
+    try:
+        message_text = "💊 <b>Добавки</b>\n" + "\n".join(lines)
+        keyboard = supplement_intake_keyboard(pending) if pending else {"inline_keyboard": []}
+        if action == "z":
+            message_text += "\n\n⏰ Напоминание перенесено на 30 минут."
+            keyboard = {"inline_keyboard": []}
+        await edit_message_text(
+            settings,
+            chat_id=callback["chat_id"],
+            message_id=callback["message_id"],
+            text=message_text,
+            reply_markup=keyboard,
+        )
+    except TelegramBotError as exc:
+        logger.warning("supplement_callback_edit_failed err={}", exc)
+
+
 @router.post("/setup/menu-button")
 async def setup_menu_button(
     body: SetupMenuRequest,
@@ -235,13 +340,13 @@ async def setup_menu_button(
     """
     Set default Menu Button (Open) for all chats.
 
-    Dev/ops helper — call once after MINI_APP_URL / ngrok URL is known.
+    Dev/ops helper — call once after the permanent MINI_APP_URL is known.
     Disabled in production unless explicitly allowed later.
     """
     if settings.environment == "production":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Use scripts/setup_telegram_bot.ps1 or BotFather in production",
+            detail="Настройте Telegram-бота через служебный скрипт или BotFather",
         )
     try:
         data = await set_chat_menu_button(
@@ -268,7 +373,7 @@ async def setup_webhook(
     if settings.environment == "production":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Configure webhook via ops script in production",
+            detail="Настройте webhook через служебный скрипт",
         )
     try:
         data = await set_webhook(
@@ -285,7 +390,7 @@ async def setup_webhook(
 @router.get("/setup/webhook")
 async def webhook_info(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     if settings.environment == "production":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Не найдено")
     try:
         info = await get_webhook_info(settings)
         return {"ok": True, "info": info.get("result")}

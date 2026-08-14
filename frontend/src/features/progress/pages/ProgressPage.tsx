@@ -7,6 +7,7 @@ import { fetchExercises } from "@/api/exercises";
 import { fetchNutritionRange } from "@/api/nutrition";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   cacheWorkouts,
@@ -15,6 +16,7 @@ import {
   readCachedWorkouts,
 } from "@/db/syncQueue";
 import { Calendar } from "@/features/progress/pages/Calendar";
+import { WorkoutDayDetails } from "@/features/progress/pages/WorkoutDayDetails";
 import { Charts } from "@/features/progress/pages/Charts";
 import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
 import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
@@ -32,9 +34,11 @@ import {
   groupNutritionByWeek,
   summarizeNutritionPeriods,
   type NutritionBalanceSummary,
+  workoutDateKey,
 } from "@/utils/progress";
 import { buildLiftTrends } from "@/utils/strengthProgress";
 import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
+import { toUserMessage } from "@/utils/errors";
 
 type NutritionRangeMode = "day" | "week";
 
@@ -54,6 +58,8 @@ export function ProgressPage() {
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +83,7 @@ export function ProgressPage() {
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
                 setNutritionError(
-                  err instanceof Error ? err.message : "Не удалось загрузить питание",
+                  toUserMessage(err, "Не удалось загрузить питание"),
                 );
               }
               return null;
@@ -112,7 +118,7 @@ export function ProgressPage() {
             setSource("cache");
             setError("Сеть недоступна — показан кэш");
           } else {
-            setError(err instanceof Error ? err.message : "Не удалось загрузить прогресс");
+            setError(toUserMessage(err, "Не удалось загрузить прогресс"));
           }
         }
       } finally {
@@ -139,7 +145,7 @@ export function ProgressPage() {
   async function askWeekAi() {
     if (weekAiBusy) return;
     if (!getStoredToken() || !isOnline()) {
-      setWeekAiError("AI-разбор доступен онлайн после входа");
+      setWeekAiError("ИИ-разбор доступен онлайн после входа");
       return;
     }
     setWeekAiBusy(true);
@@ -149,7 +155,7 @@ export function ProgressPage() {
       const res = await analyzeProgress(7);
       setWeekAiText(res.report);
     } catch (err) {
-      setWeekAiError(err instanceof Error ? err.message : "AI недоступен");
+      setWeekAiError(toUserMessage(err, "ИИ-тренер временно недоступен"));
     } finally {
       setWeekAiBusy(false);
     }
@@ -174,10 +180,10 @@ export function ProgressPage() {
   }
 
   return (
-    <section>
+    <section className="mx-auto max-w-4xl">
       <Header title="Прогресс" subtitle="Тренировки, питание и календарь" />
 
-      {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
+      {loading ? <PageSkeleton cards={2} /> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
       {!loading && completedCount === 0 ? (
@@ -215,7 +221,7 @@ export function ProgressPage() {
         </p>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {completedCount > 0 ? <HabitsCheckin /> : null}
         <WeeklyOverview
           overview={weekOverview}
@@ -228,7 +234,7 @@ export function ProgressPage() {
         {weekAiText ? (
           <div className="rounded-2xl bg-tg-secondary p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">AI · разбор недели</p>
+              <p className="text-sm font-semibold">ИИ · разбор недели</p>
               <button type="button" className="text-xs text-tg-hint" onClick={() => setWeekAiText(null)}>
                 Скрыть
               </button>
@@ -239,9 +245,20 @@ export function ProgressPage() {
             </Link>
           </div>
         ) : null}
-        <BadgesPanel badges={badges} />
-        <StrengthTrends trends={liftTrends} />
+        <StrengthTrends trends={liftTrends.slice(0, 1)} />
 
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((value) => !value)}
+          aria-expanded={detailsOpen}
+          className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+        >
+          {detailsOpen ? "Скрыть подробную аналитику" : "Календарь, достижения и подробные графики"}
+        </button>
+
+        {detailsOpen ? <>
+        <BadgesPanel badges={badges} />
+        {liftTrends.length > 1 ? <StrengthTrends trends={liftTrends} /> : null}
         <div className="rounded-2xl bg-tg-secondary p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">Сводка по питанию</p>
@@ -290,8 +307,19 @@ export function ProgressPage() {
           days={calendarDays}
           onPrev={() => shiftMonth(-1)}
           onNext={() => shiftMonth(1)}
+          onSelectDate={setSelectedDate}
         />
+        </> : null}
       </div>
+      {selectedDate ? <WorkoutDayDetails
+        date={selectedDate}
+        workouts={workouts.filter((workout) => workoutDateKey(workout) === selectedDate)}
+        catalog={catalog}
+        onClose={() => setSelectedDate(null)}
+        onChanged={(changed, deletedId) => setWorkouts((current) => deletedId
+          ? current.filter((item) => item.id !== deletedId)
+          : current.map((item) => item.id === changed?.id ? changed : item))}
+      /> : null}
     </section>
   );
 }

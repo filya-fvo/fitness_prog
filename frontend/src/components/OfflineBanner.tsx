@@ -10,6 +10,7 @@ import {
   peekSyncQueue,
 } from "@/db/syncQueue";
 import { isOnline } from "@/utils/network";
+import { confirmAction } from "@/lib/telegram";
 
 export function OfflineBanner() {
   const [online, setOnline] = useState(isOnline());
@@ -116,14 +117,11 @@ export function OfflineBanner() {
           type="button"
           disabled={syncing}
           onClick={() => {
-            if (
-              !window.confirm(
-                "Удалить очередь локальных действий? Данные на сервере не затронем.",
-              )
-            ) {
-              return;
-            }
-            void clearSyncQueue().then(() => refresh());
+            void confirmAction(
+              "Удалить очередь локальных действий? Данные на сервере не затронем.",
+            ).then((accepted) => {
+              if (accepted) void clearSyncQueue().then(() => refresh());
+            });
           }}
           className="rounded-lg bg-tg-bg px-2.5 py-1 text-[11px] text-tg-hint disabled:opacity-60"
         >

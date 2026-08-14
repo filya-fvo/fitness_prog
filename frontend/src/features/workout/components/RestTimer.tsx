@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 
 import { formatRestTime } from "@/utils/format";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 type RestTimerProps = {
   secondsLeft: number;
@@ -24,6 +25,7 @@ export function RestTimer({
   onAdjust,
 }: RestTimerProps) {
   const [expanded, setExpanded] = useState(false);
+  const dialogRef = useModalAccessibility(expanded, () => setExpanded(false));
   const totalRef = useRef<number>(Math.max(1, totalSeconds || secondsLeft || 1));
 
   useEffect(() => {
@@ -100,9 +102,16 @@ export function RestTimer({
 
       {/* Full modal — only when user opens the chip */}
       {expanded ? (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#121214] text-white">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rest-timer-title"
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex flex-col bg-[#121214] text-white"
+        >
           <div className="flex items-center justify-between px-4 py-3">
-            <p className="text-sm font-medium text-white/80">Таймер отдыха</p>
+            <p id="rest-timer-title" className="text-sm font-medium text-white/80">Таймер отдыха</p>
             <button
               type="button"
               onClick={() => setExpanded(false)}

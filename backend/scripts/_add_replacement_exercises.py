@@ -13,12 +13,38 @@ if str(ROOT) not in sys.path:
 
 CONTENT = Path(__file__).resolve().parent / "seed_content"
 SEED_PATH = CONTENT / "exercises.json"
+MANIFEST_PATH = ROOT.parent / "frontend" / "public" / "exercise-gifs" / "exercise-gifs-manifest.json"
+
+DEPRECATED_ALIASES = {
+    "Жим гантелей на наклонной скамье",
+    "Разводка гантелей лёжа",
+    "Тяга нижнего блока к поясу",
+    "Жим штанги узким хватом",
+}
 
 # Reuse closest existing GIFs so UI is not empty until dedicated media is added.
 GIF_CABLE_ROW = "/exercise-gifs/0861-fUBheHs.gif"
 GIF_CABLE_PUSH = "/exercise-gifs/0201-3ZflifB.gif"
 GIF_DB_SKULL = "/exercise-gifs/0351-mpKZGWz.gif"
 GIF_LAT_PD = "/exercise-gifs/2330-LEprlgG.gif"
+GIF_DB_FLY = "/exercise-gifs/0308-yz9nUhF.gif"
+GIF_CABLE_DECLINE_FLY = "/exercise-gifs/0158-7saC5zz.gif"
+GIF_DB_INCLINE_PRESS = "/exercise-gifs/0314-ns0SIbU.gif"
+GIF_DB_LATERAL_RAISE = "/exercise-gifs/0334-DsgkuIt.gif"
+GIF_REVERSE_GRIP_PULL_UP = "/exercise-gifs/0674-YAk5dIw.gif"
+GIF_SMITH_BENCH = "/exercise-gifs/0748-trqKQv2.gif"
+GIF_INCLINE_MACHINE_PRESS = "/exercise-gifs/1299-jHAnWmT.gif"
+GIF_PEC_DECK = "/exercise-gifs/0596-v3xmPAR.gif"
+GIF_MACHINE_SHOULDER_PRESS = "/exercise-gifs/0603-67n3r98.gif"
+GIF_CABLE_LATERAL_RAISE = "/exercise-gifs/0178-goJ6ezq.gif"
+GIF_MACHINE_ROW = "/exercise-gifs/1350-7I6LNUG.gif"
+GIF_NEUTRAL_PULLDOWN = "/exercise-gifs/0818-rkg41Fb.gif"
+GIF_SEATED_LEG_CURL = "/exercise-gifs/0599-Zg3XY7P.gif"
+GIF_SMITH_HIP_RAISE = "/exercise-gifs/0756-CqhoytW.gif"
+GIF_MACHINE_CALF_RAISE = "/exercise-gifs/0605-ykUOVze.gif"
+GIF_INCLINE_CURL = "/exercise-gifs/0315-F3xgbjF.gif"
+GIF_CABLE_CRUNCH = "/exercise-gifs/0175-WW95auq.gif"
+GIF_PALLOF = "/exercise-gifs/0979-9pa4H5m.gif"
 
 
 def ex(
@@ -37,7 +63,11 @@ def ex(
         "name_ru": name_ru,
         "muscle_group": muscle_group,
         "equipment": equipment,
-        "description": description or f"{name_ru}.",
+        "description": description or (
+            f"{name_ru}. © Gym Visual — https://gymvisual.com/"
+            if tags and "gymvisual" in tags
+            else f"{name_ru}."
+        ),
         "technique": technique,
         "common_mistakes": common_mistakes,
         "difficulty": difficulty,
@@ -180,6 +210,7 @@ NEW_ITEMS: list[dict] = [
         "4. Не выпрямляйте локти полностью.\n"
         "5. Контролируйте негативную фазу.",
         description="Изоляция груди, хорошая замена жимовым движениям в пампе.",
+        animation_url=GIF_DB_FLY,
         tags=["curated", "manual_add", "replacement", "грудь"],
     ),
     ex(
@@ -193,6 +224,7 @@ NEW_ITEMS: list[dict] = [
         "4. Медленно вернитесь в растяжение.\n"
         "5. Не округляйте плечи вперёд чрезмерно.",
         description="Сведение на кроссовере — изоляция груди.",
+        animation_url=GIF_CABLE_DECLINE_FLY,
         tags=["curated", "manual_add", "replacement", "cable", "грудь"],
     ),
     ex(
@@ -206,6 +238,7 @@ NEW_ITEMS: list[dict] = [
         "4. Выжмите вверх, не ударяя гантели друг о друга.\n"
         "5. Стопы устойчиво на полу.",
         description="Наклонный жим гантелей — акцент на верх груди.",
+        animation_url=GIF_DB_INCLINE_PRESS,
         tags=["curated", "manual_add", "replacement", "грудь"],
     ),
     ex(
@@ -219,6 +252,7 @@ NEW_ITEMS: list[dict] = [
         "4. Медленно опустите.\n"
         "5. Не раскачивайте корпус.",
         description="Средняя дельта, классические боковые махи.",
+        animation_url=GIF_DB_LATERAL_RAISE,
         tags=["curated", "manual_add", "replacement", "плечи"],
     ),
     ex(
@@ -232,6 +266,7 @@ NEW_ITEMS: list[dict] = [
         "4. Опустите штангу контролируемо.\n"
         "5. Не округляйте поясницу.",
         description="Базовая тяга штанги в наклоне для толщины спины.",
+        animation_url="/exercise-gifs/0027-eZyBC3j.gif",
         tags=["curated", "manual_add", "replacement", "barbell", "спина"],
     ),
     ex(
@@ -245,6 +280,7 @@ NEW_ITEMS: list[dict] = [
         "4. Не раскачивайтесь.\n"
         "5. При необходимости используйте резину или гравитрон.",
         description="Подтягивания супинированным хватом — спина + бицепс.",
+        animation_url=GIF_REVERSE_GRIP_PULL_UP,
         tags=["curated", "manual_add", "replacement", "спина"],
     ),
     ex(
@@ -277,19 +313,171 @@ NEW_ITEMS: list[dict] = [
     ),
 ]
 
+NEW_ITEMS.extend(
+    [
+        ex(
+            "Жим лёжа в машине Смита", "грудь", "машина Смита", 3,
+            "1. Настройте скамью так, чтобы гриф опускался к середине груди.\n"
+            "2. Сведите лопатки, стопы плотно прижмите к полу.\n"
+            "3. Снимите гриф с фиксаторов и опускайте подконтрольно.\n"
+            "4. Выжмите гриф вверх без жёсткого замыкания локтей.",
+            animation_url=GIF_SMITH_BENCH,
+            tags=["gymvisual", "ds:0748", "curated", "replacement", "smith", "грудь"],
+        ),
+        ex(
+            "Жим на наклонной в тренажёре", "грудь", "тренажёр", 2,
+            "1. Настройте сиденье: рукояти должны быть у верхней части груди.\n"
+            "2. Прижмите спину к опоре и сведите лопатки.\n"
+            "3. Выжмите рукояти вперёд-вверх.\n4. Медленно вернитесь до комфортного растяжения.",
+            animation_url=GIF_INCLINE_MACHINE_PRESS,
+            tags=["gymvisual", "ds:1299", "curated", "replacement", "machine", "грудь"],
+        ),
+        ex(
+            "Сведение рук в тренажёре «бабочка»", "грудь", "тренажёр", 2,
+            "1. Настройте сиденье, чтобы локти были примерно на уровне груди.\n"
+            "2. Прижмите спину, держите локти мягкими.\n"
+            "3. Сведите рукояти перед собой.\n4. Вернитесь без рывка, сохраняя натяжение груди.",
+            animation_url=GIF_PEC_DECK,
+            tags=["gymvisual", "ds:0596", "curated", "replacement", "machine", "грудь"],
+        ),
+        ex(
+            "Жим вверх в тренажёре сидя", "плечи", "тренажёр", 2,
+            "1. Настройте сиденье: рукояти начинаются около уровня плеч.\n"
+            "2. Прижмите спину и напрягите корпус.\n"
+            "3. Выжмите рукояти вверх.\n4. Опускайте до комфортной глубины без рывка.",
+            animation_url=GIF_MACHINE_SHOULDER_PRESS,
+            tags=["gymvisual", "ds:0603", "curated", "replacement", "machine", "плечи"],
+        ),
+        ex(
+            "Отведение руки в сторону на блоке", "плечи", "блок/кроссовер", 2,
+            "1. Встаньте боком к нижнему блоку и возьмите рукоять дальней рукой.\n"
+            "2. Слегка согните локоть.\n3. Поднимите руку в сторону до уровня плеч.\n"
+            "4. Медленно опустите, не раскачивая корпус.",
+            animation_url=GIF_CABLE_LATERAL_RAISE,
+            tags=["gymvisual", "ds:0178", "curated", "replacement", "cable", "плечи"],
+        ),
+        ex(
+            "Тяга с упором грудью в тренажёре", "спина", "тренажёр", 2,
+            "1. Настройте сиденье и упритесь грудью в подушку.\n"
+            "2. Начните с вытянутых рук и опущенных плеч.\n"
+            "3. Тяните рукояти к корпусу, сводя лопатки.\n4. Верните вес без отрыва груди.",
+            animation_url=GIF_MACHINE_ROW,
+            tags=["gymvisual", "ds:1350", "curated", "replacement", "machine", "спина"],
+        ),
+        ex(
+            "Тяга верхнего блока нейтральным хватом", "спина", "блок/кроссовер", 2,
+            "1. Возьмите параллельные рукояти, зафиксируйте бёдра.\n"
+            "2. Слегка отклоните корпус назад.\n3. Тяните рукоять к верхней части груди.\n"
+            "4. Полностью и подконтрольно выпрямите руки.",
+            animation_url=GIF_NEUTRAL_PULLDOWN,
+            tags=["gymvisual", "ds:0818", "curated", "replacement", "cable", "спина"],
+        ),
+        ex(
+            "Сгибания ног сидя", "ноги", "тренажёр", 2,
+            "1. Совместите колени с осью тренажёра и зафиксируйте бёдра валиком.\n"
+            "2. Согните ноги, направляя пятки вниз-назад.\n"
+            "3. Сделайте короткую паузу.\n4. Медленно верните вес, не бросая стек.",
+            animation_url=GIF_SEATED_LEG_CURL,
+            tags=["gymvisual", "ds:0599", "curated", "replacement", "machine", "ноги"],
+        ),
+        ex(
+            "Ягодичный мост в машине Смита", "ноги", "машина Смита", 3,
+            "1. Упритесь верхом спины в скамью, гриф расположите на сгибе таза через накладку.\n"
+            "2. Поставьте стопы устойчиво.\n3. Поднимите таз до прямой линии плечи–таз–колени.\n"
+            "4. Сожмите ягодицы и опуститесь подконтрольно.",
+            animation_url=GIF_SMITH_HIP_RAISE,
+            tags=["gymvisual", "ds:0756", "curated", "replacement", "smith", "ноги"],
+        ),
+        ex(
+            "Подъёмы на носки стоя в тренажёре", "ноги", "тренажёр", 2,
+            "1. Установите плечи под упоры, носки поставьте на край платформы.\n"
+            "2. Опустите пятки до комфортного растяжения.\n"
+            "3. Поднимитесь максимально высоко на носки.\n4. Не пружиньте в нижней точке.",
+            animation_url=GIF_MACHINE_CALF_RAISE,
+            tags=["gymvisual", "ds:0605", "curated", "replacement", "machine", "ноги"],
+        ),
+        ex(
+            "Сгибания гантелей на бицепс на наклонной скамье", "бицепс", "гантели", 2,
+            "1. Сядьте на наклонную скамью, руки свободно опустите.\n"
+            "2. Не выводя локти вперёд, согните руки.\n"
+            "3. Сожмите бицепс вверху.\n4. Медленно опустите гантели до полного растяжения.",
+            animation_url=GIF_INCLINE_CURL,
+            tags=["gymvisual", "ds:0315", "curated", "replacement", "dumbbells", "бицепс"],
+        ),
+        ex(
+            "Скручивания на верхнем блоке", "кор", "блок/кроссовер", 2,
+            "1. Встаньте на колени спиной или лицом к верхнему блоку, канат держите у головы.\n"
+            "2. Зафиксируйте таз.\n3. Скрутите грудную клетку к тазу усилием пресса.\n"
+            "4. Вернитесь, не разгибая поясницу чрезмерно.",
+            animation_url=GIF_CABLE_CRUNCH,
+            tags=["gymvisual", "ds:0175", "curated", "replacement", "cable", "кор"],
+        ),
+        ex(
+            "Жим Паллофа с резинкой", "кор", "резинка", 2,
+            "1. Встаньте боком к закреплённой резинке и держите её у груди.\n"
+            "2. Напрягите корпус и выжмите руки перед собой.\n"
+            "3. Не позволяйте корпусу поворачиваться.\n4. Верните руки и выполните на другую сторону.",
+            animation_url=GIF_PALLOF,
+            tags=["gymvisual", "ds:0979", "curated", "replacement", "bands", "кор"],
+        ),
+    ]
+)
+
 
 def patch_seed() -> list[str]:
     rows = json.loads(SEED_PATH.read_text(encoding="utf-8"))
-    existing = {str(r.get("name_ru")) for r in rows}
+    rows = [row for row in rows if str(row.get("name_ru")) not in DEPRECATED_ALIASES]
+    corrections = {
+        "Ягодичный мост": {
+            "muscle_group": "ноги",
+            "equipment": "свой вес",
+            "description": "Ягодичный мост без отягощения. Цель: ягодичные. Оборудование: body weight. © Gym Visual — https://gymvisual.com/",
+            "technique": "1. Лягте на спину, согните колени и поставьте стопы на пол.\n2. Напрягите корпус и ягодицы.\n3. Поднимите таз до прямой линии от колен до плеч.\n4. Задержитесь вверху и медленно опуститесь.\n5. Не переразгибайте поясницу.",
+            "difficulty": 1,
+            "animation_url": "/exercise-gifs/3013-u0cNiij.gif",
+            "tags": ["gymvisual", "ds:3013", "© Gym Visual", "curated", "load:reps_only"],
+        },
+        "Ягодичный мост со штангой": {
+            "muscle_group": "ноги",
+            "equipment": "штанга",
+            "description": "Ягодичный мост со штангой. Цель: ягодичные. Оборудование: barbell. © Gym Visual — https://gymvisual.com/",
+            "technique": "1. Лягте на спину и поставьте стопы устойчиво.\n2. Разместите штангу на сгибе таза через мягкую накладку.\n3. Поднимите таз усилием ягодиц до прямой линии от колен до плеч.\n4. Задержитесь вверху и опуститесь подконтрольно.\n5. Не переразгибайте поясницу.",
+            "difficulty": 3,
+            "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
+            "tags": ["gymvisual", "ds:1409", "© Gym Visual", "curated", "barbell", "ноги"],
+        },
+    }
+    for row in rows:
+        patch = corrections.get(str(row.get("name_ru")))
+        if patch:
+            row.update(patch)
+    by_name = {str(r.get("name_ru")): r for r in rows}
     added: list[str] = []
     for item in NEW_ITEMS:
         name = item["name_ru"]
-        if name in existing:
+        if name in DEPRECATED_ALIASES:
+            continue
+        if name in by_name:
+            by_name[name].update({key: value for key, value in item.items() if value is not None})
             continue
         rows.append(item)
-        existing.add(name)
+        by_name[name] = item
         added.append(name)
     SEED_PATH.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest = [
+        {
+            "name_ru": row["name_ru"],
+            "file": Path(str(row.get("animation_url") or "")).name,
+            "animation_url": row.get("animation_url"),
+            "muscle_group": row.get("muscle_group"),
+        }
+        for row in rows
+        if row.get("animation_url")
+    ]
+    MANIFEST_PATH.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     print(f"seed_total={len(rows)} seed_added={len(added)}")
     for n in added:
         print(f" + {n}")

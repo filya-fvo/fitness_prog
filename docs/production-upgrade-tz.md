@@ -299,7 +299,9 @@ JSONB `workouts.plan` / `workouts.structure_snapshot`:
   - `JWT_SECRET` (≥32 random bytes)
   - `CORS_ORIGINS` = `https://web.telegram.org,https://app.example.com`
   - `REDIS_URL`
-  - `LLM_API_KEY` (optional)
+  - `AI_PROVIDER=groq`
+  - `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_FALLBACK_MODELS` (Groq и каскад моделей)
+  - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL` (optional fallback; OpenAI Platform API, не подписка ChatGPT)
   - `SENTRY_DSN` (front+back)
   - (optional later) `R2_*` keys — not required in v1
   - `ENVIRONMENT=production`
@@ -571,7 +573,7 @@ GitHub Actions:
 | Нет своих видео | YouTube/external embed + text fallback; без R2 в v1 |
 | VPN/tunnel instability | permanent domain hosting |
 | asyncpg localhost on Windows | always `127.0.0.1` in local docs; prod uses platform host |
-| LLM cost | rule-based default; Redis rate limit 15/day |
+| LLM cost | OpenAI `gpt-5-nano`; rule-based fallback; Redis rate limit 20/day by default |
 | Over-scoping admin | JSON editor first, visual builder later |
 | Content quality | seed review checklist before prod |
 

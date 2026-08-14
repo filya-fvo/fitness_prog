@@ -13,6 +13,8 @@ const authUserSchema = z.object({
   auth_email: z.string().nullable().optional(),
   subscription_status: z.string(),
   onboarding_completed: z.boolean().optional().default(false),
+  merged_from_user_ids: z.array(z.string().uuid()).optional(),
+  last_merge_preference: z.enum(["email", "telegram"]).nullable().optional(),
 });
 
 const authResponseSchema = z.object({
@@ -67,7 +69,21 @@ export async function loginWithEmailCode(email: string, code: string): Promise<A
 const emailLinkResultSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
-  user: authUserSchema,
+  user: authUserSchema.nullable().optional(),
+  merge_required: z.boolean().optional().default(false),
+  merge_preview: z.object({
+    conflicts: z.array(z.string()),
+    email: z.object({
+      email: z.string().nullable().optional(),
+      onboarding_completed: z.boolean(),
+      counts: z.record(z.string(), z.number()),
+    }),
+    telegram: z.object({
+      username: z.string().nullable().optional(),
+      onboarding_completed: z.boolean(),
+      counts: z.record(z.string(), z.number()),
+    }),
+  }).nullable().optional(),
 });
 
 export type EmailLinkResult = z.infer<typeof emailLinkResultSchema>;
@@ -79,10 +95,15 @@ export async function requestEmailLinkCode(email: string): Promise<EmailOtpReque
 }
 
 /** Authenticated: verify OTP and save auth_email on current user. */
-export async function verifyEmailLinkCode(email: string, code: string): Promise<EmailLinkResult> {
+export async function verifyEmailLinkCode(
+  email: string,
+  code: string,
+  mergePreference?: "email" | "telegram",
+): Promise<EmailLinkResult> {
   const { data } = await apiClient.post("/auth/email/link/verify", {
     email: email.trim(),
     code: code.trim(),
+    merge_preference: mergePreference,
   });
   return emailLinkResultSchema.parse(data);
 }

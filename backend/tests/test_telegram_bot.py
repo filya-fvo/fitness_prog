@@ -1,10 +1,14 @@
 """Unit tests for Telegram helpers (/start, menu, keyboards)."""
 
+import pytest
+
 from app.core.config import Settings
+from app.services import telegram_bot
 from app.services.telegram_bot import (
     bot_commands_reply_keyboard,
     build_mini_app_open_url,
     extract_help_command,
+    extract_callback_query,
     extract_open_text_tap,
     extract_start_command,
     extract_web_app_data,
@@ -12,12 +16,81 @@ from app.services.telegram_bot import (
     mini_app_keyboard,
     open_web_app_keyboard,
     start_welcome_text,
+    supplement_intake_keyboard,
     user_guide_path,
 )
 
 
+async def test_set_webhook_subscribes_to_inline_button_callbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_bot_api(
+        _settings: Settings,
+        method: str,
+        payload: dict[str, object] | None = None,
+        **_kwargs: object,
+    ) -> dict[str, object]:
+        captured["method"] = method
+        captured["payload"] = payload or {}
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram_bot, "bot_api", fake_bot_api)
+
+    await telegram_bot.set_webhook(
+        Settings(bot_token="test-token"),
+        webhook_url="https://example.test/telegram/webhook",
+    )
+
+    assert captured["method"] == "setWebhook"
+    assert captured["payload"]["allowed_updates"] == ["message", "callback_query"]  # type: ignore[index]
+
+
+@pytest.mark.asyncio
+async def test_set_webhook_rejects_ngrok_before_api_call() -> None:
+    with pytest.raises(telegram_bot.TelegramBotError):
+        await telegram_bot.set_webhook(
+            Settings(bot_token="test-token"),
+            webhook_url="https://old.ngrok-free.dev/telegram/webhook",
+        )
+
+
+def test_supplement_keyboard_keeps_names_and_group_actions() -> None:
+    first = "11111111-1111-1111-1111-111111111111"
+    second = "22222222-2222-2222-2222-222222222222"
+    keyboard = supplement_intake_keyboard([(first, "Креатин"), (second, "Протеин")])
+    rows = keyboard["inline_keyboard"]
+    assert rows[0][0]["text"] == "✅ Креатин"
+    assert rows[0][0]["callback_data"] == f"si:t:{first}"
+    assert rows[1][0]["text"] == "✅ Протеин"
+    assert rows[2][0]["callback_data"] == f"si:a:{first}"
+    assert rows[3][0]["callback_data"] == f"si:z:{first}"
+    assert all(len(button["callback_data"].encode()) <= 64 for row in rows for button in row)
+
+
+def test_extract_supplement_callback_query() -> None:
+    parsed = extract_callback_query(
+        {
+            "callback_query": {
+                "id": "callback-1",
+                "data": "si:t:11111111-1111-1111-1111-111111111111",
+                "from": {"id": 42},
+                "message": {"message_id": 7, "chat": {"id": 42}},
+            }
+        }
+    )
+    assert parsed == {
+        "id": "callback-1",
+        "data": "si:t:11111111-1111-1111-1111-111111111111",
+        "user_id": 42,
+        "chat_id": 42,
+        "message_id": 7,
+    }
+
+
 def test_build_mini_app_open_url_routes() -> None:
-    base = "https://example.ngrok-free.dev"
+    base = "https://fitness-pc.example.ts.net"
     assert build_mini_app_open_url(base, startapp="home") == f"{base}/?startapp=home"
     assert build_mini_app_open_url(base, startapp="profile").startswith(f"{base}/profile")
     assert "tab=supplements" in build_mini_app_open_url(base, startapp="supplements")
@@ -31,12 +104,12 @@ def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
         bot_username="fil_fit_bot",
         startapp="workout_abc",
         button_text="Open",
-        mini_app_url="https://example.ngrok-free.dev",
+        mini_app_url="https://fitness-pc.example.ts.net",
     )
     btn = kb["inline_keyboard"][0][0]
     assert btn["text"] == "Open"
     assert "web_app" in btn
-    assert btn["web_app"]["url"].startswith("https://example.ngrok-free.dev/workouts/active/abc")
+    assert btn["web_app"]["url"].startswith("https://fitness-pc.example.ts.net/workouts/active/abc")
 
 
 def test_mini_app_keyboard_fallback_tme_without_url() -> None:
@@ -53,14 +126,26 @@ def test_mini_app_keyboard_fallback_tme_without_url() -> None:
 
 def test_open_web_app_keyboard() -> None:
     kb = open_web_app_keyboard(
-        mini_app_url="https://example.ngrok-free.dev",
+        mini_app_url="https://fitness-pc.example.ts.net",
         button_text="Open",
         startapp="home",
     )
     assert kb is not None
     btn = kb["inline_keyboard"][0][0]
     assert btn["text"] == "Open"
-    assert btn["web_app"]["url"] == "https://example.ngrok-free.dev/?startapp=home"
+    assert btn["web_app"]["url"] == "https://fitness-pc.example.ts.net/?startapp=home"
+
+
+def test_runtime_rejects_deprecated_ngrok_mini_app_url() -> None:
+    settings = Settings(mini_app_url="https://old-address.ngrok-free.dev")
+    assert telegram_bot.resolve_mini_app_url(settings) == ""
+    assert telegram_bot.open_app_markup(settings) is None
+    assert "ngrok" not in str(telegram_bot.open_app_markup(settings)).lower()
+
+
+def test_open_url_builder_rejects_unsafe_or_obsolete_hosts() -> None:
+    assert build_mini_app_open_url("http://localhost:5173", startapp="home") == ""
+    assert build_mini_app_open_url("https://old.ngrok-free.dev", startapp="home") == ""
 
 
 def test_bot_commands_reply_keyboard_has_start_help() -> None:
@@ -73,12 +158,12 @@ def test_bot_commands_reply_keyboard_has_start_help() -> None:
 
 
 def test_bot_commands_reply_keyboard_includes_open_when_url() -> None:
-    settings = Settings(mini_app_url="https://example.ngrok-free.dev")
+    settings = Settings(mini_app_url="https://fitness-pc.example.ts.net")
     kb = bot_commands_reply_keyboard(settings)
     first = kb["keyboard"][0][0]
     assert first["text"] == "Open"
     assert "web_app" in first
-    assert first["web_app"]["url"].startswith("https://example.ngrok-free.dev")
+    assert first["web_app"]["url"].startswith("https://fitness-pc.example.ts.net")
     second_row = [b["text"] for b in kb["keyboard"][1]]
     assert second_row == ["/start", "/help"]
 
@@ -97,11 +182,11 @@ def test_start_welcome_uses_first_name_variable() -> None:
 def test_start_welcome_mentions_email_link_and_no_raw_url() -> None:
     text = start_welcome_text(
         first_name="Rom",
-        mini_app_url="https://example.ngrok-free.dev",
+        mini_app_url="https://fitness-pc.example.ts.net",
         include_guide_hint=True,
     )
     # Mini App URL stays on the button, not in plain text
-    assert "https://example.ngrok-free.dev" not in text
+    assert "https://fitness-pc.example.ts.net" not in text
     assert "http" not in text.lower()
     assert "docs/USER_GUIDE" not in text
     assert "Open" in text

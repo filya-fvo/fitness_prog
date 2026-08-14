@@ -8,7 +8,7 @@
 
   # custom public front URL:
   powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\setup_telegram_bot.ps1 `
-    -MiniAppUrl https://xxxx.ngrok-free.dev
+    -MiniAppUrl https://fitness-pc.example.ts.net
 #>
 param(
   [string]$MiniAppUrl = "",
@@ -21,7 +21,9 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $BackendEnv = Join-Path $Root "backend\.env"
-$UrlsFile = Join-Path $Root "scripts\ngrok-urls.local.env"
+$UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
+$SyncEntrypoints = Join-Path $Root "backend\scripts\sync_telegram_entrypoints.py"
+$BackendPython = Join-Path $Root "backend\.venv\Scripts\python.exe"
 
 function Read-DotEnvValue([string]$Path, [string]$Key) {
   if (-not (Test-Path $Path)) { return "" }
@@ -46,22 +48,19 @@ if (-not $token -or $token.StartsWith("replace_with")) {
 }
 
 if (-not $MiniAppUrl) {
-  $MiniAppUrl = Read-DotEnvValue $BackendEnv "MINI_APP_URL"
-}
-if (-not $MiniAppUrl) {
   $MiniAppUrl = Read-UrlFileValue $UrlsFile "FRONTEND_PUBLIC_URL"
 }
 if (-not $MiniAppUrl) {
-  try {
-    $tunnels = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -TimeoutSec 2
-    $https = $tunnels.tunnels | Where-Object { $_.public_url -like "https://*" } | Select-Object -First 1
-    if ($https) { $MiniAppUrl = $https.public_url }
-  } catch { }
+  $MiniAppUrl = Read-DotEnvValue $BackendEnv "MINI_APP_URL"
 }
 
 $MiniAppUrl = ($MiniAppUrl -replace "/$", "").Trim()
 if (-not $MiniAppUrl.StartsWith("https://")) {
-  throw "Need public HTTPS Mini App URL (ngrok). Pass -MiniAppUrl or set MINI_APP_URL / start ngrok."
+  throw "Need public HTTPS Mini App URL. Pass -MiniAppUrl, set MINI_APP_URL, or start Tailscale Funnel."
+}
+$miniHost = ([uri]$MiniAppUrl).DnsSafeHost.ToLowerInvariant()
+if ($miniHost.Contains("ngrok")) {
+  throw "ngrok URL is forbidden. Start Tailscale Funnel and use its *.ts.net URL."
 }
 
 if (-not $WebhookBase) {
@@ -99,14 +98,27 @@ if (-not $SkipMenu) {
   $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
   if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
   Write-Host "[telegram] Menu Button set to '$MenuText' -> $MiniAppUrl" -ForegroundColor Green
+
+  if ((Test-Path -LiteralPath $BackendPython) -and (Test-Path -LiteralPath $SyncEntrypoints)) {
+    Push-Location (Join-Path $Root "backend")
+    try {
+      & $BackendPython $SyncEntrypoints
+      if ($LASTEXITCODE -ne 0) { throw "Per-chat Menu Button sync failed with code $LASTEXITCODE" }
+      Write-Host "[telegram] Per-chat Menu Buttons synchronized" -ForegroundColor Green
+    } finally {
+      Pop-Location
+    }
+  } else {
+    Write-Host "[telegram] WARNING: per-chat sync skipped; backend venv/script missing" -ForegroundColor Yellow
+  }
 }
 
 if (-not $SkipWebhook) {
   $secret = Read-DotEnvValue $BackendEnv "TELEGRAM_WEBHOOK_SECRET"
   $wh = @{
     url = $WebhookUrl
-    allowed_updates = @("message")
-    drop_pending_updates = $true
+    allowed_updates = @("message", "callback_query")
+    drop_pending_updates = $false
   }
   if ($secret) { $wh.secret_token = $secret }
   $whBody = $wh | ConvertTo-Json -Depth 5
@@ -120,7 +132,7 @@ if (-not $SkipWebhook) {
 
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
-Write-Host "  1) Backend + frontend + ngrok must be running (dev.cmd start / start-ngrok)"
+Write-Host "  1) Backend + frontend + Tailscale Funnel must be running (start-all.cmd)"
 Write-Host "  2) Restart backend so it reloads MINI_APP_URL: dev.cmd restart-backend"
 Write-Host "  3) In Telegram: open @bot -> /start -> expect welcome + Open"
 Write-Host "  4) Blue Open near message field / chat list should open Mini App"

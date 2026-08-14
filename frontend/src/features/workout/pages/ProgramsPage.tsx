@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
+import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   readCachedExercises,
@@ -15,6 +17,7 @@ import {
 } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { trackEvent } from "@/lib/analytics";
+import { confirmAction } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
 import {
@@ -23,6 +26,9 @@ import {
   resolveWeekPhase,
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
+import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
+import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
+import { toUserMessage } from "@/utils/errors";
 import {
   LEVEL_LABELS,
   pickTodayDayIndex,
@@ -31,6 +37,28 @@ import {
   scorePrograms,
   type ProgramScoreBreakdown,
 } from "@/utils/programRecommend";
+
+const PROGRAM_PAGE_SIZE = 8;
+const PROGRAMS_UI_KEY = "fitness_programs_ui_v1";
+
+type ProgramsUiState = {
+  viewMode?: "recommended" | "all";
+  searchQuery?: string;
+  typeFilter?: string;
+  levelFilter?: string;
+  sexFilter?: string;
+  limitsOnly?: boolean;
+  visibleCount?: number;
+  scrollY?: number;
+};
+
+function readProgramsUi(): ProgramsUiState {
+  try {
+    return JSON.parse(sessionStorage.getItem(PROGRAMS_UI_KEY) || "{}") as ProgramsUiState;
+  } catch {
+    return {};
+  }
+}
 
 function draftsFromWorkout(
   workout: {
@@ -65,6 +93,7 @@ function profileLimits(goals: Record<string, unknown>): string[] {
     const out: string[] = [];
     if (s.includes("no_knee") || s.includes("колен")) out.push("no_knee");
     if (s.includes("no_spine") || s.includes("позвон") || s.includes("спин")) out.push("no_spine");
+    if (s.includes("shoulder_sensitive") || s.includes("плеч")) out.push("shoulder_sensitive");
     return out;
   }
   return [];
@@ -78,22 +107,10 @@ function limitationConflict(program: Program, userLimits: string[]): string | nu
   const labels: Record<string, string> = {
     no_knee: "без нагрузки на колени",
     no_spine: "без нагрузки на позвоночник",
+    shoulder_sensitive: "щадящая нагрузка на плечи",
   };
   return missing.map((m) => labels[m] || m).join(", ");
 }
-
-const TYPE_LABELS: Record<string, string> = {
-  full_body: "Всё тело",
-  full_body_alt: "Всё тело A/B",
-  upper_lower: "Верх/низ",
-  push_pull_legs: "Жим/тяга/ноги",
-  home_express: "Дома",
-  strength: "Сила",
-  hypertrophy: "Гипертрофия",
-  mobility: "Мобильность",
-  conditioning: "Кардио",
-  custom: "Своя",
-};
 
 function scheduleOf(program: Program): Array<Record<string, unknown>> {
   const raw =
@@ -207,6 +224,7 @@ function placeholderExercise(row: DayExerciseRow): Exercise {
 }
 
 export function ProgramsPage() {
+  const initialUi = useMemo(readProgramsUi, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -216,18 +234,19 @@ export function ProgramsPage() {
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [items, setItems] = useState<Program[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || "");
-  const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || "");
+  const [viewMode, setViewMode] = useState<"recommended" | "all">(initialUi.viewMode || "recommended");
+  const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
+  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || initialUi.typeFilter || "");
+  const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || initialUi.levelFilter || "");
   // male | female | "" (all). URL ?sex=male|female or default from profile after load.
   const [sexFilter, setSexFilter] = useState<string>(() => {
     const q = (searchParams.get("sex") || "").toLowerCase();
     if (q === "male" || q === "m" || q === "муж" || q === "м") return "male";
     if (q === "female" || q === "f" || q === "жен" || q === "ж") return "female";
-    return "";
+    return initialUi.sexFilter || "";
   });
-  const [sexFilterTouched, setSexFilterTouched] = useState(() => Boolean(searchParams.get("sex")));
-  const [limitsOnly, setLimitsOnly] = useState(false);
+  const sexFilterTouchedRef = useRef(Boolean(searchParams.get("sex") || initialUi.sexFilter));
+  const [limitsOnly, setLimitsOnly] = useState(Boolean(initialUi.limitsOnly));
   const [expandedId, setExpandedId] = useState<string | null>(searchParams.get("id"));
   const [dayExercisesOpen, setDayExercisesOpen] = useState<Record<string, boolean>>({});
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
@@ -237,6 +256,9 @@ export function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(Math.max(PROGRAM_PAGE_SIZE, initialUi.visibleCount || 0));
+  const scrollRestoredRef = useRef(false);
+  const filtersMountedRef = useRef(false);
   const userJointLimits = useMemo(() => profileLimits(profileGoals), [profileGoals]);
 
   useEffect(() => {
@@ -271,7 +293,7 @@ export function ProgramsPage() {
           const sexFromProfile = String(anthro.sex || goals.sex || "").toLowerCase();
           setProfileSex(sexFromProfile);
           // Default filter to profile sex once (unless user/URL already chose)
-          if (!sexFilterTouched && !searchParams.get("sex")) {
+          if (!sexFilterTouchedRef.current) {
             if (sexFromProfile === "male" || sexFromProfile === "female") {
               setSexFilter(sexFromProfile);
             }
@@ -285,7 +307,7 @@ export function ProgramsPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Не удалось загрузить программы");
+          setError(toUserMessage(err, "Не удалось загрузить программы"));
           setLoading(false);
         }
       }
@@ -388,22 +410,14 @@ export function ProgramsPage() {
     const key = `${program.id}:${dayIndex}`;
     if (startingKey) return;
 
-    // P0.5: warn if profile has joint limits but program does not
-    try {
-      if (isOnline() && getStoredToken()) {
-        const profile = await fetchMyProfile().catch(() => null);
-        const goals = (profile?.goals as Record<string, unknown>) || {};
-        const conflict = limitationConflict(program, profileLimits(goals));
-        if (conflict) {
-          const ok = window.confirm(
-            `В профиле указано ограничение: ${conflict}.\n\n` +
-              `Программа «${program.name}» это не учитывает. Всё равно начать?`,
-          );
-          if (!ok) return;
-        }
-      }
-    } catch {
-      /* soft */
+    const mismatches = compareProgramToProfile(program, recommendInput);
+    if (mismatches.length) {
+      const critical = mismatches.some((item) => item.critical);
+      const ok = await confirmAction(
+        `${critical ? "Важно: программа не учитывает ограничение здоровья." : "Программа отличается от вашей анкеты."}\n\n` +
+          `${programMismatchSummary(mismatches)}.\n\nВсё равно начать?`,
+      );
+      if (!ok) return;
     }
 
     setStartingKey(key);
@@ -424,7 +438,6 @@ export function ProgramsPage() {
       let history = buildExerciseHistory(await readCachedWorkouts());
       if (isOnline() && getStoredToken()) {
         try {
-          const { fetchWorkoutHistory } = await import("@/api/workouts");
           history = buildExerciseHistory(await fetchWorkoutHistory());
         } catch {
           /* keep cache */
@@ -450,7 +463,7 @@ export function ProgramsPage() {
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось стартовать программу");
+      setError(toUserMessage(err, "Не удалось начать программу"));
     } finally {
       setStartingKey(null);
     }
@@ -462,13 +475,14 @@ export function ProgramsPage() {
     const open = expandedId === program.id;
     const todayIdx = pickTodayDayIndex(program);
     const reasons = why?.length ? why : reasonsById.get(program.id) || [];
+    const mismatches = compareProgramToProfile(program, recommendInput);
 
     return (
       <article key={`${badge || "all"}-${program.id}`} className="rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-medium">{program.name}</h2>
+              <h2 className="font-medium">{programDayLabel(program.name)}</h2>
               {badge ? (
                 <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-medium text-tg-link">
                   {badge}
@@ -484,6 +498,11 @@ export function ProgramsPage() {
                   без спины
                 </span>
               ) : null}
+              {programLimitations(program).includes("shoulder_sensitive") ? (
+                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] text-violet-700">
+                  щадяще для плеч
+                </span>
+              ) : null}
               {userJointLimits.length > 0 && limitationConflict(program, userJointLimits) ? (
                 <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-800">
                   не под ограничение
@@ -491,14 +510,19 @@ export function ProgramsPage() {
               ) : null}
             </div>
             <p className="mt-1 text-xs text-tg-hint">
-              {TYPE_LABELS[program.workout_type] ?? program.workout_type}
+              {enumLabel(program.workout_type)}
               {program.level || program.target_level
-                ? ` · ${program.level || program.target_level}`
+                ? ` · ${enumLabel(program.level || program.target_level)}`
                 : ""}
               {days ? ` · ${days} дн.` : ""}
             </p>
             {reasons.length ? (
               <p className="mt-1 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p>
+            ) : null}
+            {mismatches.length ? (
+              <p className={mismatches.some((item) => item.critical) ? "mt-1 text-xs text-red-600" : "mt-1 text-xs text-amber-700"}>
+                Не совпадает с анкетой: {programMismatchSummary(mismatches)}
+              </p>
             ) : null}
           </div>
           <button
@@ -520,7 +544,7 @@ export function ProgramsPage() {
             ) : (
               schedule.map((day, idx) => {
                 const dayIndex = Number(day.day_index ?? day.day ?? idx + 1) || idx + 1;
-                const name = String(day.name || day.title || `День ${dayIndex}`);
+                const name = programDayLabel(String(day.name || day.title || ""), dayIndex);
                 const rows = dayExerciseRows(day);
                 const exCount = rows.length;
                 const isToday = dayIndex === todayIdx;
@@ -537,7 +561,7 @@ export function ProgramsPage() {
                           ) : null}
                         </p>
                         <p className="text-[11px] text-tg-hint">
-                          {exCount ? `${exCount} упр.` : "упражнения по шаблону"}
+                          {exCount ? exercisesCount(exCount) : "упражнения по шаблону"}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -624,21 +648,87 @@ export function ProgramsPage() {
     );
   }
 
-  const topRecommended: ProgramScoreBreakdown[] = recommendedScored.slice(0, 2);
-  const topIds = new Set(topRecommended.map((x) => x.program.id));
+  const topRecommended: ProgramScoreBreakdown[] = recommendedScored.slice(0, 4);
+  const showRecommendations = viewMode === "recommended";
+  const filteredWithoutTop = filtered;
+  const visiblePrograms = filteredWithoutTop.slice(0, visibleCount);
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() || typeFilter || levelFilter || limitsOnly || sexFilter,
+  );
+
+  useEffect(() => {
+    if (!filtersMountedRef.current) {
+      filtersMountedRef.current = true;
+      return;
+    }
+    setVisibleCount(PROGRAM_PAGE_SIZE);
+  }, [levelFilter, limitsOnly, searchQuery, sexFilter, typeFilter]);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      PROGRAMS_UI_KEY,
+      JSON.stringify({ viewMode, searchQuery, typeFilter, levelFilter, sexFilter, limitsOnly, visibleCount, scrollY: window.scrollY }),
+    );
+  }, [levelFilter, limitsOnly, searchQuery, sexFilter, typeFilter, viewMode, visibleCount]);
+
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    window.requestAnimationFrame(() => window.scrollTo({ top: initialUi.scrollY || 0 }));
+    const rememberScroll = () => {
+      const state = readProgramsUi();
+      sessionStorage.setItem(PROGRAMS_UI_KEY, JSON.stringify({ ...state, scrollY: window.scrollY }));
+    };
+    window.addEventListener("scroll", rememberScroll, { passive: true });
+    return () => {
+      rememberScroll();
+      window.removeEventListener("scroll", rememberScroll);
+    };
+  }, [initialUi.scrollY, loading]);
+
+  function resetFilters() {
+    setSearchQuery("");
+    setTypeFilter("");
+    setLevelFilter("");
+    setLimitsOnly(false);
+    setSexFilter("");
+    sexFilterTouchedRef.current = true;
+  }
 
   return (
     <section>
       <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
-      {!loading && topRecommended.length > 0 ? (
-        <div className="mb-4 space-y-2">
-          <p className="text-sm font-medium">Рекомендуем вам</p>
+      <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-tg-secondary p-1" role="group" aria-label="Режим списка программ">
+        <button
+          type="button"
+          onClick={() => setViewMode("recommended")}
+          className={viewMode === "recommended" ? "rounded-xl bg-tg-bg px-3 py-2 text-sm font-semibold shadow-sm" : "rounded-xl px-3 py-2 text-sm text-tg-hint"}
+        >
+          Подходят вам
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("all")}
+          className={viewMode === "all" ? "rounded-xl bg-tg-bg px-3 py-2 text-sm font-semibold shadow-sm" : "rounded-xl px-3 py-2 text-sm text-tg-hint"}
+        >
+          Все программы
+        </button>
+      </div>
+
+      {!loading && showRecommendations && topRecommended.length > 0 ? (
+        <div className="mb-4 grid gap-3 md:grid-cols-2">
+          <p className="text-sm font-medium md:col-span-2">Лучшие совпадения с анкетой</p>
           {topRecommended.map((row) => renderCard(row.program, "для вас", row.reasons))}
+          <button type="button" onClick={() => setViewMode("all")} className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link md:col-span-2">
+            Посмотреть все программы
+          </button>
         </div>
       ) : null}
 
+      {viewMode === "all" ? (
+      <div className="sticky top-0 z-10 -mx-1 mb-3 rounded-2xl bg-tg-bg/95 p-1 shadow-sm backdrop-blur">
       <label className="mb-2 block text-xs text-tg-hint">
         Поиск
         <input
@@ -662,7 +752,7 @@ export function ProgramsPage() {
             key={opt.id || "all-sex"}
             type="button"
             onClick={() => {
-              setSexFilterTouched(true);
+              sexFilterTouchedRef.current = true;
               setSexFilter(opt.id);
             }}
             className={[
@@ -696,7 +786,7 @@ export function ProgramsPage() {
               typeFilter === t ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
             ].join(" ")}
           >
-            {TYPE_LABELS[t] ?? t}
+            {enumLabel(t)}
           </button>
         ))}
       </div>
@@ -729,18 +819,45 @@ export function ProgramsPage() {
         ) : null}
       </div>
 
-      {loading ? <p className="text-sm text-tg-hint">Загрузка программ…</p> : null}
+      {!loading ? (
+        <div className="mb-3 flex items-center justify-between gap-3 text-xs text-tg-hint">
+          <span>Найдено программ: {filtered.length}</span>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
+            >
+              Сбросить фильтры
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      </div>
+      ) : null}
 
-      {!loading && filtered.length === 0 ? (
+      {loading ? <PageSkeleton cards={4} /> : null}
+
+      {!loading && viewMode === "all" && filtered.length === 0 ? (
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
           Нет программ по выбранным фильтрам. Сбросьте пол / тип / уровень или соберите
           тренировку в каталоге.
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        {filtered.filter((p) => !topIds.has(p.id)).map((program) => renderCard(program))}
-      </div>
+      {viewMode === "all" ? <div className="grid gap-3 md:grid-cols-2">
+        {visiblePrograms.map((program) => renderCard(program))}
+      </div> : null}
+
+      {viewMode === "all" && visiblePrograms.length < filteredWithoutTop.length ? (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((count) => count + PROGRAM_PAGE_SIZE)}
+          className="tap-target-x mt-4 w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+        >
+          Показать ещё · осталось {filteredWithoutTop.length - visiblePrograms.length}
+        </button>
+      ) : null}
 
       <Link to="/workouts" className="mt-4 block text-center text-xs text-tg-link">
         Или собрать свою тренировку из каталога

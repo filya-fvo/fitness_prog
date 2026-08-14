@@ -11,6 +11,8 @@ import { fetchWorkoutHistory } from "@/api/workouts";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import {
   cacheExercises,
   getPendingCount,
@@ -18,6 +20,7 @@ import {
   readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
+  syncWorkoutPlan,
 } from "@/db/syncQueue";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { trackEvent } from "@/lib/analytics";
@@ -25,6 +28,7 @@ import { hapticNotification } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
+import type { Exercise } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 import {
   buildExerciseHistory,
@@ -35,6 +39,7 @@ import {
 } from "@/utils/loadProgression";
 import {
   cursorGoalsPatch,
+  listProgramDayExercises,
   listProgramDays,
   phaseMetaFromName,
   readProgramCursor,
@@ -42,8 +47,12 @@ import {
 import { toast } from "@/store/toastStore";
 import { getHabitDay } from "@/utils/habits";
 import { buildHomeTips } from "@/utils/homeTips";
-import { LEVEL_LABELS, recommendPrograms } from "@/utils/programRecommend";
+import { recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
+import { enumLabel } from "@/utils/localization";
+import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
+import { isAdminUsername } from "@/utils/adminAccess";
+import { toUserMessage } from "@/utils/errors";
 
 function planHasReplacements(plan: WorkoutPlan | Record<string, unknown> | null | undefined): boolean {
   if (!plan || typeof plan !== "object") return false;
@@ -53,13 +62,6 @@ function planHasReplacements(plan: WorkoutPlan | Record<string, unknown> | null 
     (e) => e.original_exercise_id && e.original_exercise_id !== e.exercise_id,
   );
 }
-
-const ADMIN_USERNAMES = new Set(
-  String(import.meta.env.VITE_ADMIN_TELEGRAM_USERNAMES || "Filatov_Slava")
-    .split(",")
-    .map((s) => s.trim().replace(/^@/, "").toLowerCase())
-    .filter(Boolean),
-);
 
 function draftsFromWorkout(workout: {
   plan?: WorkoutPlan | Record<string, unknown> | null;
@@ -83,10 +85,7 @@ function draftsFromWorkout(workout: {
 export function HomePage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
-  const isAdmin = Boolean(
-    user?.username &&
-      ADMIN_USERNAMES.has(user.username.replace(/^@/, "").toLowerCase()),
-  );
+  const isAdmin = isAdminUsername(user?.username);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const catalog = useWorkoutStore((s) => s.catalog);
@@ -111,6 +110,7 @@ export function HomePage() {
   /** True when today's in-progress session has user exercise swaps. */
   const [sessionHasReplacements, setSessionHasReplacements] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerDialogRef = useModalAccessibility(pickerOpen, () => setPickerOpen(false));
   const [pickDay, setPickDay] = useState(1);
   const [pickPhase, setPickPhase] = useState<WeekPhase>("medium");
   const [completedCount, setCompletedCount] = useState(0);
@@ -118,6 +118,8 @@ export function HomePage() {
   const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
   const [waterMl, setWaterMl] = useState(() => getHabitDay().waterMl);
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [todayPlanOpen, setTodayPlanOpen] = useState(false);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -145,6 +147,14 @@ export function HomePage() {
   );
   const todayDayTitle =
     dayOptions.find((d) => d.dayIndex === todayDay)?.title || `День ${todayDay}`;
+  const todayExercises = useMemo(
+    () => (todayProgram ? listProgramDayExercises(todayProgram, todayDay) : []),
+    [todayDay, todayProgram],
+  );
+
+  useEffect(() => {
+    setTodayPlanOpen(false);
+  }, [todayDay, todayProgram]);
 
   useEffect(() => {
     const onStatus = () => setOnline(isOnline());
@@ -162,6 +172,8 @@ export function HomePage() {
       try {
         const queue = await getPendingCount();
         let workouts = await readCachedWorkouts();
+        const cachedExerciseCatalog = await readCachedExercises();
+        if (cachedExerciseCatalog.length) setCatalog(cachedExerciseCatalog);
 
         // Detect exercise swaps on today's resumable session (store or Dexie).
         const storeState = useWorkoutStore.getState();
@@ -194,17 +206,23 @@ export function HomePage() {
             // keep cache
           }
           try {
-            const [programs, profile] = await Promise.all([
+            const [programs, profile, exerciseResponse] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
               fetchMyProfile().catch(() => null),
+              fetchExercises({ pageSize: 200 }).catch(() => null),
             ]);
+            if (exerciseResponse?.items.length) {
+              setCatalog(exerciseResponse.items);
+              await cacheExercises(exerciseResponse.items);
+            }
             const goals = (profile?.goals as Record<string, unknown>) || {};
-            if (!cancelled) setProfileGoals(goals);
             const activeId = String(goals.active_program_id || "");
             const active = activeId
               ? programs.items.find((p) => p.id === activeId) || null
               : null;
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
+            const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
+            if (!cancelled) setProfileGoals(goalsWithSex);
             const rec = recommendPrograms(
               programs.items,
               {
@@ -284,7 +302,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setCatalog]);
 
   const homeTips = useMemo(
     () =>
@@ -368,19 +386,24 @@ export function HomePage() {
 
       const next = useWorkoutStore.getState();
       if (next.activeWorkout) {
+        const clientWorkoutId = next.clientWorkoutId ?? next.activeWorkout.id;
         await saveLocalSession({
-          clientId: next.clientWorkoutId ?? next.activeWorkout.id,
+          clientId: clientWorkoutId,
           serverId: next.serverWorkoutId,
           workout: next.activeWorkout,
           drafts: next.drafts,
           currentExerciseIndex: next.currentExerciseIndex,
+        });
+        await syncWorkoutPlan({
+          clientWorkoutId,
+          plan: next.activeWorkout.plan as WorkoutPlan,
         });
       }
       setSessionHasReplacements(false);
       hapticNotification("success");
       toast("Упражнения по умолчанию восстановлены");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось восстановить");
+      setError(toUserMessage(err, "Не удалось восстановить тренировку"));
     } finally {
       setRestoringDefaults(false);
     }
@@ -488,7 +511,7 @@ export function HomePage() {
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось стартовать");
+      setError(toUserMessage(err, "Не удалось начать тренировку"));
       navigate("/programs");
     } finally {
       setStarting(false);
@@ -506,7 +529,7 @@ export function HomePage() {
   return (
     <section>
       <Header title="Главная" subtitle="Сегодняшняя тренировка и прогресс" />
-      <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
         {daysSinceLastWorkout != null && daysSinceLastWorkout >= 7 && !reentryDismissed && !canResume ? (
@@ -604,12 +627,76 @@ export function HomePage() {
               {todayDayTitle}
               {" · "}
               {phaseMetaFromName(todayPhase).label}
-              {todayProgram.workout_type ? ` · ${todayProgram.workout_type}` : ""}
+              {todayProgram.workout_type ? ` · ${enumLabel(todayProgram.workout_type)}` : ""}
               {(() => {
                 const lvl = String(todayProgram.level || todayProgram.target_level || "");
-                return lvl ? ` · ${LEVEL_LABELS[lvl] ?? lvl}` : "";
+                return lvl ? ` · ${enumLabel(lvl)}` : "";
               })()}
             </p>
+            {todayExercises.length ? (
+              <div className="rounded-xl bg-tg-bg/70 p-3">
+                <button
+                  type="button"
+                  aria-expanded={todayPlanOpen}
+                  className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left"
+                  onClick={() => setTodayPlanOpen((open) => !open)}
+                >
+                  <span className="text-xs font-semibold">План на сегодня</span>
+                  <span className="shrink-0 text-[11px] text-tg-link">
+                    {todayExercises.length} упр. · {todayPlanOpen ? "Свернуть ↑" : "Развернуть ↓"}
+                  </span>
+                </button>
+                {todayPlanOpen ? (
+                  <ol className="mt-2 space-y-1.5 border-t border-tg-hint/15 pt-3">
+                    {todayExercises.map((exercise, index) => (
+                      <li key={exercise.key} className="flex items-start gap-2 text-xs">
+                        <span className="w-4 shrink-0 text-right text-tg-hint">{index + 1}.</span>
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left text-tg-link"
+                          onClick={() => {
+                            const found = catalog.find(
+                              (item) =>
+                                item.id === exercise.exerciseId ||
+                                item.name_ru.trim().toLowerCase() === exercise.name.trim().toLowerCase(),
+                            );
+                            if (found) setDetailExercise(found);
+                            else setError("Описание этого упражнения пока не найдено в каталоге.");
+                          }}
+                        >
+                          {exercise.name}
+                          <span className="ml-1 text-[10px] text-tg-hint">Открыть</span>
+                        </button>
+                        {exercise.sets || exercise.reps ? (
+                          <span className="shrink-0 text-tg-hint">
+                            {exercise.sets ?? "—"} × {phaseMetaFromName(todayPhase).defaultReps}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+              </div>
+            ) : null}
+            {(() => {
+              const mismatches = compareProgramToProfile(todayProgram, {
+                primaryGoal: String(profileGoals.primary_goal || ""),
+                level: String(profileGoals.level || ""),
+                daysPerWeek: Number(profileGoals.days_per_week) || undefined,
+                equipment: Array.isArray(profileGoals.equipment) ? profileGoals.equipment as string[] : [],
+                sex: String(profileGoals.sex || ""),
+                location: String(profileGoals.location || ""),
+                limitations: profileGoals.limitations as string[] | string | null,
+              });
+              return mismatches.length ? (
+                <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800">
+                  <p>Отличается от анкеты: {programMismatchSummary(mismatches)}</p>
+                  <Link to="/programs" className="mt-1 inline-flex min-h-[44px] items-center font-medium text-tg-link">
+                    Подобрать подходящую
+                  </Link>
+                </div>
+              ) : null;
+            })()}
             <div className="flex overflow-hidden rounded-xl bg-tg-button">
               <button
                 type="button"
@@ -642,8 +729,8 @@ export function HomePage() {
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">С чего начать</p>
             <p className="text-base font-semibold">Выберите программу на 10 минут</p>
             <p className="text-sm text-tg-hint">
-              Готовый сплит под зал или дом — или соберите день из каталога.
-              {!online ? " Сейчас оффлайн — сессия сохранится на устройстве." : ""}
+              Готовый план тренировочных дней для зала или дома — либо соберите день из каталога.
+              {!online ? " Сейчас нет сети — сессия сохранится на устройстве." : ""}
             </p>
             <button
               type="button"
@@ -670,7 +757,7 @@ export function HomePage() {
             </div>
             {!online ? (
               <p className="text-right text-[11px] text-amber-600">
-                Оффлайн
+                Нет сети
                 {pending > 0 ? ` · сохраним ${pending} при сети` : " · изменения на устройстве"}
               </p>
             ) : pending > 0 ? (
@@ -699,6 +786,13 @@ export function HomePage() {
         ) : null}
 
         <HabitsCheckin />
+
+        {detailExercise ? (
+          <ExerciseDetailModal
+            exercise={detailExercise}
+            onClose={() => setDetailExercise(null)}
+          />
+        ) : null}
 
         {completedCount > 0 || canResume || todayProgram ? (
           <div className="rounded-2xl border border-tg-button/20 bg-tg-secondary px-4 py-3">
@@ -734,10 +828,17 @@ export function HomePage() {
 
         {pickerOpen && todayProgram ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-            <div className="w-full max-w-md rounded-2xl bg-tg-bg p-4 shadow-xl">
+            <div
+              ref={pickerDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="program-day-picker-title"
+              tabIndex={-1}
+              className="w-full max-w-md rounded-2xl bg-tg-bg p-4 shadow-xl"
+            >
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-base font-semibold">День и неделя</h3>
-                <button type="button" className="text-sm text-tg-hint" onClick={() => setPickerOpen(false)}>
+                <h3 id="program-day-picker-title" className="text-base font-semibold">День и неделя</h3>
+                <button type="button" aria-label="Закрыть" className="text-sm text-tg-hint" onClick={() => setPickerOpen(false)}>
                   ✕
                 </button>
               </div>

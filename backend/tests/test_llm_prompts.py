@@ -9,7 +9,6 @@ import re
 
 from app.services.ai_engine import _rule_based_reply
 
-USER_CTX = "Ты работаешь с пользователем Test, его цель: maintain, уровень: beginner, текущий вес: 70."
 RAG = (
     "1. Приседания (ноги), сложность 2. Техника: спина прямая. Ошибки: колени внутрь.\n"
     "2. Жим лёжа (грудь), сложность 3. Техника: лопатки сведены. Ошибки: отрыв таза.\n"
@@ -58,7 +57,7 @@ def test_twenty_fixed_prompts_count() -> None:
 
 def test_twenty_fixed_prompts_have_safe_keywords() -> None:
     for prompt, required in PROMPTS:
-        reply = _rule_based_reply(prompt, RAG, USER_CTX)
+        reply = _rule_based_reply(prompt, RAG)
         assert reply.strip(), f"empty reply for: {prompt}"
         assert _contains_any(reply, required), (
             f"missing keywords {required} in reply for: {prompt}\n{reply}"
@@ -70,5 +69,5 @@ def test_twenty_fixed_prompts_have_safe_keywords() -> None:
 
 
 def test_knee_prompt_mentions_doctor_boundary() -> None:
-    reply = _rule_based_reply("Почему болят колени?", RAG, USER_CTX)
+    reply = _rule_based_reply("Почему болят колени?", RAG)
     assert "врач" in reply.lower()

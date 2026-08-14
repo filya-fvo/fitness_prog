@@ -4,6 +4,17 @@
 
 :root {
   color-scheme: light dark;
+  --space-page: 1rem;
+  --space-section: 1rem;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --surface-primary: var(--tg-theme-bg-color, #ffffff);
+  --surface-secondary: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  --surface-inset: color-mix(in srgb, var(--surface-secondary) 72%, var(--surface-primary));
+  --border-subtle: color-mix(in srgb, var(--tg-theme-text-color, #000000) 12%, transparent);
+  --color-success: #15803d;
+  --color-warning: #a16207;
+  --color-danger: #dc2626;
   font-family:
     system-ui,
     -apple-system,
@@ -23,6 +34,36 @@ body {
   min-height: 100vh;
 }
 
+@layer base {
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--tg-theme-link-color, #2481cc);
+    outline-offset: 2px;
+  }
+
+  button,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select {
+    min-height: 44px;
+  }
+
+  @media (pointer: coarse) {
+    a[href]:not(.block) {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+    }
+
+    a[href].block {
+      min-height: 44px;
+    }
+  }
+}
+
 /* P3 a11y: minimum touch targets (~44px) for primary controls */
 @layer utilities {
   .tap-target {
@@ -32,4 +73,37 @@ body {
   .tap-target-x {
     min-height: 44px;
   }
+}
+
+@layer components {
+  .surface-card {
+    border-radius: var(--radius-card);
+    background: var(--surface-secondary);
+  }
+
+  .surface-inset {
+    border-radius: var(--radius-control);
+    background: var(--surface-inset);
+  }
+
+  .state-success {
+    color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  }
+
+  .state-warning {
+    color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  }
+
+  .state-danger {
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  }
+}
+
+/* Significant helper text must remain readable at browser and Telegram font scaling. */
+.text-\[10px\],
+.text-\[11px\] {
+  font-size: 0.75rem;
 }

@@ -7,7 +7,14 @@ const settingsSchema = z.object({
   defaults: z.record(z.unknown()),
 });
 
+const pushConfigSchema = z.object({
+  enabled: z.boolean(),
+  public_key: z.string(),
+  subscriptions: z.number(),
+});
+
 export type NotificationSettingsPayload = z.infer<typeof settingsSchema>;
+export type PushConfig = z.infer<typeof pushConfigSchema>;
 
 export async function fetchNotificationSettings(): Promise<NotificationSettingsPayload> {
   const { data } = await apiClient.get("/notifications/settings");
@@ -19,6 +26,28 @@ export async function saveNotificationSettings(
 ): Promise<NotificationSettingsPayload> {
   const { data } = await apiClient.put("/notifications/settings", { settings });
   return settingsSchema.parse(data);
+}
+
+export async function fetchPushConfig(): Promise<PushConfig> {
+  const { data } = await apiClient.get("/notifications/push/config");
+  return pushConfigSchema.parse(data);
+}
+
+export async function savePushSubscription(subscription: PushSubscription): Promise<PushConfig> {
+  const raw = subscription.toJSON();
+  if (!raw.endpoint || !raw.keys?.p256dh || !raw.keys.auth) {
+    throw new Error("Браузер вернул неполную подписку на уведомления");
+  }
+  const { data } = await apiClient.post("/notifications/push/subscriptions", {
+    endpoint: raw.endpoint,
+    keys: raw.keys,
+    user_agent: navigator.userAgent,
+  });
+  return pushConfigSchema.parse(data);
+}
+
+export async function removePushSubscription(endpoint: string): Promise<void> {
+  await apiClient.delete("/notifications/push/subscriptions", { params: { endpoint } });
 }
 
 export async function dispatchMyDueNotifications(): Promise<{ ok: boolean; sent: number }> {
@@ -70,4 +99,24 @@ export async function notifyTimerEnded(input: {
     workout_id: input.workoutId ?? null,
   });
   return z.object({ ok: z.boolean(), detail: z.string().nullable().optional() }).parse(data);
+}
+
+export async function scheduleTimerNotification(input: {
+  seconds: number;
+  title: string;
+  text: string;
+  workoutId?: string | null;
+}): Promise<void> {
+  await apiClient.post("/notifications/timer/schedule", {
+    seconds: input.seconds,
+    title: input.title,
+    text: input.text,
+    workout_id: input.workoutId ?? null,
+  });
+}
+
+export async function cancelTimerNotification(workoutId?: string | null): Promise<void> {
+  await apiClient.delete("/notifications/timer/schedule", {
+    params: workoutId ? { workout_id: workoutId } : undefined,
+  });
 }

@@ -16,9 +16,11 @@ from app.schemas.workout import (
     WorkoutCompleteRequest,
     WorkoutCreate,
     WorkoutHistoryResponse,
+    WorkoutPlan,
     WorkoutResponse,
     WorkoutSetCreate,
     WorkoutSetResponse,
+    WorkoutUpdateRequest,
 )
 from app.services import scheduler as scheduler_service
 from app.services import workout_service
@@ -81,6 +83,37 @@ async def get_workout(
     user: User = Depends(get_current_user),
 ) -> WorkoutResponse:
     workout = await workout_service.get_workout(session, user, workout_id)
+    return WorkoutResponse.model_validate(workout)
+
+
+@router.patch("/{workout_id}", response_model=WorkoutResponse)
+async def update_workout(
+    workout_id: uuid.UUID,
+    body: WorkoutUpdateRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutResponse:
+    workout = await workout_service.update_workout(session, user, workout_id, body)
+    return WorkoutResponse.model_validate(workout)
+
+
+@router.delete("/{workout_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_workout(
+    workout_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    await workout_service.delete_workout(session, user, workout_id)
+
+
+@router.put("/{workout_id}/plan", response_model=WorkoutResponse)
+async def update_workout_plan(
+    workout_id: uuid.UUID,
+    body: WorkoutPlan,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutResponse:
+    workout = await workout_service.update_workout_plan(session, user, workout_id, body)
     return WorkoutResponse.model_validate(workout)
 
 

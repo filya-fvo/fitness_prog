@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Local dev helpers for fitness_prog (backend / frontend / ngrok).
+  Local dev helpers for fitness_prog (backend / frontend / Tailscale Funnel).
 
 .DESCRIPTION
   Dot-source once per terminal, then call functions:
@@ -169,47 +169,7 @@ function Stop-Frontend {
 }
 
 function Start-Ngrok {
-  $ngrok = Get-Command ngrok -ErrorAction SilentlyContinue
-  if (-not $ngrok) {
-    throw "ngrok not in PATH"
-  }
-  # Prefer full launcher which also wires Telegram:
-  #   C:\fitness_prog\start-all.cmd
-  $token = ""
-  foreach ($envFile in @(
-      (Join-Path $script:Root ".env"),
-      (Join-Path $script:BackendDir ".env")
-    )) {
-    if (-not (Test-Path $envFile)) { continue }
-    $line = Get-Content $envFile | Where-Object { $_ -match "^\s*NGROK_AUTHTOKEN\s*=" } | Select-Object -First 1
-    if ($line) {
-      $token = (($line -split "=", 2)[1]).Trim().Trim('"')
-      if ($token -match "^(.*?)(\s+#.*)$") { $token = $Matches[1].Trim() }
-      break
-    }
-  }
-  $cfg = Join-Path $script:ScriptsDir "ngrok.yml"
-  if (-not (Test-Path $cfg)) {
-    $cfg = Join-Path $script:ScriptsDir "ngrok.yml.example"
-  }
-  if (Test-Path $cfg) {
-    $cmd = @"
-if ('$token') { `$env:NGROK_AUTHTOKEN='$token'; ngrok config add-authtoken `$env:NGROK_AUTHTOKEN 2>`$null | Out-Null }
-Write-Host 'ngrok frontend :$script:FrontendPort' -ForegroundColor Green
-ngrok start --config `"$cfg`" frontend
-"@
-  } else {
-    $cmd = @"
-if ('$token') { `$env:NGROK_AUTHTOKEN='$token'; ngrok config add-authtoken `$env:NGROK_AUTHTOKEN 2>`$null | Out-Null }
-Write-Host 'ngrok http $script:FrontendPort' -ForegroundColor Green
-ngrok http $script:FrontendPort
-"@
-  }
-  Start-Process -FilePath "powershell.exe" -ArgumentList @(
-    "-NoExit", "-NoProfile", "-Command", $cmd
-  ) | Out-Null
-  Write-FitnessOk "ngrok window started - public URL: http://127.0.0.1:4040"
-  Write-FitnessInfo "BotFather Web App URL = ngrok https URL (API via Vite proxy, same origin)"
+  throw "ngrok отключён: он создаёт устаревающие кнопки и показывает предупреждение. Используйте start-all.cmd и Tailscale Funnel."
 }
 
 function Start-Worker {
@@ -246,7 +206,7 @@ function Restart-FitnessStack {
 function Stop-FitnessStack {
   Stop-Backend
   Stop-Frontend
-  Write-FitnessOk "Stack stopped (close ngrok window manually if running)"
+  Write-FitnessOk "Stack stopped (Tailscale Funnel remains configured)"
 }
 
 function Get-FitnessStatus {
@@ -259,28 +219,27 @@ function Get-FitnessStatus {
       @{ Name = "frontend"; Port = $script:FrontendPort; Url = "http://127.0.0.1:$script:FrontendPort" }
     )) {
     $pids = Get-FitnessPortPids -Port $pair.Port
+    $reachable = $false
+    try {
+      $response = Invoke-WebRequest -Uri $pair.Url -UseBasicParsing -TimeoutSec 2
+      $reachable = $response.StatusCode -ge 200 -and $response.StatusCode -lt 500
+    } catch { }
     if (@($pids).Count -gt 0) {
       Write-Host ("  {0} :{1} LISTEN pids={2}  {3}" -f $pair.Name, $pair.Port, ($pids -join ","), $pair.Url) -ForegroundColor Green
+    } elseif ($reachable) {
+      Write-Host ("  {0} :{1} UP (PID requires elevation)  {2}" -f $pair.Name, $pair.Port, $pair.Url) -ForegroundColor Green
     } else {
       Write-Host ("  {0} :{1} DOWN" -f $pair.Name, $pair.Port) -ForegroundColor DarkYellow
     }
   }
 
-  try {
-    $tunnels = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -TimeoutSec 2
-    foreach ($t in $tunnels.tunnels) {
-      if ($t.public_url -like "https://*") {
-        Write-Host ("  ngrok   {0} -> {1}" -f $t.public_url, $t.config.addr) -ForegroundColor Green
-      }
-    }
-  } catch {
-    Write-Host "  ngrok   (API :4040 not up)" -ForegroundColor DarkYellow
-  }
-
-  $urlFile = Join-Path $script:ScriptsDir "ngrok-urls.local.env"
+  $urlFile = Join-Path $script:ScriptsDir "tailscale-url.local.env"
   if (Test-Path $urlFile) {
+    Write-Host "  tunnel  Tailscale Funnel" -ForegroundColor Green
     Write-Host "  saved   $urlFile" -ForegroundColor DarkGray
     Get-Content $urlFile | ForEach-Object { Write-Host "          $_" -ForegroundColor DarkGray }
+  } else {
+    Write-Host "  tunnel  URL not configured" -ForegroundColor DarkYellow
   }
   Write-Host ""
 }
@@ -330,7 +289,7 @@ fitness_prog - local commands
 START
   Start-Backend [-Reload]     uvicorn 127.0.0.1:8001
   Start-Frontend              vite 0.0.0.0:5173
-  Start-Ngrok                 tunnel -> :5173
+  start-all.cmd               backend + frontend + Tailscale Funnel + Telegram
   Start-Worker                arq reminders (Redis)
   Start-FitnessStack [-WithNgrok] [-Reload]
 
@@ -362,12 +321,9 @@ RAW copy-paste
   cd C:\fitness_prog\frontend
   npm.cmd run dev -- --host 0.0.0.0 --port 5173
 
-  ngrok start --config C:\fitness_prog\scripts\ngrok.yml frontend
-  # inspect: http://127.0.0.1:4040
-
 NOTES
   - DATABASE_URL: use 127.0.0.1 not localhost (Windows)
-  - Telegram WebApp URL = ngrok https (API via Vite proxy same origin)
+  - Telegram WebApp URL = Tailscale Funnel HTTPS (API via Vite proxy same origin)
   - Profile / calorie targets need backend restart after pulling energy code
   - Kill stuck port: Stop-FitnessPort -Port 8001
 

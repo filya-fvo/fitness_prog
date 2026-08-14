@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { createWorkout } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   enqueueSync,
@@ -16,10 +17,12 @@ import { ExerciseCard } from "@/features/workout/components/ExerciseCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { trackEvent } from "@/lib/analytics";
+import { getTelegramWebApp, isTelegramEnvironment } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, Workout } from "@/types/workout";
 import { isOnline } from "@/utils/network";
+import { enumLabel } from "@/utils/localization";
 import {
   defaultSetTemplate,
   pickPresetExercises,
@@ -28,6 +31,27 @@ import {
   type SetTemplate,
 } from "@/utils/setTemplates";
 import { draftsWithSuggestions, resolveWeekPhase } from "@/utils/loadProgression";
+import { toUserMessage } from "@/utils/errors";
+
+const CATALOG_PAGE_SIZE = 20;
+const CATALOG_UI_KEY = "fitness_catalog_ui_v1";
+
+type CatalogUiState = {
+  selectedIds?: string[];
+  templateId?: string;
+  muscleFilter?: string;
+  searchQuery?: string;
+  visibleCount?: number;
+  scrollY?: number;
+};
+
+function readCatalogUi(): CatalogUiState {
+  try {
+    return JSON.parse(sessionStorage.getItem(CATALOG_UI_KEY) || "{}") as CatalogUiState;
+  } catch {
+    return {};
+  }
+}
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -67,6 +91,7 @@ function buildDrafts(exercises: Exercise[], template: SetTemplate): LocalSetDraf
 
 
 export function WorkoutCatalogPage() {
+  const initialUi = useMemo(readCatalogUi, []);
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
   const catalog = useWorkoutStore((s) => s.catalog);
@@ -77,15 +102,20 @@ export function WorkoutCatalogPage() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [templateId, setTemplateId] = useState(defaultSetTemplate().id);
-  const [muscleFilter, setMuscleFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialUi.selectedIds || []);
+  const [templateId, setTemplateId] = useState(initialUi.templateId || defaultSetTemplate().id);
+  const [muscleFilter, setMuscleFilter] = useState(initialUi.muscleFilter || "");
+  const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [visibleCount, setVisibleCount] = useState(Math.max(CATALOG_PAGE_SIZE, initialUi.visibleCount || 0));
+  const scrollRestoredRef = useRef(false);
+  const filtersMountedRef = useRef(false);
+  const usesNativeMainButton =
+    isTelegramEnvironment() && Boolean(getTelegramWebApp()?.MainButton);
 
   const activeTemplate = SET_TEMPLATES.find((t) => t.id === templateId) ?? defaultSetTemplate();
   const muscleGroups = useMemo(() => {
@@ -133,7 +163,7 @@ export function WorkoutCatalogPage() {
             setFromCache(true);
             setError("Сеть недоступна — показан кэш каталога");
           } else {
-            setError(err instanceof Error ? err.message : "Не удалось загрузить каталог");
+            setError(toUserMessage(err, "Не удалось загрузить каталог"));
           }
           setLoading(false);
         }
@@ -161,6 +191,37 @@ export function WorkoutCatalogPage() {
     () => catalog.filter((item) => selectedIds.includes(item.id)),
     [catalog, selectedIds],
   );
+  const catalogPage = visibleCatalog.slice(0, visibleCount);
+
+  useEffect(() => {
+    if (!filtersMountedRef.current) {
+      filtersMountedRef.current = true;
+      return;
+    }
+    setVisibleCount(CATALOG_PAGE_SIZE);
+  }, [muscleFilter, searchQuery]);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      CATALOG_UI_KEY,
+      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, scrollY: window.scrollY }),
+    );
+  }, [muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
+
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    window.requestAnimationFrame(() => window.scrollTo({ top: initialUi.scrollY || 0 }));
+    const rememberScroll = () => {
+      const state = readCatalogUi();
+      sessionStorage.setItem(CATALOG_UI_KEY, JSON.stringify({ ...state, scrollY: window.scrollY }));
+    };
+    window.addEventListener("scroll", rememberScroll, { passive: true });
+    return () => {
+      rememberScroll();
+      window.removeEventListener("scroll", rememberScroll);
+    };
+  }, [initialUi.scrollY, loading]);
 
   function toggleExercise(exercise: Exercise) {
     setSelectedIds((prev) =>
@@ -182,6 +243,7 @@ export function WorkoutCatalogPage() {
 
       if (isOnline() && getStoredToken()) {
         workout = await createWorkout({
+          clientWorkoutId: clientId,
           scheduledDate: todayISO(),
           exerciseIds,
           title: `Своя · ${activeTemplate.label}`,
@@ -255,7 +317,7 @@ export function WorkoutCatalogPage() {
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать тренировку");
+      setError(toUserMessage(err, "Не удалось создать тренировку"));
     } finally {
       setStarting(false);
     }
@@ -338,18 +400,19 @@ export function WorkoutCatalogPage() {
         </p>
       </div>
 
-      <label className="mb-2 block text-xs text-tg-hint">
-        Поиск
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Поиск упражнения"
-          className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-        />
-      </label>
+      <div className="sticky top-0 z-10 -mx-1 mb-3 rounded-2xl bg-tg-bg/95 p-1 shadow-sm backdrop-blur">
+        <label className="mb-2 block text-xs text-tg-hint">
+          Поиск
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Поиск упражнения"
+            className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+          />
+        </label>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+        <div className="flex max-h-24 flex-wrap gap-2 overflow-y-auto">
         <button
           type="button"
           onClick={() => setMuscleFilter("")}
@@ -370,15 +433,34 @@ export function WorkoutCatalogPage() {
               muscleFilter === group ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
             ].join(" ")}
           >
-            {group}
+            {enumLabel(group)}
           </button>
         ))}
+        </div>
       </div>
 
-      {loading ? <p className="text-sm text-tg-hint">Загрузка каталога…</p> : null}
+      {!loading && catalog.length > 0 ? (
+        <div className="mb-3 flex items-center justify-between gap-3 text-xs text-tg-hint">
+          <span>Найдено упражнений: {visibleCatalog.length}</span>
+          {searchQuery || muscleFilter ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setMuscleFilter("");
+              }}
+              className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
+            >
+              Сбросить фильтры
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {loading ? <PageSkeleton cards={4} /> : null}
       {fromCache ? (
         <p className="mb-2 text-xs text-tg-hint">
-          Каталог из оффлайн-кэша{isOnline() ? "" : " (нет сети)"}
+          Показана сохранённая копия каталога{isOnline() ? "" : " (нет сети)"}
         </p>
       ) : null}
       {error ? (
@@ -387,19 +469,52 @@ export function WorkoutCatalogPage() {
 
       {!loading && catalog.length === 0 ? (
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
-          Каталог пуст или нет авторизации. Для оффлайна нужен хотя бы один успешный онлайн-загрузчик
-          каталога.
+          Каталог пуст или нет авторизации. Чтобы пользоваться без сети, сначала один раз откройте
+          каталог при подключённом интернете.
         </div>
       ) : null}
 
       {!loading && catalog.length > 0 && visibleCatalog.length === 0 ? (
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
-          Нет упражнений в группе «{muscleFilter}». Сбросьте фильтр.
+          Нет упражнений в группе «{enumLabel(muscleFilter)}». Сбросьте фильтр.
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        {visibleCatalog.map((exercise) => (
+      {selectedExercises.length > 0 ? (
+        <div className="sticky bottom-[4.5rem] z-10 mb-3 rounded-2xl border border-tg-button/25 bg-tg-bg/95 p-3 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Выбрано: {selectedExercises.length}</p>
+              <p className="truncate text-[11px] text-tg-hint">
+                {selectedExercises.slice(0, 3).map((item) => item.name_ru).join(" · ")}
+                {selectedExercises.length > 3 ? ` · ещё ${selectedExercises.length - 3}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="tap-target-x shrink-0 rounded-lg px-2 py-1 text-xs text-tg-link"
+            >
+              Очистить
+            </button>
+          </div>
+          {!usesNativeMainButton ? (
+            <button
+              type="button"
+              onClick={() => void startWorkout()}
+              disabled={starting}
+              className="tap-target-x mt-2 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            >
+              {starting
+                ? "Создаём…"
+                : `Начать ${activeTemplate.label} (${selectedExercises.length})`}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {catalogPage.map((exercise) => (
           <ExerciseCard
             key={exercise.id}
             exercise={exercise}
@@ -409,6 +524,16 @@ export function WorkoutCatalogPage() {
           />
         ))}
       </div>
+
+      {catalogPage.length < visibleCatalog.length ? (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((count) => count + CATALOG_PAGE_SIZE)}
+          className="tap-target-x mt-4 w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+        >
+          Показать ещё · осталось {visibleCatalog.length - catalogPage.length}
+        </button>
+      ) : null}
 
       {detailExercise ? (
         <ExerciseDetailModal
@@ -421,18 +546,6 @@ export function WorkoutCatalogPage() {
         />
       ) : null}
 
-      {selectedExercises.length > 0 ? (
-        <button
-          type="button"
-          onClick={() => void startWorkout()}
-          disabled={starting}
-          className="mt-4 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-        >
-          {starting
-            ? "Создаём…"
-            : `Начать ${activeTemplate.label} (${selectedExercises.length})`}
-        </button>
-      ) : null}
     </section>
   );
 }

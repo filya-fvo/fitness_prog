@@ -52,5 +52,6 @@
 - Keep changes scoped to the request.
 - Preserve public APIs unless the user asks to break them.
 - Prefer typed APIs where the stack supports them.
+- After every user-facing feature or behavior change, update both `docs/CHANGELOG.md` and the relevant section of `docs/USER_GUIDE.md`.
 
 See `.xgrok/BEST_PRACTICES.md` and `.xgrok/SECURITY.md`.

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import type { AuthUser } from "@/api/auth";
+import { clearCachedUserProfile } from "@/utils/profileCache";
 
 type UserState = {
   user: AuthUser | null;
@@ -26,11 +27,13 @@ export const useUserStore = create<UserState>((set) => ({
     }),
   setAuthLoading: (isAuthLoading) => set({ isAuthLoading }),
   setAuthError: (authError) => set({ authError, isAuthLoading: false }),
-  reset: () =>
+  reset: () => {
+    clearCachedUserProfile();
     set({
       user: null,
       isAuthenticated: false,
       isAuthLoading: false,
       authError: null,
-    }),
+    });
+  },
 }));

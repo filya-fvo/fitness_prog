@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Integer, String, Text
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+import uuid
+
+from sqlalchemy import BigInteger, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -25,6 +27,14 @@ class User(Base, TimestampSoftDeleteMixin):
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True, index=True)
     username: Mapped[str | None] = mapped_column(Text, nullable=True)
     auth_email: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
+    # Provider-side conversation id; never use a mutable Telegram username as the key.
+    openai_conversation_id: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
+    merged_into_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
 
     anthropometry: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     goals: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)

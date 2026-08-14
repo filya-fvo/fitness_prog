@@ -97,15 +97,15 @@
   },
   {
     "name_ru": "Ягодичный мост",
-    "file": "1409-qKBpF7I.gif",
-    "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
+    "file": "3013-u0cNiij.gif",
+    "animation_url": "/exercise-gifs/3013-u0cNiij.gif",
     "muscle_group": "ноги"
   },
   {
     "name_ru": "Ягодичный мост со штангой",
-    "file": "0756-CqhoytW.gif",
-    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
-    "muscle_group": "кор"
+    "file": "1409-qKBpF7I.gif",
+    "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
+    "muscle_group": "ноги"
   },
   {
     "name_ru": "Подъёмы на носки стоя",
@@ -580,5 +580,167 @@
     "file": "1604-DFGXwZr.gif",
     "animation_url": "/exercise-gifs/1604-DFGXwZr.gif",
     "muscle_group": "мобильность"
+  },
+  {
+    "name_ru": "Пуловер в блоке на спину",
+    "file": "2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Французский жим со штангой",
+    "file": "0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Французский жим EZ-грифом",
+    "file": "0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Французский жим стоя со штангой",
+    "file": "0351-mpKZGWz.gif",
+    "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Разгибания из-за головы на блоке",
+    "file": "0201-3ZflifB.gif",
+    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Жим вниз на блоке канатом",
+    "file": "0201-3ZflifB.gif",
+    "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
+    "muscle_group": "трицепс"
+  },
+  {
+    "name_ru": "Тяга верхнего блока обратным хватом",
+    "file": "2330-LEprlgG.gif",
+    "animation_url": "/exercise-gifs/2330-LEprlgG.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Кроссовер на верхних блоках",
+    "file": "0158-7saC5zz.gif",
+    "animation_url": "/exercise-gifs/0158-7saC5zz.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Махи гантелями в стороны",
+    "file": "0334-DsgkuIt.gif",
+    "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Подтягивания обратным хватом",
+    "file": "0674-YAk5dIw.gif",
+    "animation_url": "/exercise-gifs/0674-YAk5dIw.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Пуловер с гантелью лёжа поперёк скамьи",
+    "file": "0375-9XjtHvS.gif",
+    "animation_url": "/exercise-gifs/0375-9XjtHvS.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Приседания в машине Смита",
+    "file": "3281-NNoHCEA.gif",
+    "animation_url": "/exercise-gifs/3281-NNoHCEA.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Гакк-приседания",
+    "file": "0743-Qa55kX1.gif",
+    "animation_url": "/exercise-gifs/0743-Qa55kX1.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Болгарские приседания в машине Смита",
+    "file": "0768-wWFspEi.gif",
+    "animation_url": "/exercise-gifs/0768-wWFspEi.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Жим лёжа в машине Смита",
+    "file": "0748-trqKQv2.gif",
+    "animation_url": "/exercise-gifs/0748-trqKQv2.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Жим на наклонной в тренажёре",
+    "file": "1299-jHAnWmT.gif",
+    "animation_url": "/exercise-gifs/1299-jHAnWmT.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Сведение рук в тренажёре «бабочка»",
+    "file": "0596-v3xmPAR.gif",
+    "animation_url": "/exercise-gifs/0596-v3xmPAR.gif",
+    "muscle_group": "грудь"
+  },
+  {
+    "name_ru": "Жим вверх в тренажёре сидя",
+    "file": "0603-67n3r98.gif",
+    "animation_url": "/exercise-gifs/0603-67n3r98.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Отведение руки в сторону на блоке",
+    "file": "0178-goJ6ezq.gif",
+    "animation_url": "/exercise-gifs/0178-goJ6ezq.gif",
+    "muscle_group": "плечи"
+  },
+  {
+    "name_ru": "Тяга с упором грудью в тренажёре",
+    "file": "1350-7I6LNUG.gif",
+    "animation_url": "/exercise-gifs/1350-7I6LNUG.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Тяга верхнего блока нейтральным хватом",
+    "file": "0818-rkg41Fb.gif",
+    "animation_url": "/exercise-gifs/0818-rkg41Fb.gif",
+    "muscle_group": "спина"
+  },
+  {
+    "name_ru": "Сгибания ног сидя",
+    "file": "0599-Zg3XY7P.gif",
+    "animation_url": "/exercise-gifs/0599-Zg3XY7P.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Ягодичный мост в машине Смита",
+    "file": "0756-CqhoytW.gif",
+    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Подъёмы на носки стоя в тренажёре",
+    "file": "0605-ykUOVze.gif",
+    "animation_url": "/exercise-gifs/0605-ykUOVze.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Сгибания гантелей на бицепс на наклонной скамье",
+    "file": "0315-F3xgbjF.gif",
+    "animation_url": "/exercise-gifs/0315-F3xgbjF.gif",
+    "muscle_group": "бицепс"
+  },
+  {
+    "name_ru": "Скручивания на верхнем блоке",
+    "file": "0175-WW95auq.gif",
+    "animation_url": "/exercise-gifs/0175-WW95auq.gif",
+    "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Жим Паллофа с резинкой",
+    "file": "0979-9pa4H5m.gif",
+    "animation_url": "/exercise-gifs/0979-9pa4H5m.gif",
+    "muscle_group": "кор"
   }
 ]

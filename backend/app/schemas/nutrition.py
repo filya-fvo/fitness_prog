@@ -57,7 +57,7 @@ class BarcodeLookupResponse(BaseModel):
 
 class NutritionLogCreate(BaseModel):
     product_id: uuid.UUID
-    quantity_grams: Decimal = Field(..., gt=0)
+    quantity_grams: Decimal = Field(..., gt=0, le=100_000)
     meal_type: MealType
     # Avoid field name clashing with datetime.date under Python 3.14 + pydantic
     log_date: Optional[Date] = Field(default=None, alias="date")
@@ -73,7 +73,7 @@ class NutritionLogCreate(BaseModel):
 class NutritionLogUpdate(BaseModel):
     """Partial update for an existing diary entry (grams / meal / optional KBJU override)."""
 
-    quantity_grams: Optional[Decimal] = Field(default=None, gt=0)
+    quantity_grams: Optional[Decimal] = Field(default=None, gt=0, le=100_000)
     meal_type: Optional[MealType] = None
     calories_per_100: Optional[float] = Field(default=None, ge=0, le=1200)
     proteins_per_100: Optional[float] = Field(default=None, ge=0, le=100)

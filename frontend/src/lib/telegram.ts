@@ -168,7 +168,7 @@ export function pathFromStartParam(start: string): string | null {
   if (key === "profile" || key === "measurements") return "/profile";
   if (key === "supplements" || key === "alerts" || key === "notifications") {
     const tab = key === "supplements" ? "supplements" : "alerts";
-    return `/profile?tab=${tab}`;
+    return `/profile?section=${tab}`;
   }
   if (key === "nutrition" || key === "food") return "/nutrition";
   if (key === "programs") return "/programs";

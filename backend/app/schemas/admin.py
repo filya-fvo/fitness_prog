@@ -4,9 +4,17 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+AdminResetScope = Literal["all", "workouts", "nutrition", "measurements"]
+
+
+class AdminClearRequest(BaseModel):
+    scope: AdminResetScope
+    notify: bool = True
+    confirm_full_reset: bool = False
 
 
 class AdminUserRow(BaseModel):

@@ -42,7 +42,8 @@ export function StrengthTrends({ trends }: { trends: LiftTrend[] }) {
         <p className="text-sm font-semibold">Силовые тренды</p>
         <p className="mt-2 text-xs text-tg-hint">
           Появятся после нескольких завершённых тренировок с весом. Считаем лучший подход и
-          ориентировочный 1ПМ (Epley).
+          ориентировочный одноповторный максимум (1ПМ) по формуле Эпли. Это расчётная оценка,
+          а не рекомендация проверять максимум на практике.
         </p>
       </div>
     );
@@ -52,7 +53,7 @@ export function StrengthTrends({ trends }: { trends: LiftTrend[] }) {
     <div className="rounded-2xl bg-tg-secondary p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <p className="text-sm font-semibold">Силовые тренды</p>
-        <p className="text-[10px] text-tg-hint">est. 1ПМ · Epley</p>
+        <p className="text-[10px] text-tg-hint">Расчётный 1ПМ · формула Эпли</p>
       </div>
       <ul className="space-y-2">
         {trends.map((t) => (
@@ -62,7 +63,7 @@ export function StrengthTrends({ trends }: { trends: LiftTrend[] }) {
                 <p className="truncate text-sm font-medium">{t.name}</p>
                 <p className="text-[11px] text-tg-hint">
                   {t.latest
-                    ? `${t.latest.weight} кг × ${t.latest.reps} · 1ПМ ~${t.latest.est1rm}`
+                    ? `${t.latest.weight} кг × ${t.latest.reps} · расчётный 1ПМ ≈ ${t.latest.est1rm} кг`
                     : "нет данных"}
                   {t.muscleGroup ? ` · ${t.muscleGroup}` : ""}
                 </p>

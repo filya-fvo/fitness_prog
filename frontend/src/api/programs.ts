@@ -29,6 +29,9 @@ const setSchema = z.object({
   weight: z.union([z.number(), z.string()]).nullable().optional(),
   is_completed: z.boolean(),
   rest_time_sec: z.number().nullable().optional(),
+  duration_sec: z.number().nullable().optional(),
+  note: z.string().nullable().optional(),
+  machine_params: z.record(z.union([z.string(), z.number()])).nullable().optional(),
 });
 
 const workoutSchema = z.object({
@@ -86,6 +89,9 @@ function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
       weight: s.weight == null ? null : Number(s.weight),
       is_completed: s.is_completed,
       rest_time_sec: s.rest_time_sec ?? null,
+      duration_sec: s.duration_sec ?? null,
+      note: s.note ?? null,
+      machine_params: s.machine_params ?? null,
     })),
   };
 }

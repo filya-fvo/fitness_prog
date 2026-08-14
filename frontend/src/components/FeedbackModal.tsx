@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 
 import { openUserChatWithText } from "@/lib/telegram";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 type Props = {
   open: boolean;
@@ -16,6 +17,7 @@ const ADMIN_USERNAME =
 export function FeedbackModal({ open, onClose }: Props) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useModalAccessibility(open, onClose);
 
   if (!open) return null;
 
@@ -41,18 +43,20 @@ export function FeedbackModal({ open, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Обратная связь"
       onClick={close}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-title"
+        tabIndex={-1}
         className="w-full max-w-lg rounded-2xl bg-tg-bg p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-tg-text">Обратная связь</h2>
+            <h2 id="feedback-title" className="text-lg font-semibold text-tg-text">Обратная связь</h2>
             <p className="mt-1 text-xs text-tg-hint">
               Откроется личный чат с @{ADMIN_USERNAME}. Сообщение отправите вы
               сами — оно придёт от вашего аккаунта, не от бота.

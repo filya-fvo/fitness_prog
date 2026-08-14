@@ -300,7 +300,7 @@ def gym_female_int_lower_glute(sets=4, reps="8-12", rest=80):
         ex("Румынская тяга с гантелями", sets, reps, rest),
         ex("Болгарские выпады", 3, "8-12/стор", 75),
         ex("Сгибания ног лёжа", 3, "10-15", 60),
-        ex("Ягодичный мост", 3, "12-15", 45),
+        ex("Разгибания ног", 3, "10-15", 55),
         ex("Подъёмы на носки стоя", 3, "12-15", 40),
     ]
 
@@ -334,6 +334,7 @@ def gym_adv_push(sets=4, reps="5-8", rest=120):
         ex("Жим штанги стоя", sets, "5-8", 100),
         ex("Отжимания на брусьях", 3, "6-12", 90),
         ex("Разгибания на блоке", 3, "8-12", 60),
+        ex("Разводка гантелей в стороны", 3, "12-15", 55),
     ]
 
 
@@ -344,6 +345,7 @@ def gym_adv_pull(sets=4, reps="5-8", rest=120):
         ex("Тяга штанги в наклоне", sets, "5-8", 100),
         ex("Тяга к лицу", 3, "12-15", 60),
         ex("Сгибания со штангой", 3, "6-10", 75),
+        ex("Молотковые сгибания", 3, "8-12", 60),
     ]
 
 
@@ -354,6 +356,7 @@ def gym_adv_legs(sets=4, reps="5-8", rest=120):
         ex("Жим ногами", 3, "8-12", 90),
         ex("Выпады назад с гантелями", 3, "8-12/стор", 75),
         ex("Подъёмы на носки стоя", 4, "8-12", 45),
+        ex("Сгибания ног лёжа", 3, "10-15", 60),
     ]
 
 
@@ -364,6 +367,7 @@ def gym_adv_push_b(sets=4):
         ex("Сведение рук в кроссовере", 3, "10-15", 60),
         ex("Жим лёжа узким хватом", 3, "6-10", 90),
         ex("Разгибания гантели из-за головы", 3, "8-12", 60),
+        ex("Разводка гантелей в стороны", 3, "12-15", 55),
     ]
 
 
@@ -374,6 +378,7 @@ def gym_adv_pull_b(sets=4):
         ex("Тяга горизонтального блока", 3, "8-12", 75),
         ex("Шраги с гантелями", 3, "8-12", 60),
         ex("Молотковые сгибания", 3, "8-12", 60),
+        ex("Сгибания на скамье Скотта", 3, "10-15", 60),
     ]
 
 
@@ -384,6 +389,7 @@ def gym_adv_legs_b(sets=4):
         ex("Болгарские выпады", 3, "8-12/стор", 75),
         ex("Сгибания ног лёжа", 3, "8-12", 60),
         ex("Подъёмы на носки сидя", 4, "10-15", 45),
+        ex("Разгибания ног", 3, "10-15", 60),
     ]
 
 
@@ -883,6 +889,7 @@ def ppl_push_beg():
         ex("Разведение гантелей лёжа", 3, "10-15", 60),
         ex("Разводка гантелей в стороны", 3, "10-15", 55),
         ex("Разгибания на блоке", 3, "10-15", 55),
+        ex("Боковая планка", 2, "20-30с/стор", 40),
     ]
 
 
@@ -893,6 +900,7 @@ def ppl_pull_beg():
         ex("Тяга к лицу", 3, "12-15", 55),
         ex("Сгибания гантелей на бицепс", 3, "8-12", 55),
         ex("Планка", 3, "30-45с", 45),
+        ex("Молотковые сгибания", 2, "10-15", 50),
     ]
 
 
@@ -903,6 +911,100 @@ def ppl_legs_beg():
         ex("Выпады вперёд", 3, "8-12/стор", 70),
         ex("Сгибания ног лёжа", 3, "10-15", 55),
         ex("Подъёмы на носки стоя", 3, "12-15", 40),
+        ex("Мёртвый жук", 2, "8-10/стор", 40),
+    ]
+
+
+# Shoulder-sensitive plans deliberately avoid pressing, overhead work, arm support,
+# pull-ups and rows. This is a conservative catalog profile, not rehabilitation.
+def shoulder_home_male(sets=3, reps="10-15", rest=60):
+    return [
+        [
+            ex("Приседания со своим весом", sets, reps, rest),
+            ex("Румынская тяга с гантелями", sets, reps, rest),
+            ex("Ягодичный мост", sets, "12-20", rest),
+            ex("Сгибания гантелей на бицепс", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Подъёмы ног лёжа", sets, "8-15", 45),
+        ],
+        [
+            ex("Приседания с гантелью у груди", sets, reps, rest),
+            ex("Выпады назад с гантелями", sets, "8-12/стор", rest),
+            ex("Ягодичный мост", sets, "12-20", rest),
+            ex("Молотковые сгибания", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Велосипед", sets, "12-20/стор", 45),
+            ex("Русские скручивания", sets, "12-20/стор", 45),
+        ],
+        [
+            ex("Болгарские выпады", sets, "8-12/стор", rest),
+            ex("Зашагивания на тумбу", sets, "8-12/стор", rest),
+            ex("Румынская тяга с гантелями", sets, reps, rest),
+            ex("Сгибания гантелей на бицепс", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+        ],
+    ]
+
+
+def shoulder_home_female(sets=3, reps="10-15", rest=60):
+    return [
+        [
+            ex("Приседания со своим весом", sets, reps, rest),
+            ex("Ягодичный мост", sets, "12-20", rest),
+            ex("Выпады назад с гантелями", sets, "8-12/стор", rest),
+            ex("Румынская тяга с гантелями", sets, reps, rest),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Подъёмы ног лёжа", sets, "8-15", 45),
+        ],
+        [
+            ex("Приседания с гантелью у груди", sets, reps, rest),
+            ex("Болгарские выпады", sets, "8-12/стор", rest),
+            ex("Ягодичный мост", sets, "12-20", rest),
+            ex("Молотковые сгибания", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Велосипед", sets, "12-20/стор", 45),
+            ex("Русские скручивания", sets, "12-20/стор", 45),
+        ],
+        [
+            ex("Зашагивания на тумбу", sets, "8-12/стор", rest),
+            ex("Выпады вперёд", sets, "8-12/стор", rest),
+            ex("Румынская тяга с гантелями", sets, reps, rest),
+            ex("Ягодичный мост", sets, "12-20", rest),
+            ex("Сгибания гантелей на бицепс", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+        ],
+    ]
+
+
+def shoulder_gym(sex: str, sets=3, reps="10-15", rest=70):
+    bridge = "Ягодичный мост в машине Смита" if sex == "female" else "Ягодичный мост со штангой"
+    return [
+        [
+            ex("Жим ногами", sets, reps, rest),
+            ex("Разгибания ног", sets, "10-15", 60),
+            ex("Сгибания ног сидя", sets, "10-15", 60),
+            ex("Подъёмы на носки сидя", sets, "12-20", 50),
+            ex("Сгибания на нижнем блоке", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Подъёмы ног лёжа", sets, "8-15", 45),
+        ],
+        [
+            ex("Жим ногами", sets, reps, rest),
+            ex("Сгибания ног лёжа", sets, "10-15", 60),
+            ex(bridge, sets, "10-15", rest),
+            ex("Подъёмы на носки стоя в тренажёре", sets, "12-20", 50),
+            ex("Жим вниз на блоке канатом", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Велосипед", sets, "12-20/стор", 45),
+            ex("Русские скручивания", sets, "12-20/стор", 45),
+        ],
+        [
+            ex("Разгибания ног", sets, "10-15", 60),
+            ex("Сгибания ног сидя", sets, "10-15", 60),
+            ex(bridge, sets, "10-15", rest),
+            ex("Подъёмы на носки сидя", sets, "12-20", 50),
+            ex("Сгибания на скамье Скотта", 2 if sets == 3 else 3, "10-15", 50),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+        ],
     ]
 
 
@@ -911,7 +1013,7 @@ def build_all() -> list[dict]:
 
     # ===== BEGINNER MALE =====
     programs.append(prog(
-        name="М · Зал · Новичок · Тренажёры FB",
+        name="М · Зал · Новичок · Тренажёры · Всё тело",
         description="Мужская full body на тренажёрах и гантелях. 3 дня. Без разминочных упражнений в списке — разминку делайте 5–8 мин сами.",
         level="beginner", workout_type="full_body",
         sex=["male"], location="gym",
@@ -924,12 +1026,12 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="М · Зал · Новичок · PPL intro",
+        name="М · Зал · Новичок · Жим/тяга/ноги · Введение",
         description="Мягкий push/pull/legs для мужчины-новичка в зале.",
         level="beginner", workout_type="push_pull_legs",
         sex=["male"], location="gym",
-        equipment=["machines", "dumbbells", "barbell"], limitations=[],
-        days_per_week=3, session_min=50,
+        equipment=["machines", "dumbbells"], limitations=[],
+        days_per_week=3, session_min=55,
         schedule=[
             day(1, "Push", "push", ppl_push_beg()),
             day(2, "Pull", "pull", ppl_pull_beg()),
@@ -937,7 +1039,7 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="М · Зал · Новичок · Гантели FB",
+        name="М · Зал · Новичок · Гантели · Всё тело",
         description="Full body преимущественно с гантелями (зал/уголок).",
         level="beginner", workout_type="full_body",
         sex=["male"], location="gym",
@@ -954,7 +1056,7 @@ def build_all() -> list[dict]:
         description="Домашняя программа с весом тела, 3 дня.",
         level="beginner", workout_type="home_express",
         sex=["male"], location="home",
-        equipment=["bodyweight"], limitations=[],
+        equipment=["bodyweight", "bands"], limitations=[],
         days_per_week=3, session_min=35,
         schedule=[
             day(1, "Home A", "full", fb_bw_a()),
@@ -991,7 +1093,7 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="Ж · Зал · Новичок · Тренажёры FB",
+        name="Ж · Зал · Новичок · Тренажёры · Всё тело",
         description="Мягкий вход в зал на тренажёрах, 3 full body.",
         level="beginner", workout_type="full_body",
         sex=["female"], location="gym",
@@ -1074,20 +1176,21 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="М · Зал · Опытный · PPL 3 дня",
-        description="Классический PPL 3 дня для опытного.",
+        name="М · Зал · Опытный · Жим/тяга/ноги · 3 дня",
+        description="Классический сплит жим/тяга/ноги на 3 дня для опытного.",
         level="intermediate", workout_type="push_pull_legs",
         sex=["male"], location="gym",
         equipment=["barbell", "dumbbells", "machines"], limitations=[],
-        days_per_week=3, session_min=55, duration_weeks=8,
+        days_per_week=3, session_min=60, duration_weeks=8,
         schedule=[
-            day(1, "Push", "push", gym_adv_push(sets=3, reps="6-10", rest=100)[:5]),
+            day(1, "Push", "push", gym_adv_push(sets=3, reps="6-10", rest=100)),
             day(2, "Pull", "pull", [
                 ex("Тяга штанги в наклоне", 4, "6-10", 100),
                 ex("Подтягивания", 3, "5-10", 90),
                 ex("Тяга верхнего блока", 3, "8-12", 75),
                 ex("Тяга к лицу", 3, "12-15", 55),
                 ex("Сгибания со штангой", 3, "6-10", 70),
+                ex("Молотковые сгибания", 3, "8-12", 60),
             ]),
             day(3, "Legs", "legs", gym_male_int_lower()),
         ],
@@ -1098,7 +1201,7 @@ def build_all() -> list[dict]:
         level="intermediate", workout_type="home_express",
         sex=["male"], location="home",
         equipment=["dumbbells", "bodyweight"], limitations=[],
-        days_per_week=3, session_min=45,
+        days_per_week=3, session_min=50,
         schedule=[
             day(1, "Home DB A", "full", home_db_male_a( ) if False else home_db_male_a()),
             day(2, "Home DB B", "full", home_db_male_b()),
@@ -1119,6 +1222,7 @@ def build_all() -> list[dict]:
                 ex("Приседания со своим весом", 4, "15-25", 60),
                 ex("Выпады вперёд", 3, "10-15/стор", 60),
                 ex("Планка", 3, "40-60с", 45),
+                ex("Австралийские подтягивания", 3, "8-15", 70),
             ]),
             day(2, "Pull + core", "full", [
                 ex("Подтягивания", 4, "4-10", 100),
@@ -1126,6 +1230,7 @@ def build_all() -> list[dict]:
                 ex("Отжимания узким хватом", 3, "8-15", 60),
                 ex("Удержание «лодочки»", 3, "20-40с", 45),
                 ex("Альпинисты", 3, "20-30с", 45),
+                ex("Ягодичный мост", 3, "12-20", 45),
             ]),
             day(3, "Full circuit", "full", outdoor_a(sets=4)),
         ],
@@ -1133,7 +1238,7 @@ def build_all() -> list[dict]:
 
     # ===== INTERMEDIATE FEMALE =====
     programs.append(prog(
-        name="Ж · Зал · Опытный · Glute focus 3 дня",
+        name="Ж · Зал · Опытный · Акцент на ягодицы · 3 дня",
         description="Опытная: ягодицы/ноги + верх, 3 дня в зале.",
         level="intermediate", workout_type="hypertrophy",
         sex=["female"], location="gym",
@@ -1179,7 +1284,7 @@ def build_all() -> list[dict]:
         level="intermediate", workout_type="home_express",
         sex=["female"], location="home",
         equipment=["bands", "bodyweight"], limitations=[],
-        days_per_week=3, session_min=40,
+        days_per_week=3, session_min=45,
         schedule=[
             day(1, "Bands A", "full", home_bands_a()),
             day(2, "Bands B", "full", home_bands_b()),
@@ -1200,6 +1305,7 @@ def build_all() -> list[dict]:
                 ex("Выпады вперёд", 3, "10-15/стор", 55),
                 ex("Боковые выпады", 3, "8-12/стор", 55),
                 ex("Планка", 3, "30-45с", 40),
+                ex("Подъёмы на носки стоя", 3, "15-20", 40),
             ]),
             day(2, "Upper + core", "upper", [
                 ex("Отжимания от пола", 4, "6-15", 60),
@@ -1207,6 +1313,7 @@ def build_all() -> list[dict]:
                 ex("Отжимания с возвышения", 3, "8-15", 55),
                 ex("Боковая планка", 3, "20-40с", 40),
                 ex("Скручивания", 3, "12-15", 40),
+                ex("Подтягивания", 3, "3-8", 80),
             ]),
             day(3, "Full", "full", outdoor_b(sets=4)),
         ],
@@ -1214,12 +1321,12 @@ def build_all() -> list[dict]:
 
     # ===== ADVANCED =====
     programs.append(prog(
-        name="М · Зал · Продвинутый · PPL 6 дней",
+        name="М · Зал · Продвинутый · Жим/тяга/ноги · 6 дней",
         description="PPL x2 для продвинутых. Высокий объём, зал.",
         level="advanced", workout_type="push_pull_legs",
         sex=["male"], location="gym",
         equipment=["barbell", "dumbbells", "machines"], limitations=[],
-        days_per_week=6, session_min=60, duration_weeks=8,
+        days_per_week=6, session_min=70, duration_weeks=8,
         schedule=[
             day(1, "Push A", "push", gym_adv_push()),
             day(2, "Pull A", "pull", gym_adv_pull()),
@@ -1243,6 +1350,7 @@ def build_all() -> list[dict]:
                 ex("Румынская тяга", 3, "6-10", 100),
                 ex("Болгарские выпады", 3, "8-12/стор", 75),
                 ex("Сгибания ног лёжа", 3, "8-12", 60),
+                ex("Подъёмы на носки стоя", 3, "10-15", 45),
             ]),
             day(2, "Upper strength", "upper", [
                 ex("Жим гантелей лёжа", 4, "6-10", 90),
@@ -1250,18 +1358,19 @@ def build_all() -> list[dict]:
                 ex("Жим гантелей сидя", 3, "6-10", 80),
                 ex("Тяга верхнего блока", 3, "6-10", 75),
                 ex("Разгибания на блоке", 3, "8-12", 55),
+                ex("Сгибания гантелей на бицепс", 3, "8-12", 55),
             ]),
             day(3, "Lower volume", "lower", gym_female_int_lower_glute()),
             day(4, "Upper volume", "upper", gym_female_int_upper() + [ex("Тяга к лицу", 3, "12-15", 55)]),
         ],
     ))
     programs.append(prog(
-        name="М · Дом · Продвинутый · Гантели dense",
+        name="М · Дом · Продвинутый · Гантели · Плотный формат",
         description="Плотный домашний комплекс с гантелями.",
         level="advanced", workout_type="strength",
         sex=["male"], location="home",
         equipment=["dumbbells", "bodyweight"], limitations=[],
-        days_per_week=4, session_min=50,
+        days_per_week=4, session_min=55,
         schedule=[
             day(1, "Push home", "push", [
                 ex("Жим гантелей лёжа", 4, "5-8", 100),
@@ -1269,6 +1378,7 @@ def build_all() -> list[dict]:
                 ex("Отжимания на брусьях", 3, "6-12", 90),
                 ex("Разводка гантелей в стороны", 3, "10-15", 55),
                 ex("Французский жим гантели", 3, "6-10", 60),
+                ex("Планка с касанием плеч", 3, "8-12/стор", 45),
             ]),
             day(2, "Pull home", "pull", [
                 ex("Тяга гантели в наклоне", 4, "5-8", 90),
@@ -1276,6 +1386,7 @@ def build_all() -> list[dict]:
                 ex("Пуловер с гантелью", 3, "8-12", 60),
                 ex("Молотковые сгибания", 3, "6-10", 55),
                 ex("Планка", 3, "40-60с", 40),
+                ex("Разводка в наклоне", 3, "12-15", 55),
             ]),
             day(3, "Legs home", "legs", [
                 ex("Приседания с гантелью у груди", 4, "6-10", 90),
@@ -1283,17 +1394,18 @@ def build_all() -> list[dict]:
                 ex("Болгарские выпады", 3, "8-12/стор", 75),
                 ex("Ягодичный мост", 3, "10-15", 45),
                 ex("Подъёмы на носки стоя", 4, "8-12", 40),
+                ex("Мёртвый жук", 3, "8-10/стор", 40),
             ]),
             day(4, "Full dense", "full", home_db_male_c()),
         ],
     ))
     programs.append(prog(
-        name="Ж · Дом · Продвинутый · Резинки dense",
+        name="Ж · Дом · Продвинутый · Резинки · Плотный формат",
         description="Продвинутый дом: резинки + вес тела, 4 дня.",
         level="advanced", workout_type="home_express",
         sex=["female"], location="home",
         equipment=["bands", "bodyweight"], limitations=[],
-        days_per_week=4, session_min=45,
+        days_per_week=4, session_min=50,
         schedule=[
             day(1, "Lower", "lower", [
                 ex("Приседания со своим весом", 4, "15-25", 50),
@@ -1301,6 +1413,7 @@ def build_all() -> list[dict]:
                 ex("Выпады вперёд", 3, "12-15/стор", 50),
                 ex("Боковые выпады", 3, "10-12/стор", 50),
                 ex("Планка", 3, "40-60с", 40),
+                ex("Подъёмы на носки стоя", 3, "15-20", 40),
             ]),
             day(2, "Upper", "upper", [
                 ex("Отжимания от пола", 4, "8-15", 55),
@@ -1308,6 +1421,7 @@ def build_all() -> list[dict]:
                 ex("Отжимания узким хватом", 3, "6-12", 55),
                 ex("Планка с касанием плеч", 3, "8-12/стор", 40),
                 ex("Скручивания", 3, "15-20", 35),
+                ex("Боковая планка", 3, "20-40с/стор", 40),
             ]),
             day(3, "Lower B", "lower", home_bands_b()),
             day(4, "Full", "full", home_bands_c()),
@@ -1584,21 +1698,172 @@ def build_all() -> list[dict]:
         ],
     ))
 
+    # Keep the two established three-day strength templates in the generator so
+    # rebuilding content cannot silently remove them from the seed.
+    programs.append(prog(
+        name="М · Зал · Опытный · Сила FB 3 дня",
+        description="Три full body дня с упором на базовые силовые паттерны и мышечную массу.",
+        level="intermediate", workout_type="strength",
+        sex=["male"], location="gym",
+        equipment=["barbell", "dumbbells", "machines"], limitations=[],
+        days_per_week=3, session_min=50,
+        schedule=[
+            day(1, "A · Присед + жим", "legs_push", [
+                ex("Приседания со штангой", 4, "5-8", 120),
+                ex("Жим штанги лёжа", 4, "5-8", 120),
+                ex("Тяга штанги в наклоне", 3, "6-10", 90),
+                ex("Жим гантелей сидя", 3, "8-12", 75),
+                ex("Разгибания на блоке", 3, "10-15", 60),
+                ex("Планка", 3, "30-45с", 45),
+            ]),
+            day(2, "B · Тяга + задняя цепь", "hinge_pull", [
+                ex("Румынская тяга", 4, "6-10", 120),
+                ex("Подтягивания", 4, "5-10", 90),
+                ex("Жим гантелей на наклонной", 3, "8-12", 75),
+                ex("Тяга горизонтального блока", 3, "8-12", 75),
+                ex("Сгибания гантелей на бицепс", 3, "8-12", 60),
+                ex("Подъёмы на носки стоя", 3, "10-15", 45),
+            ]),
+            day(3, "C · Объём", "full", [
+                ex("Фронтальные приседания", 3, "6-10", 100),
+                ex("Жим штанги стоя", 3, "6-10", 90),
+                ex("Тяга гантели в наклоне", 3, "8-12", 75),
+                ex("Болгарские выпады", 3, "8-12/стор", 75),
+                ex("Разводка гантелей в стороны", 3, "10-15", 60),
+                ex("Скручивания", 3, "12-15", 45),
+            ]),
+        ],
+    ))
+    programs.append(prog(
+        name="Ж · Зал · Опытный · Сила + ягодицы 3 дня",
+        description="Три full body дня с балансом силы, ягодиц, ног и верхней части тела.",
+        level="intermediate", workout_type="hypertrophy",
+        sex=["female"], location="gym",
+        equipment=["barbell", "dumbbells", "machines"], limitations=[],
+        days_per_week=3, session_min=50,
+        schedule=[
+            day(1, "A · Ягодицы + жим", "glute_push", [
+                ex("Ягодичный мост со штангой", 4, "6-10", 90),
+                ex("Жим гантелей лёжа", 3, "8-12", 75),
+                ex("Тяга верхнего блока", 3, "8-12", 75),
+                ex("Болгарские выпады", 3, "8-12/стор", 75),
+                ex("Разводка гантелей в стороны", 3, "12-15", 60),
+                ex("Планка", 3, "30-45с", 45),
+            ]),
+            day(2, "B · Задняя цепь + тяга", "hinge_pull", [
+                ex("Румынская тяга с гантелями", 4, "8-12", 90),
+                ex("Тяга горизонтального блока", 3, "8-12", 75),
+                ex("Жим в тренажёре", 3, "8-12", 75),
+                ex("Сгибания ног лёжа", 3, "10-15", 60),
+                ex("Сгибания гантелей на бицепс", 3, "10-15", 60),
+                ex("Русские скручивания", 3, "12-15", 45),
+            ]),
+            day(3, "C · Квадрицепс + плечи", "quad_shoulders", [
+                ex("Жим ногами", 4, "8-12", 90),
+                ex("Жим гантелей сидя", 3, "8-12", 75),
+                ex("Тяга гантели в наклоне", 3, "8-12", 75),
+                ex("Выпады назад с гантелями", 3, "10-12/стор", 75),
+                ex("Разгибания на блоке", 3, "10-15", 60),
+                ex("Боковая планка", 3, "20-40с/стор", 45),
+            ]),
+        ],
+    ))
+
+    # ===== SHOULDER-SENSITIVE =====
+    shoulder_notice = (
+        "Без жимов верхней части тела, тяг, отжиманий, подтягиваний, упоров на руки "
+        "и движений над головой. "
+        "Только безболезненная амплитуда; это не лечебная программа."
+    )
+    for sex, sex_name, builder in (
+        ("male", "М", shoulder_home_male),
+        ("female", "Ж", shoulder_home_female),
+    ):
+        for level, level_name, sets, reps, rest, minutes in (
+            ("beginner", "Новичок", 3, "10-15", 60, 40),
+            ("intermediate", "Опытный/продвинутый", 4, "8-12", 70, 50),
+        ):
+            shoulder_days = builder(sets=sets, reps=reps, rest=rest)
+            programs.append(prog(
+                name=f"{sex_name} · Дом · {level_name} · Щадящая нагрузка на плечи",
+                description=f"Дом: ноги, ягодицы, руки у корпуса и кор. {shoulder_notice}",
+                level=level, workout_type="home_express",
+                sex=[sex], location="home",
+                equipment=["dumbbells", "bodyweight"], limitations=["shoulder_sensitive"],
+                days_per_week=3, session_min=minutes,
+                schedule=[
+                    day(1, "Shoulder-safe home A", "lower", shoulder_days[0]),
+                    day(2, "Shoulder-safe home B", "lower", shoulder_days[1]),
+                    day(3, "Shoulder-safe home C", "lower", shoulder_days[2]),
+                ],
+            ))
+
+    for sex, sex_name in (("male", "М"), ("female", "Ж")):
+        for level, level_name, sets, reps, rest, minutes in (
+            ("beginner", "Новичок", 3, "10-15", 65, 45),
+            ("intermediate", "Опытный", 4, "8-12", 75, 50),
+            ("advanced", "Продвинутый", 4, "6-10", 90, 55),
+        ):
+            shoulder_days = shoulder_gym(sex, sets=sets, reps=reps, rest=rest)
+            programs.append(prog(
+                name=f"{sex_name} · Зал · {level_name} · Щадящая нагрузка на плечи",
+                description=f"Зал: тренажёры для ног, изоляция рук и кор. {shoulder_notice}",
+                level=level, workout_type="full_body",
+                sex=[sex], location="gym",
+                equipment=["machines", "dumbbells", "barbell", "bodyweight"],
+                limitations=["shoulder_sensitive"],
+                days_per_week=3, session_min=minutes,
+                schedule=[
+                    day(1, "Shoulder-safe gym A", "lower", shoulder_days[0]),
+                    day(2, "Shoulder-safe gym B", "lower", shoulder_days[1]),
+                    day(3, "Shoulder-safe gym C", "lower", shoulder_days[2]),
+                ],
+            ))
+
     return programs
 
 
 def validate(programs: list[dict]) -> None:
     names = json.loads((Path(__file__).resolve().parent / "seed_content" / "exercises.json").read_text(encoding="utf-8"))
     known = {e["name_ru"] for e in names}
+    canonical_equipment = {"bodyweight", "bands", "dumbbells", "barbell", "machines"}
     missing: set[str] = set()
+    invalid: list[str] = []
+    shoulder_unsafe = (
+        "жим штанги", "жим гантелей", "жим в тренажёре", "жим вверх", "жим арнольда",
+        "отжим", "брусь", "подтягив", "верхнего блока", "горизонтального блока",
+        "тяга штанги", "тяга гантели", "пуловер", "развод", "развед", "махи",
+        "планка", "птица-собака", "фермер", "из-за головы", "француз",
+    )
     for p in programs:
-        for d in p["structure"]["schedule"]:
-            for item in d["exercises"]:
+        structure = p["structure"]
+        schedule = structure["schedule"]
+        if len(schedule) != structure["days_per_week"]:
+            invalid.append(f"{p['name']}: schedule length differs from days_per_week")
+        unknown_equipment = set(structure.get("equipment", [])) - canonical_equipment
+        if unknown_equipment:
+            invalid.append(f"{p['name']}: unknown equipment {sorted(unknown_equipment)}")
+        for d in schedule:
+            items = d["exercises"]
+            if len(items) not in {6, 7}:
+                invalid.append(
+                    f"{p['name']} / {d['name']}: expected 6-7 exercises, got {len(items)}"
+                )
+            exercise_names = [item["exercise_name"] for item in items]
+            if len(exercise_names) != len(set(exercise_names)):
+                invalid.append(f"{p['name']} / {d['name']}: duplicate exercises")
+            for item in items:
                 n = item["exercise_name"]
                 if n not in known:
                     missing.add(n)
+                if "shoulder_sensitive" in structure.get("limitations", []):
+                    lowered = n.lower()
+                    if any(token in lowered for token in shoulder_unsafe):
+                        invalid.append(f"{p['name']} / {d['name']}: shoulder-risk exercise {n}")
     if missing:
         raise SystemExit("Unknown exercises:\n- " + "\n- ".join(sorted(missing)))
+    if invalid:
+        raise SystemExit("Invalid programs:\n- " + "\n- ".join(invalid))
 
 
 def main() -> None:

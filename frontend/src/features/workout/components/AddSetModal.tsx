@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { WheelPicker, rangeInts } from "@/components/WheelPicker";
+import { WheelPicker } from "@/components/WheelPicker";
+import { DecimalInput } from "@/components/DecimalInput";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, LocalSetDraft } from "@/types/workout";
+import { rangeInts } from "@/utils/range";
 import {
   type CardioMachineKind,
   type ExerciseLoadType,
@@ -20,6 +23,7 @@ type Props = {
   onApply: (draft: {
     reps: string;
     weight: string;
+    weightMode: "total" | "per_hand" | null;
     durationSec: number | null;
     note: string | null;
     machineParams: Record<string, string | number> | null;
@@ -47,6 +51,7 @@ export function AddSetModal({
   onStartTimerOnly,
   defaultRestSec = 60,
 }: Props) {
+  const dialogRef = useModalAccessibility(open, onClose);
   const loadType: ExerciseLoadType = useMemo(() => inferLoadType(exercise), [exercise]);
   const machineKind: CardioMachineKind = useMemo(
     () => inferCardioMachineKind(exercise),
@@ -69,6 +74,16 @@ export function AddSetModal({
   const [note, setNote] = useState(String(initial?.note || ""));
   const [restSec, setRestSec] = useState(initial?.restTimeSec || defaultRestSec);
   const [startTimer, setStartTimer] = useState(true);
+  const dumbbellExercise = /гантел|dumbbell/i.test(
+    `${exercise.name_ru} ${exercise.equipment || ""}`,
+  );
+  const [weightMode, setWeightMode] = useState<"total" | "per_hand">(
+    initial?.weightMode === "total" || initial?.weightMode === "per_hand"
+      ? initial.weightMode
+      : dumbbellExercise
+        ? "per_hand"
+        : "total",
+  );
 
   // machine params
   const mp = (initial?.machineParams || {}) as Record<string, number>;
@@ -97,16 +112,24 @@ export function AddSetModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-[#2a2a2e] p-4 text-white shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-set-title"
+        tabIndex={-1}
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-[#2a2a2e] p-4 text-white shadow-xl"
+      >
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold">Добавить подход</h3>
-          <button type="button" className="text-sm text-white/70" onClick={onClose}>
+          <h3 id="add-set-title" className="text-base font-semibold">Добавить подход</h3>
+          <button type="button" aria-label="Закрыть" className="text-sm text-white/70" onClick={onClose}>
             ✕
           </button>
         </div>
         <p className="mb-3 text-xs text-white/60">{exercise.name_ru}</p>
 
         {loadType === "weight_reps" ? (
+          <div>
           <div className="flex gap-2">
             <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
             <WheelPicker label="кг" value={kgWhole} options={rangeInts(0, 300)} onChange={setKgWhole} />
@@ -118,6 +141,24 @@ export function AddSetModal({
               format={(n) => String(n)}
               className="max-w-[72px]"
             />
+          </div>
+          {dumbbellExercise ? (
+            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-white/5 p-1">
+              {(["per_hand", "total"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setWeightMode(mode)}
+                  className={[
+                    "rounded-lg px-2 py-2 text-xs",
+                    weightMode === mode ? "bg-white text-black" : "text-white/70",
+                  ].join(" ")}
+                >
+                  {mode === "per_hand" ? "На 1 гантель" : "Общий вес"}
+                </button>
+              ))}
+            </div>
+          ) : null}
           </div>
         ) : null}
 
@@ -142,21 +183,19 @@ export function AddSetModal({
                   <>
                     <label className="text-white/60">
                       Скорость
-                      <input
-                        type="number"
+                      <DecimalInput
                         step={0.1}
                         value={speed}
-                        onChange={(e) => setSpeed(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setSpeed(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
                     <label className="text-white/60">
                       Наклон
-                      <input
-                        type="number"
+                      <DecimalInput
                         step={0.5}
                         value={incline}
-                        onChange={(e) => setIncline(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setIncline(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
@@ -166,20 +205,18 @@ export function AddSetModal({
                   <>
                     <label className="text-white/60">
                       Уровень
-                      <input
-                        type="number"
+                      <DecimalInput
                         value={resistance}
-                        onChange={(e) => setResistance(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setResistance(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
                     <label className="text-white/60">
                       Скорость
-                      <input
-                        type="number"
+                      <DecimalInput
                         step={0.1}
                         value={speed}
-                        onChange={(e) => setSpeed(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setSpeed(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
@@ -189,19 +226,17 @@ export function AddSetModal({
                   <>
                     <label className="text-white/60">
                       Сопротивление
-                      <input
-                        type="number"
+                      <DecimalInput
                         value={resistance}
-                        onChange={(e) => setResistance(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setResistance(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
                     <label className="text-white/60">
                       Каденс (об/мин)
-                      <input
-                        type="number"
+                      <DecimalInput
                         value={cadence}
-                        onChange={(e) => setCadence(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setCadence(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
@@ -211,20 +246,18 @@ export function AddSetModal({
                   <>
                     <label className="text-white/60">
                       Сопротивление
-                      <input
-                        type="number"
+                      <DecimalInput
                         value={resistance}
-                        onChange={(e) => setResistance(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setResistance(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
                     <label className="text-white/60">
                       Темп /500 м
-                      <input
-                        type="number"
+                      <DecimalInput
                         step={0.1}
                         value={pace}
-                        onChange={(e) => setPace(Number(e.target.value) || 0)}
+                        onValueChange={(value) => setPace(Number(value) || 0)}
                         className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
                       />
                     </label>
@@ -301,6 +334,7 @@ export function AddSetModal({
               reps:
                 loadType === "weight_reps" || loadType === "reps_only" ? String(reps) : "",
               weight: loadType === "weight_reps" ? weightStr : "",
+              weightMode: loadType === "weight_reps" ? weightMode : null,
               durationSec:
                 loadType === "timed" || loadType === "cardio_machine" ? durationSec : null,
               note: note.trim() || null,

@@ -2,27 +2,32 @@
 
 from __future__ import annotations
 
+import asyncio
+from datetime import UTC, datetime
 from typing import Any
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_admin
 from app.models.user import User
+from app.models.supplement_intake import WebPushSubscription
 from app.schemas.notifications import (
     ReminderRequest,
     ReminderResponse,
     TimerNotifyRequest,
     TimerNotifyResponse,
+    TimerScheduleRequest,
 )
-from app.services import workout_service
-from app.services import nutrition_service
+from app.services import nutrition_service, supplement_intakes, workout_service
 from app.services.energy_targets import compute_energy_targets
 from app.services.notification_prefs import (
     apply_state_updates,
@@ -33,9 +38,47 @@ from app.services.notification_prefs import (
     set_water_ml_for_day,
     water_ml_for_day,
 )
-from app.services.telegram_bot import TelegramBotError, send_app_notification, send_workout_reminder
+from app.services.telegram_bot import (
+    TelegramBotError,
+    send_app_notification,
+    send_message,
+    send_workout_reminder,
+    supplement_intake_keyboard,
+)
+from app.services.web_push import send_user_web_push
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+
+def _timer_job_id(user_id: Any, workout_id: Any = None) -> str:
+    return f"rest-timer:{user_id}:{workout_id or 'active'}:{uuid.uuid4().hex}"
+
+
+def _timer_job_ref(user_id: Any, workout_id: Any = None) -> str:
+    return f"rest-timer-ref:{user_id}:{workout_id or 'active'}"
+
+
+async def _acquire_timer_lock(redis: Any, ref_key: str) -> tuple[str, str]:
+    lock_key = f"{ref_key}:lock"
+    token = uuid.uuid4().hex
+    for _ in range(20):
+        if await redis.set(lock_key, token, nx=True, px=10_000):
+            return lock_key, token
+        await asyncio.sleep(0.05)
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="Таймер уже изменяется. Повторите запрос.",
+    )
+
+
+async def _release_timer_lock(redis: Any, lock_key: str, token: str) -> None:
+    await redis.eval(
+        "if redis.call('get', KEYS[1]) == ARGV[1] then "
+        "return redis.call('del', KEYS[1]) else return 0 end",
+        1,
+        lock_key,
+        token,
+    )
 
 
 class NotificationSettingsResponse(BaseModel):
@@ -62,6 +105,30 @@ class WaterLogResponse(BaseModel):
     daily_target_ml: int | None = None
 
 
+class PushKeys(BaseModel):
+    p256dh: str = Field(min_length=1, max_length=512)
+    auth: str = Field(min_length=1, max_length=512)
+
+
+class PushSubscriptionBody(BaseModel):
+    endpoint: str = Field(min_length=8, max_length=4096)
+    keys: PushKeys
+    user_agent: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("endpoint")
+    @classmethod
+    def endpoint_must_be_https(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError("push endpoint must use HTTPS")
+        return value
+
+
+class PushConfigResponse(BaseModel):
+    enabled: bool
+    public_key: str
+    subscriptions: int
+
+
 @router.get("/settings", response_model=NotificationSettingsResponse)
 async def get_settings_route(user: User = Depends(get_current_user)) -> NotificationSettingsResponse:
     raw = (user.goals or {}).get("notification_settings")
@@ -82,6 +149,82 @@ async def put_settings_route(
     await session.commit()
     await session.refresh(user)
     return NotificationSettingsResponse(settings=merged, defaults=default_notification_settings())
+
+
+@router.get("/push/config", response_model=PushConfigResponse)
+async def get_push_config(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> PushConfigResponse:
+    subscriptions = len(
+        list(
+            await session.scalars(
+                select(WebPushSubscription).where(
+                    WebPushSubscription.user_id == user.id,
+                    WebPushSubscription.disabled_at.is_(None),
+                    WebPushSubscription.is_deleted.is_(False),
+                )
+            )
+        )
+    )
+    public_key = settings.web_push_vapid_public_key.strip()
+    return PushConfigResponse(
+        enabled=bool(public_key and settings.web_push_vapid_private_key.strip()),
+        public_key=public_key,
+        subscriptions=subscriptions,
+    )
+
+
+@router.post("/push/subscriptions", response_model=PushConfigResponse)
+async def save_push_subscription(
+    body: PushSubscriptionBody,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> PushConfigResponse:
+    if not settings.web_push_vapid_public_key or not settings.web_push_vapid_private_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Фоновые уведомления браузера ещё не настроены администратором",
+        )
+    values = {
+        "user_id": user.id,
+        "endpoint": body.endpoint,
+        "p256dh": body.keys.p256dh,
+        "auth": body.keys.auth,
+        "user_agent": body.user_agent,
+        "failure_count": 0,
+        "disabled_at": None,
+        "is_deleted": False,
+    }
+    statement = insert(WebPushSubscription).values(**values)
+    statement = statement.on_conflict_do_update(
+        index_elements=[WebPushSubscription.endpoint],
+        set_=values,
+    )
+    await session.execute(statement)
+    await session.commit()
+    return await get_push_config(session, user, settings)
+
+
+@router.delete("/push/subscriptions")
+async def delete_push_subscription(
+    endpoint: str,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict[str, bool]:
+    row = await session.scalar(
+        select(WebPushSubscription).where(
+            WebPushSubscription.user_id == user.id,
+            WebPushSubscription.endpoint == endpoint,
+            WebPushSubscription.is_deleted.is_(False),
+        )
+    )
+    if row is not None:
+        row.disabled_at = datetime.now(UTC)
+        await session.commit()
+    return {"ok": True}
 
 
 @router.get("/water", response_model=WaterLogResponse)
@@ -163,25 +306,37 @@ async def dispatch_due_for_me(
 async def dispatch_all(
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    _: User = Depends(require_admin),
 ) -> dict[str, Any]:
-    """Cron/worker entry: scan users and send due chat notifications."""
+    """Admin-only HTTP trigger; the worker calls dispatch_all_users directly."""
     return await dispatch_all_users(session, settings)
 
 
 async def dispatch_all_users(session: AsyncSession, settings: Settings) -> dict[str, Any]:
-    users = list(
-        await session.scalars(select(User).where(User.is_deleted.is_(False)).limit(5000))
-    )
     total_sent = 0
     errors = 0
-    for user in users:
-        try:
-            n = await _dispatch_user(session, user, settings)
-            total_sent += n
-        except Exception as exc:
-            errors += 1
-            logger.warning("dispatch_user_failed user={} err={}", user.id, exc)
-    return {"ok": True, "users": len(users), "sent": total_sent, "errors": errors}
+    processed = 0
+    last_id = None
+    batch_size = 500
+    while True:
+        statement = select(User).where(User.is_deleted.is_(False))
+        if last_id is not None:
+            statement = statement.where(User.id > last_id)
+        batch = list(
+            await session.scalars(statement.order_by(User.id).limit(batch_size))
+        )
+        if not batch:
+            break
+        for user in batch:
+            try:
+                n = await _dispatch_user(session, user, settings)
+                total_sent += n
+            except Exception as exc:
+                errors += 1
+                logger.warning("dispatch_user_failed user={} err={}", user.id, exc)
+            processed += 1
+        last_id = batch[-1].id
+    return {"ok": True, "users": processed, "sent": total_sent, "errors": errors}
 
 
 async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, Any]) -> dict[str, Any]:
@@ -212,48 +367,91 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
 
 
 async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) -> int:
-    """Claim due marks first, then send — prevents duplicate spam on restart."""
+    """Dispatch legacy reminders plus idempotent supplement intake groups."""
     goals = user.goals or {}
-    due = due_notifications(goals)
-    if not due:
-        return 0
+    due = [item for item in due_notifications(goals) if item.get("kind") != "supplement"]
 
-    # Claim immediately so a second worker tick / restart cannot re-send the same slots.
-    user.goals = apply_state_updates(goals, due)
-    flag_modified(user, "goals")
-    await session.commit()
-    await session.refresh(user)
+    if due:
+        # Claim immediately so a second worker tick / restart cannot re-send the same slots.
+        user.goals = apply_state_updates(goals, due)
+        flag_modified(user, "goals")
+        await session.commit()
+        await session.refresh(user)
 
     enriched: list[dict[str, Any]] = []
     for item in due:
         enriched.append(await _enrich_due_item(session, user, item))
 
-    if not settings.bot_token or settings.bot_token.startswith("replace_with"):
-        logger.info("notification_dry_run user={} count={}", user.id, len(enriched))
-        return 0
-
-    if user.telegram_id is None:
-        logger.info("notification_skip_no_telegram user={} count={}", user.id, len(enriched))
-        return 0
-
     sent = 0
     for item in enriched:
-        try:
-            await send_app_notification(
-                settings,
-                telegram_id=int(user.telegram_id),
-                title=str(item.get("title") or "Напоминание"),
-                text=str(item.get("text") or ""),
-                startapp=str(item.get("startapp") or "home"),
-            )
-            sent += 1
-        except TelegramBotError as exc:
-            logger.warning(
-                "notification_send_failed user={} kind={} err={}",
-                user.id,
-                item.get("kind"),
-                exc,
-            )
+        if user.telegram_id is not None and settings.bot_token and not settings.bot_token.startswith(
+            "replace_with"
+        ):
+            try:
+                await send_app_notification(
+                    settings,
+                    telegram_id=int(user.telegram_id),
+                    title=str(item.get("title") or "Напоминание"),
+                    text=str(item.get("text") or ""),
+                    startapp=str(item.get("startapp") or "home"),
+                )
+                sent += 1
+            except TelegramBotError as exc:
+                logger.warning(
+                    "notification_send_failed user={} kind={} err={}",
+                    user.id,
+                    item.get("kind"),
+                    exc,
+                )
+        sent += await send_user_web_push(
+            session,
+            settings,
+            user_id=user.id,
+            title=str(item.get("title") or "Напоминание"),
+            body=str(item.get("text") or "").replace("<b>", "").replace("</b>", ""),
+            url=f"/?startapp={item.get('startapp') or 'home'}",
+            tag=f"fitness-{item.get('kind') or 'reminder'}",
+        )
+
+    for group in await supplement_intakes.due_groups(session, user):
+        await supplement_intakes.claim_notified(session, group)
+        lines = [
+            f"{index}. <b>{row.name_ru}</b>" + (f" — {row.dose}" if row.dose else "")
+            for index, row in enumerate(group, start=1)
+        ]
+        text = "Добавки на сейчас:\n" + "\n".join(lines)
+        delivered = 0
+        if user.telegram_id is not None and settings.bot_token and not settings.bot_token.startswith(
+            "replace_with"
+        ):
+            try:
+                await send_message(
+                    settings,
+                    chat_id=int(user.telegram_id),
+                    text=f"💊 <b>Добавки</b>\n{text}",
+                    reply_markup=supplement_intake_keyboard(
+                        [(str(row.id), row.name_ru) for row in group]
+                    ),
+                )
+                delivered += 1
+            except TelegramBotError as exc:
+                logger.warning("supplement_telegram_failed user={} err={}", user.id, exc)
+        delivered += await send_user_web_push(
+            session,
+            settings,
+            user_id=user.id,
+            title="Пора принять добавки",
+            body="; ".join(
+                row.name_ru + (f" — {row.dose}" if row.dose else "") for row in group
+            ),
+            url="/profile?section=supplements",
+            tag=f"supplements-{group[0].scheduled_at.isoformat()}",
+        )
+        if delivered:
+            sent += delivered
+        else:
+            await supplement_intakes.release_notification_claim(session, group)
+            logger.info("supplement_notification_no_channel user={} count={}", user.id, len(group))
     return sent
 
 
@@ -312,7 +510,7 @@ async def create_reminder(
         return ReminderResponse(
             ok=True,
             mode="dry_run",
-            detail="BOT_TOKEN not set — reminder not sent",
+            detail="Токен Telegram-бота не настроен — напоминание не отправлено",
         )
 
     try:
@@ -367,5 +565,74 @@ async def timer_ended_notify(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Не удалось отправить в Telegram: {exc}",
         ) from exc
-    return TimerNotifyResponse(ok=True, detail="sent")
+    return TimerNotifyResponse(ok=True, detail="Отправлено")
+
+
+@router.post("/timer/schedule", response_model=TimerNotifyResponse)
+async def schedule_timer_notification(
+    body: TimerScheduleRequest,
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> TimerNotifyResponse:
+    """Schedule delivery so closing or suspending the PWA cannot stop the timer."""
+    from arq import create_pool
+    from arq.connections import RedisSettings
+    from arq.jobs import Job
+
+    redis = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+    ref_key = _timer_job_ref(user.id, body.workout_id)
+    job_id = _timer_job_id(user.id, body.workout_id)
+    lock_key = ""
+    lock_token = ""
+    try:
+        lock_key, lock_token = await _acquire_timer_lock(redis, ref_key)
+        previous = await redis.get(ref_key)
+        if previous:
+            await Job(previous.decode() if isinstance(previous, bytes) else str(previous), redis).abort(
+                timeout=1
+            )
+        await redis.enqueue_job(
+            "send_timer_finished_task",
+            user_id=str(user.id),
+            title=body.title,
+            text=body.text,
+            workout_id=str(body.workout_id) if body.workout_id else None,
+            _job_id=job_id,
+            _defer_by=body.seconds,
+        )
+        await redis.set(ref_key, job_id, ex=body.seconds + 3600)
+    finally:
+        if lock_key:
+            await _release_timer_lock(redis, lock_key, lock_token)
+        await redis.close()
+    return TimerNotifyResponse(ok=True, detail="Запланировано")
+
+
+@router.delete("/timer/schedule", response_model=TimerNotifyResponse)
+async def cancel_timer_notification(
+    workout_id: str | None = None,
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> TimerNotifyResponse:
+    from arq import create_pool
+    from arq.connections import RedisSettings
+    from arq.jobs import Job
+
+    redis = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+    lock_key = ""
+    lock_token = ""
+    try:
+        ref_key = _timer_job_ref(user.id, workout_id)
+        lock_key, lock_token = await _acquire_timer_lock(redis, ref_key)
+        current = await redis.get(ref_key)
+        if current:
+            await Job(current.decode() if isinstance(current, bytes) else str(current), redis).abort(
+                timeout=1
+            )
+            await redis.delete(ref_key)
+    finally:
+        if lock_key:
+            await _release_timer_lock(redis, lock_key, lock_token)
+        await redis.close()
+    return TimerNotifyResponse(ok=True, detail="Отменено")
 

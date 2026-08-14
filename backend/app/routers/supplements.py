@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from datetime import date, datetime
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -18,6 +19,8 @@ from app.data.supplements_catalog import (
 )
 from app.deps import get_current_user
 from app.models.user import User
+from app.models.supplement_intake import SupplementIntake
+from app.services import supplement_intakes
 
 router = APIRouter(prefix="/supplements", tags=["supplements"])
 
@@ -63,6 +66,47 @@ class AddCustomRequest(BaseModel):
     notes: str = ""
     # optional link to catalog key for description
     key: str | None = None
+
+
+class IntakeItemResponse(BaseModel):
+    id: uuid.UUID
+    supplement_entry_id: str
+    supplement_key: str
+    name_ru: str
+    dose: str
+    slot: str
+    scheduled_at: datetime
+    status: str
+    completed_at: datetime | None = None
+    source: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class IntakeDayResponse(BaseModel):
+    date: date
+    timezone: str
+    total: int
+    taken: int
+    skipped: int
+    pending: int
+    items: list[IntakeItemResponse]
+
+
+class IntakeMarkRequest(BaseModel):
+    status: Literal["pending", "taken", "skipped"]
+
+
+def _day_response(day: date, timezone_name: str, items: list[SupplementIntake]) -> IntakeDayResponse:
+    return IntakeDayResponse(
+        date=day,
+        timezone=timezone_name,
+        total=len(items),
+        taken=sum(item.status == "taken" for item in items),
+        skipped=sum(item.status == "skipped" for item in items),
+        pending=sum(item.status == "pending" for item in items),
+        items=[IntakeItemResponse.model_validate(item) for item in items],
+    )
 
 
 def _stack(user: User) -> list[dict[str, Any]]:
@@ -149,6 +193,7 @@ async def put_stack(
     flag_modified(user, "goals")
     await session.commit()
     await session.refresh(user)
+    await supplement_intakes.reset_pending_schedule(session, user)
     return SupplementStackResponse(
         items=[SupplementEntry.model_validate(x) for x in items],
         catalog=SUPPLEMENTS_CATALOG,
@@ -163,10 +208,10 @@ async def add_from_catalog(
 ) -> SupplementStackResponse:
     cat = catalog_by_key().get(body.key)
     if not cat:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown supplement key")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Добавка не найдена")
     items = _stack(user)
     if any(str(x.get("key")) == body.key for x in items):
-        raise HTTPException(status_code=400, detail="Already in stack")
+        raise HTTPException(status_code=400, detail="Добавка уже есть в списке")
     entry = user_entry_from_catalog(cat)
     if body.dose:
         entry["dose"] = body.dose
@@ -183,6 +228,7 @@ async def add_from_catalog(
     flag_modified(user, "goals")
     await session.commit()
     await session.refresh(user)
+    await supplement_intakes.reset_pending_schedule(session, user)
     return SupplementStackResponse(
         items=[SupplementEntry.model_validate(x) for x in items],
         catalog=SUPPLEMENTS_CATALOG,
@@ -217,6 +263,7 @@ async def add_custom(
     flag_modified(user, "goals")
     await session.commit()
     await session.refresh(user)
+    await supplement_intakes.reset_pending_schedule(session, user)
     return SupplementStackResponse(
         items=[SupplementEntry.model_validate(x) for x in items],
         catalog=SUPPLEMENTS_CATALOG,
@@ -238,7 +285,57 @@ async def remove_entry(
     flag_modified(user, "goals")
     await session.commit()
     await session.refresh(user)
+    await supplement_intakes.reset_pending_schedule(session, user)
     return SupplementStackResponse(
         items=[SupplementEntry.model_validate(x) for x in items],
         catalog=SUPPLEMENTS_CATALOG,
     )
+
+
+@router.get("/intakes/today", response_model=IntakeDayResponse)
+async def get_today_intakes(
+    date_value: date | None = None,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> IntakeDayResponse:
+    day = date_value or supplement_intakes.local_day_for_user(user)
+    timezone_name, items = await supplement_intakes.day_items(session, user, day)
+    return _day_response(day, timezone_name, items)
+
+
+@router.put("/intakes/{intake_id}", response_model=IntakeItemResponse)
+async def update_intake(
+    intake_id: uuid.UUID,
+    body: IntakeMarkRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> IntakeItemResponse:
+    intake = await supplement_intakes.mark_intake(
+        session,
+        user,
+        intake_id,
+        status=body.status,
+        source="app",
+    )
+    if intake is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Приём не найден")
+    return IntakeItemResponse.model_validate(intake)
+
+
+@router.put("/intakes/{intake_id}/group", response_model=list[IntakeItemResponse])
+async def update_intake_group(
+    intake_id: uuid.UUID,
+    body: IntakeMarkRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[IntakeItemResponse]:
+    rows = await supplement_intakes.mark_group(
+        session,
+        user,
+        intake_id,
+        status=body.status,
+        source="app",
+    )
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Приёмы не найдены")
+    return [IntakeItemResponse.model_validate(row) for row in rows]

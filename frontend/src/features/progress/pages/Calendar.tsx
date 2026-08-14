@@ -7,6 +7,7 @@ type CalendarProps = {
   days: CalendarDay[];
   onPrev: () => void;
   onNext: () => void;
+  onSelectDate: (date: string) => void;
 };
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -24,7 +25,7 @@ function statusClass(status: CalendarDay["status"]): string {
   }
 }
 
-export function Calendar({ year, monthIndex, days, onPrev, onNext }: CalendarProps) {
+export function Calendar({ year, monthIndex, days, onPrev, onNext, onSelectDate }: CalendarProps) {
   // Monday-first offset
   const firstWeekday = (new Date(Date.UTC(year, monthIndex, 1)).getUTCDay() + 6) % 7;
   const blanks = Array.from({ length: firstWeekday });
@@ -52,13 +53,16 @@ export function Calendar({ year, monthIndex, days, onPrev, onNext }: CalendarPro
           <div key={`b-${i}`} />
         ))}
         {days.map((day) => (
-          <div
+          <button
+            type="button"
             key={day.date}
+            onClick={() => onSelectDate(day.date)}
             className={`flex aspect-square items-center justify-center rounded-lg text-xs ${statusClass(day.status)}`}
-            title={`${day.date}: ${day.status}`}
+            aria-label={`${day.date}: ${day.count ? `тренировок ${day.count}` : "нет тренировок"}`}
           >
             {Number(day.date.slice(8))}
-          </div>
+            {day.count > 1 ? <span className="ml-0.5 text-[8px]">×{day.count}</span> : null}
+          </button>
         ))}
       </div>
 

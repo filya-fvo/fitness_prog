@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,7 +16,13 @@ from app.models.exercise import Exercise
 from app.models.program import Program
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
-from app.schemas.workout import WorkoutCompleteRequest, WorkoutCreate, WorkoutPlan, WorkoutSetCreate
+from app.schemas.workout import (
+    WorkoutCompleteRequest,
+    WorkoutCreate,
+    WorkoutPlan,
+    WorkoutSetCreate,
+    WorkoutUpdateRequest,
+)
 
 
 async def _get_workout_for_user(
@@ -35,7 +42,7 @@ async def _get_workout_for_user(
     )
     workout = result.scalar_one_or_none()
     if workout is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Тренировка не найдена")
     return workout
 
 
@@ -132,7 +139,7 @@ async def _load_exercises_map(
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unknown exercise ids: {', '.join(missing)}",
+            detail=f"Не найдены упражнения: {', '.join(missing)}",
         )
     return found
 
@@ -143,7 +150,7 @@ def _extract_day_from_program(program: Program, day_index: int) -> dict[str, Any
     if not isinstance(schedule, list) or not schedule:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Program has no schedule days",
+            detail="В программе нет тренировочных дней",
         )
 
     day: dict[str, Any] | None = None
@@ -165,7 +172,7 @@ def _extract_day_from_program(program: Program, day_index: int) -> dict[str, Any
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Program day_index={day_index} not found",
+                detail=f"День программы №{day_index} не найден",
             )
     return day
 
@@ -198,7 +205,7 @@ async def build_plan_from_program_day(
     if not raw_exercises:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Program day has no exercises",
+            detail="В этом дне программы нет упражнений",
         )
 
     names: list[str] = []
@@ -258,7 +265,7 @@ async def build_plan_from_program_day(
     if not plan_exercises:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not resolve any exercises for program day",
+            detail="Не удалось найти упражнения для этого дня программы",
         )
 
     title = day.get("name") or day.get("title") or program.name
@@ -277,6 +284,9 @@ async def build_plan_from_program_day(
         "week_in_cycle": phase["week_in_cycle"],
         "week_label": phase["week_label"],
         "week_rir": phase["week_rir"],
+        "location": structure.get("location"),
+        "equipment": list(structure.get("equipment") or []),
+        "limitations": list(structure.get("limitations") or []),
         "exercises": plan_exercises,
     }
 
@@ -327,13 +337,28 @@ def _create_set_slots(session: AsyncSession, workout_id: uuid.UUID, plan: dict[s
 
 
 async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate) -> Workout:
+    if data.client_workout_id is not None:
+        existing = await session.scalar(
+            select(Workout).where(
+                Workout.user_id == user.id,
+                Workout.client_workout_id == data.client_workout_id,
+                Workout.is_deleted.is_(False),
+            )
+        )
+        if existing is not None:
+            return await _get_workout_for_user(
+                session,
+                workout_id=existing.id,
+                user_id=user.id,
+            )
+
     program: Program | None = None
     if data.program_id is not None:
         program = await session.scalar(
             select(Program).where(Program.id == data.program_id, Program.is_deleted.is_(False))
         )
         if program is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
     if data.plan is not None and data.plan.exercises:
         ids = [item.exercise_id for item in data.plan.exercises]
@@ -381,6 +406,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
 
     workout = Workout(
         user_id=user.id,
+        client_workout_id=data.client_workout_id,
         program_id=data.program_id,
         scheduled_date=data.scheduled_date,
         status="planned",
@@ -392,7 +418,22 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
     session.add(workout)
     await session.flush()
     _create_set_slots(session, workout.id, plan)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        if data.client_workout_id is None:
+            raise
+        existing = await session.scalar(
+            select(Workout).where(
+                Workout.user_id == user.id,
+                Workout.client_workout_id == data.client_workout_id,
+                Workout.is_deleted.is_(False),
+            )
+        )
+        if existing is None:
+            raise
+        workout = existing
     return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
 
 
@@ -409,7 +450,7 @@ async def start_program_workout(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
     )
     if program is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
     payload = WorkoutCreate(
         scheduled_date=scheduled_date or date.today(),
@@ -428,7 +469,8 @@ async def complete_workout(
 ) -> Workout:
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
     if workout.status == "completed":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workout already completed")
+        # Offline clients may retry after the server committed but the response was lost.
+        return workout
 
     now = datetime.now(UTC)
     workout.status = "completed"
@@ -477,17 +519,11 @@ async def add_workout_set(
     data: WorkoutSetCreate,
 ) -> WorkoutSet:
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
-    if workout.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot add sets to a completed workout",
-        )
-
     exercise = await session.scalar(
         select(Exercise).where(Exercise.id == data.exercise_id, Exercise.is_deleted.is_(False))
     )
     if exercise is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
 
     existing = await session.scalar(
         select(WorkoutSet).where(
@@ -500,7 +536,11 @@ async def add_workout_set(
     if existing is not None:
         existing.reps = data.reps
         existing.weight = data.weight
+        existing.weight_mode = data.weight_mode
         existing.rest_time_sec = data.rest_time_sec
+        existing.duration_sec = data.duration_sec
+        existing.note = data.note
+        existing.machine_params = data.machine_params
         existing.is_completed = data.is_completed
         await session.commit()
         await session.refresh(existing)
@@ -512,7 +552,11 @@ async def add_workout_set(
         set_number=data.set_number,
         reps=data.reps,
         weight=data.weight,
+        weight_mode=data.weight_mode,
         rest_time_sec=data.rest_time_sec,
+        duration_sec=data.duration_sec,
+        note=data.note,
+        machine_params=data.machine_params,
         is_completed=data.is_completed,
     )
     session.add(workout_set)
@@ -523,5 +567,155 @@ async def add_workout_set(
     return workout_set
 
 
+async def update_workout(
+    session: AsyncSession,
+    user: User,
+    workout_id: uuid.UUID,
+    data: WorkoutUpdateRequest,
+) -> Workout:
+    """Update notes/RPE without changing completion timestamps or schedule."""
+    workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    workout.rpe = data.rpe
+    workout.ai_notes = data.ai_notes
+    await session.commit()
+    return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
+
+
+async def delete_workout(
+    session: AsyncSession,
+    user: User,
+    workout_id: uuid.UUID,
+) -> None:
+    """Soft-delete a workout and its sets so it disappears from all progress metrics."""
+    workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    await _rollback_program_cursor_for_deleted_workout(session, user, workout)
+    now = datetime.now(UTC)
+    workout.is_deleted = True
+    workout.updated_at = now
+    for workout_set in workout.sets:
+        workout_set.is_deleted = True
+        workout_set.updated_at = now
+    await session.commit()
+
+
+def _program_day_index(workout: Workout, schedule: list[Any]) -> int:
+    """Resolve a program day for current and legacy workout snapshots."""
+    plan = workout.plan or {}
+    try:
+        day_index = int(plan.get("day_index") or 0)
+    except (TypeError, ValueError):
+        day_index = 0
+    if 1 <= day_index <= len(schedule):
+        return day_index
+
+    # Older snapshots may not contain day_index. Match their title to the
+    # program schedule, ignoring the appended load-phase suffix.
+    workout_title = str(plan.get("title") or workout.title or "").split(" · ", 1)[0].strip().casefold()
+    if not workout_title:
+        return 0
+    for position, raw_day in enumerate(schedule, start=1):
+        if not isinstance(raw_day, dict):
+            continue
+        title = str(raw_day.get("name") or raw_day.get("title") or "").strip().casefold()
+        if title and title == workout_title:
+            try:
+                explicit = int(raw_day.get("day_index", raw_day.get("day", position)))
+            except (TypeError, ValueError):
+                explicit = position
+            return explicit if 1 <= explicit <= len(schedule) else position
+    return 0
+
+
+async def _rollback_program_cursor_for_deleted_workout(
+    session: AsyncSession,
+    user: User,
+    workout: Workout,
+) -> None:
+    """Make a deleted program workout the next workout again.
+
+    Deletion means that the program day is no longer completed. This must not
+    depend on whether another workout was created later or whether a client-side
+    cursor update arrived out of order.
+    """
+    if workout.program_id is None:
+        return
+    goals = dict(user.goals or {})
+    if str(goals.get("active_program_id") or "") != str(workout.program_id):
+        return
+    program = await session.scalar(
+        select(Program).where(Program.id == workout.program_id, Program.is_deleted.is_(False))
+    )
+    if program is None:
+        return
+    schedule = (program.structure or {}).get("schedule") or (program.structure or {}).get("days")
+    if not isinstance(schedule, list) or not schedule:
+        return
+    day_index = _program_day_index(workout, schedule)
+    if day_index < 1:
+        return
+
+    plan = workout.plan or {}
+    phase = str(plan.get("week_phase") or "").strip().lower()
+    if phase not in {"light", "medium", "heavy"}:
+        current_phase = str(goals.get("active_program_week_phase") or "").strip().lower()
+        phase = current_phase if current_phase in {"light", "medium", "heavy"} else "medium"
+
+    goals["active_program_next_day"] = day_index
+    goals["active_program_week_phase"] = phase
+    goals["active_program_phase_source"] = "manual"
+    # Before day N, exactly N-1 days of the split phase have been completed.
+    goals["active_program_workouts_in_phase"] = day_index - 1
+    user.goals = goals
+
+
 async def get_workout(session: AsyncSession, user: User, workout_id: uuid.UUID) -> Workout:
     return await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+
+
+async def update_workout_plan(
+    session: AsyncSession,
+    user: User,
+    workout_id: uuid.UUID,
+    data: WorkoutPlan,
+) -> Workout:
+    """Persist exercise replacements and keep empty set slots aligned with the plan."""
+    workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    if workout.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="План завершённой тренировки нельзя изменить",
+        )
+
+    plan = _normalize_plan(data)
+    exercise_ids = [uuid.UUID(str(item["exercise_id"])) for item in plan["exercises"]]
+    if len(exercise_ids) != len(set(exercise_ids)):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="В плане повторяются упражнения")
+    await _load_exercises_map(session, exercise_ids)
+
+    old_by_order = {
+        int(item.get("order") or 0): uuid.UUID(str(item["exercise_id"]))
+        for item in (workout.plan or {}).get("exercises", [])
+        if item.get("exercise_id")
+    }
+    sets_by_slot = {(item.exercise_id, item.set_number): item for item in workout.sets}
+    for item in plan["exercises"]:
+        order = int(item.get("order") or 0)
+        new_id = uuid.UUID(str(item["exercise_id"]))
+        old_id = old_by_order.get(order)
+        if old_id is None or old_id == new_id:
+            continue
+        for workout_set in workout.sets:
+            if workout_set.exercise_id != old_id or workout_set.is_completed:
+                continue
+            collision = sets_by_slot.get((new_id, workout_set.set_number))
+            if collision is not None:
+                await session.delete(workout_set)
+            else:
+                sets_by_slot.pop((old_id, workout_set.set_number), None)
+                workout_set.exercise_id = new_id
+                sets_by_slot[(new_id, workout_set.set_number)] = workout_set
+
+    workout.plan = plan
+    await session.commit()
+    await session.refresh(workout)
+    return workout

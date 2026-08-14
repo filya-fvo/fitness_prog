@@ -11,6 +11,7 @@ import {
   readOtpDraft,
   writeOtpDraft,
 } from "@/utils/otpDraft";
+import { toUserMessage } from "@/utils/errors";
 
 type Props = {
   currentEmail?: string | null;
@@ -32,6 +33,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
   const [devCode, setDevCode] = useState<string | null>(restored?.devCode ?? null);
   const [resendIn, setResendIn] = useState(0);
   const [editing, setEditing] = useState(Boolean(restored) || !currentEmail);
+  const [mergePreview, setMergePreview] = useState<Awaited<ReturnType<typeof verifyEmailLinkCode>>["merge_preview"]>(null);
 
   useEffect(() => {
     if (step !== "code") return;
@@ -80,7 +82,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
     setDevCode(null);
     const value = email.trim();
     if (!value.includes("@")) {
-      setError("Введите корректный email");
+      setError("Введите корректный адрес электронной почты");
       return;
     }
     setBusy(true);
@@ -100,19 +102,24 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
     } catch (err) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : "Не удалось отправить код");
+        toUserMessage(err, "Не удалось отправить код");
       setError(typeof msg === "string" ? msg : "Не удалось отправить код");
     } finally {
       setBusy(false);
     }
   }
 
-  async function onVerify(e: FormEvent) {
-    e.preventDefault();
+  async function verifyOrMerge(mergePreference?: "email" | "telegram") {
     setError(null);
     setBusy(true);
     try {
-      const res = await verifyEmailLinkCode(email.trim(), code.trim());
+      const res = await verifyEmailLinkCode(email.trim(), code.trim(), mergePreference);
+      if (res.merge_required && res.merge_preview) {
+        setMergePreview(res.merge_preview);
+        setInfo(res.message);
+        return;
+      }
+      if (!res.user) throw new Error("Сервер не вернул объединённый аккаунт");
       clearOtpDraft(OTP_DRAFT_LINK_KEY);
       setInfo(res.message);
       setStep("idle");
@@ -123,18 +130,23 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
     } catch (err) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : "Неверный код");
+        toUserMessage(err, "Не удалось подтвердить код");
       setError(typeof msg === "string" ? msg : "Неверный код");
     } finally {
       setBusy(false);
     }
   }
 
+  async function onVerify(e: FormEvent) {
+    e.preventDefault();
+    await verifyOrMerge();
+  }
+
   return (
     <div className="rounded-2xl bg-tg-secondary p-4">
       <p className="text-sm font-medium">Почта для входа в браузере</p>
       <p className="mt-1 text-xs text-tg-hint">
-        Привяжите email к этому аккаунту — потом можно открыть приложение в браузере и войти
+        Привяжите электронную почту к этому аккаунту — потом можно открыть приложение в браузере и войти
         кодом с почты, с тем же прогрессом и программой. Можно свернуть приложение, открыть
         почту и вернуться — поле кода сохранится.
       </p>
@@ -161,10 +173,43 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
       ) : null}
 
       {editing || !currentEmail || step === "code" ? (
-        step === "idle" ? (
+        mergePreview ? (
+          <div className="mt-3 space-y-3 rounded-xl bg-tg-bg p-3">
+            <div>
+              <p className="text-sm font-semibold">Найдены два аккаунта</p>
+              <p className="mt-1 text-xs text-tg-hint">Вся история с обеих сторон будет сохранена. Выберите приоритет только для конфликтующих данных профиля.</p>
+            </div>
+            {mergePreview.conflicts.length ? (
+              <ul className="list-disc pl-5 text-xs text-tg-hint">
+                {mergePreview.conflicts.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            ) : <p className="text-xs text-tg-hint">Конфликтов профиля нет — требуется подтверждение объединения.</p>}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg bg-tg-secondary p-2"><p className="font-medium">Почта</p><p className="mt-1 text-tg-hint">Тренировок: {mergePreview.email.counts.workouts ?? 0}</p><p className="text-tg-hint">Питание: {mergePreview.email.counts.nutrition ?? 0}</p></div>
+              <div className="rounded-lg bg-tg-secondary p-2"><p className="font-medium">Telegram</p><p className="mt-1 text-tg-hint">Тренировок: {mergePreview.telegram.counts.workouts ?? 0}</p><p className="text-tg-hint">Питание: {mergePreview.telegram.counts.nutrition ?? 0}</p></div>
+            </div>
+            <button type="button" disabled={busy} onClick={() => void verifyOrMerge("email")} className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-60">Основные данные — из почты</button>
+            <button type="button" disabled={busy} onClick={() => void verifyOrMerge("telegram")} className="w-full rounded-xl bg-tg-secondary px-3 py-2 text-sm font-semibold disabled:opacity-60">Основные данные — из Telegram</button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                clearOtpDraft(OTP_DRAFT_LINK_KEY);
+                setMergePreview(null);
+                setCode("");
+                setInfo(null);
+                setDevCode(null);
+                setStep("idle");
+              }}
+              className="w-full text-xs text-tg-hint"
+            >
+              Отменить объединение
+            </button>
+          </div>
+        ) : step === "idle" ? (
           <form className="mt-3 space-y-2" onSubmit={(e) => void onRequestCode(e)}>
             <label className="block text-xs text-tg-hint">
-              Email
+              Электронная почта
               <input
                 type="email"
                 autoComplete="email"
@@ -236,7 +281,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
                   setDevCode(null);
                 }}
               >
-                Изменить email
+                Изменить адрес
               </button>
               <button
                 type="button"

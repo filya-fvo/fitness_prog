@@ -19,7 +19,6 @@ export async function initSentry(): Promise<void> {
   } catch (err) {
     // Package may be absent until npm i @sentry/react
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.warn("[sentry] init skipped:", err);
     }
   }

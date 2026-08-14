@@ -10,8 +10,10 @@
 export type AnalyticsEventName =
   | "web_app_opened"
   | "workout_started"
+  | "workout_session_restored"
   | "workout_completed"
   | "workout_exercise_completed"
+  | "workout_exercises_bulk_replaced"
   | "program_started"
   | "exercise_media_played"
   | "onboarding_completed"
@@ -44,7 +46,6 @@ export function trackEvent(event: AnalyticsEventName, payload: AnalyticsPayload 
   pushLocal(event, payload);
 
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.debug("[analytics]", event, payload);
   }
 }

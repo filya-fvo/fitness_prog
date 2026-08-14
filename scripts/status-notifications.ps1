@@ -68,7 +68,13 @@ if ($workerLines.Count -gt 0) {
   Write-Host "Worker process: detected" -ForegroundColor Green
   $workerLines | ForEach-Object { Write-Host ("  PID {0} {1}" -f $_.ProcessId, $_.Name) }
 } else {
-  Write-Host "Worker process: not detected (run start-notifications.cmd)" -ForegroundColor Yellow
+  $workerLog = Join-Path $Root ("logs\worker-" + (Get-Date -Format "yyyy-MM-dd") + ".log")
+  $recentLog = (Test-Path $workerLog) -and (((Get-Date) - (Get-Item $workerLog).LastWriteTime).TotalMinutes -lt 3)
+  if ($recentLog) {
+    Write-Host "Worker process: active (recent worker log; process details require elevation)" -ForegroundColor Green
+  } else {
+    Write-Host "Worker process: not detected (run start-notifications.cmd)" -ForegroundColor Yellow
+  }
 }
 
 if ((Test-Path $Py) -and $redisOk) {

@@ -37,7 +37,7 @@ _redoc = None if settings.environment == "production" else "/redoc"
 
 app = FastAPI(
     title="Fitness Mini App API",
-    version="0.8.1",
+    version="0.14.1",
     docs_url=_docs,
     redoc_url=_redoc,
 )

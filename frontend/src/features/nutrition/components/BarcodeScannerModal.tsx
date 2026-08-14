@@ -7,6 +7,8 @@
  */
 import { useEffect, useRef, useState } from "react";
 
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -40,10 +42,24 @@ function normalizeCode(raw: string | null | undefined): string {
   return String(raw).replace(/\D/g, "");
 }
 
-async function openCameraStream(): Promise<MediaStream> {
+function hasLiveVideoTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getVideoTracks().some((track) => track.readyState === "live"));
+}
+
+function setVideoTracksEnabled(stream: MediaStream, enabled: boolean): void {
+  for (const track of stream.getVideoTracks()) track.enabled = enabled;
+}
+
+async function openCameraStream(existing: MediaStream | null): Promise<MediaStream> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("Камера недоступна в этом клиенте");
   }
+
+  if (existing && hasLiveVideoTrack(existing)) {
+    setVideoTracksEnabled(existing, true);
+    return existing;
+  }
+  existing?.getTracks().forEach((track) => track.stop());
 
   // iOS WebKit is picky: prefer simple facingMode string, then fall back.
   const attempts: MediaStreamConstraints[] = [
@@ -71,6 +87,14 @@ async function openCameraStream(): Promise<MediaStream> {
       return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (err) {
       lastErr = err;
+      // A permission denial cannot be fixed by trying looser constraints and
+      // may otherwise result in several consecutive prompts in a WebView.
+      if (
+        err instanceof DOMException &&
+        ["NotAllowedError", "PermissionDeniedError", "SecurityError"].includes(err.name)
+      ) {
+        throw err;
+      }
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error("Не удалось открыть камеру");
@@ -105,6 +129,15 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
   const [cameraReady, setCameraReady] = useState(false);
   const [engine, setEngine] = useState<"native" | "zxing" | "manual">("manual");
   const [hint, setHint] = useState("Наведите камеру на штрихкод");
+  const dialogRef = useModalAccessibility(open, onClose);
+
+  useEffect(() => {
+    return () => {
+      const stream = streamRef.current;
+      streamRef.current = null;
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +149,7 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
     setManual("");
     setEngine("manual");
     setHint("Держите штрихкод ровно в рамке, 10–20 см от камеры");
+    const mountedVideo = videoRef.current;
 
     const Detector = getBarcodeDetector();
 
@@ -190,13 +224,15 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
 
     async function start() {
       try {
-        const stream = await openCameraStream();
+        const existing = streamRef.current;
+        const stream = await openCameraStream(existing);
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          if (stream === existing) setVideoTracksEnabled(stream, false);
+          else stream.getTracks().forEach((track) => track.stop());
           return;
         }
         streamRef.current = stream;
-        const video = videoRef.current;
+        const video = mountedVideo;
         if (!video) {
           setError("Видеоэлемент недоступен");
           return;
@@ -265,11 +301,10 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
       }
       zxingRef.current = null;
       const stream = streamRef.current;
-      streamRef.current = null;
-      stream?.getTracks().forEach((t) => t.stop());
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = null;
+      if (stream) setVideoTracksEnabled(stream, false);
+      if (mountedVideo) {
+        mountedVideo.pause();
+        mountedVideo.srcObject = null;
       }
     };
   }, [open, onDetected]);
@@ -278,13 +313,20 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[#1f1f23] text-white shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="barcode-scanner-title"
+        tabIndex={-1}
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-[#1f1f23] text-white shadow-xl"
+      >
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
-            <h3 className="text-base font-semibold">Сканер штрихкода</h3>
+            <h3 id="barcode-scanner-title" className="text-base font-semibold">Сканер штрихкода</h3>
             <p className="text-[11px] text-white/60">{hint}</p>
           </div>
-          <button type="button" className="text-sm text-white/70" onClick={onClose}>
+          <button type="button" aria-label="Закрыть сканер" className="text-sm text-white/70" onClick={onClose}>
             ✕
           </button>
         </div>

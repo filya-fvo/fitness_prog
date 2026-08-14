@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -22,6 +23,8 @@ class AuthUserResponse(BaseModel):
     auth_email: str | None = None
     subscription_status: str
     onboarding_completed: bool = False
+    merged_from_user_ids: list[uuid.UUID] = Field(default_factory=list)
+    last_merge_preference: Literal["email", "telegram"] | None = None
 
     model_config = {"from_attributes": True}
 
@@ -46,6 +49,7 @@ class EmailOtpVerifyRequest(BaseModel):
 
     email: str = Field(..., min_length=3, max_length=254)
     code: str = Field(..., min_length=4, max_length=8)
+    merge_preference: Literal["email", "telegram"] | None = None
 
 
 class EmailOtpRequestResponse(BaseModel):
@@ -74,4 +78,6 @@ class EmailLinkResponse(BaseModel):
 
     ok: bool = True
     message: str = "Почта привязана"
-    user: AuthUserResponse
+    user: AuthUserResponse | None = None
+    merge_required: bool = False
+    merge_preview: dict[str, Any] | None = None

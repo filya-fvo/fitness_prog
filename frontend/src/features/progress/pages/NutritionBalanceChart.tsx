@@ -99,8 +99,8 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                 mode === "week" ? `нед. ${day.date.slice(5)}` : day.date.slice(8);
               const title =
                 day.target != null
-                  ? `${day.date}: съедено ${Math.round(day.calories)}, цель ${Math.round(day.target)}, Δ ${fmtDelta(day.delta)}`
-                  : `${day.date}: съедено ${Math.round(day.calories)}`;
+                  ? `${day.date}: съедено ${Math.round(day.calories)} ккал, цель ${Math.round(day.target)} ккал, разница ${fmtDelta(day.delta)} ккал`
+                  : `${day.date}: съедено ${Math.round(day.calories)} ккал`;
               return (
                 <div
                   key={day.date}

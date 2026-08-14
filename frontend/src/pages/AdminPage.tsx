@@ -7,28 +7,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  clearAdminUser,
   deleteAdminUser,
   fetchAdminUsers,
-  resetAdminUser,
+  type AdminResetScope,
   type AdminUser,
 } from "@/api/admin";
 import { apiClient, getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
+import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
+import { clearLocalWorkoutData } from "@/db/syncQueue";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import type { Exercise } from "@/types/workout";
-
-const ADMIN_USERNAMES = new Set(
-  String(import.meta.env.VITE_ADMIN_TELEGRAM_USERNAMES || "Filatov_Slava")
-    .split(",")
-    .map((s) => s.trim().replace(/^@/, "").toLowerCase())
-    .filter(Boolean),
-);
-
-function isAdminUser(username: string | null | undefined): boolean {
-  const u = (username || "").trim().replace(/^@/, "").toLowerCase();
-  return Boolean(u && ADMIN_USERNAMES.has(u));
-}
+import { clearMeasurementHistory, clearWaterHistory } from "@/utils/habits";
+import { isAdminUsername } from "@/utils/adminAccess";
+import { toUserMessage } from "@/utils/errors";
+import { confirmAction } from "@/lib/telegram";
 
 type ProgramRow = {
   id: string;
@@ -54,10 +50,37 @@ const WORKOUT_TYPES = [
   "custom",
 ];
 
+const RESET_OPTIONS: Array<{
+  scope: AdminResetScope;
+  title: string;
+  description: string;
+}> = [
+  {
+    scope: "workouts",
+    title: "Тренировки",
+    description: "История тренировок и подходы. Анкета и выбранная программа сохранятся.",
+  },
+  {
+    scope: "nutrition",
+    title: "Питание",
+    description: "Дневник питания и вода. Профиль и цели по калориям сохранятся.",
+  },
+  {
+    scope: "measurements",
+    title: "Замеры",
+    description: "Обхваты тела и локальная история веса. Основные данные анкеты сохранятся.",
+  },
+  {
+    scope: "all",
+    title: "Всё",
+    description: "Полный сброс профиля, истории и дневника. Анкету придётся пройти заново.",
+  },
+];
+
 export function AdminPage() {
   const user = useUserStore((s) => s.user);
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);
-  const allowed = useMemo(() => isAdminUser(user?.username), [user?.username]);
+  const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +92,9 @@ export function AdminPage() {
   const [userQ, setUserQ] = useState("");
   const [usersLoading, setUsersLoading] = useState(false);
   const [okNote, setOkNote] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
+  const [resetScope, setResetScope] = useState<AdminResetScope>("workouts");
+  const resetDialogRef = useModalAccessibility(Boolean(resetTarget), () => setResetTarget(null));
 
   const [exName, setExName] = useState("");
   const [exGroup, setExGroup] = useState("ноги");
@@ -105,7 +131,7 @@ export function AdminPage() {
   useEffect(() => {
     if (isAuthLoading || !allowed) return;
     void reload().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : "Ошибка загрузки");
+      setError(toUserMessage(err, "Не удалось загрузить админку"));
     });
     void loadUsers("").catch(() => {
       /* loadUsers sets error */
@@ -125,7 +151,7 @@ export function AdminPage() {
       setUsers(res.items);
       setUsersTotal(res.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось загрузить пользователей");
+      setError(toUserMessage(err, "Не удалось загрузить пользователей"));
       setUsers([]);
       setUsersTotal(0);
     } finally {
@@ -133,24 +159,55 @@ export function AdminPage() {
     }
   }
 
-  async function onResetUser(u: AdminUser) {
-    const label = u.display_name || u.username || u.id;
-    if (!window.confirm(`Очистить профиль «${label}»?\nПользователь пройдёт анкету заново. Придёт уведомление.`)) {
-      return;
+  function onResetUser(u: AdminUser) {
+    setResetTarget(u);
+    setResetScope("workouts");
+    setError(null);
+  }
+
+  async function clearCurrentUserLocalData(scope: AdminResetScope) {
+    if (scope === "workouts" || scope === "all") {
+      await clearLocalWorkoutData();
+      localStorage.removeItem("fitness_active_workout_started_ms");
     }
+    if (scope === "nutrition" || scope === "all") {
+      if (scope === "all") {
+        localStorage.removeItem("fitness_nutrition_recent_v1");
+        localStorage.removeItem("fitness_nutrition_favorites_v1");
+        localStorage.removeItem("fitness_habits_v1");
+      } else {
+        clearWaterHistory();
+      }
+    }
+    if (scope === "measurements") clearMeasurementHistory();
+    if (scope === "all") localStorage.removeItem("fitness_profile_draft");
+  }
+
+  async function confirmResetUser() {
+    if (!resetTarget) return;
+    const target = resetTarget;
+    const label = target.display_name || target.username || target.id;
     setBusy(true);
     setOkNote(null);
     setError(null);
     try {
-      const res = await resetAdminUser(u.id, true);
+      const res = await clearAdminUser(target.id, resetScope, true);
+      if (target.id === user?.id) await clearCurrentUserLocalData(resetScope);
+      const successText: Record<AdminResetScope, string> = {
+        workouts: "Тренировки очищены",
+        nutrition: "Питание очищено",
+        measurements: "Замеры очищены",
+        all: "Данные полностью очищены",
+      };
       setOkNote(
         res.notified
-          ? `Профиль очищен, уведомление отправлено: ${label}`
-          : `Профиль очищен (уведомление не отправлено): ${label}`,
+          ? `${successText[resetScope]}, уведомление отправлено: ${label}`
+          : `${successText[resetScope]} (уведомление не отправлено): ${label}`,
       );
+      setResetTarget(null);
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось очистить профиль");
+      setError(toUserMessage(err, "Не удалось очистить данные"));
     } finally {
       setBusy(false);
     }
@@ -158,10 +215,10 @@ export function AdminPage() {
 
   async function onDeleteUser(u: AdminUser) {
     const label = u.display_name || u.username || u.id;
-    if (!window.confirm(`УДАЛИТЬ пользователя «${label}»?\nДействие необратимо. Придёт уведомление.`)) {
+    if (!await confirmAction(`УДАЛИТЬ пользователя «${label}»?\nДействие необратимо. Придёт уведомление.`)) {
       return;
     }
-    if (!window.confirm("Точно удалить? Повторное подтверждение.")) return;
+    if (!await confirmAction("Точно удалить? Повторное подтверждение.")) return;
     setBusy(true);
     setOkNote(null);
     setError(null);
@@ -174,7 +231,7 @@ export function AdminPage() {
       );
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось удалить");
+      setError(toUserMessage(err, "Не удалось удалить пользователя"));
     } finally {
       setBusy(false);
     }
@@ -218,7 +275,7 @@ export function AdminPage() {
       resetExerciseForm();
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить упражнение");
+      setError(toUserMessage(err, "Не удалось сохранить упражнение"));
     } finally {
       setBusy(false);
     }
@@ -231,7 +288,7 @@ export function AdminPage() {
       if (editingExId === id) resetExerciseForm();
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось удалить упражнение");
+      setError(toUserMessage(err, "Не удалось удалить упражнение"));
     } finally {
       setBusy(false);
     }
@@ -259,7 +316,7 @@ export function AdminPage() {
       setProgName("");
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать программу");
+      setError(toUserMessage(err, "Не удалось создать программу"));
     } finally {
       setBusy(false);
     }
@@ -271,7 +328,7 @@ export function AdminPage() {
       await apiClient.put(`/programs/${id}`, patch);
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось обновить программу");
+      setError(toUserMessage(err, "Не удалось обновить программу"));
     } finally {
       setBusy(false);
     }
@@ -283,7 +340,7 @@ export function AdminPage() {
       await apiClient.delete(`/programs/${id}`);
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось удалить программу");
+      setError(toUserMessage(err, "Не удалось удалить программу"));
     } finally {
       setBusy(false);
     }
@@ -303,11 +360,7 @@ export function AdminPage() {
       <section>
         <Header title="Админка" subtitle="Доступ ограничен" />
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
-          Админка доступна только владельцу бота
-          {ADMIN_USERNAMES.size
-            ? ` (@${Array.from(ADMIN_USERNAMES).join(", @")})`
-            : ""}
-          .
+          Админка доступна только пользователям из настроенного списка администраторов.
           <Link to="/" className="mt-3 block text-center text-tg-link">
             На главную
           </Link>
@@ -365,7 +418,7 @@ export function AdminPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") void loadUsers(userQ);
               }}
-              placeholder="Поиск: фамилия, @логин, email, tg id"
+              placeholder="Поиск: фамилия, @логин, почта, Telegram ID"
               className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
             <button
@@ -378,7 +431,8 @@ export function AdminPage() {
             </button>
           </div>
           <p className="text-[11px] text-tg-hint">
-            Всего: {usersTotal}. Очистка — анкета заново + push. Удаление — soft-delete + push.
+            Всего: {usersTotal}. Очистка сбрасывает данные и обновляет экран пользователя. Удаление
+            архивирует аккаунт без физического удаления записи.
           </p>
           {usersLoading && !users.length ? (
             <p className="text-sm text-tg-hint">Загрузка…</p>
@@ -394,22 +448,22 @@ export function AdminPage() {
                     <p className="font-medium leading-snug">{u.display_name}</p>
                     <p className="mt-0.5 text-[11px] text-tg-hint">
                       {u.username ? `@${u.username.replace(/^@/, "")}` : "без логина"}
-                      {u.telegram_id != null ? ` · tg ${u.telegram_id}` : ""}
+                      {u.telegram_id != null ? ` · Telegram ID ${u.telegram_id}` : ""}
                       {u.auth_email ? ` · ${u.auth_email}` : ""}
                     </p>
                     <p className="mt-0.5 text-[11px] text-tg-hint">
                       {u.onboarding_completed ? "анкета ✓" : "анкета не пройдена"}
-                      {` · ${u.subscription_status || "free"}`}
+                      {` · ${subscriptionLabel(u.subscription_status)}`}
                       {` · тр. ${u.completed_workouts}/${u.workouts_count}`}
-                      {u.level ? ` · ${u.level}` : ""}
-                      {u.primary_goal ? ` · ${u.primary_goal}` : ""}
+                      {u.level ? ` · ${enumLabel(u.level)}` : ""}
+                      {u.primary_goal ? ` · ${enumLabel(u.primary_goal)}` : ""}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void onResetUser(u)}
+                      onClick={() => onResetUser(u)}
                       className="text-[11px] text-tg-link disabled:opacity-50"
                     >
                       Очистить
@@ -500,8 +554,8 @@ export function AdminPage() {
                 >
                   <span className="font-medium">{item.name_ru}</span>
                   <span className="block text-[11px] text-tg-hint">
-                    {item.muscle_group} · {item.media_source || "none"}
-                    {item.video_url ? " · video" : ""}
+                    {enumLabel(item.muscle_group)} · источник: {enumLabel(item.media_source || "none")}
+                    {item.video_url ? " · есть видео" : ""}
                   </span>
                 </button>
                 <button
@@ -532,7 +586,7 @@ export function AdminPage() {
             >
               {WORKOUT_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {enumLabel(t)}
                 </option>
               ))}
             </select>
@@ -559,9 +613,9 @@ export function AdminPage() {
               <li key={item.id} className="rounded-xl bg-tg-bg p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium">{item.name}</p>
+                    <p className="font-medium">{programDayLabel(item.name)}</p>
                     <p className="text-[11px] text-tg-hint">
-                      {item.workout_type} · {item.level || item.target_level || "—"}
+                      {enumLabel(item.workout_type)} · {enumLabel(item.level || item.target_level, "Уровень не указан")}
                     </p>
                   </div>
                   <button
@@ -584,7 +638,7 @@ export function AdminPage() {
                   >
                     {WORKOUT_TYPES.map((t) => (
                       <option key={t} value={t}>
-                        {t}
+                        {enumLabel(t)}
                       </option>
                     ))}
                   </select>
@@ -608,6 +662,104 @@ export function AdminPage() {
           </ul>
         </div>
       </div>
+
+      {resetTarget ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/60 p-3 sm:items-center">
+          <div
+            ref={resetDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-reset-title"
+            tabIndex={-1}
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="admin-reset-title" className="font-semibold">
+                  Что очистить?
+                </h2>
+                <p className="mt-1 text-xs text-tg-hint">
+                  Пользователь: {resetTarget.display_name}
+                </p>
+                <p className="mt-1 text-[11px] text-tg-hint">
+                  После очистки пользователь получит уведомление.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setResetTarget(null)}
+                className="text-sm text-tg-link disabled:opacity-50"
+              >
+                Закрыть
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {RESET_OPTIONS.map((option) => (
+                <button
+                  key={option.scope}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setResetScope(option.scope)}
+                  className={[
+                    "w-full rounded-xl border px-3 py-3 text-left disabled:opacity-50",
+                    resetScope === option.scope
+                      ? "border-tg-button bg-tg-button/10"
+                      : "border-black/10 bg-tg-secondary",
+                  ].join(" ")}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{option.title}</span>
+                    <span
+                      aria-hidden="true"
+                      className={[
+                        "h-4 w-4 rounded-full border-2",
+                        resetScope === option.scope
+                          ? "border-tg-button bg-tg-button"
+                          : "border-tg-hint",
+                      ].join(" ")}
+                    />
+                  </span>
+                  <span className="mt-1 block text-xs text-tg-hint">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {resetScope === "all" ? (
+              <p className="mt-3 rounded-xl bg-red-500/10 p-3 text-xs text-red-500">
+                Полный сброс потребует повторного заполнения анкеты.
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setResetTarget(null)}
+                className="flex-1 rounded-xl bg-tg-secondary px-4 py-3 text-sm disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void confirmResetUser()}
+                className={[
+                  "flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50",
+                  resetScope === "all" ? "bg-red-500" : "bg-tg-button",
+                ].join(" ")}
+              >
+                {busy
+                  ? "Очищаем…"
+                  : `Очистить ${RESET_OPTIONS.find((item) => item.scope === resetScope)?.title.toLowerCase()}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

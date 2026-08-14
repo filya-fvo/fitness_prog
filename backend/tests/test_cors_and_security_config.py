@@ -1,7 +1,11 @@
 """Light security/config guards for production readiness."""
 
+import pytest
+from fastapi import HTTPException
+
 from app.core.config import Settings, get_settings
 from app.core.security import create_access_token, decode_access_token
+from app.routers.telegram import _verify_secret
 
 
 def test_cors_origin_list_strips_blanks() -> None:
@@ -38,3 +42,22 @@ def test_production_disables_docs_flag_logic() -> None:
     env = "production"
     docs = None if env == "production" else "/docs"
     assert docs is None
+
+
+def test_production_webhook_requires_configured_secret() -> None:
+    settings = Settings(environment="production", telegram_webhook_secret="")
+    with pytest.raises(HTTPException) as exc:
+        _verify_secret(settings, None)
+    assert exc.value.status_code == 503
+
+
+def test_webhook_rejects_wrong_secret() -> None:
+    settings = Settings(environment="production", telegram_webhook_secret="expected")
+    with pytest.raises(HTTPException) as exc:
+        _verify_secret(settings, "wrong")
+    assert exc.value.status_code == 403
+
+
+def test_webhook_accepts_matching_secret() -> None:
+    settings = Settings(environment="production", telegram_webhook_secret="expected")
+    _verify_secret(settings, "expected")

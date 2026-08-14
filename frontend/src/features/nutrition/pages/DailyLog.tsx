@@ -1,7 +1,7 @@
 /**
  * Daily nutrition diary — TZ §5 tracker.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -20,11 +20,14 @@ import {
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
+import { DecimalInput } from "@/components/DecimalInput";
 import { BarcodeScannerModal } from "@/features/nutrition/components/BarcodeScannerModal";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { toast } from "@/store/toastStore";
 import { isOnline } from "@/utils/network";
+import { toUserMessage } from "@/utils/errors";
 import { MEAL_TEMPLATES } from "@/utils/mealTemplates";
 import {
   loadFavoriteProducts,
@@ -61,6 +64,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   drinks: "Напитки",
   ready: "Готовое",
   supplements: "Спортпит",
+  custom: "Пользовательские",
+  barcode: "По штрихкоду",
 };
 
 type MealId = (typeof MEALS)[number]["id"];
@@ -114,6 +119,8 @@ export function DailyLog() {
   const [grams, setGrams] = useState("100");
   const [saving, setSaving] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [addPanelOpen, setAddPanelOpen] = useState(false);
+  const [goalDetailsOpen, setGoalDetailsOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editGrams, setEditGrams] = useState("100");
   const [editMeal, setEditMeal] = useState<MealId>("breakfast");
@@ -124,6 +131,8 @@ export function DailyLog() {
   const [ovF, setOvF] = useState("");
   const [ovC, setOvC] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
+  const editDialogRef = useModalAccessibility(Boolean(editingLog), () => setEditingLog(null));
+  const customDialogRef = useModalAccessibility(customOpen, () => setCustomOpen(false));
   const [cName, setCName] = useState("");
   const [cCal, setCCal] = useState("");
   const [cP, setCP] = useState("");
@@ -135,8 +144,9 @@ export function DailyLog() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const [okNote, setOkNote] = useState<string | null>(null);
+  const productSearchRef = useRef<HTMLInputElement>(null);
 
-  async function reload() {
+  const reload = useCallback(async () => {
     if (!getStoredToken()) {
       setLoading(false);
       setError(null);
@@ -149,15 +159,15 @@ export function DailyLog() {
       const daily = await fetchDailyNutrition(day);
       setData(daily);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось загрузить дневник");
+      setError(toUserMessage(err, "Не удалось загрузить дневник"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [day]);
 
   useEffect(() => {
     void reload();
-  }, [day]);
+  }, [reload]);
 
   useEffect(() => {
     if (!getStoredToken() || !isOnline()) return;
@@ -295,7 +305,7 @@ export function DailyLog() {
       setOkNote(`${t.label}: ${product.name_ru}, ${t.grams} г. Проверьте и нажмите «Добавить».`);
       toast(`${t.label} · проверьте граммы`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось применить шаблон");
+      setError(toUserMessage(err, "Не удалось применить шаблон"));
     }
   }
 
@@ -334,9 +344,11 @@ export function DailyLog() {
       setOverrideOpen(false);
       await reload();
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
+      setOkNote(`${selected.name_ru} добавлен в «${mealLabel}». Можно сразу выбрать следующий продукт.`);
       toast(`Добавлено · ${selected.name_ru} · ${g} г · ${mealLabel}`);
+      window.requestAnimationFrame(() => productSearchRef.current?.focus());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось добавить приём пищи");
+      setError(toUserMessage(err, "Не удалось добавить продукт"));
     } finally {
       setSaving(false);
     }
@@ -360,7 +372,7 @@ export function DailyLog() {
       await reload();
       toast(`Обновлено · ${g} г`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось изменить запись");
+      setError(toUserMessage(err, "Не удалось изменить запись"));
     } finally {
       setEditBusy(false);
     }
@@ -460,7 +472,7 @@ export function DailyLog() {
       setRecent(loadRecentProducts());
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось скопировать вчера");
+      setError(toUserMessage(err, "Не удалось скопировать вчерашний рацион"));
     } finally {
       setCopyingYesterday(false);
     }
@@ -505,7 +517,7 @@ export function DailyLog() {
       setCatalog(res.items);
       setCatalogTotal(res.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать продукт");
+      setError(toUserMessage(err, "Не удалось создать продукт"));
     } finally {
       setSaving(false);
     }
@@ -549,7 +561,7 @@ export function DailyLog() {
         `Найден: ${res.product.name_ru}. Укажите граммы (сейчас ${gramsDefault} г) и нажмите «Добавить».`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось распознать штрихкод");
+      setError(toUserMessage(err, "Не удалось распознать штрихкод"));
     } finally {
       setBarcodeBusy(false);
     }
@@ -566,7 +578,7 @@ export function DailyLog() {
   const isToday = day === todayISO();
 
   return (
-    <section>
+    <section className="mx-auto max-w-4xl">
       <Header title="Питание" subtitle={`Дневник · ${formatDayLabel(day)}`} />
 
       <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-tg-secondary px-2 py-2">
@@ -607,7 +619,7 @@ export function DailyLog() {
         <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
           <p className="text-sm font-semibold">Войдите, чтобы вести дневник</p>
           <p className="mt-1 text-sm text-tg-hint">
-            В Telegram — через Mini App. В браузере — по email вверху экрана. После входа откроются
+            В Telegram — через мини-приложение. В браузере — по электронной почте вверху экрана. После входа откроются
             каталог, сканер и история приёмов.
           </p>
         </div>
@@ -617,9 +629,9 @@ export function DailyLog() {
         <div className="flex items-end justify-between gap-2">
           <div>
             <p className="text-xs text-tg-hint">
-              Калории {isToday ? "сегодня" : formatDayLabel(day)}
+              Калории, ккал · {isToday ? "сегодня" : formatDayLabel(day)}
             </p>
-            <p className="text-2xl font-semibold">{totals.calories.toFixed(0)}</p>
+            <p className="text-2xl font-semibold">{totals.calories.toFixed(0)} <span className="text-sm font-normal text-tg-hint">ккал</span></p>
           </div>
           <div className="text-right text-xs text-tg-hint">
             <p>
@@ -647,30 +659,37 @@ export function DailyLog() {
           <div className="h-full rounded-full bg-tg-button" style={{ width: `${calPct}%` }} />
         </div>
         {targets?.complete && targets.bmr && targets.tdee ? (
-          <p className="mt-2 text-[11px] text-tg-hint">
-            обмен {targets.bmr} · расход {targets.tdee}
-            {targets.macros
-              ? ` · цель Б/Ж/У ${targets.macros.proteins_g ?? "—"}/${targets.macros.fats_g ?? "—"}/${targets.macros.carbs_g ?? "—"} г`
-              : ""}
-          </p>
+          <div className="mt-2">
+            <button type="button" onClick={() => setGoalDetailsOpen((value) => !value)} className="text-xs font-medium text-tg-link">
+              {goalDetailsOpen ? "Скрыть расчёт цели" : "Как рассчитана цель"}
+            </button>
+            {goalDetailsOpen ? (
+              <p className="mt-1 rounded-xl bg-tg-bg/70 p-2 text-xs text-tg-hint">
+                Основной обмен — энергия в покое: {targets.bmr} ккал · суточный расход с активностью: {targets.tdee} ккал
+                {targets.macros
+                  ? ` · цель Б/Ж/У ${targets.macros.proteins_g ?? "—"}/${targets.macros.fats_g ?? "—"}/${targets.macros.carbs_g ?? "—"} г`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
           <div>
-            <p className="text-tg-hint">Б</p>
+            <p className="text-tg-hint">Белки, г</p>
             <p className="font-medium">{totals.proteins.toFixed(0)}</p>
             {targets?.macros?.proteins_g ? (
               <p className="text-[10px] text-tg-hint">/ {targets.macros.proteins_g}</p>
             ) : null}
           </div>
           <div>
-            <p className="text-tg-hint">Ж</p>
+            <p className="text-tg-hint">Жиры, г</p>
             <p className="font-medium">{totals.fats.toFixed(0)}</p>
             {targets?.macros?.fats_g ? (
               <p className="text-[10px] text-tg-hint">/ {targets.macros.fats_g}</p>
             ) : null}
           </div>
           <div>
-            <p className="text-tg-hint">У</p>
+            <p className="text-tg-hint">Углеводы, г</p>
             <p className="font-medium">{totals.carbs.toFixed(0)}</p>
             {targets?.macros?.carbs_g ? (
               <p className="text-[10px] text-tg-hint">/ {targets.macros.carbs_g}</p>
@@ -682,7 +701,16 @@ export function DailyLog() {
         </Link>
       </div>
 
-      <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
+      <button
+        type="button"
+        onClick={() => setAddPanelOpen((value) => !value)}
+        aria-expanded={addPanelOpen}
+        className="sticky bottom-20 z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
+      >
+        {addPanelOpen ? "Закрыть добавление" : "+ Добавить продукт"}
+      </button>
+
+      {addPanelOpen ? <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium">Добавить продукт</p>
           <div className="flex items-center gap-3">
@@ -787,6 +815,7 @@ export function DailyLog() {
           ))}
         </div>
         <input
+          ref={productSearchRef}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -887,13 +916,11 @@ export function DailyLog() {
 
         <label className="block text-xs text-tg-hint">
           Граммы
-          <input
-            type="number"
-            inputMode="decimal"
+          <DecimalInput
             min={1}
             step={1}
             value={grams}
-            onChange={(e) => setGrams(e.target.value)}
+            onValueChange={setGrams}
             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
@@ -953,33 +980,33 @@ export function DailyLog() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <label className="text-tg-hint">
                   Ккал/100г
-                  <input
+                  <DecimalInput
                     value={ovCal}
-                    onChange={(e) => setOvCal(e.target.value)}
+                    onValueChange={setOvCal}
                     className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
                   />
                 </label>
                 <label className="text-tg-hint">
                   Белки
-                  <input
+                  <DecimalInput
                     value={ovP}
-                    onChange={(e) => setOvP(e.target.value)}
+                    onValueChange={setOvP}
                     className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
                   />
                 </label>
                 <label className="text-tg-hint">
                   Жиры
-                  <input
+                  <DecimalInput
                     value={ovF}
-                    onChange={(e) => setOvF(e.target.value)}
+                    onValueChange={setOvF}
                     className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
                   />
                 </label>
                 <label className="text-tg-hint">
                   Углеводы
-                  <input
+                  <DecimalInput
                     value={ovC}
-                    onChange={(e) => setOvC(e.target.value)}
+                    onValueChange={setOvC}
                     className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
                   />
                 </label>
@@ -1018,7 +1045,7 @@ export function DailyLog() {
             onClick={() => void submit()}
             className="min-w-0 flex-1 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
           >
-            {saving ? "Сохраняем…" : "Добавить"}
+            {saving ? "Сохраняем…" : "Добавить и продолжить"}
           </button>
         </div>
         <button
@@ -1028,14 +1055,27 @@ export function DailyLog() {
         >
           + Свой продукт в общий каталог
         </button>
-      </div>
+      </div> : null}
 
-      <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {MEALS.map((m) => {
           const items = data?.meals?.[m.id] ?? [];
           return (
             <div key={m.id} className="rounded-2xl bg-tg-secondary p-4">
-              <p className="text-sm font-medium">{m.label}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{m.label}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMealType(m.id);
+                    setAddPanelOpen(true);
+                    window.requestAnimationFrame(() => productSearchRef.current?.focus());
+                  }}
+                  className="min-h-11 px-2 text-xs font-medium text-tg-link"
+                >
+                  + Добавить
+                </button>
+              </div>
               {items.length === 0 ? (
                 <p className="mt-1 text-xs text-tg-hint">Пусто</p>
               ) : (
@@ -1091,11 +1131,19 @@ export function DailyLog() {
 
       {editingLog ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl">
+          <div
+            ref={editDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="nutrition-edit-title"
+            tabIndex={-1}
+            className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl"
+          >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Изменить запись</h3>
+              <h3 id="nutrition-edit-title" className="font-semibold">Изменить запись</h3>
               <button
                 type="button"
+                aria-label="Закрыть"
                 className="text-tg-hint"
                 onClick={() => setEditingLog(null)}
               >
@@ -1107,10 +1155,9 @@ export function DailyLog() {
             </p>
             <label className="block text-xs text-tg-hint">
               Граммы
-              <input
+              <DecimalInput
                 value={editGrams}
-                onChange={(e) => setEditGrams(e.target.value)}
-                inputMode="decimal"
+                onValueChange={setEditGrams}
                 className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm"
               />
             </label>
@@ -1153,10 +1200,17 @@ export function DailyLog() {
 
       {customOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-          <div className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl">
+          <div
+            ref={customDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="custom-product-title"
+            tabIndex={-1}
+            className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl"
+          >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Новый продукт</h3>
-              <button type="button" className="text-tg-hint" onClick={() => setCustomOpen(false)}>✕</button>
+              <h3 id="custom-product-title" className="font-semibold">Новый продукт</h3>
+              <button type="button" aria-label="Закрыть" className="text-tg-hint" onClick={() => setCustomOpen(false)}>✕</button>
             </div>
             <p className="text-xs text-tg-hint">БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
             <label className="block text-xs text-tg-hint">
@@ -1164,10 +1218,10 @@ export function DailyLog() {
               <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm" />
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-tg-hint">Ккал<input value={cCal} onChange={(e) => setCCal(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Белки<input value={cP} onChange={(e) => setCP(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Жиры<input value={cF} onChange={(e) => setCF(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Углеводы<input value={cC} onChange={(e) => setCC(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Белки<DecimalInput value={cP} onValueChange={setCP} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Жиры<DecimalInput value={cF} onValueChange={setCF} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Углеводы<DecimalInput value={cC} onValueChange={setCC} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
             </div>
             <button type="button" disabled={saving} onClick={() => void submitCustomProduct()} className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60">
               {saving ? "Сохраняем…" : "Создать и выбрать"}
@@ -1179,9 +1233,7 @@ export function DailyLog() {
       <BarcodeScannerModal
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
-        onDetected={(code) => {
-          void handleBarcodeDetected(code);
-        }}
+        onDetected={handleBarcodeDetected}
       />
     </section>
   );

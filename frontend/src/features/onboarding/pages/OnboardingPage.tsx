@@ -8,9 +8,12 @@ import { useNavigate } from "react-router-dom";
 import { fetchPrograms } from "@/api/programs";
 import { updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
+import { DecimalInput } from "@/components/DecimalInput";
+import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
+import { toUserMessage } from "@/utils/errors";
 import { trackEvent } from "@/lib/analytics";
-import { hapticNotification } from "@/lib/telegram";
+import { getTelegramWebApp, hapticNotification, isTelegramEnvironment } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
@@ -19,6 +22,7 @@ import {
   previewEnergyTargets,
 } from "@/utils/energyTargets";
 import { localDateKey } from "@/utils/loadProgression";
+import { enumLabel } from "@/utils/localization";
 import { isOnline } from "@/utils/network";
 import { cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
 import { recommendPrograms } from "@/utils/programRecommend";
@@ -52,6 +56,7 @@ const EQUIPMENT = [
 const JOINT_LIMITS = [
   { id: "no_knee", label: "Без нагрузки на колени" },
   { id: "no_spine", label: "Без нагрузки на позвоночник" },
+  { id: "shoulder_sensitive", label: "Щадящая нагрузка на плечевые суставы" },
 ] as const;
 
 const DAYS_PER_WEEK = [2, 3, 4, 5, 6] as const;
@@ -90,6 +95,8 @@ export function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const usesNativeMainButton =
+    isTelegramEnvironment() && Boolean(getTelegramWebApp()?.MainButton);
 
   const energyPreview = useMemo(
     () =>
@@ -116,8 +123,16 @@ export function OnboardingPage() {
     if (step === 5) {
       const w = Number(weight);
       const h = Number(height);
-      const hasAge = Number(age) > 0 || Boolean(birthDate);
-      return w > 0 && h > 0 && hasAge && Boolean(sex);
+      const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
+      return (
+        w >= 20 &&
+        w <= 500 &&
+        h >= 80 &&
+        h <= 250 &&
+        resolvedAge >= 10 &&
+        resolvedAge <= 100 &&
+        Boolean(sex)
+      );
     }
     return true;
   }, [
@@ -224,6 +239,7 @@ export function OnboardingPage() {
           goals: goalsToSave,
           anthropometry,
         });
+        await clearQueuedProfileUpdate();
         if (user) {
           setUser({
             ...user,
@@ -235,10 +251,7 @@ export function OnboardingPage() {
           });
         }
       } else {
-        localStorage.setItem(
-          "fitness_onboarding_draft",
-          JSON.stringify({ goals: goalsToSave, anthropometry }),
-        );
+        await enqueueProfileUpdate({ goals: goalsToSave, anthropometry });
         if (user) {
           setUser({ ...user, onboarding_completed: true });
         }
@@ -257,29 +270,33 @@ export function OnboardingPage() {
       hapticNotification("success");
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить анкету");
+      setError(toUserMessage(err, "Не удалось сохранить анкету"));
       setGenerating(false);
     } finally {
       setSaving(false);
     }
   }
 
+  const primaryActionText =
+    step < 6
+      ? "Далее"
+      : generating
+        ? "Подбираем программы…"
+        : "Завершить";
+
+  const runPrimaryAction = () => {
+    if (step < 6) {
+      setStep((s) => s + 1);
+      return;
+    }
+    void finish();
+  };
+
   useMainButton({
-    text:
-      step < 6
-        ? "Далее"
-        : generating
-          ? "Подбираем программы…"
-          : "Завершить",
-    visible: true,
+    text: primaryActionText,
+    visible: usesNativeMainButton,
     enabled: canNext && !saving,
-    onClick: () => {
-      if (step < 6) {
-        setStep((s) => s + 1);
-        return;
-      }
-      void finish();
-    },
+    onClick: runPrimaryAction,
   });
 
   if (generating && step >= 6) {
@@ -289,7 +306,7 @@ export function OnboardingPage() {
         <div className="rounded-2xl bg-tg-secondary p-6 text-center">
           <p className="text-sm font-medium">Подбираем программы под ваш профиль…</p>
           <p className="mt-2 text-xs text-tg-hint">
-            Учтём пол, место ({location}), уровень, инвентарь и {daysPerWeek} дн./нед.
+            Учтём пол, место ({enumLabel(location)}), уровень, инвентарь и {daysPerWeek} дн./нед.
           </p>
         </div>
       </section>
@@ -437,21 +454,21 @@ export function OnboardingPage() {
           </div>
           <label className="block text-xs text-tg-hint">
             Вес, кг
-            <input
-              type="number"
-              inputMode="decimal"
+            <DecimalInput
+              min={20}
+              max={500}
               value={weight}
-              onChange={(e) => setWeight(e.target.value)}
+              onValueChange={setWeight}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
           </label>
           <label className="block text-xs text-tg-hint">
             Рост, см
-            <input
-              type="number"
-              inputMode="numeric"
+            <DecimalInput
+              min={80}
+              max={250}
               value={height}
-              onChange={(e) => setHeight(e.target.value)}
+              onValueChange={setHeight}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
           </label>
@@ -518,10 +535,9 @@ export function OnboardingPage() {
           </label>
           <label className="block text-xs text-tg-hint">
             % к суточному расходу (дефицит / профицит)
-            <input
-              type="number"
+            <DecimalInput
               value={adjPct}
-              onChange={(e) => setAdjPct(e.target.value)}
+              onValueChange={setAdjPct}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
           </label>
@@ -554,7 +570,7 @@ export function OnboardingPage() {
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="text-sm font-medium">Ограничения по суставам</p>
             <p className="mt-1 text-xs text-tg-hint">
-              Можно выбрать несколько. Подберём программы без проблемных нагрузок.
+              Можно выбрать несколько. Подберём программы с более щадящей нагрузкой.
             </p>
             <div className="mt-3 space-y-2">
               {JOINT_LIMITS.map((lim) => {
@@ -574,6 +590,12 @@ export function OnboardingPage() {
                 );
               })}
             </div>
+            {jointLimits.includes("shoulder_sensitive") ? (
+              <p className="mt-3 text-xs leading-5 text-tg-hint">
+                При боли выполняйте только комфортные движения. Программа не заменяет
+                рекомендации врача или физиотерапевта.
+              </p>
+            ) : null}
           </div>
           <label className="block rounded-2xl bg-tg-secondary p-4 text-sm">
             Другие заметки (опционально)
@@ -585,14 +607,6 @@ export function OnboardingPage() {
               placeholder="Например: недавно была травма плеча…"
             />
           </label>
-          <button
-            type="button"
-            disabled={!canNext || saving}
-            onClick={() => void finish()}
-            className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-          >
-            Сохранить и продолжить
-          </button>
         </div>
       ) : null}
 
@@ -604,6 +618,19 @@ export function OnboardingPage() {
         >
           Назад
         </button>
+      ) : null}
+
+      {!usesNativeMainButton ? (
+        <div className="sticky bottom-0 z-10 -mx-4 mt-4 border-t border-black/5 bg-tg-bg/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          <button
+            type="button"
+            disabled={!canNext || saving}
+            onClick={runPrimaryAction}
+            className="tap-target-x w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+          >
+            {primaryActionText}
+          </button>
+        </div>
       ) : null}
     </section>
   );

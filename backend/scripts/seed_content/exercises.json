@@ -322,11 +322,32 @@
   {
     "name_ru": "Ягодичный мост",
     "muscle_group": "ноги",
-    "equipment": "штанга",
-    "description": "Ягодичный мост. Цель: glutes. Оборудование: barbell. © Gym Visual — https://gymvisual.com/",
-    "technique": "1. Начните с того, что лягте на спину на землю, согните колени и поставьте ступни на пол.\n2. Положите штангу на бедра, крепко удерживая ее обеими руками.\n3. Задействуйте ягодицы и мышцы корпуса, затем поднимите бедра от земли, пока ваше тело не образует прямую линию от колен до плеч.\n4. Задержитесь на мгновение в верхней точке, напрягая ягодицы.\n5. Медленно опустите бедра обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "equipment": "свой вес",
+    "description": "Ягодичный мост без отягощения. Цель: ягодичные. Оборудование: body weight. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину, согните колени и поставьте стопы на пол.\n2. Напрягите корпус и ягодицы.\n3. Поднимите таз до прямой линии от колен до плеч.\n4. Задержитесь вверху и медленно опуститесь.\n5. Не переразгибайте поясницу.",
     "common_mistakes": null,
-    "difficulty": 2,
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3013-u0cNiij.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3013",
+      "© Gym Visual",
+      "curated",
+      "load:reps_only"
+    ]
+  },
+  {
+    "name_ru": "Ягодичный мост со штангой",
+    "muscle_group": "ноги",
+    "equipment": "штанга",
+    "description": "Ягодичный мост со штангой. Цель: ягодичные. Оборудование: barbell. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Лягте на спину и поставьте стопы устойчиво.\n2. Разместите штангу на сгибе таза через мягкую накладку.\n3. Поднимите таз усилием ягодиц до прямой линии от колен до плеч.\n4. Задержитесь вверху и опуститесь подконтрольно.\n5. Не переразгибайте поясницу.",
+    "common_mistakes": null,
+    "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
     "thumbnail_url": null,
@@ -336,27 +357,9 @@
       "gymvisual",
       "ds:1409",
       "© Gym Visual",
-      "curated"
-    ]
-  },
-  {
-    "name_ru": "Ягодичный мост со штангой",
-    "muscle_group": "кор",
-    "equipment": "машина смита",
-    "description": "Ягодичный мост со штангой. Цель: abs. Оборудование: smith machine. © Gym Visual — https://gymvisual.com/",
-    "technique": "1. Встаньте на тренажер Смита, прислонившись спиной к подушке и поставив ноги на ширине плеч.\n2. Положите руки на штангу на расстоянии чуть шире ширины плеч.\n3. Задействуйте корпус и ягодицы, затем подтолкните пятки, чтобы поднять бедра от земли.\n4. Продолжайте подниматься до тех пор, пока ваше тело не образует прямую линию от колен до плеч.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите бедра обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
-    "common_mistakes": null,
-    "difficulty": 3,
-    "video_url": null,
-    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "gymvisual",
-      "ds:0756",
-      "© Gym Visual",
-      "curated"
+      "curated",
+      "barbell",
+      "ноги"
     ]
   },
   {
@@ -690,8 +693,8 @@
     "name_ru": "Тяга штанги в наклоне",
     "muscle_group": "спина",
     "equipment": "штанга",
-    "description": "Тяга штанги в наклоне. Цель: upper back. Оборудование: barbell. © Gym Visual — https://gymvisual.com/",
-    "technique": "1. Встаньте, ноги на ширине плеч и слегка согнуты в коленях.\n2. Наклонитесь вперед в бедрах, сохраняя спину прямой и грудь вверх.\n3. Возьмите штангу хватом сверху, руки на расстоянии чуть шире плеч.\n4. Потяните штангу к нижней части груди, сводя лопатки и напрягая мышцы спины.\n5. Задержитесь на мгновение в верхней точке, затем медленно опустите штангу обратно в исходное положение.\n6. Повторите необходимое количество повторений.",
+    "description": "Базовая тяга штанги в наклоне для толщины спины.",
+    "technique": "1. Наклонитесь вперёд с почти прямой спиной, штанга в руках.\n2. Тяните гриф к низу живота/поясу.\n3. Сводите лопатки вверху движения.\n4. Опустите штангу контролируемо.\n5. Не округляйте поясницу.",
     "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
@@ -700,10 +703,11 @@
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
-      "gymvisual",
-      "ds:0027",
-      "© Gym Visual",
-      "curated"
+      "curated",
+      "manual_add",
+      "replacement",
+      "barbell",
+      "спина"
     ]
   },
   {
@@ -2103,27 +2107,6 @@
     ]
   },
   {
-    "name_ru": "Тяга нижнего блока к поясу",
-    "muscle_group": "спина",
-    "equipment": "блок/кроссовер",
-    "description": "Горизонтальная тяга блока к поясу — базовая тяга для спины.",
-    "technique": "1. Сядьте в тренажёр горизонтальной тяги, стопы на платформе.\n2. Возьмите рукоять, спина прямая, грудь вперёд.\n3. Тяните рукоять к поясу, сводя лопатки.\n4. Плавно верните вес, не округляя поясницу.\n5. Не используйте инерцию корпуса.",
-    "common_mistakes": null,
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": "/exercise-gifs/0861-fUBheHs.gif",
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "curated",
-      "manual_add",
-      "replacement",
-      "cable",
-      "спина"
-    ]
-  },
-  {
     "name_ru": "Тяга верхнего блока обратным хватом",
     "muscle_group": "спина",
     "equipment": "блок/кроссовер",
@@ -2145,26 +2128,6 @@
     ]
   },
   {
-    "name_ru": "Разводка гантелей лёжа",
-    "muscle_group": "грудь",
-    "equipment": "гантели",
-    "description": "Изоляция груди, хорошая замена жимовым движениям в пампе.",
-    "technique": "1. Лягте на скамью, гантели над грудью, небольшой сгиб в локтях.\n2. Разведите руки в стороны по широкой дуге до растяжения груди.\n3. Сведите гантели обратно над грудью по той же дуге.\n4. Не выпрямляйте локти полностью.\n5. Контролируйте негативную фазу.",
-    "common_mistakes": null,
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "curated",
-      "manual_add",
-      "replacement",
-      "грудь"
-    ]
-  },
-  {
     "name_ru": "Кроссовер на верхних блоках",
     "muscle_group": "грудь",
     "equipment": "блок/кроссовер",
@@ -2173,7 +2136,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0158-7saC5zz.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -2186,26 +2149,6 @@
     ]
   },
   {
-    "name_ru": "Жим гантелей на наклонной скамье",
-    "muscle_group": "грудь",
-    "equipment": "гантели",
-    "description": "Наклонный жим гантелей — акцент на верх груди.",
-    "technique": "1. Установите скамью под 30–45°.\n2. Жмите гантели вверх над верхней частью груди.\n3. Опускайте до комфортного растяжения, локти ~45° к корпусу.\n4. Выжмите вверх, не ударяя гантели друг о друга.\n5. Стопы устойчиво на полу.",
-    "common_mistakes": null,
-    "difficulty": 2,
-    "video_url": null,
-    "animation_url": null,
-    "thumbnail_url": null,
-    "media_duration_sec": null,
-    "media_source": "none",
-    "tags": [
-      "curated",
-      "manual_add",
-      "replacement",
-      "грудь"
-    ]
-  },
-  {
     "name_ru": "Махи гантелями в стороны",
     "muscle_group": "плечи",
     "equipment": "гантели",
@@ -2214,7 +2157,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -2234,7 +2177,7 @@
     "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0674-YAk5dIw.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -2267,24 +2210,356 @@
     ]
   },
   {
-    "name_ru": "Жим штанги узким хватом",
-    "muscle_group": "трицепс",
-    "equipment": "штанга",
-    "description": "Узкий жим штанги — сила трицепса и жимовой паттерн.",
-    "technique": "1. Лягте на скамью, хват уже плеч (но комфортный для запястий).\n2. Опустите гриф к нижней части груди, локти вдоль корпуса.\n3. Выжмите штангу вверх, полностью разгибая локти без хлопка.\n4. Не разводите локти широко.\n5. Контролируйте опускание.",
-    "common_mistakes": null,
+    "name_ru": "Приседания в машине Смита",
+    "muscle_group": "ноги",
+    "equipment": "машина Смита",
+    "description": "Приседания в машине Смита. Цель: ягодичные и квадрицепсы. Оборудование: smith machine. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Установите гриф на уровне плеч.\n2. Встаньте под гриф и расположите его на верхней части спины.\n3. Поставьте стопы устойчиво, носки слегка наружу.\n4. Напрягите корпус и опускайтесь, сгибая колени и таз.\n5. Сохраняйте колени по направлению носков.\n6. Оттолкнитесь всей стопой и вернитесь в исходное положение.",
+    "common_mistakes": "Слишком близкая постановка стоп к линии грифа; сведение коленей; отрыв пяток; расслабленный корпус.",
     "difficulty": 3,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0030-J6Dx1Mu.gif",
+    "animation_url": "/exercise-gifs/3281-NNoHCEA.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
+      "gymvisual",
+      "ds:3281",
+      "© Gym Visual",
       "curated",
-      "manual_add",
       "replacement",
-      "barbell",
-      "трицепс"
+      "smith"
+    ]
+  },
+  {
+    "name_ru": "Гакк-приседания",
+    "muscle_group": "ноги",
+    "equipment": "гакк-тренажёр",
+    "description": "Гакк-приседания. Цель: ягодичные и квадрицепсы. Оборудование: sled machine. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте платформу и ограничители под свой рост.\n2. Прижмите спину и таз к опоре, стопы поставьте устойчиво.\n3. Снимите тренажёр с фиксаторов.\n4. Опускайтесь до комфортной глубины, не отрывая пятки.\n5. Колени направляйте по линии носков.\n6. Выжмите платформу вверх без жёсткого замыкания коленей.",
+    "common_mistakes": "Отрыв таза или пяток; сведение коленей; слишком глубокий присед ценой подкручивания таза; полное замыкание коленей.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0743-Qa55kX1.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0743",
+      "© Gym Visual",
+      "curated",
+      "replacement",
+      "machine"
+    ]
+  },
+  {
+    "name_ru": "Болгарские приседания в машине Смита",
+    "muscle_group": "ноги",
+    "equipment": "машина Смита",
+    "description": "Болгарские приседания в машине Смита. Цель: квадрицепсы и ягодичные. Оборудование: smith machine. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Расположите гриф на верхней части спины.\n2. Одну стопу поставьте впереди, вторую — на скамью позади.\n3. Опускайтесь вертикально, сохраняя устойчивый корпус.\n4. Переднее колено направляйте по линии носка.\n5. Оттолкнитесь пяткой передней ноги.\n6. Выполните подход и поменяйте сторону.",
+    "common_mistakes": "Слишком узкая стойка; перенос всей нагрузки на заднюю ногу; завал колена внутрь; отрыв пятки передней стопы.",
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0768-wWFspEi.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0768",
+      "© Gym Visual",
+      "curated",
+      "replacement",
+      "smith",
+      "unilateral"
+    ]
+  },
+  {
+    "name_ru": "Жим лёжа в машине Смита",
+    "muscle_group": "грудь",
+    "equipment": "машина Смита",
+    "description": "Жим лёжа в машине Смита. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте скамью так, чтобы гриф опускался к середине груди.\n2. Сведите лопатки, стопы плотно прижмите к полу.\n3. Снимите гриф с фиксаторов и опускайте подконтрольно.\n4. Выжмите гриф вверх без жёсткого замыкания локтей.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0748-trqKQv2.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0748",
+      "curated",
+      "replacement",
+      "smith",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим на наклонной в тренажёре",
+    "muscle_group": "грудь",
+    "equipment": "тренажёр",
+    "description": "Жим на наклонной в тренажёре. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте сиденье: рукояти должны быть у верхней части груди.\n2. Прижмите спину к опоре и сведите лопатки.\n3. Выжмите рукояти вперёд-вверх.\n4. Медленно вернитесь до комфортного растяжения.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1299-jHAnWmT.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1299",
+      "curated",
+      "replacement",
+      "machine",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Сведение рук в тренажёре «бабочка»",
+    "muscle_group": "грудь",
+    "equipment": "тренажёр",
+    "description": "Сведение рук в тренажёре «бабочка». © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте сиденье, чтобы локти были примерно на уровне груди.\n2. Прижмите спину, держите локти мягкими.\n3. Сведите рукояти перед собой.\n4. Вернитесь без рывка, сохраняя натяжение груди.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0596-v3xmPAR.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0596",
+      "curated",
+      "replacement",
+      "machine",
+      "грудь"
+    ]
+  },
+  {
+    "name_ru": "Жим вверх в тренажёре сидя",
+    "muscle_group": "плечи",
+    "equipment": "тренажёр",
+    "description": "Жим вверх в тренажёре сидя. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте сиденье: рукояти начинаются около уровня плеч.\n2. Прижмите спину и напрягите корпус.\n3. Выжмите рукояти вверх.\n4. Опускайте до комфортной глубины без рывка.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0603-67n3r98.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0603",
+      "curated",
+      "replacement",
+      "machine",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Отведение руки в сторону на блоке",
+    "muscle_group": "плечи",
+    "equipment": "блок/кроссовер",
+    "description": "Отведение руки в сторону на блоке. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Встаньте боком к нижнему блоку и возьмите рукоять дальней рукой.\n2. Слегка согните локоть.\n3. Поднимите руку в сторону до уровня плеч.\n4. Медленно опустите, не раскачивая корпус.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0178-goJ6ezq.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0178",
+      "curated",
+      "replacement",
+      "cable",
+      "плечи"
+    ]
+  },
+  {
+    "name_ru": "Тяга с упором грудью в тренажёре",
+    "muscle_group": "спина",
+    "equipment": "тренажёр",
+    "description": "Тяга с упором грудью в тренажёре. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Настройте сиденье и упритесь грудью в подушку.\n2. Начните с вытянутых рук и опущенных плеч.\n3. Тяните рукояти к корпусу, сводя лопатки.\n4. Верните вес без отрыва груди.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1350-7I6LNUG.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1350",
+      "curated",
+      "replacement",
+      "machine",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Тяга верхнего блока нейтральным хватом",
+    "muscle_group": "спина",
+    "equipment": "блок/кроссовер",
+    "description": "Тяга верхнего блока нейтральным хватом. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Возьмите параллельные рукояти, зафиксируйте бёдра.\n2. Слегка отклоните корпус назад.\n3. Тяните рукоять к верхней части груди.\n4. Полностью и подконтрольно выпрямите руки.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0818-rkg41Fb.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0818",
+      "curated",
+      "replacement",
+      "cable",
+      "спина"
+    ]
+  },
+  {
+    "name_ru": "Сгибания ног сидя",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Сгибания ног сидя. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Совместите колени с осью тренажёра и зафиксируйте бёдра валиком.\n2. Согните ноги, направляя пятки вниз-назад.\n3. Сделайте короткую паузу.\n4. Медленно верните вес, не бросая стек.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0599-Zg3XY7P.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0599",
+      "curated",
+      "replacement",
+      "machine",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Ягодичный мост в машине Смита",
+    "muscle_group": "ноги",
+    "equipment": "машина Смита",
+    "description": "Ягодичный мост в машине Смита. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Упритесь верхом спины в скамью, гриф расположите на сгибе таза через накладку.\n2. Поставьте стопы устойчиво.\n3. Поднимите таз до прямой линии плечи–таз–колени.\n4. Сожмите ягодицы и опуститесь подконтрольно.",
+    "common_mistakes": null,
+    "difficulty": 3,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0756",
+      "curated",
+      "replacement",
+      "smith",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки стоя в тренажёре",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Подъёмы на носки стоя в тренажёре. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Установите плечи под упоры, носки поставьте на край платформы.\n2. Опустите пятки до комфортного растяжения.\n3. Поднимитесь максимально высоко на носки.\n4. Не пружиньте в нижней точке.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0605-ykUOVze.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0605",
+      "curated",
+      "replacement",
+      "machine",
+      "ноги"
+    ]
+  },
+  {
+    "name_ru": "Сгибания гантелей на бицепс на наклонной скамье",
+    "muscle_group": "бицепс",
+    "equipment": "гантели",
+    "description": "Сгибания гантелей на бицепс на наклонной скамье. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Сядьте на наклонную скамью, руки свободно опустите.\n2. Не выводя локти вперёд, согните руки.\n3. Сожмите бицепс вверху.\n4. Медленно опустите гантели до полного растяжения.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0315-F3xgbjF.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0315",
+      "curated",
+      "replacement",
+      "dumbbells",
+      "бицепс"
+    ]
+  },
+  {
+    "name_ru": "Скручивания на верхнем блоке",
+    "muscle_group": "кор",
+    "equipment": "блок/кроссовер",
+    "description": "Скручивания на верхнем блоке. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Встаньте на колени спиной или лицом к верхнему блоку, канат держите у головы.\n2. Зафиксируйте таз.\n3. Скрутите грудную клетку к тазу усилием пресса.\n4. Вернитесь, не разгибая поясницу чрезмерно.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0175-WW95auq.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0175",
+      "curated",
+      "replacement",
+      "cable",
+      "кор"
+    ]
+  },
+  {
+    "name_ru": "Жим Паллофа с резинкой",
+    "muscle_group": "кор",
+    "equipment": "резинка",
+    "description": "Жим Паллофа с резинкой. © Gym Visual — https://gymvisual.com/",
+    "technique": "1. Встаньте боком к закреплённой резинке и держите её у груди.\n2. Напрягите корпус и выжмите руки перед собой.\n3. Не позволяйте корпусу поворачиваться.\n4. Верните руки и выполните на другую сторону.",
+    "common_mistakes": null,
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0979-9pa4H5m.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0979",
+      "curated",
+      "replacement",
+      "bands",
+      "кор"
     ]
   }
 ]

@@ -60,6 +60,22 @@ export function addWater(ml: number, date = localDateKey(new Date())): HabitDay 
   return saveHabitDay({ ...cur, waterMl: Math.max(0, cur.waterMl + ml) });
 }
 
+export function clearWaterHistory(): void {
+  const store = readStore();
+  for (const [date, day] of Object.entries(store)) {
+    store[date] = { ...day, waterMl: 0 };
+  }
+  writeStore(store);
+}
+
+export function clearMeasurementHistory(): void {
+  const store = readStore();
+  for (const [date, day] of Object.entries(store)) {
+    store[date] = { ...day, weightKg: null };
+  }
+  writeStore(store);
+}
+
 export function habitStreak(today = new Date()): number {
   const s = readStore();
   let streak = 0;

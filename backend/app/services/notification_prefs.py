@@ -331,6 +331,20 @@ def due_notifications(
                             "startapp": "supplements",
                             "state_key": "supplement_mark",
                             "state_value": mark,
+                            "meta": {
+                                "supplement_entry_id": sid,
+                                "supplement_key": str(sup.get("key") or sid),
+                                "name_ru": name,
+                                "dose": dose,
+                                "slot": slot_s,
+                                "days_mode": days_mode,
+                                "scheduled_at": now.replace(
+                                    hour=target.hour,
+                                    minute=target.minute,
+                                    second=0,
+                                    microsecond=0,
+                                ).isoformat(),
+                            },
                         }
                     )
 

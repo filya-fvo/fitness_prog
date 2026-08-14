@@ -22,8 +22,15 @@ export type WorkoutSet = {
   set_number: number;
   reps: number | null;
   weight: number | null;
+  weight_mode?: "total" | "per_hand" | null;
   is_completed: boolean;
   rest_time_sec: number | null;
+  duration_sec?: number | null;
+  note?: string | null;
+  machine_params?: Record<string, string | number> | null;
+  /** Local-only values retained while an exercise is temporarily replaced. */
+  replacement_original_weight?: number | null;
+  replacement_original_machine_params?: Record<string, string | number> | null;
 };
 
 export type WorkoutPlanExercise = {
@@ -47,6 +54,9 @@ export type WorkoutPlan = {
   week_in_cycle?: number | null;
   week_label?: string | null;
   week_rir?: string | null;
+  location?: string | null;
+  equipment?: string[];
+  limitations?: string[];
   exercises: WorkoutPlanExercise[];
 };
 
@@ -72,6 +82,7 @@ export type LocalSetDraft = {
   setNumber: number;
   reps: string;
   weight: string;
+  weightMode?: "total" | "per_hand" | null;
   isCompleted: boolean;
   restTimeSec: number;
   /** Duration seconds for timed / cardio sets (optional). */
@@ -79,6 +90,9 @@ export type LocalSetDraft = {
   note?: string | null;
   /** Free-form machine params: speed, incline, resistance… */
   machineParams?: Record<string, string | number> | null;
+  /** Values preserved only so a bulk replacement can be fully reverted. */
+  replacementOriginalWeight?: string;
+  replacementOriginalMachineParams?: Record<string, string | number> | null;
 };
 
 export type Program = {

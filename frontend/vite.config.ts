@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       includeAssets: ["favicon.svg"],
       manifest: {
         name: "Fitness Mini App",
@@ -17,31 +20,8 @@ export default defineConfig({
         display: "standalone",
         start_url: "/",
       },
-      workbox: {
-        navigateFallback: "/index.html",
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          {
-            // Never cache API — Dexie/sync queue owns offline data
-            urlPattern: ({ url }) =>
-              [
-                "/auth",
-                "/exercises",
-                "/programs",
-                "/workouts",
-                "/users",
-                "/health",
-                "/nutrition",
-                "/ai",
-                "/notifications",
-                "/supplements",
-                "/feedback",
-                "/telegram",
-                "/admin",
-              ].some((p) => url.pathname.startsWith(p)),
-            handler: "NetworkOnly",
-          },
-        ],
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,gif,woff2}"],
       },
       devOptions: {
         enabled: false,
@@ -57,7 +37,7 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: true,
-    // Single public host (ngrok free): browser XHR → API, document navigation → SPA.
+    // Single public host (Tailscale Funnel): browser XHR → API, navigation → SPA.
     // Critical: /programs and /workouts exist both as React routes and API paths.
     proxy: (() => {
       const target = "http://127.0.0.1:8001";
@@ -97,5 +77,22 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("@zxing")) return "vendor-zxing";
+          if (id.includes("dexie")) return "vendor-storage";
+          if (
+            id.includes("react-dom") ||
+            id.includes("react-router") ||
+            /node_modules[\\/](react|scheduler)[\\/]/.test(id)
+          ) {
+            return "vendor-react";
+          }
+          return undefined;
+        },
+      },
+    },
   },
 });

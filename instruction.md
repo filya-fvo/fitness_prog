@@ -1,5 +1,9 @@
 # Финальная инструкция для ИИ-агента (Production-Ready)
 
+> Пользовательский сценарий отметки добавок и эксплуатационная настройка Telegram/Web Push описаны в `docs/USER_GUIDE.md` и `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md`. При изменении этой подсистемы обе инструкции нужно обновлять вместе с кодом.
+
+> Настройки активной тренировки включают серверный таймер отдыха, опциональный автопереход и режим веса гантелей. Их пользовательское поведение описано в разделе «Активная тренировка» файла `docs/USER_GUIDE.md`.
+
 ## Критические правила (не нарушать)
 
 ### Никаких галлюцинаций
@@ -85,7 +89,7 @@ app/
 ├── ai/
 │   ├── prompts.py          # Системные промпты для LLM
 │   ├── rag.py              # Векторизация + pgvector поиск
-│   └── rate_limiter.py     # Redis Token Bucket (15 запросов/сутки)
+│   └── rate_limiter.py     # Redis Token Bucket (10 запросов/сутки по умолчанию)
 └── utils/                  # Вспомогательные функции
 ```
 
@@ -151,7 +155,7 @@ app/
 | POST | `/ai/chat` | Сообщение в чат (возвращает ответ LLM + RAG контекст) |
 | POST | `/ai/analyze` | Анализ прогресса за 14 дней (текстовый отчёт) |
 
-**Rate Limiting:** `/ai/*` — 15 запросов/сутки на `user_id` (Redis Token Bucket)
+**Rate Limiting:** AI-запросы — 10 запросов/сутки на `user_id` (`AI_DAILY_LIMIT`, Redis Token Bucket)
 
 ---
 
@@ -271,7 +275,7 @@ app/
 - `app/ai/rag.py` — векторизация запроса, поиск в pgvector (топ-3)
 - `app/ai/prompts.py` — системный промпт AI-тренера (из ТЗ)
 - `app/routers/ai.py` — `POST /ai/chat`, `POST /ai/analyze`
-- `app/ai/rate_limiter.py` — Redis Token Bucket (15 запросов/сутки)
+- `app/ai/rate_limiter.py` — Redis Token Bucket (`AI_DAILY_LIMIT`, по умолчанию 10 запросов/сутки)
 - Кэширование ответов LLM по хэшу запроса (24 часа)
 
 **Frontend:**

@@ -4,7 +4,16 @@ from datetime import date
 from decimal import Decimal
 from uuid import uuid4
 
-from app.schemas.workout import WorkoutCompleteRequest, WorkoutCreate, WorkoutSetCreate
+import pytest
+from pydantic import ValidationError
+
+from app.schemas.workout import (
+    WorkoutCompleteRequest,
+    WorkoutCreate,
+    WorkoutPlan,
+    WorkoutSetCreate,
+    WorkoutUpdateRequest,
+)
 
 
 def test_workout_create_defaults() -> None:
@@ -13,6 +22,35 @@ def test_workout_create_defaults() -> None:
     assert body.exercise_ids == []
     assert body.sets_per_exercise == 3
     assert body.plan is None
+    assert body.client_workout_id is None
+
+
+def test_workout_create_accepts_client_idempotency_key() -> None:
+    client_id = uuid4()
+    body = WorkoutCreate(scheduled_date=date(2026, 8, 13), client_workout_id=client_id)
+    assert body.client_workout_id == client_id
+
+
+def test_workout_plan_keeps_replacement_context() -> None:
+    original_id = uuid4()
+    plan = WorkoutPlan(
+        location="home",
+        equipment=["bodyweight", "dumbbells"],
+        limitations=["no_knee"],
+        exercises=[
+            {
+                "exercise_id": uuid4(),
+                "original_exercise_id": original_id,
+                "order": 1,
+                "suggested_weight": Decimal("12.5"),
+            }
+        ],
+    )
+    assert plan.location == "home"
+    assert plan.equipment == ["bodyweight", "dumbbells"]
+    assert plan.limitations == ["no_knee"]
+    assert plan.exercises[0].original_exercise_id == original_id
+    assert plan.exercises[0].suggested_weight == Decimal("12.5")
 
 
 def test_workout_set_create_validation() -> None:
@@ -21,13 +59,36 @@ def test_workout_set_create_validation() -> None:
         set_number=1,
         reps=10,
         weight=Decimal("40.5"),
+        weight_mode="per_hand",
         rest_time_sec=60,
+        duration_sec=90,
+        note="Темп 3-1-1",
+        machine_params={"speed_kmh": 8.5, "incline_pct": 2},
         is_completed=True,
     )
     assert body.reps == 10
+    assert body.duration_sec == 90
+    assert body.weight_mode == "per_hand"
+    assert body.note == "Темп 3-1-1"
+    assert body.machine_params == {"speed_kmh": 8.5, "incline_pct": 2}
     assert body.is_completed is True
 
 
 def test_complete_request_rpe_bounds() -> None:
     body = WorkoutCompleteRequest(rpe=8, ai_notes="Хорошая сессия")
     assert body.rpe == 8
+
+
+def test_completed_workout_summary_can_be_edited() -> None:
+    body = WorkoutUpdateRequest(rpe=6, ai_notes="Исправленная заметка")
+    assert body.rpe == 6
+    assert body.ai_notes == "Исправленная заметка"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("weight", Decimal("10000.01")), ("reps", 100_001), ("rest_time_sec", 3601)],
+)
+def test_workout_set_rejects_values_outside_database_bounds(field: str, value: object) -> None:
+    with pytest.raises(ValidationError):
+        WorkoutSetCreate(exercise_id=uuid4(), set_number=1, **{field: value})

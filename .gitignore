@@ -16,6 +16,8 @@ build/
 .env.*.local
 !**/.env.example
 !**/.env.production.example
+/backend/private_key.pem
+/backend/public_key.pem
 
 # IDE / OS
 .idea/
@@ -52,6 +54,7 @@ frontend/dist/
 scripts/tunnel-urls.local.env
 scripts/ngrok-urls.local.env
 scripts/public-url.local.env
+scripts/tailscale-url.local.env
 scripts/ngrok.yml
 scripts/ngrok.yml.local
 ngrok.txt

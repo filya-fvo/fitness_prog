@@ -60,6 +60,10 @@ type Props = {
   >;
   compact?: boolean;
   preferVideo?: boolean;
+  /** Render only the GIF/image area, without technique text and video controls. */
+  mediaOnly?: boolean;
+  /** Short media preview for the compact active-workout layout. */
+  preview?: boolean;
 };
 
 function hasGymVisualCredit(exercise: Props["exercise"]): boolean {
@@ -75,6 +79,8 @@ export function ExerciseMediaPlayer({
   exercise,
   compact = false,
   preferVideo = false,
+  mediaOnly = false,
+  preview = false,
 }: Props) {
   const mediaUrl = useMemo(
     () => resolveLocalMedia(exercise.animation_url),
@@ -86,7 +92,7 @@ export function ExerciseMediaPlayer({
 
   const ytId = useMemo(() => extractYouTubeId(exercise.video_url), [exercise.video_url]);
   const hasVideo = Boolean(exercise.video_url) && !videoFailed;
-  const heightClass = compact ? "h-40" : "h-52";
+  const heightClass = preview ? "h-24" : compact ? "h-40" : "h-52";
   const showGymVisual = hasGymVisualCredit(exercise);
 
   const techniqueText =
@@ -147,33 +153,35 @@ export function ExerciseMediaPlayer({
               <div
                 className={`flex items-center justify-center bg-tg-secondary text-xs text-tg-hint ${heightClass}`}
               >
-                Медиа пока не добавлено (GIF/картинка)
+                Анимация или изображение пока не добавлены
               </div>
             )
           ) : null}
-          <div className={`space-y-1 p-3 ${compact ? "text-xs" : "text-sm"}`}>
-            <p className="font-medium text-tg-text">Как выполнять</p>
-            <p className="whitespace-pre-wrap text-tg-hint">{techniqueText}</p>
-            {exercise.common_mistakes ? (
-              <p className="text-tg-hint">
-                <span className="font-medium text-tg-text">Частые ошибки: </span>
-                {exercise.common_mistakes}
-              </p>
-            ) : null}
-            {showGymVisual ? (
-              <p className="text-[11px] text-tg-hint">
-                Анимация: ©{" "}
-                <a
-                  href="https://gymvisual.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  Gym Visual
-                </a>
-              </p>
-            ) : null}
-          </div>
+          {!mediaOnly ? (
+            <div className={`space-y-1 p-3 ${compact ? "text-xs" : "text-sm"}`}>
+              <p className="font-medium text-tg-text">Как выполнять</p>
+              <p className="whitespace-pre-wrap text-tg-hint">{techniqueText}</p>
+              {exercise.common_mistakes ? (
+                <p className="text-tg-hint">
+                  <span className="font-medium text-tg-text">Частые ошибки: </span>
+                  {exercise.common_mistakes}
+                </p>
+              ) : null}
+              {showGymVisual ? (
+                <p className="text-[11px] text-tg-hint">
+                  Анимация: ©{" "}
+                  <a
+                    href="https://gymvisual.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    Gym Visual
+                  </a>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -221,21 +229,23 @@ export function ExerciseMediaPlayer({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {hasVideo ? (
-          <button
-            type="button"
-            onClick={() => setShowVideo((v) => !v)}
-            className="rounded-full bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text"
-          >
-            {showVideo ? "К медиа и описанию" : "Видео инструкция"}
-          </button>
-        ) : (
-          <span className="rounded-full bg-tg-secondary px-3 py-1.5 text-xs text-tg-hint">
-            Видео пока нет
-          </span>
-        )}
-      </div>
+      {!mediaOnly ? (
+        <div className="flex flex-wrap gap-2">
+          {hasVideo ? (
+            <button
+              type="button"
+              onClick={() => setShowVideo((v) => !v)}
+              className="rounded-full bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text"
+            >
+              {showVideo ? "К медиа и описанию" : "Видео инструкция"}
+            </button>
+          ) : (
+            <span className="rounded-full bg-tg-secondary px-3 py-1.5 text-xs text-tg-hint">
+              Видео пока нет
+            </span>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

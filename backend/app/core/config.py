@@ -21,13 +21,13 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fitness"
     bot_token: str = "replace_with_telegram_bot_token"
     bot_username: str = ""  # e.g. fil_fit_bot — for Mini App deep links
-    # Public HTTPS Mini App front (ngrok / prod). Used for Menu Button Open + /start web_app.
+    # Public HTTPS Mini App front (Tailscale Funnel or production host).
     mini_app_url: str = ""
-    # Optional secret for Telegram webhook header X-Telegram-Bot-Api-Secret-Token
+    # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
     telegram_webhook_secret: str = ""
     # Comma-separated Telegram usernames (without @) allowed to use admin CRUD / feedback target.
     # Example: Filatov_Slava
-    admin_telegram_usernames: str = "Filatov_Slava"
+    admin_telegram_usernames: str = ""
     # Optional comma-separated Telegram numeric IDs (more stable than username).
     # Required for reliable feedback delivery if admin never opened the Mini App.
     admin_telegram_ids: str = ""
@@ -39,10 +39,25 @@ class Settings(BaseSettings):
     r2_secret_key: str = ""
     r2_bucket: str = ""
     r2_endpoint: str = ""
+    # Standards-based Web Push (VAPID). Private key stays backend-only.
+    web_push_vapid_public_key: str = ""
+    web_push_vapid_private_key: str = ""
+    web_push_vapid_subject: str = "mailto:admin@example.com"
+    # AI provider switch. Groq uses an OpenAI-compatible Chat Completions API.
+    ai_provider: str = "groq"
     llm_api_key: str = ""
-    llm_base_url: str = ""
-    # OpenAI-compatible model id (Groq: llama-3.1-8b-instant, OpenAI: gpt-4o-mini, …)
-    llm_model: str = "gpt-4o-mini"
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "qwen/qwen3.6-27b"
+    # Comma-separated Groq cascade, tried only when a preceding model is rate-limited/unavailable.
+    llm_fallback_models: str = (
+        "openai/gpt-oss-120b,llama-3.3-70b-versatile,"
+        "openai/gpt-oss-20b,llama-3.1-8b-instant"
+    )
+    # Optional OpenAI Platform fallback (separate billing from ChatGPT).
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-5-nano"
+    ai_daily_limit: int = 10
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
     sentry_dsn: str = ""
@@ -66,6 +81,7 @@ class Settings(BaseSettings):
     email_otp_length: int = 6
     email_otp_max_attempts: int = 5
     email_otp_resend_seconds: int = 60
+    email_otp_ip_hourly_limit: int = 20
     # Dev helper: include plaintext code in API response when SMTP is not configured.
     email_otp_dev_return_code: bool = True
 

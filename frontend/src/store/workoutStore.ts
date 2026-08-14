@@ -10,6 +10,7 @@ type WorkoutState = {
   drafts: LocalSetDraft[];
   currentExerciseIndex: number;
   restSecondsLeft: number;
+  restEndsAtMs: number | null;
   isResting: boolean;
   setCatalog: (items: Exercise[]) => void;
   setActiveWorkout: (workout: Workout | null) => void;
@@ -32,7 +33,7 @@ type WorkoutState = {
   startRest: (seconds: number) => void;
   /** Add/subtract seconds while timer is running (clamped). */
   adjustRest: (deltaSeconds: number) => void;
-  tickRest: () => void;
+  syncRest: () => void;
   stopRest: () => void;
   /** Set rest duration for all incomplete sets of an exercise. */
   setExerciseRest: (exerciseId: string, restTimeSec: number) => void;
@@ -41,10 +42,37 @@ type WorkoutState = {
    * Preserves set data. Tracks original_exercise_id for restore.
    */
   replaceExercise: (fromExerciseId: string, toExercise: Exercise) => boolean;
+  /** Atomically replace several incomplete exercises and keep originals for restore. */
+  replaceExercises: (
+    replacements: Array<{ fromExerciseId: string; toExercise: Exercise }>,
+  ) => number;
   /** Restore all session replacements back to original program exercises. */
   restoreDefaultExercises: (catalog?: Exercise[]) => boolean;
   resetSession: () => void;
 };
+
+const REST_TIMER_KEY = "fitness_rest_timer_v1";
+
+function saveRestEnd(endsAtMs: number | null): void {
+  try {
+    if (endsAtMs) localStorage.setItem(REST_TIMER_KEY, String(endsAtMs));
+    else localStorage.removeItem(REST_TIMER_KEY);
+  } catch {
+    // Storage may be unavailable in a private WebView; in-memory timer still works.
+  }
+}
+
+function restoredRest(): { isResting: boolean; restSecondsLeft: number; restEndsAtMs: number | null } {
+  try {
+    const endsAtMs = Number(localStorage.getItem(REST_TIMER_KEY));
+    const seconds = Math.max(0, Math.ceil((endsAtMs - Date.now()) / 1000));
+    if (endsAtMs > 0 && seconds > 0) return { isResting: true, restSecondsLeft: seconds, restEndsAtMs: endsAtMs };
+    saveRestEnd(null);
+  } catch {
+    // Fall through to an inactive timer.
+  }
+  return { isResting: false, restSecondsLeft: 0, restEndsAtMs: null };
+}
 
 function clampIndex(index: number, maxExclusive: number): number {
   if (maxExclusive <= 0) return 0;
@@ -92,8 +120,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   serverWorkoutId: null,
   drafts: [],
   currentExerciseIndex: 0,
-  restSecondsLeft: 0,
-  isResting: false,
+  ...restoredRest(),
   setCatalog: (catalog) => set({ catalog }),
   setActiveWorkout: (activeWorkout) => set({ activeWorkout }),
   setDrafts: (drafts) => set({ drafts }),
@@ -129,8 +156,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         currentExerciseIndex ?? 0,
         sessionExerciseIds(workout, drafts).length,
       ),
-      isResting: false,
-      restSecondsLeft: 0,
+      ...restoredRest(),
     }),
   updateDraft: (exerciseId, setNumber, patch) =>
     set({
@@ -147,6 +173,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       setNumber: nextNumber,
       reps: template?.reps ?? last?.reps ?? "",
       weight: template?.weight ?? last?.weight ?? "",
+      weightMode: template?.weightMode ?? last?.weightMode ?? null,
       isCompleted: false,
       restTimeSec: template?.restTimeSec ?? last?.restTimeSec ?? 60,
       durationSec: template?.durationSec ?? last?.durationSec ?? null,
@@ -169,29 +196,47 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set({ drafts: renumbered });
   },
   startRest: (seconds) =>
-    set({
-      isResting: true,
-      restSecondsLeft: Math.max(0, Math.round(seconds)),
+    set(() => {
+      const value = Math.max(0, Math.round(seconds));
+      const endsAtMs = value > 0 ? Date.now() + value * 1000 : null;
+      saveRestEnd(endsAtMs);
+      return {
+        isResting: value > 0,
+        restSecondsLeft: value,
+        restEndsAtMs: endsAtMs,
+      };
     }),
   adjustRest: (deltaSeconds) => {
     const state = get();
     if (!state.isResting) return;
-    const next = Math.max(0, Math.min(600, state.restSecondsLeft + Math.round(deltaSeconds)));
+    const liveLeft = state.restEndsAtMs
+      ? Math.max(0, Math.ceil((state.restEndsAtMs - Date.now()) / 1000))
+      : state.restSecondsLeft;
+    const next = Math.max(0, Math.min(600, liveLeft + Math.round(deltaSeconds)));
     if (next <= 0) {
-      set({ isResting: false, restSecondsLeft: 0 });
+      saveRestEnd(null);
+      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
       return;
     }
-    set({ restSecondsLeft: next });
+    const endsAtMs = Date.now() + next * 1000;
+    saveRestEnd(endsAtMs);
+    set({ restSecondsLeft: next, restEndsAtMs: endsAtMs });
   },
-  tickRest: () => {
-    const left = get().restSecondsLeft;
-    if (left <= 1) {
-      set({ isResting: false, restSecondsLeft: 0 });
+  syncRest: () => {
+    const state = get();
+    if (!state.isResting || !state.restEndsAtMs) return;
+    const left = Math.max(0, Math.ceil((state.restEndsAtMs - Date.now()) / 1000));
+    if (left <= 0) {
+      saveRestEnd(null);
+      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
       return;
     }
-    set({ restSecondsLeft: left - 1 });
+    if (left !== state.restSecondsLeft) set({ restSecondsLeft: left });
   },
-  stopRest: () => set({ isResting: false, restSecondsLeft: 0 }),
+  stopRest: () => {
+    saveRestEnd(null);
+    set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
+  },
   setExerciseRest: (exerciseId, restTimeSec) => {
     const sec = Math.max(0, Math.min(600, Math.round(restTimeSec)));
     set({
@@ -277,6 +322,94 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     });
     return true;
   },
+  replaceExercises: (replacements) => {
+    const state = get();
+    if (!state.activeWorkout || !replacements.length) return 0;
+
+    const plan = asMutablePlan(state.activeWorkout.plan);
+    if (!plan.exercises.length) return 0;
+
+    const completedIds = new Set([
+      ...state.drafts.filter((draft) => draft.isCompleted).map((draft) => draft.exerciseId),
+      ...(state.activeWorkout.sets || [])
+        .filter((setRow) => setRow.is_completed)
+        .map((setRow) => setRow.exercise_id),
+    ]);
+    const planIds = new Set(plan.exercises.map((item) => item.exercise_id));
+    const usedTargets = new Set<string>();
+    const accepted = new Map<string, Exercise>();
+
+    for (const item of replacements) {
+      const fromId = item.fromExerciseId;
+      const toId = item.toExercise?.id;
+      if (
+        !fromId ||
+        !toId ||
+        fromId === toId ||
+        !planIds.has(fromId) ||
+        completedIds.has(fromId) ||
+        planIds.has(toId) ||
+        usedTargets.has(toId)
+      ) {
+        continue;
+      }
+      accepted.set(fromId, item.toExercise);
+      usedTargets.add(toId);
+    }
+
+    if (!accepted.size) return 0;
+
+    const nextExercises = plan.exercises.map((item) => {
+      const replacement = accepted.get(item.exercise_id);
+      if (!replacement) return item;
+      return {
+        ...item,
+        exercise_id: replacement.id,
+        name_ru: replacement.name_ru,
+        original_exercise_id: item.original_exercise_id || item.exercise_id,
+      };
+    });
+
+    const idMap = new Map(
+      [...accepted.entries()].map(([fromId, exercise]) => [fromId, exercise.id]),
+    );
+    const nextDrafts = state.drafts.map((draft) => {
+      const nextId = idMap.get(draft.exerciseId);
+      if (!nextId) return draft;
+      return {
+        ...draft,
+        exerciseId: nextId,
+        // A working weight is exercise-specific and must not be copied in bulk.
+        weight: "",
+        machineParams: null,
+        replacementOriginalWeight: draft.replacementOriginalWeight ?? draft.weight,
+        replacementOriginalMachineParams:
+          draft.replacementOriginalMachineParams ?? draft.machineParams ?? null,
+      };
+    });
+    const nextWorkout: Workout = {
+      ...state.activeWorkout,
+      plan: { ...plan, exercises: nextExercises },
+      sets: (state.activeWorkout.sets || []).map((setRow) => {
+        const nextId = idMap.get(setRow.exercise_id);
+        return nextId && !setRow.is_completed
+          ? {
+              ...setRow,
+              exercise_id: nextId,
+              weight: null,
+              machine_params: null,
+              replacement_original_weight:
+                setRow.replacement_original_weight ?? setRow.weight,
+              replacement_original_machine_params:
+                setRow.replacement_original_machine_params ?? setRow.machine_params ?? null,
+            }
+          : setRow;
+      }),
+    };
+
+    set({ activeWorkout: nextWorkout, drafts: nextDrafts });
+    return accepted.size;
+  },
   restoreDefaultExercises: (catalog) => {
     const state = get();
     if (!state.activeWorkout) return false;
@@ -311,7 +444,18 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
     const nextDrafts = state.drafts.map((d) => {
       const orig = idMap.get(d.exerciseId);
-      return orig ? { ...d, exerciseId: orig } : d;
+      if (!orig) return d;
+      const {
+        replacementOriginalWeight,
+        replacementOriginalMachineParams,
+        ...rest
+      } = d;
+      return {
+        ...rest,
+        exerciseId: orig,
+        weight: replacementOriginalWeight ?? d.weight,
+        machineParams: replacementOriginalMachineParams ?? d.machineParams ?? null,
+      };
     });
 
     const nextWorkout: Workout = {
@@ -319,7 +463,19 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       plan: { ...plan, exercises: nextExercises },
       sets: (state.activeWorkout.sets || []).map((setRow) => {
         const orig = idMap.get(setRow.exercise_id);
-        return orig ? { ...setRow, exercise_id: orig } : setRow;
+        if (!orig) return setRow;
+        const {
+          replacement_original_weight,
+          replacement_original_machine_params,
+          ...rest
+        } = setRow;
+        return {
+          ...rest,
+          exercise_id: orig,
+          weight: replacement_original_weight ?? setRow.weight,
+          machine_params:
+            replacement_original_machine_params ?? setRow.machine_params ?? null,
+        };
       }),
     };
 
@@ -331,7 +487,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     });
     return true;
   },
-  resetSession: () =>
+  resetSession: () => {
+    saveRestEnd(null);
     set({
       activeWorkout: null,
       clientWorkoutId: null,
@@ -340,5 +497,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       currentExerciseIndex: 0,
       isResting: false,
       restSecondsLeft: 0,
-    }),
+      restEndsAtMs: null,
+    });
+  },
 }));

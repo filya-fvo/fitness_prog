@@ -52,7 +52,7 @@ export function computeWorkoutVolume(workout: Workout): number {
       return acc;
     }
     const reps = set.reps ?? 0;
-    const weight = set.weight ?? 0;
+    const weight = (set.weight ?? 0) * (set.weight_mode === "per_hand" ? 2 : 1);
     return acc + reps * weight;
   }, 0);
 }

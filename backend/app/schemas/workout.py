@@ -16,6 +16,8 @@ class WorkoutPlanExercise(BaseModel):
     target_reps: str | None = "8-12"
     rest_sec: int = Field(default=60, ge=0, le=600)
     name_ru: str | None = None
+    suggested_weight: Decimal | None = Field(default=None, ge=0)
+    original_exercise_id: uuid.UUID | None = None
 
 
 class WorkoutPlan(BaseModel):
@@ -26,11 +28,15 @@ class WorkoutPlan(BaseModel):
     week_in_cycle: int | None = None
     week_label: str | None = None
     week_rir: str | None = None
+    location: str | None = None
+    equipment: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
     exercises: list[WorkoutPlanExercise] = Field(default_factory=list)
 
 
 class WorkoutCreate(BaseModel):
     scheduled_date: date
+    client_workout_id: uuid.UUID | None = None
     program_id: uuid.UUID | None = None
     day_index: int | None = Field(default=None, ge=1)
     week_phase: str | None = Field(default=None, pattern=r"^(light|medium|heavy)$")
@@ -49,12 +55,23 @@ class WorkoutCompleteRequest(BaseModel):
     ai_notes: str | None = None
 
 
+class WorkoutUpdateRequest(BaseModel):
+    """Editable summary fields for an existing workout."""
+
+    rpe: int | None = Field(default=None, ge=1, le=10)
+    ai_notes: str | None = Field(default=None, max_length=5000)
+
+
 class WorkoutSetCreate(BaseModel):
     exercise_id: uuid.UUID
     set_number: int = Field(..., gt=0)
-    reps: int | None = Field(default=None, ge=0)
-    weight: Decimal | None = Field(default=None, ge=0)
-    rest_time_sec: int | None = Field(default=None, ge=0)
+    reps: int | None = Field(default=None, ge=0, le=100_000)
+    weight: Decimal | None = Field(default=None, ge=0, le=10_000)
+    weight_mode: str | None = Field(default=None, pattern=r"^(total|per_hand)$")
+    rest_time_sec: int | None = Field(default=None, ge=0, le=3600)
+    duration_sec: int | None = Field(default=None, ge=0, le=86400)
+    note: str | None = Field(default=None, max_length=1000)
+    machine_params: dict[str, str | int | float] | None = None
     is_completed: bool = False
 
 
@@ -67,8 +84,12 @@ class WorkoutSetResponse(BaseModel):
     set_number: int
     reps: int | None = None
     weight: Decimal | None = None
+    weight_mode: str | None = None
     is_completed: bool
     rest_time_sec: int | None = None
+    duration_sec: int | None = None
+    note: str | None = None
+    machine_params: dict[str, str | int | float] | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -51,7 +51,7 @@ async def get_program(
 ) -> ProgramResponse:
     program = await program_service.get_program(session, program_id)
     if program is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     return ProgramResponse.model_validate(program)
 
 
@@ -93,7 +93,7 @@ async def update_program(
 ) -> ProgramResponse:
     program = await program_service.get_program(session, program_id)
     if program is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     updated = await program_service.update_program(session, program, body)
     return ProgramResponse.model_validate(updated)
 
@@ -106,5 +106,5 @@ async def delete_program(
 ) -> None:
     program = await program_service.get_program(session, program_id)
     if program is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     await program_service.soft_delete_program(session, program)

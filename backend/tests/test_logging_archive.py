@@ -5,7 +5,18 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 
-from app.core.logging import archive_stale_logs, setup_logging
+from app.core.logging import archive_stale_logs, redact_log_secrets, setup_logging
+
+
+def test_redact_log_secrets_masks_telegram_and_bearer_tokens() -> None:
+    raw = (
+        'POST https://api.telegram.org/bot123456:super-secret/sendMessage '
+        'Authorization=Bearer another-secret'
+    )
+    safe = redact_log_secrets(raw)
+    assert "super-secret" not in safe
+    assert "another-secret" not in safe
+    assert "api.telegram.org/bot[REDACTED]/sendMessage" in safe
 
 
 def test_archive_moves_yesterday_log(tmp_path: Path) -> None:

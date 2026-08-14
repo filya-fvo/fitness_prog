@@ -14,7 +14,7 @@ export type WarmupStep = {
   detail: string;
   /** Suggested duration seconds */
   durationSec: number;
-  /** Optional catalog exercise id for cardio machine swap */
+  /** Optional catalog exercise id used for cardio settings or a matching GIF preview. */
   exerciseId?: string | null;
   /** Muscle focus labels */
   focus?: string[];
@@ -28,7 +28,13 @@ export type WarmupPlan = {
   steps: WarmupStep[];
 };
 
-const MOBILITY_POOL: Array<{ title: string; detail: string; focus: string[]; durationSec: number }> = [
+const MOBILITY_POOL: Array<{
+  title: string;
+  detail: string;
+  focus: string[];
+  durationSec: number;
+  catalogNames?: string[];
+}> = [
   {
     title: "Круги плечами и руками",
     detail: "20–30 с в каждую сторону, без боли, полная амплитуда.",
@@ -46,6 +52,7 @@ const MOBILITY_POOL: Array<{ title: string; detail: string; focus: string[]; dur
     detail: "8–10 медленных циклов, дышите ровно.",
     focus: ["спина", "грудь", "кор"],
     durationSec: 45,
+    catalogNames: ["Кошка-корова"],
   },
   {
     title: "Приседания без веса (медленно)",
@@ -64,6 +71,7 @@ const MOBILITY_POOL: Array<{ title: string; detail: string; focus: string[]; dur
     detail: "8–10 мягких наклонов, спина нейтральна.",
     focus: ["ноги", "спина", "ягодиц"],
     durationSec: 45,
+    catalogNames: ["Наклоны к носкам"],
   },
   {
     title: "Вращения таза и корпуса",
@@ -76,18 +84,21 @@ const MOBILITY_POOL: Array<{ title: string; detail: string; focus: string[]; dur
     detail: "20–30 с на сторону, без пружины.",
     focus: ["ноги", "ягодиц"],
     durationSec: 50,
+    catalogNames: ["Растяжка сгибателей бедра"],
   },
   {
     title: "Отведения рук с лёгкой резинкой / без веса",
     detail: "12–15 лёгких повторений, разогрев плеч.",
     focus: ["плечи", "спина"],
     durationSec: 45,
+    catalogNames: ["Мобилизация плеч с резинкой"],
   },
   {
     title: "Планка на коленях или короткая планка",
     detail: "20–30 с, только активация кора.",
     focus: ["кор", "грудь", "плечи"],
     durationSec: 30,
+    catalogNames: ["Планка"],
   },
 ];
 
@@ -194,6 +205,10 @@ export function buildWarmupPlan(input: {
       title: row.item.title,
       detail: row.item.detail,
       durationSec: row.item.durationSec,
+      exerciseId:
+        row.item.catalogNames
+          ?.map((name) => input.catalog.find((exercise) => exercise.name_ru === name))
+          .find(Boolean)?.id ?? null,
       focus: row.item.focus,
       skippable: true,
     });

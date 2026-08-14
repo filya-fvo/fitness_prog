@@ -1,3 +1,5 @@
+import { DecimalInput } from "@/components/DecimalInput";
+
 type Props = {
   label: string;
   value: string;
@@ -69,12 +71,10 @@ export function NumberStepper({
         >
           −
         </button>
-        <input
-          type="number"
-          inputMode="decimal"
+        <DecimalInput
           value={value}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onValueChange={onChange}
           className="h-9 min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-secondary px-2 text-center text-sm text-tg-text"
         />
         <button

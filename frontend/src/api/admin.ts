@@ -38,6 +38,7 @@ const actionSchema = z.object({
 
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminActionResult = z.infer<typeof actionSchema>;
+export type AdminResetScope = "all" | "workouts" | "nutrition" | "measurements";
 
 function adminApiError(err: unknown, fallback: string): Error {
   if (axios.isAxiosError(err)) {
@@ -77,17 +78,20 @@ export async function fetchAdminUsers(opts?: {
   }
 }
 
-export async function resetAdminUser(
+export async function clearAdminUser(
   userId: string,
+  scope: AdminResetScope = "all",
   notify = true,
 ): Promise<AdminActionResult> {
   try {
-    const { data } = await apiClient.post(`/admin/users/${userId}/reset`, null, {
-      params: { notify },
+    const { data } = await apiClient.post(`/admin/users/${userId}/clear`, {
+      scope,
+      notify,
+      confirm_full_reset: scope === "all",
     });
     return actionSchema.parse(data);
   } catch (err) {
-    throw adminApiError(err, "Не удалось очистить профиль");
+    throw adminApiError(err, "Не удалось очистить данные");
   }
 }
 

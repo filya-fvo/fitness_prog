@@ -1,13 +1,14 @@
 #Requires -Version 5.1
 param(
   [string]$ApiBase = "http://127.0.0.1:8001",
-  [string]$FeBase = "http://127.0.0.1:5173"
+  [string]$FeBase = "http://127.0.0.1:5173",
+  [long]$TelegramChatId = 0
 )
 
 $ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot
 $BackendEnv = Join-Path $Root "backend\.env"
-$UrlsFile = Join-Path $Root "scripts\ngrok-urls.local.env"
+$UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
 $fail = 0
 
 function Read-DotEnvValue([string]$Path, [string]$Key) {
@@ -49,23 +50,30 @@ $whSecret = Read-DotEnvValue $BackendEnv "TELEGRAM_WEBHOOK_SECRET"
 
 if ($token -and -not $token.StartsWith("replace_with")) { Ok "BOT_TOKEN set" } else { Bad "BOT_TOKEN missing" }
 if ($user) { Ok ("BOT_USERNAME=" + $user) } else { Info "BOT_USERNAME empty" }
-if ($mini -and $mini.StartsWith("https://")) { Ok "MINI_APP_URL is https" } else { Bad "MINI_APP_URL not https (need ngrok/prod)" }
+if ($mini -and $mini.StartsWith("https://") -and $mini -notmatch "(?i)ngrok") {
+  Ok ("MINI_APP_URL=" + $mini)
+} else {
+  Bad "MINI_APP_URL must be HTTPS and must not use ngrok"
+}
 if ($smtpHost -and $smtpUser -and $smtpPass) { Ok "SMTP host/user/pass present" } else { Info "SMTP incomplete - OTP may use dev_log" }
 if ($whSecret) { Ok "TELEGRAM_WEBHOOK_SECRET set" } else { Info "webhook secret empty (ok for local)" }
 
-Sec "ngrok"
-try {
-  $tunnels = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -TimeoutSec 2
-  $https = @($tunnels.tunnels | Where-Object { $_.public_url -like "https://*" })
-  if ($https.Count -gt 0) {
-    Ok ("ngrok https: " + $https[0].public_url)
-  } else {
-    Bad "ngrok running but no https tunnel"
+Sec "Tailscale Funnel"
+$savedPublic = Read-DotEnvValue $UrlsFile "FRONTEND_PUBLIC_URL"
+if ($savedPublic -and $savedPublic -like "https://*.ts.net") {
+  Ok ("saved Funnel URL: " + $savedPublic)
+  if ($mini.TrimEnd("/") -eq $savedPublic.TrimEnd("/")) { Ok "MINI_APP_URL matches Funnel" } else { Bad "MINI_APP_URL differs from saved Funnel URL" }
+  try {
+    $public = Invoke-WebRequest -Uri $savedPublic -UseBasicParsing -TimeoutSec 15
+    if ($public.StatusCode -eq 200 -and $public.Content -notmatch "(?i)ngrok") { Ok "public frontend status=200, no ngrok page" } else { Bad "public frontend returned unexpected content" }
+    $health = Invoke-RestMethod -Uri ($savedPublic.TrimEnd("/") + "/health") -TimeoutSec 15
+    if ($health.status -eq "ok") { Ok "public /health=ok" } else { Bad "public /health is not ok" }
+  } catch {
+    Bad ("public Funnel URL unavailable: " + $_.Exception.Message)
   }
-} catch {
-  Info "ngrok inspector :4040 not up (local-only mode?)"
+} else {
+  Bad "scripts\tailscale-url.local.env missing or invalid"
 }
-if (Test-Path $UrlsFile) { Info ("urls file: " + $UrlsFile) }
 
 Sec "Telegram Bot API"
 if ($token -and -not $token.StartsWith("replace_with")) {
@@ -80,7 +88,8 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     $wh = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getWebhookInfo") -TimeoutSec 10
     if ($wh.ok) {
       $u = [string]$wh.result.url
-      if ($u) { Ok ("webhook url set: " + $u) } else { Bad "webhook url EMPTY - /start will not reach API" }
+      $expectedWebhook = $mini.TrimEnd("/") + "/telegram/webhook"
+      if ($u -eq $expectedWebhook) { Ok ("webhook URL matches MINI_APP_URL: " + $u) } elseif ($u) { Bad ("webhook URL mismatch: " + $u) } else { Bad "webhook URL EMPTY - /start will not reach API" }
       $le = [string]$wh.result.last_error_message
       if ($le) { Bad ("webhook last_error: " + $le) } else { Ok "webhook no last_error_message" }
       Info ("pending_update_count=" + $wh.result.pending_update_count)
@@ -94,13 +103,25 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     if ($menu.ok) {
       $t = [string]$menu.result.type
       if ($t -eq "web_app") {
-        Ok ("Menu Button type=web_app text=" + $menu.result.text)
+        $menuUrl = [string]$menu.result.web_app.url
+        if ($menuUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("default Menu Button URL matches: " + $menuUrl) } else { Bad ("default Menu Button URL mismatch: " + $menuUrl) }
       } else {
         Info ("Menu Button type=" + $t + " (run setup_telegram_bot.ps1 for Open)")
       }
     }
   } catch {
     Info "getChatMenuButton skipped/failed"
+  }
+
+  if ($TelegramChatId -gt 0) {
+    try {
+      $body = @{ chat_id = $TelegramChatId } | ConvertTo-Json
+      $chatMenu = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getChatMenuButton") -Method Post -TimeoutSec 10 -ContentType "application/json" -Body $body
+      $chatUrl = [string]$chatMenu.result.web_app.url
+      if ($chatUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("chat Menu Button URL matches for " + $TelegramChatId) } else { Bad ("chat Menu Button URL mismatch for " + $TelegramChatId + ": " + $chatUrl) }
+    } catch {
+      Bad ("per-chat Menu Button check failed for " + $TelegramChatId)
+    }
   }
 } else {
   Info "skip Telegram checks - no token"
@@ -116,6 +137,12 @@ try {
   }
 } catch {
   Info "could not probe :6379"
+}
+$workerLog = Join-Path $Root ("logs\worker-" + (Get-Date -Format "yyyy-MM-dd") + ".log")
+if ((Test-Path $workerLog) -and ((Get-Date) - (Get-Item $workerLog).LastWriteTime).TotalMinutes -lt 3) {
+  Ok "notification worker has recent activity"
+} else {
+  Bad "notification worker has no recent activity; run start-notifications.cmd"
 }
 
 Sec "Device QA checklist (manual in Telegram)"

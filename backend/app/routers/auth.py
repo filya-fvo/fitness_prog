@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,6 +36,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _user_response(profile) -> AuthUserResponse:
+    goals = profile.goals if isinstance(getattr(profile, "goals", None), dict) else {}
+    merged_ids = []
+    for raw in goals.get("_merged_from_user_ids") or []:
+        try:
+            merged_ids.append(uuid.UUID(str(raw)))
+        except (TypeError, ValueError):
+            continue
     return AuthUserResponse(
         id=profile.id,
         telegram_id=profile.telegram_id,
@@ -41,6 +50,8 @@ def _user_response(profile) -> AuthUserResponse:
         auth_email=getattr(profile, "auth_email", None),
         subscription_status=profile.subscription_status,
         onboarding_completed=profile.onboarding_completed,
+        merged_from_user_ids=merged_ids,
+        last_merge_preference=goals.get("_last_merge_preference"),
     )
 
 
@@ -62,7 +73,7 @@ async def auth_telegram(
         logger.warning("initData_validation_failed detail={}", str(exc))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(exc),
+            detail="Не удалось подтвердить данные авторизации Telegram",
         ) from exc
 
     profile = to_profile(user)
@@ -157,16 +168,30 @@ async def auth_email_link_verify(
     settings: Settings = Depends(get_settings),
     user: User = Depends(get_current_user),
 ) -> EmailLinkResponse:
-    linked = await verify_link_code(
+    result = await verify_link_code(
         session,
         user=user,
         email_raw=str(body.email),
         code_raw=body.code,
         settings=settings,
+        merge_preference=body.merge_preference,
     )
-    profile = to_profile(linked)
+    if result.merge_required:
+        return EmailLinkResponse(
+            ok=True,
+            message="Найдены два аккаунта. Выберите, какие данные профиля считать основными.",
+            merge_required=True,
+            merge_preview=result.preview,
+        )
+    if result.user is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Не удалось объединить аккаунты")
+    profile = to_profile(result.user)
     return EmailLinkResponse(
         ok=True,
-        message="Почта привязана. Теперь можно входить через неё в браузере.",
+        message=(
+            "Аккаунты объединены. История из почты и Telegram сохранена."
+            if result.merged_from_user_ids
+            else "Почта привязана. Теперь можно входить через неё в браузере."
+        ),
         user=_user_response(profile),
     )

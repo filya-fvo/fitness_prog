@@ -10,10 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from sqlalchemy import select
+from sqlalchemy import select  # noqa: E402
 
-from app.core.database import AsyncSessionLocal
-from app.models.program import Program
+from app.core.database import AsyncSessionLocal  # noqa: E402
+from app.models.program import Program  # noqa: E402
 
 SEED = ROOT / "scripts" / "seed_content" / "programs.json"
 
@@ -65,7 +65,7 @@ def prog(
 
 EXTRA = [
     prog(
-        name="М · Зал · Опытный · Сила FB 3 дня",
+        name="М · Зал · Опытный · Сила · Всё тело · 3 дня",
         description=(
             "Full body 3×/нед с упором на базовые силовые паттерны: "
             "присед/тяга/жим/тяга в наклоне. Эффективно для силы и мышечной массы."
@@ -74,7 +74,7 @@ EXTRA = [
         workout_type="strength",
         sex=["male"],
         location="gym",
-        equipment=["barbell", "dumbbell", "machine", "cable"],
+        equipment=["barbell", "dumbbells", "machines"],
         limitations=[],
         days_per_week=3,
         schedule=[
@@ -129,7 +129,7 @@ EXTRA = [
         workout_type="hypertrophy",
         sex=["female"],
         location="gym",
-        equipment=["barbell", "dumbbell", "machine", "cable"],
+        equipment=["barbell", "dumbbells", "machines"],
         limitations=[],
         days_per_week=3,
         schedule=[
