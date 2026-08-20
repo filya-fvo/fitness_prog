@@ -60,10 +60,22 @@ async def ai_history(
     )
     rows.reverse()
     latest_session_id = rows[-1].session_id if rows else None
-    return AIHistoryResponse(
-        session_id=latest_session_id,
-        messages=[AIMessageResponse.model_validate(item) for item in rows],
-    )
+    messages: list[AIMessageResponse] = []
+    for item in rows:
+        content = item.content
+        if item.role == "assistant":
+            content = ai_engine.sanitize_ai_output(content) or (
+                "Старый ответ скрыт, потому что содержал служебный текст."
+            )
+        messages.append(
+            AIMessageResponse(
+                id=item.id,
+                role=item.role,
+                content=content,
+                timestamp=item.timestamp,
+            )
+        )
+    return AIHistoryResponse(session_id=latest_session_id, messages=messages)
 
 
 @router.post("/chat", response_model=AIChatResponse)

@@ -10,6 +10,11 @@ const Chat = lazy(() =>
 const DailyLog = lazy(() =>
   import("@/features/nutrition/pages/DailyLog").then((module) => ({ default: module.DailyLog })),
 );
+const MeasurementsPage = lazy(() =>
+  import("@/features/measurements/pages/MeasurementsPage").then((module) => ({
+    default: module.MeasurementsPage,
+  })),
+);
 const OnboardingPage = lazy(() =>
   import("@/features/onboarding/pages/OnboardingPage").then((module) => ({
     default: module.OnboardingPage,
@@ -49,6 +54,12 @@ const HomePage = lazy(() =>
 const MorePage = lazy(() =>
   import("@/pages/MorePage").then((module) => ({ default: module.MorePage })),
 );
+const HelpPage = lazy(() =>
+  import("@/pages/HelpPage").then((module) => ({ default: module.HelpPage })),
+);
+const KnowledgeBasePage = lazy(() =>
+  import("@/pages/KnowledgeBasePage").then((module) => ({ default: module.KnowledgeBasePage })),
+);
 const TrainHubPage = lazy(() =>
   import("@/pages/TrainHubPage").then((module) => ({ default: module.TrainHubPage })),
 );
@@ -64,6 +75,22 @@ export function App() {
         }
       >
         <Routes>
+          <Route
+            path="help"
+            element={(
+              <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
+                <HelpPage />
+              </div>
+            )}
+          />
+          <Route
+            path="knowledge"
+            element={(
+              <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
+                <KnowledgeBasePage />
+              </div>
+            )}
+          />
           <Route element={<Shell />}>
             <Route index element={<HomePage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
@@ -72,6 +99,7 @@ export function App() {
             <Route path="programs" element={<ProgramsPage />} />
             <Route path="workouts/active/:workoutId" element={<ActiveWorkout />} />
             <Route path="nutrition" element={<DailyLog />} />
+            <Route path="measurements" element={<MeasurementsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="ai" element={<Chat />} />

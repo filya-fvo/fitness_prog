@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 import uuid
 from typing import Any
 
@@ -22,6 +23,21 @@ from sqlalchemy import select
 def notification_settings() -> Settings:
     """Reload .env so a long-lived worker never sends buttons with an obsolete URL."""
     return Settings()
+
+
+async def _claim_dispatch_minute(redis: Any, now: datetime | None = None) -> bool:
+    """Allow only one scheduled dispatch across all worker processes per minute."""
+    if redis is None:
+        return True
+    minute = (now or datetime.now(UTC)).strftime("%Y%m%d%H%M")
+    return bool(
+        await redis.set(
+            f"fitness:notifications:dispatch:{minute}",
+            uuid.uuid4().hex,
+            nx=True,
+            ex=180,
+        )
+    )
 
 
 async def send_reminder_task(
@@ -58,6 +74,10 @@ async def send_reminder_task(
 
 async def dispatch_scheduled_notifications_task(ctx: dict[str, Any]) -> dict[str, Any]:
     """Cron: every minute check measurement / workout / supplement windows."""
+    # Multiple ARQ processes may briefly coexist while Windows services recover.
+    # Keep one dispatch for each UTC minute so reminders cannot race or fan out.
+    if not await _claim_dispatch_minute(ctx.get("redis")):
+        return {"ok": True, "skipped": "already_dispatched"}
     settings = notification_settings()
     async with AsyncSessionLocal() as session:
         result = await dispatch_all_users(session, settings)

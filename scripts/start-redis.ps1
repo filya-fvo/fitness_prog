@@ -2,7 +2,7 @@
 # Start portable Redis from tools\redis (no Memurai/MSI needed).
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) { $Root = "C:\fitness_prog" }
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 
 $RedisDir = Join-Path $Root "tools\redis"
 $Server = Join-Path $RedisDir "redis-server.exe"

@@ -10,6 +10,8 @@ export type HabitDay = {
   waterMl: number;
   weightKg: number | null;
   sleepHours: number | null;
+  steps?: number | null;
+  activeMinutes?: number | null;
   checkedIn: boolean;
 };
 
@@ -36,15 +38,22 @@ function writeStore(s: Store) {
 
 export function getHabitDay(date = localDateKey(new Date())): HabitDay {
   const s = readStore();
-  return (
-    s[date] || {
+  const stored = s[date];
+  return stored
+    ? {
+        ...stored,
+        steps: stored.steps ?? null,
+        activeMinutes: stored.activeMinutes ?? null,
+      }
+    : {
       date,
       waterMl: 0,
       weightKg: null,
       sleepHours: null,
+      steps: null,
+      activeMinutes: null,
       checkedIn: false,
-    }
-  );
+    };
 }
 
 export function saveHabitDay(day: HabitDay): HabitDay {

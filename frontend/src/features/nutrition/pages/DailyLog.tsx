@@ -1,7 +1,7 @@
 /**
  * Daily nutrition diary — TZ §5 tracker.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -13,15 +13,18 @@ import {
   fetchProductCategories,
   lookupBarcode,
   previewKbju,
+  recognizeNutritionLabel,
   searchProducts,
   updateNutritionLog,
   type DailyNutrition,
   type NutritionLog,
+  type NutritionLabelRecognition,
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
 import { DecimalInput } from "@/components/DecimalInput";
-import { BarcodeScannerModal } from "@/features/nutrition/components/BarcodeScannerModal";
+import { NutritionLabelCameraModal } from "@/features/nutrition/components/NutritionLabelCameraModal";
+import { prepareNutritionLabelImage } from "@/features/nutrition/utils/labelImage";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
@@ -39,6 +42,12 @@ import {
   yesterdayEntries,
   type QuickProduct,
 } from "@/utils/nutritionQuick";
+
+const BarcodeScannerModal = lazy(() =>
+  import("@/features/nutrition/components/BarcodeScannerModal").then((module) => ({
+    default: module.BarcodeScannerModal,
+  })),
+);
 
 const MEALS = [
   { id: "breakfast", label: "Завтрак" },
@@ -119,6 +128,8 @@ export function DailyLog() {
   const [grams, setGrams] = useState("100");
   const [saving, setSaving] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [goalDetailsOpen, setGoalDetailsOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
@@ -143,8 +154,21 @@ export function DailyLog() {
   const [copyingYesterday, setCopyingYesterday] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
+  const [pendingBarcode, setPendingBarcode] = useState("");
+  const [barcodeFallback, setBarcodeFallback] = useState<string | null>(null);
+  const [labelBusy, setLabelBusy] = useState(false);
+  const [labelCameraOpen, setLabelCameraOpen] = useState(false);
+  const [labelFeedback, setLabelFeedback] = useState<{
+    message: string;
+    error: boolean;
+  } | null>(null);
+  const [labelReview, setLabelReview] = useState<NutritionLabelRecognition | null>(null);
   const [okNote, setOkNote] = useState<string | null>(null);
   const productSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!customOpen) setLabelReview(null);
+  }, [customOpen]);
 
   const reload = useCallback(async () => {
     if (!getStoredToken()) {
@@ -481,15 +505,16 @@ export function DailyLog() {
   async function submitCustomProduct() {
     if (saving) return;
     const name = cName.trim();
-    const calories = Number(cCal);
-    const proteins = Number(cP);
-    const fats = Number(cF);
-    const carbs = Number(cC);
+    const values = [cCal, cP, cF, cC];
+    const [calories, proteins, fats, carbs] = values.map(Number);
     if (!name) {
       setError("Укажите название продукта");
       return;
     }
-    if (![calories, proteins, fats, carbs].every((n) => Number.isFinite(n) && n >= 0)) {
+    if (
+      values.some((value) => value.trim() === "") ||
+      ![calories, proteins, fats, carbs].every((n) => Number.isFinite(n) && n >= 0)
+    ) {
       setError("БЖУ и ккал должны быть числами ≥ 0 (на 100 г)");
       return;
     }
@@ -503,6 +528,7 @@ export function DailyLog() {
         fats,
         carbs,
         category: "custom",
+        barcode: pendingBarcode || undefined,
       });
       setCustomOpen(false);
       setCName("");
@@ -510,6 +536,9 @@ export function DailyLog() {
       setCP("");
       setCF("");
       setCC("");
+      setLabelReview(null);
+      setPendingBarcode("");
+      setBarcodeFallback(null);
       pickProduct(product);
       setBrowseOpen(true);
       // refresh catalog
@@ -537,19 +566,23 @@ export function DailyLog() {
       }
       const res = await lookupBarcode(digits);
       if (!res.found || !res.product) {
-        setError(
+        if (res.error === "invalid_barcode") {
+          setError("Некорректный штрихкод. Попробуйте ещё раз или сфотографируйте этикетку.");
+        }
+        setPendingBarcode(res.error === "invalid_barcode" ? "" : digits);
+        setBarcodeFallback(
           res.error === "invalid_barcode"
-            ? "Некорректный штрихкод"
-            : `Товар ${digits} не найден. Добавьте вручную или создайте свой продукт.`,
+            ? "Не удалось прочитать этот код."
+            : `Товар ${digits} пока не найден в каталоге.`,
         );
-        setQuery(digits);
-        setCustomOpen(true);
         return;
       }
       // Only select product + suggested grams — user confirms grams, then taps «Добавить».
       const gramsDefault =
         res.serving_grams && res.serving_grams > 0 ? Math.round(res.serving_grams) : 100;
       pickProduct(res.product, { grams: gramsDefault });
+      setPendingBarcode("");
+      setBarcodeFallback(null);
       setBrowseOpen(false);
       trackEvent("nutrition_barcode_selected", {
         product_id: res.product.id,
@@ -566,6 +599,63 @@ export function DailyLog() {
       setBarcodeBusy(false);
     }
   }, []);
+
+  async function handleLabelPhoto(file: File | null) {
+    if (!file || labelBusy) return;
+    setLabelCameraOpen(false);
+    if (!getStoredToken() || !isOnline()) {
+      const message = "Распознавание этикетки доступно онлайн после входа";
+      setLabelFeedback({ message, error: true });
+      toast(message, "error");
+      return;
+    }
+    setLabelBusy(true);
+    setError(null);
+    setOkNote(null);
+    setLabelFeedback({ message: "Подготавливаем фото…", error: false });
+    try {
+      const prepared = await prepareNutritionLabelImage(file);
+      setLabelFeedback({ message: "Распознаём этикетку, это может занять несколько секунд…", error: false });
+      const result = await recognizeNutritionLabel(prepared);
+      if (!result.recognized) {
+        const message = "Не удалось распознать этикетку. Внесите данные с упаковки вручную.";
+        setLabelFeedback({ message, error: true });
+        setLabelReview(null);
+        setCustomOpen(true);
+        toast(message, "error", 5000);
+        return;
+      }
+      setCName(result.name_ru ?? "");
+      setCCal(result.calories_kcal == null ? "" : String(result.calories_kcal));
+      setCP(result.proteins_g == null ? "" : String(result.proteins_g));
+      setCF(result.fats_g == null ? "" : String(result.fats_g));
+      setCC(result.carbs_g == null ? "" : String(result.carbs_g));
+      setLabelReview(result);
+      setLabelFeedback(null);
+      setCustomOpen(true);
+      trackEvent("nutrition_label_recognized", {
+        confidence: result.confidence,
+        complete_kbju: [
+          result.calories_kcal,
+          result.proteins_g,
+          result.fats_g,
+          result.carbs_g,
+        ].every((value) => value != null),
+      });
+    } catch (err) {
+      const message = toUserMessage(
+        err,
+        err instanceof Error ? err.message : "Не удалось распознать этикетку",
+      );
+      const fallbackMessage = `${message} Внесите данные с упаковки вручную.`;
+      setLabelReview(null);
+      setLabelFeedback({ message: fallbackMessage, error: true });
+      setCustomOpen(true);
+      toast(fallbackMessage, "error", 5000);
+    } finally {
+      setLabelBusy(false);
+    }
+  }
 
   const totals = data?.totals ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
   const targets = data?.targets;
@@ -696,7 +786,7 @@ export function DailyLog() {
             ) : null}
           </div>
         </div>
-        <Link to="/profile" className="mt-3 block text-center text-xs text-tg-link">
+        <Link to="/measurements" className="mt-3 block text-center text-xs text-tg-link">
           Замеры и % дефицита/профицита
         </Link>
       </div>
@@ -706,7 +796,7 @@ export function DailyLog() {
           type="button"
           onClick={() => setAddPanelOpen(true)}
           aria-expanded={false}
-          className="sticky bottom-20 z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
+          className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
         >
           + Добавить продукт
         </button>
@@ -715,37 +805,98 @@ export function DailyLog() {
       {addPanelOpen ? <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium">Добавить продукт</p>
-          <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={copyingYesterday || saving}
+            onClick={() => void copyYesterday()}
+            className="rounded-lg px-2 text-xs text-tg-link disabled:opacity-50"
+          >
+            {copyingYesterday ? "Копируем…" : "Как вчера"}
+          </button>
+        </div>
+        <button
+          type="button"
+          disabled={barcodeBusy || labelBusy || saving || !isOnline()}
+          onClick={() => {
+            setError(null);
+            setOkNote(null);
+            setScannerOpen(true);
+          }}
+          className="w-full rounded-xl bg-tg-bg px-3 py-3 text-sm font-semibold text-tg-link disabled:opacity-50"
+        >
+          {barcodeBusy ? "Ищем…" : "▦ Сканировать штрихкод"}
+        </button>
+        <p className="text-[11px] text-tg-hint">
+          Начните со штрихкода. Внутри сканера можно перейти к фото этикетки или ручному
+          вводу. Если товар не найден, приложение само предложит эти варианты.
+        </p>
+        {labelFeedback ? (
+          <div
+            role={labelFeedback.error ? "alert" : "status"}
+            aria-live="polite"
+            className={[
+              "rounded-xl px-3 py-2 text-xs",
+              labelFeedback.error
+                ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                : "bg-tg-bg text-tg-link",
+            ].join(" ")}
+          >
+            {labelFeedback.message}
+          </div>
+        ) : null}
+
+        {barcodeFallback ? (
+          <div role="status" className="space-y-2 rounded-xl border border-tg-button/20 bg-tg-bg p-3">
+            <p className="text-sm font-medium">{barcodeFallback}</p>
+            <p className="text-xs text-tg-hint">
+              Сфотографируйте пищевую ценность — мы заполним КБЖУ. Если фото не распознается,
+              откроется ручной ввод.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setLabelFeedback(null);
+                  setLabelCameraOpen(true);
+                }}
+                className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text"
+              >
+                📷 Этикетка
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLabelReview(null);
+                  setCustomOpen(true);
+                }}
+                className="rounded-xl bg-tg-secondary px-3 py-2 text-xs font-medium"
+              >
+                Ввести вручную
+              </button>
+            </div>
             <button
               type="button"
-              disabled={barcodeBusy || saving || !isOnline()}
               onClick={() => {
-                setError(null);
-                setOkNote(null);
+                setBarcodeFallback(null);
                 setScannerOpen(true);
               }}
-              className="text-xs font-medium text-tg-link disabled:opacity-50"
+              className="w-full rounded-xl px-3 py-2 text-xs text-tg-link"
             >
-              {barcodeBusy ? "Ищем…" : "📷 Сканер"}
-            </button>
-            <button
-              type="button"
-              disabled={copyingYesterday || saving}
-              onClick={() => void copyYesterday()}
-              className="text-xs text-tg-link disabled:opacity-50"
-            >
-              {copyingYesterday ? "Копируем…" : "Как вчера"}
+              Сканировать ещё раз
             </button>
           </div>
-        </div>
-        <p className="text-[11px] text-tg-hint">
-          Сканер подставит продукт и предложит граммы (порция с упаковки или 100 г). Проверьте
-          граммы и нажмите «Добавить».
-        </p>
+        ) : null}
 
         <div className="space-y-1.5">
-          <p className="text-[11px] text-tg-hint">Быстрые шаблоны</p>
-          <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTemplatesOpen((value) => !value)}
+            aria-expanded={templatesOpen}
+            className="w-full text-left text-xs text-tg-link"
+          >
+            {templatesOpen ? "Скрыть быстрые шаблоны" : "Открыть быстрые шаблоны"} · {MEAL_TEMPLATES.length}
+          </button>
+          {templatesOpen ? <div className="flex flex-wrap gap-1.5">
             {MEAL_TEMPLATES.map((t) => (
               <button
                 key={t.id}
@@ -758,7 +909,7 @@ export function DailyLog() {
                 {t.label}
               </button>
             ))}
-          </div>
+          </div> : null}
         </div>
 
         {favorites.length || recent.length ? (
@@ -782,8 +933,15 @@ export function DailyLog() {
             ) : null}
             {recent.length ? (
               <div>
-                <p className="mb-1 text-[11px] text-tg-hint">Недавние</p>
-                <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setRecentOpen((value) => !value)}
+                  aria-expanded={recentOpen}
+                  className="mb-1 w-full text-left text-xs text-tg-link"
+                >
+                  {recentOpen ? "Скрыть недавние" : "Открыть недавние"} · {recent.length}
+                </button>
+                {recentOpen ? <div className="flex flex-wrap gap-1.5">
                   {recent.map((q) => (
                     <button
                       key={`rec-${q.id}`}
@@ -795,7 +953,7 @@ export function DailyLog() {
                       {q.lastGrams ? ` · ${q.lastGrams}г` : ""}
                     </button>
                   ))}
-                </div>
+                </div> : null}
               </div>
             ) : null}
           </div>
@@ -1059,7 +1217,10 @@ export function DailyLog() {
         </button>
         <button
           type="button"
-          onClick={() => setCustomOpen(true)}
+          onClick={() => {
+            setLabelReview(null);
+            setCustomOpen(true);
+          }}
           className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium"
         >
           + Свой продукт в общий каталог
@@ -1070,7 +1231,7 @@ export function DailyLog() {
         {MEALS.map((m) => {
           const items = data?.meals?.[m.id] ?? [];
           return (
-            <div key={m.id} className="rounded-2xl bg-tg-secondary p-4">
+            <div key={m.id} className="rounded-2xl bg-tg-secondary p-4 max-[359px]:p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium">{m.label}</p>
                 <button
@@ -1092,17 +1253,17 @@ export function DailyLog() {
                   {items.map((item) => (
                     <li
                       key={item.id}
-                      className="flex items-start justify-between gap-2 rounded-xl bg-tg-bg/60 px-2 py-2 text-sm"
+                      className="flex items-start justify-between gap-2 rounded-xl bg-tg-bg/60 px-2 py-2 text-sm max-[359px]:flex-col"
                     >
                       <div className="min-w-0">
-                        <p className="font-medium">
+                        <p className="break-words font-medium">
                           {item.product?.name_ru ?? "Продукт"} · {item.quantity_grams}г
                         </p>
                         <p className="text-xs text-tg-hint">
                           {Number(item.calculated_kbj.calories ?? 0).toFixed(0)} ккал
                         </p>
                       </div>
-                      <div className="flex shrink-0 gap-1">
+                      <div className="flex shrink-0 gap-1 max-[359px]:w-full max-[359px]:justify-end">
                         <button
                           type="button"
                           disabled={editBusy}
@@ -1153,7 +1314,7 @@ export function DailyLog() {
               <button
                 type="button"
                 aria-label="Закрыть"
-                className="text-tg-hint"
+                className="tap-target flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-tg-hint"
                 onClick={() => setEditingLog(null)}
               >
                 ✕
@@ -1202,9 +1363,19 @@ export function DailyLog() {
               className="w-full rounded-xl bg-tg-secondary px-4 py-2.5 text-sm text-tg-hint disabled:opacity-60"
             >
               Удалить запись
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setBarcodeFallback(null);
+                setScannerOpen(true);
+              }}
+              className="w-full rounded-xl px-3 py-2 text-xs text-tg-link"
+            >
+              Сканировать ещё раз
             </button>
           </div>
-        </div>
       ) : null}
 
       {customOpen ? (
@@ -1218,10 +1389,48 @@ export function DailyLog() {
             className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
-              <h3 id="custom-product-title" className="font-semibold">Новый продукт</h3>
-              <button type="button" aria-label="Закрыть" className="text-tg-hint" onClick={() => setCustomOpen(false)}>✕</button>
+              <h3 id="custom-product-title" className="font-semibold">
+                {labelReview ? "Проверьте этикетку" : "Новый продукт"}
+              </h3>
+              <button
+                type="button"
+                aria-label="Закрыть"
+                className="text-tg-hint"
+                onClick={() => {
+                  setCustomOpen(false);
+                  setLabelReview(null);
+                }}
+              >
+                ✕
+              </button>
             </div>
-            <p className="text-xs text-tg-hint">БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
+            {labelReview ? (
+              <div className="space-y-1 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
+                <p className="font-medium text-tg-text">
+                  Это черновик: сверьте каждое поле с упаковкой.
+                </p>
+                {labelReview.basis_label ? <p>{labelReview.basis_label}</p> : null}
+                {labelReview.fiber_g != null ||
+                labelReview.sugars_g != null ||
+                labelReview.salt_g != null ? (
+                  <p>
+                    Дополнительно на 100 г:
+                    {labelReview.fiber_g != null ? ` клетчатка ${labelReview.fiber_g} г` : ""}
+                    {labelReview.sugars_g != null ? ` · сахара ${labelReview.sugars_g} г` : ""}
+                    {labelReview.salt_g != null ? ` · соль ${labelReview.salt_g} г` : ""}
+                  </p>
+                ) : null}
+                {labelReview.warnings.map((warning) => (
+                  <p key={warning} className="text-amber-700 dark:text-amber-300">
+                    ⚠ {warning}
+                  </p>
+                ))}
+              </div>
+            ) : <div className="space-y-1 text-xs text-tg-hint">
+              {labelFeedback?.error ? <p className="text-amber-700 dark:text-amber-300">{labelFeedback.message}</p> : null}
+              {pendingBarcode ? <p>Штрихкод {pendingBarcode} будет сохранён с этим продуктом.</p> : null}
+              <p>БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
+            </div>}
             <label className="block text-xs text-tg-hint">
               Название
               <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm" />
@@ -1239,10 +1448,39 @@ export function DailyLog() {
         </div>
       ) : null}
 
-      <BarcodeScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onDetected={handleBarcodeDetected}
+      {scannerOpen ? (
+        <Suspense
+          fallback={(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <p role="status" className="rounded-xl bg-[#1f1f23] px-4 py-3 text-sm text-white">
+                Открываем сканер…
+              </p>
+            </div>
+          )}
+        >
+          <BarcodeScannerModal
+            open
+            onClose={() => setScannerOpen(false)}
+            onDetected={handleBarcodeDetected}
+            onOpenLabel={() => {
+              setScannerOpen(false);
+              setLabelFeedback(null);
+              setLabelCameraOpen(true);
+            }}
+            onManualProduct={() => {
+              setScannerOpen(false);
+              setPendingBarcode("");
+              setLabelReview(null);
+              setCustomOpen(true);
+            }}
+          />
+        </Suspense>
+      ) : null}
+      <NutritionLabelCameraModal
+        open={labelCameraOpen}
+        busy={labelBusy}
+        onClose={() => setLabelCameraOpen(false)}
+        onPhoto={(file) => void handleLabelPhoto(file)}
       />
     </section>
   );

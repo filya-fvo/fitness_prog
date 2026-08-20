@@ -1,7 +1,8 @@
 @echo off
 setlocal EnableExtensions
-cd /d "C:\fitness_prog"
-set "Folder=C:\fitness_prog"
+set "Folder=%~dp0"
+if "%Folder:~-1%"=="\" set "Folder=%Folder:~0,-1%"
+cd /d "%Folder%"
 title fitness_prog launcher
 echo.
 echo  ============================================
@@ -37,17 +38,17 @@ echo.
 
 REM Order: Redis -> notifications worker -> production app + Tailscale Funnel
 echo [1/3] Redis...
-start "fitness Redis" cmd /k "cd /d %Folder% && call start-redis.cmd"
+start "fitness Redis" cmd /k "cd /d ""%Folder%"" && call start-redis.cmd"
 
 timeout /t 2 /nobreak >nul
 
 echo [2/3] Notification worker...
-start "fitness Notifications" cmd /k "cd /d %Folder% && call start-notifications.cmd"
+start "fitness Notifications" cmd /k "cd /d ""%Folder%"" && call start-notifications.cmd"
 
 timeout /t 1 /nobreak >nul
 
 echo [3/3] Production app + Tailscale Funnel...
-start "fitness App" cmd /k "cd /d %Folder% && call start-all.cmd"
+start "fitness App" cmd /k "cd /d ""%Folder%"" && call start-all.cmd"
 
 echo.
 echo  Launched:

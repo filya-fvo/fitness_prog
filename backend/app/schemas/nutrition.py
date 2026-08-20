@@ -55,6 +55,25 @@ class BarcodeLookupResponse(BaseModel):
     error: str | None = None
 
 
+class NutritionLabelRecognitionResponse(BaseModel):
+    """Editable draft extracted from a package nutrition label."""
+
+    recognized: bool
+    name_ru: str | None = Field(default=None, max_length=200)
+    basis_label: str | None = Field(default=None, max_length=120)
+    serving_grams: float | None = Field(default=None, gt=0, le=100_000)
+    calories_kcal: float | None = Field(default=None, ge=0, le=1200)
+    proteins_g: float | None = Field(default=None, ge=0, le=100)
+    fats_g: float | None = Field(default=None, ge=0, le=100)
+    carbs_g: float | None = Field(default=None, ge=0, le=100)
+    fiber_g: float | None = Field(default=None, ge=0, le=100)
+    sugars_g: float | None = Field(default=None, ge=0, le=100)
+    salt_g: float | None = Field(default=None, ge=0, le=100)
+    confidence: float = Field(default=0, ge=0, le=1)
+    warnings: list[str] = Field(default_factory=list, max_length=10)
+    remaining_requests: int | None = Field(default=None, ge=0)
+
+
 class NutritionLogCreate(BaseModel):
     product_id: uuid.UUID
     quantity_grams: Decimal = Field(..., gt=0, le=100_000)

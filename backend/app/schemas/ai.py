@@ -16,7 +16,7 @@ class AIChatRequest(BaseModel):
 class AIChatResponse(BaseModel):
     session_id: uuid.UUID
     reply: str
-    source: str  # groq | openai | rule
+    source: str  # groq | rule
     remaining_requests: int | None = None
 
 

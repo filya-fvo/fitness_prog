@@ -88,6 +88,7 @@ def test_water_slots_and_due() -> None:
     assert water
     assert "500" in water[0]["text"]
     assert water[0]["meta"]["left_ml"] == 2000
+    assert water[0]["startapp"] == "water"
 
 
 def test_water_log_helpers() -> None:

@@ -21,17 +21,34 @@
     Segoe UI,
     Roboto,
     sans-serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--tg-theme-bg-color, #ffffff);
   color: var(--tg-theme-text-color, #000000);
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Browser/PWA fallback. Telegram's inline theme variables still take precedence. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tg-theme-bg-color: #111827;
+    --tg-theme-text-color: #f8fafc;
+    --tg-theme-hint-color: #94a3b8;
+    --tg-theme-link-color: #60a5fa;
+    --tg-theme-button-color: #2563eb;
+    --tg-theme-button-text-color: #ffffff;
+    --tg-theme-secondary-bg-color: #1f2937;
+  }
 }
 
 @layer base {
@@ -106,4 +123,13 @@ body {
 .text-\[10px\],
 .text-\[11px\] {
   font-size: 0.75rem;
+}
+
+/* iOS zooms the page when a focused form control renders below 16px. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 1rem;
+  }
 }

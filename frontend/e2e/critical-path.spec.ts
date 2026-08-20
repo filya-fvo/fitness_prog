@@ -40,11 +40,17 @@ test.describe("critical path smoke", () => {
 
   test("programs and catalog render SPA shell (not API JSON)", async ({ page }) => {
     await page.goto("/programs");
+    await expect(page.getByRole("heading", { name: /Программы/i })).toBeVisible({
+      timeout: 10_000,
+    });
     const programsBody = await page.locator("body").innerText();
     expect(programsBody).not.toMatch(/Not authenticated/i);
     expect(programsBody).toMatch(/Программ|Dev mode|авторизац|онлайн|Загруз/i);
 
     await page.goto("/workouts");
+    await expect(page.getByRole("heading", { name: /Каталог/i })).toBeVisible({
+      timeout: 10_000,
+    });
     const catalogBody = await page.locator("body").innerText();
     expect(catalogBody).not.toMatch(/Not authenticated/i);
     expect(catalogBody).toMatch(/Каталог|упражнен|шаблон|Dev mode|кэш/i);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Workout } from "@/types/workout";
-import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
+import { buildWeeklyWorkoutOverview, formatWeekDelta } from "@/utils/weeklyOverview";
 
 function w(partial: Partial<Workout> & { id: string; completed_at: string }): Workout {
   return {
@@ -53,5 +53,13 @@ describe("buildWeeklyWorkoutOverview", () => {
     expect(o.days).toHaveLength(7);
     expect(o.days[0].weekdayShort).toBe("пн");
     expect(o.totalVolume).toBeGreaterThan(0);
+  });
+});
+
+describe("formatWeekDelta", () => {
+  it("explains direction and formats large volume", () => {
+    expect(formatWeekDelta(-1, "workouts")).toBe("на 1 тренировку меньше");
+    expect(formatWeekDelta(-19_759, "volume")).toBe("на 19,8 т меньше");
+    expect(formatWeekDelta(0, "volume")).toBe("как на прошлой неделе");
   });
 });

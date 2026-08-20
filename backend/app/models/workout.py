@@ -1,4 +1,4 @@
-"""Workout and WorkoutSet models (fitness-tz.md §4)."""
+"""Workout and WorkoutSet models."""
 
 from __future__ import annotations
 

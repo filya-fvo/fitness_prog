@@ -35,6 +35,28 @@ export type WeeklyWorkoutOverview = {
   tip: string;
 };
 
+export type WeekDeltaKind = "workouts" | "volume";
+
+export function formatWeekDelta(value: number, kind: WeekDeltaKind): string {
+  if (value === 0) return "как на прошлой неделе";
+  const direction = value > 0 ? "больше" : "меньше";
+  const absolute = Math.abs(value);
+  if (kind === "workouts") {
+    const mod10 = absolute % 10;
+    const mod100 = absolute % 100;
+    const noun = mod10 === 1 && mod100 !== 11
+      ? "тренировку"
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? "тренировки"
+        : "тренировок";
+    return `на ${absolute} ${noun} ${direction}`;
+  }
+  const amount = absolute >= 1000
+    ? `${(absolute / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} т`
+    : `${absolute.toLocaleString("ru-RU")} кг`;
+  return `на ${amount} ${direction}`;
+}
+
 const WD_SHORT = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
 function mondayOf(date: Date): Date {

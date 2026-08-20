@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
-import { createWorkout } from "@/api/workouts";
+import { createWorkout, fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   enqueueSync,
   readCachedExercises,
+  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
@@ -30,7 +32,12 @@ import {
   WORKOUT_DAY_PRESETS,
   type SetTemplate,
 } from "@/utils/setTemplates";
-import { draftsWithSuggestions, resolveWeekPhase } from "@/utils/loadProgression";
+import {
+  buildExerciseHistory,
+  draftsWithSuggestions,
+  resolveWeekPhase,
+  type ExerciseHistoryBest,
+} from "@/utils/loadProgression";
 import { toUserMessage } from "@/utils/errors";
 
 const CATALOG_PAGE_SIZE = 20;
@@ -43,6 +50,7 @@ type CatalogUiState = {
   searchQuery?: string;
   visibleCount?: number;
   scrollY?: number;
+  compactMode?: boolean;
 };
 
 function readCatalogUi(): CatalogUiState {
@@ -73,7 +81,11 @@ function makeLocalWorkout(userId: string): Workout {
   };
 }
 
-function buildDrafts(exercises: Exercise[], template: SetTemplate): LocalSetDraft[] {
+function buildDrafts(
+  exercises: Exercise[],
+  template: SetTemplate,
+  history: Map<string, ExerciseHistoryBest>,
+): LocalSetDraft[] {
   // Prefill set slots from template (fast log in ActiveWorkout).
   return draftsWithSuggestions({
     exercises: exercises.map((item, idx) => ({
@@ -84,7 +96,7 @@ function buildDrafts(exercises: Exercise[], template: SetTemplate): LocalSetDraf
       rest_sec: template.restSec,
       name_ru: item.name_ru,
     })),
-    history: new Map(),
+    history,
     phase: resolveWeekPhase(null),
   });
 }
@@ -112,6 +124,7 @@ export function WorkoutCatalogPage() {
   const [fromCache, setFromCache] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [visibleCount, setVisibleCount] = useState(Math.max(CATALOG_PAGE_SIZE, initialUi.visibleCount || 0));
+  const [compactMode, setCompactMode] = useState(initialUi.compactMode ?? true);
   const scrollRestoredRef = useRef(false);
   const filtersMountedRef = useRef(false);
   const usesNativeMainButton =
@@ -204,9 +217,9 @@ export function WorkoutCatalogPage() {
   useEffect(() => {
     sessionStorage.setItem(
       CATALOG_UI_KEY,
-      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, scrollY: window.scrollY }),
+      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, compactMode, scrollY: window.scrollY }),
     );
-  }, [muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
+  }, [compactMode, muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
 
   useEffect(() => {
     if (loading || scrollRestoredRef.current) return;
@@ -235,7 +248,15 @@ export function WorkoutCatalogPage() {
     setError(null);
     try {
       const exerciseIds = selectedExercises.map((item) => item.id);
-      const drafts = buildDrafts(selectedExercises, activeTemplate);
+      let history = buildExerciseHistory(await readCachedWorkouts());
+      if (isOnline() && getStoredToken()) {
+        try {
+          history = buildExerciseHistory(await fetchWorkoutHistory());
+        } catch {
+          // Keep cached history when the fresh request is temporarily unavailable.
+        }
+      }
+      const drafts = buildDrafts(selectedExercises, activeTemplate, history);
       const clientId = crypto.randomUUID();
 
       let workout: Workout;
@@ -400,7 +421,10 @@ export function WorkoutCatalogPage() {
         </p>
       </div>
 
-      <div className="sticky top-0 z-10 -mx-1 mb-3 rounded-2xl bg-tg-bg/95 p-1 shadow-sm backdrop-blur">
+      <CollapsibleFilterPanel
+        activeCount={Number(Boolean(searchQuery)) + Number(Boolean(muscleFilter))}
+        summary={[searchQuery ? `«${searchQuery}»` : "", muscleFilter ? enumLabel(muscleFilter) : "Все группы"].filter(Boolean).join(" · ")}
+      >
         <label className="mb-2 block text-xs text-tg-hint">
           Поиск
           <input
@@ -437,11 +461,20 @@ export function WorkoutCatalogPage() {
           </button>
         ))}
         </div>
-      </div>
+      </CollapsibleFilterPanel>
 
       {!loading && catalog.length > 0 ? (
-        <div className="mb-3 flex items-center justify-between gap-3 text-xs text-tg-hint">
+        <div className="sticky top-0 z-10 mb-3 flex items-center justify-between gap-3 rounded-xl bg-tg-bg/95 py-1 text-xs text-tg-hint backdrop-blur lg:top-16">
           <span>Найдено упражнений: {visibleCatalog.length}</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-pressed={compactMode}
+              onClick={() => setCompactMode((value) => !value)}
+              className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
+            >
+              {compactMode ? "Подробнее" : "Компактно"}
+            </button>
           {searchQuery || muscleFilter ? (
             <button
               type="button"
@@ -454,6 +487,7 @@ export function WorkoutCatalogPage() {
               Сбросить фильтры
             </button>
           ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -521,6 +555,7 @@ export function WorkoutCatalogPage() {
             selected={selectedIds.includes(exercise.id)}
             onSelect={toggleExercise}
             onOpenDetail={setDetailExercise}
+            compact={compactMode}
           />
         ))}
       </div>

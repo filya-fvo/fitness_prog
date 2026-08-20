@@ -28,6 +28,7 @@ import {
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import { DecimalInput } from "@/components/DecimalInput";
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
@@ -36,7 +37,6 @@ import type { Exercise } from "@/types/workout";
 import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
-  BODY_MEASURE_FIELDS,
   ageFromBirthDate,
   birthYearFromDate,
   previewEnergyTargets,
@@ -53,6 +53,7 @@ import { toUserMessage } from "@/utils/errors";
 import { programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { confirmAction } from "@/lib/telegram";
+import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
 import {
   currentWebPushEnabled,
   disableWebPush,
@@ -331,7 +332,6 @@ export function ProfilePage() {
   const [primaryGoal, setPrimaryGoal] = useState("maintain");
   const [adjPct, setAdjPct] = useState("0");
   const [daysPerWeek, setDaysPerWeek] = useState("3");
-  const [measures, setMeasures] = useState<Record<string, string>>({});
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeProgramId, setActiveProgramId] = useState("");
@@ -375,7 +375,7 @@ export function ProfilePage() {
   const [calTimes, setCalTimes] = useState("14:00, 20:00");
   /** Body tab: quick essentials vs full measures / advanced energy. */
   const [bodyAdvanced, setBodyAdvanced] = useState(false);
-  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(false);
+  const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -401,7 +401,7 @@ setAuthEmail(p.auth_email ?? null);
         const a = asRecord(p.anthropometry);
         const g = asRecord(p.goals);
         setProfileGoalsKeep(g);
-        setAutoAdvanceExercises(Boolean(g.auto_advance_exercises));
+        setAutoAdvanceExercises(resolveAutoAdvanceSetting(g.auto_advance_exercises, true));
         const sexFromProfile = String(a.sex || g.sex || "male").toLowerCase();
         setSex(sexFromProfile === "female" ? "female" : "male");
         if (sexFromProfile === "male" || sexFromProfile === "female") {
@@ -429,11 +429,6 @@ setAuthEmail(p.auth_email ?? null);
         setDaysPerWeek(numOrEmpty(g.days_per_week || 3));
         const existingActive = String(g.active_program_id || "");
         setActiveProgramId(existingActive);
-        const m = asRecord(a.measurements);
-        const next: Record<string, string> = {};
-        for (const f of BODY_MEASURE_FIELDS) next[f.key] = numOrEmpty(m[f.key]);
-        setMeasures(next);
-
         const programItems = prog.items || [];
         setPrograms(programItems);
         if (exCatalog?.items?.length) {
@@ -576,6 +571,7 @@ setAuthEmail(p.auth_email ?? null);
   }, [catalog]);
 
   const activeProgram = programs.find((p) => p.id === activeProgramId) || null;
+  const savedProgramId = String(profileGoalsKeep.active_program_id || "");
   const unusedCatalog = catalog.filter((c) => !stack.some((s) => s.key === c.key && !s.custom));
 
   const recommendedPrograms = useMemo(
@@ -685,11 +681,6 @@ setAuthEmail(p.auth_email ?? null);
       ) {
         throw new Error("Проверьте вес, рост и возраст: значения вне допустимого диапазона");
       }
-      const measurements: Record<string, number> = {};
-      for (const [k, v] of Object.entries(measures)) {
-        const n = Number(v);
-        if (n > 0) measurements[k] = n;
-      }
       const ageFromBirth = ageFromBirthDate(birthDate);
       const ageNum = ageFromBirth ?? (Number(age) || null);
       const anthropometry = {
@@ -700,8 +691,6 @@ setAuthEmail(p.auth_email ?? null);
         birth_date: birthDate || null,
         birth_year: birthYearFromDate(birthDate),
         activity_level: activity,
-        measurements,
-        measurements_updated_at: new Date().toISOString(),
       };
       const goals = {
         ...profileGoalsKeep,
@@ -1098,21 +1087,16 @@ setAuthEmail(p.auth_email ?? null);
 
           {bodyAdvanced ? (
             <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-              <p className="text-sm font-medium">Замеры тела, см</p>
-              <div className="grid grid-cols-2 gap-2">
-                {BODY_MEASURE_FIELDS.map((f) => (
-                  <label key={f.key} className="block text-xs text-tg-hint">
-                    {f.label}
-                    <DecimalInput
-                      value={measures[f.key] || ""}
-                      onValueChange={(value) =>
-                        setMeasures((prev) => ({ ...prev, [f.key]: value }))
-                      }
-                      className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                    />
-                  </label>
-                ))}
-              </div>
+              <p className="text-sm font-medium">Замеры тела</p>
+              <p className="text-xs text-tg-hint">
+                Обхваты теперь сохраняются отдельными датированными записями и не перезаписывают историю.
+              </p>
+              <Link
+                to="/measurements"
+                className="block min-h-[44px] rounded-xl bg-tg-bg px-4 py-3 text-center text-sm font-medium text-tg-link"
+              >
+                Открыть замеры и динамику
+              </Link>
             </div>
           ) : null}
 
@@ -1310,6 +1294,10 @@ setAuthEmail(p.auth_email ?? null);
             ) : null}
           </div>
 
+          <CollapsibleFilterPanel
+            activeCount={Number(Boolean(programSearch)) + Number(Boolean(programSexFilter)) + Number(Boolean(programTypeFilter)) + Number(Boolean(programLevelFilter))}
+            summary={[programSearch ? `«${programSearch}»` : "", programSexFilter === "male" ? "Мужские" : programSexFilter === "female" ? "Женские" : "", programTypeFilter ? (PROGRAM_TYPE_LABELS[programTypeFilter] ?? programTypeFilter) : "", programLevelFilter ? (PROGRAM_LEVEL_LABELS[programLevelFilter] ?? programLevelFilter) : ""].filter(Boolean).join(" · ") || "Все программы"}
+          >
           <label className="block text-xs text-tg-hint">
             Поиск
             <input
@@ -1397,6 +1385,7 @@ setAuthEmail(p.auth_email ?? null);
               </button>
             ))}
           </div>
+          </CollapsibleFilterPanel>
 
           <div className="space-y-2">
             <button
@@ -1413,6 +1402,16 @@ setAuthEmail(p.auth_email ?? null);
             >
               Без фиксированной программы
             </button>
+            {!activeProgramId && savedProgramId !== "" ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void saveProgramOnly()}
+                className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+              >
+                {saving ? "Сохраняем…" : "Сохранить: без программы"}
+              </button>
+            ) : null}
 
             {filteredPrograms.length === 0 ? (
               <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
@@ -1617,19 +1616,40 @@ setAuthEmail(p.auth_email ?? null);
                       </button>
                     </div>
                   ) : null}
+                  {selected && activeProgramId !== savedProgramId ? (
+                    <div className="mt-3 space-y-2 rounded-xl bg-black/10 p-2">
+                      <p className="text-xs">Вы выбрали: {programDayLabel(p.name)}</p>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void saveProgramOnly()}
+                        className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-link shadow-sm disabled:opacity-60"
+                      >
+                        {saving ? "Сохраняем…" : "Сохранить программу"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => {
+                          setActiveProgramId(savedProgramId);
+                          setAutoAssignedProgram(false);
+                          setDirtyTabs((current) => {
+                            const next = new Set(current);
+                            next.delete("program");
+                            return next;
+                          });
+                        }}
+                        className="w-full rounded-lg px-3 py-1.5 text-xs underline disabled:opacity-60"
+                      >
+                        Отменить выбор
+                      </button>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
           </div>
 
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void saveProgramOnly()}
-            className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-          >
-            Сохранить программу
-          </button>
           <Link to="/programs" className="block text-center text-xs text-tg-link">
             Открыть полный каталог программ
           </Link>

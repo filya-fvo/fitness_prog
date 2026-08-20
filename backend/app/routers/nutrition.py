@@ -5,9 +5,15 @@ from __future__ import annotations
 import uuid
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.rate_limiter import (
+    RateLimitBackendUnavailable,
+    RateLimitExceeded,
+    consume_ai_quota,
+)
+from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
@@ -19,12 +25,13 @@ from app.schemas.nutrition import (
     NutritionLogCreate,
     NutritionLogResponse,
     NutritionLogUpdate,
+    NutritionLabelRecognitionResponse,
     NutritionProductCreate,
     NutritionProductListResponse,
     NutritionProductResponse,
     NutritionRangeResponse,
 )
-from app.services import nutrition_service
+from app.services import nutrition_label_vision, nutrition_service
 from app.services.energy_targets import compute_energy_targets
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
@@ -112,6 +119,58 @@ async def lookup_barcode(
         created=bool(meta.get("created")),
         error=meta.get("error"),
     )
+
+
+@router.post("/label/recognize", response_model=NutritionLabelRecognitionResponse)
+async def recognize_label(
+    image: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> NutritionLabelRecognitionResponse:
+    """Extract an editable per-100g draft from a nutrition-label photo."""
+    try:
+        data, mime_type = await nutrition_label_vision.read_label_image(image)
+    except nutrition_label_vision.NutritionLabelImageError as exc:
+        detail = {
+            "empty_image": "Файл изображения пуст",
+            "image_too_large": "Фото слишком большое (максимум 8 МБ)",
+            "unsupported_image": "Поддерживаются JPEG, PNG и WebP",
+        }.get(str(exc), "Некорректное изображение")
+        code = (
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            if str(exc) == "image_too_large"
+            else status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        )
+        raise HTTPException(status_code=code, detail=detail) from exc
+
+    try:
+        remaining = await consume_ai_quota(str(user.id), settings)
+    except RateLimitExceeded as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Дневной лимит ИИ исчерпан ({settings.ai_daily_limit} запросов)",
+        ) from exc
+    except RateLimitBackendUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Распознавание временно недоступно",
+        ) from exc
+
+    try:
+        result = await nutrition_label_vision.recognize_nutrition_label(
+            data, mime_type, settings
+        )
+    except nutrition_label_vision.NutritionLabelInvalidResponse as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось разобрать ответ распознавания. Попробуйте другое фото",
+        ) from exc
+    except nutrition_label_vision.NutritionLabelUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Распознавание этикетки временно недоступно",
+        ) from exc
+    return result.model_copy(update={"remaining_requests": remaining})
 
 
 @router.get("/categories")

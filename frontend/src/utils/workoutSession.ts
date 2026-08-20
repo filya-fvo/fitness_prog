@@ -102,6 +102,25 @@ export function isPlannedExerciseComplete(
   return true;
 }
 
+/** Return the next unfinished exercise after the current one, respecting plan order. */
+export function findNextIncompleteExerciseIndex(
+  exerciseIds: string[],
+  drafts: LocalSetDraft[],
+  currentIndex: number,
+  planExercises: Array<Pick<WorkoutPlanExercise, "exercise_id" | "target_sets">> = [],
+): number | null {
+  const targets = new Map(
+    planExercises.map((item) => [item.exercise_id, item.target_sets ?? null]),
+  );
+  for (let index = Math.max(0, currentIndex + 1); index < exerciseIds.length; index += 1) {
+    const exerciseId = exerciseIds[index];
+    if (!isPlannedExerciseComplete(drafts, exerciseId, targets.get(exerciseId))) {
+      return index;
+    }
+  }
+  return null;
+}
+
 /** A completed set starts rest only when there was no timer at submit time. */
 export function shouldStartRestAfterSet(input: {
   setWasCompleted: boolean;
@@ -109,4 +128,11 @@ export function shouldStartRestAfterSet(input: {
   restIsActiveNow: boolean;
 }): boolean {
   return !input.setWasCompleted && !input.restWasActiveAtSubmit && !input.restIsActiveNow;
+}
+
+/** Profiles created before this option existed retain automatic exercise switching. */
+export function resolveAutoAdvanceSetting(value: unknown, fallback = true): boolean {
+  if (value === true || value === 1 || value === "1" || value === "true") return true;
+  if (value === false || value === 0 || value === "0" || value === "false") return false;
+  return fallback;
 }

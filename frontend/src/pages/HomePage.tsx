@@ -921,10 +921,10 @@ export function HomePage() {
           Открыть прогресс
         </Link>
         <Link
-          to="/profile"
+          to="/measurements"
           className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
         >
-          Профиль: замеры и калории
+          Замеры тела и динамика
         </Link>
         <button
           type="button"

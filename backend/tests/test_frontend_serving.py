@@ -39,6 +39,7 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
     dist.mkdir()
     (dist / "index.html").write_text("<html>fitness-spa</html>", encoding="utf-8")
     (dist / "sw.js").write_text("self.skipWaiting()", encoding="utf-8")
+    (dist / "favicon.svg").write_text("<svg></svg>", encoding="utf-8")
 
     test_app = FastAPI()
     assert register_frontend(test_app, dist)
@@ -49,15 +50,30 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
             "/workouts/active/123",
             headers={"Accept": "text/html"},
         )
+        measurements = await client.get(
+            "/measurements",
+            headers={"Accept": "text/html"},
+        )
+        knowledge = await client.get(
+            "/knowledge",
+            headers={"Accept": "text/html"},
+        )
         service_worker = await client.get("/sw.js")
+        legacy_favicon = await client.get("/favicon.ico")
         missing_api = await client.get("/auth/not-a-route", headers={"Accept": "application/json"})
 
     assert root.status_code == 200
     assert "fitness-spa" in root.text
     assert deep_link.status_code == 200
     assert "fitness-spa" in deep_link.text
+    assert measurements.status_code == 200
+    assert "fitness-spa" in measurements.text
+    assert knowledge.status_code == 200
+    assert "fitness-spa" in knowledge.text
     assert service_worker.text == "self.skipWaiting()"
     assert service_worker.headers["cache-control"] == "no-cache"
+    assert legacy_favicon.status_code == 200
+    assert legacy_favicon.text == "<svg></svg>"
     assert missing_api.status_code == 404
     assert missing_api.json() == {"detail": "Not Found"}
 

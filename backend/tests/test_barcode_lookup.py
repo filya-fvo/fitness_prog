@@ -7,6 +7,7 @@ from app.services.nutrition_service import (
     is_valid_barcode,
     list_categories,
     normalize_barcode,
+    normalize_product_name,
     search_products,
 )
 
@@ -14,6 +15,11 @@ from app.services.nutrition_service import (
 def test_normalize_barcode_strips_noise() -> None:
     assert normalize_barcode(" 4600-1234 567890 ") == "46001234567890"
     assert normalize_barcode("ean:3017620422003") == "3017620422003"
+
+
+def test_normalize_product_name_decodes_supplier_entities() -> None:
+    assert normalize_product_name('  Батончик &quot;Спорт&quot;  ') == 'Батончик "Спорт"'
+    assert normalize_product_name("A&amp;quot;B&amp;quot;") == 'A"B"'
 
 
 def test_is_valid_barcode() -> None:

@@ -16,3 +16,9 @@ if (Test-Path $log) {
   Write-Host "Recent supervisor log:" -ForegroundColor Cyan
   Get-Content $log -Tail 20
 }
+$heartbeat = Join-Path $Root "logs\supervisor-heartbeat.json"
+if (Test-Path -LiteralPath $heartbeat) {
+  Write-Host ""
+  Write-Host "Latest heartbeat:" -ForegroundColor Cyan
+  Get-Content -LiteralPath $heartbeat -Raw
+}

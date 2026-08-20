@@ -1,19 +1,18 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Configure Telegram Menu Button (Open) + webhook for /start welcome.
+  Restore the standard Telegram menu and configure the /start webhook.
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\setup_telegram_bot.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File <project>\scripts\setup_telegram_bot.ps1
 
   # custom public front URL:
-  powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\setup_telegram_bot.ps1 `
+  powershell -NoProfile -ExecutionPolicy Bypass -File <project>\scripts\setup_telegram_bot.ps1 `
     -MiniAppUrl https://fitness-pc.example.ts.net
 #>
 param(
   [string]$MiniAppUrl = "",
   [string]$WebhookBase = "",
-  [string]$MenuText = "Open",
   [switch]$SkipWebhook,
   [switch]$SkipMenu
 )
@@ -89,15 +88,11 @@ $api = "https://api.telegram.org/bot$token"
 
 if (-not $SkipMenu) {
   $menuBody = @{
-    menu_button = @{
-      type = "web_app"
-      text = $MenuText
-      web_app = @{ url = $MiniAppUrl }
-    }
+    menu_button = @{ type = "default" }
   } | ConvertTo-Json -Depth 6
   $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
   if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
-  Write-Host "[telegram] Menu Button set to '$MenuText' -> $MiniAppUrl" -ForegroundColor Green
+  Write-Host "[telegram] Standard menu restored; persistent Open button removed" -ForegroundColor Green
 
   if ((Test-Path -LiteralPath $BackendPython) -and (Test-Path -LiteralPath $SyncEntrypoints)) {
     Push-Location (Join-Path $Root "backend")
@@ -134,5 +129,5 @@ Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
 Write-Host "  1) The production app + Tailscale Funnel must be running (start-all.cmd)"
 Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
-Write-Host "  3) Blue Open near message field / chat list should open Mini App"
+Write-Host "  3) Persistent Open near the message field should be absent"
 Write-Host ""

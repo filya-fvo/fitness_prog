@@ -26,7 +26,6 @@ import shutil
 import sys
 import urllib.error
 import urllib.request
-import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -191,7 +190,6 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
 # Showing no GIF is safer than teaching a different exercise or equipment variant.
 NO_EXACT_GIF = {
     "Приседания со своим весом",
-    "Планка",
     "Боковая планка",
     "Птица-собака",
     "Удержание «лодочки»",

@@ -2,8 +2,10 @@
 import { Link } from "react-router-dom";
 
 import { analyzeProgress } from "@/api/ai";
+import { fetchBodyMeasurementRange, type BodyMeasurement } from "@/api/bodyMeasurements";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
+import { fetchDailyMetricsRange, type DailyMetric } from "@/api/dailyMetrics";
 import { fetchNutritionRange } from "@/api/nutrition";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
@@ -21,8 +23,9 @@ import { Charts } from "@/features/progress/pages/Charts";
 import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
 import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
+import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
 import { StrengthTrends } from "@/features/progress/pages/StrengthTrends";
-import { HabitsCheckin } from "@/components/HabitsCheckin";
+import { WellnessSummary } from "@/features/progress/pages/WellnessSummary";
 import type { Exercise, Workout } from "@/types/workout";
 import { computeBadges } from "@/utils/achievements";
 import { isOnline } from "@/utils/network";
@@ -55,6 +58,10 @@ export function ProgressPage() {
   const [nutritionMode, setNutritionMode] = useState<NutritionRangeMode>("day");
   const [nutrition, setNutrition] = useState<NutritionBalanceSummary | null>(null);
   const [nutritionError, setNutritionError] = useState<string | null>(null);
+  const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
+  const [dailyMetricsError, setDailyMetricsError] = useState<string | null>(null);
+  const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
+  const [bodyMeasurementsError, setBodyMeasurementsError] = useState<string | null>(null);
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
@@ -67,6 +74,8 @@ export function ProgressPage() {
       setLoading(true);
       setError(null);
       setNutritionError(null);
+      setDailyMetricsError(null);
+      setBodyMeasurementsError(null);
       try {
         const cached = await readCachedWorkouts();
         const cachedEx = await readCachedExercises();
@@ -78,7 +87,7 @@ export function ProgressPage() {
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range, ex] = await Promise.all([
+          const [items, range, ex, metrics, measurements] = await Promise.all([
             fetchWorkoutHistory(),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
@@ -89,6 +98,18 @@ export function ProgressPage() {
               return null;
             }),
             fetchExercises({ pageSize: 200 }).catch(() => null),
+            fetchDailyMetricsRange({ days: 30 }).catch((err: unknown) => {
+              if (!cancelled) {
+                setDailyMetricsError(toUserMessage(err, "Не удалось загрузить показатели"));
+              }
+              return null;
+            }),
+            fetchBodyMeasurementRange({ days: 3650 }).catch((err: unknown) => {
+              if (!cancelled) {
+                setBodyMeasurementsError(toUserMessage(err, "Не удалось загрузить замеры"));
+              }
+              return null;
+            }),
           ]);
           await cacheWorkouts(items);
           if (ex?.items?.length) {
@@ -99,6 +120,8 @@ export function ProgressPage() {
             setWorkouts(items);
             setSource("network");
             if (range) setNutrition(buildNutritionBalance(range));
+            if (metrics) setDailyMetrics(metrics.days);
+            if (measurements) setBodyMeasurements(measurements.items);
           }
         } else if (cached.length) {
           if (!cancelled) {
@@ -222,7 +245,8 @@ export function ProgressPage() {
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        {completedCount > 0 ? <HabitsCheckin /> : null}
+        <WellnessSummary days={dailyMetrics} error={dailyMetricsError} />
+        <BodyMeasurementsSummary items={bodyMeasurements} error={bodyMeasurementsError} />
         <WeeklyOverview
           overview={weekOverview}
           onAskAi={() => void askWeekAi()}

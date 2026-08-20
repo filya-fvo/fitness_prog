@@ -111,6 +111,10 @@ export type ExerciseHistoryBest = {
   lastWeight: number;
   lastReps: number;
   lastDate: string | null;
+  lastDurationSec?: number | null;
+  lastWeightMode?: "total" | "per_hand" | null;
+  lastMachineParams?: Record<string, string | number> | null;
+  lastRpe?: number | null;
 };
 
 /** Per exercise: last completed session's top set (max weight, then max reps). */
@@ -126,15 +130,33 @@ export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseH
     });
 
   for (const w of completed) {
-    const byEx = new Map<string, { weight: number; reps: number }>();
+    const byEx = new Map<string, {
+      weight: number;
+      reps: number;
+      durationSec: number;
+      weightMode: "total" | "per_hand" | null;
+      machineParams: Record<string, string | number> | null;
+    }>();
     for (const s of w.sets) {
       if (!s.is_completed) continue;
       const weight = Number(s.weight) || 0;
       const reps = Number(s.reps) || 0;
-      if (weight <= 0 && reps <= 0) continue;
+      const durationSec = Number(s.duration_sec) || 0;
+      if (weight <= 0 && reps <= 0 && durationSec <= 0 && !s.machine_params) continue;
       const prev = byEx.get(s.exercise_id);
-      if (!prev || weight > prev.weight || (weight === prev.weight && reps > prev.reps)) {
-        byEx.set(s.exercise_id, { weight, reps });
+      if (
+        !prev ||
+        weight > prev.weight ||
+        (weight === prev.weight && reps > prev.reps) ||
+        (weight === prev.weight && reps === prev.reps && durationSec > prev.durationSec)
+      ) {
+        byEx.set(s.exercise_id, {
+          weight,
+          reps,
+          durationSec,
+          weightMode: s.weight_mode ?? null,
+          machineParams: s.machine_params ?? null,
+        });
       }
     }
     const date = (w.completed_at || w.scheduled_date || "").slice(0, 10) || null;
@@ -145,6 +167,10 @@ export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseH
         lastWeight: best.weight,
         lastReps: best.reps,
         lastDate: date,
+        lastDurationSec: best.durationSec || null,
+        lastWeightMode: best.weightMode,
+        lastMachineParams: best.machineParams,
+        lastRpe: w.rpe ?? null,
       });
     }
   }
@@ -154,7 +180,14 @@ export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseH
 export function suggestLoad(input: {
   history?: ExerciseHistoryBest | null;
   phase: WeekPhaseMeta;
-}): { weight: string; reps: string; note: string | null } {
+}): {
+  weight: string;
+  reps: string;
+  durationSec: number | null;
+  weightMode: "total" | "per_hand" | null;
+  machineParams: Record<string, string | number> | null;
+  note: string | null;
+} {
   const hist = input.history;
   const phase = input.phase;
   const defaultReps = phase.defaultReps;
@@ -166,10 +199,16 @@ export function suggestLoad(input: {
     return single ? single[1] : "10";
   })();
 
-  if (!hist || (hist.lastWeight <= 0 && hist.lastReps <= 0)) {
+  if (
+    !hist ||
+    (hist.lastWeight <= 0 && hist.lastReps <= 0 && !(hist.lastDurationSec && hist.lastDurationSec > 0))
+  ) {
     return {
       weight: "",
       reps: repsMid,
+      durationSec: null,
+      weightMode: null,
+      machineParams: null,
       note: null,
     };
   }
@@ -178,6 +217,9 @@ export function suggestLoad(input: {
   // Phase still drives plan target_reps / RIR copy elsewhere.
   const weight = hist.lastWeight > 0 ? formatWeight(hist.lastWeight) : "";
   const reps = hist.lastReps > 0 ? String(hist.lastReps) : repsMid;
+  const date = hist.lastDate
+    ? ` (${hist.lastDate.split("-").reverse().join(".")})`
+    : "";
   const phaseHint =
     phase.phase === "heavy"
       ? "тяжёлая неделя — можно +1–2.5 кг к прошлому"
@@ -188,9 +230,14 @@ export function suggestLoad(input: {
   return {
     weight,
     reps,
-    note: weight
-      ? `Прошлый раз: ${weight} кг × ${reps}. Сейчас ${phase.label.toLowerCase()} (${phaseHint}).`
-      : `Прошлый раз: ${reps} повт. Цель недели: ${phase.defaultReps}.`,
+    durationSec: hist.lastDurationSec ?? null,
+    weightMode: hist.lastWeightMode ?? null,
+    machineParams: hist.lastMachineParams ?? null,
+    note: hist.lastDurationSec && !weight && hist.lastReps <= 0
+      ? `Прошлый раз${date}: ${Math.floor(hist.lastDurationSec / 60)}:${String(hist.lastDurationSec % 60).padStart(2, "0")}.`
+      : weight
+        ? `Прошлый раз${date}: ${weight} кг × ${reps}${hist.lastRpe ? `, RPE ${hist.lastRpe}` : ""}. Сейчас ${phase.label.toLowerCase()} (${phaseHint}).`
+        : `Прошлый раз${date}: ${reps} повт. Цель недели: ${phase.defaultReps}.`,
   };
 }
 
@@ -236,8 +283,11 @@ export function draftsWithSuggestions(input: {
         setNumber: n,
         reps: sug.reps || "",
         weight: sug.weight || "",
+        weightMode: sug.weightMode,
         isCompleted: false,
         restTimeSec: item.rest_sec ?? 60,
+        durationSec: sug.durationSec,
+        machineParams: sug.machineParams,
       });
     }
   }

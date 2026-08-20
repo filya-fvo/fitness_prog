@@ -16,7 +16,10 @@ SPA_ROUTES = {
     "/",
     "/admin",
     "/ai",
+    "/help",
+    "/knowledge",
     "/more",
+    "/measurements",
     "/nutrition",
     "/onboarding",
     "/profile",
@@ -88,7 +91,8 @@ def register_frontend(app: FastAPI, dist_dir: Path) -> bool:
 
     @app.get("/{frontend_path:path}", include_in_schema=False)
     async def frontend_fallback(frontend_path: str, request: Request) -> FileResponse:
-        requested_file = _safe_frontend_file(dist_dir, frontend_path)
+        requested_path = "favicon.svg" if frontend_path == "favicon.ico" else frontend_path
+        requested_file = _safe_frontend_file(dist_dir, requested_path)
         if requested_file is not None:
             cache_control = "no-cache" if requested_file.name in {
                 "index.html",

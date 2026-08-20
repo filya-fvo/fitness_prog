@@ -1,6 +1,8 @@
 """SQLAlchemy models."""
 
 from app.models.ai_conversation import AIConversation
+from app.models.body_measurement import BodyMeasurement
+from app.models.daily_metric import DailyMetric
 from app.models.email_otp import EmailOtpCode
 from app.models.exercise import Exercise
 from app.models.nutrition import NutritionLog, NutritionProduct
@@ -19,6 +21,8 @@ __all__ = [
     "NutritionProduct",
     "NutritionLog",
     "AIConversation",
+    "BodyMeasurement",
+    "DailyMetric",
     "SupplementIntake",
     "WebPushSubscription",
 ]

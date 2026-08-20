@@ -9,8 +9,9 @@ from sqlalchemy import text
 
 from app.core.database import engine
 
-G = Path(r"C:/fitness_prog/frontend/public/exercise-gifs")
-REPORT = Path(r"C:/fitness_prog/backups/catalog_rebuild_report.json")
+ROOT = Path(__file__).resolve().parents[2]
+G = ROOT / "frontend" / "public" / "exercise-gifs"
+REPORT = ROOT / "backups" / "catalog_rebuild_report.json"
 
 
 async def main() -> None:

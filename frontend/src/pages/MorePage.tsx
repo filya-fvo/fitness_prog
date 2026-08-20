@@ -33,9 +33,21 @@ export function MorePage() {
           <p className="text-sm font-semibold">Профиль</p>
           <p className="mt-1 text-xs text-tg-hint">Тело, программа, добавки, уведомления</p>
         </Link>
+        <Link to="/measurements" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-semibold">Замеры тела</p>
+          <p className="mt-1 text-xs text-tg-hint">Обхваты, сравнение и графики динамики</p>
+        </Link>
         <Link to="/ai" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
           <p className="text-sm font-semibold">ИИ-тренер</p>
           <p className="mt-1 text-xs text-tg-hint">Техника, замены, разбор прогресса</p>
+        </Link>
+        <Link to="/help" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-semibold">Как пользоваться</p>
+          <p className="mt-1 text-xs text-tg-hint">Короткая инструкция по тренировкам, питанию и прогрессу</p>
+        </Link>
+        <Link to="/knowledge" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
+          <p className="text-sm font-semibold">Справочник</p>
+          <p className="mt-1 text-xs text-tg-hint">Питание, рабочий вес, периодизация, разминка и восстановление</p>
         </Link>
         {isAdmin ? (
           <Link to="/admin" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">

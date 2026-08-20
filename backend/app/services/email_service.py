@@ -44,6 +44,29 @@ def _build_otp_message(
     return msg
 
 
+def _build_feedback_message(
+    *,
+    settings: Settings,
+    to_email: str,
+    message: str,
+    user_label: str,
+    context: dict[str, str],
+) -> EmailMessage:
+    msg = EmailMessage()
+    msg["Subject"] = "Обратная связь из Fitness Mini App"
+    msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+    msg["To"] = to_email
+    context_lines = "\n".join(f"{key}: {value}" for key, value in context.items() if value)
+    msg.set_content(
+        "Новая обратная связь из Fitness Mini App\n\n"
+        f"Пользователь: {user_label}\n"
+        f"{context_lines}\n\n"
+        "Сообщение:\n"
+        f"{message}\n"
+    )
+    return msg
+
+
 def _send_smtp_sync(settings: Settings, msg: EmailMessage) -> None:
     host = settings.smtp_host
     port = int(settings.smtp_port)
@@ -88,4 +111,32 @@ async def send_login_otp_email(
         return True
     except Exception:
         logger.exception("email_otp_send_failed to={}", to_email)
+        raise
+
+
+async def send_feedback_email(
+    *,
+    settings: Settings,
+    to_email: str,
+    message: str,
+    user_label: str,
+    context: dict[str, str],
+) -> bool:
+    """Deliver authenticated user feedback without exposing the admin address."""
+    if not settings.smtp_password or not to_email:
+        logger.warning("feedback_smtp_not_configured")
+        return False
+    email = _build_feedback_message(
+        settings=settings,
+        to_email=to_email,
+        message=message,
+        user_label=user_label,
+        context=context,
+    )
+    try:
+        await asyncio.to_thread(_send_smtp_sync, settings, email)
+        logger.info("feedback_email_sent")
+        return True
+    except Exception:
+        logger.exception("feedback_email_send_failed")
         raise

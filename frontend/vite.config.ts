@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  define: {
+    __FITNESS_BUILD_ID__: JSON.stringify(process.env.FITNESS_BUILD_ID || "development"),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -19,6 +22,14 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
+        icons: [
+          {
+            src: "/favicon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+        ],
       },
       injectManifest: {
         // Precache only the application shell. Exercise GIFs, barcode scanner,
@@ -29,7 +40,6 @@ export default defineConfig({
           "assets/index-*.js",
           "assets/index-*.css",
           "assets/vendor-react-*.js",
-          "assets/vendor-storage-*.js",
           "assets/virtual_pwa-register-*.js",
           "assets/workbox-window*.js",
         ],
@@ -70,6 +80,8 @@ export default defineConfig({
         "/workouts": { ...toApi },
         "/users": { ...toApi },
         "/nutrition": { ...toApi },
+        "/metrics": { ...toApi },
+        "/measurements": { ...toApi },
         "/supplements": { ...toApi },
         "/ai": { ...toApi },
         "/notifications": { ...toApi },

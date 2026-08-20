@@ -1,6 +1,6 @@
 #Requires -Version 5.1
-# Full local launch: backend + frontend + Tailscale Funnel + Telegram Open button.
-# Entry point: C:\fitness_prog\start-all.cmd
+# Full local launch: backend + frontend + Tailscale Funnel + Telegram webhook.
+# Entry point: <project>\start-all.cmd
 param(
   [switch]$SkipTunnel,
   [switch]$SkipNgrok,
@@ -12,9 +12,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) {
-  $Root = "C:\fitness_prog"
-}
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 
 $BackendDir = Join-Path $Root "backend"
 $FrontendDir = Join-Path $Root "frontend"
@@ -137,15 +135,15 @@ if (-not (Test-Path -LiteralPath (Join-Path $FrontendDir "node_modules"))) {
 if (-not $Development) {
   $distIndex = Join-Path $FrontendDir "dist\index.html"
   if (-not $SkipBuild) {
-    Info "Building production frontend..."
+    Info "Building and safely publishing production frontend..."
     Push-Location $FrontendDir
     try {
-      & npm.cmd run build
-      if ($LASTEXITCODE -ne 0) { Die "Frontend production build failed" }
+      & npm.cmd run build:publish
+      if ($LASTEXITCODE -ne 0) { Die "Frontend production publish failed" }
     } finally {
       Pop-Location
     }
-    Ok "Production frontend built"
+    Ok "Production frontend published; previous release assets retained"
   } elseif (-not (Test-Path -LiteralPath $distIndex)) {
     Die "frontend\dist is missing. Run start-all.cmd once without -SkipBuild."
   }
@@ -299,7 +297,7 @@ if (-not $skipPublicTunnel) {
 # --- telegram ---
 if ((-not $SkipTelegram) -and (-not $skipPublicTunnel) -and $publicUrl) {
   if (Test-Path -LiteralPath $SetupTg) {
-    Info "Configuring Telegram Menu Button Open + /start webhook..."
+    Info "Configuring Telegram standard menu + /start webhook..."
     try {
       & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SetupTg -MiniAppUrl $publicUrl
       if ($LASTEXITCODE -ne 0) { throw "setup_telegram_bot.ps1 exited with code $LASTEXITCODE" }
@@ -330,7 +328,7 @@ if ($publicUrl) {
   Write-Host "  Telegram URL: $publicUrl" -ForegroundColor Green
   Write-Host "  Tunnel      : Tailscale Funnel (stable HTTPS, no warning page)"
   Write-Host ""
-  Write-Host "  Telegram: open @$bot -> /start -> Open" -ForegroundColor Green
+  Write-Host "  Telegram: open @$bot -> /start -> inline Open" -ForegroundColor Green
 } else {
   Write-Host "  Browser only (no public tunnel)" -ForegroundColor Yellow
 }

@@ -13,6 +13,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onDetected: (code: string) => void;
+  onOpenLabel?: () => void;
+  onManualProduct?: () => void;
 };
 
 type BarcodeDetectorLike = {
@@ -117,7 +119,13 @@ async function createZxingReader(): Promise<ZxingReader | null> {
   }
 }
 
-export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
+export function BarcodeScannerModal({
+  open,
+  onClose,
+  onDetected,
+  onOpenLabel,
+  onManualProduct,
+}: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -319,14 +327,19 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
         tabIndex={-1}
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-[#1f1f23] text-white shadow-xl"
+        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-[#1f1f23] text-white shadow-xl"
       >
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
             <h3 id="barcode-scanner-title" className="text-base font-semibold">Сканер штрихкода</h3>
             <p className="text-[11px] text-white/60">{hint}</p>
           </div>
-          <button type="button" aria-label="Закрыть сканер" className="text-sm text-white/70" onClick={onClose}>
+          <button
+            type="button"
+            aria-label="Закрыть сканер"
+            className="tap-target flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-sm text-white/70"
+            onClick={onClose}
+          >
             ✕
           </button>
         </div>
@@ -334,7 +347,7 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
         <div className="relative bg-black">
           <video
             ref={videoRef}
-            className="aspect-[3/4] w-full bg-black object-cover"
+            className="aspect-[4/3] max-h-[48dvh] w-full bg-black object-cover"
             playsInline
             muted
             autoPlay
@@ -378,6 +391,26 @@ export function BarcodeScannerModal({ open, onClose, onDetected }: Props) {
               </button>
             </div>
           </label>
+          <div className="grid grid-cols-2 gap-2">
+            {onOpenLabel ? (
+              <button
+                type="button"
+                onClick={onOpenLabel}
+                className="rounded-xl bg-white/10 px-3 py-2 text-sm"
+              >
+                📷 Этикетка
+              </button>
+            ) : null}
+            {onManualProduct ? (
+              <button
+                type="button"
+                onClick={onManualProduct}
+                className="rounded-xl bg-white/10 px-3 py-2 text-sm"
+              >
+                Ввести вручную
+              </button>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={onClose}

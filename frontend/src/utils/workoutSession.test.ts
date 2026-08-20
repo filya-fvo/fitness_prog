@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { Workout } from "@/types/workout";
 import {
   draftsFromWorkoutSnapshot,
+  findNextIncompleteExerciseIndex,
   isPlannedExerciseComplete,
+  resolveAutoAdvanceSetting,
   shouldStartRestAfterSet,
 } from "@/utils/workoutSession";
 
@@ -146,5 +148,31 @@ describe("active workout completion rules", () => {
         restIsActiveNow: false,
       }),
     ).toBe(true);
+  });
+
+  it("keeps auto-advance enabled for profiles saved before the preference existed", () => {
+    expect(resolveAutoAdvanceSetting(undefined)).toBe(true);
+    expect(resolveAutoAdvanceSetting(null)).toBe(true);
+    expect(resolveAutoAdvanceSetting(false)).toBe(false);
+    expect(resolveAutoAdvanceSetting("0")).toBe(false);
+  });
+
+  it("selects the next unfinished exercise for auto-advance", () => {
+    const rows = [
+      ...drafts,
+      { exerciseId: "exercise-2", setNumber: 1, reps: "10", weight: "20", isCompleted: true, restTimeSec: 60 },
+      { exerciseId: "exercise-3", setNumber: 1, reps: "10", weight: "20", isCompleted: false, restTimeSec: 60 },
+    ];
+    const next = findNextIncompleteExerciseIndex(
+      ["exercise-1", "exercise-2", "exercise-3"],
+      rows,
+      0,
+      [
+        { exercise_id: "exercise-1", target_sets: 3 },
+        { exercise_id: "exercise-2", target_sets: 1 },
+        { exercise_id: "exercise-3", target_sets: 1 },
+      ],
+    );
+    expect(next).toBe(2);
   });
 });

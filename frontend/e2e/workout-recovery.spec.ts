@@ -179,3 +179,131 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await page.getByRole("button", { name: /Показать ещё · осталось 5/ }).click();
   await expect(page.locator("article")).toHaveCount(25);
 });
+
+test("workout completion is instant and AI coach runs only on request", async ({ page }) => {
+  const startedAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  let aiRequests = 0;
+  let completionPayload: Record<string, unknown> | null = null;
+  const workout = {
+    id: WORKOUT_ID,
+    user_id: USER_ID,
+    program_id: null,
+    scheduled_date: "2026-08-20",
+    status: "planned",
+    ai_notes: null,
+    rpe: null,
+    started_at: startedAt,
+    completed_at: null,
+    title: "Итоговая тренировка",
+    workout_type: "custom",
+    plan: {
+      title: "Итоговая тренировка",
+      workout_type: "custom",
+      exercises: [
+        {
+          exercise_id: EXERCISE_ID,
+          order: 1,
+          target_sets: 2,
+          target_reps: "10",
+          rest_sec: 60,
+          name_ru: "Тестовый жим",
+        },
+      ],
+    },
+    duration_sec: null,
+    sets: [],
+  };
+
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: USER_ID,
+        telegram_id: null,
+        username: "e2e-user",
+        auth_email: "e2e@example.test",
+        anthropometry: {},
+        goals: { onboarding_completed: true },
+        subscription_status: "free",
+        stars_balance: 0,
+        onboarding_completed: true,
+      }),
+    }),
+  );
+  await page.route(`**/workouts/${WORKOUT_ID}`, (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify(workout) }),
+  );
+  await page.route(`**/workouts/${WORKOUT_ID}/complete`, async (route) => {
+    completionPayload = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...workout,
+        status: "completed",
+        rpe: 7,
+        completed_at: new Date().toISOString(),
+        duration_sec: 600,
+      }),
+    });
+  });
+  await page.route(/\/exercises(?:\?|$)/, (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            id: EXERCISE_ID,
+            name_ru: "Тестовый жим",
+            muscle_group: "грудь",
+            equipment: "гантели",
+            description: "Тест",
+            technique: "Подконтрольное движение",
+            common_mistakes: null,
+            difficulty: 2,
+            video_url: null,
+            animation_url: null,
+            thumbnail_url: null,
+            media_duration_sec: null,
+            media_source: "none",
+            tags: [],
+          },
+        ],
+        total: 1,
+        page: 1,
+        page_size: 200,
+      }),
+    }),
+  );
+  await page.route("**/workouts/history", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [], total: 0 }) }),
+  );
+  await page.route("**/ai/chat", async (route) => {
+    aiRequests += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        session_id: "44444444-4444-4444-8444-444444444444",
+        reply: "Вы сохранили 2 запланированных подхода и честно отметили нагрузку. Возвращайтесь к плану в комфортном темпе.",
+        source: "groq",
+        remaining_requests: 9,
+      }),
+    });
+  });
+
+  await page.goto(`/workouts/active/${WORKOUT_ID}`);
+  await expect(page.getByRole("heading", { name: "Итоговая тренировка" })).toBeVisible();
+  await page.getByText("Завершить тренировку", { exact: true }).click();
+  await page.getByRole("button", { name: /Завершить · тяжесть 7\/10/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Тренировка завершена" })).toBeVisible();
+  await expect(page.getByLabel("Итоги тренировки").getByText("0/1")).toBeVisible();
+  await expect(page.getByLabel("Итоги тренировки").getByText("0/2")).toBeVisible();
+  await expect(page.getByText(/Выполненный объём уже учтён/)).toBeVisible();
+  expect(completionPayload).toEqual({ rpe: 7, ai_notes: null });
+  expect(aiRequests).toBe(0);
+
+  await page.getByRole("button", { name: "Получить комментарий ИИ" }).click();
+  await expect(page.getByText(/Возвращайтесь к плану в комфортном темпе/)).toBeVisible();
+  expect(aiRequests).toBe(1);
+});

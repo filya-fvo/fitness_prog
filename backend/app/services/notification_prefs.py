@@ -275,7 +275,7 @@ def due_notifications(
                             f"Сегодня тренировочный день. Время по плану: {t.strftime('%H:%M')}.\n"
                             "Откройте Mini App и начните сессию."
                         ),
-                        "startapp": "home",
+                        "startapp": "water",
                         "state_key": "last_workout_mark",
                         "state_value": mark,
                     }
@@ -432,7 +432,7 @@ def due_notifications(
                                 f"Осталось ~<b>{left} мл</b>."
                                 f"\nСлот: {slot.strftime('%H:%M')} · интервал {interval} мин."
                             ),
-                            "startapp": "home",
+                            "startapp": "water",
                             "state_key": "water_mark",
                             "state_value": mark,
                             "meta": {

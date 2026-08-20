@@ -371,19 +371,14 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
     goals = user.goals or {}
     due = [item for item in due_notifications(goals) if item.get("kind") != "supplement"]
 
-    if due:
-        # Claim immediately so a second worker tick / restart cannot re-send the same slots.
-        user.goals = apply_state_updates(goals, due)
-        flag_modified(user, "goals")
-        await session.commit()
-        await session.refresh(user)
-
     enriched: list[dict[str, Any]] = []
     for item in due:
         enriched.append(await _enrich_due_item(session, user, item))
 
     sent = 0
+    delivered_due: list[dict[str, Any]] = []
     for item in enriched:
+        delivered = 0
         if user.telegram_id is not None and settings.bot_token and not settings.bot_token.startswith(
             "replace_with"
         ):
@@ -394,8 +389,9 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                     title=str(item.get("title") or "Напоминание"),
                     text=str(item.get("text") or ""),
                     startapp=str(item.get("startapp") or "home"),
+                    water_add_ml=250 if item.get("kind") == "water" else None,
                 )
-                sent += 1
+                delivered += 1
             except TelegramBotError as exc:
                 logger.warning(
                     "notification_send_failed user={} kind={} err={}",
@@ -403,7 +399,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                     item.get("kind"),
                     exc,
                 )
-        sent += await send_user_web_push(
+        delivered += await send_user_web_push(
             session,
             settings,
             user_id=user.id,
@@ -412,9 +408,19 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
             url=f"/?startapp={item.get('startapp') or 'home'}",
             tag=f"fitness-{item.get('kind') or 'reminder'}",
         )
+        if delivered:
+            sent += delivered
+            delivered_due.append(item)
+
+    # A reminder becomes complete only after at least one channel accepted it.
+    # Otherwise catch-up must retry it when DNS/Internet/Tailscale recovers.
+    if delivered_due:
+        user.goals = apply_state_updates(user.goals or goals, delivered_due)
+        flag_modified(user, "goals")
+        await session.commit()
+        await session.refresh(user)
 
     for group in await supplement_intakes.due_groups(session, user):
-        await supplement_intakes.claim_notified(session, group)
         lines = [
             f"{index}. <b>{row.name_ru}</b>" + (f" — {row.dose}" if row.dose else "")
             for index, row in enumerate(group, start=1)
@@ -448,9 +454,9 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
             tag=f"supplements-{group[0].scheduled_at.isoformat()}",
         )
         if delivered:
+            await supplement_intakes.claim_notified(session, group)
             sent += delivered
         else:
-            await supplement_intakes.release_notification_claim(session, group)
             logger.info("supplement_notification_no_channel user={} count={}", user.id, len(group))
     return sent
 

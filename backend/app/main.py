@@ -17,6 +17,8 @@ from app.frontend import register_frontend
 from app.routers import admin as admin_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
+from app.routers import body_measurements as body_measurements_router
+from app.routers import daily_metrics as daily_metrics_router
 from app.routers import exercises as exercises_router
 from app.routers import feedback as feedback_router
 from app.routers import notifications as notifications_router
@@ -56,6 +58,8 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 
 app.include_router(auth_router.router)
+app.include_router(body_measurements_router.router)
+app.include_router(daily_metrics_router.router)
 app.include_router(users_router.router)
 app.include_router(admin_router.router)
 app.include_router(exercises_router.router)

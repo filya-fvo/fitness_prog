@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import type { WeeklyWorkoutOverview } from "@/utils/weeklyOverview";
+import { formatWeekDelta, type WeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { daysCount, setsCount, workoutsCount } from "@/utils/localization";
 
 type Props = {
@@ -8,12 +8,6 @@ type Props = {
   onAskAi?: () => void;
   aiBusy?: boolean;
 };
-
-function deltaLabel(n: number, unit = ""): string {
-  if (n === 0) return `= прошл.${unit ? ` ${unit}` : ""}`;
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${n}${unit}`;
-}
 
 export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
   const maxVol = Math.max(1, ...overview.days.map((d) => d.volume));
@@ -35,7 +29,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
           <p className="text-lg font-semibold">{overview.completedWorkouts}</p>
           <p className="text-[10px] text-tg-hint">{workoutsCount(overview.completedWorkouts).replace(/^\d+\s/, "")}</p>
           <p className="text-[10px] text-tg-hint">
-            {deltaLabel(overview.vsPrevWeek.workoutsDelta)}
+            {formatWeekDelta(overview.vsPrevWeek.workoutsDelta, "workouts")}
           </p>
         </div>
         <div className="rounded-xl bg-tg-bg px-2 py-2">
@@ -51,7 +45,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
           </p>
           <p className="text-[10px] text-tg-hint">объём, кг</p>
           <p className="text-[10px] text-tg-hint">
-            {deltaLabel(overview.vsPrevWeek.volumeDelta, " кг")}
+            {formatWeekDelta(overview.vsPrevWeek.volumeDelta, "volume")}
           </p>
         </div>
       </div>

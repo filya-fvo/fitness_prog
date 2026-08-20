@@ -25,6 +25,9 @@ REQUIRED_FILES = [
     "20260812000014_workout_set_weight_mode.sql",
     "20260813000015_workout_idempotency.sql",
     "20260813000016_account_merge.sql",
+    "20260815000017_daily_metrics.sql",
+    "20260815000018_body_measurements.sql",
+    "20260820000019_plank_animation.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -39,6 +42,8 @@ REQUIRED_TABLES = [
     "email_otp_codes",
     "supplement_intakes",
     "web_push_subscriptions",
+    "daily_metrics",
+    "body_measurements",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -55,6 +60,9 @@ REQUIRED_SNIPPETS = [
     "client_workout_id UUID",
     "uq_workouts_user_client_id",
     "merged_into_user_id UUID",
+    "uq_daily_metrics_user_date",
+    "uq_body_measurements_user_date",
+    "/exercise-gifs/2135-VBAWRPG.gif",
 ]
 
 

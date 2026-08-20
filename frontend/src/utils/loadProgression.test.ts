@@ -140,6 +140,38 @@ describe("loadProgression", () => {
     expect(drafts.every((d) => !d.isCompleted)).toBe(true);
   });
 
+  it("carries the last duration and machine settings for timed/cardio exercises", () => {
+    const hist = buildExerciseHistory([
+      w({
+        id: "timed-workout",
+        completed_at: "2026-08-19T10:00:00Z",
+        rpe: 6,
+        sets: [
+          {
+            id: "timed-set",
+            workout_id: "timed-workout",
+            exercise_id: "plank",
+            set_number: 1,
+            reps: null,
+            weight: null,
+            is_completed: true,
+            rest_time_sec: 60,
+            duration_sec: 75,
+            machine_params: { level: 4 },
+          },
+        ],
+      }),
+    ]);
+    const suggestion = suggestLoad({
+      history: hist.get("plank"),
+      phase: resolveWeekPhase(null),
+    });
+
+    expect(suggestion.durationSec).toBe(75);
+    expect(suggestion.machineParams).toEqual({ level: 4 });
+    expect(suggestion.note).toContain("1:15");
+  });
+
   it("draftReadyToComplete checks load type fields", () => {
     expect(
       draftReadyToComplete({ reps: "10", weight: "80", durationSec: undefined }, "weight_reps"),

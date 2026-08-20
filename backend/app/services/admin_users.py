@@ -14,6 +14,8 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import Settings
 from app.models.ai_conversation import AIConversation
+from app.models.body_measurement import BodyMeasurement
+from app.models.daily_metric import DailyMetric
 from app.models.email_otp import EmailOtpCode
 from app.models.nutrition import NutritionLog
 from app.models.user import User
@@ -165,6 +167,12 @@ async def _delete_user_owned_rows(session: AsyncSession, user_id: uuid.UUID) -> 
     dr = await session.execute(delete(NutritionLog).where(NutritionLog.user_id == user_id))
     stats["nutrition_logs"] = int(dr.rowcount or 0)
 
+    dr = await session.execute(delete(DailyMetric).where(DailyMetric.user_id == user_id))
+    stats["daily_metrics"] = int(dr.rowcount or 0)
+
+    dr = await session.execute(delete(BodyMeasurement).where(BodyMeasurement.user_id == user_id))
+    stats["body_measurements"] = int(dr.rowcount or 0)
+
     dr = await session.execute(delete(AIConversation).where(AIConversation.user_id == user_id))
     stats["ai_conversations"] = int(dr.rowcount or 0)
 
@@ -216,6 +224,25 @@ def _clear_measurements(user: User) -> dict[str, int]:
     return {"measurements": len(measurements) if isinstance(measurements, dict) else 0}
 
 
+async def _clear_daily_weights(session: AsyncSession, user_id: uuid.UUID) -> int:
+    rows = list(
+        (
+            await session.scalars(
+                select(DailyMetric).where(
+                    DailyMetric.user_id == user_id,
+                    DailyMetric.weight_kg.is_not(None),
+                )
+            )
+        ).all()
+    )
+    for row in rows:
+        row.weight_kg = None
+        sources = dict(row.sources or {})
+        sources.pop("weight_kg", None)
+        row.sources = sources
+    return len(rows)
+
+
 async def clear_user_data(
     session: AsyncSession,
     user: User,
@@ -243,6 +270,11 @@ async def clear_user_data(
         text = "Администратор очистил дневник питания и воду. Профиль и цели сохранены."
     else:
         stats = _clear_measurements(user)
+        stats["weight_days"] = await _clear_daily_weights(session, user.id)
+        result = await session.execute(
+            delete(BodyMeasurement).where(BodyMeasurement.user_id == user.id)
+        )
+        stats["body_measurements"] = int(result.rowcount or 0)
         title = "Замеры очищены"
         text = "Администратор очистил замеры тела. Анкета, рост, вес и остальные настройки сохранены."
 
@@ -298,8 +330,6 @@ async def reset_user_profile(
     Keeps telegram_id / username / auth_email / TG name.
     """
     stats = await _delete_user_owned_rows(session, user.id)
-    user.openai_conversation_id = None
-
     identity = _preserve_identity_anthropometry(user)
     user.anthropometry = identity
     flag_modified(user, "anthropometry")
@@ -352,7 +382,6 @@ async def delete_user(
         )
 
     stats = await _delete_user_owned_rows(session, user.id)
-    user.openai_conversation_id = None
     tg_id = user.telegram_id
     uname = user.username
 

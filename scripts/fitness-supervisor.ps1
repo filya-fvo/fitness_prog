@@ -5,10 +5,11 @@ param(
 
 $ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) { $Root = "C:\fitness_prog" }
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 
 $LogDir = Join-Path $Root "logs"
 $LogFile = Join-Path $LogDir "supervisor.log"
+$HeartbeatFile = Join-Path $LogDir "supervisor-heartbeat.json"
 $StartAll = Join-Path $Root "scripts\start-all.ps1"
 $StartRedis = Join-Path $Root "scripts\start-redis.ps1"
 $StartNotifications = Join-Path $Root "scripts\start-notifications.ps1"
@@ -20,10 +21,39 @@ $PublicPort = $BackendPort
 $FailureThreshold = 2
 
 New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+$SupervisorLockPath = Join-Path $LogDir "fitness-supervisor.lock"
+try {
+  # A file handle with FileShare.None works across users and Windows sessions.
+  # It is released automatically if the supervisor process crashes.
+  $SupervisorLock = [System.IO.File]::Open(
+    $SupervisorLockPath,
+    [System.IO.FileMode]::OpenOrCreate,
+    [System.IO.FileAccess]::ReadWrite,
+    [System.IO.FileShare]::None
+  )
+} catch {
+  exit 0
+}
 
 function Write-SupervisorLog([string]$Message, [string]$Level = "INFO") {
   $line = "{0} [{1}] {2}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Level, $Message
   Add-Content -LiteralPath $LogFile -Value $line -Encoding utf8
+}
+
+function Write-SupervisorHeartbeat(
+  [bool]$LocalOk,
+  [bool]$PublicOk,
+  [bool]$RedisOk,
+  [bool]$WorkerOk
+) {
+  $payload = @{
+    updated_at_utc = [DateTime]::UtcNow.ToString("o")
+    local_ok = $LocalOk
+    public_ok = $PublicOk
+    redis_ok = $RedisOk
+    worker_ok = $WorkerOk
+  } | ConvertTo-Json -Compress
+  Set-Content -LiteralPath $HeartbeatFile -Value $payload -Encoding utf8
 }
 
 function Read-DotEnvValue([string]$Path, [string]$Key) {
@@ -147,6 +177,13 @@ Write-SupervisorLog "Supervisor started; interval=${IntervalSeconds}s"
 $publicFailures = 0
 $localFailures = 0
 
+# Do not wait for two failed monitoring cycles after boot. The first task start
+# must bring up the complete stack immediately on a freshly installed server.
+Ensure-LocalStack
+if (-not (Test-Http "$(Get-PublicUrl)/health" 12)) {
+  [void](Ensure-Tailscale)
+}
+
 while ($true) {
   try {
     $localOk = (Test-Http "http://127.0.0.1:$BackendPort/health" 3) -and (Test-Http "http://127.0.0.1:$PublicPort" 3)
@@ -160,7 +197,9 @@ while ($true) {
         $localFailures = 0
       }
     }
-    if (-not (Test-Tcp 6379) -or -not (Test-NotificationWorker)) {
+    $redisOk = Test-Tcp 6379
+    $workerOk = Test-NotificationWorker
+    if (-not $redisOk -or -not $workerOk) {
       Ensure-LocalStack
     }
     $publicUrl = Get-PublicUrl
@@ -180,6 +219,7 @@ while ($true) {
         }
       }
     }
+    Write-SupervisorHeartbeat $localOk $publicOk $redisOk $workerOk
   } catch {
     Write-SupervisorLog "Supervisor cycle error: $($_.Exception.Message)" "ERROR"
   }

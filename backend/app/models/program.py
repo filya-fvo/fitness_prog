@@ -1,4 +1,4 @@
-"""Program SQLAlchemy model (fitness-tz.md §4)."""
+"""Program SQLAlchemy model."""
 
 from __future__ import annotations
 

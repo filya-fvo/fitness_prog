@@ -103,12 +103,7 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     $menu = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getChatMenuButton") -Method Post -TimeoutSec 10 -ContentType "application/json" -Body "{}"
     if ($menu.ok) {
       $t = [string]$menu.result.type
-      if ($t -eq "web_app") {
-        $menuUrl = [string]$menu.result.web_app.url
-        if ($menuUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("default Menu Button URL matches: " + $menuUrl) } else { Bad ("default Menu Button URL mismatch: " + $menuUrl) }
-      } else {
-        Info ("Menu Button type=" + $t + " (run setup_telegram_bot.ps1 for Open)")
-      }
+      if ($t -in @("default", "commands")) { Ok ("standard Telegram menu is active (type=" + $t + "); persistent Open is absent") } else { Bad ("unexpected default Menu Button type=" + $t) }
     }
   } catch {
     Info "getChatMenuButton skipped/failed"
@@ -118,8 +113,8 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     try {
       $body = @{ chat_id = $TelegramChatId } | ConvertTo-Json
       $chatMenu = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getChatMenuButton") -Method Post -TimeoutSec 10 -ContentType "application/json" -Body $body
-      $chatUrl = [string]$chatMenu.result.web_app.url
-      if ($chatUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("chat Menu Button URL matches for " + $TelegramChatId) } else { Bad ("chat Menu Button URL mismatch for " + $TelegramChatId + ": " + $chatUrl) }
+      $chatType = [string]$chatMenu.result.type
+      if ($chatType -in @("default", "commands")) { Ok ("standard chat menu active for " + $TelegramChatId + " (type=" + $chatType + ")") } else { Bad ("unexpected chat Menu Button type for " + $TelegramChatId + ": " + $chatType) }
     } catch {
       Bad ("per-chat Menu Button check failed for " + $TelegramChatId)
     }
@@ -148,8 +143,8 @@ if ((Test-Path $workerLog) -and ((Get-Date) - (Get-Item $workerLog).LastWriteTim
 
 Sec "Device QA checklist (manual in Telegram)"
 $checklist = @(
-  "1) /start -> welcome + reply keyboard Open /start /help",
-  "2) Open (inline + menu) -> Mini App loads and stays open",
+  "1) /start -> welcome + reply keyboard /start /help; no persistent Open near composer",
+  "2) Inline Open under the fresh message -> Mini App loads and stays open",
   "3) Auth via initData; Home CTA works",
   "4) Start workout -> set -> rest -> finish",
   "5) Nutrition: barcode (iOS ZXing) or manual EAN -> add",

@@ -21,6 +21,7 @@ export type AnalyticsEventName =
   | "set_logged"
   | "nutrition_logged"
   | "nutrition_barcode_selected"
+  | "nutrition_label_recognized"
   | "ai_message_sent"
   | "reentry_shown"
   | "habit_checked";

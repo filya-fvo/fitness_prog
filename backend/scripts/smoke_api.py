@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import hashlib
 import hmac
@@ -65,7 +66,15 @@ async def db_check() -> None:
         print("DB_OK", "exercises=", ex, "products=", np)
 
 
-async def api_flow() -> int:
+async def api_health() -> int:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
+    print("health", response.status_code, response.text)
+    return 0 if response.status_code == 200 else 1
+
+
+async def api_flow(*, include_external: bool) -> int:
     settings = get_settings()
     errors = 0
     transport = ASGITransport(app=app)
@@ -77,7 +86,7 @@ async def api_flow() -> int:
 
         init = make_init(settings.bot_token)
         r = await client.post("/auth/telegram", json={"init_data": init})
-        print("auth", r.status_code, r.text[:220])
+        print("auth", r.status_code)
         if r.status_code != 200:
             return 1
         token = r.json()["access_token"]
@@ -169,15 +178,16 @@ async def api_flow() -> int:
                 if r.status_code != 200:
                     errors += 1
 
-                r = await client.post(
-                    "/notifications/reminders",
-                    headers=headers,
-                    json={"workout_id": wid, "enqueue": False},
-                )
-                print("reminder", r.status_code, r.text[:200])
-                # 200 = sent/dry_run; 400 = synthetic telegram id has no chat (expected in smoke)
-                if r.status_code not in (200, 400):
-                    errors += 1
+                if include_external:
+                    r = await client.post(
+                        "/notifications/reminders",
+                        headers=headers,
+                        json={"workout_id": wid, "enqueue": False},
+                    )
+                    print("reminder", r.status_code, r.text[:200])
+                    # Synthetic Telegram users have no real chat.
+                    if r.status_code not in (200, 400, 502):
+                        errors += 1
 
         r = await client.get("/nutrition/products", headers=headers, params={"q": "ябл"})
         print(
@@ -211,33 +221,54 @@ async def api_flow() -> int:
             print("NO_PRODUCTS")
             errors += 1
 
-        r = await client.post("/ai/chat", headers=headers, json={"message": "Замени жим лёжа"})
-        if r.status_code == 200:
-            body = r.json()
-            reply = (body.get("reply") or "").encode("ascii", "replace").decode("ascii")
-            print("ai_chat", r.status_code, body.get("source"), reply[:90])
-        else:
-            print("ai_chat", r.status_code, r.text[:180])
-            errors += 1
+        if include_external:
+            r = await client.post("/ai/chat", headers=headers, json={"message": "Замени жим лёжа"})
+            if r.status_code == 200:
+                body = r.json()
+                reply = (body.get("reply") or "").encode("ascii", "replace").decode("ascii")
+                print("ai_chat", r.status_code, body.get("source"), reply[:90])
+            else:
+                print("ai_chat", r.status_code, r.text[:180])
+                errors += 1
 
-        r = await client.post("/ai/analyze", headers=headers, json={"days": 14})
-        if r.status_code == 200:
-            body = r.json()
-            report = (body.get("report") or "").encode("ascii", "replace").decode("ascii")
-            print("ai_analyze", r.status_code, body.get("source"), report[:90])
-        else:
-            print("ai_analyze", r.status_code, r.text[:180])
-            errors += 1
+            r = await client.post("/ai/analyze", headers=headers, json={"days": 14})
+            if r.status_code == 200:
+                body = r.json()
+                report = (body.get("report") or "").encode("ascii", "replace").decode("ascii")
+                print("ai_analyze", r.status_code, body.get("source"), report[:90])
+            else:
+                print("ai_analyze", r.status_code, r.text[:180])
+                errors += 1
 
     print("ERRORS", errors)
     return errors
 
 
-async def main() -> None:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Read-only health smoke by default; mutation requires an explicit flag.",
+    )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="create a synthetic QA user and test workout/nutrition writes",
+    )
+    parser.add_argument(
+        "--external",
+        action="store_true",
+        help="with --write, also call Telegram and the configured AI provider",
+    )
+    args = parser.parse_args()
+    if args.external and not args.write:
+        parser.error("--external requires --write")
+    return args
+
+
+async def main(args: argparse.Namespace) -> None:
     await db_check()
-    code = await api_flow()
+    code = await api_flow(include_external=args.external) if args.write else await api_health()
     raise SystemExit(code)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(parse_args()))

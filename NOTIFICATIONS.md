@@ -302,7 +302,7 @@ arq app.tasks.notifications.WorkerSettings
 ```
 
 + managed Redis (`REDIS_URL`), валидный `BOT_TOKEN`, webhook/mini app URL.  
-См. также [docs/ops-runbook.md](docs/ops-runbook.md), [docker-compose.yml](docker-compose.yml) (сервис `worker` + `redis`).
+См. также [docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md), [docker-compose.yml](docker-compose.yml) (сервис `worker` + `redis`).
 
 ---
 

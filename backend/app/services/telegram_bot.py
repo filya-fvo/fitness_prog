@@ -1,4 +1,4 @@
-"""Telegram Bot API helpers — /start, menu Open button, reminders (TZ §7)."""
+"""Telegram Bot API helpers — commands, Mini App links and reminders."""
 
 from __future__ import annotations
 
@@ -47,18 +47,22 @@ async def bot_api(
         raise TelegramBotError("BOT_TOKEN is not configured")
 
     url = f"https://api.telegram.org/bot{settings.bot_token}/{method}"
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(url, json=payload or {})
-        data = resp.json()
-        if resp.status_code >= 400 or not data.get("ok"):
-            logger.error(
-                "telegram_api_failed method={} status={} body={}",
-                method,
-                resp.status_code,
-                data,
-            )
-            raise TelegramBotError(str(data.get("description") or resp.text))
-        return data
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(url, json=payload or {})
+            data = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        # Keep transport outages retryable by the notification dispatcher.
+        raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+    if resp.status_code >= 400 or not data.get("ok"):
+        logger.error(
+            "telegram_api_failed method={} status={} body={}",
+            method,
+            resp.status_code,
+            data,
+        )
+        raise TelegramBotError(str(data.get("description") or resp.text))
+    return data
 
 
 async def send_message(
@@ -290,6 +294,28 @@ def mini_app_keyboard(
     }
 
 
+def water_intake_keyboard(
+    *,
+    bot_username: str,
+    mini_app_url: str = "",
+    amount_ml: int = 250,
+) -> dict[str, Any]:
+    """Inline water action plus a precise link to the daily water controls."""
+    amount = max(50, min(1000, int(amount_ml)))
+    rows: list[list[dict[str, str | dict[str, str]]]] = [
+        [{"text": f"💧 +{amount} мл", "callback_data": f"wa:{amount}"}],
+    ]
+    if mini_app_url or bot_username:
+        open_keyboard = mini_app_keyboard(
+            bot_username=bot_username,
+            startapp="water",
+            button_text="Открыть дневник",
+            mini_app_url=mini_app_url,
+        )
+        rows.extend(open_keyboard["inline_keyboard"])
+    return {"inline_keyboard": rows}
+
+
 def start_welcome_text(
     *,
     first_name: str | None = None,
@@ -308,7 +334,7 @@ def start_welcome_text(
         "",
         "Это <b>Fitness Mini App</b> — программы, тренировки, питание, прогресс и AI-тренер.",
         "",
-        "Чтобы начать — нажмите <b>Open</b> ниже или синюю кнопку меню.",
+        "Чтобы начать — нажмите <b>Open</b> под этим сообщением.",
         "",
         "• Первый вход: короткая анкета (цель, уровень, тело).",
         "• <b>Главная → Сегодня</b> — старт/продолжение тренировки.",
@@ -389,18 +415,11 @@ def bot_commands_reply_keyboard(settings: Settings | None = None) -> dict[str, A
     Persistent reply keyboard under the message field.
 
     Buttons send plain text commands so users can tap /start and /help
-    instead of typing them. Optional Open web_app row when Mini App URL is set.
+    instead of typing them. App opening remains in inline messages.
     """
-    rows: list[list[dict[str, Any]]] = []
-    mini_url = ""
-    if settings is not None:
-        mini_url = (resolve_mini_app_url(settings) or "").strip().rstrip("/")
-    if mini_url.startswith("https://"):
-        open_url = build_mini_app_open_url(mini_url, startapp="home") or mini_url
-        rows.append([{"text": "Open", "web_app": {"url": open_url}}])
-    rows.append([{"text": "/start"}, {"text": "/help"}])
+    _ = settings  # kept for backwards-compatible call sites
     return {
-        "keyboard": rows,
+        "keyboard": [[{"text": "/start"}, {"text": "/help"}]],
         "resize_keyboard": True,
         "is_persistent": True,
         "input_field_placeholder": "Команда или сообщение…",
@@ -495,11 +514,11 @@ async def send_start_welcome(
         text=text,
         reply_markup=inline_open,
     )
-    # Persistent reply keyboard under the composer (Open + /start + /help when URL set).
+    # Persistent reply keyboard under the composer contains commands only.
     await send_message(
         settings,
         chat_id=chat_id,
-        text="Кнопки под полем ввода: <b>Open</b>, /start, /help",
+        text="Команды под полем ввода: /start и /help",
         reply_markup=bot_commands_reply_keyboard(settings),
     )
     if send_full_guide:
@@ -507,29 +526,13 @@ async def send_start_welcome(
     return result
 
 
-async def set_chat_menu_button(
+async def set_default_chat_menu_button(
     settings: Settings,
     *,
-    mini_app_url: str | None = None,
-    text: str = "Open",
     chat_id: int | None = None,
 ) -> dict[str, Any]:
-    """
-    Set Menu Button (blue Open next to message field / in chat list).
-
-    chat_id=None -> default for all users.
-    """
-    raw_url = (mini_app_url or resolve_mini_app_url(settings) or "").strip().rstrip("/")
-    url = build_mini_app_open_url(raw_url)
-    if not url:
-        raise TelegramBotError("MINI_APP_URL must be safe HTTPS and must not use ngrok")
-
-    menu_button: dict[str, Any] = {
-        "type": "web_app",
-        "text": text or "Open",
-        "web_app": {"url": url},
-    }
-    payload: dict[str, Any] = {"menu_button": menu_button}
+    """Remove a per-chat Web App override and restore Telegram's standard menu."""
+    payload: dict[str, Any] = {"menu_button": {"type": "default"}}
     if chat_id is not None:
         payload["chat_id"] = chat_id
     return await bot_api(settings, "setChatMenuButton", payload)
@@ -595,13 +598,20 @@ async def send_app_notification(
     title: str,
     text: str,
     startapp: str | None = "home",
+    water_add_ml: int | None = None,
 ) -> dict[str, Any]:
     """Send HTML notification with Mini App Open button (web_app preferred)."""
     body = f"🔔 <b>{title}</b>\n{text}"
     target = (startapp or "home").strip() or "home"
     mini_url = resolve_mini_app_url(settings)
     markup: dict[str, Any] | None = None
-    if mini_url:
+    if water_add_ml is not None:
+        markup = water_intake_keyboard(
+            bot_username=settings.bot_username,
+            mini_app_url=mini_url,
+            amount_ml=water_add_ml,
+        )
+    elif mini_url:
         markup = open_web_app_keyboard(
             mini_app_url=mini_url,
             button_text="Open",
@@ -726,8 +736,7 @@ async def send_open_again(
     _ = reason
     markup = open_app_markup(settings)
     text = (
-        "Откройте приложение кнопкой <b>Open</b> ниже "
-        "или синей кнопкой меню рядом с полем ввода."
+        "Откройте приложение кнопкой <b>Open</b> под этим сообщением."
     )
     result = await send_message(
         settings,
@@ -738,7 +747,7 @@ async def send_open_again(
     await send_message(
         settings,
         chat_id=chat_id,
-        text="Кнопки: <b>Open</b>, /start, /help",
+        text="Команды: /start и /help",
         reply_markup=bot_commands_reply_keyboard(settings),
     )
     return result

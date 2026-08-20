@@ -7,10 +7,20 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $envFile = Join-Path $root "backend\.env"
 $migrationsDir = Join-Path $root "supabase\migrations"
-$psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
+$psqlCommand = Get-Command psql.exe -ErrorAction SilentlyContinue
+if ($psqlCommand) {
+    $psql = $psqlCommand.Source
+}
+else {
+    $psql = Get-ChildItem (Join-Path $env:ProgramFiles "PostgreSQL\*\bin\psql.exe") -ErrorAction SilentlyContinue |
+        Sort-Object { [int]$_.Directory.Parent.Name } -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
+}
 
 if (-not (Test-Path $envFile)) { throw "Missing $envFile" }
-if (-not (Test-Path $psql)) { throw "psql not found: $psql" }
+if (-not $psql -or -not (Test-Path $psql)) {
+    throw "psql not found. Install PostgreSQL command-line tools or run install-server.cmd."
+}
 
 function Get-EnvValue([string]$Path, [string]$Key) {
     $line = Get-Content $Path | Where-Object { $_ -match ("^" + [regex]::Escape($Key) + "=") } | Select-Object -First 1

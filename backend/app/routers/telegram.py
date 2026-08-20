@@ -1,4 +1,4 @@
-"""Telegram Bot webhook + setup helpers (/start welcome, Menu Button Open)."""
+"""Telegram Bot webhook and setup helpers."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from app.core.config import Settings, get_settings
 from app.core.database import AsyncSessionLocal
 from app.models.user import User
-from app.services import supplement_intakes
+from app.services import notification_prefs, supplement_intakes
 from app.services.telegram_bot import (
     TelegramBotError,
     answer_callback_query,
@@ -32,11 +32,13 @@ from app.services.telegram_bot import (
     send_start_welcome,
     send_user_guide,
     set_bot_commands,
-    set_chat_menu_button,
+    set_default_chat_menu_button,
     set_webhook,
     supplement_intake_keyboard,
+    water_intake_keyboard,
 )
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
@@ -45,11 +47,10 @@ _GUIDE_SENT_PATH = Path(__file__).resolve().parents[2] / "data" / "bot_guide_sen
 
 
 class SetupMenuRequest(BaseModel):
-    mini_app_url: str | None = Field(
-        default=None,
-        description="HTTPS Mini App URL; defaults to MINI_APP_URL env",
-    )
-    text: str = Field(default="Open", max_length=16)
+    """Deprecated request body retained for local API compatibility."""
+
+    mini_app_url: str | None = None
+    text: str | None = Field(default=None, max_length=16)
 
 
 class SetupWebhookRequest(BaseModel):
@@ -117,19 +118,11 @@ def _mark_guide_sent(telegram_user_id: int | None, chat_id: int) -> None:
     _save_guide_sent(store)
 
 
-async def _ensure_menu_button(settings: Settings, chat_id: int) -> None:
-    mini = resolve_mini_app_url(settings)
-    if not mini:
-        return
+async def _ensure_default_menu_button(settings: Settings, chat_id: int) -> None:
     try:
-        await set_chat_menu_button(
-            settings,
-            mini_app_url=mini,
-            text="Open",
-            chat_id=chat_id,
-        )
+        await set_default_chat_menu_button(settings, chat_id=chat_id)
     except TelegramBotError as exc:
-        logger.warning("set_chat_menu_button_failed chat={} err={}", chat_id, exc)
+        logger.warning("set_default_menu_button_failed chat={} err={}", chat_id, exc)
 
 
 async def _ensure_bot_commands(settings: Settings) -> None:
@@ -181,6 +174,9 @@ async def telegram_webhook(
     if callback and callback["data"].startswith("si:"):
         await _handle_supplement_callback(settings, callback)
         return {"ok": True}
+    if callback and callback["data"].startswith("wa:"):
+        await _handle_water_callback(settings, callback)
+        return {"ok": True}
 
     # Legacy Mini App sendData closes the app and delivers web_app_data here.
     wad = extract_web_app_data(update)
@@ -193,7 +189,7 @@ async def telegram_webhook(
             len(str(wad.get("data") or "")),
         )
         try:
-            await _ensure_menu_button(settings, chat_id)
+            await _ensure_default_menu_button(settings, chat_id)
             await send_open_again(settings, chat_id=chat_id, reason="web_app_data")
         except TelegramBotError as exc:
             logger.error("telegram_web_app_data_reply_failed chat={} err={}", chat_id, exc)
@@ -204,7 +200,7 @@ async def telegram_webhook(
         chat_id = open_tap["chat_id"]
         logger.info("telegram_open_text chat_id={} user_id={}", chat_id, open_tap.get("user_id"))
         try:
-            await _ensure_menu_button(settings, chat_id)
+            await _ensure_default_menu_button(settings, chat_id)
             await send_open_again(settings, chat_id=chat_id, reason="open_text")
         except TelegramBotError as exc:
             logger.error("telegram_open_text_reply_failed chat={} err={}", chat_id, exc)
@@ -245,7 +241,7 @@ async def telegram_webhook(
             help_cmd.get("username"),
         )
         try:
-            await _ensure_menu_button(settings, chat_id)
+            await _ensure_default_menu_button(settings, chat_id)
             await _ensure_bot_commands(settings)
             await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
             _mark_guide_sent(help_cmd.get("user_id"), chat_id)
@@ -271,7 +267,7 @@ async def telegram_webhook(
 
     try:
         await _ensure_bot_commands(settings)
-        await _ensure_menu_button(settings, chat_id)
+        await _ensure_default_menu_button(settings, chat_id)
         await send_start_welcome(
             settings,
             chat_id=chat_id,
@@ -372,32 +368,101 @@ async def _handle_supplement_callback(settings: Settings, callback: dict[str, An
         logger.warning("supplement_callback_edit_failed err={}", exc)
 
 
+async def _handle_water_callback(settings: Settings, callback: dict[str, Any]) -> None:
+    try:
+        amount = int(callback["data"].split(":", 1)[1])
+    except (IndexError, TypeError, ValueError):
+        amount = 0
+    if amount not in {250, 500}:
+        await answer_callback_query(
+            settings,
+            callback_query_id=callback["id"],
+            text="Некорректный объём воды",
+        )
+        return
+
+    async with AsyncSessionLocal() as session:
+        user = await session.scalar(
+            select(User)
+            .where(
+                User.telegram_id == callback["user_id"],
+                User.is_deleted.is_(False),
+            )
+            .with_for_update()
+        )
+        if user is None:
+            await answer_callback_query(
+                settings,
+                callback_query_id=callback["id"],
+                text="Аккаунт не найден",
+            )
+            return
+
+        goals = dict(user.goals or {})
+        reminder_settings = notification_prefs.merge_notification_settings(
+            goals.get("notification_settings")
+            if isinstance(goals.get("notification_settings"), dict)
+            else None
+        )
+        today = notification_prefs.local_now(
+            str(reminder_settings.get("timezone") or notification_prefs.DEFAULT_TZ)
+        ).date()
+        total = notification_prefs.water_ml_for_day(goals, today) + amount
+        user.goals = notification_prefs.set_water_ml_for_day(goals, today, total)
+        flag_modified(user, "goals")
+        await session.commit()
+
+    water_settings = reminder_settings.get("water") or {}
+    try:
+        target = max(500, min(8000, int(water_settings.get("daily_ml") or 2500)))
+    except (TypeError, ValueError):
+        target = 2500
+    await answer_callback_query(
+        settings,
+        callback_query_id=callback["id"],
+        text=f"Добавлено {amount} мл · сегодня {total} мл",
+    )
+    try:
+        await edit_message_text(
+            settings,
+            chat_id=callback["chat_id"],
+            message_id=callback["message_id"],
+            text=(
+                "💧 <b>Вода отмечена</b>\n"
+                f"Сегодня: <b>{total} мл</b> из {target} мл."
+            ),
+            reply_markup=water_intake_keyboard(
+                bot_username=settings.bot_username,
+                mini_app_url=resolve_mini_app_url(settings),
+                amount_ml=amount,
+            ),
+        )
+    except TelegramBotError as exc:
+        logger.warning("water_callback_edit_failed err={}", exc)
+
+
 @router.post("/setup/menu-button")
 async def setup_menu_button(
     body: SetupMenuRequest,
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
     """
-    Set default Menu Button (Open) for all chats.
+    Restore Telegram's standard menu instead of a persistent Web App button.
 
     Dev/ops helper — call once after the permanent MINI_APP_URL is known.
     Disabled in production unless explicitly allowed later.
     """
+    _ = body
     if settings.environment == "production":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Настройте Telegram-бота через служебный скрипт или BotFather",
         )
     try:
-        data = await set_chat_menu_button(
-            settings,
-            mini_app_url=body.mini_app_url,
-            text=body.text or "Open",
-            chat_id=None,
-        )
+        data = await set_default_chat_menu_button(settings, chat_id=None)
         return {
             "ok": True,
-            "menu_url": body.mini_app_url or resolve_mini_app_url(settings),
+            "menu_type": "default",
             "result": data.get("result"),
         }
     except TelegramBotError as exc:

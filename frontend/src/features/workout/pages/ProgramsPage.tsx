@@ -7,6 +7,7 @@ import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
@@ -527,7 +528,7 @@ export function ProgramsPage() {
           </div>
           <button
             type="button"
-            className="shrink-0 text-xs text-tg-link"
+            className="tap-target flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg px-1 text-xs text-tg-link"
             onClick={() => setExpandedId(open ? null : program.id)}
           >
             {open ? "Скрыть" : "Детали"}
@@ -728,7 +729,10 @@ export function ProgramsPage() {
       ) : null}
 
       {viewMode === "all" ? (
-      <div className="sticky top-0 z-10 -mx-1 mb-3 rounded-2xl bg-tg-bg/95 p-1 shadow-sm backdrop-blur">
+      <CollapsibleFilterPanel
+        activeCount={Number(Boolean(searchQuery)) + Number(Boolean(sexFilter)) + Number(Boolean(typeFilter)) + Number(Boolean(levelFilter)) + Number(limitsOnly)}
+        summary={[searchQuery ? `«${searchQuery}»` : "", sexFilter ? (sexFilter === "male" ? "Мужские" : "Женские") : "", typeFilter ? enumLabel(typeFilter) : "", levelFilter ? (LEVEL_LABELS[levelFilter] ?? levelFilter) : ""].filter(Boolean).join(" · ") || "Все программы"}
+      >
       <label className="mb-2 block text-xs text-tg-hint">
         Поиск
         <input
@@ -833,7 +837,7 @@ export function ProgramsPage() {
           ) : null}
         </div>
       ) : null}
-      </div>
+      </CollapsibleFilterPanel>
       ) : null}
 
       {loading ? <PageSkeleton cards={4} /> : null}

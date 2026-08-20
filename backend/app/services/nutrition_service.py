@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 import uuid
 from datetime import date
@@ -20,6 +21,17 @@ from app.models.user import User
 from app.schemas.nutrition import NutritionLogCreate, NutritionLogUpdate
 
 _BARCODE_RE = re.compile(r"^\d{8,14}$")
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def normalize_product_name(value: str | None) -> str:
+    """Return a safe display name and decode escaped supplier metadata."""
+    text = str(value or "")
+    # Some catalogue sources contain doubly encoded entities such as
+    # ``&amp;quot;``. Two bounded passes handle those without an open-ended loop.
+    text = html.unescape(html.unescape(text))
+    text = "".join(char for char in text if char >= " " or char in "\t\n")
+    return _WHITESPACE_RE.sub(" ", text).strip()
 
 
 def calc_kbju(
@@ -424,13 +436,13 @@ async def fetch_openfoodfacts(barcode: str) -> dict[str, Any] | None:
     carbs = _num(nutriments.get("carbohydrates_100g", nutriments.get("carbohydrates")))
 
     name = (
-        str(product.get("product_name_ru") or "").strip()
-        or str(product.get("product_name") or "").strip()
-        or str(product.get("generic_name_ru") or "").strip()
-        or str(product.get("generic_name") or "").strip()
+        normalize_product_name(product.get("product_name_ru"))
+        or normalize_product_name(product.get("product_name"))
+        or normalize_product_name(product.get("generic_name_ru"))
+        or normalize_product_name(product.get("generic_name"))
         or f"Товар {code}"
     )
-    brands = str(product.get("brands") or "").strip()
+    brands = normalize_product_name(product.get("brands"))
     if brands and brands.lower() not in name.lower():
         name = f"{name} ({brands})"
 
@@ -486,7 +498,7 @@ async def create_product(
     barcode: str | None = None,
     source: str = "manual",
 ) -> NutritionProduct:
-    name = (name_ru or "").strip()
+    name = normalize_product_name(name_ru)
     if not name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Укажите название продукта")
     code = normalize_barcode(barcode) or None

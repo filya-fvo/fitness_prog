@@ -7,15 +7,15 @@
   Dot-source once per terminal, then call functions:
 
     Set-ExecutionPolicy -Scope Process Bypass -Force
-    . C:\fitness_prog\scripts\dev.ps1
+    . <project>\scripts\dev.ps1
     Start-FitnessStack
     Restart-Backend
     Get-FitnessStatus
 
   Or use the cmd wrapper (bypasses ExecutionPolicy):
 
-    C:\fitness_prog\scripts\dev.cmd status
-    C:\fitness_prog\scripts\dev.cmd restart-backend
+    <project>\scripts\dev.cmd status
+    <project>\scripts\dev.cmd restart-backend
 
 .NOTES
   Ports: production app/API 8001, development Vite 5173
@@ -28,7 +28,7 @@ $ErrorActionPreference = "Stop"
 
 $script:Root = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $script:Root "backend"))) {
-  $script:Root = "C:\fitness_prog"
+  throw "Project root not found from $PSScriptRoot"
 }
 
 $script:BackendDir = Join-Path $script:Root "backend"
@@ -54,10 +54,21 @@ function Write-FitnessWarn([string]$Message) {
 
 function Get-FitnessPortPids {
   param([Parameter(Mandatory = $true)][int]$Port)
-  @(
+  $pids = @(
     Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
       Select-Object -ExpandProperty OwningProcess -Unique
   )
+  if ($pids.Count -gt 0) { return $pids }
+
+  # Get-NetTCPConnection may return nothing without elevation even though the
+  # port is occupied by the scheduled supervisor. netstat remains readable.
+  $fallback = @()
+  foreach ($line in (& netstat.exe -ano -p TCP 2>$null)) {
+    if ($line -match ("^\s*TCP\s+\S+:" + $Port + "\s+\S+\s+LISTENING\s+(\d+)\s*$")) {
+      $fallback += [int]$Matches[1]
+    }
+  }
+  return @($fallback | Select-Object -Unique)
 }
 
 function Stop-FitnessPort {
@@ -75,12 +86,16 @@ function Stop-FitnessPort {
       $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
       $name = if ($p) { $p.ProcessName } else { "?" }
       Write-FitnessWarn "Stopping $Label PID $procId ($name) on :$Port"
-      Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+      Stop-Process -Id $procId -Force -ErrorAction Stop
     } catch {
-      Write-FitnessWarn "Could not stop PID $procId"
+      throw "Could not stop $Label PID $procId on :$Port. If Fitness App Supervisor owns it, run pause-supervisor.cmd as administrator first."
     }
   }
   Start-Sleep -Milliseconds 400
+  $remaining = @(Get-FitnessPortPids -Port $Port)
+  if ($remaining.Count -gt 0) {
+    throw "$Label :$Port is still occupied by PID(s): $($remaining -join ', ')"
+  }
 }
 
 function Test-FitnessBackendReady {
@@ -286,7 +301,7 @@ function Show-FitnessHelp {
 fitness_prog - local commands
 
   Set-ExecutionPolicy -Scope Process Bypass -Force
-  . C:\fitness_prog\scripts\dev.ps1
+  . <project>\scripts\dev.ps1
 
 START
   Start-Backend [-Reload]     uvicorn 127.0.0.1:8001
@@ -310,19 +325,19 @@ STATUS / DATA
   Invoke-FitnessTest
 
 ONE-LINERS (cmd wrapper bypasses ExecutionPolicy)
-  C:\fitness_prog\scripts\dev.cmd status
-  C:\fitness_prog\scripts\dev.cmd start
-  C:\fitness_prog\scripts\dev.cmd restart-backend
-  C:\fitness_prog\scripts\dev.cmd restart-frontend
-  C:\fitness_prog\scripts\dev.cmd restart
-  C:\fitness_prog\scripts\dev.cmd stop
-  C:\fitness_prog\scripts\dev.cmd help
+  <project>\scripts\dev.cmd status
+  <project>\scripts\dev.cmd start
+  <project>\scripts\dev.cmd restart-backend
+  <project>\scripts\dev.cmd restart-frontend
+  <project>\scripts\dev.cmd restart
+  <project>\scripts\dev.cmd stop
+  <project>\scripts\dev.cmd help
 
 RAW copy-paste
-  cd C:\fitness_prog\backend
+  cd <project>\backend
   .\.venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 8001
 
-  cd C:\fitness_prog\frontend
+  cd <project>\frontend
   npm.cmd run dev -- --host 0.0.0.0 --port 5173
 
 NOTES

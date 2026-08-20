@@ -188,6 +188,32 @@ export async function lookupBarcode(code: string): Promise<BarcodeLookup> {
   return barcodeLookupSchema.parse(data);
 }
 
+const nutritionLabelRecognitionSchema = z.object({
+  recognized: z.boolean(),
+  name_ru: z.string().nullable().optional(),
+  basis_label: z.string().nullable().optional(),
+  serving_grams: z.number().nullable().optional(),
+  calories_kcal: z.number().nullable().optional(),
+  proteins_g: z.number().nullable().optional(),
+  fats_g: z.number().nullable().optional(),
+  carbs_g: z.number().nullable().optional(),
+  fiber_g: z.number().nullable().optional(),
+  sugars_g: z.number().nullable().optional(),
+  salt_g: z.number().nullable().optional(),
+  confidence: z.number().min(0).max(1),
+  warnings: z.array(z.string()).default([]),
+  remaining_requests: z.number().nullable().optional(),
+});
+
+export type NutritionLabelRecognition = z.infer<typeof nutritionLabelRecognitionSchema>;
+
+export async function recognizeNutritionLabel(image: File): Promise<NutritionLabelRecognition> {
+  const body = new FormData();
+  body.append("image", image, image.name);
+  const { data } = await apiClient.post("/nutrition/label/recognize", body);
+  return nutritionLabelRecognitionSchema.parse(data);
+}
+
 export async function fetchDailyNutrition(date?: string): Promise<DailyNutrition> {
   const { data } = await apiClient.get("/nutrition/daily", {
     params: date ? { date } : undefined,

@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 $ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) { $Root = "C:\fitness_prog" }
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 $BackendDir = Join-Path $Root "backend"
 $EnvFile = Join-Path $BackendDir ".env"
 $Arq = Join-Path $BackendDir ".venv\Scripts\arq.exe"

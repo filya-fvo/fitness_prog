@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) { $Root = "C:\fitness_prog" }
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 
 $BackendDir = Join-Path $Root "backend"
 $Arq = Join-Path $BackendDir ".venv\Scripts\arq.exe"
@@ -150,6 +150,18 @@ if (Test-Path $Py) {
 
 Info "Starting ARQ worker window..."
 $cmd = @"
+`$workerLockPath = '$((Join-Path $Root "logs\notification-worker.lock").Replace("'", "''"))'
+try {
+  `$workerLock = [System.IO.File]::Open(
+    `$workerLockPath,
+    [System.IO.FileMode]::OpenOrCreate,
+    [System.IO.FileAccess]::ReadWrite,
+    [System.IO.FileShare]::None
+  )
+} catch {
+  Write-Host 'Notification worker is already active.' -ForegroundColor Green
+  exit 0
+}
 Set-Location '$BackendDir'
 `$Host.UI.RawUI.WindowTitle = 'FITNESS NOTIFICATIONS (ARQ)'
 Write-Host '========================================' -ForegroundColor Green

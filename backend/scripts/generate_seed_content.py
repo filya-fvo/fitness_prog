@@ -163,7 +163,6 @@ YT = {
     "Молотковые сгибания": "https://www.youtube.com/watch?v=zC3nLlEvin4",
     "Мировая растяжка": "https://www.youtube.com/watch?v=oNzynUF41kA",
     "Махи гирей": "https://www.youtube.com/watch?v=YSxHifyI6s8",
-    "Махи гирей": "https://www.youtube.com/watch?v=YSxHifyI6s8",
     "Фермерская прогулка": "https://www.youtube.com/watch?v=Fkzk_RqlYig",
 }
 

@@ -72,6 +72,12 @@ function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
 }
 
 const workoutRequestsInFlight = new Map<string, Promise<Workout>>();
+const recentWorkoutResponses = new Map<string, { workout: Workout; expiresAt: number }>();
+const WORKOUT_RESPONSE_GRACE_MS = 5_000;
+
+function invalidateWorkoutResponse(workoutId: string): void {
+  recentWorkoutResponses.delete(workoutId);
+}
 
 export async function createWorkout(input: {
   clientWorkoutId?: string | null;
@@ -97,12 +103,23 @@ export async function createWorkout(input: {
 }
 
 export function fetchWorkout(workoutId: string): Promise<Workout> {
+  const cached = recentWorkoutResponses.get(workoutId);
+  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.workout);
+  if (cached) recentWorkoutResponses.delete(workoutId);
+
   const existing = workoutRequestsInFlight.get(workoutId);
   if (existing) return existing;
 
   const request = apiClient
     .get(`/workouts/${workoutId}`)
-    .then(({ data }) => mapWorkout(workoutSchema.parse(data)))
+    .then(({ data }) => {
+      const workout = mapWorkout(workoutSchema.parse(data));
+      recentWorkoutResponses.set(workoutId, {
+        workout,
+        expiresAt: Date.now() + WORKOUT_RESPONSE_GRACE_MS,
+      });
+      return workout;
+    })
     .finally(() => workoutRequestsInFlight.delete(workoutId));
   workoutRequestsInFlight.set(workoutId, request);
   return request;
@@ -112,6 +129,7 @@ export async function updateWorkoutPlan(input: {
   workoutId: string;
   plan: WorkoutPlan;
 }): Promise<Workout> {
+  invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.put(`/workouts/${input.workoutId}/plan`, input.plan);
   return mapWorkout(workoutSchema.parse(data));
 }
@@ -129,6 +147,7 @@ export async function addWorkoutSet(input: {
   machineParams?: Record<string, string | number> | null;
   isCompleted?: boolean;
 }): Promise<WorkoutSet> {
+  invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.post(`/workouts/${input.workoutId}/sets`, {
     exercise_id: input.exerciseId,
     set_number: input.setNumber,
@@ -149,6 +168,7 @@ export async function completeWorkout(input: {
   rpe?: number | null;
   aiNotes?: string | null;
 }): Promise<Workout> {
+  invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.put(`/workouts/${input.workoutId}/complete`, {
     rpe: input.rpe ?? null,
     ai_notes: input.aiNotes ?? null,
@@ -161,6 +181,7 @@ export async function updateWorkout(input: {
   rpe: number | null;
   aiNotes: string | null;
 }): Promise<Workout> {
+  invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.patch(`/workouts/${input.workoutId}`, {
     rpe: input.rpe,
     ai_notes: input.aiNotes,
@@ -169,6 +190,7 @@ export async function updateWorkout(input: {
 }
 
 export async function deleteWorkout(workoutId: string): Promise<void> {
+  invalidateWorkoutResponse(workoutId);
   await apiClient.delete(`/workouts/${workoutId}`);
 }
 

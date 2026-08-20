@@ -43,20 +43,15 @@ class Settings(BaseSettings):
     web_push_vapid_public_key: str = ""
     web_push_vapid_private_key: str = ""
     web_push_vapid_subject: str = "mailto:admin@example.com"
-    # AI provider switch. Groq uses an OpenAI-compatible Chat Completions API.
-    ai_provider: str = "groq"
+    # Groq uses an OpenAI-compatible Chat Completions protocol. This URL is
+    # hosted and billed by Groq; the application has no OpenAI Platform fallback.
     llm_api_key: str = ""
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_model: str = "qwen/qwen3.6-27b"
     # Comma-separated Groq cascade, tried only when a preceding model is rate-limited/unavailable.
-    llm_fallback_models: str = (
-        "openai/gpt-oss-120b,llama-3.3-70b-versatile,"
-        "openai/gpt-oss-20b,llama-3.1-8b-instant"
-    )
-    # Optional OpenAI Platform fallback (separate billing from ChatGPT).
-    openai_api_key: str = ""
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-5-nano"
+    llm_fallback_models: str = ""
+    # Package-label OCR uses Groq vision; override its model independently.
+    nutrition_vision_model: str = "qwen/qwen3.6-27b"
     ai_daily_limit: int = 10
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
@@ -76,6 +71,9 @@ class Settings(BaseSettings):
     # Mailbox password or Mail.ru app password. Empty → codes only logged in development.
     smtp_password: str = ""
     smtp_use_ssl: bool = True
+    # Browser feedback is delivered server-side. Empty means smtp_from_email.
+    admin_feedback_email: str = ""
+    feedback_hourly_limit: int = 8
     # OTP policy
     email_otp_ttl_minutes: int = 10
     email_otp_length: int = 6

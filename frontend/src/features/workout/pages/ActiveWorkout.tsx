@@ -37,7 +37,6 @@ import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
-import { formatElapsed } from "@/utils/format";
 import {
   buildExerciseHistory,
   draftReadyToComplete,
@@ -58,12 +57,20 @@ import { advanceCursorAfterWorkout, cursorGoalsPatch, readProgramCursor } from "
 import { buildWarmupPlan } from "@/utils/warmupPlan";
 import {
   draftsFromWorkoutSnapshot,
+  findNextIncompleteExerciseIndex,
   isPlannedExerciseComplete,
+  resolveAutoAdvanceSetting,
   shouldStartRestAfterSet,
 } from "@/utils/workoutSession";
 import { fetchPrograms } from "@/api/programs";
 import { toUserMessage } from "@/utils/errors";
 import { enumLabel, programDayLabel } from "@/utils/localization";
+import {
+  buildInstantWorkoutMessage,
+  buildWorkoutCoachPrompt,
+  buildWorkoutCompletionFacts,
+  type WorkoutCompletionFacts,
+} from "@/utils/workoutCompletion";
 
 function asPlan(raw: Workout["plan"]): WorkoutPlan & {
   warmup_pending?: boolean;
@@ -93,9 +100,9 @@ const AUTO_ADVANCE_STORAGE_KEY = "fitness_auto_advance_exercises";
 function readCachedAutoAdvance(): boolean {
   try {
     const value = localStorage.getItem(AUTO_ADVANCE_STORAGE_KEY);
-    return value === "1" || value === "true";
+    return resolveAutoAdvanceSetting(value, true);
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -141,6 +148,10 @@ export function ActiveWorkout() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const [summaryFacts, setSummaryFacts] = useState<WorkoutCompletionFacts | null>(null);
+  const [completionAiLoading, setCompletionAiLoading] = useState(false);
+  const [completionAiText, setCompletionAiText] = useState<string | null>(null);
+  const [completionAiError, setCompletionAiError] = useState<string | null>(null);
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
   const [suggestNote, setSuggestNote] = useState<string | null>(null);
   const [elapsedFinalSec, setElapsedFinalSec] = useState<number | null>(null);
@@ -164,7 +175,7 @@ export function ActiveWorkout() {
   const [lastCardioDur, setLastCardioDur] = useState<number | null>(null);
   const [lastCardioParams, setLastCardioParams] = useState<Record<string, string | number> | null>(null);
   const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(readCachedAutoAdvance);
-  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState<number | null>(null);
+  const [autoAdvance, setAutoAdvance] = useState<{ seconds: number; targetIndex: number } | null>(null);
   const completingSetsRef = useRef(new Set<string>());
   /** Gym-first UI: large set + Done; extras behind «Ещё». Default on. */
   const [simpleMode, setSimpleMode] = useState(() => {
@@ -217,7 +228,10 @@ export function ActiveWorkout() {
           const profile = await fetchMyProfile();
           const g = (profile.goals as Record<string, unknown>) || {};
           if (!cancelled) {
-            const autoAdvance = Boolean(g.auto_advance_exercises);
+            const autoAdvance = resolveAutoAdvanceSetting(
+              g.auto_advance_exercises,
+              readCachedAutoAdvance(),
+            );
             setAutoAdvanceExercises(autoAdvance);
             cacheAutoAdvance(autoAdvance);
             setLastCardioId(
@@ -439,7 +453,6 @@ export function ActiveWorkout() {
   const REST_PRESETS = [45, 60, 75, 90, 120, 150, 180] as const;
 
 
-  const completedCount = drafts.filter((d) => d.isCompleted).length;
   const targetReps =
     plan.exercises.find((e) => e.exercise_id === currentExerciseId)?.target_reps ??
     weekPhase.defaultReps;
@@ -464,13 +477,6 @@ export function ActiveWorkout() {
     let cancelled = false;
     async function suggest() {
       if (!currentExerciseId || booting) return;
-      const empty = drafts.filter(
-        (d) => d.exerciseId === currentExerciseId && !d.isCompleted && (!d.weight || !d.reps),
-      );
-      if (!empty.length) {
-        setSuggestNote(null);
-        return;
-      }
       try {
         let workouts = await readCachedWorkouts();
         if (isOnline()) {
@@ -486,16 +492,28 @@ export function ActiveWorkout() {
           history: histMap.get(currentExerciseId),
           phase: weekPhase,
         });
-        if (!sug.weight && !sug.reps) return;
+        if (!sug.note) {
+          setSuggestNote(null);
+          return;
+        }
         const next = drafts.map((d) => {
           if (d.exerciseId !== currentExerciseId || d.isCompleted) return d;
           return {
             ...d,
             weight: d.weight || sug.weight,
             reps: d.reps || sug.reps,
+            weightMode: d.weightMode ?? sug.weightMode,
+            durationSec: d.durationSec ?? sug.durationSec,
+            machineParams: d.machineParams ?? sug.machineParams,
           };
         });
-        const changed = next.some((d, i) => d.weight !== drafts[i]?.weight || d.reps !== drafts[i]?.reps);
+        const changed = next.some((d, i) =>
+          d.weight !== drafts[i]?.weight ||
+          d.reps !== drafts[i]?.reps ||
+          d.durationSec !== drafts[i]?.durationSec ||
+          d.weightMode !== drafts[i]?.weightMode ||
+          d.machineParams !== drafts[i]?.machineParams
+        );
         if (changed) {
           setDrafts(next);
           setSuggestNote(sug.note);
@@ -838,14 +856,14 @@ export function ActiveWorkout() {
       return Math.max(0, Math.floor((Date.now() - started) / 1000));
     })();
     setElapsedFinalSec(finalElapsed);
+    const completionFacts = buildWorkoutCompletionFacts({
+      drafts,
+      exerciseIds,
+      elapsedSec: finalElapsed,
+      rpe,
+    });
     try {
-      const tonnage = drafts.reduce((acc, draft) => {
-        const reps = Number(draft.reps) || 0;
-        const weight = Number(draft.weight) || 0;
-        return acc + reps * weight;
-      }, 0);
-      const aiNotes =
-        notes || "Отличная работа! Завтра день отдыха, рекомендую лёгкую мобильность.";
+      const aiNotes = notes.trim() || null;
       const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
 
       let result: Workout;
@@ -937,14 +955,15 @@ export function ActiveWorkout() {
       hapticNotification("success");
       trackEvent("workout_completed", {
         client_id: clientId,
-        tonnage,
+        tonnage: completionFacts.tonnageKg,
         rpe,
         week_phase: weekPhase.phase,
         duration_sec: finalElapsed,
       });
-      setSummary(
-        `Готово. Время: ${formatElapsed(finalElapsed)}. Упражнений: ${exerciseIds.length}. Подходов: ${completedCount}/${drafts.length}. Объём нагрузки: ${tonnage.toFixed(1)} кг (вес × повторы). Субъективная тяжесть: ${rpe}/10 (RPE). Неделя: ${weekPhase.label}.`,
-      );
+      setSummaryFacts(completionFacts);
+      setCompletionAiText(null);
+      setCompletionAiError(null);
+      setSummary(buildInstantWorkoutMessage(completionFacts));
     } catch (err) {
       setError(toUserMessage(err, "Не удалось завершить тренировку"));
       setElapsedFinalSec(null);
@@ -954,7 +973,6 @@ export function ActiveWorkout() {
   }, [
     activeWorkout,
     apiWorkoutId,
-    completedCount,
     completing,
     drafts,
     exerciseIds,
@@ -966,9 +984,30 @@ export function ActiveWorkout() {
     rpe,
     setActiveWorkout,
     stableClientId,
-    weekPhase.label,
     weekPhase.phase,
   ]);
+
+  const requestCompletionCoach = useCallback(async () => {
+    if (!summaryFacts || completionAiLoading) return;
+    setCompletionAiError(null);
+    if (!isOnline()) {
+      setCompletionAiError("Комментарий ИИ доступен только при подключении к интернету.");
+      return;
+    }
+    if (!getStoredToken()) {
+      setCompletionAiError("Войдите в аккаунт, чтобы получить комментарий тренера ИИ.");
+      return;
+    }
+    setCompletionAiLoading(true);
+    try {
+      const result = await sendAIChat({ message: buildWorkoutCoachPrompt(summaryFacts) });
+      setCompletionAiText(result.reply);
+    } catch (err) {
+      setCompletionAiError(toUserMessage(err, "Не удалось получить комментарий ИИ"));
+    } finally {
+      setCompletionAiLoading(false);
+    }
+  }, [completionAiLoading, summaryFacts]);
 
   const openFinishDialog = useCallback(() => {
     setFinishOpen(true);
@@ -1049,15 +1088,15 @@ export function ActiveWorkout() {
 
   useEffect(() => {
     setMoreOpen(false);
-    setAutoAdvanceCountdown(null);
+    setAutoAdvance(null);
   }, [currentExerciseId]);
 
   useEffect(() => {
-    if (autoAdvanceCountdown == null) return;
-    if (autoAdvanceCountdown <= 0) {
-      setAutoAdvanceCountdown(null);
+    if (autoAdvance == null) return;
+    if (autoAdvance.seconds <= 0) {
+      setAutoAdvance(null);
       const state = useWorkoutStore.getState();
-      state.nextExercise();
+      state.setCurrentExerciseIndex(autoAdvance.targetIndex);
       const next = useWorkoutStore.getState();
       if (next.activeWorkout) {
         void persistSession(next.activeWorkout, next.drafts, next.currentExerciseIndex);
@@ -1065,11 +1104,11 @@ export function ActiveWorkout() {
       return;
     }
     const timer = window.setTimeout(
-      () => setAutoAdvanceCountdown((value) => (value == null ? null : value - 1)),
+      () => setAutoAdvance((value) => value == null ? null : { ...value, seconds: value.seconds - 1 }),
       1000,
     );
     return () => window.clearTimeout(timer);
-  }, [autoAdvanceCountdown, persistSession]);
+  }, [autoAdvance, persistSession]);
 
   useEffect(() => {
     if (!activeWorkout || ["completed", "skipped"].includes(activeWorkout.status)) return;
@@ -1307,7 +1346,17 @@ export function ActiveWorkout() {
           index: currentExerciseIndex + 1,
           total: exerciseIds.length,
         });
-        if (autoAdvanceExercises) setAutoAdvanceCountdown((value) => value ?? 3);
+        if (autoAdvanceExercises) {
+          const targetIndex = findNextIncompleteExerciseIndex(
+            exerciseIds,
+            nextDrafts,
+            currentExerciseIndex,
+            plan.exercises,
+          );
+          if (targetIndex != null) {
+            setAutoAdvance((value) => value ?? { seconds: 3, targetIndex });
+          }
+        }
       }
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить подход"));
@@ -1338,7 +1387,63 @@ export function ActiveWorkout() {
             className="mt-1 text-3xl font-semibold tabular-nums"
           />
         </div>
-        <div className="rounded-2xl bg-tg-secondary p-4 text-sm">{summary}</div>
+        {summaryFacts ? (
+          <div className="mb-3 grid grid-cols-2 gap-2" aria-label="Итоги тренировки">
+            <div className="rounded-2xl bg-tg-secondary p-3">
+              <p className="text-xs text-tg-hint">Упражнения</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {summaryFacts.completedExercises}/{summaryFacts.totalExercises}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-tg-secondary p-3">
+              <p className="text-xs text-tg-hint">Подходы</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {summaryFacts.completedSets}/{summaryFacts.totalSets}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-tg-secondary p-3">
+              <p className="text-xs text-tg-hint">Объём нагрузки</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {summaryFacts.tonnageKg.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} кг
+              </p>
+            </div>
+            <div className="rounded-2xl bg-tg-secondary p-3">
+              <p className="text-xs text-tg-hint">Тяжесть (RPE)</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">{summaryFacts.rpe}/10</p>
+            </div>
+          </div>
+        ) : null}
+        <div className="rounded-2xl bg-tg-secondary p-4 text-sm leading-relaxed">{summary}</div>
+        {offlineNote ? (
+          <p className="mt-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-800">
+            {offlineNote} Данные отправятся автоматически после восстановления сети.
+          </p>
+        ) : null}
+        {summaryFacts ? (
+          <div className="mt-3 rounded-2xl border border-tg-button/20 bg-tg-secondary p-4">
+            <p className="text-sm font-semibold">Комментарий тренера ИИ</p>
+            <p className="mt-1 text-xs leading-relaxed text-tg-hint">
+              Только по вашему запросу и только по фактам этой тренировки.
+            </p>
+            {completionAiText ? (
+              <p className="mt-3 text-sm leading-relaxed">{completionAiText}</p>
+            ) : (
+              <button
+                type="button"
+                className="mt-3 w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-button disabled:cursor-wait disabled:opacity-60"
+                disabled={completionAiLoading}
+                onClick={() => void requestCompletionCoach()}
+              >
+                {completionAiLoading ? "Готовлю комментарий…" : "Получить комментарий ИИ"}
+              </button>
+            )}
+            {completionAiError ? (
+              <p className="mt-2 text-xs text-rose-600" role="alert">
+                {completionAiError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <button
           type="button"
           className="mt-4 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
@@ -1580,13 +1685,14 @@ export function ActiveWorkout() {
               >
                 {aiAssistLoading ? "ИИ…" : "ИИ"}
               </button>
-              {simpleMode && !moreOpen ? (
+              {simpleMode ? (
                 <button
                   type="button"
                   className="text-xs text-tg-hint"
-                  onClick={() => setMoreOpen(true)}
+                  aria-expanded={moreOpen}
+                  onClick={() => setMoreOpen((value) => !value)}
                 >
-                  Ещё
+                  {moreOpen ? "Скрыть" : "Ещё"}
                 </button>
               ) : null}
             </div>
@@ -1639,6 +1745,15 @@ export function ActiveWorkout() {
                 Медиа и техника
               </button>
             </div>
+          ) : null}
+          {simpleMode && moreOpen ? (
+            <button
+              type="button"
+              onClick={() => setMoreOpen(false)}
+              className="w-full rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link"
+            >
+              Скрыть дополнительные настройки
+            </button>
           ) : null}
 
           {!simpleMode || moreOpen ? (
@@ -2093,19 +2208,28 @@ export function ActiveWorkout() {
 
       <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
 
-      {autoAdvanceCountdown != null ? (
+      {autoAdvance != null ? (
         <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl bg-[#1a1a1e] p-4 text-white shadow-2xl">
           <p className="text-sm font-semibold">Упражнение выполнено</p>
           <p className="mt-1 text-xs text-white/70">
-            Переход к следующему через {autoAdvanceCountdown} сек.
+            Переход к следующему через {autoAdvance.seconds} сек.
           </p>
-          <button
-            type="button"
-            className="mt-3 w-full rounded-xl bg-white/10 px-3 py-2 text-sm font-medium"
-            onClick={() => setAutoAdvanceCountdown(null)}
-          >
-            Отмена — добавить ещё подход
-          </button>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-black"
+              onClick={() => setAutoAdvance((value) => value ? { ...value, seconds: 0 } : null)}
+            >
+              Перейти сейчас
+            </button>
+            <button
+              type="button"
+              className="rounded-xl bg-white/10 px-3 py-2 text-sm font-medium"
+              onClick={() => setAutoAdvance(null)}
+            >
+              Отмена
+            </button>
+          </div>
         </div>
       ) : null}
 

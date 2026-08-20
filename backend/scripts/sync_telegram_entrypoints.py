@@ -15,7 +15,7 @@ from app.services.telegram_bot import (
     open_app_markup,
     send_message,
     send_start_welcome,
-    set_chat_menu_button,
+    set_default_chat_menu_button,
 )
 
 
@@ -42,7 +42,7 @@ async def main() -> None:
 
     settings = get_settings()
     public_url = safe_public_url(settings.mini_app_url)
-    await set_chat_menu_button(settings, mini_app_url=public_url, text="Open")
+    await set_default_chat_menu_button(settings)
 
     async with AsyncSessionLocal() as session:
         telegram_ids = [
@@ -61,12 +61,7 @@ async def main() -> None:
     failed: list[int] = []
     for telegram_id in telegram_ids:
         try:
-            await set_chat_menu_button(
-                settings,
-                mini_app_url=public_url,
-                text="Open",
-                chat_id=telegram_id,
-            )
+            await set_default_chat_menu_button(settings, chat_id=telegram_id)
             updated += 1
         except Exception:  # noqa: BLE001 - continue syncing other chats
             failed.append(telegram_id)
@@ -104,14 +99,12 @@ async def main() -> None:
             await asyncio.sleep(0.1)
 
     print(f"URL={public_url}")
-    print("DEFAULT_MENU=updated")
+    print("DEFAULT_MENU=standard")
     print(f"CHAT_MENUS_UPDATED={updated}")
     print(f"CHAT_MENUS_FAILED={len(failed)}")
     if args.send_welcome_all:
         print(f"WELCOME_SENT={welcome_sent}")
         print(f"WELCOME_FAILED={welcome_failed}")
-    if failed:
-        print("FAILED_TELEGRAM_IDS=" + ",".join(str(item) for item in failed))
 
 
 if __name__ == "__main__":

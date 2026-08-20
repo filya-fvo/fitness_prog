@@ -9,6 +9,7 @@ import { getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
 import { toUserMessage } from "@/utils/errors";
 import { trackEvent } from "@/lib/analytics";
+import { previewAiMessage } from "@/utils/aiMessage";
 
 type Msg = {
   id: string;
@@ -58,6 +59,7 @@ export function Chat() {
   const sendingRef = useRef(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const prefiredRef = useRef(false);
 
@@ -186,35 +188,55 @@ export function Chat() {
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto pb-3">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={[
-              "max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
-              m.role === "user"
-                ? "ml-auto bg-tg-button text-tg-button-text"
-                : "mr-auto bg-tg-secondary",
-            ].join(" ")}
-          >
-            {m.content}
-            {m.role === "assistant" && m.source ? (
-              <span className="mt-1 block text-[10px] opacity-60">
-                {m.source === "rule" ? "Локальный резервный ответ" : "Ответ ИИ-тренера"}
-              </span>
-            ) : null}
-          </div>
-        ))}
+        {messages.map((m) => {
+          const isLong = m.role === "assistant" && previewAiMessage(m.content) !== m.content;
+          const isExpanded = expandedMessages.has(m.id);
+          return (
+            <div
+              key={m.id}
+              className={[
+                "max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
+                m.role === "user"
+                  ? "ml-auto bg-tg-button text-tg-button-text"
+                  : "mr-auto bg-tg-secondary",
+              ].join(" ")}
+            >
+              {isLong && !isExpanded ? previewAiMessage(m.content) : m.content}
+              {isLong ? (
+                <button
+                  type="button"
+                  className="mt-2 block min-h-11 rounded-lg px-2 text-xs font-medium text-tg-link"
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedMessages((current) => {
+                    const next = new Set(current);
+                    if (next.has(m.id)) next.delete(m.id);
+                    else next.add(m.id);
+                    return next;
+                  })}
+                >
+                  {isExpanded ? "Свернуть" : "Подробнее"}
+                </button>
+              ) : null}
+              {m.role === "assistant" && m.source ? (
+                <span className="mt-1 block text-[10px] opacity-60">
+                  {m.source === "rule" ? "Локальный резервный ответ" : "Ответ ИИ-тренера"}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
       <form
-        className="sticky bottom-16 flex gap-2 bg-tg-bg pt-2"
+        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex gap-2 bg-tg-bg pt-2"
         onSubmit={(e) => {
           e.preventDefault();
           void send(text);
         }}
       >
         <input
+          aria-label="Сообщение тренеру"
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={!historyReady}

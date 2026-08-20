@@ -21,104 +21,57 @@
 
 Компьютер должен быть включён, подключён к интернету и не находиться в спящем режиме. Открытая страница Tailscale в браузере не нужна: после входа работает служба Windows.
 
-## 2. Что установить один раз
+## 2. Автоматическая установка на новый сервер
 
-Рекомендуемое расположение проекта:
+Проект можно разместить в любой постоянной папке локального диска, в том числе не в `C:\fitness_prog`. Все рабочие сценарии определяют корень относительно собственного расположения. После установки папку не перемещайте: абсолютный путь сохраняется в Windows Scheduled Task. Если перенос всё-таки понадобился, повторно запустите установщик и переустановите задачу.
 
-```text
-C:\fitness_prog
-```
+До начала нужны только:
 
-`start_all_comand.bat` использует этот путь. Если проект расположен иначе, измените переменную `Folder` в начале файла.
+1. Windows 10/11 либо Windows Server x64, доступ в интернет и учётная запись с правами администратора.
+2. Папка проекта целиком.
+3. Токен и username Telegram-бота от BotFather.
+4. При переносе существующей установки — исходный `backend\.env` и отдельно перенесённая база данных.
 
-Потребуются:
-
-1. Windows 10/11 x64 и права администратора.
-2. Python версии, совместимой с `backend/pyproject.toml`.
-3. Node.js LTS и `npm`.
-4. PostgreSQL либо доступ к существующей PostgreSQL/Supabase базе.
-5. Tailscale для Windows: <https://tailscale.com/download/windows>.
-6. Telegram-бот и токен от BotFather.
-
-Для AI, почтовых кодов и Web Push дополнительно потребуются соответствующие ключи. Без них основная часть приложения запускается, но связанные функции будут недоступны.
-
-## 3. Подготовка проекта
-
-### 3.1. Backend
-
-Откройте PowerShell:
-
-```powershell
-cd C:\fitness_prog\backend
-python -m venv .venv
-.\.venv\Scripts\pip.exe install -e ".[dev]"
-```
-
-Скопируйте `backend\.env.example` в `backend\.env`. Реальный `.env` нельзя отправлять в Git или передавать посторонним.
-
-Минимально заполните:
-
-```dotenv
-DATABASE_URL=postgresql+asyncpg://USER:PASSWORD@127.0.0.1:5432/fitness
-BOT_TOKEN=токен_от_BotFather
-BOT_USERNAME=имя_бота_без_собаки
-JWT_SECRET=длинная_случайная_строка
-TELEGRAM_WEBHOOK_SECRET=другая_длинная_случайная_строка
-ADMIN_TELEGRAM_USERNAMES=UsernameАдминистратора
-ADMIN_TELEGRAM_IDS=числовой_Telegram_ID_администратора
-REDIS_URL=redis://127.0.0.1:6379/0
-```
-
-`MINI_APP_URL` вручную придумывать не нужно: `start-all.cmd` запишет адрес Funnel автоматически.
-
-Если `TELEGRAM_WEBHOOK_SECRET` оставлен пустым, production-launcher один раз создаст криптографически случайное значение в `backend\.env` и не выведет его на экран. Затем Telegram webhook будет зарегистрирован с этим секретом.
-
-Для локального PostgreSQL в Windows используйте `127.0.0.1`, а не `localhost`.
-
-Примените миграции:
-
-```powershell
-cd C:\fitness_prog
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\apply_migrations_local.ps1
-```
-
-Если база новая, загрузите системный контент:
-
-```powershell
-cd C:\fitness_prog\backend
-.\.venv\Scripts\python.exe scripts\seed_prod_content.py
-.\.venv\Scripts\python.exe scripts\seed_nutrition.py
-```
-
-### 3.2. Frontend
-
-```powershell
-cd C:\fitness_prog\frontend
-npm.cmd install
-```
-
-### 3.3. Tailscale
-
-1. Установите Tailscale.
-2. Нажмите **Log in** в значке Tailscale возле часов и войдите в аккаунт.
-3. Оставьте включённым MagicDNS.
-4. При первом `start-all.cmd` подтвердите UAC и страницу **Enable Funnel**.
-
-Funnel публикует только единое приложение `127.0.0.1:8001`. Открывать входящие порты на роутере или настраивать белый IP не требуется.
-
-Постоянный URL сохраняется локально в:
+Запустите из корня проекта:
 
 ```text
-scripts\tailscale-url.local.env
+install-server.cmd
 ```
 
-Этот файл и `backend\.env` исключены из Git.
+Подтвердите UAC. Сценарий автоматически:
+
+1. устанавливает Chocolatey, если его ещё нет;
+2. устанавливает Python 3.12, Node.js LTS, PostgreSQL 18/командные инструменты и Tailscale;
+3. создаёт необходимые каталоги и переносимое `backend\.venv`;
+4. устанавливает backend- и frontend-зависимости строго из проекта;
+5. собирает production frontend во временный каталог и безопасно публикует его с сохранением ассетов предыдущего релиза;
+6. подготавливает portable Redis;
+7. применяет SQL-миграции и идемпотентно загружает упражнения, программы и питание;
+8. выполняет вход в Tailscale, включает **Run unattended** и Funnel;
+9. сохраняет новый постоянный `*.ts.net` URL, обновляет CORS, возвращает стандартное меню Telegram и настраивает webhook;
+10. проверяет импорт backend и останавливается до установки системной задачи.
+
+Установщик можно запускать повторно после обновления проекта. Существующий `backend\.env` сохраняется, секреты не печатаются. Если файла нет, он создаётся из примера, `JWT_SECRET`, `TELEGRAM_WEBHOOK_SECRET` и пароль новой локальной PostgreSQL генерируются автоматически, а токен и username бота запрашиваются в окне.
+
+При первом входе Tailscale может открыть браузер и попросить подтвердить **Enable Funnel**. Это единственное внешнее подтверждение, которое нельзя безопасно выполнить от имени пользователя автоматически.
+
+Для предварительной проверки без установок и записи файлов:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-server.ps1 -DryRun -NonInteractive
+```
+
+### Важно при переносе данных
+
+`backend\.env` содержит настройки подключения, но не сами записи PostgreSQL. Если старая база была локальной, перед переносом сделайте `pg_dump`, а на новом сервере восстановите дамп. Без дампа установщик создаст чистую базу и загрузит только системные каталоги. Если используется Supabase или другая внешняя PostgreSQL, достаточно сохранить прежний `DATABASE_URL`.
+
+Дополнительные ключи AI, SMTP и Web Push установщик не придумывает. Перенесите их в `backend\.env`; без них основное приложение работает, но соответствующие функции отключены. Для обратной связи укажите `ADMIN_FEEDBACK_EMAIL`; если значение пустое, письма отправляются на `SMTP_FROM_EMAIL`.
 
 ## 4. Какой файл запускать
 
 ### Постоянная работа через supervisor — рекомендуется для ноутбука-сервера
 
-Один раз дважды щёлкните `install-supervisor.cmd` и подтвердите запрос Windows UAC кнопкой **«Да»**. Установится системная задача **Fitness App Supervisor**, которая:
+После успешного `install-server.cmd` один раз дважды щёлкните `install-supervisor.cmd` и подтвердите запрос Windows UAC кнопкой **«Да»**. Установится и сразу запустится системная задача **Fitness App Supervisor**, которая:
 
 1. запускается при старте Windows и при входе пользователя;
 2. работает от имени `SYSTEM`, даже если пользователь вышел из Windows;
@@ -126,7 +79,9 @@ scripts\tailscale-url.local.env
 4. каждые 30 секунд проверяет единое приложение, Redis, worker и публичный `/health`;
 5. после двух неудачных проверок перезапускает нужный компонент и повторно включает Tailscale Funnel;
 6. включает Tailscale **Run unattended**;
-7. пишет журнал в `logs\supervisor.log`.
+7. пишет журнал в `logs\supervisor.log` и каждые 30 секунд обновляет обезличенный `logs\supervisor-heartbeat.json` со статусом local/public/Redis/worker.
+
+Supervisor и worker держат межпроцессные lock-файлы в `logs`. Поэтому повторный ручной запуск, одновременные триггеры Windows или краткий обрыв Tailscale не создают второй экземпляр. Дополнительно одна минутная рассылка выполняется только одним worker даже во время восстановления процессов.
 
 Команды управления:
 
@@ -138,16 +93,22 @@ resume-supervisor.cmd     — снова включить автоконтрол
 uninstall-supervisor.cmd  — удалить системную задачу
 ```
 
+После установки создаётся `logs\supervisor-install-status.json` с именем задачи,
+состоянием и кодом последнего запуска. Это позволяет подтвердить установку без
+чтения секретов; актуальную работоспособность показывает heartbeat.
+
 Если supervisor установлен, обычный `stop-all.cmd` остановит API/UI только временно: supervisor сочтёт это сбоем и вернёт их. Перед обслуживанием сначала используйте `pause-supervisor.cmd`.
+
+Команда `scripts\dev.cmd restart-backend` теперь также определяет процесс supervisor через `netstat`. Если backend запущен с повышенными правами, команда не сообщает ложное «порт свободен», а просит сначала выполнить `pause-supervisor.cmd`.
 
 Закрытие крышки должно быть настроено как **«Действие не требуется»**. `Run unattended` не отменяет настоящий сон Windows: оно лишь сохраняет Tailscale активным без вошедшего пользователя. Supervisor использует системный power request вместо имитации движений мыши.
 
 ### Полный рабочий режим — рекомендуется
 
-Дважды щёлкните:
+Для ручного запуска без Scheduled Task дважды щёлкните:
 
 ```text
-C:\fitness_prog\start_all_comand.bat
+start_all_comand.bat
 ```
 
 Он запускает:
@@ -157,41 +118,35 @@ C:\fitness_prog\start_all_comand.bat
 3. production-сборку frontend;
 4. единое приложение FastAPI на `:8001`;
 5. Tailscale Funnel;
-6. настройку Telegram Menu Button и webhook.
+6. стандартное меню Telegram и webhook.
 
 Не закрывайте окна Redis, Notifications и Backend. Отдельного окна Frontend в рабочем режиме теперь нет. Окно браузера Tailscale держать открытым не требуется.
 
 ### Базовый режим без фоновых уведомлений
 
-```text
-C:\fitness_prog\start-all.cmd
-```
+`start-all.cmd`
 
 Приложение и Telegram будут работать, но запланированные уведомления, фоновые таймеры и некоторые отложенные задачи требуют отдельно запущенных Redis и worker.
 
 ### Локальная разработка
 
-```text
-C:\fitness_prog\dev-local.cmd
-```
+`dev-local.cmd`
 
 Команда приостанавливает supervisor и запускает backend с автоперезагрузкой плюс Vite на `http://127.0.0.1:5173`, не обновляя Telegram и Funnel. После завершения разработки опубликуйте версию и снова включите supervisor:
 
-```text
-C:\fitness_prog\publish-local.cmd
-```
+`publish-local.cmd`
 
 ## 5. Что делает `start-all.cmd`
 
 При каждом полном запуске скрипт:
 
-1. проверяет зависимости и выполняет production-сборку frontend;
+1. собирает frontend в `frontend/.dist-next`, копирует новые файлы в работающий `dist` до смены `index.html` и сохраняет ассеты текущего и предыдущего релиза;
 2. запускает FastAPI, который обслуживает API и готовый интерфейс на `:8001`;
 3. использует постоянный `*.ts.net` адрес Tailscale, проверяет его снаружи и при необходимости повторно включает Funnel;
 4. записывает его в `MINI_APP_URL`;
 5. перезапускает backend только если адрес в `.env` действительно изменился;
-6. обновляет общий Telegram Menu Button;
-7. обновляет персональные Menu Button всех Telegram-пользователей из базы;
+6. убирает общий постоянный Menu Button `Open`, возвращая стандартное меню Telegram;
+7. убирает персональные overrides `Open` у всех Telegram-пользователей из базы;
 8. регистрирует webhook с событиями `message` и `callback_query`;
 9. не завершает подготовку Telegram, пока публичные `/` и `/health` не начали отвечать.
 
@@ -205,16 +160,16 @@ URL inline-кнопки хранится внутри конкретного Tel
 
 1. не используйте Open в старых сообщениях;
 2. отправьте боту `/start`;
-3. используйте Open в новом ответе или синюю кнопку меню возле поля ввода.
+3. используйте **Open** под новым ответом `/start`.
 
 Новые приветствия, напоминания и уведомления получают текущий `MINI_APP_URL` автоматически.
 
-Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**, обновите её URL на текущий адрес из `scripts\tailscale-url.local.env` либо не используйте старую direct link. Menu Button и inline-кнопки приложения основной скрипт настраивает через Telegram Bot API сам.
+Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**, обновите её URL на текущий адрес из `scripts\tailscale-url.local.env` либо не используйте старую direct link. Основной скрипт возвращает стандартное меню Telegram; открытие приложения остаётся в актуальных inline-кнопках сообщений.
 
 Для принудительной синхронизации всех персональных кнопок:
 
 ```powershell
-cd C:\fitness_prog\backend
+cd <папка проекта>\backend
 .\.venv\Scripts\python.exe scripts\sync_telegram_entrypoints.py
 ```
 
@@ -224,7 +179,7 @@ cd C:\fitness_prog\backend
 .\.venv\Scripts\python.exe scripts\sync_telegram_entrypoints.py --send-open-to 123456789
 ```
 
-Чтобы отправить всем привязанным пользователям эквивалент нового `/start` — приветствие с актуальной inline-кнопкой и отдельное сообщение, обновляющее постоянную клавиатуру Open, `/start`, `/help`:
+Чтобы отправить всем привязанным пользователям эквивалент нового `/start` — приветствие с актуальной inline-кнопкой и отдельное сообщение с командами `/start`, `/help`:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\sync_telegram_entrypoints.py --send-welcome-all
@@ -237,31 +192,33 @@ cd C:\fitness_prog\backend
 Быстрая проверка процессов:
 
 ```text
-C:\fitness_prog\status.cmd
-C:\fitness_prog\status-notifications.cmd
+<папка проекта>\status.cmd
+<папка проекта>\status-notifications.cmd
 ```
 
-Полная проверка локальных сервисов, Funnel, webhook и Menu Button:
+Полная проверка локальных сервисов, Funnel, webhook и стандартного меню Telegram:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\device_ops_check.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.ps1
 ```
 
-Проверка персональной Menu Button:
+Проверка персонального меню Telegram:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\device_ops_check.ps1 -TelegramChatId 123456789
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.ps1 -TelegramChatId 123456789
 ```
 
 Нормальный результат:
 
 - локальные `http://127.0.0.1:8001` и `http://127.0.0.1:8001/health` отвечают;
 - публичные `/` и `/health` отвечают `200`;
-- `MINI_APP_URL`, сохранённый Funnel URL, webhook и Menu Button совпадают;
+- `MINI_APP_URL`, сохранённый Funnel URL и webhook совпадают, а Menu Button имеет стандартный тип `commands`/`default`, не `web_app`;
 - нигде нет `ngrok`;
 - webhook не содержит `last_error_message`.
 
-После этого в Telegram отправьте `/start` и проверьте новую кнопку Open.
+После этого в Telegram отправьте `/start`: постоянной кнопки `Open` возле поля ввода быть не должно, inline-кнопка под сообщением должна открывать приложение.
+
+GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Неудачная проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
 
 ## 8. Ежедневная работа
 
@@ -282,7 +239,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\fitness_prog\scripts\devi
 Единое приложение и необязательный Vite разработки:
 
 ```text
-C:\fitness_prog\stop-all.cmd
+<папка проекта>\stop-all.cmd
 ```
 
 Worker и Redis остановите закрытием их отдельных окон. Конфигурация Tailscale Funnel сохраняется и будет снова обслуживать приложение после следующего запуска FastAPI.
@@ -299,11 +256,11 @@ Worker и Redis остановите закрытием их отдельных 
 6. перезапустите полный стек.
 
 ```powershell
-cd C:\fitness_prog\backend
+cd <папка проекта>\backend
 .\.venv\Scripts\pip.exe install -e ".[dev]"
 .\.venv\Scripts\python.exe -m pytest -q
 
-cd C:\fitness_prog\frontend
+cd <папка проекта>\frontend
 npm.cmd install
 npm.cmd test -- --run
 npm.cmd run build

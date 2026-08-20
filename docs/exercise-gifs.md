@@ -45,9 +45,10 @@ Pipeline:
 5. Upsert DB (soft-delete retired exercises/templates)
 6. Apply YouTube URLs from `docs/exercise-media-checklist.csv`
 
-## Deprecated scripts
+## Archived scripts
 
-Do not run:
+Do not run. They are kept only for review under
+`_archive_candidates/2026-08-20/backend-scripts/`:
 
 - `gen_exercise_gif_list.py`
 - `apply_local_exercise_gifs.py`
@@ -59,3 +60,11 @@ Do not run:
 .\venv\Scripts\python.exe -m pytest tests\test_catalog_seed.py -q
 .\venv\Scripts\python.exe scripts\_verify_catalog_quality.py
 ```
+
+Полный воспроизводимый аудит seed, manifest, исходных `ds:<id>` и локальных файлов запускается из корня проекта:
+
+```powershell
+backend\.venv\Scripts\python.exe backend\scripts\audit_exercise_media.py --report docs\EXERCISE_MEDIA_AUDIT_2026-08-20.md
+```
+
+Команда завершается с ошибкой при битом или пустом GIF, расхождении manifest, отсутствии ссылки на источник либо непроверенном совместном использовании одного файла.

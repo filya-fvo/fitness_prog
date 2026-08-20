@@ -64,4 +64,21 @@ describe("habit history clearing", () => {
       sleepHours: 7.5,
     });
   });
+
+  it("keeps manual movement fields in the offline copy", () => {
+    saveHabitDay({
+      date: "2026-08-10",
+      waterMl: 1000,
+      weightKg: 82,
+      sleepHours: 8,
+      steps: 9500,
+      activeMinutes: 55,
+      checkedIn: true,
+    });
+
+    expect(getHabitDay("2026-08-10")).toMatchObject({
+      steps: 9500,
+      activeMinutes: 55,
+    });
+  });
 });

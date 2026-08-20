@@ -165,7 +165,9 @@ export function pathFromStartParam(start: string): string | null {
   if (key.startsWith("workout_") && key.length > "workout_".length) {
     return `/workouts/active/${key.slice("workout_".length)}`;
   }
-  if (key === "profile" || key === "measurements") return "/profile";
+  if (key === "profile") return "/profile";
+  if (key === "measurements") return "/measurements";
+  if (key === "water") return "/?checkin=water";
   if (key === "supplements" || key === "alerts" || key === "notifications") {
     const tab = key === "supplements" ? "supplements" : "alerts";
     return `/profile?section=${tab}`;

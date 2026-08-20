@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeDecimalInput, parseDecimalInput } from "./DecimalInput";
+import { normalizeDecimalInput, parseDecimalInput } from "./decimalInputValue";
 
 describe("localized decimal input", () => {
   it("accepts both Russian comma and dot", () => {

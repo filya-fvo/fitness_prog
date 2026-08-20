@@ -1,7 +1,8 @@
 #Requires -Version 5.1
 param(
   [int]$Port = 8001,
-  [string]$OutputFile = ""
+  [string]$OutputFile = "",
+  [switch]$Interactive
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,7 +40,15 @@ if (-not $dnsName) {
 
 $funnelOutput = (& $tailscale funnel --bg $Port 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
-  throw "Не удалось включить Tailscale Funnel: $funnelOutput"
+  if ($Interactive) {
+    Write-Host "Tailscale требует подтверждения Funnel:" -ForegroundColor Yellow
+    Write-Host $funnelOutput
+    [void](Read-Host "Откройте показанную ссылку, подтвердите Funnel и нажмите Enter")
+    $funnelOutput = (& $tailscale funnel --bg $Port 2>&1 | Out-String).Trim()
+  }
+  if ($LASTEXITCODE -ne 0) {
+    throw "Не удалось включить Tailscale Funnel: $funnelOutput"
+  }
 }
 
 $publicUrl = "https://$dnsName"

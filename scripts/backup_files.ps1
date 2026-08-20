@@ -1,7 +1,7 @@
 ﻿param([Parameter(Mandatory=$true)][string[]]$Paths)
 $ts = Get-Date -Format "yyyyMMdd_HHmmss"
-$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-if (-not (Test-Path (Join-Path $root "backend"))) { $root = "C:\fitness_prog" }
+$root = Split-Path -Parent $PSScriptRoot
+if (-not (Test-Path (Join-Path $root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 $bak = Join-Path $root "backups\$ts"
 New-Item -ItemType Directory -Force -Path $bak | Out-Null
 foreach ($p in $Paths) {

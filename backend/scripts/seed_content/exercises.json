@@ -1222,7 +1222,7 @@
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/2135-VBAWRPG.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -1231,8 +1231,7 @@
       "ds:2135",
       "© Gym Visual",
       "curated",
-      "load:timed",
-      "media:no-exact-gif"
+      "load:timed"
     ]
   },
   {

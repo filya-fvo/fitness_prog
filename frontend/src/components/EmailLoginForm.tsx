@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { loginWithEmailCode, requestEmailLoginCode, type AuthUser } from "@/api/auth";
-import { adoptMergedLocalData } from "@/db/accountMerge";
 import {
   clearOtpDraft,
   OTP_DRAFT_LOGIN_KEY,
@@ -103,6 +103,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
     setBusy(true);
     try {
       const res = await loginWithEmailCode(email.trim(), code.trim());
+      const { adoptMergedLocalData } = await import("@/db/accountMerge");
       await adoptMergedLocalData(res.user);
       clearOtpDraft(OTP_DRAFT_LOGIN_KEY);
       onSuccess(res.user);
@@ -122,6 +123,9 @@ export function EmailLoginForm({ onSuccess }: Props) {
       <p className="mt-1 text-xs text-tg-hint">
         Если аккаунта ещё нет, он будет создан после подтверждения кода. Код придёт с адреса fil_fit_bot@mail.ru.
       </p>
+      <Link to="/help" className="mt-2 inline-block text-xs text-tg-link">
+        Как пользоваться приложением →
+      </Link>
 
       {step === "email" ? (
         <form className="mt-3 space-y-2" onSubmit={(e) => void onRequestCode(e)}>

@@ -4,9 +4,20 @@ param()
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "backend"))) { $Root = "C:\fitness_prog" }
+if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not found from $PSScriptRoot" }
 $Supervisor = Join-Path $Root "scripts\fitness-supervisor.ps1"
 $TaskName = "Fitness App Supervisor"
+$Required = @(
+  (Join-Path $Root "backend\.env"),
+  (Join-Path $Root "backend\.venv\Scripts\python.exe"),
+  (Join-Path $Root "frontend\dist\index.html"),
+  (Join-Path $Root "tools\redis\redis-server.exe")
+)
+
+$missing = @($Required | Where-Object { -not (Test-Path -LiteralPath $_) })
+if ($missing.Count -gt 0) {
+  throw "Server installation is incomplete. Run install-server.cmd first. Missing: $($missing -join ', ')"
+}
 
 if (-not (Test-Path -LiteralPath $Supervisor)) {
   throw "Supervisor script not found: $Supervisor"
@@ -53,5 +64,16 @@ if (Test-Path -LiteralPath $tailscale) {
 Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 3
 $task = Get-ScheduledTask -TaskName $TaskName
+$taskInfo = Get-ScheduledTaskInfo -TaskName $TaskName
+$logDir = Join-Path $Root "logs"
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+$statusPath = Join-Path $logDir "supervisor-install-status.json"
+@{
+  task_name = $TaskName
+  state = [string]$task.State
+  last_result = $taskInfo.LastTaskResult
+  checked_at_utc = [DateTime]::UtcNow.ToString("o")
+} | ConvertTo-Json | Set-Content -LiteralPath $statusPath -Encoding utf8
 Write-Host "[OK] $TaskName installed and started. State=$($task.State)" -ForegroundColor Green
 Write-Host "Log: $Root\logs\supervisor.log"
+Write-Host "Status snapshot: $statusPath"

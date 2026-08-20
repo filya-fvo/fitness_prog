@@ -31,9 +31,10 @@ Use after P0–P3 code is in place and before inviting real users.
 - [ ] Migrations applied on prod DB
 - [ ] Seed applied on prod DB
 - [ ] Arq worker running (if reminders needed)
-- [ ] BotFather Menu Button = prod front URL
+- [ ] Telegram Menu Button имеет стандартный тип `commands`/`default`, не `web_app`; inline Open из нового `/start` ведёт на prod URL
+- [ ] Scheduled workflow `Public health monitor` успешно проверяет публичный `/health`
 - [ ] Sentry DSN set (optional but recommended)
-- [ ] Backup note/job exists ([ops-runbook.md](./ops-runbook.md))
+- [ ] Backup note/job exists ([LOCAL_ADMIN_GUIDE.md](./LOCAL_ADMIN_GUIDE.md))
 
 ## Automated
 

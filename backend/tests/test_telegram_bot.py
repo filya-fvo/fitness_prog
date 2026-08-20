@@ -22,6 +22,7 @@ from app.services.telegram_bot import (
     start_welcome_text,
     supplement_intake_keyboard,
     user_guide_path,
+    water_intake_keyboard,
 )
 
 
@@ -49,6 +50,35 @@ async def test_set_webhook_subscribes_to_inline_button_callbacks(
 
     assert captured["method"] == "setWebhook"
     assert captured["payload"]["allowed_updates"] == ["message", "callback_query"]  # type: ignore[index]
+
+
+@pytest.mark.asyncio
+async def test_standard_menu_replaces_persistent_open_button(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_bot_api(
+        _settings: Settings,
+        method: str,
+        payload: dict[str, object] | None = None,
+        **_kwargs: object,
+    ) -> dict[str, object]:
+        captured["method"] = method
+        captured["payload"] = payload or {}
+        return {"ok": True, "result": True}
+
+    monkeypatch.setattr(telegram_bot, "bot_api", fake_bot_api)
+    await telegram_bot.set_default_chat_menu_button(
+        Settings(bot_token="test-token"),
+        chat_id=42,
+    )
+
+    assert captured["method"] == "setChatMenuButton"
+    assert captured["payload"] == {
+        "chat_id": 42,
+        "menu_button": {"type": "default"},
+    }
 
 
 @pytest.mark.asyncio
@@ -101,6 +131,17 @@ def test_build_mini_app_open_url_routes() -> None:
     assert build_mini_app_open_url(base, startapp="workout_abc") == (
         f"{base}/workouts/active/abc?startapp=workout_abc"
     )
+    assert build_mini_app_open_url(base, startapp="water") == f"{base}/?startapp=water"
+
+
+def test_water_keyboard_can_log_or_open_daily_checkin() -> None:
+    keyboard = water_intake_keyboard(
+        bot_username="fil_fit_bot",
+        mini_app_url="https://fitness-pc.example.ts.net",
+    )
+    rows = keyboard["inline_keyboard"]
+    assert rows[0][0]["callback_data"] == "wa:250"
+    assert rows[1][0]["web_app"]["url"].endswith("/?startapp=water")
 
 
 def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
@@ -161,15 +202,12 @@ def test_bot_commands_reply_keyboard_has_start_help() -> None:
     assert "/help" in flat
 
 
-def test_bot_commands_reply_keyboard_includes_open_when_url() -> None:
+def test_bot_commands_reply_keyboard_never_duplicates_open_button() -> None:
     settings = Settings(mini_app_url="https://fitness-pc.example.ts.net")
     kb = bot_commands_reply_keyboard(settings)
-    first = kb["keyboard"][0][0]
-    assert first["text"] == "Open"
-    assert "web_app" in first
-    assert first["web_app"]["url"].startswith("https://fitness-pc.example.ts.net")
-    second_row = [b["text"] for b in kb["keyboard"][1]]
-    assert second_row == ["/start", "/help"]
+    flat = [button["text"] for row in kb["keyboard"] for button in row]
+    assert flat == ["/start", "/help"]
+    assert "Open" not in flat
 
 
 def test_start_welcome_uses_first_name_variable() -> None:

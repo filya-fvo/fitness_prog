@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 import time
+import re
 from datetime import date, timedelta
 
 import httpx
@@ -21,9 +22,40 @@ from app.models.workout import Workout
 
 _groq_model_cooldowns: dict[str, float] = {}
 
+_THINK_BLOCK_RE = re.compile(r"<think\b[^>]*>.*?</think\s*>", re.IGNORECASE | re.DOTALL)
+_THINK_OPEN_RE = re.compile(r"<think\b[^>]*>", re.IGNORECASE)
+_THINK_CLOSE_RE = re.compile(r"</think\s*>", re.IGNORECASE)
+_REASONING_LEAK_MARKERS = (
+    "here's a thinking process",
+    "here is a thinking process",
+    "analyze user input",
+    "identify key requirements",
+    "system prompt",
+    "developer message",
+)
 
-def _ai_provider(settings: Settings) -> str:
-    return settings.ai_provider.strip().lower() or "groq"
+
+def sanitize_ai_output(reply: str | None) -> str | None:
+    """Return only user-facing model text, never hidden reasoning or prompt fragments."""
+    if not reply or not reply.strip():
+        return None
+    text = _THINK_BLOCK_RE.sub("", reply).strip()
+
+    # An interrupted provider response can contain an opening tag without a closing one.
+    # Keep a final answer that precedes the tag; otherwise reject the whole response.
+    open_match = _THINK_OPEN_RE.search(text)
+    if open_match:
+        text = text[: open_match.start()].strip()
+    close_match = _THINK_CLOSE_RE.search(text)
+    if close_match:
+        text = text[close_match.end() :].strip()
+
+    lowered = text.casefold()
+    if any(marker in lowered for marker in _REASONING_LEAK_MARKERS):
+        return None
+    text = re.sub(r"^```(?:markdown|text)?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text).strip()
+    return text or None
 
 
 def _groq_models(settings: Settings) -> list[str]:
@@ -77,104 +109,6 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
     )
 
 
-def _response_text(data: dict) -> str | None:
-    direct = data.get("output_text")
-    if isinstance(direct, str) and direct.strip():
-        return direct.strip()
-    chunks: list[str] = []
-    for item in data.get("output") or []:
-        if not isinstance(item, dict) or item.get("type") != "message":
-            continue
-        for content in item.get("content") or []:
-            if isinstance(content, dict) and content.get("type") == "output_text":
-                text = content.get("text")
-                if isinstance(text, str) and text.strip():
-                    chunks.append(text.strip())
-    return "\n".join(chunks) or None
-
-
-async def _create_openai_conversation(settings: Settings, user_id: uuid.UUID) -> str | None:
-    if not settings.openai_api_key:
-        return None
-    base = settings.openai_base_url.rstrip("/")
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{base}/conversations",
-                headers={
-                    "Authorization": f"Bearer {settings.openai_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={"metadata": {"fitness_user_id": str(user_id)}},
-            )
-            response.raise_for_status()
-            conversation_id = response.json().get("id")
-            return str(conversation_id) if conversation_id else None
-    except Exception as exc:
-        from loguru import logger
-
-        logger.warning("openai_conversation_create_failed user={} err={}", user_id, exc)
-        return None
-
-
-async def _ensure_openai_conversation(
-    session: AsyncSession,
-    user: User,
-    settings: Settings,
-) -> tuple[str | None, bool]:
-    if user.openai_conversation_id:
-        return user.openai_conversation_id, False
-    locked_user = await session.scalar(select(User).where(User.id == user.id).with_for_update())
-    if locked_user is None:
-        return None, False
-    if locked_user.openai_conversation_id:
-        return locked_user.openai_conversation_id, False
-    conversation_id = await _create_openai_conversation(settings, user.id)
-    if not conversation_id:
-        await session.rollback()
-        return None, False
-    locked_user.openai_conversation_id = conversation_id
-    await session.commit()
-    user.openai_conversation_id = conversation_id
-    return conversation_id, True
-
-
-async def _call_openai_response(
-    settings: Settings,
-    instructions: str,
-    user_prompt: str,
-    *,
-    conversation_id: str | None = None,
-) -> str | None:
-    if not settings.openai_api_key:
-        return None
-    base = settings.openai_base_url.rstrip("/")
-    model = settings.openai_model.strip() or "gpt-5-nano"
-    url = f"{base}/responses"
-    headers = {
-        "Authorization": f"Bearer {settings.openai_api_key}",
-        "Content-Type": "application/json",
-    }
-    body = {
-        "model": model,
-        "instructions": instructions,
-        "input": user_prompt,
-        "max_output_tokens": 600,
-    }
-    if conversation_id:
-        body["conversation"] = conversation_id
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, headers=headers, json=body)
-            resp.raise_for_status()
-            return _response_text(resp.json())
-    except Exception as exc:
-        from loguru import logger
-
-        logger.warning("openai_response_failed model={} base={} err={}", model, base, exc)
-        return None
-
-
 async def _call_groq_chat(
     settings: Settings,
     instructions: str,
@@ -206,6 +140,7 @@ async def _call_groq_chat(
             }
             if model.startswith("qwen/"):
                 body["reasoning_effort"] = reasoning_effort
+                body["reasoning_format"] = "hidden"
             try:
                 response = await client.post(
                     f"{base}/chat/completions",
@@ -257,34 +192,15 @@ async def _call_configured_ai(
     settings: Settings,
     instructions: str,
     user_prompt: str,
-    *,
-    conversation_id: str | None = None,
-    analyze: bool = False,
 ) -> tuple[str | None, str]:
-    provider = _ai_provider(settings)
-    if provider == "groq":
-        reply = await _call_groq_chat(
-            settings,
-            instructions,
-            user_prompt,
-            reasoning_effort="default" if analyze else "none",
-        )
-        checked = _russian_only(reply)
-        return checked, "groq" if checked else "rule"
-    if provider == "openai":
-        reply = await _call_openai_response(
-            settings,
-            instructions,
-            user_prompt,
-            conversation_id=conversation_id,
-        )
-        checked = _russian_only(reply)
-        return checked, "openai" if checked else "rule"
-
-    from loguru import logger
-
-    logger.error("unsupported_ai_provider provider={}", provider)
-    return None, "rule"
+    reply = await _call_groq_chat(
+        settings,
+        instructions,
+        user_prompt,
+        reasoning_effort="none",
+    )
+    checked = _russian_only(sanitize_ai_output(reply))
+    return checked, "groq" if checked else "rule"
 
 
 def _russian_only(reply: str | None) -> str | None:
@@ -330,12 +246,7 @@ async def chat(
         f"{catalog_context}\n\n"
         "Ответь по фактам из данных приложения и текущей истории."
     )
-    provider = _ai_provider(settings)
-    conversation_id: str | None = None
-    created = False
-    if provider == "openai":
-        conversation_id, created = await _ensure_openai_conversation(session, user, settings)
-    if history and (provider != "openai" or created):
+    if history:
         transcript = "\n".join(
             f"{item['role']}: {item['content']}" for item in history
         )
@@ -347,7 +258,6 @@ async def chat(
         settings,
         system,
         user_prompt,
-        conversation_id=conversation_id,
     )
     if llm_reply:
         reply = llm_reply
@@ -374,6 +284,9 @@ async def store_exchange(
     user_content: str,
     assistant_content: str,
 ) -> None:
+    safe_assistant_content = sanitize_ai_output(assistant_content)
+    if not safe_assistant_content:
+        safe_assistant_content = "Не удалось подготовить корректный ответ. Попробуйте ещё раз."
     session.add_all(
         [
             AIConversation(
@@ -386,7 +299,7 @@ async def store_exchange(
                 user_id=user_id,
                 session_id=session_id,
                 role="assistant",
-                content=assistant_content,
+                content=safe_assistant_content,
             ),
         ]
     )
@@ -450,7 +363,6 @@ async def analyze_progress(
         settings,
         system,
         prompt,
-        analyze=True,
     )
     if llm_reply:
         report = llm_reply

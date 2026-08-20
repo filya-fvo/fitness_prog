@@ -2,18 +2,15 @@
  * App shell: Telegram theme, auth bootstrap, routing frame.
  * Sprint 1 — TZ §7, §8, §10.
  */
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithTelegram } from "@/api/auth";
 import { fetchMyProfile } from "@/api/users";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ToastHost } from "@/components/ui/ToastHost";
-import { startSyncListeners } from "@/db/syncQueue";
 import { trackEvent } from "@/lib/analytics";
-import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import {
   getStartParam,
   initTelegramApp,
@@ -24,6 +21,10 @@ import { useUserStore } from "@/store/userStore";
 import { isOnline } from "@/utils/network";
 import { cacheUserProfile, readCachedUserProfile } from "@/utils/profileCache";
 import { toUserMessage } from "@/utils/errors";
+
+const OfflineBanner = lazy(() =>
+  import("@/components/OfflineBanner").then((module) => ({ default: module.OfflineBanner })),
+);
 
 export function Shell() {
   const navigate = useNavigate();
@@ -43,9 +44,14 @@ export function Shell() {
       online: isOnline(),
     });
     let cancelled = false;
+    let bootstrapInFlight = false;
+    let retryAfterFailure = false;
 
     async function bootstrapAuth() {
+      if (bootstrapInFlight || cancelled) return;
+      bootstrapInFlight = true;
       setAuthLoading(true);
+      setAuthError(null);
       try {
         const start = getStartParam();
         if (start && !cancelled) {
@@ -99,21 +105,40 @@ export function Shell() {
 
         const result = await loginWithTelegram();
         if (!cancelled) {
+          retryAfterFailure = false;
           setUser(result.user);
           cacheUserProfile(result.user);
           setAuthLoading(false);
         }
       } catch (error) {
+        retryAfterFailure = true;
         if (!cancelled) {
           const message = toUserMessage(error, "Не удалось войти в приложение");
           setAuthError(message);
+          setAuthLoading(false);
         }
+      } finally {
+        bootstrapInFlight = false;
       }
     }
 
     void bootstrapAuth();
+    const retryBootstrap = () => {
+      if (retryAfterFailure && isOnline()) void bootstrapAuth();
+    };
+    const retryWhenVisible = () => {
+      if (document.visibilityState === "visible") retryBootstrap();
+    };
+    // A Funnel outage does not change navigator.onLine on the phone, so an
+    // "online" event alone cannot recover a failed Telegram authorization.
+    window.addEventListener("online", retryBootstrap);
+    document.addEventListener("visibilitychange", retryWhenVisible);
+    const retryTimer = window.setInterval(retryBootstrap, 10_000);
     return () => {
       cancelled = true;
+      window.removeEventListener("online", retryBootstrap);
+      document.removeEventListener("visibilitychange", retryWhenVisible);
+      window.clearInterval(retryTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, setAuthError, setAuthLoading, setUser]);
@@ -121,15 +146,23 @@ export function Shell() {
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    const stopSync = startSyncListeners(userId);
-    if (!location.pathname.startsWith("/workouts/active/")) {
-      void findResumableSession(userId).then(async (session) => {
-        if (session && !cancelled) await restoreSessionIntoStore(session, userId);
-      });
-    }
+    let stopSync: (() => void) | null = null;
+    void Promise.all([
+      import("@/db/syncQueue"),
+      import("@/lib/sessionRestore"),
+    ]).then(async ([syncQueue, sessionRestore]) => {
+      if (cancelled) return;
+      stopSync = syncQueue.startSyncListeners(userId);
+      if (!location.pathname.startsWith("/workouts/active/")) {
+        const session = await sessionRestore.findResumableSession(userId);
+        if (session && !cancelled) {
+          await sessionRestore.restoreSessionIntoStore(session, userId);
+        }
+      }
+    });
     return () => {
       cancelled = true;
-      stopSync();
+      stopSync?.();
     };
   }, [location.pathname, userId]);
 
@@ -171,7 +204,7 @@ export function Shell() {
   return (
     <div className="min-h-screen bg-tg-bg text-tg-text">
       <div
-        className={`mx-auto min-h-screen px-4 pt-4 ${isFocusedFlow ? "max-w-lg pb-6" : "max-w-5xl pb-24"}`}
+        className={`mx-auto min-h-screen px-4 pt-[calc(1rem+env(safe-area-inset-top))] ${isFocusedFlow ? "max-w-lg pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "max-w-5xl pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pt-24"}`}
       >
         {isAuthLoading ? (
           <p className="text-sm text-tg-hint">Авторизация…</p>
@@ -194,9 +227,13 @@ export function Shell() {
           />
         ) : null}
 
-        {!isAuthLoading ? <OfflineBanner /> : null}
+        {!isAuthLoading && user ? (
+          <Suspense fallback={null}>
+            <OfflineBanner />
+          </Suspense>
+        ) : null}
 
-        <Outlet />
+        {!isAuthLoading && (user || import.meta.env.DEV) ? <Outlet /> : null}
       </div>
       <ToastHost />
       {!isFocusedFlow ? <BottomNavigation /> : null}

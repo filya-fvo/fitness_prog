@@ -6,6 +6,15 @@ import { expect, test } from "@playwright/test";
  * Full Telegram auth + set logging still needs device QA with initData.
  */
 test.describe("P3 funnel path", () => {
+  test("browser help opens directly without Telegram authorization", async ({ page }) => {
+    await page.goto("/help");
+    await expect(page.getByRole("heading", { name: "Как пользоваться" })).toBeVisible();
+    await expect(page.getByText("Тренировки", { exact: true })).toBeVisible();
+    await expect(page.getByText("Питание", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Справочник" }).click();
+    await expect(page.getByRole("heading", { name: "Справочник" })).toBeVisible();
+    await expect(page.getByText("Как настроить питание под цель")).toBeVisible();
+  });
   test("bottom nav covers train / nutrition / progress / more", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#root")).toBeVisible({ timeout: 15_000 });
@@ -72,6 +81,9 @@ test.describe("P3 funnel path", () => {
 
   test("nutrition quick actions labels present when page loads", async ({ page }) => {
     await page.goto("/nutrition");
+    await expect(page.getByRole("heading", { name: /Питание/i })).toBeVisible({
+      timeout: 10_000,
+    });
     const body = await page.locator("body").innerText();
     // Either diary UI or auth gate — both are valid SPA shells
     expect(body).toMatch(/Питание|Дневник|Калории|авторизац|Telegram|Как вчера|Добавить/i);

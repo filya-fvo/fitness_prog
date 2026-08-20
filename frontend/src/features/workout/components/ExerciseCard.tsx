@@ -6,6 +6,7 @@ type ExerciseCardProps = {
   selected?: boolean;
   onSelect?: (exercise: Exercise) => void;
   onOpenDetail?: (exercise: Exercise) => void;
+  compact?: boolean;
 };
 
 /**
@@ -17,6 +18,7 @@ export function ExerciseCard({
   selected = false,
   onSelect,
   onOpenDetail,
+  compact = false,
 }: ExerciseCardProps) {
   const openDetail = () => {
     if (onOpenDetail) onOpenDetail(exercise);
@@ -41,7 +43,7 @@ export function ExerciseCard({
               {exercise.equipment ? ` · ${enumLabel(exercise.equipment)}` : ""}
             </p>
           </button>
-          {technique ? (
+          {technique && !compact ? (
             <p
               className="mt-1 overflow-hidden text-[12px] leading-snug text-tg-hint"
               style={{
@@ -56,14 +58,14 @@ export function ExerciseCard({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-          <span title="Сложность техники: 1 — легко, 5 — сложно" className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] text-tg-hint">
+          <span title="Сложность техники: 1 — легко, 5 — сложно" className={["rounded-full bg-black/5 px-2 py-0.5 text-[10px] text-tg-hint", compact ? "hidden sm:inline" : ""].join(" ")}>
             Сложность: {exercise.difficulty}/5
           </span>
           {onOpenDetail ? (
             <button
               type="button"
               onClick={() => onOpenDetail(exercise)}
-              className="text-[11px] leading-none text-tg-link"
+              className="tap-target flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg px-1 text-[11px] leading-none text-tg-link"
             >
               Детали
             </button>
