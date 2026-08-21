@@ -86,6 +86,14 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Browser tests
         run: npm run test:e2e
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa-failure
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Build for Lighthouse
         env:
           VITE_API_URL: https://api.example.com
@@ -95,6 +103,37 @@ jobs:
         run: |
           echo "CHROME_PATH=$(node -e \"const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())\")" >> "$GITHUB_ENV"
           npm run audit:lighthouse
+
+  frontend-visual:
+    name: Frontend (visual QA)
+    runs-on: windows-latest
+    needs: [frontend]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Visual regression tests
+        env:
+          PLAYWRIGHT_VISUAL_QA: "1"
+        run: npm run test:e2e -- --grep "@visual"
+      - name: Upload visual failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-failure
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   docker-api:
     name: Docker API image

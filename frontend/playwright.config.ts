@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const visualRegressionEnabled =
+  process.platform === "win32" || process.env.PLAYWRIGHT_VISUAL_QA === "1";
+
 /**
  * E2E critical path (TZ §11).
  * Run: npx playwright test
@@ -22,7 +25,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /iphone-(layout|telegram-entry)\.spec\.ts/,
+      testIgnore: [
+        /iphone-(layout|telegram-entry)\.spec\.ts/,
+        ...(visualRegressionEnabled ? [] : [/visual-regression\.spec\.ts/]),
+      ],
     },
     {
       name: "iphone-webkit",

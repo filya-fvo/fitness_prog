@@ -13,6 +13,40 @@ test("Telegram authorization retries when Funnel returns without an online event
       },
     };
   });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/auth/telegram") {
+      await route.fallback();
+      return;
+    }
+    const apiPrefixes = [
+      "/ai",
+      "/auth",
+      "/daily-metrics",
+      "/exercises",
+      "/feedback",
+      "/measurements",
+      "/notifications",
+      "/nutrition",
+      "/programs",
+      "/supplements",
+      "/users",
+      "/workouts",
+    ];
+    if (
+      request.resourceType() !== "document" &&
+      apiPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    ) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "E2E API fallback" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
   await page.route("**/auth/telegram", async (route) => {
     authRequests += 1;
     if (authRequests === 1) {
@@ -44,6 +78,6 @@ test("Telegram authorization retries when Funnel returns without an online event
   // Returning to the Mini App must retry without relying on window.online.
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
 
-  await expect.poll(() => authRequests).toBe(2);
+  await expect.poll(() => authRequests, { timeout: 2_000 }).toBe(2);
   await expect(page.getByText("Не удалось войти")).toHaveCount(0);
 });

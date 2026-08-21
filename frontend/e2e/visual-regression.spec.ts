@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("mobile visual baselines", () => {
+test.describe("@visual mobile visual baselines", () => {
   test.use({ viewport: { width: 360, height: 800 }, colorScheme: "light" });
 
   for (const [name, route] of [
@@ -21,7 +21,7 @@ test.describe("mobile visual baselines", () => {
   }
 });
 
-test.describe("desktop visual baseline", () => {
+test.describe("@visual desktop visual baseline", () => {
   test.use({ viewport: { width: 1440, height: 900 }, colorScheme: "light" });
 
   test("train hub uses desktop navigation", async ({ page }) => {

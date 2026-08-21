@@ -48,3 +48,10 @@ def test_setup_logging_creates_today_file(tmp_path: Path) -> None:
     today = date.today().isoformat()
     matches = list(tmp_path.glob(f"api-{today}.log"))
     assert matches, f"expected api-{today}.log in {list(tmp_path.iterdir())}"
+
+
+def test_setup_logging_accepts_non_development_environments(tmp_path: Path) -> None:
+    for environment in ("test", "production"):
+        log_dir = tmp_path / environment
+        path = setup_logging(environment=environment, service="api", log_dir=log_dir)
+        assert path == log_dir

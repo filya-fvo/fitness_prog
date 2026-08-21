@@ -286,6 +286,11 @@ npm run audit:lighthouse
 `audit:lighthouse` требует свежий `dist` и Chrome/Chromium. Visual snapshots
 обновлять только после осмысленной визуальной проверки:
 `npm run test:e2e -- --update-snapshots`.
+Полноэкранные pixel-snapshots эталонно проверяются на Windows: обычный Linux CI
+запускает функциональные browser-тесты без `visual-regression.spec.ts`, а job
+`Frontend (visual QA)` включает их через `PLAYWRIGHT_VISUAL_QA=1`. Не обновляйте
+Windows-эталоны из Linux/macOS; при падении сначала изучите загруженный artifact
+`visual-qa-failure` с actual/diff изображениями.
 
 `build:publish` используется эксплуатационными скриптами вместо прямой сборки в
 работающий `dist`. Не заменяйте его на `vite build` в `start-all`/installer:

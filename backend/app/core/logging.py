@@ -150,7 +150,7 @@ def setup_logging(
     console_fmt = (
         "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} | {message}"
         if environment == "development"
-        else None
+        else "{message}"
     )
     logger.add(
         sys.stdout,

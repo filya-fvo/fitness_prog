@@ -46,6 +46,7 @@ export function Shell() {
     let cancelled = false;
     let bootstrapInFlight = false;
     let retryAfterFailure = false;
+    let retryQueued = false;
 
     async function bootstrapAuth() {
       if (bootstrapInFlight || cancelled) return;
@@ -106,6 +107,7 @@ export function Shell() {
         const result = await loginWithTelegram();
         if (!cancelled) {
           retryAfterFailure = false;
+          retryQueued = false;
           setUser(result.user);
           cacheUserProfile(result.user);
           setAuthLoading(false);
@@ -119,12 +121,22 @@ export function Shell() {
         }
       } finally {
         bootstrapInFlight = false;
+        if (retryQueued && retryAfterFailure && isOnline() && !cancelled) {
+          retryQueued = false;
+          queueMicrotask(() => void bootstrapAuth());
+        }
       }
     }
 
     void bootstrapAuth();
     const retryBootstrap = () => {
-      if (retryAfterFailure && isOnline()) void bootstrapAuth();
+      if (!retryAfterFailure || !isOnline()) return;
+      if (bootstrapInFlight) {
+        retryQueued = true;
+        return;
+      }
+      retryQueued = false;
+      void bootstrapAuth();
     };
     const retryWhenVisible = () => {
       if (document.visibilityState === "visible") retryBootstrap();
