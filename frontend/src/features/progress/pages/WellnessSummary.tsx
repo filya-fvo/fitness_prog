@@ -12,13 +12,14 @@ type MetricConfig = {
   goal: number | null;
   value: (day: DailyMetric) => number | null | undefined;
   format: (value: number) => string;
+  axisFormat: (value: number) => string;
 };
 
 const METRICS: Record<MetricId, MetricConfig> = {
-  steps: { label: "Шаги", shortLabel: "Шаги", goal: 8000, value: (day) => day.steps, format: (value) => Math.round(value).toLocaleString("ru-RU") },
-  sleep: { label: "Сон", shortLabel: "Сон", goal: 480, value: (day) => day.sleep_minutes, format: (value) => `${Math.floor(value / 60)} ч ${Math.round(value % 60)} мин` },
-  active: { label: "Активность", shortLabel: "Активн.", goal: 30, value: (day) => day.active_minutes, format: (value) => `${Math.round(value)} мин` },
-  weight: { label: "Вес", shortLabel: "Вес", goal: null, value: (day) => day.weight_kg, format: (value) => `${value.toFixed(1).replace(".", ",")} кг` },
+  steps: { label: "Шаги", shortLabel: "Шаги", goal: 8000, value: (day) => day.steps, format: (value) => Math.round(value).toLocaleString("ru-RU"), axisFormat: (value) => value >= 1000 ? `${(value / 1000).toFixed(1)}к` : String(Math.round(value)) },
+  sleep: { label: "Сон", shortLabel: "Сон", goal: 480, value: (day) => day.sleep_minutes, format: (value) => `${Math.floor(value / 60)} ч ${Math.round(value % 60)} мин`, axisFormat: (value) => `${(value / 60).toFixed(1)} ч` },
+  active: { label: "Активность", shortLabel: "Активн.", goal: 30, value: (day) => day.active_minutes, format: (value) => `${Math.round(value)} мин`, axisFormat: (value) => `${Math.round(value)} м` },
+  weight: { label: "Вес", shortLabel: "Вес", goal: null, value: (day) => day.weight_kg, format: (value) => `${value.toFixed(1).replace(".", ",")} кг`, axisFormat: (value) => value.toFixed(1).replace(".", ",") },
 };
 
 function localIso(date: Date): string {
@@ -87,15 +88,16 @@ function MetricChart({ series, config }: { series: DailyMetric[]; config: Metric
       <svg viewBox="0 0 600 174" className="h-44 w-full" role="img" aria-label={`${config.label} по дням`}>
         <line x1={left} x2={right} y1={bottom} y2={bottom} className="stroke-black/10 dark:stroke-white/15" />
         <line x1={left} x2={right} y1={top} y2={top} className="stroke-black/10 dark:stroke-white/15" />
-        <text x="2" y={top + 4} className="fill-tg-hint text-[10px]">{config.format(max)}</text>
-        <text x="2" y={bottom + 4} className="fill-tg-hint text-[10px]">{config.format(min)}</text>
+        <line x1={left} x2={right} y1={(top + bottom) / 2} y2={(top + bottom) / 2} className="stroke-black/10 dark:stroke-white/10" strokeDasharray="4 5" />
+        <text x="2" y={top + 4} className="fill-tg-hint text-[10px]">{config.axisFormat(max)}</text>
+        <text x="2" y={bottom + 4} className="fill-tg-hint text-[10px]">{config.axisFormat(min)}</text>
         {config.goal != null ? <>
           <line x1={left} x2={right} y1={y(config.goal)} y2={y(config.goal)} strokeDasharray="6 5" className="stroke-emerald-500/70" />
           <text x={right - 2} y={Math.max(12, y(config.goal) - 5)} textAnchor="end" className="fill-emerald-600 text-[10px]">цель {config.format(config.goal)}</text>
         </> : null}
         {segments.map((segment, index) => <g key={index}>
           {segment.length > 1 ? <polyline points={segment.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="stroke-tg-button" /> : null}
-          {segment.map((point) => <circle key={`${point.x}-${point.y}`} cx={point.x} cy={point.y} r="5" className="fill-tg-button"><title>{config.format(point.value)}</title></circle>)}
+          {segment.map((point, pointIndex) => <g key={`${point.x}-${point.y}`}><circle cx={point.x} cy={point.y} r="5" className="fill-tg-button"><title>{config.format(point.value)}</title></circle>{index === segments.length - 1 && pointIndex === segment.length - 1 ? <text x={point.x} y={Math.max(11, point.y - 9)} textAnchor="end" className="fill-tg-text text-[10px] font-semibold">{config.axisFormat(point.value)}</text> : null}</g>)}
         </g>)}
         {values.map((value, index) => value == null ? <circle key={`missing-${series[index].date}`} cx={x(index)} cy={bottom} r="2.5" className="fill-black/20 dark:fill-white/20"><title>{shortDate(series[index].date)}: нет данных</title></circle> : null)}
         {[0, Math.floor((series.length - 1) / 2), series.length - 1].map((index) => <text key={index} x={x(index)} y="164" textAnchor={index === 0 ? "start" : index === series.length - 1 ? "end" : "middle"} className="fill-tg-hint text-[10px]">{shortDate(series[index].date)}</text>)}
@@ -114,6 +116,7 @@ export function WellnessSummary({ days, error }: Props) {
   const avg = average(values.map((row) => row.value));
   const current = values.at(-1)?.value ?? null;
   const change = values.length > 1 ? values.at(-1)!.value - values[0].value : null;
+  const goalDays = config.goal == null ? null : values.filter((row) => row.value >= config.goal!).length;
 
   return (
     <section className="rounded-2xl bg-tg-secondary p-4 md:col-span-2">
@@ -130,7 +133,7 @@ export function WellnessSummary({ days, error }: Props) {
         <div className="my-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Последнее</p><p className="mt-1 text-sm font-semibold tabular-nums">{current == null ? "—" : config.format(current)}</p></div>
           <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Среднее</p><p className="mt-1 text-sm font-semibold tabular-nums">{avg == null ? "—" : config.format(avg)}</p></div>
-          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Изменение</p><p className="mt-1 text-sm font-semibold tabular-nums">{change == null ? "—" : `${change > 0 ? "+" : change < 0 ? "−" : ""}${config.format(Math.abs(change))}`}</p></div>
+          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">{goalDays == null ? "Изменение" : "Дней в цели"}</p><p className="mt-1 text-sm font-semibold tabular-nums">{goalDays == null ? (change == null ? "—" : `${change > 0 ? "+" : change < 0 ? "−" : ""}${config.format(Math.abs(change))}`) : `${goalDays} из ${values.length}`}</p></div>
           <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Заполнено</p><p className="mt-1 text-sm font-semibold tabular-nums">{values.length} из {period}</p></div>
         </div>
         <MetricChart series={series} config={config} />

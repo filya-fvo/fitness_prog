@@ -11,7 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
-from app.schemas.scheduler import ShiftScheduleRequest, ShiftScheduleResponse, SkipWorkoutRequest
+from app.schemas.scheduler import (
+    ShiftScheduleRequest,
+    ShiftScheduleResponse,
+    SkipWorkoutRequest,
+    WorkoutRescheduleRequest,
+    WorkoutScheduleOverview,
+)
 from app.schemas.workout import (
     WorkoutCompleteRequest,
     WorkoutCreate,
@@ -23,6 +29,7 @@ from app.schemas.workout import (
     WorkoutUpdateRequest,
 )
 from app.services import scheduler as scheduler_service
+from app.services import workout_shift
 from app.services import workout_service
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
@@ -64,7 +71,7 @@ async def shift_schedule(
     user: User = Depends(get_current_user),
 ) -> ShiftScheduleResponse:
     """Shift all planned workouts from a date by N days."""
-    items = await scheduler_service.shift_future_workouts(
+    items = await workout_shift.shift_future_workouts(
         session,
         user,
         from_date=body.from_date,
@@ -74,6 +81,36 @@ async def shift_schedule(
         shifted=len(items),
         workout_ids=[item.id for item in items],
     )
+
+
+@router.get("/schedule/overview", response_model=WorkoutScheduleOverview)
+async def workout_schedule_overview(
+    day: date | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleOverview:
+    overview = await scheduler_service.get_schedule_overview(
+        session,
+        user,
+        day or scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.post("/schedule/reschedule", response_model=WorkoutScheduleOverview)
+async def reschedule_workout_occurrence(
+    body: WorkoutRescheduleRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleOverview:
+    overview = await scheduler_service.reschedule_workout_occurrence(
+        session,
+        user,
+        original_date=body.original_date,
+        target_date=body.target_date,
+        target_time=body.target_time,
+    )
+    return WorkoutScheduleOverview.model_validate(overview)
 
 
 @router.get("/{workout_id}", response_model=WorkoutResponse)
@@ -137,7 +174,7 @@ async def skip_workout(
 ) -> WorkoutResponse:
     """Mark workout skipped and shift later planned sessions (TZ §6)."""
     payload = body or SkipWorkoutRequest()
-    workout = await scheduler_service.mark_skipped_and_shift(
+    workout = await workout_shift.mark_skipped_and_shift(
         session,
         user,
         workout_id,

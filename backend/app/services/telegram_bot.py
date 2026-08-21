@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
+from time import time_ns
 from typing import Any
 from urllib.parse import quote, urlencode
 
@@ -240,6 +241,11 @@ def build_mini_app_open_url(
         path = "/"
         if key:
             query["startapp"] = key
+
+    # Telegram WebViews may reuse an in-memory document for the exact same URL.
+    # A unique navigation token forces a fresh HTML request while keeping the
+    # permanent origin and all routing parameters intact.
+    query["_fv"] = str(time_ns())
 
     url = f"{base}{path}"
     if query:
@@ -599,6 +605,7 @@ async def send_app_notification(
     text: str,
     startapp: str | None = "home",
     water_add_ml: int | None = None,
+    button_text: str = "Открыть приложение",
 ) -> dict[str, Any]:
     """Send HTML notification with Mini App Open button (web_app preferred)."""
     body = f"🔔 <b>{title}</b>\n{text}"
@@ -614,7 +621,7 @@ async def send_app_notification(
     elif mini_url:
         markup = open_web_app_keyboard(
             mini_app_url=mini_url,
-            button_text="Open",
+            button_text=button_text,
             startapp=target,
         )
     if markup is None:

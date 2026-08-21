@@ -60,9 +60,9 @@ function PeriodCard({ item }: { item: NutritionPeriodTotals }) {
 export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Props) {
   const maxAbs = Math.max(
     1,
-    ...series.map((d) => Math.abs(d.delta ?? d.calories)),
-    dailyTarget ?? 0,
+    ...series.filter((day) => day.hasLogs).map((day) => Math.abs(day.delta ?? 0)),
   );
+  const lastLoggedDate = [...series].reverse().find((day) => day.hasLogs)?.date ?? null;
 
   return (
     <section className="rounded-2xl bg-tg-secondary p-4">
@@ -97,10 +97,12 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
               const height = Math.max(4, Math.round((Math.abs(delta) / maxAbs) * 48));
               const label =
                 mode === "week" ? `нед. ${day.date.slice(5)}` : day.date.slice(8);
-              const title =
-                day.target != null
+              const title = !day.hasLogs
+                ? `${day.date}: нет записей`
+                : day.target != null
                   ? `${day.date}: съедено ${Math.round(day.calories)} ккал, цель ${Math.round(day.target)} ккал, разница ${fmtDelta(day.delta)} ккал`
                   : `${day.date}: съедено ${Math.round(day.calories)} ккал`;
+              const showValue = day.hasLogs && (mode === "week" || day.date === lastLoggedDate);
               return (
                 <div
                   key={day.date}
@@ -109,23 +111,23 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                 >
                   <div className="flex h-full w-full flex-col">
                     <div className="flex flex-1 items-end justify-center">
-                      {delta > 0 ? (
+                      {day.hasLogs && delta > 0 ? (
                         <div
-                          className="w-full max-w-[18px] rounded-t bg-orange-500/80"
+                          className="relative w-full max-w-[18px] rounded-t bg-orange-400/85"
                           style={{ height: `${height}%` }}
-                        />
+                        >{showValue ? <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-orange-300">+{Math.round(delta)}</span> : null}</div>
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
                     </div>
                     <div className="flex flex-1 items-start justify-center">
-                      {delta < 0 ? (
+                      {day.hasLogs && delta < 0 ? (
                         <div
-                          className="w-full max-w-[18px] rounded-b bg-emerald-600/80"
+                          className="relative w-full max-w-[18px] rounded-b bg-cyan-500/75"
                           style={{ height: `${height}%` }}
-                        />
-                      ) : !day.hasLogs && delta === 0 ? (
-                        <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-black/10" />
+                        >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-cyan-300">{Math.round(delta)}</span> : null}</div>
+                      ) : !day.hasLogs ? (
+                        <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-white/15" />
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
@@ -138,13 +140,14 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
           </div>
           <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-tg-hint">
             <span>
-              <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-orange-500/80" />
+              <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-orange-400/85" />
               перебор
             </span>
             <span>
-              <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-emerald-600/80" />
+              <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-cyan-500/75" />
               недобор
             </span>
+            <span><span className="mr-1 inline-block h-1 w-2 rounded bg-white/15" />нет записи</span>
             <span>линия — цель (0)</span>
           </div>
         </div>

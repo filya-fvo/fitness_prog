@@ -7,12 +7,25 @@ Media comes from **[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldr
 
 - Metadata clone: `backups/exercises-dataset-src/`
 - Active GIFs: `frontend/public/exercise-gifs/`
+- Static first frames for lists: `frontend/public/exercise-thumbnails/`
 - Old local semantic GIFs archived under `backups/exercise-gifs-archive-*`
 
 ## How the app shows media
 
 Field `animation_url` on exercise (e.g. `/exercise-gifs/0025-EIeI8Vf.gif`).  
 Player: `frontend/src/features/workout/components/ExerciseMediaPlayer.tsx`.
+
+Каталог и списки программ не запускают все GIF одновременно. Компонент
+`ExerciseThumbnail.tsx` преобразует локальный путь GIF в одноимённый PNG первого
+кадра. После добавления или замены GIF пересоберите миниатюры:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-exercise-thumbnails.ps1
+```
+
+Скрипт идемпотентен: без `-Force` обновляет только отсутствующие или устаревшие
+PNG. Миниатюры являются производными от тех же файлов и не заменяют manifest,
+аудит источника и атрибуцию в полной карточке.
 
 ## Rebuild catalog + GIFs + programs
 
@@ -44,6 +57,7 @@ Pipeline:
 4. Write `scripts/seed_content/exercises.json` and regenerate `programs.json` (**сохраняет `video_url`** из seed/checklist)
 5. Upsert DB (soft-delete retired exercises/templates)
 6. Apply YouTube URLs from `docs/exercise-media-checklist.csv`
+7. Regenerate static first-frame thumbnails for list views
 
 ## Archived scripts
 

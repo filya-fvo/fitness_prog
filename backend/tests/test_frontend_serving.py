@@ -28,10 +28,16 @@ async def test_spa_navigation_and_api_can_share_a_path(tmp_path) -> None:
 
     assert navigation.status_code == 200
     assert "fitness-spa" in navigation.text
-    assert navigation.headers["cache-control"] == "no-cache"
+    assert navigation.headers["cache-control"] == "no-store, no-cache, max-age=0, must-revalidate"
+    assert navigation.headers["pragma"] == "no-cache"
     assert api_response.json() == {"kind": "api"}
     assert asset.status_code == 200
     assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        missing_asset = await client.get("/assets/removed-release.js")
+    assert missing_asset.status_code == 404
+    assert missing_asset.headers["cache-control"] == "no-store"
 
 
 async def test_spa_deep_link_and_root_files(tmp_path) -> None:

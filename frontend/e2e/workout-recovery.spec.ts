@@ -6,6 +6,7 @@ const EXERCISE_ID = "33333333-3333-4333-8333-333333333333";
 
 test("server-only active workout deep link is restored and cached", async ({ page }) => {
   let workoutRequests = 0;
+  await page.setViewportSize({ width: 390, height: 844 });
 
   await page.addInitScript(() => {
     localStorage.setItem("fitness_jwt", "e2e-token");
@@ -92,7 +93,49 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await page.route("**/workouts/history", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ items: [], total: 0 }),
+      body: JSON.stringify({
+        items: [
+          {
+            id: "44444444-4444-4444-8444-444444444441",
+            user_id: USER_ID,
+            program_id: null,
+            scheduled_date: "2026-08-12",
+            status: "completed",
+            ai_notes: null,
+            rpe: 7,
+            started_at: "2026-08-12T10:00:00Z",
+            completed_at: "2026-08-12T11:00:00Z",
+            title: "Прошлая тренировка",
+            workout_type: "custom",
+            plan: { exercises: [], week_phase: "medium" },
+            duration_sec: 3600,
+            sets: [
+              { id: "55555555-5555-4555-8555-555555555551", workout_id: "44444444-4444-4444-8444-444444444441", exercise_id: EXERCISE_ID, set_number: 1, reps: 8, weight: 80, is_completed: true, rest_time_sec: 90 },
+              { id: "55555555-5555-4555-8555-555555555552", workout_id: "44444444-4444-4444-8444-444444444441", exercise_id: EXERCISE_ID, set_number: 2, reps: 8, weight: 82.5, is_completed: true, rest_time_sec: 90 },
+            ],
+          },
+          {
+            id: "44444444-4444-4444-8444-444444444442",
+            user_id: USER_ID,
+            program_id: null,
+            scheduled_date: "2026-08-18",
+            status: "completed",
+            ai_notes: null,
+            rpe: 8,
+            started_at: "2026-08-18T10:00:00Z",
+            completed_at: "2026-08-18T11:00:00Z",
+            title: "Тяжёлая тренировка",
+            workout_type: "custom",
+            plan: { exercises: [], week_phase: "heavy" },
+            duration_sec: 3600,
+            sets: [
+              { id: "55555555-5555-4555-8555-555555555553", workout_id: "44444444-4444-4444-8444-444444444442", exercise_id: EXERCISE_ID, set_number: 1, reps: 6, weight: 85, is_completed: true, rest_time_sec: 120 },
+              { id: "55555555-5555-4555-8555-555555555554", workout_id: "44444444-4444-4444-8444-444444444442", exercise_id: EXERCISE_ID, set_number: 2, reps: 6, weight: 87.5, is_completed: true, rest_time_sec: 120 },
+            ],
+          },
+        ],
+        total: 2,
+      }),
     });
   });
 
@@ -104,6 +147,21 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await expect(page.getByRole("navigation", { name: "Основная навигация" })).toHaveCount(0);
   await expect(page).toHaveURL(new RegExp(`/workouts/active/${WORKOUT_ID}$`));
   expect(workoutRequests).toBe(1);
+
+  await page.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
+  await expect(page.getByText("Дневник", { exact: true })).toBeVisible();
+  await expect(page.getByText("87.5 кг × 6 повт.")).toBeVisible();
+  await page.getByRole("button", { name: /Динамика веса/ }).click();
+  const progressDialog = page.getByRole("dialog", { name: "Динамика веса" });
+  await expect(progressDialog).toBeVisible();
+  await expect(progressDialog.getByRole("button", { name: "Месяц" })).toBeVisible();
+  await expect(progressDialog.getByRole("img", { name: "Динамика рабочих весов упражнения" })).toBeVisible();
+  await expect(progressDialog).toHaveScreenshot("exercise-progress-dialog-mobile.png", {
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(progressDialog).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Восстановленная тренировка" })).toBeVisible();
 
   await page.getByRole("button", { name: "Заменить", exact: true }).click();
   const replaceDialog = page.getByRole("dialog", { name: "Замена упражнения" });
@@ -161,7 +219,7 @@ test("exercise catalog renders progressively", async ({ page }) => {
       common_mistakes: null,
       difficulty: 2,
       video_url: null,
-      animation_url: null,
+      animation_url: index === 0 ? "/exercise-gifs/0043-qXTaZnJ.gif" : null,
       thumbnail_url: null,
       media_duration_sec: null,
       media_source: "none",
@@ -176,6 +234,10 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await page.goto("/workouts");
   await expect(page.getByText("Найдено упражнений: 25")).toBeVisible();
   await expect(page.locator("article")).toHaveCount(20);
+  await expect(page.locator('img[src="/exercise-thumbnails/0043-qXTaZnJ.png"]')).toBeVisible();
+  await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
+    animations: "disabled",
+  });
   await page.getByRole("button", { name: /Показать ещё · осталось 5/ }).click();
   await expect(page.locator("article")).toHaveCount(25);
 });

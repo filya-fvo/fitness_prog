@@ -152,7 +152,7 @@ export function KnowledgeBasePage() {
       </details>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Link to="/help" className="rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium text-tg-text underline">Как пользоваться</Link>
-        <Link to="/more" className="rounded-xl bg-[#1d6fae] px-4 py-3 text-center text-sm font-semibold text-white">Назад в «Ещё»</Link>
+        <Link to="/more" className="rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text">Назад в «Ещё»</Link>
       </div>
     </section>
   );

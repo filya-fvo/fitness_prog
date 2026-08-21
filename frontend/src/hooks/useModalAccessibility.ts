@@ -9,6 +9,8 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+const openDialogStack: symbol[] = [];
+
 function focusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
     (element) => element.getClientRects().length > 0 && element.getAttribute("aria-hidden") !== "true",
@@ -21,11 +23,15 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
   onClose: () => void,
 ): RefObject<T> {
   const dialogRef = useRef<T>(null);
+  const dialogIdRef = useRef(Symbol("dialog"));
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
+
+    const dialogId = dialogIdRef.current;
+    openDialogStack.push(dialogId);
 
     const previouslyFocused = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -42,6 +48,7 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
     });
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (openDialogStack.at(-1) !== dialogId) return;
       const dialog = dialogRef.current;
       if (!dialog) return;
 
@@ -74,6 +81,8 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => {
+      const stackIndex = openDialogStack.lastIndexOf(dialogId);
+      if (stackIndex >= 0) openDialogStack.splice(stackIndex, 1);
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = previousOverflow;

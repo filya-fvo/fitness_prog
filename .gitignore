@@ -46,6 +46,7 @@ htmlcov/
 # Frontend build
 frontend/dist/
 frontend/.dist-next/
+frontend/.dist-check/
 
 # Test / cache
 *.tsbuildinfo

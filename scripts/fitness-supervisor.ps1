@@ -10,6 +10,8 @@ if (-not (Test-Path (Join-Path $Root "backend"))) { throw "Project root not foun
 $LogDir = Join-Path $Root "logs"
 $LogFile = Join-Path $LogDir "supervisor.log"
 $HeartbeatFile = Join-Path $LogDir "supervisor-heartbeat.json"
+$RestartApiRequest = Join-Path $LogDir "restart-api.request"
+$RestartWorkerRequest = Join-Path $LogDir "restart-worker.request"
 $StartAll = Join-Path $Root "scripts\start-all.ps1"
 $StartRedis = Join-Path $Root "scripts\start-redis.ps1"
 $StartNotifications = Join-Path $Root "scripts\start-notifications.ps1"
@@ -131,6 +133,52 @@ function Ensure-LocalStack {
   }
 }
 
+function Invoke-RequestedApiRestart {
+  if (-not (Test-Path -LiteralPath $RestartApiRequest)) { return }
+  try {
+    $listeners = @(Get-NetTCPConnection -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue)
+    foreach ($listener in $listeners) {
+      $process = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)" -ErrorAction SilentlyContinue
+      $command = [string]$process.CommandLine
+      if ($command -match [regex]::Escape($Root) -and $command -match "uvicorn") {
+        Write-SupervisorLog "Applying requested API restart; pid=$($listener.OwningProcess)"
+        Stop-Process -Id $listener.OwningProcess -Force -ErrorAction Stop
+      } else {
+        Write-SupervisorLog "API restart request ignored unexpected pid=$($listener.OwningProcess)" "ERROR"
+        return
+      }
+    }
+    Remove-Item -LiteralPath $RestartApiRequest -Force -ErrorAction Stop
+    Start-Sleep -Seconds 2
+    Ensure-LocalStack
+  } catch {
+    Write-SupervisorLog "Requested API restart failed: $($_.Exception.Message)" "ERROR"
+  }
+}
+
+function Invoke-RequestedWorkerRestart {
+  if (-not (Test-Path -LiteralPath $RestartWorkerRequest)) { return }
+  try {
+    $workers = @(
+      Get-CimInstance Win32_Process -ErrorAction Stop |
+        Where-Object {
+          $_.Name -and $_.CommandLine -and
+          ($_.Name -match "python|arq") -and
+          ($_.CommandLine -match "WorkerSettings|tasks\.notifications")
+        }
+    )
+    foreach ($worker in $workers) {
+      Write-SupervisorLog "Applying requested worker restart; pid=$($worker.ProcessId)"
+      Stop-Process -Id $worker.ProcessId -Force -ErrorAction Stop
+    }
+    Remove-Item -LiteralPath $RestartWorkerRequest -Force -ErrorAction Stop
+    Start-Sleep -Seconds 2
+    Start-HiddenPowerShell $StartNotifications @("-ForceStart")
+  } catch {
+    Write-SupervisorLog "Requested worker restart failed: $($_.Exception.Message)" "ERROR"
+  }
+}
+
 function Ensure-Tailscale {
   if (-not (Test-Path -LiteralPath $Tailscale)) {
     Write-SupervisorLog "Tailscale executable not found" "ERROR"
@@ -186,6 +234,8 @@ if (-not (Test-Http "$(Get-PublicUrl)/health" 12)) {
 
 while ($true) {
   try {
+    Invoke-RequestedApiRestart
+    Invoke-RequestedWorkerRestart
     $localOk = (Test-Http "http://127.0.0.1:$BackendPort/health" 3) -and (Test-Http "http://127.0.0.1:$PublicPort" 3)
     if ($localOk) {
       $localFailures = 0

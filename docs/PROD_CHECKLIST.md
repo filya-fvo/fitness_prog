@@ -50,6 +50,14 @@ npx.cmd playwright install chromium
 npm.cmd run test:e2e
 ```
 
+`npm.cmd run build` создаёт изолированную проверочную сборку `.dist-check`.
+Публикация выполняется только через `npm.cmd run build:publish`; не копируйте
+проверочную сборку в `dist` вручную.
+
+После изменения backend вызовите `scripts\request-production-restart.ps1`.
+Supervisor отдельно перезапустит API и notification worker и проверит владельцев
+процессов перед остановкой.
+
 ## Manual Telegram QA
 
 | Check | iOS | Android |

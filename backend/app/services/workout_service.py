@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.exercise import Exercise
 from app.models.program import Program
@@ -23,6 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
+from app.services.workout_notifications import mark_occurrence_started
 
 
 async def _get_workout_for_user(
@@ -415,6 +417,9 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         workout_type=data.workout_type or plan.get("workout_type"),
         plan=plan,
     )
+    if data.program_id is not None:
+        user.goals = mark_occurrence_started(user.goals or {}, data.scheduled_date)
+        flag_modified(user, "goals")
     session.add(workout)
     await session.flush()
     _create_set_slots(session, workout.id, plan)

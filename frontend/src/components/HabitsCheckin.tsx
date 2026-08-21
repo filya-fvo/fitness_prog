@@ -211,7 +211,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
     <section
       id="daily-checkin"
       ref={checkinRef}
-      className="scroll-mt-4 rounded-2xl bg-tg-secondary p-4"
+      className="min-w-0 max-w-full scroll-mt-4 overflow-hidden rounded-2xl bg-tg-secondary p-4"
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
@@ -244,8 +244,8 @@ export function HabitsCheckin({ date, onSaved }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-tg-hint">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
+        <label className="min-w-0 text-xs text-tg-hint">
           Сон, часов
           <DecimalInput
             min={0}
@@ -253,10 +253,10 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             value={sleep}
             onValueChange={setSleep}
             placeholder="например, 7,5"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
-        <label className="text-xs text-tg-hint">
+        <label className="min-w-0 text-xs text-tg-hint">
           Шаги
           <DecimalInput
             min={0}
@@ -264,10 +264,10 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             value={steps}
             onValueChange={setSteps}
             placeholder="например, 8000"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
-        <label className="text-xs text-tg-hint">
+        <label className="min-w-0 text-xs text-tg-hint">
           Активность, минут
           <DecimalInput
             min={0}
@@ -275,10 +275,10 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             value={activeMinutes}
             onValueChange={setActiveMinutes}
             placeholder="например, 45"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
-        <label className="text-xs text-tg-hint">
+        <label className="min-w-0 text-xs text-tg-hint">
           Вес, кг
           <DecimalInput
             min={20}
@@ -286,7 +286,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             value={weight}
             onValueChange={setWeight}
             placeholder="например, 75,2"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
       </div>

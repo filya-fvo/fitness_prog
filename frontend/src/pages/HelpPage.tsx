@@ -54,7 +54,7 @@ export function HelpPage() {
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <Link to="/" className="rounded-xl bg-[#1d6fae] px-4 py-3 text-center text-sm font-semibold text-white">На главную</Link>
+        <Link to="/" className="rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text">На главную</Link>
         <Link to="/knowledge" className="rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium text-tg-text underline">Справочник</Link>
       </div>
       <p className="mt-4 text-center text-xs text-tg-hint">

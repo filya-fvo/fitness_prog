@@ -35,6 +35,28 @@ const workoutSchema = z.object({
   sets: z.array(setSchema).default([]),
 });
 
+const scheduleOccurrenceSchema = z.object({
+  original_date: z.string(),
+  target_date: z.string(),
+  start_time: z.string(),
+  title: z.string(),
+  program_id: z.string().uuid().nullable().optional(),
+  day_index: z.number().nullable().optional(),
+  status: z.enum(["scheduled", "moved", "missed"]),
+  is_override: z.boolean(),
+  can_reschedule: z.boolean(),
+  reschedule_until: z.string().nullable().optional(),
+});
+
+const scheduleOverviewSchema = z.object({
+  requested_date: z.string(),
+  current: scheduleOccurrenceSchema.nullable().optional(),
+  next: scheduleOccurrenceSchema.nullable().optional(),
+});
+
+export type WorkoutScheduleOccurrence = z.infer<typeof scheduleOccurrenceSchema>;
+export type WorkoutScheduleOverview = z.infer<typeof scheduleOverviewSchema>;
+
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   return {
     id: item.id,
@@ -203,4 +225,24 @@ export async function fetchWorkoutHistory(): Promise<Workout[]> {
     })
     .parse(data);
   return parsed.items.map(mapWorkout);
+}
+
+export async function fetchWorkoutSchedule(day?: string): Promise<WorkoutScheduleOverview> {
+  const { data } = await apiClient.get("/workouts/schedule/overview", {
+    params: day ? { day } : undefined,
+  });
+  return scheduleOverviewSchema.parse(data);
+}
+
+export async function rescheduleWorkout(input: {
+  originalDate: string;
+  targetDate: string;
+  targetTime: string;
+}): Promise<WorkoutScheduleOverview> {
+  const { data } = await apiClient.post("/workouts/schedule/reschedule", {
+    original_date: input.originalDate,
+    target_date: input.targetDate,
+    target_time: input.targetTime,
+  });
+  return scheduleOverviewSchema.parse(data);
 }

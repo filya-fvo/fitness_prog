@@ -327,7 +327,7 @@ export function BarcodeScannerModal({
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
         tabIndex={-1}
-        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-[#1f1f23] text-white shadow-xl"
+        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101f32] text-white shadow-xl"
       >
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>

@@ -125,13 +125,14 @@ def test_extract_supplement_callback_query() -> None:
 
 def test_build_mini_app_open_url_routes() -> None:
     base = "https://fitness-pc.example.ts.net"
-    assert build_mini_app_open_url(base, startapp="home") == f"{base}/?startapp=home"
+    home = build_mini_app_open_url(base, startapp="home")
+    assert home.startswith(f"{base}/?startapp=home&_fv=")
     assert build_mini_app_open_url(base, startapp="profile").startswith(f"{base}/profile")
     assert "tab=supplements" in build_mini_app_open_url(base, startapp="supplements")
-    assert build_mini_app_open_url(base, startapp="workout_abc") == (
-        f"{base}/workouts/active/abc?startapp=workout_abc"
-    )
-    assert build_mini_app_open_url(base, startapp="water") == f"{base}/?startapp=water"
+    workout = build_mini_app_open_url(base, startapp="workout_abc")
+    assert workout.startswith(f"{base}/workouts/active/abc?startapp=workout_abc&_fv=")
+    water = build_mini_app_open_url(base, startapp="water")
+    assert water.startswith(f"{base}/?startapp=water&_fv=")
 
 
 def test_water_keyboard_can_log_or_open_daily_checkin() -> None:
@@ -141,7 +142,10 @@ def test_water_keyboard_can_log_or_open_daily_checkin() -> None:
     )
     rows = keyboard["inline_keyboard"]
     assert rows[0][0]["callback_data"] == "wa:250"
-    assert rows[1][0]["web_app"]["url"].endswith("/?startapp=water")
+    water_url = rows[1][0]["web_app"]["url"]
+    assert "/?" in water_url
+    assert "startapp=water" in water_url
+    assert "_fv=" in water_url
 
 
 def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
@@ -155,6 +159,7 @@ def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
     assert btn["text"] == "Open"
     assert "web_app" in btn
     assert btn["web_app"]["url"].startswith("https://fitness-pc.example.ts.net/workouts/active/abc")
+    assert "_fv=" in btn["web_app"]["url"]
 
 
 def test_mini_app_keyboard_fallback_tme_without_url() -> None:
@@ -178,7 +183,9 @@ def test_open_web_app_keyboard() -> None:
     assert kb is not None
     btn = kb["inline_keyboard"][0][0]
     assert btn["text"] == "Open"
-    assert btn["web_app"]["url"] == "https://fitness-pc.example.ts.net/?startapp=home"
+    assert btn["web_app"]["url"].startswith("https://fitness-pc.example.ts.net/?")
+    assert "startapp=home" in btn["web_app"]["url"]
+    assert "_fv=" in btn["web_app"]["url"]
 
 
 def test_runtime_rejects_deprecated_ngrok_mini_app_url() -> None:

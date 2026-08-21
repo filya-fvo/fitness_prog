@@ -104,8 +104,9 @@ test("an open old client survives publication and then receives the new worker",
     await writeRelease(stagedDir, "v3");
     await promoteBuild({ liveDir, stagedDir, buildId: "v3" });
 
-    // Only one previous release is retained: v2 stays usable, v1 is pruned.
-    expect((await fetch(`${baseUrl}/assets/feature-v1.js`)).status).toBe(404);
+    // Mobile WebViews can stay open for multiple publications, so both older
+    // release graphs remain usable rather than only the immediately prior one.
+    expect((await fetch(`${baseUrl}/assets/feature-v1.js`)).status).toBe(200);
     expect((await fetch(`${baseUrl}/assets/feature-v2.js`)).status).toBe(200);
     await page.locator("#lazy").click();
     await expect(page.locator("#feature")).toHaveText("feature-v2");

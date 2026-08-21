@@ -10,7 +10,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Registration is intentionally native in main.tsx. The generated
+      // virtual helper reloads a controlled page when a worker activates,
+      // which looks like a broken sign-in in iOS Telegram WebViews.
+      injectRegister: null,
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.ts",
@@ -40,8 +43,6 @@ export default defineConfig({
           "assets/index-*.js",
           "assets/index-*.css",
           "assets/vendor-react-*.js",
-          "assets/virtual_pwa-register-*.js",
-          "assets/workbox-window*.js",
         ],
       },
       devOptions: {
@@ -98,7 +99,9 @@ export default defineConfig({
     })(),
   },
   build: {
-    outDir: "dist",
+    // Verification builds must never overwrite the live directory served by FastAPI.
+    // Only scripts/publish-build.mjs is allowed to promote a staged build into dist.
+    outDir: ".dist-check",
     sourcemap: true,
     rollupOptions: {
       output: {

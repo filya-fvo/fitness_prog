@@ -30,3 +30,33 @@ def test_same_time_supplements_are_materialized_as_independent_rows() -> None:
 def test_local_day_uses_profile_timezone_not_utc() -> None:
     user = _user({"notification_settings": {"timezone": "Asia/Vladivostok"}})
     assert local_day_for_user(user, datetime(2026, 8, 12, 18, 0, tzinfo=UTC)) == date(2026, 8, 13)
+
+
+def test_workout_day_supplements_follow_one_off_move() -> None:
+    user = _user(
+        {
+            "notification_settings": {
+                "timezone": "Europe/Moscow",
+                "workouts": {"time": "06:15", "days": [0, 2, 4]},
+            },
+            "workout_schedule_overrides": [
+                {
+                    "original_date": "2026-08-21",
+                    "target_date": "2026-08-22",
+                    "target_time": "08:00",
+                }
+            ],
+            "supplements": [
+                {
+                    "id": "pre",
+                    "name_ru": "Предтренировочный комплекс",
+                    "schedule": [{"slot": "pre_workout", "days": "workout"}],
+                }
+            ],
+        }
+    )
+
+    assert _scheduled_rows(user, date(2026, 8, 21)) == []
+    moved_rows = _scheduled_rows(user, date(2026, 8, 22))
+    assert len(moved_rows) == 1
+    assert moved_rows[0]["scheduled_at"] == datetime(2026, 8, 22, 4, 15, tzinfo=UTC)

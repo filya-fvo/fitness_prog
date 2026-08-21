@@ -70,7 +70,7 @@ export function RestTimer({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="fixed bottom-24 left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#1a1a1e]/95 shadow-lg ring-1 ring-white/10 backdrop-blur"
+          className="fixed bottom-24 left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#101f32]/95 shadow-lg ring-1 ring-cyan-300/15 backdrop-blur"
           aria-label={`Отдых ${formatRestTime(secondsLeft)}. Открыть таймер`}
         >
           <svg width={size} height={size} className={reduceMotion ? "" : "-rotate-90"}>

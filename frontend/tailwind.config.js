@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         tg: {
-          bg: "var(--tg-theme-bg-color, #ffffff)",
-          text: "var(--tg-theme-text-color, #000000)",
-          hint: "var(--tg-theme-hint-color, #5f6368)",
-          link: "var(--tg-theme-link-color, #2481cc)",
-          button: "var(--tg-theme-button-color, #2481cc)",
-          "button-text": "var(--tg-theme-button-text-color, #ffffff)",
-          secondary: "var(--tg-theme-secondary-bg-color, #f0f0f0)",
+          bg: "var(--app-bg, #07111f)",
+          text: "var(--app-text, #eff7ff)",
+          hint: "var(--app-hint, #91a4bd)",
+          link: "var(--app-accent, #43c7ff)",
+          button: "var(--app-button, #218ee5)",
+          "button-text": "var(--app-button-text, #ffffff)",
+          secondary: "var(--app-surface, #101f32)",
         },
       },
     },

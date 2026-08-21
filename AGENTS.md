@@ -102,6 +102,10 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/schemas/` — Pydantic request/response contracts.
 - `backend/app/routers/` — HTTP-слой: валидация контекста, статус, вызов service.
 - `backend/app/services/` — бизнес-логика и внешние интеграции.
+- `backend/app/services/scheduler.py` — постоянные тренировочные дни, разовые
+  переносы и окно до следующей тренировки; `workout_notifications.py` — расчёт
+  workout-reminder; `workout_shift.py` — изолированный legacy API массового
+  сдвига уже созданных тренировок.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
 - `backend/app/ai/prompts.py` и `services/ai_engine.py` — системные инструкции,
   контекст, Groq и очистка вывода модели.
@@ -125,8 +129,9 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/sw.ts` — service worker и offline navigation.
 - `frontend/e2e/` — browser, reconnect, nutrition label, a11y и visual tests.
 - `frontend/scripts/` — E2E runner, UX audit, Lighthouse, bundle budget.
-- `frontend/scripts/publish-build.mjs` — staging-публикация: новые файлы копируются до `index.html`, предыдущий набор immutable-ассетов сохраняется на один релиз.
-- `frontend/public/exercise-gifs/` — локальные медиа и manifest.
+- `frontend/scripts/publish-build.mjs` — staging-публикация: новые файлы копируются до `index.html`, immutable-ассеты сохраняются для восьми последних релизов.
+- `frontend/public/exercise-gifs/` — локальные анимации и manifest;
+  `frontend/public/exercise-thumbnails/` — производные PNG первых кадров для списков.
 
 ### Данные и операции
 
@@ -144,7 +149,7 @@ services → SQLAlchemy models → PostgreSQL
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts` | `daily_metrics` router/schema/service/model, migration 17 | daily metrics + habits tests |
 | Тренировки и автопереход | `ActiveWorkout.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, workout models | load progression, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
-| Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseMediaPlayer.tsx` | `exercises.py`, `exercise_service.py`, seed, rebuild/audit scripts | media audit, catalog quality, E2E |
+| Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx` | `exercises.py`, `exercise_service.py`, seed, rebuild/audit/thumbnail scripts | media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |
 | Прогресс/графики | `ProgressPage.tsx`, `WeeklyOverview.tsx`, progress utils | workout/nutrition/daily metric range endpoints | weekly/progress tests + visual/mobile checks |
 | Замеры тела | `features/measurements`, `api/bodyMeasurements.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests |
@@ -274,6 +279,10 @@ npm run test:e2e
 npm run audit:lighthouse
 ```
 
+`npm run build` пишет только в `frontend/.dist-check` и не должен менять
+обслуживаемый backend каталог `frontend/dist`. Рабочий `dist` обновляет только
+атомарный `build:publish`; иначе теряется граф сохранённых ассетов старых версий.
+
 `audit:lighthouse` требует свежий `dist` и Chrome/Chromium. Visual snapshots
 обновлять только после осмысленной визуальной проверки:
 `npm run test:e2e -- --update-snapshots`.
@@ -291,6 +300,7 @@ npm run audit:lighthouse
 .\scripts\apply_migrations_local.ps1
 python .\scripts\check_migrations.py
 .\scripts\rebuild-content.cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-exercise-thumbnails.ps1
 cd backend
 .\.venv\Scripts\python.exe scripts\audit_exercise_media.py
 ```

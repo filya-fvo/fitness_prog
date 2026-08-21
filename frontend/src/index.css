@@ -3,18 +3,29 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
   --space-page: 1rem;
   --space-section: 1rem;
-  --radius-card: 1rem;
-  --radius-control: 0.75rem;
-  --surface-primary: var(--tg-theme-bg-color, #ffffff);
-  --surface-secondary: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  --radius-card: 1.125rem;
+  --radius-control: 0.875rem;
+  --app-bg: #07111f;
+  --app-bg-deep: #040b16;
+  --app-surface: #101f32;
+  --app-surface-raised: #172a42;
+  --app-text: #eff7ff;
+  --app-hint: #91a4bd;
+  --app-accent: #43c7ff;
+  --app-accent-strong: #168fe1;
+  --app-violet: #8b6cff;
+  --app-button: #218ee5;
+  --app-button-text: #ffffff;
+  --surface-primary: var(--app-bg);
+  --surface-secondary: var(--app-surface);
   --surface-inset: color-mix(in srgb, var(--surface-secondary) 72%, var(--surface-primary));
-  --border-subtle: color-mix(in srgb, var(--tg-theme-text-color, #000000) 12%, transparent);
-  --color-success: #15803d;
-  --color-warning: #a16207;
-  --color-danger: #dc2626;
+  --border-subtle: rgba(132, 178, 222, 0.14);
+  --color-success: #38d39f;
+  --color-warning: #f5ba5b;
+  --color-danger: #ff6f7d;
   font-family:
     system-ui,
     -apple-system,
@@ -29,26 +40,18 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--tg-theme-bg-color, #ffffff);
-  color: var(--tg-theme-text-color, #000000);
+  background-color: var(--app-bg-deep);
+  background-image:
+    radial-gradient(circle at 12% -8%, rgba(36, 151, 233, 0.2), transparent 34rem),
+    radial-gradient(circle at 100% 18%, rgba(130, 86, 255, 0.13), transparent 28rem),
+    linear-gradient(165deg, var(--app-bg) 0%, var(--app-bg-deep) 72%);
+  background-attachment: fixed;
+  color: var(--app-text);
 }
 
 #root {
   min-height: 100vh;
   min-height: 100dvh;
-}
-
-/* Browser/PWA fallback. Telegram's inline theme variables still take precedence. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tg-theme-bg-color: #111827;
-    --tg-theme-text-color: #f8fafc;
-    --tg-theme-hint-color: #94a3b8;
-    --tg-theme-link-color: #60a5fa;
-    --tg-theme-button-color: #2563eb;
-    --tg-theme-button-text-color: #ffffff;
-    --tg-theme-secondary-bg-color: #1f2937;
-  }
 }
 
 @layer base {
@@ -58,7 +61,7 @@ body {
   select:focus-visible,
   textarea:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid var(--tg-theme-link-color, #2481cc);
+    outline: 2px solid var(--app-accent);
     outline-offset: 2px;
   }
 
@@ -94,11 +97,14 @@ body {
 
 @layer components {
   .surface-card {
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-card);
     background: var(--surface-secondary);
+    box-shadow: 0 14px 40px rgba(0, 4, 12, 0.16);
   }
 
   .surface-inset {
+    border: 1px solid rgba(132, 178, 222, 0.1);
     border-radius: var(--radius-control);
     background: var(--surface-inset);
   }
@@ -117,6 +123,93 @@ body {
     color: var(--color-danger);
     background: color-mix(in srgb, var(--color-danger) 10%, transparent);
   }
+
+  .app-page-header {
+    position: relative;
+    padding-top: 0.125rem;
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    min-height: 44px;
+    min-width: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(74, 199, 255, 0.22);
+    border-radius: 0.9rem;
+    background: linear-gradient(145deg, rgba(52, 183, 244, 0.16), rgba(52, 122, 215, 0.12));
+    color: var(--app-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 7, 22, 0.18);
+  }
+
+  .brand-letter {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .exercise-thumbnail {
+    display: inline-flex;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(132, 178, 222, 0.16);
+    border-radius: 0.8rem;
+    background: #f3f7fb;
+    color: var(--app-accent-strong);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+
+  .app-back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(91, 191, 241, 0.2);
+    border-radius: 0.9rem;
+    background: rgba(17, 37, 59, 0.78);
+    color: var(--app-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform 140ms ease, background 140ms ease;
+  }
+
+  .app-back-button:active {
+    transform: scale(0.95);
+    background: rgba(27, 57, 87, 0.92);
+  }
+}
+
+/* Common cards inherit one calm visual language without rewriting every page. */
+.rounded-2xl.bg-tg-secondary {
+  border: 1px solid var(--border-subtle);
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.018), transparent 60%);
+  box-shadow: 0 16px 42px rgba(0, 4, 12, 0.14);
+}
+
+button.bg-tg-button,
+a.bg-tg-button {
+  border: 1px solid rgba(91, 204, 255, 0.22);
+  background-image: linear-gradient(115deg, var(--app-accent-strong), #327bdc 56%, #765fe2);
+  box-shadow: 0 10px 28px rgba(22, 116, 195, 0.2);
+}
+
+input,
+select,
+textarea {
+  border-color: rgba(132, 178, 222, 0.18) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.border-black\/5,
+.border-black\/10,
+.border-black\/20 {
+  border-color: var(--border-subtle) !important;
+}
+
+.bg-black\/5,
+.bg-black\/10 {
+  background-color: rgba(205, 229, 255, 0.055) !important;
 }
 
 /* Significant helper text must remain readable at browser and Telegram font scaling. */

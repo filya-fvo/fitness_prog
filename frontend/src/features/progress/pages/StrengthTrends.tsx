@@ -21,8 +21,10 @@ function MiniSpark({ points }: { points: { est1rm: number }[] }) {
       return `${x},${y}`;
     })
     .join(" ");
+  const area = `0,${h} ${coords} ${w},${h}`;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-8 w-full text-tg-link" aria-hidden>
+      <polygon points={area} fill="currentColor" opacity="0.1" />
       <polyline
         fill="none"
         stroke="currentColor"
@@ -31,6 +33,10 @@ function MiniSpark({ points }: { points: { est1rm: number }[] }) {
         strokeLinecap="round"
         points={coords}
       />
+      {coords.split(" ").map((point, index) => {
+        const [x, y] = point.split(",");
+        return <circle key={index} cx={x} cy={y} r="1.8" fill="currentColor" />;
+      })}
     </svg>
   );
 }
@@ -85,6 +91,10 @@ export function StrengthTrends({ trends }: { trends: LiftTrend[] }) {
             </div>
             <div className="mt-1">
               <MiniSpark points={t.points} />
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-tg-hint">
+              <span>{t.points.length} {t.points.length === 1 ? "тренировка" : "тренировок"}</span>
+              <span>{t.points.length > 1 ? `${t.points[0].date.slice(5)} → ${t.points.at(-1)?.date.slice(5)}` : t.points[0]?.date.slice(5)}</span>
             </div>
           </li>
         ))}

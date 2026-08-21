@@ -16,6 +16,10 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.resolve(scriptDir, "..");
 const currentManifestName = ".fitness-release.json";
 const previousManifestName = ".fitness-previous-release.json";
+const historyManifestName = ".fitness-release-history.json";
+// Mobile Telegram WebViews can keep a tab alive for days. Retaining several
+// releases is cheap compared with leaving such a tab unable to load a chunk.
+const retainedReleaseCount = 8;
 const criticalFiles = new Set(["manifest.webmanifest", "sw.js.map", "sw.js", "index.html"]);
 
 function assertInside(baseDir, targetDir, label) {
@@ -68,6 +72,23 @@ async function readReleaseManifest(distDir, filename) {
   }
 }
 
+async function readReleaseHistory(distDir) {
+  try {
+    const data = JSON.parse(await readFile(path.join(distDir, historyManifestName), "utf8"));
+    if (!Array.isArray(data.releases)) return [];
+    return data.releases
+      .filter((release) => release && Array.isArray(release.versionedFiles))
+      .map((release) => ({
+        buildId: String(release.buildId || "unknown"),
+        createdAt: String(release.createdAt || ""),
+        versionedFiles: release.versionedFiles.map(String).filter(isVersionedAsset),
+      }));
+  } catch (error) {
+    if (error?.code === "ENOENT" || error instanceof SyntaxError) return [];
+    throw error;
+  }
+}
+
 async function removeEmptyParents(filePath, stopDir) {
   let current = path.dirname(filePath);
   while (current !== stopDir && current.startsWith(stopDir)) {
@@ -90,11 +111,12 @@ export async function promoteBuild({ liveDir, stagedDir, buildId = "unknown" }) 
   }
 
   const stagedFiles = (await walkFiles(resolvedStage)).filter(
-    (item) => item !== currentManifestName && item !== previousManifestName,
+    (item) => ![currentManifestName, previousManifestName, historyManifestName].includes(item),
   );
   const nextVersioned = stagedFiles.filter(isVersionedAsset);
   const currentManifest = await readReleaseManifest(resolvedLive, currentManifestName);
   const previousManifest = await readReleaseManifest(resolvedLive, previousManifestName);
+  const storedHistory = await readReleaseHistory(resolvedLive);
   const currentVersioned = currentManifest?.versionedFiles
     ?? (await walkFiles(resolvedLive)).filter(isVersionedAsset);
 
@@ -124,15 +146,31 @@ export async function promoteBuild({ liveDir, stagedDir, buildId = "unknown" }) 
     await copyFile(path.join(resolvedStage, relative), destination);
   }
 
-  const keep = new Set([...currentVersioned, ...nextVersioned]);
-  const stale = (previousManifest?.versionedFiles ?? []).filter((item) => !keep.has(item));
+  const createdAt = new Date().toISOString();
+  const legacyHistory = storedHistory.length > 0
+    ? storedHistory
+    : [previousManifest, currentManifest].filter(Boolean);
+  const releases = [
+    { buildId, createdAt, versionedFiles: nextVersioned },
+    ...legacyHistory.filter((release) => release.buildId !== buildId),
+  ].slice(0, retainedReleaseCount);
+  if (currentManifest && !releases.some((release) => release.buildId === currentManifest.buildId)) {
+    releases.splice(1, 0, currentManifest);
+    releases.length = Math.min(releases.length, retainedReleaseCount);
+  }
+  const keep = new Set(releases.flatMap((release) => release.versionedFiles));
+  const knownVersioned = new Set([
+    ...storedHistory.flatMap((release) => release.versionedFiles),
+    ...(previousManifest?.versionedFiles ?? []),
+    ...currentVersioned,
+  ]);
+  const stale = [...knownVersioned].filter((item) => !keep.has(item));
   for (const relative of stale) {
     const target = path.join(resolvedLive, relative);
     await rm(target, { force: true });
     await removeEmptyParents(target, resolvedLive);
   }
 
-  const createdAt = new Date().toISOString();
   await writeFile(
     path.join(resolvedLive, previousManifestName),
     `${JSON.stringify({
@@ -147,10 +185,18 @@ export async function promoteBuild({ liveDir, stagedDir, buildId = "unknown" }) 
     `${JSON.stringify({ buildId, createdAt, versionedFiles: nextVersioned }, null, 2)}\n`,
     "utf8",
   );
+  await writeFile(
+    path.join(resolvedLive, historyManifestName),
+    `${JSON.stringify({ retainedReleaseCount, releases }, null, 2)}\n`,
+    "utf8",
+  );
 
   return {
     copied: stagedFiles.length,
-    retainedPrevious: currentVersioned.length,
+    retainedPrevious: releases.slice(1).reduce(
+      (count, release) => count + release.versionedFiles.length,
+      0,
+    ),
     pruned: stale.length,
   };
 }

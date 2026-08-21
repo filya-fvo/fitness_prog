@@ -7,11 +7,16 @@ import { fetchDailyNutrition } from "@/api/nutrition";
 import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { fetchWorkoutHistory } from "@/api/workouts";
+import {
+  fetchWorkoutHistory,
+  fetchWorkoutSchedule,
+  type WorkoutScheduleOverview,
+} from "@/api/workouts";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { WorkoutSchedulePanel } from "@/features/workout/components/WorkoutSchedulePanel";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import {
   cacheExercises,
@@ -120,6 +125,7 @@ export function HomePage() {
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
+  const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -206,10 +212,11 @@ export function HomePage() {
             // keep cache
           }
           try {
-            const [programs, profile, exerciseResponse] = await Promise.all([
+            const [programs, profile, exerciseResponse, schedule] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
               fetchMyProfile().catch(() => null),
               fetchExercises({ pageSize: 200 }).catch(() => null),
+              fetchWorkoutSchedule().catch(() => null),
             ]);
             if (exerciseResponse?.items.length) {
               setCatalog(exerciseResponse.items);
@@ -223,6 +230,7 @@ export function HomePage() {
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
             if (!cancelled) setProfileGoals(goalsWithSex);
+            if (!cancelled && schedule) setWorkoutSchedule(schedule);
             const rec = recommendPrograms(
               programs.items,
               {
@@ -413,6 +421,7 @@ export function HomePage() {
     dayIndex: number;
     weekPhase: WeekPhase;
     phaseSource: "auto" | "manual";
+    scheduledDate?: string;
   }) {
     if (!todayProgram || starting) {
       if (!todayProgram) navigate("/programs");
@@ -459,6 +468,7 @@ export function HomePage() {
         programId: todayProgram.id,
         dayIndex: opts.dayIndex,
         weekPhase: opts.weekPhase,
+        scheduledDate: opts.scheduledDate,
       });
       const clientId = crypto.randomUUID();
       const plan = (workout.plan || {}) as WorkoutPlan;
@@ -519,17 +529,21 @@ export function HomePage() {
   }
 
   async function startToday() {
+    const scheduled = workoutSchedule?.current?.status === "scheduled"
+      ? workoutSchedule.current
+      : null;
     await startProgramDay({
-      dayIndex: todayDay,
+      dayIndex: scheduled?.day_index ?? todayDay,
       weekPhase: todayPhase,
       phaseSource: programCursor?.phaseSource ?? "auto",
+      scheduledDate: scheduled?.target_date,
     });
   }
 
   return (
-    <section>
+    <section className="min-w-0 max-w-full">
       <Header title="Главная" subtitle="Сегодняшняя тренировка и прогресс" />
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
         {daysSinceLastWorkout != null && daysSinceLastWorkout >= 7 && !reentryDismissed && !canResume ? (
@@ -588,9 +602,9 @@ export function HomePage() {
 
         {/* Primary hero CTA first — review P0 */}
         {canResume ? (
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+          <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сейчас</p>
-            <p className="text-base font-semibold">
+            <p className="break-words text-base font-semibold [overflow-wrap:anywhere]">
               {activeWorkout?.title || "Тренировка в процессе"}
             </p>
             {hasReplacements ? (
@@ -620,10 +634,10 @@ export function HomePage() {
             </p>
           </div>
         ) : todayProgram ? (
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+          <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
-            <p className="text-base font-semibold">{todayProgram.name}</p>
-            <p className="text-sm text-tg-hint">
+            <p className="break-words text-base font-semibold [overflow-wrap:anywhere]">{todayProgram.name}</p>
+            <p className="break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
               {todayDayTitle}
               {" · "}
               {phaseMetaFromName(todayPhase).label}
@@ -633,6 +647,11 @@ export function HomePage() {
                 return lvl ? ` · ${enumLabel(lvl)}` : "";
               })()}
             </p>
+            <WorkoutSchedulePanel
+              overview={workoutSchedule}
+              disabled={!online || starting}
+              onChange={setWorkoutSchedule}
+            />
             {todayExercises.length ? (
               <div className="rounded-xl bg-tg-bg/70 p-3">
                 <button
@@ -702,7 +721,7 @@ export function HomePage() {
                 type="button"
                 disabled={starting}
                 onClick={() => void startToday()}
-                className="min-w-0 flex-1 px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text disabled:opacity-60"
+                className="min-w-0 flex-1 break-words px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text [overflow-wrap:anywhere] disabled:opacity-60"
               >
                 {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
                 <span className="mt-0.5 block text-[10px] font-normal opacity-80">

@@ -53,6 +53,13 @@ export type TelegramWebApp = {
     showProgress: (leaveActive?: boolean) => void;
     hideProgress: () => void;
   };
+  BackButton?: {
+    isVisible: boolean;
+    show: () => void;
+    hide: () => void;
+    onClick: (cb: () => void) => void;
+    offClick: (cb: () => void) => void;
+  };
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   openTelegramLink?: (url: string) => void;
@@ -74,14 +81,42 @@ export function getTelegramWebApp(): TelegramWebApp | null {
   return window.Telegram?.WebApp ?? null;
 }
 
+/**
+ * Read signed Telegram initData from the launch URL.
+ *
+ * Telegram places Mini App launch parameters in the URL fragment. Keeping this
+ * parser independent from telegram-web-app.js lets a fresh iOS WebView sign in
+ * even when the external SDK script is delayed or blocked. The backend still
+ * performs the authoritative HMAC and auth_date validation.
+ */
+export function extractTelegramInitDataFromUrl(href: string): string {
+  try {
+    const url = new URL(href, "https://fitness.invalid");
+    const sources = [url.search.replace(/^\?/, ""), url.hash.replace(/^#\??/, "")];
+    for (const raw of sources) {
+      if (!raw) continue;
+      const params = new URLSearchParams(raw);
+      const initData = params.get("tgWebAppData") ?? "";
+      const hasTelegramLaunchMarker =
+        params.has("tgWebAppVersion") || params.has("tgWebAppPlatform");
+      if (initData && hasTelegramLaunchMarker) return initData;
+    }
+  } catch {
+    // An invalid URL is not a Telegram launch.
+  }
+  return "";
+}
+
+const launchInitData =
+  typeof window === "undefined" ? "" : extractTelegramInitDataFromUrl(window.location.href);
+
 /** Raw initData string for backend HMAC validation (TZ §8). */
 export function getInitData(): string {
-  return getTelegramWebApp()?.initData ?? "";
+  return getTelegramWebApp()?.initData || launchInitData;
 }
 
 export function isTelegramEnvironment(): boolean {
-  const wa = getTelegramWebApp();
-  return Boolean(wa && wa.initData);
+  return Boolean(getInitData());
 }
 
 /** Apply Telegram theme CSS variables to :root (Tailwind tg-* colors). */
@@ -91,13 +126,13 @@ export function applyTelegramTheme(webApp: TelegramWebApp | null = getTelegramWe
   }
   const root = document.documentElement;
   const map: Record<string, string | undefined> = {
-    "--tg-theme-bg-color": webApp.themeParams.bg_color,
-    "--tg-theme-text-color": webApp.themeParams.text_color,
-    "--tg-theme-hint-color": webApp.themeParams.hint_color,
-    "--tg-theme-link-color": webApp.themeParams.link_color,
-    "--tg-theme-button-color": webApp.themeParams.button_color,
-    "--tg-theme-button-text-color": webApp.themeParams.button_text_color,
-    "--tg-theme-secondary-bg-color": webApp.themeParams.secondary_bg_color,
+    "--telegram-theme-bg-color": webApp.themeParams.bg_color,
+    "--telegram-theme-text-color": webApp.themeParams.text_color,
+    "--telegram-theme-hint-color": webApp.themeParams.hint_color,
+    "--telegram-theme-link-color": webApp.themeParams.link_color,
+    "--telegram-theme-button-color": webApp.themeParams.button_color,
+    "--telegram-theme-button-text-color": webApp.themeParams.button_text_color,
+    "--telegram-theme-secondary-bg-color": webApp.themeParams.secondary_bg_color,
   };
   for (const [key, value] of Object.entries(map)) {
     if (value) {
@@ -107,9 +142,8 @@ export function applyTelegramTheme(webApp: TelegramWebApp | null = getTelegramWe
   if (webApp.colorScheme) {
     root.dataset.colorScheme = webApp.colorScheme;
   }
-  if (webApp.themeParams.bg_color && webApp.setBackgroundColor) {
-    webApp.setBackgroundColor(webApp.themeParams.bg_color);
-  }
+  webApp.setHeaderColor?.("#07111f");
+  webApp.setBackgroundColor?.("#07111f");
 }
 
 export function initTelegramApp(): TelegramWebApp | null {

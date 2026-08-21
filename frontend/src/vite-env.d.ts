@@ -3,6 +3,10 @@
 
 declare const __FITNESS_BUILD_ID__: string;
 
+interface Window {
+  __FITNESS_APP_BOOTED__?: boolean;
+}
+
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_SENTRY_DSN?: string;

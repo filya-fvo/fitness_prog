@@ -136,7 +136,15 @@ async def test_failed_delivery_stays_retryable(monkeypatch) -> None:
     async def no_supplements(*_args, **_kwargs):
         return []
 
-    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [reminder_item()])
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(
+        notifications.workout_notifications,
+        "due_workout_notification",
+        lambda _goals: reminder_item(),
+    )
+    async def workout_title(*_args, **_kwargs):
+        return None, None, "Тренировка"
+    monkeypatch.setattr(notifications.scheduler_service, "active_program_snapshot", workout_title)
     monkeypatch.setattr(notifications, "send_app_notification", fail_telegram)
     monkeypatch.setattr(notifications, "send_user_web_push", no_web_push)
     monkeypatch.setattr(notifications.supplement_intakes, "due_groups", no_supplements)
@@ -165,7 +173,15 @@ async def test_successful_delivery_is_marked(monkeypatch) -> None:
     async def no_supplements(*_args, **_kwargs):
         return []
 
-    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [reminder_item()])
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(
+        notifications.workout_notifications,
+        "due_workout_notification",
+        lambda _goals: reminder_item(),
+    )
+    async def workout_title(*_args, **_kwargs):
+        return None, None, "Тренировка"
+    monkeypatch.setattr(notifications.scheduler_service, "active_program_snapshot", workout_title)
     monkeypatch.setattr(notifications, "send_app_notification", sent_telegram)
     monkeypatch.setattr(notifications, "send_user_web_push", no_web_push)
     monkeypatch.setattr(notifications.supplement_intakes, "due_groups", no_supplements)

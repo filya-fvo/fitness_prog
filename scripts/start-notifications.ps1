@@ -1,7 +1,8 @@
 #Requires -Version 5.1
 param(
   [switch]$SkipRedisCheck,
-  [switch]$InstallRedisHint
+  [switch]$InstallRedisHint,
+  [switch]$ForceStart
 )
 
 $ErrorActionPreference = "Stop"
@@ -83,7 +84,7 @@ if (-not $workerRunning) {
   $workerLog = Join-Path $Root ("logs\worker-" + (Get-Date -Format "yyyy-MM-dd") + ".log")
   $workerRunning = (Test-Path $workerLog) -and (((Get-Date) - (Get-Item $workerLog).LastWriteTime).TotalMinutes -lt 2)
 }
-if ($workerRunning) {
+if ($workerRunning -and -not $ForceStart) {
   Ok "Notification worker is already active"
   exit 0
 }

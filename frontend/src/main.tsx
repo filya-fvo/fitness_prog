@@ -31,29 +31,21 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 );
+window.__FITNESS_APP_BOOTED__ = true;
+sessionStorage.removeItem("fitness:boot-recovery");
 
-// Workbox SW via vite-plugin-pwa (prod). virtual:pwa-register injects at build.
+// The worker activates immediately, but the already running client keeps its
+// current release until the next natural open/navigation. Publishing retains
+// old immutable assets, so a forced post-login refresh is unnecessary.
 if (import.meta.env.PROD) {
-  void import("virtual:pwa-register")
-    .then(({ registerSW }) => {
-      const hadController = Boolean(navigator.serviceWorker?.controller);
-      let controllerChanged = false;
-      navigator.serviceWorker?.addEventListener("controllerchange", () => {
-        if (!hadController || controllerChanged) return;
-        controllerChanged = true;
-        window.location.reload();
-      });
-      registerSW({
-        immediate: true,
-        onRegisteredSW(_url, registration) {
-          if (!registration) return;
-          window.setInterval(() => {
-            void registration.update().catch(() => undefined);
-          }, 30 * 60 * 1000);
-        },
-      });
+  void navigator.serviceWorker
+    ?.register("/sw.js", { scope: "/", updateViaCache: "none" })
+    .then((registration) => {
+      window.setInterval(() => {
+        void registration.update().catch(() => undefined);
+      }, 30 * 60 * 1000);
     })
     .catch(() => {
-      // non-fatal if plugin virtual module missing in odd builds
+      // Offline support is optional; the online application stays usable.
     });
 }

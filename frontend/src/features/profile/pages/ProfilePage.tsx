@@ -31,6 +31,7 @@ import { DecimalInput } from "@/components/DecimalInput";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
+import { WorkoutReminderSettings } from "@/features/profile/components/WorkoutReminderSettings";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { fetchExercises } from "@/api/exercises";
 import type { Exercise } from "@/types/workout";
@@ -363,6 +364,7 @@ export function ProfilePage() {
   const [measWeekday, setMeasWeekday] = useState<number | null>(0);
   const [woEnabled, setWoEnabled] = useState(true);
   const [woTime, setWoTime] = useState("18:30");
+  const [woLeadMinutes, setWoLeadMinutes] = useState(0);
   const [woDays, setWoDays] = useState<number[]>([0, 2, 4]);
   const [supEnabled, setSupEnabled] = useState(true);
   const [catchUp, setCatchUp] = useState(true);
@@ -508,6 +510,7 @@ setAuthEmail(p.auth_email ?? null);
           const wo = asRecord(s.workouts);
           setWoEnabled(wo.enabled !== false);
           setWoTime(String(wo.time || "18:30"));
+          setWoLeadMinutes(Math.max(0, Math.min(1440, Number(wo.remind_before_minutes) || 0)));
           const days = Array.isArray(wo.days) ? wo.days.map((d) => Number(d)) : [0, 2, 4];
           setWoDays(days.filter((d) => d >= 0 && d <= 6));
           const su = asRecord(s.supplements);
@@ -830,6 +833,7 @@ setAuthEmail(p.auth_email ?? null);
           enabled: woEnabled,
           time: woTime,
           days: woDays,
+          remind_before_minutes: woLeadMinutes,
         },
         supplements: {
           enabled: supEnabled,
@@ -852,7 +856,8 @@ setAuthEmail(p.auth_email ?? null);
         goals: {
           notification_settings: settings,
           workout_days: woDays,
-          workout_remind_time: woTime,
+          workout_start_time: woTime,
+          workout_remind_before_minutes: woLeadMinutes,
         },
       });
       setOk("Уведомления сохранены. Бот пришлёт сообщения в чат по расписанию.");
@@ -2215,42 +2220,16 @@ setAuthEmail(p.auth_email ?? null);
             </div>
           </div>
 
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Дни тренировки</span>
-              <input
-                type="checkbox"
-                checked={woEnabled}
-                onChange={(e) => setWoEnabled(e.target.checked)}
-              />
-            </label>
-            <label className="block text-xs text-tg-hint">
-              Время напоминания
-              <input
-                type="time"
-                value={woTime}
-                onChange={(e) => setWoTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {WEEKDAYS.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => toggleDay(d.id)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs",
-                    woDays.includes(d.id)
-                      ? "bg-tg-button text-tg-button-text"
-                      : "bg-tg-bg",
-                  ].join(" ")}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <WorkoutReminderSettings
+            enabled={woEnabled}
+            startTime={woTime}
+            remindBeforeMinutes={woLeadMinutes}
+            days={woDays}
+            onEnabledChange={setWoEnabled}
+            onStartTimeChange={setWoTime}
+            onLeadChange={setWoLeadMinutes}
+            onToggleDay={toggleDay}
+          />
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
             <label className="flex items-center justify-between text-sm">

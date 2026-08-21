@@ -1,5 +1,6 @@
 import type { Exercise } from "@/types/workout";
 import { enumLabel } from "@/utils/localization";
+import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 
 type ExerciseCardProps = {
   exercise: Exercise;
@@ -35,6 +36,7 @@ export function ExerciseCard({
       ].join(" ")}
     >
       <div className="flex items-start gap-2">
+        <ExerciseThumbnail exercise={exercise} />
         <div className="min-w-0 flex-1">
           <button type="button" onClick={openDetail} className="w-full text-left">
             <p className="text-sm font-medium leading-snug text-tg-text">{exercise.name_ru}</p>

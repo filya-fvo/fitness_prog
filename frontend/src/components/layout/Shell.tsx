@@ -202,7 +202,7 @@ export function Shell() {
     location.pathname.startsWith("/workouts/active/");
 
   return (
-    <div className="min-h-screen bg-tg-bg text-tg-text">
+    <div className="app-shell min-h-screen bg-transparent text-tg-text">
       <div
         className={`mx-auto min-h-screen px-4 pt-[calc(1rem+env(safe-area-inset-top))] ${isFocusedFlow ? "max-w-lg pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "max-w-5xl pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 lg:pt-24"}`}
       >

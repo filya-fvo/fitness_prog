@@ -93,6 +93,7 @@ def default_notification_settings() -> dict[str, Any]:
             "enabled": True,
             "time": "18:30",
             "days": [0, 2, 4],
+            "remind_before_minutes": 0,
         },
         "supplements": {
             "enabled": True,
@@ -119,6 +120,15 @@ def merge_notification_settings(raw: dict[str, Any] | None) -> dict[str, Any]:
     for key in ("measurements", "workouts", "supplements", "water", "calories"):
         if isinstance(raw.get(key), dict):
             out[key] = {**base.get(key, {}), **raw[key]}
+    workouts = out.get("workouts") or {}
+    try:
+        workouts["remind_before_minutes"] = max(
+            0,
+            min(1440, int(workouts.get("remind_before_minutes") or 0)),
+        )
+    except (TypeError, ValueError):
+        workouts["remind_before_minutes"] = 0
+    out["workouts"] = workouts
     cal = out.get("calories") or {}
     times = cal.get("times")
     if isinstance(times, str):
@@ -285,13 +295,14 @@ def due_notifications(
     if scfg.get("enabled"):
         supplements = goals.get("supplements")
         if isinstance(supplements, list):
-            workout_t = parse_hhmm(
-                str((settings.get("workouts") or {}).get("time") or "18:30")
-            ) or time(18, 30)
+            from app.services.scheduler import effective_workout_context
+
+            workout_context = effective_workout_context(goals, now.date())
+            workout_t = workout_context["start_time"]
             sent = state.get("supplement_marks") or {}
             if not isinstance(sent, dict):
                 sent = {}
-            today_is_workout = is_workout_day(settings, now.weekday())
+            today_is_workout = bool(workout_context["is_workout_day"])
             for sup in supplements:
                 if not isinstance(sup, dict) or not sup.get("enabled", True):
                     continue

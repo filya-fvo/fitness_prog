@@ -78,7 +78,7 @@ export function App() {
           <Route
             path="help"
             element={(
-              <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
+              <div className="app-shell min-h-screen bg-transparent px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
                 <HelpPage />
               </div>
             )}
@@ -86,7 +86,7 @@ export function App() {
           <Route
             path="knowledge"
             element={(
-              <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
+              <div className="app-shell min-h-screen bg-transparent px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
                 <KnowledgeBasePage />
               </div>
             )}

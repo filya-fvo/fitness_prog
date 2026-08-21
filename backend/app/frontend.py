@@ -29,6 +29,12 @@ SPA_ROUTES = {
     "/workouts",
 }
 
+HTML_NO_STORE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 
 def _is_spa_navigation(request: Request) -> bool:
     if request.method != "GET":
@@ -80,11 +86,16 @@ def register_frontend(app: FastAPI, dist_dir: Path) -> bool:
         # Several SPA screens share paths with JSON APIs. Browser navigation asks
         # for HTML, whereas axios/fetch asks for JSON, so both can use one origin.
         if _is_spa_navigation(request):
-            return FileResponse(index_file, headers={"Cache-Control": "no-cache"})
+            return FileResponse(index_file, headers=HTML_NO_STORE_HEADERS)
 
         response = await call_next(request)
         if request.url.path.startswith("/assets/"):
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            if response.status_code == status.HTTP_200_OK:
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            else:
+                # A cached 404 prevents recovery even after a later publication
+                # restores that immutable chunk.
+                response.headers["Cache-Control"] = "no-store"
         elif request.url.path.startswith("/exercise-gifs/"):
             response.headers["Cache-Control"] = "public, max-age=604800"
         return response
@@ -99,9 +110,14 @@ def register_frontend(app: FastAPI, dist_dir: Path) -> bool:
                 "manifest.webmanifest",
                 "sw.js",
             } else "public, max-age=3600"
-            return FileResponse(requested_file, headers={"Cache-Control": cache_control})
+            headers = (
+                HTML_NO_STORE_HEADERS
+                if requested_file.name == "index.html"
+                else {"Cache-Control": cache_control}
+            )
+            return FileResponse(requested_file, headers=headers)
         if "text/html" in request.headers.get("accept", ""):
-            return FileResponse(index_file, headers={"Cache-Control": "no-cache"})
+            return FileResponse(index_file, headers=HTML_NO_STORE_HEADERS)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
 
     logger.info("frontend_build_enabled path={}", str(dist_dir))

@@ -65,6 +65,49 @@ def test_programs_only_reference_known_exercises() -> None:
     assert not bad, bad[:20]
 
 
+def test_gym_no_knee_programs_use_loaded_knee_sparing_leg_variants() -> None:
+    exercise_rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
+    exercises = {row["name_ru"]: row for row in exercise_rows}
+    expected_variants = {
+        "Тяга с канатом между ног",
+        "Отведение ноги назад в кроссовере",
+        "Обратная гиперэкстензия в тренажёре",
+        "Ягодичный мост с гантелью",
+    }
+    assert expected_variants <= exercises.keys()
+    for name in expected_variants - {"Ягодичный мост с гантелью"}:
+        animation_url = exercises[name].get("animation_url") or ""
+        assert animation_url.startswith("/exercise-gifs/"), name
+
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    gym_no_knee = [
+        program
+        for program in programs
+        if program["structure"].get("location") == "gym"
+        and "no_knee" in program["structure"].get("limitations", [])
+    ]
+    assert len(gym_no_knee) == 2
+    knee_dominant = ("присед", "выпад", "разгибания ног", "жим ногами", "прыж")
+    for program in gym_no_knee:
+        all_names = [
+            item["exercise_name"]
+            for day in program["structure"]["schedule"]
+            for item in day["exercises"]
+        ]
+        assert "Ягодичный мост" not in all_names
+        assert not any(
+            token in exercise_name.lower()
+            for exercise_name in all_names
+            for token in knee_dominant
+        )
+
+    female = next(program for program in gym_no_knee if program["structure"]["sex"] == ["female"])
+    female_days = female["structure"]["schedule"]
+    assert female_days[0]["exercises"][4]["exercise_name"] == "Отведение ноги назад в кроссовере"
+    assert female_days[1]["exercises"][3]["exercise_name"] == "Ягодичный мост с гантелью"
+    assert female_days[2]["exercises"][0]["exercise_name"] == "Тяга с канатом между ног"
+
+
 def test_serious_programs_cover_both_sexes_and_requested_splits() -> None:
     programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
     names = [p["name"] for p in programs]

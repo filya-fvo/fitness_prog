@@ -1,4 +1,5 @@
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise } from "@/types/workout";
 import { enumLabel, visibleExerciseTags } from "@/utils/localization";
@@ -49,6 +50,7 @@ export function ExerciseDetailModal({
         </div>
 
         <ExerciseMediaPlayer exercise={exercise} />
+        <ExerciseProgressSection exerciseId={exercise.id} exerciseName={exercise.name_ru} />
 
         {exercise.description ? (
           <div className="mt-3 rounded-xl bg-tg-secondary p-3 text-sm">

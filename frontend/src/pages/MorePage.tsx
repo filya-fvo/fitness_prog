@@ -8,6 +8,33 @@ import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { subscriptionLabel } from "@/utils/localization";
 
+type MoreIconName = "profile" | "measurements" | "ai" | "help" | "knowledge" | "admin";
+
+function MoreIcon({ name }: { name: MoreIconName }) {
+  const common = "h-5 w-5";
+  if (name === "profile") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.7-4 2.9-6 6.5-6s5.8 2 6.5 6" strokeLinecap="round" /></svg>;
+  if (name === "measurements") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M8 6h4m-4 4h2m-2 4h4m-4 4h2M16 5h-2m2 4h-4m4 4h-2m2 4h-4" strokeLinecap="round" /></svg>;
+  if (name === "ai") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3 14 8l5 2-5 2-2 5-2-5-5-2 5-2 2-5Z" strokeLinejoin="round" /><path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" /></svg>;
+  if (name === "help") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.8 9a2.4 2.4 0 1 1 3.4 2.2c-.9.4-1.2 1-1.2 1.8M12 17h.01" strokeLinecap="round" /></svg>;
+  if (name === "knowledge") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v18H7.5A3.5 3.5 0 0 0 4 23V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v18h3.5A3.5 3.5 0 0 1 20 23V5.5Z" strokeLinejoin="round" /></svg>;
+  return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3 4 7v5c0 4.7 3.2 7.7 8 9 4.8-1.3 8-4.3 8-9V7l-8-4Z" /><path d="M9 12h6M12 9v6" strokeLinecap="round" /></svg>;
+}
+
+function MoreLink({ to, icon, title, description }: { to: string; icon: MoreIconName; title: string; description: string }) {
+  return (
+    <Link to={to} className="group flex min-h-[68px] items-center gap-3 rounded-2xl bg-tg-secondary p-3.5 active:scale-[0.99]">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/15 to-violet-500/15 text-cyan-300 ring-1 ring-cyan-300/15">
+        <MoreIcon name={icon} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="mt-0.5 block text-xs leading-snug text-tg-hint">{description}</span>
+      </span>
+      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-tg-hint transition-transform group-active:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </Link>
+  );
+}
+
 export function MorePage() {
   const user = useUserStore((s) => s.user);
   const isAdmin = isAdminUsername(user?.username);
@@ -29,31 +56,13 @@ export function MorePage() {
         </div>
       ) : null}
       <div className="space-y-3">
-        <Link to="/profile" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">Профиль</p>
-          <p className="mt-1 text-xs text-tg-hint">Тело, программа, добавки, уведомления</p>
-        </Link>
-        <Link to="/measurements" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">Замеры тела</p>
-          <p className="mt-1 text-xs text-tg-hint">Обхваты, сравнение и графики динамики</p>
-        </Link>
-        <Link to="/ai" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">ИИ-тренер</p>
-          <p className="mt-1 text-xs text-tg-hint">Техника, замены, разбор прогресса</p>
-        </Link>
-        <Link to="/help" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">Как пользоваться</p>
-          <p className="mt-1 text-xs text-tg-hint">Короткая инструкция по тренировкам, питанию и прогрессу</p>
-        </Link>
-        <Link to="/knowledge" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">Справочник</p>
-          <p className="mt-1 text-xs text-tg-hint">Питание, рабочий вес, периодизация, разминка и восстановление</p>
-        </Link>
+        <MoreLink to="/profile" icon="profile" title="Профиль" description="Тело, программа, добавки и уведомления" />
+        <MoreLink to="/measurements" icon="measurements" title="Замеры тела" description="Обхваты, сравнение и графики динамики" />
+        <MoreLink to="/ai" icon="ai" title="ИИ-тренер" description="Техника, замены и разбор прогресса" />
+        <MoreLink to="/help" icon="help" title="Как пользоваться" description="Короткая инструкция по основным разделам" />
+        <MoreLink to="/knowledge" icon="knowledge" title="Справочник" description="Питание, нагрузка, разминка и восстановление" />
         {isAdmin ? (
-          <Link to="/admin" className="tap-target-x block min-h-[44px] rounded-2xl bg-tg-secondary p-4">
-            <p className="text-sm font-semibold">Админ</p>
-            <p className="mt-1 text-xs text-tg-hint">Пользователи, очистка/удаление, каталог</p>
-          </Link>
+          <MoreLink to="/admin" icon="admin" title="Админ" description="Пользователи, данные и каталог" />
         ) : null}
       </div>
     </section>

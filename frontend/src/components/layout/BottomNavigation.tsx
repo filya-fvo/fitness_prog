@@ -53,11 +53,14 @@ function NavIcon({ name }: { name: NavIconName }) {
 export function BottomNavigation() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-20 border-t border-black/10 bg-tg-secondary/95 backdrop-blur lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0"
+      className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#091525]/90 shadow-[0_-12px_36px_rgba(0,4,12,0.28)] backdrop-blur-xl lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:shadow-[0_12px_36px_rgba(0,4,12,0.2)]"
       aria-label="Основная навигация"
     >
       <ul className="mx-auto flex max-w-5xl items-stretch justify-between px-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5 lg:h-16 lg:items-center lg:justify-start lg:gap-1 lg:px-4 lg:py-2">
-        <li className="mr-auto hidden text-sm font-semibold lg:block">Фитнес-тренер</li>
+        <li className="mr-auto hidden items-center gap-2 text-sm font-semibold lg:flex">
+          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-cyan-300 to-violet-500 shadow-[0_0_14px_rgba(67,199,255,0.65)]" />
+          Fitness
+        </li>
         {items.map((item) => (
           <li key={item.to} className="flex-1 lg:flex-none">
             <NavLink
@@ -65,10 +68,10 @@ export function BottomNavigation() {
               end={"end" in item ? item.end : false}
               className={({ isActive }) =>
                 [
-                  "tap-target flex min-h-[44px] flex-col items-center justify-center rounded-lg px-1 py-2 text-[11px] font-medium lg:flex-row lg:gap-2 lg:px-3 lg:text-xs",
+                  "tap-target relative flex min-h-[48px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] font-medium transition-colors lg:flex-row lg:gap-2 lg:px-3 lg:text-xs",
                   isActive
-                    ? "bg-tg-button/10 font-semibold text-tg-button"
-                    : "text-tg-hint hover:bg-tg-bg/60",
+                    ? "bg-gradient-to-b from-cyan-400/15 to-violet-500/10 font-semibold text-cyan-300 ring-1 ring-cyan-300/15"
+                    : "text-tg-hint hover:bg-white/5 hover:text-tg-text",
                 ].join(" ")
               }
             >

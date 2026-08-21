@@ -118,7 +118,7 @@ export function AddSetModal({
         aria-modal="true"
         aria-labelledby="add-set-title"
         tabIndex={-1}
-        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-[#2a2a2e] p-4 text-white shadow-xl"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101f32] p-4 text-white shadow-xl"
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 id="add-set-title" className="text-base font-semibold">Добавить подход</h3>

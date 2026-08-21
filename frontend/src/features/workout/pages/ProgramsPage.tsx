@@ -17,6 +17,7 @@ import {
   saveLocalSession,
 } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
@@ -603,9 +604,11 @@ export function ProgramsPage() {
                               <button
                                 type="button"
                                 onClick={() => openProgramExercise(row)}
-                                className="flex w-full items-start justify-between gap-2 rounded-lg px-1 py-1.5 text-left text-xs hover:bg-black/5"
+                                className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1.5 text-left text-xs hover:bg-black/5"
                               >
-                                <span>
+                                <span className="flex min-w-0 items-center gap-2">
+                                  <ExerciseThumbnail exercise={resolved ?? placeholderExercise(row)} size="sm" />
+                                  <span className="min-w-0">
                                   <span className="font-medium text-tg-text">
                                     {exIdx + 1}. {row.name}
                                   </span>
@@ -617,6 +620,7 @@ export function ProgramsPage() {
                                     ]
                                       .filter(Boolean)
                                       .join(" · ")}
+                                  </span>
                                   </span>
                                 </span>
                                 <span className="shrink-0 text-tg-link">

@@ -4,6 +4,8 @@ test.describe("mobile visual baselines", () => {
   test.use({ viewport: { width: 360, height: 800 }, colorScheme: "light" });
 
   for (const [name, route] of [
+    ["home", "/"],
+    ["more", "/more"],
     ["help", "/help"],
     ["knowledge", "/knowledge"],
     ["nutrition", "/nutrition"],

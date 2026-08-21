@@ -22,11 +22,11 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /iphone-layout\.spec\.ts/,
+      testIgnore: /iphone-(layout|telegram-entry)\.spec\.ts/,
     },
     {
       name: "iphone-webkit",
-      testMatch: /iphone-layout\.spec\.ts/,
+      testMatch: /iphone-(layout|telegram-entry)\.spec\.ts/,
       use: { ...devices["iPhone 13"] },
     },
   ],

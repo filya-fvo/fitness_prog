@@ -20,6 +20,8 @@ import {
 } from "@/db/syncQueue";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
+import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
 import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
 import { WorkoutElapsedClock } from "@/features/workout/components/WorkoutElapsedClock";
@@ -1761,6 +1763,10 @@ export function ActiveWorkout() {
           ) : null}
 
           {!simpleMode || moreOpen ? (
+            <ExerciseProgressSection exerciseId={currentExercise.id} exerciseName={currentExercise.name_ru} />
+          ) : null}
+
+          {!simpleMode || moreOpen ? (
             <div className="rounded-xl bg-tg-bg p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-tg-hint">Отдых между подходами</p>
@@ -2209,7 +2215,7 @@ export function ActiveWorkout() {
       <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
 
       {autoAdvance != null ? (
-        <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl bg-[#1a1a1e] p-4 text-white shadow-2xl">
+        <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl border border-cyan-300/15 bg-[#101f32] p-4 text-white shadow-2xl">
           <p className="text-sm font-semibold">Упражнение выполнено</p>
           <p className="mt-1 text-xs text-white/70">
             Переход к следующему через {autoAdvance.seconds} сек.
@@ -2437,11 +2443,14 @@ export function ActiveWorkout() {
                         onClick={() => applyReplace(ex)}
                         className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
                       >
-                        <span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <ExerciseThumbnail exercise={ex} size="sm" />
+                          <span className="min-w-0">
                           <span className="block text-sm font-medium">{ex.name_ru}</span>
                           <span className="block text-[11px] text-tg-hint">
                             {enumLabel(ex.muscle_group)}
                             {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
+                          </span>
                           </span>
                         </span>
                         <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
@@ -2505,11 +2514,14 @@ export function ActiveWorkout() {
                       onClick={() => applyReplace(ex)}
                       className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
                     >
-                      <span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ExerciseThumbnail exercise={ex} size="sm" />
+                        <span className="min-w-0">
                         <span className="block text-sm font-medium">{ex.name_ru}</span>
                         <span className="block text-[11px] text-tg-hint">
                           {enumLabel(ex.muscle_group)}
                           {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
+                        </span>
                         </span>
                       </span>
                       <span className="shrink-0 text-xs text-tg-link">Выбрать</span>

@@ -1452,7 +1452,7 @@ export function DailyLog() {
         <Suspense
           fallback={(
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-              <p role="status" className="rounded-xl bg-[#1f1f23] px-4 py-3 text-sm text-white">
+              <p role="status" className="rounded-xl border border-white/10 bg-[#101f32] px-4 py-3 text-sm text-white">
                 Открываем сканер…
               </p>
             </div>

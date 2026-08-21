@@ -20,7 +20,7 @@
   {
     "name_ru": "Приседания со своим весом",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "ноги"
   },
   {
@@ -368,7 +368,7 @@
   {
     "name_ru": "Боковая планка",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "кор"
   },
   {
@@ -410,13 +410,13 @@
   {
     "name_ru": "Птица-собака",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "кор"
   },
   {
     "name_ru": "Удержание «лодочки»",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "кор"
   },
   {
@@ -440,7 +440,7 @@
   {
     "name_ru": "Высокие колени",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "кардио"
   },
   {
@@ -494,7 +494,7 @@
   {
     "name_ru": "Присед + жим гантелей",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "плечи"
   },
   {
@@ -524,7 +524,7 @@
   {
     "name_ru": "Кошка-корова",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "мобильность"
   },
   {
@@ -536,13 +536,13 @@
   {
     "name_ru": "Мобилизация плеч с резинкой",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "мобильность"
   },
   {
     "name_ru": "Поза голубя",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "мобильность"
   },
   {
@@ -560,13 +560,13 @@
   {
     "name_ru": "Раскрытие грудного отдела у стены",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "мобильность"
   },
   {
     "name_ru": "Растяжка грудных у дверного проёма",
     "file": "",
-    "animation_url": "",
+    "animation_url": null,
     "muscle_group": "мобильность"
   },
   {
@@ -742,5 +742,29 @@
     "file": "0979-9pa4H5m.gif",
     "animation_url": "/exercise-gifs/0979-9pa4H5m.gif",
     "muscle_group": "кор"
+  },
+  {
+    "name_ru": "Тяга с канатом между ног",
+    "file": "0196-OM46QHm.gif",
+    "animation_url": "/exercise-gifs/0196-OM46QHm.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Отведение ноги назад в кроссовере",
+    "file": "0228-Kpajagk.gif",
+    "animation_url": "/exercise-gifs/0228-Kpajagk.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Обратная гиперэкстензия в тренажёре",
+    "file": "0593-Krmb3cB.gif",
+    "animation_url": "/exercise-gifs/0593-Krmb3cB.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Ягодичный мост с гантелью",
+    "file": "",
+    "animation_url": null,
+    "muscle_group": "ноги"
   }
 ]

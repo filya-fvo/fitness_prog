@@ -71,10 +71,12 @@ function MeasurementChart({
     <div className="mt-3 rounded-xl bg-tg-bg p-3">
       <svg viewBox="0 0 320 120" className="h-32 w-full" role="img" aria-label="Динамика замеров">
         <line x1="12" y1="105" x2="308" y2="105" stroke="currentColor" opacity="0.15" />
+        <line x1="12" y1="62" x2="308" y2="62" stroke="currentColor" opacity="0.1" strokeDasharray="4 4" />
         <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="3" className="text-tg-button" />
         {points.map((point, index) => {
           const [x, y] = polyline.split(" ")[index].split(",");
-          return <circle key={`${point.date}-${index}`} cx={x} cy={y} r="4" fill="currentColor" className="text-tg-button" />;
+          const showLabel = index === 0 || index === points.length - 1;
+          return <g key={`${point.date}-${index}`}><circle cx={x} cy={y} r="4" fill="currentColor" className="text-tg-button"><title>{point.date}: {point.value} см</title></circle>{showLabel ? <text x={x} y={Math.max(10, Number(y) - 8)} textAnchor={index === 0 ? "start" : "end"} className="fill-tg-text text-[10px] font-semibold">{String(point.value).replace(".", ",")}</text> : null}</g>;
         })}
       </svg>
       <div className="flex justify-between text-[10px] text-tg-hint">

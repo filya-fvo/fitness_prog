@@ -35,6 +35,8 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
         "scripts/start-notifications.ps1",
         "scripts/fitness-supervisor.ps1",
         "scripts/install-fitness-supervisor.ps1",
+        "scripts/restart-production-api.ps1",
+        "scripts/request-production-restart.ps1",
         "scripts/apply_migrations_local.ps1",
     )
     for relative in runtime_files:
@@ -44,7 +46,22 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
     supervisor = (ROOT / "scripts" / "fitness-supervisor.ps1").read_text(encoding="utf-8")
     installer = (ROOT / "scripts" / "install-fitness-supervisor.ps1").read_text(encoding="utf-8")
     assert "supervisor-heartbeat.json" in supervisor
+    assert "restart-api.request" in supervisor
+    assert "restart-worker.request" in supervisor
+    assert "Invoke-RequestedApiRestart" in supervisor
+    assert "Invoke-RequestedWorkerRestart" in supervisor
     assert "supervisor-install-status.json" in installer
+
+    restart_api = (ROOT / "scripts" / "restart-production-api.ps1").read_text(encoding="utf-8")
+    assert "#Requires -RunAsAdministrator" in restart_api
+    assert "Get-NetTCPConnection -LocalPort 8001" in restart_api
+    assert "Refusing to stop unexpected listener" in restart_api
+
+    restart_all = (ROOT / "scripts" / "request-production-restart.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "restart-api.request" in restart_all
+    assert "restart-worker.request" in restart_all
 
     launcher = (ROOT / "start_all_comand.bat").read_text(encoding="utf-8")
     assert "%~dp0" in launcher

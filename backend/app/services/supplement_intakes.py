@@ -15,10 +15,10 @@ from app.models.user import User
 from app.services.notification_prefs import (
     _resolve_slot_time,
     _resolve_tz,
-    is_workout_day,
     merge_notification_settings,
     normalize_supplement_schedule,
 )
+from app.services.scheduler import effective_workout_context
 
 VALID_STATUSES = {"pending", "taken", "skipped"}
 VALID_SOURCES = {"telegram", "web", "app"}
@@ -49,11 +49,9 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
         else None
     )
     tz = _resolve_tz(str(settings.get("timezone") or "Europe/Moscow"))
-    workout_t = _resolve_slot_time(
-        str((settings.get("workouts") or {}).get("time") or "18:30"),
-        time(18, 30),
-    ) or time(18, 30)
-    workout_day = is_workout_day(settings, day.weekday())
+    workout_context = effective_workout_context(goals, day)
+    workout_t = workout_context["start_time"]
+    workout_day = bool(workout_context["is_workout_day"])
     rows: list[dict[str, Any]] = []
     supplements = goals.get("supplements")
     if not isinstance(supplements, list):
@@ -115,6 +113,31 @@ async def reset_pending_schedule(session: AsyncSession, user: User) -> None:
             SupplementIntake.scheduled_at >= start,
         )
     )
+    await session.commit()
+
+
+async def reset_pending_days(
+    session: AsyncSession,
+    user: User,
+    days: set[date],
+) -> None:
+    """Rebuild only pending rows affected by a workout occurrence move."""
+    settings = merge_notification_settings(
+        (user.goals or {}).get("notification_settings")
+        if isinstance((user.goals or {}).get("notification_settings"), dict)
+        else None
+    )
+    timezone_name = str(settings.get("timezone") or "Europe/Moscow")
+    for day in days:
+        start, end = _day_bounds(day, timezone_name)
+        await session.execute(
+            delete(SupplementIntake).where(
+                SupplementIntake.user_id == user.id,
+                SupplementIntake.status == "pending",
+                SupplementIntake.scheduled_at >= start,
+                SupplementIntake.scheduled_at < end,
+            )
+        )
     await session.commit()
 
 

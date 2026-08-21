@@ -27,7 +27,13 @@ from app.schemas.notifications import (
     TimerNotifyResponse,
     TimerScheduleRequest,
 )
-from app.services import nutrition_service, supplement_intakes, workout_service
+from app.services import (
+    nutrition_service,
+    scheduler as scheduler_service,
+    supplement_intakes,
+    workout_notifications,
+    workout_service,
+)
 from app.services.energy_targets import compute_energy_targets
 from app.services.notification_prefs import (
     apply_state_updates,
@@ -342,6 +348,18 @@ async def dispatch_all_users(session: AsyncSession, settings: Settings) -> dict[
 async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, Any]) -> dict[str, Any]:
     """Fill dynamic text for calories (and keep water as-is)."""
     meta = item.get("meta") if isinstance(item.get("meta"), dict) else {}
+    if item.get("kind") == "workout":
+        previous_title = str(meta.get("workout_title") or "Тренировка")
+        if previous_title != "Тренировка" and not previous_title.startswith("День "):
+            return item
+        _program_id, _day_index, resolved_title = await scheduler_service.active_program_snapshot(
+            session,
+            user,
+        )
+        out = dict(item)
+        out["text"] = str(item.get("text") or "").replace(previous_title, resolved_title)
+        out["meta"] = {**meta, "workout_title": resolved_title}
+        return out
     if item.get("kind") != "calories" and not meta.get("needs_calorie_context"):
         return item
     from datetime import date as date_cls
@@ -369,7 +387,14 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
 async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) -> int:
     """Dispatch legacy reminders plus idempotent supplement intake groups."""
     goals = user.goals or {}
-    due = [item for item in due_notifications(goals) if item.get("kind") != "supplement"]
+    due = [
+        item
+        for item in due_notifications(goals)
+        if item.get("kind") not in {"supplement", "workout"}
+    ]
+    workout_due = workout_notifications.due_workout_notification(goals)
+    if workout_due is not None:
+        due.append(workout_due)
 
     enriched: list[dict[str, Any]] = []
     for item in due:
@@ -390,6 +415,11 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                     text=str(item.get("text") or ""),
                     startapp=str(item.get("startapp") or "home"),
                     water_add_ml=250 if item.get("kind") == "water" else None,
+                    button_text=(
+                        "Открыть тренировку"
+                        if item.get("kind") == "workout"
+                        else "Открыть приложение"
+                    ),
                 )
                 delivered += 1
             except TelegramBotError as exc:

@@ -50,20 +50,24 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
         </div>
       </div>
 
-      <div className="mb-2 flex items-end justify-between gap-1">
+      <div className="relative mb-2 flex items-end justify-between gap-1 pt-4">
+        <span className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-white/10" />
         {overview.days.map((d) => {
           const h = d.volume > 0 ? Math.max(8, Math.round((d.volume / maxVol) * 40)) : 4;
           return (
             <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-              <div
+              <div className="relative flex h-11 w-full items-end justify-center" role="img" aria-label={`${d.date}: ${d.completed} тренировок, объём ${Math.round(d.volume)} килограммов`}>
+                {d.completed > 0 ? <span className="absolute -top-3 text-[9px] font-semibold text-tg-text">{d.completed}</span> : null}
+                <span
                 className={[
                   "w-full max-w-[28px] rounded-t-md",
-                  d.completed > 0 ? "bg-tg-button" : "bg-black/10",
+                  d.completed > 0 ? "bg-gradient-to-t from-blue-600/80 to-cyan-400/90" : "bg-white/10",
                   d.isToday ? "ring-2 ring-tg-link/40" : "",
                 ].join(" ")}
                 style={{ height: h }}
                 title={`${d.date}: ${d.completed} тр., ${Math.round(d.volume)} кг`}
-              />
+                />
+              </div>
               <span
                 className={[
                   "text-[10px]",
