@@ -5,6 +5,16 @@ const USER_ID = "22222222-2222-4222-8222-222222222222";
 test("Telegram authorization retries when Funnel returns without an online event", async ({ page }) => {
   let authRequests = 0;
   await page.addInitScript(() => {
+    let visibilityState: DocumentVisibilityState = "hidden";
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => visibilityState,
+    });
+    (window as Window & {
+      __setE2EVisibility?: (state: DocumentVisibilityState) => void;
+    }).__setE2EVisibility = (state) => {
+      visibilityState = state;
+    };
     window.Telegram = {
       WebApp: {
         initData: "query_id=e2e",
@@ -12,40 +22,6 @@ test("Telegram authorization retries when Funnel returns without an online event
         expand: () => undefined,
       },
     };
-  });
-  await page.route("**/*", async (route) => {
-    const request = route.request();
-    const pathname = new URL(request.url()).pathname;
-    if (pathname === "/auth/telegram") {
-      await route.fallback();
-      return;
-    }
-    const apiPrefixes = [
-      "/ai",
-      "/auth",
-      "/daily-metrics",
-      "/exercises",
-      "/feedback",
-      "/measurements",
-      "/notifications",
-      "/nutrition",
-      "/programs",
-      "/supplements",
-      "/users",
-      "/workouts",
-    ];
-    if (
-      request.resourceType() !== "document" &&
-      apiPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-    ) {
-      await route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "E2E API fallback" }),
-      });
-      return;
-    }
-    await route.continue();
   });
   await page.route("**/auth/telegram", async (route) => {
     authRequests += 1;
@@ -76,7 +52,12 @@ test("Telegram authorization retries when Funnel returns without an online event
 
   // The phone can stay online while only Tailscale/Funnel was unavailable.
   // Returning to the Mini App must retry without relying on window.online.
-  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.evaluate(() => {
+    (window as Window & {
+      __setE2EVisibility?: (state: DocumentVisibilityState) => void;
+    }).__setE2EVisibility?.("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
 
   await expect.poll(() => authRequests, { timeout: 2_000 }).toBe(2);
   await expect(page.getByText("Не удалось войти")).toHaveCount(0);

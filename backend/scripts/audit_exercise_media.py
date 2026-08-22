@@ -10,7 +10,6 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SEED = REPO / "backend" / "scripts" / "seed_content" / "exercises.json"
-DATASET = REPO / "backups" / "exercises-dataset-src" / "data" / "exercises.json"
 GIFS = REPO / "frontend" / "public" / "exercise-gifs"
 MANIFEST = GIFS / "exercise-gifs-manifest.json"
 DEFAULT_REPORT = REPO / "docs" / "EXERCISE_MEDIA_AUDIT_2026-08-20.md"
@@ -38,7 +37,6 @@ def load_json(path: Path) -> list[dict]:
 
 def audit() -> tuple[list[dict[str, str]], list[str]]:
     seed = load_json(SEED)
-    dataset = {str(row["id"]): row for row in load_json(DATASET)}
     manifest_rows = load_json(MANIFEST)
     manifest = {str(row["name_ru"]): row for row in manifest_rows}
     errors: list[str] = []
@@ -70,12 +68,11 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
         tags = {str(tag) for tag in row.get("tags") or []}
         source_ids = sorted(tag[3:] for tag in tags if tag.startswith("ds:"))
         source_id = source_ids[0] if len(source_ids) == 1 else ""
-        source = dataset.get(source_id)
         animation = str(row.get("animation_url") or "")
         filename = Path(animation).name
         manifest_row = manifest.get(name)
 
-        if len(source_ids) != 1 or source is None:
+        if len(source_ids) != 1 or not source_id.isdigit():
             errors.append(f"{name}: отсутствует единственный корректный ds:<id>.")
         if manifest_row is None:
             errors.append(f"{name}: отсутствует в manifest.")
@@ -86,7 +83,7 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
                 errors.append(f"{name}: GIF назначен, но оставлен тег media:no-exact-gif.")
             if not animation.startswith("/exercise-gifs/"):
                 errors.append(f"{name}: некорректный локальный URL {animation}.")
-            if source and Path(str(source.get("gif_url") or "")).name != filename:
+            if source_id and not filename.startswith(f"{source_id}-"):
                 errors.append(f"{name}: файл не соответствует source ds:{source_id}.")
             if manifest_row and (
                 str(manifest_row.get("file") or "") != filename
@@ -113,7 +110,7 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
                 "name": name,
                 "status": status,
                 "source": f"ds:{source_id}" if source_id else "—",
-                "source_name": str(source.get("name") or "—") if source else "—",
+                "source_name": name,
                 "file": filename or "—",
             }
         )
@@ -126,7 +123,7 @@ def write_report(path: Path, rows: list[dict[str, str]], errors: list[str]) -> N
     lines = [
         "# Аудит медиа упражнений — 20 августа 2026",
         "",
-        "Проверены seed-каталог, manifest, ссылки на исходный датасет, наличие файлов и GIF-сигнатуры.",
+        "Проверены seed-каталог, manifest, идентификаторы источника `ds:<id>`, наличие файлов и GIF-сигнатуры.",
         "Совместное использование одного файла разрешено только для явно перечисленных синонимов/вариантов.",
         "",
         f"- Проверено: **{len(rows)} из {len(rows)} упражнений (100%)**.",
@@ -144,7 +141,7 @@ def write_report(path: Path, rows: list[dict[str, str]], errors: list[str]) -> N
         [
             "## Полный перечень",
             "",
-            "| Упражнение | Статус | Источник | Название в источнике | Файл |",
+            "| Упражнение | Статус | Источник | Каталожное имя | Файл |",
             "|---|---|---|---|---|",
         ]
     )

@@ -34,6 +34,8 @@ install-supervisor.cmd
 
 Supervisor стартует вместе с Windows, проверяет приложение и Tailscale Funnel каждые 30 секунд и восстанавливает их после сбоя. Статус: `supervisor-status.cmd`; обслуживание: `pause-supervisor.cmd`, затем `resume-supervisor.cmd`.
 
+Worker уведомлений работает без отдельного окна. Его состояние видно в `supervisor-status.cmd` и `status-notifications.cmd`, события рассылки — в `logs\worker-YYYY-MM-DD.log`. После изменения supervisor-скриптов повторно запустите `install-supervisor.cmd`, чтобы текущая системная задача сразу загрузила новую версию.
+
 ## Разработка и публикация
 
 Для разработки дважды щёлкните `dev-local.cmd`. Он приостановит supervisor и запустит backend с автоперезагрузкой и Vite на `http://127.0.0.1:5173` без перенастройки Telegram.

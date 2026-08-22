@@ -42,6 +42,18 @@ $principal = New-ScheduledTaskPrincipal `
   -LogonType ServiceAccount `
   -RunLevel Highest
 
+# Register-ScheduledTask -Force does not reliably replace an already running
+# task instance. Stop it first so the newly installed script is loaded now.
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTask -and $existingTask.State -eq "Running") {
+  Stop-ScheduledTask -TaskName $TaskName
+  for ($attempt = 0; $attempt -lt 20; $attempt++) {
+    Start-Sleep -Milliseconds 250
+    $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if (-not $existingTask -or $existingTask.State -ne "Running") { break }
+  }
+}
+
 Register-ScheduledTask `
   -TaskName $TaskName `
   -Action $action `

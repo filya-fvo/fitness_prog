@@ -62,7 +62,7 @@ export default defineConfig({
     // Single public host (Tailscale Funnel): browser XHR → API, navigation → SPA.
     // Critical: /programs and /workouts exist both as React routes and API paths.
     proxy: (() => {
-      const target = "http://127.0.0.1:8001";
+      const target = process.env.VITE_PROXY_TARGET || "http://127.0.0.1:8001";
       const toApi = {
         target,
         changeOrigin: true,

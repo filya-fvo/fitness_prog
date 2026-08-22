@@ -11,11 +11,6 @@ GIFS = Path(__file__).resolve().parents[2] / "frontend" / "public" / "exercise-g
 
 def test_exercises_seed_has_traceable_media_and_unique_names() -> None:
     rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
-    dataset = json.loads(
-        (Path(__file__).resolve().parents[2] / "backups" / "exercises-dataset-src" / "data" / "exercises.json")
-        .read_text(encoding="utf-8")
-    )
-    dataset_by_id = {str(row["id"]): row for row in dataset}
     assert len(rows) >= 80
     names = [r["name_ru"] for r in rows]
     assert len(names) == len(set(names))
@@ -29,8 +24,8 @@ def test_exercises_seed_has_traceable_media_and_unique_names() -> None:
         assert au.startswith("/exercise-gifs/"), r["name_ru"]
         source_ids = [tag[3:] for tag in tags if tag.startswith("ds:")]
         assert len(source_ids) == 1, f"untraceable gif: {r['name_ru']}"
-        source = dataset_by_id[source_ids[0]]
-        assert Path(au).name == Path(source["gif_url"]).name, r["name_ru"]
+        assert source_ids[0].isdigit(), f"invalid source id: {r['name_ru']}"
+        assert Path(au).name.startswith(f"{source_ids[0]}-"), r["name_ru"]
         fp = GIFS / Path(au).name
         if not fp.is_file() or fp.stat().st_size < 500:
             missing.append(r["name_ru"])

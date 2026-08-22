@@ -2,7 +2,8 @@
 param(
   [switch]$SkipRedisCheck,
   [switch]$InstallRedisHint,
-  [switch]$ForceStart
+  [switch]$ForceStart,
+  [switch]$Headless
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,6 +15,11 @@ $Arq = Join-Path $BackendDir ".venv\Scripts\arq.exe"
 $Py = Join-Path $BackendDir ".venv\Scripts\python.exe"
 $EnvFile = Join-Path $BackendDir ".env"
 $GuideRu = Join-Path $Root "NOTIFICATIONS.md"
+$LogDir = Join-Path $Root "logs"
+$LauncherLog = Join-Path $LogDir "notification-worker-launcher.log"
+$ConsoleOutLog = Join-Path $LogDir "notification-worker-stdout.log"
+$ConsoleErrorLog = Join-Path $LogDir "notification-worker-stderr.log"
+New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 
 function Info([string]$m) { Write-Host "[notifications] $m" -ForegroundColor Cyan }
 function Ok([string]$m) { Write-Host "[notifications] $m" -ForegroundColor Green }
@@ -149,39 +155,61 @@ if (Test-Path $Py) {
   } catch { }
 }
 
-Info "Starting ARQ worker window..."
-$cmd = @"
-`$workerLockPath = '$((Join-Path $Root "logs\notification-worker.lock").Replace("'", "''"))'
-try {
-  `$workerLock = [System.IO.File]::Open(
-    `$workerLockPath,
-    [System.IO.FileMode]::OpenOrCreate,
-    [System.IO.FileAccess]::ReadWrite,
-    [System.IO.FileShare]::None
+if ($Headless) {
+  $workerLockPath = Join-Path $LogDir "notification-worker.lock"
+  try {
+    $workerLock = [System.IO.File]::Open(
+      $workerLockPath,
+      [System.IO.FileMode]::OpenOrCreate,
+      [System.IO.FileAccess]::ReadWrite,
+      [System.IO.FileShare]::None
+    )
+  } catch {
+    Ok "Notification worker is already active"
+    exit 0
+  }
+
+  Add-Content -LiteralPath $LauncherLog -Encoding utf8 -Value (
+    "{0} [INFO] Starting headless ARQ worker" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
   )
-} catch {
-  Write-Host 'Notification worker is already active.' -ForegroundColor Green
-  exit 0
+  try {
+    Set-Location $BackendDir
+    # ARQ/Loguru writes normal lifecycle messages to stderr. Run it as a native
+    # child instead of through PowerShell's error pipeline, where PowerShell 5
+    # turns the first stderr line into a terminating NativeCommandError.
+    $env:PYTHONUTF8 = "1"
+    $env:PYTHONIOENCODING = "utf-8"
+    $workerProcess = Start-Process -FilePath $Arq `
+      -ArgumentList @("app.tasks.notifications.WorkerSettings") `
+      -WorkingDirectory $BackendDir `
+      -WindowStyle Hidden `
+      -RedirectStandardOutput $ConsoleOutLog `
+      -RedirectStandardError $ConsoleErrorLog `
+      -Wait `
+      -PassThru
+    $workerExitCode = $workerProcess.ExitCode
+    Add-Content -LiteralPath $LauncherLog -Encoding utf8 -Value (
+      "{0} [WARN] ARQ worker exited with code {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $workerExitCode
+    )
+    exit $workerExitCode
+  } catch {
+    Add-Content -LiteralPath $LauncherLog -Encoding utf8 -Value (
+      "{0} [ERROR] ARQ worker failed: {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $_.Exception.Message
+    )
+    exit 1
+  } finally {
+    $workerLock.Dispose()
+  }
 }
-Set-Location '$BackendDir'
-`$Host.UI.RawUI.WindowTitle = 'FITNESS NOTIFICATIONS (ARQ)'
-Write-Host '========================================' -ForegroundColor Green
-Write-Host '  FITNESS notification worker (ARQ)' -ForegroundColor Green
-Write-Host '  Cron: every minute' -ForegroundColor Green
-Write-Host '  Stop: Ctrl+C or close window' -ForegroundColor Green
-Write-Host '========================================' -ForegroundColor Green
-Write-Host ''
-& '$Arq' app.tasks.notifications.WorkerSettings
-Write-Host ''
-Write-Host 'Worker stopped. Press any key...' -ForegroundColor Yellow
-[void][System.Console]::ReadKey(`$true)
-"@
 
-Start-Process -FilePath "powershell.exe" -ArgumentList @(
-  "-NoExit", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $cmd
-) | Out-Null
+Info "Starting ARQ worker..."
+$childArguments = @(
+  "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ('"{0}"' -f $PSCommandPath), "-Headless"
+)
+if ($SkipRedisCheck) { $childArguments += "-SkipRedisCheck" }
+Start-Process -FilePath "powershell.exe" -ArgumentList $childArguments -WindowStyle Hidden | Out-Null
 
-Ok "Worker window started."
+Ok "Worker started in the background."
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Cyan
 Write-Host "  1) Backend running (start-all.cmd)"

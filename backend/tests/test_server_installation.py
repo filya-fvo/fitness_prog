@@ -50,7 +50,23 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
     assert "restart-worker.request" in supervisor
     assert "Invoke-RequestedApiRestart" in supervisor
     assert "Invoke-RequestedWorkerRestart" in supervisor
+    assert 'Start-HiddenPowerShell $StartNotifications @("-Headless")' in supervisor
+    assert '($_.Name -match "powershell")' in supervisor
+    assert '($_.CommandLine -match "notification-worker\\.lock")' in supervisor
+    assert "Stop-Process -Id $worker.ProcessId -Force -ErrorAction SilentlyContinue" in supervisor
     assert "supervisor-install-status.json" in installer
+    assert "Stop-ScheduledTask -TaskName $TaskName" in installer
+
+    notification_launcher = (ROOT / "scripts" / "start-notifications.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "[switch]$Headless" in notification_launcher
+    assert "notification-worker-launcher.log" in notification_launcher
+    assert "notification-worker-stdout.log" in notification_launcher
+    assert "notification-worker-stderr.log" in notification_launcher
+    assert "Start-Process -FilePath $Arq" in notification_launcher
+    assert "-RedirectStandardError $ConsoleErrorLog" in notification_launcher
+    assert '$env:PYTHONIOENCODING = "utf-8"' in notification_launcher
 
     restart_api = (ROOT / "scripts" / "restart-production-api.ps1").read_text(encoding="utf-8")
     assert "#Requires -RunAsAdministrator" in restart_api

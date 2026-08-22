@@ -90,7 +90,8 @@ function Test-Tcp([int]$Port) {
 }
 
 function Start-HiddenPowerShell([string]$ScriptPath, [string[]]$ScriptArguments = @()) {
-  $arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ScriptPath) + $ScriptArguments
+  $quotedScriptPath = '"{0}"' -f $ScriptPath
+  $arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $quotedScriptPath) + $ScriptArguments
   Start-Process -FilePath "powershell.exe" -WindowStyle Hidden -ArgumentList @(
     $arguments
   ) | Out-Null
@@ -129,7 +130,7 @@ function Ensure-LocalStack {
 
   if (-not (Test-NotificationWorker)) {
     Write-SupervisorLog "Notification worker is down; starting it" "WARN"
-    Start-HiddenPowerShell $StartNotifications
+    Start-HiddenPowerShell $StartNotifications @("-Headless")
   }
 }
 
@@ -163,17 +164,29 @@ function Invoke-RequestedWorkerRestart {
       Get-CimInstance Win32_Process -ErrorAction Stop |
         Where-Object {
           $_.Name -and $_.CommandLine -and
-          ($_.Name -match "python|arq") -and
-          ($_.CommandLine -match "WorkerSettings|tasks\.notifications")
+          (
+            (
+              ($_.Name -match "python|arq") -and
+              ($_.CommandLine -match "WorkerSettings|tasks\.notifications")
+            ) -or (
+              ($_.Name -match "powershell") -and
+              ($_.CommandLine -match "notification-worker\.lock") -and
+              ($_.CommandLine -match "WorkerSettings|tasks\.notifications")
+            )
+          )
         }
     )
     foreach ($worker in $workers) {
-      Write-SupervisorLog "Applying requested worker restart; pid=$($worker.ProcessId)"
-      Stop-Process -Id $worker.ProcessId -Force -ErrorAction Stop
+      if (Get-Process -Id $worker.ProcessId -ErrorAction SilentlyContinue) {
+        Write-SupervisorLog "Applying requested worker restart; pid=$($worker.ProcessId)"
+        # Stopping the ARQ wrapper can terminate its Python child before this
+        # snapshot reaches the next PID; that is a successful restart, not an error.
+        Stop-Process -Id $worker.ProcessId -Force -ErrorAction SilentlyContinue
+      }
     }
     Remove-Item -LiteralPath $RestartWorkerRequest -Force -ErrorAction Stop
     Start-Sleep -Seconds 2
-    Start-HiddenPowerShell $StartNotifications @("-ForceStart")
+    Start-HiddenPowerShell $StartNotifications @("-Headless", "-ForceStart")
   } catch {
     Write-SupervisorLog "Requested worker restart failed: $($_.Exception.Message)" "ERROR"
   }
