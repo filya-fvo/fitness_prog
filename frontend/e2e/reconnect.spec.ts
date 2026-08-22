@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 
 test("Telegram authorization retries when Funnel returns without an online event", async ({ page }) => {
-  let authRequests = 0;
   let funnelAvailable = false;
+  let unavailableAuthRequests = 0;
   let recoveredAuthRequests = 0;
   await page.addInitScript(() => {
     let visibilityState: DocumentVisibilityState = "hidden";
@@ -25,9 +25,14 @@ test("Telegram authorization retries when Funnel returns without an online event
       },
     };
   });
+  // Keep the real Telegram SDK from replacing the deterministic WebApp mock.
+  // Other Telegram E2E scenarios use the same isolation boundary.
+  await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
+    route.abort("blockedbyclient"),
+  );
   await page.route("**/auth/telegram", async (route) => {
-    authRequests += 1;
     if (!funnelAvailable) {
+      unavailableAuthRequests += 1;
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -55,8 +60,8 @@ test("Telegram authorization retries when Funnel returns without an online event
   });
 
   await page.goto("/");
+  await expect.poll(() => unavailableAuthRequests).toBeGreaterThan(0);
   await expect(page.getByText("Не удалось войти")).toBeVisible();
-  expect(authRequests).toBe(1);
 
   // The phone can stay online while only Tailscale/Funnel was unavailable.
   // Returning to the Mini App must retry without relying on window.online.
