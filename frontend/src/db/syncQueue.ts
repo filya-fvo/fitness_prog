@@ -5,6 +5,10 @@
  */
 import { addWorkoutSet, completeWorkout, createWorkout, deleteWorkout, updateWorkoutPlan } from "@/api/workouts";
 import { updateMyProfile } from "@/api/users";
+import {
+  mergeProfileUpdates,
+  type ProfileUpdatePayload,
+} from "@/db/profileUpdate";
 import { db, type SyncQueueItem } from "@/db/schema";
 import { syncItemBelongsToUser, workoutsForUser } from "@/db/userScope";
 import { useUserStore } from "@/store/userStore";
@@ -452,23 +456,25 @@ export function startSyncListeners(ownerUserId: string): () => void {
   };
 }
 
-export async function enqueueProfileUpdate(input: {
-  anthropometry?: Record<string, unknown>;
-  goals?: Record<string, unknown>;
-}): Promise<void> {
+export async function enqueueProfileUpdate(input: ProfileUpdatePayload): Promise<void> {
   const ownerUserId = requireOwnerUserId();
   const existing = await db.syncQueue
     .where("ownerUserId")
     .equals(ownerUserId)
     .and((item) => item.type === "update_profile")
-    .primaryKeys();
-  if (existing.length) await db.syncQueue.bulkDelete(existing);
-  localStorage.setItem(profileDraftKey(ownerUserId), JSON.stringify(input));
+    .sortBy("createdAt");
+  const payload = existing.reduce(
+    (merged, item) => mergeProfileUpdates(merged, item.payload as ProfileUpdatePayload),
+    {} as ProfileUpdatePayload,
+  );
+  const mergedPayload = mergeProfileUpdates(payload, input);
+  if (existing.length) await db.syncQueue.bulkDelete(existing.map((item) => item.id));
+  localStorage.setItem(profileDraftKey(ownerUserId), JSON.stringify(mergedPayload));
   await enqueueSync({
     ownerUserId,
     type: "update_profile",
     clientWorkoutId: `profile:${ownerUserId}`,
-    payload: input,
+    payload: mergedPayload,
   });
 }
 

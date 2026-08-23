@@ -378,6 +378,7 @@ export function ProfilePage() {
   /** Body tab: quick essentials vs full measures / advanced energy. */
   const [bodyAdvanced, setBodyAdvanced] = useState(false);
   const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(true);
+  const [autoAdvanceSaving, setAutoAdvanceSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -774,6 +775,59 @@ setAuthEmail(p.auth_email ?? null);
     setStack(res.items);
     setCatalog(res.catalog);
     setIntakes(await fetchTodaySupplementIntakes());
+  }
+
+  async function toggleAutoAdvance() {
+    if (autoAdvanceSaving || saving) return;
+    const previous = autoAdvanceExercises;
+    const next = !previous;
+    setAutoAdvanceExercises(next);
+    setProfileGoalsKeep((current) => ({
+      ...current,
+      auto_advance_exercises: next,
+    }));
+    try {
+      localStorage.setItem("fitness_auto_advance_exercises", next ? "1" : "0");
+    } catch {
+      // The server or offline queue remains authoritative when storage is unavailable.
+    }
+
+    setAutoAdvanceSaving(true);
+    setError(null);
+    setOk(null);
+    try {
+      let queued = false;
+      if (isOnline() && getStoredToken()) {
+        try {
+          await updateMyProfile({ goals: { auto_advance_exercises: next } });
+        } catch {
+          await enqueueProfileUpdate({ goals: { auto_advance_exercises: next } });
+          queued = true;
+        }
+      } else {
+        await enqueueProfileUpdate({ goals: { auto_advance_exercises: next } });
+        queued = true;
+      }
+      setOk(
+        queued
+          ? "Настройка автоперехода сохранена на устройстве и синхронизируется."
+          : "Настройка автоперехода сохранена.",
+      );
+    } catch (err) {
+      setAutoAdvanceExercises(previous);
+      setProfileGoalsKeep((current) => ({
+        ...current,
+        auto_advance_exercises: previous,
+      }));
+      try {
+        localStorage.setItem("fitness_auto_advance_exercises", previous ? "1" : "0");
+      } catch {
+        // Nothing else to roll back when storage is unavailable.
+      }
+      setError(toUserMessage(err, "Не удалось сохранить настройку автоперехода"));
+    } finally {
+      setAutoAdvanceSaving(false);
+    }
   }
 
   async function setSupplementRemindersEnabled(enabled: boolean) {
@@ -1191,14 +1245,16 @@ setAuthEmail(p.auth_email ?? null);
               <button
                 type="button"
                 role="switch"
+                aria-label="Автопереход между упражнениями"
                 aria-checked={autoAdvanceExercises}
-                onClick={() => setAutoAdvanceExercises((value) => !value)}
+                disabled={autoAdvanceSaving || saving}
+                onClick={() => void toggleAutoAdvance()}
                 className={[
-                  "shrink-0 rounded-full px-3 py-2 text-xs font-semibold",
+                  "shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-60",
                   autoAdvanceExercises ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint",
                 ].join(" ")}
               >
-                {autoAdvanceExercises ? "Вкл" : "Выкл"}
+                {autoAdvanceSaving ? "…" : autoAdvanceExercises ? "Вкл" : "Выкл"}
               </button>
             </div>
             {bodyAdvanced ? (

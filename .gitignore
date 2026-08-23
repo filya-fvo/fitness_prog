@@ -53,6 +53,9 @@ frontend/.dist-check/
 .cache/
 frontend/artifacts/
 
+# Local runtime state
+/tools/redis/dump.rdb
+
 # Local tunnel URLs / ngrok secrets
 scripts/tunnel-urls.local.env
 scripts/ngrok-urls.local.env

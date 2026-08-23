@@ -69,7 +69,8 @@ OpenAI. Допустим локальный rule-based ответ без вне�
   приложения.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
   `DATABASE_URL`; SQL-схема версионируется в `supabase/migrations/`.
-  `tools/redis/dump.rdb` — снимок Redis, не PostgreSQL.
+  `tools/redis/dump.rdb` — локальный runtime-снимок Redis, не PostgreSQL;
+  он меняется при работе Redis и поэтому игнорируется Git.
 
 ## 4. Поток выполнения
 
