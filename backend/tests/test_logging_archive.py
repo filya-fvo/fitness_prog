@@ -3,9 +3,28 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from io import BytesIO, TextIOWrapper
 from pathlib import Path
 
-from app.core.logging import archive_stale_logs, redact_log_secrets, setup_logging
+from app.core.logging import (
+    _EncodingSafeStream,
+    archive_stale_logs,
+    redact_log_secrets,
+    setup_logging,
+)
+
+
+def test_encoding_safe_stream_escapes_characters_missing_from_console_encoding() -> None:
+    output = BytesIO()
+    stream = TextIOWrapper(output, encoding="cp1251")
+    safe_stream = _EncodingSafeStream(stream)
+
+    safe_stream.write("timezone=RTZ 2 (\ufffd\ufffd) icon=ℹ️\n")
+    safe_stream.flush()
+
+    rendered = output.getvalue().decode("cp1251")
+    assert "timezone=RTZ 2 (\\ufffd\\ufffd)" in rendered
+    assert "icon=\\u2139\\ufe0f" in rendered
 
 
 def test_redact_log_secrets_masks_telegram_and_bearer_tokens() -> None:

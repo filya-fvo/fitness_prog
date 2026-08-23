@@ -5,6 +5,31 @@
 
 ---
 
+## 0.20.14 — 2026-08-22
+
+### Надёжный запуск Lighthouse в CI
+
+- Lighthouse сам получает путь к установленному Playwright Chromium через
+  `@playwright/test`. Из workflow удалена вложенная shell-команда с ошибочным
+  экранированием кавычек, из-за которой Bash завершался до запуска аудита.
+- Console sink Loguru безопасно экранирует символы, отсутствующие в кодировке
+  хоста. Импорт backend и рабочие логи больше не создают внутренний
+  `UnicodeEncodeError` в Windows-консоли CP1251.
+
+### Проверено
+
+- Backend: 173 pytest-теста, Ruff, `compileall`, импорт FastAPI и справка
+  read-only smoke — без ошибок.
+- Frontend: 110 unit-тестов, ESLint, TypeScript/Vite build и bundle budget
+  (405518 байт gzip; крупнейший chunk 108742 байта) — без ошибок.
+- Playwright: полный локальный набор 29/29; CI-функциональный split 23/23 при
+  двух workers, включая Chromium и iPhone WebKit.
+- Lighthouse без `CHROME_PATH`: performance 0,99; accessibility 0,98;
+  best practices 0,96 — все пороги пройдены.
+- Проверены 20 migration-файлов и media-каталог 128 упражнений: ошибок нет.
+- Workflow разобран YAML-парсером. Docker image локально не собирался: Docker
+  CLI отсутствует в среде проверки.
+
 ## 0.20.13 — 2026-08-22
 
 ### Изоляция Telegram reconnect-теста и Node.js 24 в CI

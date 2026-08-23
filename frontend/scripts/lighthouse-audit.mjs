@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { chromium } from "@playwright/test";
 import { launch } from "chrome-launcher";
 import lighthouse from "lighthouse";
 import { preview } from "vite";
@@ -18,7 +19,7 @@ const server = await preview({
 let chrome;
 try {
   chrome = await launch({
-    chromePath: process.env.CHROME_PATH || undefined,
+    chromePath: process.env.CHROME_PATH || chromium.executablePath(),
     userDataDir: profileDir,
     chromeFlags: ["--headless", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
   });

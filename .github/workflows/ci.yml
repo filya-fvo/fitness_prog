@@ -100,9 +100,7 @@ jobs:
           VITE_BOT_USERNAME: fil_fit_bot
         run: npm run build
       - name: Lighthouse
-        run: |
-          echo "CHROME_PATH=$(node -e \"const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())\")" >> "$GITHUB_ENV"
-          npm run audit:lighthouse
+        run: npm run audit:lighthouse
 
   frontend-visual:
     name: Frontend (visual QA)

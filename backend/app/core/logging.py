@@ -16,6 +16,7 @@ import sys
 import zipfile
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import TextIO
 
 from loguru import logger
 
@@ -25,6 +26,27 @@ _DEFAULT_LOG_DIR = _REPO_ROOT / "logs"
 _DATE_IN_NAME = re.compile(r"(20\d{2}-\d{2}-\d{2})")
 _TELEGRAM_BOT_TOKEN = re.compile(r"(api\.telegram\.org/bot)[^/\s\"']+")
 _BEARER_TOKEN = re.compile(r"(?i)(authorization[=:]\s*bearer\s+)[^\s,;\"']+")
+
+
+class _EncodingSafeStream:
+    """Keep console logging alive when the host encoding cannot represent a record."""
+
+    def __init__(self, stream: TextIO) -> None:
+        self._stream = stream
+
+    def write(self, message: str) -> None:
+        try:
+            self._stream.write(message)
+        except UnicodeEncodeError:
+            encoding = self._stream.encoding or "ascii"
+            safe_message = message.encode(encoding, errors="backslashreplace").decode(encoding)
+            self._stream.write(safe_message)
+
+    def flush(self) -> None:
+        self._stream.flush()
+
+    def isatty(self) -> bool:
+        return self._stream.isatty()
 
 
 def redact_log_secrets(message: str) -> str:
@@ -153,7 +175,7 @@ def setup_logging(
         else "{message}"
     )
     logger.add(
-        sys.stdout,
+        _EncodingSafeStream(sys.stdout),
         level="INFO",
         serialize=serialize,
         backtrace=environment == "development",
