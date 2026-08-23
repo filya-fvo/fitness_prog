@@ -246,15 +246,25 @@ PowerShell **от имени администратора** и выполнит�
 
 ```powershell
 & 'C:\Program Files\Tailscale\tailscale.exe' update --track=stable --yes
-& 'C:\Program Files\Tailscale\tailscale.exe' set --auto-update=true
+```
+
+Установщик может вернуть `exit status 1618`, если его дочерний MSI ещё работает
+или Windows Installer занят другой установкой. Это не означает потерю Tailscale-
+аккаунта. Подождите 30–60 секунд, затем в том же PowerShell администратора:
+
+```powershell
+Restart-Service Tailscale -Force
+Start-Sleep -Seconds 5
 & 'C:\Program Files\Tailscale\tailscale.exe' version
-Restart-Service Tailscale
+& 'C:\Program Files\Tailscale\tailscale.exe' set --auto-update=true
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
   .\scripts\start-tailscale-funnel.ps1 -Port 8001
 curl.exe --fail --show-error https://viacheslav-msk.tail7c8a5a.ts.net/health
 ```
 
-Версия должна быть не ниже 1.102.2, ответ — `{"status":"ok"}`. Проверяйте также
+Команда `version` должна показывать одинаковую версию CLI и daemon без
+предупреждения `client version != tailscaled server version`; версия должна быть
+не ниже 1.102.2, ответ — `{"status":"ok"}`. Проверяйте также
 с устройства без включённого Tailscale: внутри tailnet DNS ведёт прямо на узел и
 может скрыть неисправность публичного ingress. До обновления текущий monitor
 следует оставлять красным: зелёная проверка закрытого tailnet не доказывает

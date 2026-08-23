@@ -92,6 +92,11 @@ def test_public_health_monitor_tolerates_a_short_funnel_reconnect() -> None:
     assert "sleep 15" in workflow
     assert 'exit "$last_status"' in workflow
 
+    funnel = (ROOT / "scripts" / "start-tailscale-funnel.ps1").read_text(encoding="utf-8")
+    assert '$status.BackendState -eq "NeedsLogin"' in funnel
+    assert "Tailscale update is incomplete" in funnel
+    assert "Restart-Service Tailscale" in funnel
+
 
 def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")

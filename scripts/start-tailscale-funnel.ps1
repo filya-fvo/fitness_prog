@@ -14,40 +14,52 @@ function Resolve-TailscaleExe {
   $installed = Join-Path $env:ProgramFiles "Tailscale\tailscale.exe"
   if (Test-Path -LiteralPath $installed) { return $installed }
 
-  throw "Tailscale не установлен. Скачайте его с https://tailscale.com/download/windows"
+  throw "Tailscale is not installed. Download it from https://tailscale.com/download/windows"
 }
 
 function Read-TailscaleStatus([string]$Exe) {
   $raw = (& $Exe status --json 2>&1 | Out-String).Trim()
-  if (-not $raw) { throw "Tailscale не вернул статус." }
+  if (-not $raw) { throw "Tailscale did not return its status." }
   try {
     return $raw | ConvertFrom-Json
   } catch {
-    throw "Не удалось прочитать статус Tailscale: $raw"
+    throw "Could not parse Tailscale status: $raw"
   }
 }
 
 $tailscale = Resolve-TailscaleExe
 $status = Read-TailscaleStatus $tailscale
-if ($status.BackendState -ne "Running" -or -not $status.Self.Online) {
-  throw "Tailscale не подключён. Откройте Tailscale в системном трее и выполните Log in."
+$versionOutput = @(& $tailscale version 2>&1)
+$clientVersion = [regex]::Match([string]$versionOutput[0], '^\d+\.\d+\.\d+').Value
+$daemonVersion = [regex]::Match([string]$status.Version, '^\d+\.\d+\.\d+').Value
+if ($clientVersion -and $daemonVersion -and $clientVersion -ne $daemonVersion) {
+  throw "Tailscale update is incomplete: CLI=$clientVersion daemon=$daemonVersion. Wait for MSI to finish, then run elevated: Restart-Service Tailscale"
+}
+if (-not $status.HaveNodeKey -or $status.BackendState -eq "NeedsLogin") {
+  throw "Tailscale needs authentication. Open the tray application and select Log in."
+}
+if ($status.BackendState -ne "Running") {
+  throw "Tailscale service is not ready (state=$($status.BackendState)). Wait a few seconds or restart the service from elevated PowerShell."
+}
+if (-not $status.Self.Online) {
+  throw "Tailscale is authenticated but the node is not online yet. Check the network and retry."
 }
 
 $dnsName = ([string]$status.Self.DNSName).Trim().TrimEnd(".")
 if (-not $dnsName) {
-  throw "У устройства нет имени MagicDNS. Включите MagicDNS в панели Tailscale."
+  throw "This device has no MagicDNS name. Enable MagicDNS in the Tailscale console."
 }
 
 $funnelOutput = (& $tailscale funnel --bg $Port 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) {
   if ($Interactive) {
-    Write-Host "Tailscale требует подтверждения Funnel:" -ForegroundColor Yellow
+    Write-Host "Tailscale requires Funnel approval:" -ForegroundColor Yellow
     Write-Host $funnelOutput
-    [void](Read-Host "Откройте показанную ссылку, подтвердите Funnel и нажмите Enter")
+    [void](Read-Host "Open the displayed URL, approve Funnel, and press Enter")
     $funnelOutput = (& $tailscale funnel --bg $Port 2>&1 | Out-String).Trim()
   }
   if ($LASTEXITCODE -ne 0) {
-    throw "Не удалось включить Tailscale Funnel: $funnelOutput"
+    throw "Could not enable Tailscale Funnel: $funnelOutput"
   }
 }
 
