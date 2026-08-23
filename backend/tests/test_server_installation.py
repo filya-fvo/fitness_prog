@@ -81,3 +81,13 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
 
     launcher = (ROOT / "start_all_comand.bat").read_text(encoding="utf-8")
     assert "%~dp0" in launcher
+
+
+def test_public_health_monitor_tolerates_a_short_funnel_reconnect() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "public-health-monitor.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "for attempt in $(seq 1 6)" in workflow
+    assert "sleep 15" in workflow
+    assert 'exit "$last_status"' in workflow

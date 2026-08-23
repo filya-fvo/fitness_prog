@@ -234,7 +234,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.p
 
 После этого в Telegram отправьте `/start`: постоянной кнопки `Open` возле поля ввода быть не должно, inline-кнопка под сообщением должна открывать приложение.
 
-GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Неудачная проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
+GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Краткое переподключение Funnel не считается аварией сразу: probe выполняет до шести попыток с интервалом 15 секунд. Если HTTPS или ответ `{"status":"ok"}` так и не восстановились, проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
 
 ## 8. Ежедневная работа
 

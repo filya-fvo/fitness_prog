@@ -23,9 +23,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          response="$(curl --fail --silent --show-error \
-            --connect-timeout 10 --max-time 30 \
-            --retry 3 --retry-delay 5 --retry-all-errors \
-            "$PUBLIC_HEALTH_URL")"
-          python -c 'import json,sys; data=json.loads(sys.argv[1]); assert data.get("status") == "ok", data' "$response"
-          echo "Public health endpoint is available."
+          case "$PUBLIC_HEALTH_URL" in
+            https://*) ;;
+            *) echo "::error::PUBLIC_HEALTH_URL must use HTTPS"; exit 2 ;;
+          esac
+
+          last_status=1
+          for attempt in $(seq 1 6); do
+            echo "Public health attempt ${attempt}/6"
+            if response="$(curl --fail --silent --show-error \
+              --connect-timeout 10 --max-time 20 \
+              "$PUBLIC_HEALTH_URL")"; then
+              if python -c 'import json,sys; data=json.loads(sys.argv[1]); assert data.get("status") == "ok", data' "$response"; then
+                echo "Public health endpoint is available."
+                exit 0
+              else
+                last_status=$?
+              fi
+            else
+              last_status=$?
+            fi
+
+            if [ "$attempt" -lt 6 ]; then
+              echo "::warning::Public endpoint is temporarily unavailable; retrying in 15 seconds"
+              sleep 15
+            fi
+          done
+
+          echo "::error::Public health endpoint remained unavailable after 6 attempts"
+          exit "$last_status"
