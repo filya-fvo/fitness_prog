@@ -12,10 +12,12 @@ from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal
 from app.models.user import User
 from app.services.telegram_bot import (
+    get_webhook_info,
     open_app_markup,
     send_message,
     send_start_welcome,
     set_default_chat_menu_button,
+    set_webhook,
 )
 
 
@@ -37,6 +39,11 @@ async def main() -> None:
         "--send-welcome-all",
         action="store_true",
         help="send a fresh /start-equivalent welcome and persistent keyboard to all users",
+    )
+    parser.add_argument(
+        "--webhook-base",
+        default="",
+        help="public API origin; registers <origin>/telegram/webhook",
     )
     args = parser.parse_args()
 
@@ -102,6 +109,17 @@ async def main() -> None:
     print("DEFAULT_MENU=standard")
     print(f"CHAT_MENUS_UPDATED={updated}")
     print(f"CHAT_MENUS_FAILED={len(failed)}")
+    if args.webhook_base:
+        webhook_base = safe_public_url(args.webhook_base)
+        webhook_url = f"{webhook_base}/telegram/webhook"
+        await set_webhook(settings, webhook_url=webhook_url)
+        info = (await get_webhook_info(settings)).get("result") or {}
+        actual_url = str(info.get("url") or "").rstrip("/")
+        if actual_url != webhook_url:
+            raise RuntimeError(f"Telegram returned unexpected webhook URL: {actual_url!r}")
+        print(f"WEBHOOK={actual_url}")
+        print(f"WEBHOOK_PENDING={int(info.get('pending_update_count') or 0)}")
+        print(f"WEBHOOK_LAST_ERROR={str(info.get('last_error_message') or '')}")
     if args.send_welcome_all:
         print(f"WELCOME_SENT={welcome_sent}")
         print(f"WELCOME_FAILED={welcome_failed}")

@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+artifacts/
+tests/
+data/
+logs/
+*.log
+private_key.pem
+public_key.pem

@@ -28,6 +28,8 @@ REQUIRED_FILES = [
     "20260815000017_daily_metrics.sql",
     "20260815000018_body_measurements.sql",
     "20260820000019_plank_animation.sql",
+    "20260820000020_normalize_nutrition_product_names.sql",
+    "20260823000021_restore_local_embedding_to_vector.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -63,6 +65,8 @@ REQUIRED_SNIPPETS = [
     "uq_daily_metrics_user_date",
     "uq_body_measurements_user_date",
     "/exercise-gifs/2135-VBAWRPG.gif",
+    "ALTER COLUMN embedding TYPE vector(1536)",
+    "cardinality(embedding) <> 1536",
 ]
 
 

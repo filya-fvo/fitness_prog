@@ -128,6 +128,10 @@ foreach ($file in $files) {
     $sql = Get-Content $file.FullName -Raw
 
     if ($useVectorFallback) {
+        if ($file.Name -eq "20260823000021_restore_local_embedding_to_vector.sql") {
+            Write-Host "SKIP $($file.Name): production pgvector normalization is not needed locally"
+            continue
+        }
         if ($file.Name -like "*extensions*") {
             $sql = $sql -replace '(?m)^\s*CREATE EXTENSION IF NOT EXISTS "vector";\s*\r?$', "-- skipped locally: vector not installed`r`n"
         }

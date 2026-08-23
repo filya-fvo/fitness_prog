@@ -91,3 +91,99 @@ def test_public_health_monitor_tolerates_a_short_funnel_reconnect() -> None:
     assert "for attempt in $(seq 1 6)" in workflow
     assert "sleep 15" in workflow
     assert 'exit "$last_status"' in workflow
+
+
+def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "pgvector/pgvector:0.8.6-pg18-bookworm" in compose
+    assert "pgdata:/var/lib/postgresql\n" in compose
+    assert "pgdata:/var/lib/postgresql/data" not in compose
+    assert "./supabase/migrations:/migrations:ro" in compose
+    assert "20260823000021_restore_local_embedding_to_vector.sql" in compose
+    assert 'psql -v ON_ERROR_STOP=1 -f "$$bootstrap"' in compose
+    assert "condition: service_completed_successfully" in compose
+    assert '"80:80"' in compose
+    assert '"443:443"' in compose
+    for forbidden_port in ('"5432:5432"', '"6379:6379"', '"8000:8000"', '"8080:80"'):
+        assert forbidden_port not in compose
+    for volume in (
+        "pgdata:",
+        "redisdata:",
+        "backend_logs:",
+        "backend_data:",
+        "frontend_releases:",
+        "caddy_data:",
+    ):
+        assert volume in compose
+
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "docker compose --env-file backend/.env.production config --quiet" in ci
+    assert "Test production migrations and Windows fallback restore" in ci
+    assert "ALTER TABLE exercises ADD COLUMN embedding double precision[]" in ci
+    assert 'test "$actual" = "vector(1536)"' in ci
+    assert "docker build -t fitness-api:ci ./backend" in ci
+    assert "-t fitness-web:ci ./frontend" in ci
+
+
+def test_vps_images_and_production_env_cover_runtime_requirements() -> None:
+    backend_dockerfile = (ROOT / "backend" / "Dockerfile").read_text(encoding="utf-8")
+    frontend_dockerfile = (ROOT / "frontend" / "Dockerfile").read_text(encoding="utf-8")
+    frontend_entrypoint = (
+        ROOT / "frontend" / "docker-entrypoint.d" / "40-publish-release.sh"
+    ).read_text(encoding="utf-8")
+    production_env = (ROOT / "backend" / ".env.production.example").read_text(
+        encoding="utf-8"
+    )
+
+    assert "COPY scripts ./scripts" in backend_dockerfile
+    assert "mkdir -p /app/logs /app/data" in backend_dockerfile
+    assert "npm run build:publish" in frontend_dockerfile
+    assert "COPY --from=build /app/dist /opt/fitness-release" in frontend_dockerfile
+    assert 'target_dir=/usr/share/nginx/html' in frontend_entrypoint
+    assert 'cp -a "$source_dir/." "$target_dir/"' in frontend_entrypoint
+    for variable in (
+        "APP_DOMAIN=",
+        "API_DOMAIN=",
+        "ACME_EMAIL=",
+        "MINI_APP_URL=",
+        "VITE_API_URL=",
+        "POSTGRES_PASSWORD=",
+        "DATABASE_URL=postgresql+asyncpg://",
+        "EMAIL_OTP_DEV_RETURN_CODE=false",
+    ):
+        assert variable in production_env
+
+
+def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
+    guide = (ROOT / "docs" / "VPS_DEPLOYMENT_GUIDE.md").read_text(encoding="utf-8")
+    backup = (ROOT / "scripts" / "backup_vps.sh").read_text(encoding="utf-8")
+    telegram_sync = (ROOT / "backend" / "scripts" / "sync_telegram_entrypoints.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "sh scripts/backup_vps.sh" in guide
+    assert "Никогда не выполняйте `docker compose down -v`" in guide
+    assert "--webhook-base https://api.example.ru" in guide
+    assert "PUBLIC_HEALTH_URL=https://api.example.ru/health" in guide
+    assert "pg_dump" in backup
+    assert "pg_restore --list" in backup
+    assert "--webhook-base" in telegram_sync
+    assert "await set_webhook" in telegram_sync
+
+    vector_restore = (
+        ROOT
+        / "supabase"
+        / "migrations"
+        / "20260823000021_restore_local_embedding_to_vector.sql"
+    ).read_text(encoding="utf-8")
+    assert "embedding_type = 'double precision[]'" in vector_restore
+    assert "ALTER COLUMN embedding TYPE vector(1536)" in vector_restore
+    assert "cardinality(embedding) <> 1536" in vector_restore
+
+    local_migrations = (ROOT / "scripts" / "apply_migrations_local.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert 'if ($file.Name -eq "20260823000021_restore_local_embedding_to_vector.sql")' in (
+        local_migrations
+    )

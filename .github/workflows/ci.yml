@@ -134,10 +134,39 @@ jobs:
           retention-days: 7
 
   docker-api:
+    # Keep the established check name for branch-protection compatibility.
     name: Docker API image
     runs-on: ubuntu-latest
     needs: [backend]
     steps:
       - uses: actions/checkout@v5
+      - name: Validate production Compose
+        shell: bash
+        run: |
+          cp backend/.env.production.example backend/.env.production
+          docker compose --env-file backend/.env.production config --quiet
+      - name: Test production migrations and Windows fallback restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose --env-file backend/.env.production)
+          "${compose[@]}" up -d db
+          "${compose[@]}" run --rm migrate
+          "${compose[@]}" exec -T db psql -U fitness -d fitness -v ON_ERROR_STOP=1 <<'SQL'
+          DROP INDEX IF EXISTS idx_exercises_embedding_hnsw;
+          ALTER TABLE exercises DROP COLUMN embedding;
+          ALTER TABLE exercises ADD COLUMN embedding double precision[];
+          SQL
+          "${compose[@]}" run --rm migrate
+          actual="$("${compose[@]}" exec -T db psql -U fitness -d fitness -tAc \
+            "SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = 'exercises'::regclass AND attname = 'embedding' AND NOT attisdropped")"
+          test "$actual" = "vector(1536)"
+          "${compose[@]}" stop db
       - name: Build backend image
         run: docker build -t fitness-api:ci ./backend
+      - name: Build frontend image
+        run: >-
+          docker build
+          --build-arg VITE_API_URL=https://api.example.ru
+          --build-arg VITE_BOT_USERNAME=fil_fit_bot
+          -t fitness-web:ci ./frontend

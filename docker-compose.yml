@@ -1,43 +1,86 @@
-# Local / VPS production-like stack
-# Usage:
-#   cp backend/.env.production.example backend/.env.production
-#   # fill secrets, then:
-#   docker compose --env-file backend/.env.production up -d --build
+name: fitness
+
+# VPS production stack.
 #
-# Free-tier alternative (no Docker on VPS):
-#   FE  -> Cloudflare Pages
-#   API -> Render / Railway
-#   DB  -> Supabase
-#   Redis -> Upstash
+# First start:
+#   cp backend/.env.production.example backend/.env.production
+#   # Fill every CHANGE_ME / REPLACE_* value, APP_DOMAIN and API_DOMAIN.
+#   docker compose --env-file backend/.env.production config --quiet
+#   docker compose --env-file backend/.env.production up -d --build
+#   docker compose --env-file backend/.env.production run --rm api \
+#     python scripts/seed_prod_content.py
+#   docker compose --env-file backend/.env.production run --rm api \
+#     python scripts/seed_nutrition.py
 
 services:
   db:
-    image: postgres:16-alpine
+    # The SQL schema requires CREATE EXTENSION vector; plain postgres is insufficient.
+    # Keep PostgreSQL at the same major version as the current Windows install,
+    # so a pg_dump/pg_restore cutover never attempts a major-version downgrade.
+    image: pgvector/pgvector:0.8.6-pg18-bookworm
     restart: unless-stopped
+    shm_size: 256mb
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-fitness}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in backend/.env.production}
       POSTGRES_DB: ${POSTGRES_DB:-fitness}
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      # PostgreSQL 18 stores PGDATA in /var/lib/postgresql/18/docker and declares
+      # /var/lib/postgresql as its volume. The legacy /data target is unsafe here.
+      - pgdata:/var/lib/postgresql
+    expose:
+      - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 10s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redisdata:/data
+    expose:
+      - "6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
-      retries: 10
+      retries: 12
+
+  migrate:
+    image: pgvector/pgvector:0.8.6-pg18-bookworm
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-fitness}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in backend/.env.production}
+      PGDATABASE: ${POSTGRES_DB:-fitness}
+    volumes:
+      - ./supabase/migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        # A Windows pgvector fallback dump can contain double precision[]. Run
+        # its append-only normalizer before the historical HNSW migration.
+        bootstrap=/migrations/20260823000021_restore_local_embedding_to_vector.sql
+        if [ -f "$$bootstrap" ]; then
+          echo "PREPARE $$bootstrap"
+          psql -v ON_ERROR_STOP=1 -f "$$bootstrap"
+        fi
+        for file in $$(find /migrations -maxdepth 1 -type f -name '*.sql' | sort); do
+          [ "$$file" = "$$bootstrap" ] && continue
+          echo "APPLY $$file"
+          psql -v ON_ERROR_STOP=1 -f "$$file"
+        done
+        echo "MIGRATIONS_OK"
 
   api:
     build:
@@ -46,14 +89,18 @@ services:
     env_file:
       - ./backend/.env.production
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/fitness}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in backend/.env.production}
+      REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
-    ports:
-      - "8000:8000"
+      LOG_DIR: /app/logs
+    volumes:
+      - backend_logs:/app/logs
+      - backend_data:/app/data
+    expose:
+      - "8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
@@ -65,27 +112,65 @@ services:
     env_file:
       - ./backend/.env.production
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/fitness}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in backend/.env.production}
+      REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
+      LOG_DIR: /app/logs
+    volumes:
+      - backend_logs:/app/logs
+      - backend_data:/app/data
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
-      api:
-        condition: service_started
 
   web:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL in backend/.env.production}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
         VITE_BOT_USERNAME: ${VITE_BOT_USERNAME:-}
     restart: unless-stopped
+    volumes:
+      # Previous hashed chunks survive container replacement for open Telegram/PWA clients.
+      - frontend_releases:/usr/share/nginx/html
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in backend/.env.production}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN in backend/.env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in backend/.env.production}
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  redisdata:
+  backend_logs:
+  backend_data:
+  frontend_releases:
+  caddy_data:
+  caddy_config:

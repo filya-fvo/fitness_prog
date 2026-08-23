@@ -65,6 +65,9 @@ OpenAI. Допустим локальный rule-based ответ без вне�
 
 - Локальный публичный режим: FastAPI отдаёт API и `frontend/dist`, HTTPS даёт
   Tailscale Funnel. Ngrok запрещён и отбрасывается кодом.
+- VPS production: Ubuntu 24.04 + Docker Compose; Caddy публикует отдельные
+  frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API и Nginx остаются
+  во внутренней Docker-сети. Полный порядок — `docs/VPS_DEPLOYMENT_GUIDE.md`.
 - Production-манифесты: `render.yaml`, `docker-compose.yml`, Dockerfile каждого
   приложения.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
@@ -320,6 +323,8 @@ backup и dry-run, если он предусмотрен.
 - `RUN.md` — короткий локальный запуск.
 - `docs/USER_GUIDE.md` — инструкция пользователя.
 - `docs/LOCAL_ADMIN_GUIDE.md` — Windows/Tailscale/supervisor/диагностика.
+- `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
+  перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
 - `docs/ADMIN_AI_MODEL_RUNBOOK.md` — Groq-модели и диагностика ИИ.
 - `docs/PROD_CHECKLIST.md` — выпуск.

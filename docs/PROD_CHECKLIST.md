@@ -18,6 +18,7 @@ Use after P0–P3 code is in place and before inviting real users.
 
 - [ ] No `.env` / secrets in git
 - [ ] `JWT_SECRET` unique prod value (≥32 chars)
+- [ ] `EMAIL_OTP_DEV_RETURN_CODE=false`; production OTP never appears in API response
 - [ ] `CORS_ORIGINS` = Telegram + **only** prod front domain(s)
 - [ ] `ENVIRONMENT=production` (docs disabled, JSON logs)
 - [ ] initData HMAC path only for Telegram auth
@@ -26,11 +27,15 @@ Use after P0–P3 code is in place and before inviting real users.
 
 ## Deploy / ops
 
-- [ ] Frontend HTTPS domain live (Cloudflare Pages or compose `web`)
+- [ ] VPS follows [VPS_DEPLOYMENT_GUIDE.md](./VPS_DEPLOYMENT_GUIDE.md); only 80/443 are public
+- [ ] Frontend HTTPS domain live (Caddy → compose `web`)
 - [ ] API HTTPS domain live, `/health` → `{"status":"ok"}`
-- [ ] Migrations applied on prod DB
+- [ ] PostgreSQL uses pinned pgvector/PostgreSQL 18 image; `vector` extension exists
+- [ ] Migrations service completed successfully before API/worker
 - [ ] Seed applied on prod DB
 - [ ] Arq worker running (if reminders needed)
+- [ ] PostgreSQL dump created by `scripts/backup_vps.sh`, copied off VPS and restore-tested
+- [ ] `docker compose down -v` is excluded from operational commands
 - [ ] Telegram Menu Button имеет стандартный тип `commands`/`default`, не `web_app`; inline Open из нового `/start` ведёт на prod URL
 - [ ] Scheduled workflow `Public health monitor` успешно проверяет публичный `/health`
 - [ ] Sentry DSN set (optional but recommended)

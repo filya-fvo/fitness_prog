@@ -13,12 +13,15 @@ RUN apt-get update \
 
 COPY pyproject.toml README.md ./
 COPY app ./app
+COPY scripts ./scripts
 
 RUN pip install --upgrade pip \
     && pip install .
 
 # Non-root
-RUN useradd -m -u 10001 appuser
+RUN useradd -m -u 10001 appuser \
+    && mkdir -p /app/logs /app/data \
+    && chown -R appuser:appuser /app/logs /app/data
 USER appuser
 
 EXPOSE 8000

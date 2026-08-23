@@ -5,6 +5,62 @@
 
 ---
 
+## 0.20.17 — 2026-08-23
+
+### Готовое развёртывание на постоянном VPS
+
+- Production Compose переведён на закрытый Docker-контур с Caddy HTTPS,
+  PostgreSQL 18 + pgvector, persistent Redis AOF, отдельными API/worker и
+  автоматическими последовательными SQL-миграциями до запуска приложения.
+  PostgreSQL/Redis/API/Nginx больше не публикуют служебные host-порты.
+- PG18 volume смонтирован в новый официальный `/var/lib/postgresql`, а не в
+  legacy `/var/lib/postgresql/data`, чтобы кластер не оказался в анонимном volume
+  и не исчез при пересоздании контейнера.
+- Добавлена append-only миграция совместимости переноса: локальный Windows-
+  fallback `exercises.embedding double precision[]` проверяется по размерности и
+  преобразуется в production `vector(1536)` до исторического HNSW index. Поэтому
+  восстановленный дамп не ломает последовательный прогон миграций.
+- Исправлена Docker-сборка frontend: контейнер использует фактический
+  `build:publish`, а persistent release-volume сохраняет старые hashed chunks
+  для уже открытых Telegram WebView/PWA. Backend image включает эксплуатационные
+  seed/Telegram-скрипты и доступный непривилегированному пользователю log-каталог.
+  Служебный Telegram marker хранится в отдельном доступном `backend_data` volume.
+- Production env получил домены Caddy/frontend/API, внутренние PostgreSQL/Redis
+  адреса и явный `EMAIL_OTP_DEV_RETURN_CODE=false` как второй предохранитель к
+  уже существующей проверке `ENVIRONMENT != production` в OTP-службе.
+- Добавлены проверяемый PostgreSQL backup-скрипт и регистрация нового Telegram
+  webhook через `sync_telegram_entrypoints.py --webhook-base`.
+- Добавлена полная инструкция `VPS_DEPLOYMENT_GUIDE.md`: сравнение доступных из
+  России тарифов, hardening Ubuntu, Docker, read-only GitHub deploy key, DNS/TLS,
+  перенос PostgreSQL без downgrade, seed, Telegram, health monitor, backup,
+  обновление, восстановление и диагностика.
+- CI с сохранённым именем обязательного check теперь валидирует Compose и
+  действительно собирает оба production Docker image, включая frontend.
+
+### Диагностика текущего Tailscale Funnel
+
+- Шесть `SSL_ERROR_SYSCALL` подряд признаны реальной аварией ingress, а не
+  нестабильностью теста: локальный `/health` отвечает 200, Funnel/capability
+  включены, но все три публичных ingress обрывают TLS. Установлен Tailscale
+  1.98.10; официальное исправление входящих Funnel-соединений выпущено в 1.102.2.
+- В локальную admin-инструкцию добавлено обновление до stable 1.102.3 из
+  PowerShell администратора и обязательная внешняя проверка. Сам monitor оставлен
+  строгим: он не должен становиться зелёным, пока приложение недоступно извне.
+
+### Проверено
+
+- Backend: 177 pytest-тестов, Ruff, compileall с отдельным pycache; 22 SQL-
+  миграций и media-каталог из 128 упражнений — без ошибок.
+- Read-only проверка текущей Windows-БД подтвердила ожидаемый fallback
+  `exercises.embedding double precision[]`: non-null значений 0, неверных
+  размерностей 0, поэтому production-normalizer не потеряет существующие данные.
+- Frontend: 112 unit-тестов, ESLint, `build:publish`, bundle budget (405764 байта
+  gzip; крупнейший chunk 108742 байта), Playwright 31/31 и Lighthouse
+  0,99/0,98/0,96 — без ошибок.
+- YAML Compose/workflows разобран парсером, shell syntax обоих новых скриптов и
+  `git diff --check` прошли. Docker CLI локально отсутствует, поэтому фактическая
+  сборка backend/frontend images будет выполнена добавленным обязательным CI job.
+
 ## 0.20.16 — 2026-08-23
 
 ### Устойчивый монитор Tailscale Funnel

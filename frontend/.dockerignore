@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+node_modules/
+dist/
+.dist-next/
+.dist-check/
+test-results/
+playwright-report/
+artifacts/
+coverage/

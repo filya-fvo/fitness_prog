@@ -236,6 +236,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.p
 
 GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Краткое переподключение Funnel не считается аварией сразу: probe выполняет до шести попыток с интервалом 15 секунд. Если HTTPS или ответ `{"status":"ok"}` так и не восстановились, проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
 
+Если все шесть попыток завершаются `SSL_ERROR_SYSCALL`, а локальный
+`http://127.0.0.1:8001/health` отвечает, это не ошибка probe и не повод отключать
+monitor. Для установленного здесь Tailscale 1.98.10 подтверждена недоступность
+всех публичных Funnel ingress при исправной локальной прокси. В официальном
+changelog Tailscale 1.102.2 отдельно исправлена регрессия входящих Funnel-
+соединений; актуальная stable 1.102.3 включает это исправление. Откройте
+PowerShell **от имени администратора** и выполните:
+
+```powershell
+& 'C:\Program Files\Tailscale\tailscale.exe' update --track=stable --yes
+& 'C:\Program Files\Tailscale\tailscale.exe' set --auto-update=true
+& 'C:\Program Files\Tailscale\tailscale.exe' version
+Restart-Service Tailscale
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\start-tailscale-funnel.ps1 -Port 8001
+curl.exe --fail --show-error https://viacheslav-msk.tail7c8a5a.ts.net/health
+```
+
+Версия должна быть не ниже 1.102.2, ответ — `{"status":"ok"}`. Проверяйте также
+с устройства без включённого Tailscale: внутри tailnet DNS ведёт прямо на узел и
+может скрыть неисправность публичного ingress. До обновления текущий monitor
+следует оставлять красным: зелёная проверка закрытого tailnet не доказывает
+доступность Mini App реальным пользователям.
+
 ## 8. Ежедневная работа
 
 После перезагрузки компьютера:

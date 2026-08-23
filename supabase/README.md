@@ -15,6 +15,7 @@ Apply in order on a fresh Supabase (PostgreSQL) project.
 | `migrations/20260721000006_nutrition.sql` | nutrition_products (`pg_trgm`), nutrition_logs |
 | `migrations/20260721000007_ai_conversations.sql` | ai_conversations |
 | `migrations/20260721000008_updated_at_triggers.sql` | `updated_at` triggers |
+| `migrations/20260823000021_restore_local_embedding_to_vector.sql` | safe conversion of the Windows `double precision[]` fallback to production `vector(1536)` after restore |
 
 ## Apply (SQL Editor)
 
