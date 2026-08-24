@@ -36,7 +36,7 @@ if not "%IMPERR%"=="0" (
 echo [preflight] Backend import OK
 echo.
 
-REM Order: Redis -> notifications worker -> production app + Tailscale Funnel
+REM Order: Redis -> notifications worker -> local built app
 echo [1/3] Redis...
 start "fitness Redis" cmd /k "cd /d ""%Folder%"" && call start-redis.cmd"
 
@@ -47,14 +47,14 @@ start "fitness Notifications" cmd /k "cd /d ""%Folder%"" && call start-notificat
 
 timeout /t 1 /nobreak >nul
 
-echo [3/3] Production app + Tailscale Funnel...
+echo [3/3] Local built app...
 start "fitness App" cmd /k "cd /d ""%Folder%"" && call start-all.cmd"
 
 echo.
 echo  Launched:
 echo    - Redis
 echo    - Notification worker
-echo    - API + built Frontend :8001 + Tailscale Funnel
+echo    - API + built Frontend :8001
 echo.
 echo  Local app:    http://127.0.0.1:8001
 echo  Health:       http://127.0.0.1:8001/health

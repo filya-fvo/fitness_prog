@@ -7,6 +7,41 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_local_cleanup_is_safe_and_dry_run_by_default() -> None:
+    cleanup = (ROOT / "scripts" / "cleanup-local.ps1").read_text(encoding="utf-8")
+    task = (ROOT / "scripts" / "install-local-cleanup-task.ps1").read_text(
+        encoding="utf-8"
+    )
+    redis_installer = (ROOT / "scripts" / "install-redis-portable.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "[switch]$Apply" in cleanup
+    assert "[switch]$Deep" in cleanup
+    assert "[int]$OlderThanDays = 2" in cleanup
+    assert "if (-not $Apply)" in cleanup
+    for protected in (
+        '"backend\\.venv"',
+        '"backups\\exercises-dataset-src"',
+        '"backups\\vps"',
+        '"docs"',
+        '"frontend\\dist"',
+        '"frontend\\public"',
+        '"supabase"',
+        '"tools\\redis\\dump.rdb"',
+    ):
+        assert protected in cleanup
+    assert "git clean" not in cleanup.lower()
+    assert "docker system prune" not in cleanup.lower()
+
+    arguments_line = next(line for line in task.splitlines() if line.startswith("$arguments"))
+    assert "#Requires -RunAsAdministrator" in task
+    assert "-Apply -OlderThanDays $OlderThanDays" in arguments_line
+    assert "-Deep" not in arguments_line
+    assert 'DEST.glob(pattern)' in redis_installer
+    assert 'ZIP_PATH.unlink(missing_ok=True)' in redis_installer
+
+
 def test_server_installer_covers_required_stack() -> None:
     launcher = (ROOT / "install-server.cmd").read_text(encoding="utf-8")
     installer = (ROOT / "scripts" / "install-server.ps1").read_text(encoding="utf-8")
@@ -16,15 +51,14 @@ def test_server_installer_covers_required_stack() -> None:
         "python312",
         "nodejs-lts",
         "postgresql18",
-        "tailscale",
         "install-redis-portable.py",
         "apply_migrations_local.ps1",
         "seed_prod_content.py",
         "seed_nutrition.py",
-        "setup_telegram_bot.ps1",
         "-DryRun",
     ):
         assert marker in installer
+    assert "tailscale" not in installer.lower()
 
 
 def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
@@ -56,6 +90,13 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
     assert "Stop-Process -Id $worker.ProcessId -Force -ErrorAction SilentlyContinue" in supervisor
     assert "supervisor-install-status.json" in installer
     assert "Stop-ScheduledTask -TaskName $TaskName" in installer
+    assert "tailscale" not in supervisor.lower()
+    assert "tailscale" not in installer.lower()
+
+    start_all = (ROOT / "scripts" / "start-all.ps1").read_text(encoding="utf-8")
+    assert "tailscale" not in start_all.lower()
+    assert "https://app.filfitclub.ru" in start_all
+    assert "https://api.filfitclub.ru" in start_all
 
     notification_launcher = (ROOT / "scripts" / "start-notifications.ps1").read_text(
         encoding="utf-8"
@@ -83,7 +124,7 @@ def test_server_runtime_scripts_do_not_depend_on_old_root() -> None:
     assert "%~dp0" in launcher
 
 
-def test_public_health_monitor_tolerates_a_short_funnel_reconnect() -> None:
+def test_public_health_monitor_uses_the_permanent_api_domain() -> None:
     workflow = (ROOT / ".github" / "workflows" / "public-health-monitor.yml").read_text(
         encoding="utf-8"
     )
@@ -91,11 +132,8 @@ def test_public_health_monitor_tolerates_a_short_funnel_reconnect() -> None:
     assert "for attempt in $(seq 1 6)" in workflow
     assert "sleep 15" in workflow
     assert 'exit "$last_status"' in workflow
-
-    funnel = (ROOT / "scripts" / "start-tailscale-funnel.ps1").read_text(encoding="utf-8")
-    assert '$status.BackendState -eq "NeedsLogin"' in funnel
-    assert "Tailscale update is incomplete" in funnel
-    assert "Restart-Service Tailscale" in funnel
+    assert "https://api.filfitclub.ru/health" in workflow
+    assert "tailscale" not in workflow.lower()
 
 
 def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
@@ -158,6 +196,10 @@ def test_vps_images_and_production_env_cover_runtime_requirements() -> None:
         "EMAIL_OTP_DEV_RETURN_CODE=false",
     ):
         assert variable in production_env
+    assert "APP_DOMAIN=app.filfitclub.ru" in production_env
+    assert "API_DOMAIN=api.filfitclub.ru" in production_env
+    assert "MINI_APP_URL=https://app.filfitclub.ru" in production_env
+    assert "VITE_API_URL=https://api.filfitclub.ru" in production_env
 
 
 def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
@@ -169,12 +211,20 @@ def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
 
     assert "sh scripts/backup_vps.sh" in guide
     assert "Никогда не выполняйте `docker compose down -v`" in guide
-    assert "--webhook-base https://api.example.ru" in guide
-    assert "PUBLIC_HEALTH_URL=https://api.example.ru/health" in guide
+    assert "--webhook-base https://api.filfitclub.ru" in guide
+    assert "PUBLIC_HEALTH_URL=https://api.filfitclub.ru/health" in guide
     assert "pg_dump" in backup
     assert "pg_restore --list" in backup
     assert "--webhook-base" in telegram_sync
     assert "await set_webhook" in telegram_sync
+
+    telegram_setup = (ROOT / "scripts" / "setup_telegram_bot.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "-MiniAppUrl https://app.filfitclub.ru" in telegram_setup
+    assert "-WebhookBase https://api.filfitclub.ru" in telegram_setup
+    assert '[string]$WebhookBase = "https://api.filfitclub.ru"' in telegram_setup
+    assert '$WebhookUrl = "$WebhookBase/telegram/webhook"' in telegram_setup
 
     vector_restore = (
         ROOT

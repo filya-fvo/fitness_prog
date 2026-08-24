@@ -7,7 +7,7 @@ from app.tasks import notifications
 
 
 def test_notification_settings_reloads_current_configuration(monkeypatch) -> None:
-    current = Settings(mini_app_url="https://current-host.example.ts.net")
+    current = Settings(mini_app_url="https://current-host.example.com")
     monkeypatch.setattr(notifications, "Settings", lambda: current)
 
     assert notifications.notification_settings() is current
@@ -15,8 +15,8 @@ def test_notification_settings_reloads_current_configuration(monkeypatch) -> Non
 
 @pytest.mark.asyncio
 async def test_reminder_job_ignores_stale_worker_settings(monkeypatch) -> None:
-    stale = Settings(mini_app_url="https://obsolete.example.ts.net")
-    current = Settings(mini_app_url="https://current.example.ts.net")
+    stale = Settings(mini_app_url="https://obsolete.example.com")
+    current = Settings(mini_app_url="https://current.example.com")
     captured: dict[str, Settings] = {}
 
     async def fake_send(settings: Settings, **_kwargs):

@@ -10,14 +10,15 @@
 frontend/   React 18 + TypeScript + Vite + Tailwind + Dexie/PWA
 backend/    FastAPI + SQLAlchemy async + ARQ/Redis + Groq
 supabase/   последовательные PostgreSQL-миграции
-scripts/    запуск Windows, supervisor, Tailscale, Redis, миграции
+scripts/    локальный запуск Windows, supervisor, Redis, миграции
 docs/       пользовательские, административные и QA-документы
 ```
 
 Агенту перед изменениями: [AGENTS.md](AGENTS.md). Пользователю:
 [docs/USER_GUIDE.md](docs/USER_GUIDE.md). Администратору:
-[docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Развёртывание постоянного
-Linux VPS: [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
+[docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Основной production без
+VPS: [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md). Linux VPS
+сохранён как [альтернативный вариант](docs/VPS_DEPLOYMENT_GUIDE.md).
 
 Исторические планы и одноразовые скрипты, не участвующие в приложении, вынесены
 в `_archive_candidates/` и не являются источником требований.
@@ -31,8 +32,7 @@ install-server.cmd
 install-supervisor.cmd
 ```
 
-Обычная публикация единого frontend + API на `127.0.0.1:8001` через Tailscale
-Funnel:
+Обычный локальный запуск единого frontend + API на `127.0.0.1:8001`:
 
 ```text
 start_all_comand.bat
@@ -64,7 +64,9 @@ npm.cmd run dev -- --host 127.0.0.1 --port 5173
 
 Секреты хранятся только в локальных `.env`. Образцы:
 `backend/.env.example`, `backend/.env.production.example`,
-`frontend/.env.example`, `frontend/.env.production.example`.
+`frontend/.env.example`, `frontend/.env.production.example`. Переменные основного
+Timeweb deployment перечислены в `deploy/timeweb/timeweb.env.example`; реальные
+значения вводятся только в панели Timeweb.
 
 ## Проверки
 
@@ -98,7 +100,8 @@ CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthou
 
 - [docs/CHANGELOG.md](docs/CHANGELOG.md) — все изменения.
 - [docs/PROD_CHECKLIST.md](docs/PROD_CHECKLIST.md) — выпуск.
-- [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md) — production VPS.
+- [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md) — основной production в Timeweb.
+- [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md) — альтернативный VPS.
 - [docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md](docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md) — уведомления.
 - [docs/ADMIN_AI_MODEL_RUNBOOK.md](docs/ADMIN_AI_MODEL_RUNBOOK.md) — Groq.
 - [docs/exercise-gifs.md](docs/exercise-gifs.md) — media pipeline.

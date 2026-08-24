@@ -6,13 +6,14 @@
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File <project>\scripts\setup_telegram_bot.ps1
 
-  # custom public front URL:
+  # production domains:
   powershell -NoProfile -ExecutionPolicy Bypass -File <project>\scripts\setup_telegram_bot.ps1 `
-    -MiniAppUrl https://fitness-pc.example.ts.net
+    -MiniAppUrl https://app.filfitclub.ru `
+    -WebhookBase https://api.filfitclub.ru
 #>
 param(
   [string]$MiniAppUrl = "",
-  [string]$WebhookBase = "",
+  [string]$WebhookBase = "https://api.filfitclub.ru",
   [switch]$SkipWebhook,
   [switch]$SkipMenu
 )
@@ -20,7 +21,6 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $BackendEnv = Join-Path $Root "backend\.env"
-$UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
 $SyncEntrypoints = Join-Path $Root "backend\scripts\sync_telegram_entrypoints.py"
 $BackendPython = Join-Path $Root "backend\.venv\Scripts\python.exe"
 
@@ -31,41 +31,35 @@ function Read-DotEnvValue([string]$Path, [string]$Key) {
   return ($line -split "=", 2)[1].Trim().Trim('"').Trim("'")
 }
 
-function Read-UrlFileValue([string]$Path, [string]$Key) {
-  if (-not (Test-Path $Path)) { return "" }
-  $line = Get-Content $Path | Where-Object { $_ -match "^\s*$Key\s*=" } | Select-Object -First 1
-  if (-not $line) { return "" }
-  $val = ($line -split "=", 2)[1]
-  # strip inline comments
-  if ($val -match "^(.*?)(\s+#.*)?$") { $val = $Matches[1] }
-  return $val.Trim().Trim('"')
-}
-
 $token = Read-DotEnvValue $BackendEnv "BOT_TOKEN"
 if (-not $token -or $token.StartsWith("replace_with")) {
   throw "BOT_TOKEN missing in backend\.env"
 }
 
 if (-not $MiniAppUrl) {
-  $MiniAppUrl = Read-UrlFileValue $UrlsFile "FRONTEND_PUBLIC_URL"
-}
-if (-not $MiniAppUrl) {
   $MiniAppUrl = Read-DotEnvValue $BackendEnv "MINI_APP_URL"
 }
 
 $MiniAppUrl = ($MiniAppUrl -replace "/$", "").Trim()
 if (-not $MiniAppUrl.StartsWith("https://")) {
-  throw "Need public HTTPS Mini App URL. Pass -MiniAppUrl, set MINI_APP_URL, or start Tailscale Funnel."
+  throw "Need a permanent public HTTPS Mini App URL. Pass -MiniAppUrl or set MINI_APP_URL."
 }
 $miniHost = ([uri]$MiniAppUrl).DnsSafeHost.ToLowerInvariant()
 if ($miniHost.Contains("ngrok")) {
-  throw "ngrok URL is forbidden. Start Tailscale Funnel and use its *.ts.net URL."
+  throw "ngrok URL is forbidden. Configure the permanent application domain."
 }
 
 if (-not $WebhookBase) {
-  $WebhookBase = $MiniAppUrl
+  $WebhookBase = Read-DotEnvValue $BackendEnv "VITE_API_URL"
 }
 $WebhookBase = ($WebhookBase -replace "/$", "").Trim()
+if (-not $WebhookBase.StartsWith("https://")) {
+  throw "Need a permanent public HTTPS API URL. Pass -WebhookBase or set VITE_API_URL."
+}
+$webhookHost = ([uri]$WebhookBase).DnsSafeHost.ToLowerInvariant()
+if ($webhookHost.Contains("ngrok")) {
+  throw "ngrok URL is forbidden. Configure the permanent API domain."
+}
 $WebhookUrl = "$WebhookBase/telegram/webhook"
 
 Write-Host "[telegram] Mini App URL : $MiniAppUrl" -ForegroundColor Cyan
@@ -127,7 +121,7 @@ if (-not $SkipWebhook) {
 
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
-Write-Host "  1) The production app + Tailscale Funnel must be running (start-all.cmd)"
+Write-Host "  1) The production VPS must answer on both configured HTTPS domains"
 Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
 Write-Host "  3) Persistent Open near the message field should be absent"
 Write-Host ""

@@ -1,6 +1,10 @@
 # Локальное развёртывание Fitness Mini App — инструкция администратора
 
-Эта инструкция описывает запуск проекта на Windows-компьютере с публичным HTTPS через Tailscale Funnel. Бесплатный ngrok использовать нельзя: его адреса устаревают, а пользователи видят предупреждение.
+Эта инструкция описывает локальный запуск проекта на Windows-компьютере.
+Публичный production работает в Timeweb App Platform по адресам
+`https://app.filfitclub.ru` и `https://api.filfitclub.ru`; настройка вынесена в
+[`TIMEWEB_DOMAIN_CUTOVER.md`](TIMEWEB_DOMAIN_CUTOVER.md). Локальные туннели не
+используются.
 
 Администратор, указанный в `ADMIN_TELEGRAM_IDS` или `ADMIN_TELEGRAM_USERNAMES`, может в любой момент получить актуальную копию этого файла скрытой командой бота `/admin`. Команда не показывается в общем меню и не отправляет файл обычным пользователям.
 
@@ -12,14 +16,13 @@
 |---|---|---:|
 | PostgreSQL | пользователи, тренировки, питание | 5432 |
 | Redis | очередь уведомлений и таймеров | 6379 |
-| FastAPI + собранный frontend | API, Telegram webhook и интерфейс Mini App | 8001 |
+| FastAPI + собранный frontend | локальная копия API и интерфейса | 8001 |
 | Vite frontend | только локальная разработка, публично не используется | 5173 |
-| Tailscale Funnel | постоянный публичный HTTPS → единое приложение | 443 |
 | ARQ worker | уведомления и фоновые задачи | — |
 
-Публичный трафик идёт через Tailscale прямо на FastAPI `:8001`. FastAPI раздаёт собранный frontend, API и `/telegram/webhook` на одном origin. Это уменьшает число процессов и запросов через туннель; Vite нужен только разработчику.
-
-Компьютер должен быть включён, подключён к интернету и не находиться в спящем режиме. Открытая страница Tailscale в браузере не нужна: после входа работает служба Windows.
+FastAPI раздаёт локальную сборку frontend и API на `127.0.0.1:8001`; Vite нужен
+только разработчику. Публичные запросы и Telegram webhook обслуживает Timeweb, поэтому
+выключение локального компьютера не должно влиять на пользователей.
 
 ## 2. Автоматическая установка на новый сервер
 
@@ -41,19 +44,15 @@ install-server.cmd
 Подтвердите UAC. Сценарий автоматически:
 
 1. устанавливает Chocolatey, если его ещё нет;
-2. устанавливает Python 3.12, Node.js LTS, PostgreSQL 18/командные инструменты и Tailscale;
+2. устанавливает Python 3.12, Node.js LTS и PostgreSQL 18/командные инструменты;
 3. создаёт необходимые каталоги и переносимое `backend\.venv`;
 4. устанавливает backend- и frontend-зависимости строго из проекта;
 5. собирает production frontend во временный каталог и безопасно публикует его с сохранением ассетов восьми последних релизов;
 6. подготавливает portable Redis;
 7. применяет SQL-миграции и идемпотентно загружает упражнения, программы и питание;
-8. выполняет вход в Tailscale, включает **Run unattended** и Funnel;
-9. сохраняет новый постоянный `*.ts.net` URL, обновляет CORS, возвращает стандартное меню Telegram и настраивает webhook;
-10. проверяет импорт backend и останавливается до установки системной задачи.
+8. проверяет импорт backend и останавливается до необязательной установки системной задачи.
 
 Установщик можно запускать повторно после обновления проекта. Существующий `backend\.env` сохраняется, секреты не печатаются. Если файла нет, он создаётся из примера, `JWT_SECRET`, `TELEGRAM_WEBHOOK_SECRET` и пароль новой локальной PostgreSQL генерируются автоматически, а токен и username бота запрашиваются в окне.
-
-При первом входе Tailscale может открыть браузер и попросить подтвердить **Enable Funnel**. Это единственное внешнее подтверждение, которое нельзя безопасно выполнить от имени пользователя автоматически.
 
 Для предварительной проверки без установок и записи файлов:
 
@@ -69,17 +68,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-server.ps1
 
 ## 4. Какой файл запускать
 
-### Постоянная работа через supervisor — рекомендуется для ноутбука-сервера
+### Локальная фоновая работа через supervisor — необязательно
 
 После успешного `install-server.cmd` один раз дважды щёлкните `install-supervisor.cmd` и подтвердите запрос Windows UAC кнопкой **«Да»**. Установится и сразу запустится системная задача **Fitness App Supervisor**, которая:
 
 1. запускается при старте Windows и при входе пользователя;
 2. работает от имени `SYSTEM`, даже если пользователь вышел из Windows;
 3. не даёт Windows усыпить систему, но разрешает отключать экран;
-4. каждые 30 секунд проверяет единое приложение, Redis, worker и публичный `/health`;
-5. после двух неудачных проверок перезапускает нужный компонент и повторно включает Tailscale Funnel;
-6. включает Tailscale **Run unattended**;
-7. пишет журнал в `logs\supervisor.log` и каждые 30 секунд обновляет обезличенный `logs\supervisor-heartbeat.json` со статусом local/public/Redis/worker.
+4. каждые 30 секунд проверяет локальное приложение, Redis и worker;
+5. после двух неудачных проверок перезапускает нужный локальный компонент;
+6. пишет журнал в `logs\supervisor.log` и каждые 30 секунд обновляет обезличенный
+   `logs\supervisor-heartbeat.json` со статусом local/Redis/worker.
+
+Supervisor не управляет DNS, Timeweb App Platform или Telegram webhook. Если
+задача сейчас остановлена, переустанавливать и запускать её для перехода домена
+не требуется.
 
 Для контролируемого применения backend-обновления создайте пустой файл
 `logs\restart-api.request`: supervisor проверит, что порт `8001` принадлежит
@@ -95,7 +98,10 @@ worker. Файловая блокировка worker не допускает в�
 `powershell -ExecutionPolicy Bypass -File scripts\restart-production-api.ps1`.
 Скрипт также проверяет владельца порта и не завершает посторонний процесс.
 
-Supervisor и worker держат межпроцессные lock-файлы в `logs`. Поэтому повторный ручной запуск, одновременные триггеры Windows или краткий обрыв Tailscale не создают второй экземпляр. Дополнительно одна минутная рассылка выполняется только одним worker даже во время восстановления процессов.
+Supervisor и worker держат межпроцессные lock-файлы в `logs`. Поэтому повторный
+ручной запуск или одновременные триггеры Windows не создают второй экземпляр.
+Дополнительно одна минутная рассылка выполняется только одним worker даже во
+время восстановления процессов.
 
 Worker supervisor запускает без интерактивного окна. Рабочие события и результаты рассылки находятся в `logs\worker-YYYY-MM-DD.log`, старт и код завершения — в `logs\notification-worker-launcher.log`, необработанный вывод процесса — в `logs\notification-worker-stdout.log` и `logs\notification-worker-stderr.log`. Если обновлялись сами supervisor-скрипты, снова запустите `install-supervisor.cmd`: установщик остановит старый экземпляр системной задачи, зарегистрирует новую версию и сразу её запустит.
 
@@ -117,7 +123,9 @@ uninstall-supervisor.cmd  — удалить системную задачу
 
 Команда `scripts\dev.cmd restart-backend` теперь также определяет процесс supervisor через `netstat`. Если backend запущен с повышенными правами, команда не сообщает ложное «порт свободен», а просит сначала выполнить `pause-supervisor.cmd`.
 
-Закрытие крышки должно быть настроено как **«Действие не требуется»**. `Run unattended` не отменяет настоящий сон Windows: оно лишь сохраняет Tailscale активным без вошедшего пользователя. Supervisor использует системный power request вместо имитации движений мыши.
+Если локальная копия должна работать постоянно, закрытие крышки настройте как
+**«Действие не требуется»**. Supervisor использует системный power request вместо
+имитации движений мыши.
 
 ### Полный рабочий режим — рекомендуется
 
@@ -133,22 +141,25 @@ start_all_comand.bat
 2. worker уведомлений;
 3. production-сборку frontend;
 4. единое приложение FastAPI на `:8001`;
-5. Tailscale Funnel;
-6. стандартное меню Telegram и webhook.
+5. локальную диагностику на `http://127.0.0.1:8001`.
 
-Не закрывайте окна Redis, Notifications и Backend. Отдельного окна Frontend в рабочем режиме теперь нет. Окно браузера Tailscale держать открытым не требуется.
+Не закрывайте окна Redis, Notifications и Backend. Отдельного окна Frontend в
+рабочем режиме нет.
 
 ### Базовый режим без фоновых уведомлений
 
 `start-all.cmd`
 
-Приложение и Telegram будут работать, но запланированные уведомления, фоновые таймеры и некоторые отложенные задачи требуют отдельно запущенных Redis и worker.
+Локальные API и интерфейс будут работать, но фоновые задачи требуют отдельно
+запущенных Redis и worker. Production Telegram продолжает использовать Timeweb.
 
 ### Локальная разработка
 
 `dev-local.cmd`
 
-Команда приостанавливает supervisor и запускает backend с автоперезагрузкой плюс Vite на `http://127.0.0.1:5173`, не обновляя Telegram и Funnel. После завершения разработки опубликуйте версию и снова включите supervisor:
+Команда приостанавливает supervisor и запускает backend с автоперезагрузкой плюс
+Vite на `http://127.0.0.1:5173`, не обновляя production или Telegram. После
+завершения локальной разработки соберите локальную версию:
 
 `publish-local.cmd`
 
@@ -158,15 +169,10 @@ start_all_comand.bat
 
 1. собирает frontend в `frontend/.dist-next`, копирует новые файлы в работающий `dist` до смены `index.html` и сохраняет ассеты восьми последних релизов;
 2. запускает FastAPI, который обслуживает API и готовый интерфейс на `:8001`;
-3. использует постоянный `*.ts.net` адрес Tailscale, проверяет его снаружи и при необходимости повторно включает Funnel;
-4. записывает его в `MINI_APP_URL`;
-5. перезапускает backend только если адрес в `.env` действительно изменился;
-6. убирает общий постоянный Menu Button `Open`, возвращая стандартное меню Telegram;
-7. убирает персональные overrides `Open` у всех Telegram-пользователей из базы;
-8. регистрирует webhook с событиями `message` и `callback_query`;
-9. не завершает подготовку Telegram, пока публичные `/` и `/health` не начали отвечать.
+3. не меняет `MINI_APP_URL`, production DNS или Telegram webhook.
 
-Настройка блокирует любые адреса, в имени которых присутствует `ngrok`.
+Production публикуется из GitHub в Timeweb App Platform. Локальная команда не
+является deployment для пользователей.
 
 ## 6. Telegram и старые кнопки
 
@@ -180,7 +186,9 @@ URL inline-кнопки хранится внутри конкретного Tel
 
 Новые приветствия, напоминания и уведомления получают текущий `MINI_APP_URL` автоматически.
 
-Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**, обновите её URL на текущий адрес из `scripts\tailscale-url.local.env` либо не используйте старую direct link. Основной скрипт возвращает стандартное меню Telegram; открытие приложения остаётся в актуальных inline-кнопках сообщений.
+Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**,
+обновите её URL на `https://app.filfitclub.ru`. Открытие приложения остаётся в
+актуальных inline-кнопках сообщений.
 
 Для принудительной синхронизации всех персональных кнопок:
 
@@ -212,7 +220,8 @@ cd <папка проекта>\backend
 <папка проекта>\status-notifications.cmd
 ```
 
-Полная проверка локальных сервисов, Funnel, webhook и стандартного меню Telegram:
+Полная проверка локальных сервисов, production-доменов, webhook и стандартного
+меню Telegram:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.ps1
@@ -227,62 +236,35 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.p
 Нормальный результат:
 
 - локальные `http://127.0.0.1:8001` и `http://127.0.0.1:8001/health` отвечают;
-- публичные `/` и `/health` отвечают `200`;
-- `MINI_APP_URL`, сохранённый Funnel URL и webhook совпадают, а Menu Button имеет стандартный тип `commands`/`default`, не `web_app`;
+- `https://app.filfitclub.ru/` и `https://api.filfitclub.ru/health` отвечают;
+- `MINI_APP_URL` равен `https://app.filfitclub.ru`, webhook указывает на
+  `https://api.filfitclub.ru/telegram/webhook`, а Menu Button имеет стандартный
+  тип `commands`/`default`, не `web_app`;
 - нигде нет `ngrok`;
 - webhook не содержит `last_error_message`.
 
 После этого в Telegram отправьте `/start`: постоянной кнопки `Open` возле поля ввода быть не должно, inline-кнопка под сообщением должна открывать приложение.
 
-GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Краткое переподключение Funnel не считается аварией сразу: probe выполняет до шести попыток с интервалом 15 секунд. Если HTTPS или ответ `{"status":"ok"}` так и не восстановились, проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
+GitHub Actions workflow `public-health-monitor.yml` проверяет
+`https://api.filfitclub.ru/health` каждые 15 минут. При переносе сервера можно
+задать repository variable `PUBLIC_HEALTH_URL`. Probe выполняет до шести попыток
+с интервалом 15 секунд; затем workflow становится failed.
 
-Если все шесть попыток завершаются `SSL_ERROR_SYSCALL`, а локальный
-`http://127.0.0.1:8001/health` отвечает, это не ошибка probe и не повод отключать
-monitor. Для установленного здесь Tailscale 1.98.10 подтверждена недоступность
-всех публичных Funnel ingress при исправной локальной прокси. В официальном
-changelog Tailscale 1.102.2 отдельно исправлена регрессия входящих Funnel-
-соединений; актуальная stable 1.102.3 включает это исправление. Откройте
-PowerShell **от имени администратора** и выполните:
-
-```powershell
-& 'C:\Program Files\Tailscale\tailscale.exe' update --track=stable --yes
-```
-
-Установщик может вернуть `exit status 1618`, если его дочерний MSI ещё работает
-или Windows Installer занят другой установкой. Это не означает потерю Tailscale-
-аккаунта. Подождите 30–60 секунд, затем в том же PowerShell администратора:
-
-```powershell
-Restart-Service Tailscale -Force
-Start-Sleep -Seconds 5
-& 'C:\Program Files\Tailscale\tailscale.exe' version
-& 'C:\Program Files\Tailscale\tailscale.exe' set --auto-update=true
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
-  .\scripts\start-tailscale-funnel.ps1 -Port 8001
-curl.exe --fail --show-error https://viacheslav-msk.tail7c8a5a.ts.net/health
-```
-
-Команда `version` должна показывать одинаковую версию CLI и daemon без
-предупреждения `client version != tailscaled server version`; версия должна быть
-не ниже 1.102.2, ответ — `{"status":"ok"}`. Проверяйте также
-с устройства без включённого Tailscale: внутри tailnet DNS ведёт прямо на узел и
-может скрыть неисправность публичного ingress. До обновления текущий monitor
-следует оставлять красным: зелёная проверка закрытого tailnet не доказывает
-доступность Mini App реальным пользователям.
+Если локальный `/health` отвечает, а production monitor красный, локальный
+supervisor проблему не исправит. Проверьте DNS-записи `app` и `api`, deployment,
+логи и healthcheck Timeweb по `TIMEWEB_DOMAIN_CUTOVER.md`.
 
 ## 8. Ежедневная работа
 
 После перезагрузки компьютера:
 
 1. убедитесь, что PostgreSQL работает;
-2. убедитесь, что Tailscale показывает состояние Connected;
-3. если supervisor установлен, выполните `supervisor-status.cmd`; вручную запускать стек после каждой перезагрузки не требуется;
-4. без supervisor запустите `start_all_comand.bat`;
-5. выполните `status.cmd` и при необходимости `device_ops_check.ps1`.
+2. если supervisor установлен, выполните `supervisor-status.cmd`; вручную запускать локальный стек после каждой перезагрузки не требуется;
+3. без supervisor при необходимости запустите `start_all_comand.bat`;
+4. выполните `status.cmd` и при необходимости `device_ops_check.ps1`.
 
-Сайт Tailscale открывать не нужно. Повторно входить требуется только после выхода из аккаунта, удаления устройства из tailnet или переустановки Tailscale.
-
-Отключите сон компьютера при работе от сети. При выключенном ПК публичный адрес сохранится, но приложение отвечать не будет.
+Tailscale и Cloudflare Tunnel для локальной разработки не требуются. Сон и
+выключение компьютера не влияют на production в Timeweb.
 
 ## 9. Остановка
 
@@ -292,7 +274,8 @@ curl.exe --fail --show-error https://viacheslav-msk.tail7c8a5a.ts.net/health
 <папка проекта>\stop-all.cmd
 ```
 
-Worker и Redis остановите закрытием их отдельных окон. Конфигурация Tailscale Funnel сохраняется и будет снова обслуживать приложение после следующего запуска FastAPI.
+Worker и Redis остановите закрытием их отдельных окон. Это не останавливает
+production в Timeweb.
 
 ## 10. Обновление проекта
 
@@ -327,10 +310,9 @@ npm.cmd run build
 |---|---|
 | Старое окно ngrok | Нажата кнопка в старом сообщении; отправьте `/start` и используйте новую кнопку |
 | Синяя кнопка ведёт не туда | Запустите `start-all.cmd`, затем `device_ops_check.ps1 -TelegramChatId ...` |
-| Публичный адрес не отвечает | Tailscale Connected, ПК не спит, приложение отвечает на `http://127.0.0.1:8001/health` |
-| На телефоне `ERR_CONNECTION_CLOSED`, после переподключения Tailscale всё работает | Соединение/Funnel Tailscale зависло. Supervisor повторно включает Funnel; также включите `Run unattended` |
-| Funnel не включается | Войдите в Tailscale, включите MagicDNS и подтвердите Enable Funnel |
-| `/start` молчит | Backend работает, webhook совпадает с `MINI_APP_URL/telegram/webhook` |
+| Публичный адрес не отвечает | DNS `app`/`api`, состояние и логи App Platform; локальный supervisor на это не влияет |
+| На телефоне `ERR_CONNECTION_CLOSED` | Проверьте HTTPS обоих доменов, SSL и логи приложения в Timeweb |
+| `/start` молчит | Webhook равен `https://api.filfitclub.ru/telegram/webhook`, API отвечает, webhook secret совпадает |
 | Кнопки добавок не работают | В webhook должны быть `message` и `callback_query` |
 | Нет уведомлений | Redis и Notifications worker должны работать |
 | Backend не стартует | Проверьте `DATABASE_URL`, PostgreSQL и окно Backend |
@@ -339,11 +321,58 @@ npm.cmd run build
 | `/start` пришёл, но на iPhone после **Open** нет `/auth/telegram` | Проверьте в access log запрос HTML/JS. Актуальный клиент умеет взять подписанный `tgWebAppData` из launch URL даже при задержке Telegram SDK; отсутствие даже `GET /` означает проблему открытия кнопки самим клиентом Telegram, а не backend-авторизацию |
 | После выключения всё недоступно | Для локального размещения это ожидаемо; нужен постоянно включённый ПК или облачный сервер |
 
-## 12. Безопасность
+## 12. Очистка места на локальном компьютере
+
+Сначала выполните только аудит — эта команда ничего не удаляет:
+
+```powershell
+Set-Location <папка проекта>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\cleanup-local.ps1
+```
+
+Обычная очистка удаляет только кэши Python/pytest, временную проверочную сборку,
+профили Lighthouse и архивные логи, которые не менялись более двух суток:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\cleanup-local.ps1 -Apply -OlderThanDays 2
+```
+
+Для ежедневного выполнения в 03:20 откройте PowerShell **от имени
+администратора** и установите задачу Windows один раз:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\install-local-cleanup-task.ps1
+```
+
+Автоматическая задача намеренно не использует `-Deep`. Глубокая очистка — только
+ручная одноразовая операция после просмотра dry-run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\cleanup-local.ps1 -Deep
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\cleanup-local.ps1 -Apply -Deep
+```
+
+Она дополнительно удаляет корневую дублирующую `.venv`, `frontend\node_modules`
+и запрещённый локальный ngrok. `node_modules` восстанавливается командой
+`npm.cmd ci` в `frontend`. Резервные копии не входят даже в глубокий режим:
+их полезность сначала проверяется вручную, а удаление выполняется точечно.
+
+Скрипт не удаляет `backend\.venv`, `.env*`, PostgreSQL/Redis runtime-данные,
+`tools\redis\dump.rdb`, `frontend\dist`, исходные GIF/миниатюры, миграции,
+активный набор `backups\exercises-dataset-src`, `backups\vps`, документацию и
+Git-историю. Резервные копии PostgreSQL удаляйте только вручную по принятой
+политике хранения — возраст файла сам по себе не доказывает, что копия не нужна.
+
+## 13. Безопасность
 
 - Не публикуйте `.env`, токены, JWT secret, SMTP-пароли и ключи AI.
 - Не отправляйте публично содержимое логов без проверки токенов и персональных данных.
 - Регулярно создавайте резервные копии PostgreSQL.
 - Не отключайте проверку Telegram initData или webhook secret.
 - Не открывайте PostgreSQL и Redis напрямую в интернет.
-- Публичным должен быть только HTTPS Funnel к единому приложению `:8001`.
+- PostgreSQL и Valkey Timeweb находятся в приватной сети; наружу опубликован
+  только контейнер приложения на управляемом HTTPS-домене.

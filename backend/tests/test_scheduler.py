@@ -184,6 +184,26 @@ async def test_overview_does_not_offer_a_performed_workout_as_missed() -> None:
 
 
 @pytest.mark.asyncio
+async def test_overview_marks_todays_completed_occurrence_and_advances_next() -> None:
+    completed = SimpleNamespace(
+        program_id=None,
+        title="Спина и грудь",
+        plan={"day_index": 2, "title": "Спина и грудь"},
+    )
+    session = AsyncMock()
+    session.scalar = AsyncMock(return_value=completed)
+    user = SimpleNamespace(id="user-1", goals=_schedule_goals())
+
+    overview = await get_schedule_overview(session, user, date(2026, 8, 21))
+
+    assert overview["current"]["status"] == "completed"
+    assert overview["current"]["title"] == "Спина и грудь"
+    assert overview["current"]["day_index"] == 2
+    assert overview["current"]["can_reschedule"] is False
+    assert overview["next"]["target_date"] == date(2026, 8, 24)
+
+
+@pytest.mark.asyncio
 async def test_reschedule_updates_only_one_occurrence(monkeypatch) -> None:
     goals = _schedule_goals()
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})

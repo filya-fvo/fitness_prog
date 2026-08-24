@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fitness"
     bot_token: str = "replace_with_telegram_bot_token"
     bot_username: str = ""  # e.g. fil_fit_bot — for Mini App deep links
-    # Public HTTPS Mini App front (Tailscale Funnel or production host).
+    # Permanent public HTTPS Mini App frontend.
     mini_app_url: str = ""
     # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
     telegram_webhook_secret: str = ""

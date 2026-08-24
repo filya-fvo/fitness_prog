@@ -126,6 +126,7 @@ export function HomePage() {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -141,6 +142,10 @@ export function HomePage() {
   }, [activeWorkout, sessionHasReplacements]);
 
   const todayProgram = recommended[0] ?? null;
+  const todayProgramCompleted = Boolean(
+    workoutSchedule?.current?.status === "completed" ||
+      (todayProgram && completedProgramIdsToday.includes(todayProgram.id)),
+  );
   const programCursor = useMemo(
     () => (todayProgram ? readProgramCursor(profileGoals, todayProgram) : null),
     [profileGoals, todayProgram],
@@ -262,13 +267,20 @@ export function HomePage() {
           setStreak(computeStreak(workouts));
           const completed = workouts.filter((w) => w.status === "completed");
           setCompletedCount(completed.length);
+          const today = progressLocalDate(new Date());
+          setCompletedProgramIdsToday(
+            Array.from(new Set(
+              completed
+                .filter((workout) => workout.scheduled_date === today && workout.program_id)
+                .map((workout) => String(workout.program_id)),
+            )),
+          );
           let latest: string | null = null;
           for (const w of completed) {
             const k = workoutDateKey(w);
             if (k && (!latest || k > latest)) latest = k;
           }
           if (latest) {
-            const today = progressLocalDate(new Date());
             const t0 = new Date(today + "T12:00:00");
             const t1 = new Date(latest + "T12:00:00");
             const diff = Math.max(0, Math.round((t0.getTime() - t1.getTime()) / 86400000));
@@ -632,6 +644,32 @@ export function HomePage() {
             <p className="text-center text-[11px] text-tg-hint">
               Чтобы выбрать другой день — сначала завершите текущую сессию.
             </p>
+          </div>
+        ) : todayProgram && todayProgramCompleted ? (
+          <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
+              <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
+                Тренировка выполнена
+              </p>
+              <p className="mt-1 break-words text-xs text-tg-hint [overflow-wrap:anywhere]">
+                {workoutSchedule?.current?.title || todayProgram.name}
+              </p>
+              <p className="mt-2 text-xs text-tg-hint">
+                Результат сохранён. Повторно начинать этот день программы не нужно.
+              </p>
+            </div>
+            <WorkoutSchedulePanel
+              overview={workoutSchedule}
+              disabled={!online || starting}
+              onChange={setWorkoutSchedule}
+            />
+            <Link
+              to="/progress"
+              className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+            >
+              Открыть прогресс
+            </Link>
           </div>
         ) : todayProgram ? (
           <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">

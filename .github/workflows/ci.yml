@@ -170,3 +170,5 @@ jobs:
           --build-arg VITE_API_URL=https://api.example.ru
           --build-arg VITE_BOT_USERNAME=fil_fit_bot
           -t fitness-web:ci ./frontend
+      - name: Build Timeweb App Platform image
+        run: docker build -t fitness-timeweb:ci .

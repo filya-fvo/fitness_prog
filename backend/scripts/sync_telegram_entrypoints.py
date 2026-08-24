@@ -28,7 +28,7 @@ def safe_public_url(raw: str) -> str:
     if parsed.scheme != "https" or not host:
         raise RuntimeError("MINI_APP_URL must be a valid HTTPS URL")
     if "ngrok" in host:
-        raise RuntimeError("ngrok URL is forbidden; configure Tailscale Funnel or a permanent host")
+        raise RuntimeError("ngrok URL is forbidden; configure a permanent host")
     return value
 
 

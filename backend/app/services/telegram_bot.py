@@ -493,7 +493,7 @@ async def send_admin_guide(
         content=content,
         caption=(
             "🔐 <b>Инструкция администратора Fitness Mini App</b>\n"
-            "Запуск, Tailscale Funnel, Telegram, проверки и диагностика."
+            "Локальный запуск, production VPS, Telegram и диагностика."
         ),
     )
 

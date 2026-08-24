@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Local dev helpers for fitness_prog (backend / frontend / Tailscale Funnel).
+  Local dev helpers for fitness_prog (backend / frontend / worker).
 
 .DESCRIPTION
   Dot-source once per terminal, then call functions:
@@ -184,7 +184,7 @@ function Stop-Frontend {
 }
 
 function Start-Ngrok {
-  throw "ngrok отключён: он создаёт устаревающие кнопки и показывает предупреждение. Используйте start-all.cmd и Tailscale Funnel."
+  throw "ngrok отключён. Production работает на VPS: https://app.filfitclub.ru."
 }
 
 function Start-Worker {
@@ -221,7 +221,7 @@ function Restart-FitnessStack {
 function Stop-FitnessStack {
   Stop-Backend
   Stop-Frontend
-  Write-FitnessOk "Stack stopped (Tailscale Funnel remains configured)"
+  Write-FitnessOk "Local stack stopped"
 }
 
 function Get-FitnessStatus {
@@ -250,14 +250,8 @@ function Get-FitnessStatus {
     }
   }
 
-  $urlFile = Join-Path $script:ScriptsDir "tailscale-url.local.env"
-  if (Test-Path $urlFile) {
-    Write-Host "  tunnel  Tailscale Funnel" -ForegroundColor Green
-    Write-Host "  saved   $urlFile" -ForegroundColor DarkGray
-    Get-Content $urlFile | ForEach-Object { Write-Host "          $_" -ForegroundColor DarkGray }
-  } else {
-    Write-Host "  tunnel  URL not configured" -ForegroundColor DarkYellow
-  }
+  Write-Host "  prod    https://app.filfitclub.ru" -ForegroundColor DarkGray
+  Write-Host "  api     https://api.filfitclub.ru" -ForegroundColor DarkGray
   Write-Host ""
 }
 
@@ -306,7 +300,7 @@ fitness_prog - local commands
 START
   Start-Backend [-Reload]     uvicorn 127.0.0.1:8001
   Start-Frontend              vite 0.0.0.0:5173
-  start-all.cmd               production build + app :8001 + Funnel + Telegram
+  start-all.cmd               local production build + app :8001
   dev-local.cmd               backend reload + Vite :5173 (supervisor paused)
   publish-local.cmd           build/publish + supervisor resume
   Start-Worker                arq reminders (Redis)
@@ -342,7 +336,7 @@ RAW copy-paste
 
 NOTES
   - DATABASE_URL: use 127.0.0.1 not localhost (Windows)
-  - Telegram WebApp URL = Tailscale Funnel HTTPS (FastAPI serves UI and API on :8001)
+  - Telegram WebApp URL = https://app.filfitclub.ru; webhook uses https://api.filfitclub.ru
   - Profile / calorie targets need backend restart after pulling energy code
   - Kill stuck port: Stop-FitnessPort -Port 8001
 

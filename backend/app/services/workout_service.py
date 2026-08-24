@@ -517,8 +517,31 @@ async def start_program_workout(
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
+    target_date = scheduled_date or date.today()
+    existing = await session.scalar(
+        select(Workout)
+        .where(
+            Workout.user_id == user.id,
+            Workout.program_id == program_id,
+            Workout.scheduled_date == target_date,
+            Workout.is_deleted.is_(False),
+        )
+        .order_by(Workout.created_at.desc())
+    )
+    if existing is not None:
+        if existing.status == "completed":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Тренировка по этой программе на сегодня уже выполнена",
+            )
+        return await _get_workout_for_user(
+            session,
+            workout_id=existing.id,
+            user_id=user.id,
+        )
+
     payload = WorkoutCreate(
-        scheduled_date=scheduled_date or date.today(),
+        scheduled_date=target_date,
         program_id=program_id,
         day_index=day_index,
         week_phase=week_phase,

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import shutil
-import sys
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -69,6 +68,13 @@ def main() -> int:
     print("has redis-cli:", cli.exists())
     if not server.exists():
         return 4
+
+    # Runtime needs the server and CLI only. Debug symbols, diagnostics and the
+    # downloaded archive add about 50 MB and can always be downloaded again.
+    for pattern in ("*.pdb", "redis-benchmark.exe", "redis-check-aof.exe", "redis-check-rdb.exe"):
+        for unused in DEST.glob(pattern):
+            unused.unlink(missing_ok=True)
+    ZIP_PATH.unlink(missing_ok=True)
 
     # minimal conf
     conf = DEST / "redis.windows.conf"

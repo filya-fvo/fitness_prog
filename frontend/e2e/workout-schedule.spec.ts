@@ -275,3 +275,122 @@ test("program exercises can be replaced and saved before workout start", async (
     replacements: [{ from_exercise_id: sourceId, to_exercise_id: targetId }],
   });
 });
+
+test("completed scheduled workout is not offered for a second start", async ({ page }) => {
+  const today = new Date();
+  const todayKey = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+  const next = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+  const nextKey = [
+    next.getFullYear(),
+    String(next.getMonth() + 1).padStart(2, "0"),
+    String(next.getDate()).padStart(2, "0"),
+  ].join("-");
+  let starts = 0;
+
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: USER_ID,
+      telegram_id: null,
+      username: "completed-user",
+      auth_email: "completed@example.test",
+      anthropometry: { sex: "male" },
+      goals: {
+        onboarding_completed: true,
+        active_program_id: PROGRAM_ID,
+        active_program_next_day: 3,
+        active_program_week_phase: "medium",
+      },
+      subscription_status: "free",
+      stars_balance: 0,
+      onboarding_completed: true,
+    }),
+  }));
+  await page.route(/\/programs(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        id: PROGRAM_ID,
+        name: "Силовая программа",
+        description: "Тест",
+        target_level: "intermediate",
+        duration_weeks: 8,
+        structure: { schedule: [{ day_index: 3, name: "Следующий день", exercises: [] }] },
+        workout_type: "strength",
+        level: "intermediate",
+        is_template: true,
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0, page: 1, page_size: 200 }),
+  }));
+  await page.route("**/workouts/history", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        id: "44444444-4444-4444-8444-444444444449",
+        user_id: USER_ID,
+        program_id: PROGRAM_ID,
+        scheduled_date: todayKey,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        title: "Выполненный день программы",
+        plan: { day_index: 2, exercises: [] },
+        sets: [],
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route("**/workouts/schedule/overview**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      requested_date: todayKey,
+      current: {
+        original_date: todayKey,
+        target_date: todayKey,
+        start_time: "06:15:00",
+        title: "Выполненный день программы",
+        program_id: PROGRAM_ID,
+        day_index: 2,
+        status: "completed",
+        is_override: false,
+        can_reschedule: false,
+        reschedule_until: null,
+      },
+      next: {
+        original_date: nextKey,
+        target_date: nextKey,
+        start_time: "06:15:00",
+        title: "Следующий день программы",
+        program_id: PROGRAM_ID,
+        day_index: 3,
+        status: "scheduled",
+        is_override: false,
+        can_reschedule: true,
+        reschedule_until: null,
+      },
+    }),
+  }));
+  await page.route(`**/programs/${PROGRAM_ID}/start`, (route) => {
+    starts += 1;
+    return route.fulfill({ status: 500 });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByText("Тренировка выполнена")).toBeVisible();
+  await expect(page.getByText("Выполненный день программы")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
+  await page.goto("/train");
+  await expect(page.getByText("Тренировка выполнена")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
+  expect(starts).toBe(0);
+});

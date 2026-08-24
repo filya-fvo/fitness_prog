@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// Empty/same-origin works with Vite dev proxy + a single Tailscale Funnel.
-// For split hosts set VITE_API_URL=https://api.example.com
+// Empty/same-origin works with the Vite dev proxy; production sets the API origin.
+// Production sets VITE_API_URL=https://api.filfitclub.ru
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 export const apiClient = axios.create({

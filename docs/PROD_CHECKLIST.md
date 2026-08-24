@@ -27,15 +27,17 @@ Use after P0–P3 code is in place and before inviting real users.
 
 ## Deploy / ops
 
-- [ ] VPS follows [VPS_DEPLOYMENT_GUIDE.md](./VPS_DEPLOYMENT_GUIDE.md); only 80/443 are public
-- [ ] Frontend HTTPS domain live (Caddy → compose `web`)
-- [ ] API HTTPS domain live, `/health` → `{"status":"ok"}`
-- [ ] PostgreSQL uses pinned pgvector/PostgreSQL 18 image; `vector` extension exists
-- [ ] Migrations service completed successfully before API/worker
-- [ ] Seed applied on prod DB
-- [ ] Arq worker running (if reminders needed)
-- [ ] PostgreSQL dump created by `scripts/backup_vps.sh`, copied off VPS and restore-tested
-- [ ] `docker compose down -v` is excluded from operational commands
+- [ ] Timeweb App Platform follows [TIMEWEB_DOMAIN_CUTOVER.md](./TIMEWEB_DOMAIN_CUTOVER.md)
+- [ ] One application replica uses the root `Dockerfile`, port 8000 and health path `/health`
+- [ ] `https://app.filfitclub.ru` returns 200
+- [ ] `https://api.filfitclub.ru/health` → `{"status":"ok"}`
+- [ ] PostgreSQL 18 DBaaS and Valkey are in the same private network as the app
+- [ ] PostgreSQL extensions `vector`, `pg_trgm`, `pgcrypto`, `uuid-ossp` exist
+- [ ] Logs show environment validation and migrations completed before API/worker
+- [ ] Versioned exercise/program/nutrition seed completed
+- [ ] ARQ worker is running (if reminders are needed)
+- [ ] Timeweb PostgreSQL backups are enabled and a restore has been tested
+- [ ] Old Cloudflare Tunnel is disabled only after at least 24 hours of stable production
 - [ ] Telegram Menu Button имеет стандартный тип `commands`/`default`, не `web_app`; inline Open из нового `/start` ведёт на prod URL
 - [ ] Scheduled workflow `Public health monitor` успешно проверяет публичный `/health`
 - [ ] Sentry DSN set (optional but recommended)
@@ -59,9 +61,9 @@ npm.cmd run test:e2e
 Публикация выполняется только через `npm.cmd run build:publish`; не копируйте
 проверочную сборку в `dist` вручную.
 
-После изменения backend вызовите `scripts\request-production-restart.ps1`.
-Supervisor отдельно перезапустит API и notification worker и проверит владельцев
-процессов перед остановкой.
+После отправки production-изменения в GitHub дождитесь успешной сборки и
+healthcheck в Timeweb App Platform. Локальный Windows supervisor не управляет
+production.
 
 ## Manual Telegram QA
 

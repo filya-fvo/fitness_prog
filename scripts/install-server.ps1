@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Installs system dependencies through Chocolatey, prepares backend/frontend,
-  applies migrations and seed content, configures Tailscale Funnel and Telegram.
+  applies migrations and seed content for local development and diagnostics.
   It does not install the Scheduled Task; run install-supervisor.cmd afterwards.
 
 .EXAMPLE
@@ -19,7 +19,6 @@ param(
   [switch]$SkipSystemPackages,
   [switch]$SkipDatabase,
   [switch]$SkipSeed,
-  [switch]$SkipTailscale,
   [switch]$NonInteractive
 )
 
@@ -33,7 +32,6 @@ $BackendEnvExample = Join-Path $BackendDir ".env.example"
 $VenvDir = Join-Path $BackendDir ".venv"
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 $VenvPip = Join-Path $VenvDir "Scripts\pip.exe"
-$UrlsFile = Join-Path $PSScriptRoot "tailscale-url.local.env"
 $TaskInstaller = Join-Path $Root "install-supervisor.cmd"
 $RebootRequired = $false
 
@@ -194,14 +192,6 @@ function Find-Psql {
   return ""
 }
 
-function Find-Tailscale {
-  $command = Get-Command tailscale.exe -ErrorAction SilentlyContinue
-  if ($command) { return $command.Source }
-  $installed = Join-Path $env:ProgramFiles "Tailscale\tailscale.exe"
-  if (Test-Path -LiteralPath $installed) { return $installed }
-  return ""
-}
-
 function Ensure-Chocolatey {
   $command = Get-Command choco.exe -ErrorAction SilentlyContinue
   if ($command) { return $command.Source }
@@ -255,7 +245,8 @@ if ($newEnvironment) {
     Set-EnvValue $BackendEnv "TELEGRAM_WEBHOOK_SECRET" (New-RandomSecret)
     Set-EnvValue $BackendEnv "ENVIRONMENT" "production"
     Set-EnvValue $BackendEnv "REDIS_URL" "redis://127.0.0.1:6379/0"
-    Set-EnvValue $BackendEnv "MINI_APP_URL" ""
+    Set-EnvValue $BackendEnv "MINI_APP_URL" "https://app.filfitclub.ru"
+    Set-EnvValue $BackendEnv "CORS_ORIGINS" "https://web.telegram.org,https://app.filfitclub.ru"
     $postgresPassword = New-RandomSecret 24
     Set-EnvValue $BackendEnv "DATABASE_URL" "postgresql+asyncpg://postgres:$postgresPassword@127.0.0.1:5432/fitness"
   }
@@ -320,11 +311,6 @@ if (-not $SkipSystemPackages) {
     Invoke-Native "Install Node.js LTS" $choco @("install", "nodejs-lts", "-y", "--no-progress")
     Refresh-ProcessPath
   } else { Ok "Node.js already installed" }
-
-  if (-not (Find-Tailscale) -and -not $SkipTailscale) {
-    Invoke-Native "Install Tailscale" $choco @("install", "tailscale", "-y", "--no-progress")
-    Refresh-ProcessPath
-  } elseif (-not $SkipTailscale) { Ok "Tailscale already installed" }
 
   if (-not $SkipDatabase -and -not (Find-Psql)) {
     $postgresArguments = @("install", "postgresql18", "-y", "--no-progress")
@@ -405,48 +391,6 @@ if (-not $SkipDatabase) {
 } else { Warn "Database migration and seed skipped" }
 
 Invoke-Native "Check backend import" $VenvPython @("-c", "import app.main; print('backend_import=OK')") $BackendDir
-
-if (-not $SkipTailscale) {
-  $tailscale = Find-Tailscale
-  if (-not $tailscale) {
-    if ($DryRun) { $tailscale = "tailscale.exe" }
-    else { Fail "Tailscale not found after installation" }
-  }
-  if (-not $DryRun) {
-    $tailscaleService = Get-Service -Name "Tailscale" -ErrorAction SilentlyContinue
-    if ($tailscaleService -and $tailscaleService.Status -ne "Running") { Start-Service Tailscale }
-    $status = $null
-    try { $status = (& $tailscale status --json 2>$null | Out-String | ConvertFrom-Json) } catch { }
-    if (-not $status -or $status.BackendState -ne "Running" -or -not $status.Self.Online) {
-      if ($NonInteractive) { Fail "Tailscale is installed but not logged in" }
-      Warn "Tailscale login is required. A browser authorization page may open."
-      & $tailscale up
-      if ($LASTEXITCODE -ne 0) { Fail "Tailscale login failed" }
-    }
-  }
-  Invoke-Step "Enable Tailscale unattended mode and Funnel" {
-    & $tailscale set --unattended=true
-    if ($LASTEXITCODE -ne 0) { Fail "Could not enable Tailscale unattended mode" }
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "start-tailscale-funnel.ps1") -Port 8001 -OutputFile $UrlsFile -Interactive
-    if ($LASTEXITCODE -ne 0) { Fail "Tailscale Funnel setup failed" }
-  }
-
-  if (-not $DryRun) {
-    $urlMap = Get-EnvMap $UrlsFile
-    $publicUrl = ([string]$urlMap["FRONTEND_PUBLIC_URL"]).TrimEnd("/")
-    if (-not $publicUrl.StartsWith("https://")) { Fail "Tailscale public URL was not created" }
-    Set-EnvValue $BackendEnv "MINI_APP_URL" $publicUrl
-    $currentCors = [string](Get-InstallerEnvMap)["CORS_ORIGINS"]
-    $cors = @($currentCors -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-    foreach ($origin in @("https://web.telegram.org", $publicUrl)) {
-      if ($origin -notin $cors) { $cors += $origin }
-    }
-    Set-EnvValue $BackendEnv "CORS_ORIGINS" ($cors -join ",")
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "setup_telegram_bot.ps1") -MiniAppUrl $publicUrl
-    if ($LASTEXITCODE -ne 0) { Fail "Telegram webhook/menu setup failed" }
-    Ok "Public URL prepared: $publicUrl"
-  }
-} else { Warn "Tailscale and Telegram public entrypoint setup skipped" }
 
 Write-Host ""
 Write-Host "=== INSTALLATION COMPLETE ===" -ForegroundColor Green

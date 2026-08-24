@@ -52,15 +52,21 @@ frontend/.dist-check/
 *.tsbuildinfo
 .cache/
 frontend/artifacts/
+frontend/test-results/
+frontend/playwright-report/
 
 # Local runtime state
 /tools/redis/dump.rdb
+/tools/redis-win.zip
+/tools/redis/*.pdb
+/tools/redis/redis-benchmark.exe
+/tools/redis/redis-check-aof.exe
+/tools/redis/redis-check-rdb.exe
 
 # Local tunnel URLs / ngrok secrets
 scripts/tunnel-urls.local.env
 scripts/ngrok-urls.local.env
 scripts/public-url.local.env
-scripts/tailscale-url.local.env
 scripts/ngrok.yml
 scripts/ngrok.yml.local
 _archive_candidates/**/local-secrets/
@@ -72,6 +78,7 @@ tools/ngrok/
 
 
 backups/
+/fordeleted/
 
 
 # Bot first-/start guide delivery markers

@@ -105,7 +105,10 @@ export function TrainHubPage() {
     const lvl = String(program?.level || program?.target_level || "");
     return lvl ? enumLabel(lvl) : "";
   })();
-  const plannedOccurrence = schedule?.current ?? schedule?.next ?? null;
+  const todayProgramCompleted = schedule?.current?.status === "completed";
+  const plannedOccurrence = todayProgramCompleted
+    ? schedule?.next ?? null
+    : schedule?.current ?? schedule?.next ?? null;
   const preparedDate = plannedOccurrence?.target_date ?? localDateKey();
   const preparedDayIndex = plannedOccurrence?.day_index ?? dayIndex;
 
@@ -171,6 +174,10 @@ export function TrainHubPage() {
 
   async function startToday() {
     if (!program || starting) return;
+    if (todayProgramCompleted) {
+      setError("Сегодняшняя тренировка программы уже выполнена.");
+      return;
+    }
     if (canResume && resumeId) {
       navigate(`/workouts/active/${resumeId}`);
       return;
@@ -293,6 +300,29 @@ export function TrainHubPage() {
             >
               Продолжить
             </button>
+          </div>
+        ) : program && todayProgramCompleted ? (
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Моя программа</p>
+            <p className="mt-1 text-base font-semibold">Тренировка выполнена</p>
+            <p className="mt-1 text-xs text-tg-hint">
+              {schedule?.current?.title || programDayLabel(program.name)} — результат сохранён.
+            </p>
+            <Link
+              to="/progress"
+              className="mt-3 block min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+            >
+              Открыть прогресс
+            </Link>
+            {plannedOccurrence ? (
+              <PlannedWorkoutEditor
+                programId={program.id}
+                scheduledDate={preparedDate}
+                dayIndex={preparedDayIndex}
+                weekPhase={weekPhase}
+                disabled={!isOnline()}
+              />
+            ) : null}
           </div>
         ) : program ? (
           <div className="rounded-2xl bg-tg-secondary p-4">

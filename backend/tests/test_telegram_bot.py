@@ -124,7 +124,7 @@ def test_extract_supplement_callback_query() -> None:
 
 
 def test_build_mini_app_open_url_routes() -> None:
-    base = "https://fitness-pc.example.ts.net"
+    base = "https://fitness.example.com"
     home = build_mini_app_open_url(base, startapp="home")
     assert home.startswith(f"{base}/?startapp=home&_fv=")
     assert build_mini_app_open_url(base, startapp="profile").startswith(f"{base}/profile")
@@ -138,7 +138,7 @@ def test_build_mini_app_open_url_routes() -> None:
 def test_water_keyboard_can_log_or_open_daily_checkin() -> None:
     keyboard = water_intake_keyboard(
         bot_username="fil_fit_bot",
-        mini_app_url="https://fitness-pc.example.ts.net",
+        mini_app_url="https://fitness.example.com",
     )
     rows = keyboard["inline_keyboard"]
     assert rows[0][0]["callback_data"] == "wa:250"
@@ -153,12 +153,12 @@ def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
         bot_username="fil_fit_bot",
         startapp="workout_abc",
         button_text="Open",
-        mini_app_url="https://fitness-pc.example.ts.net",
+        mini_app_url="https://fitness.example.com",
     )
     btn = kb["inline_keyboard"][0][0]
     assert btn["text"] == "Open"
     assert "web_app" in btn
-    assert btn["web_app"]["url"].startswith("https://fitness-pc.example.ts.net/workouts/active/abc")
+    assert btn["web_app"]["url"].startswith("https://fitness.example.com/workouts/active/abc")
     assert "_fv=" in btn["web_app"]["url"]
 
 
@@ -176,14 +176,14 @@ def test_mini_app_keyboard_fallback_tme_without_url() -> None:
 
 def test_open_web_app_keyboard() -> None:
     kb = open_web_app_keyboard(
-        mini_app_url="https://fitness-pc.example.ts.net",
+        mini_app_url="https://fitness.example.com",
         button_text="Open",
         startapp="home",
     )
     assert kb is not None
     btn = kb["inline_keyboard"][0][0]
     assert btn["text"] == "Open"
-    assert btn["web_app"]["url"].startswith("https://fitness-pc.example.ts.net/?")
+    assert btn["web_app"]["url"].startswith("https://fitness.example.com/?")
     assert "startapp=home" in btn["web_app"]["url"]
     assert "_fv=" in btn["web_app"]["url"]
 
@@ -210,7 +210,7 @@ def test_bot_commands_reply_keyboard_has_start_help() -> None:
 
 
 def test_bot_commands_reply_keyboard_never_duplicates_open_button() -> None:
-    settings = Settings(mini_app_url="https://fitness-pc.example.ts.net")
+    settings = Settings(mini_app_url="https://fitness.example.com")
     kb = bot_commands_reply_keyboard(settings)
     flat = [button["text"] for row in kb["keyboard"] for button in row]
     assert flat == ["/start", "/help"]
@@ -231,10 +231,10 @@ def test_start_welcome_uses_first_name_variable() -> None:
 def test_start_welcome_mentions_email_link_and_browser_url() -> None:
     text = start_welcome_text(
         first_name="Rom",
-        mini_app_url="https://fitness-pc.example.ts.net",
+        mini_app_url="https://fitness.example.com",
         include_guide_hint=True,
     )
-    assert "https://fitness-pc.example.ts.net" in text
+    assert "https://fitness.example.com" in text
     assert "обычном браузере" in text
     assert "docs/USER_GUIDE" not in text
     assert "Open" in text

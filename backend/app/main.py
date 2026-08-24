@@ -120,6 +120,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# The public local-production mode uses one process and one Tailscale Funnel:
-# FastAPI serves both the JSON API and the pre-built Vite application.
+# Local Windows and the combined Timeweb image use one process to serve both the
+# JSON API and the pre-built Vite application. The optional VPS stack may still
+# use a separate web container.
 register_frontend(app, Path(__file__).resolve().parents[2] / "frontend" / "dist")

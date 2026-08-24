@@ -2,13 +2,15 @@
 param(
   [string]$ApiBase = "http://127.0.0.1:8001",
   [string]$FeBase = "http://127.0.0.1:8001",
+  [string]$PublicApiBase = "https://api.filfitclub.ru",
+  [string]$PublicAppBase = "https://app.filfitclub.ru",
+  [switch]$SkipPublic,
   [long]$TelegramChatId = 0
 )
 
 $ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot
 $BackendEnv = Join-Path $Root "backend\.env"
-$UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
 $fail = 0
 
 function Read-DotEnvValue([string]$Path, [string]$Key) {
@@ -57,23 +59,25 @@ if ($mini -and $mini.StartsWith("https://") -and $mini -notmatch "(?i)ngrok") {
   Bad "MINI_APP_URL must be HTTPS and must not use ngrok"
 }
 if ($smtpHost -and $smtpUser -and $smtpPass) { Ok "SMTP host/user/pass present" } else { Info "SMTP incomplete - OTP may use dev_log" }
-if ($whSecret) { Ok "TELEGRAM_WEBHOOK_SECRET set" } else { Bad "TELEGRAM_WEBHOOK_SECRET empty for public Funnel" }
+if ($whSecret) { Ok "TELEGRAM_WEBHOOK_SECRET set" } else { Bad "TELEGRAM_WEBHOOK_SECRET empty" }
 
-Sec "Tailscale Funnel"
-$savedPublic = Read-DotEnvValue $UrlsFile "FRONTEND_PUBLIC_URL"
-if ($savedPublic -and $savedPublic -like "https://*.ts.net") {
-  Ok ("saved Funnel URL: " + $savedPublic)
-  if ($mini.TrimEnd("/") -eq $savedPublic.TrimEnd("/")) { Ok "MINI_APP_URL matches Funnel" } else { Bad "MINI_APP_URL differs from saved Funnel URL" }
-  try {
-    $public = Invoke-WebRequest -Uri $savedPublic -UseBasicParsing -TimeoutSec 15
-    if ($public.StatusCode -eq 200 -and $public.Content -notmatch "(?i)ngrok") { Ok "public frontend status=200, no ngrok page" } else { Bad "public frontend returned unexpected content" }
-    $health = Invoke-RestMethod -Uri ($savedPublic.TrimEnd("/") + "/health") -TimeoutSec 15
-    if ($health.status -eq "ok") { Ok "public /health=ok" } else { Bad "public /health is not ok" }
-  } catch {
-    Bad ("public Funnel URL unavailable: " + $_.Exception.Message)
-  }
+Sec "Production domains"
+if ($SkipPublic) {
+  Info "public checks skipped"
 } else {
-  Bad "scripts\tailscale-url.local.env missing or invalid"
+  if ($mini.TrimEnd("/") -eq $PublicAppBase.TrimEnd("/")) { Ok "MINI_APP_URL matches production app" } else { Bad "MINI_APP_URL differs from production app URL" }
+  try {
+    $public = Invoke-WebRequest -Uri $PublicAppBase -UseBasicParsing -TimeoutSec 15
+    if ($public.StatusCode -eq 200) { Ok "production frontend status=200" } else { Bad "production frontend returned unexpected status" }
+  } catch {
+    Bad ("production frontend unavailable: " + $_.Exception.Message)
+  }
+  try {
+    $health = Invoke-RestMethod -Uri ($PublicApiBase.TrimEnd("/") + "/health") -TimeoutSec 15
+    if ($health.status -eq "ok") { Ok "production API /health=ok" } else { Bad "production API /health is not ok" }
+  } catch {
+    Bad ("production API unavailable: " + $_.Exception.Message)
+  }
 }
 
 Sec "Telegram Bot API"
@@ -89,8 +93,8 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     $wh = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getWebhookInfo") -TimeoutSec 10
     if ($wh.ok) {
       $u = [string]$wh.result.url
-      $expectedWebhook = $mini.TrimEnd("/") + "/telegram/webhook"
-      if ($u -eq $expectedWebhook) { Ok ("webhook URL matches MINI_APP_URL: " + $u) } elseif ($u) { Bad ("webhook URL mismatch: " + $u) } else { Bad "webhook URL EMPTY - /start will not reach API" }
+      $expectedWebhook = $PublicApiBase.TrimEnd("/") + "/telegram/webhook"
+      if ($u -eq $expectedWebhook) { Ok ("webhook URL matches production API: " + $u) } elseif ($u) { Bad ("webhook URL mismatch: " + $u) } else { Bad "webhook URL EMPTY - /start will not reach API" }
       $le = [string]$wh.result.last_error_message
       if ($le) { Bad ("webhook last_error: " + $le) } else { Ok "webhook no last_error_message" }
       Info ("pending_update_count=" + $wh.result.pending_update_count)

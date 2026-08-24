@@ -15,9 +15,6 @@ $RestartWorkerRequest = Join-Path $LogDir "restart-worker.request"
 $StartAll = Join-Path $Root "scripts\start-all.ps1"
 $StartRedis = Join-Path $Root "scripts\start-redis.ps1"
 $StartNotifications = Join-Path $Root "scripts\start-notifications.ps1"
-$Tailscale = Join-Path $env:ProgramFiles "Tailscale\tailscale.exe"
-$UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
-$BackendEnv = Join-Path $Root "backend\.env"
 $BackendPort = 8001
 $PublicPort = $BackendPort
 $FailureThreshold = 2
@@ -44,27 +41,16 @@ function Write-SupervisorLog([string]$Message, [string]$Level = "INFO") {
 
 function Write-SupervisorHeartbeat(
   [bool]$LocalOk,
-  [bool]$PublicOk,
   [bool]$RedisOk,
   [bool]$WorkerOk
 ) {
   $payload = @{
     updated_at_utc = [DateTime]::UtcNow.ToString("o")
     local_ok = $LocalOk
-    public_ok = $PublicOk
     redis_ok = $RedisOk
     worker_ok = $WorkerOk
   } | ConvertTo-Json -Compress
   Set-Content -LiteralPath $HeartbeatFile -Value $payload -Encoding utf8
-}
-
-function Read-DotEnvValue([string]$Path, [string]$Key) {
-  if (-not (Test-Path -LiteralPath $Path)) { return "" }
-  $line = Get-Content -LiteralPath $Path -Encoding utf8 |
-    Where-Object { $_ -match ("^\s*" + [regex]::Escape($Key) + "\s*=") } |
-    Select-Object -First 1
-  if (-not $line) { return "" }
-  return (($line -split "=", 2)[1]).Trim().Trim('"').Trim("'")
 }
 
 function Test-Http([string]$Url, [int]$TimeoutSeconds = 8) {
@@ -118,7 +104,7 @@ function Ensure-LocalStack {
   $frontendOk = Test-Http "http://127.0.0.1:$PublicPort" 3
   if (-not $backendOk -or -not $frontendOk) {
     Write-SupervisorLog "Local production app unhealthy (health=$backendOk frontend=$frontendOk); starting API/UI" "WARN"
-    Start-HiddenPowerShell $StartAll @("-SkipTunnel", "-SkipTelegram", "-SkipBuild")
+    Start-HiddenPowerShell $StartAll @("-SkipBuild")
     Start-Sleep -Seconds 15
   }
 
@@ -192,34 +178,6 @@ function Invoke-RequestedWorkerRestart {
   }
 }
 
-function Ensure-Tailscale {
-  if (-not (Test-Path -LiteralPath $Tailscale)) {
-    Write-SupervisorLog "Tailscale executable not found" "ERROR"
-    return $false
-  }
-  try {
-    $status = (& $Tailscale status --json 2>$null | Out-String | ConvertFrom-Json)
-    if ($status.BackendState -ne "Running" -or -not $status.Self.Online) {
-      Write-SupervisorLog "Tailscale offline; restarting service" "WARN"
-      Restart-Service -Name Tailscale -Force -ErrorAction Stop
-      Start-Sleep -Seconds 5
-      & $Tailscale up --timeout=20s 2>&1 | Out-Null
-    }
-    & $Tailscale set --unattended=true 2>&1 | Out-Null
-    & $Tailscale funnel --bg $PublicPort 2>&1 | Out-Null
-    return $LASTEXITCODE -eq 0
-  } catch {
-    Write-SupervisorLog "Tailscale recovery failed: $($_.Exception.Message)" "ERROR"
-    return $false
-  }
-}
-
-function Get-PublicUrl {
-  $url = Read-DotEnvValue $UrlsFile "FRONTEND_PUBLIC_URL"
-  if (-not $url) { $url = Read-DotEnvValue $BackendEnv "MINI_APP_URL" }
-  return $url.Trim().TrimEnd("/")
-}
-
 function Prevent-SystemSleep {
   Add-Type -TypeDefinition @"
 using System;
@@ -235,15 +193,11 @@ public static class FitnessPowerRequest {
 
 Prevent-SystemSleep
 Write-SupervisorLog "Supervisor started; interval=${IntervalSeconds}s"
-$publicFailures = 0
 $localFailures = 0
 
 # Do not wait for two failed monitoring cycles after boot. The first task start
 # must bring up the complete stack immediately on a freshly installed server.
 Ensure-LocalStack
-if (-not (Test-Http "$(Get-PublicUrl)/health" 12)) {
-  [void](Ensure-Tailscale)
-}
 
 while ($true) {
   try {
@@ -265,24 +219,7 @@ while ($true) {
     if (-not $redisOk -or -not $workerOk) {
       Ensure-LocalStack
     }
-    $publicUrl = Get-PublicUrl
-    $publicOk = $publicUrl.StartsWith("https://") -and (Test-Http "$publicUrl/health" 12)
-    if ($publicOk) {
-      if ($publicFailures -gt 0) { Write-SupervisorLog "Public endpoint recovered: $publicUrl" }
-      $publicFailures = 0
-    } else {
-      $publicFailures++
-      Write-SupervisorLog "Public health failed ($publicFailures/$FailureThreshold): $publicUrl" "WARN"
-      if ($publicFailures -ge $FailureThreshold) {
-        [void](Ensure-Tailscale)
-        Start-Sleep -Seconds 8
-        if ($publicUrl -and (Test-Http "$publicUrl/health" 12)) {
-          Write-SupervisorLog "Public endpoint recovered after Tailscale/Funnel repair"
-          $publicFailures = 0
-        }
-      }
-    }
-    Write-SupervisorHeartbeat $localOk $publicOk $redisOk $workerOk
+    Write-SupervisorHeartbeat $localOk $redisOk $workerOk
   } catch {
     Write-SupervisorLog "Supervisor cycle error: $($_.Exception.Message)" "ERROR"
   }

@@ -8,7 +8,8 @@ Media comes from **[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldr
 - Metadata clone: `backups/exercises-dataset-src/`
 - Active GIFs: `frontend/public/exercise-gifs/`
 - Static first frames for lists: `frontend/public/exercise-thumbnails/`
-- Old local semantic GIFs archived under `backups/exercise-gifs-archive-*`
+- Исторические `backups/exercise-gifs-archive-*` не нужны приложению после
+  проверки актуального каталога и могут удаляться глубокой локальной очисткой.
 
 ## How the app shows media
 

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      PUBLIC_HEALTH_URL: ${{ vars.PUBLIC_HEALTH_URL || 'https://viacheslav-msk.tail7c8a5a.ts.net/health' }}
+      PUBLIC_HEALTH_URL: ${{ vars.PUBLIC_HEALTH_URL || 'https://api.filfitclub.ru/health' }}
     steps:
       - name: Probe public application
         shell: bash

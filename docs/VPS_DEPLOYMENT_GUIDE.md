@@ -3,11 +3,14 @@
 Актуальность цен и команд: **23 августа 2026 года**. Эта инструкция рассчитана
 на Ubuntu 24.04 LTS, Docker Compose и два постоянных HTTPS-имени:
 
-- `app.example.ru` — React/PWA;
-- `api.example.ru` — FastAPI и Telegram webhook.
+- `app.filfitclub.ru` — React/PWA;
+- `api.filfitclub.ru` — FastAPI и Telegram webhook.
 
-Заменяйте эти имена своим доменом. Не используйте IP-адрес или временный URL в
-`MINI_APP_URL`: Telegram, CORS, PWA и Web Push привязаны к HTTPS-origin.
+Точный cutover для панели Timeweb, хранение API-токена и действия в GitHub:
+[`TIMEWEB_DOMAIN_CUTOVER.md`](TIMEWEB_DOMAIN_CUTOVER.md). API-токен Timeweb
+обычному deployment не требуется; сервер забирает код по read-only deploy key.
+Не используйте IP-адрес или временный URL в `MINI_APP_URL`: Telegram, CORS, PWA
+и Web Push привязаны к HTTPS-origin.
 
 ## 1. Какой VPS купить
 
@@ -48,8 +51,8 @@ Ubuntu 24.04 без платной панели управления. Цена �
 ```text
 Internet :80/:443
         ↓
-      Caddy  ── app.example.ru ── Nginx/React
-        └──── api.example.ru ──── FastAPI
+      Caddy  ── app.filfitclub.ru ── Nginx/React
+        └──── api.filfitclub.ru ──── FastAPI
                                       ├── PostgreSQL 18 + pgvector
                                       └── Redis 7.4 ← ARQ worker
 ```
@@ -266,7 +269,8 @@ git status --short
 
 ## 8. DNS
 
-В DNS-панели создайте две записи без старого CNAME на Funnel:
+В Timeweb Cloud привяжите оба поддомена к production VPS. Это создаст две
+эквивалентные записи:
 
 ```text
 A  app  VPS_IP
@@ -280,8 +284,8 @@ A  api  VPS_IP
 Проверьте с Windows после распространения DNS:
 
 ```powershell
-Resolve-DnsName app.example.ru
-Resolve-DnsName api.example.ru
+Resolve-DnsName app.filfitclub.ru
+Resolve-DnsName api.filfitclub.ru
 ```
 
 Обе записи должны показывать `VPS_IP`. Выпуск сертификата Caddy требует доступных
@@ -309,11 +313,11 @@ nano backend/.env.production
 
 ```env
 ENVIRONMENT=production
-APP_DOMAIN=app.example.ru
-API_DOMAIN=api.example.ru
+APP_DOMAIN=app.filfitclub.ru
+API_DOMAIN=api.filfitclub.ru
 ACME_EMAIL=your-real-email@example.ru
-MINI_APP_URL=https://app.example.ru
-VITE_API_URL=https://api.example.ru
+MINI_APP_URL=https://app.filfitclub.ru
+VITE_API_URL=https://api.filfitclub.ru
 VITE_BOT_USERNAME=fil_fit_bot
 
 POSTGRES_USER=fitness
@@ -321,7 +325,7 @@ POSTGRES_PASSWORD=ОДНО_И_ТО_ЖЕ_HEX_ЗНАЧЕНИЕ
 POSTGRES_DB=fitness
 DATABASE_URL=postgresql+asyncpg://fitness:ОДНО_И_ТО_ЖЕ_HEX_ЗНАЧЕНИЕ@db:5432/fitness
 
-CORS_ORIGINS=https://web.telegram.org,https://app.example.ru
+CORS_ORIGINS=https://web.telegram.org,https://app.filfitclub.ru
 EMAIL_OTP_DEV_RETURN_CODE=false
 ```
 
@@ -468,23 +472,23 @@ docker compose --env-file backend/.env.production run --rm api \
 
 ## 12. Telegram и GitHub monitor
 
-Когда `https://api.example.ru/health` уже отвечает, зарегистрируйте новый
+Когда `https://api.filfitclub.ru/health` уже отвечает, зарегистрируйте новый
 webhook и обновите Menu Button всех связанных пользователей:
 
 ```bash
 docker compose --env-file backend/.env.production run --rm api \
   python scripts/sync_telegram_entrypoints.py \
-  --webhook-base https://api.example.ru
+  --webhook-base https://api.filfitclub.ru
 ```
 
-Ожидаются новый `WEBHOOK=https://api.example.ru/telegram/webhook`, нулевой
+Ожидаются новый `WEBHOOK=https://api.filfitclub.ru/telegram/webhook`, нулевой
 `WEBHOOK_LAST_ERROR` и разумное число `CHAT_MENUS_UPDATED`. Не используйте
 `--send-welcome-all` без отдельного решения: это массовая рассылка.
 
 В GitHub → **Settings → Secrets and variables → Actions → Variables** задайте:
 
 ```text
-PUBLIC_HEALTH_URL=https://api.example.ru/health
+PUBLIC_HEALTH_URL=https://api.filfitclub.ru/health
 ```
 
 Запустите workflow **Public health monitor** вручную. После смены этой переменной
@@ -493,8 +497,8 @@ PUBLIC_HEALTH_URL=https://api.example.ru/health
 ## 13. Полная проверка после запуска
 
 ```bash
-curl --fail --silent --show-error https://api.example.ru/health
-curl --fail --silent --show-error -I https://app.example.ru/
+curl --fail --silent --show-error https://api.filfitclub.ru/health
+curl --fail --silent --show-error -I https://app.filfitclub.ru/
 
 docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 docker compose --env-file backend/.env.production exec -T db psql \
@@ -583,7 +587,7 @@ docker compose --env-file backend/.env.production run --rm api \
   python scripts/seed_prod_content.py
 docker compose --env-file backend/.env.production run --rm api \
   python scripts/seed_nutrition.py
-curl --fail --silent --show-error https://api.example.ru/health
+curl --fail --silent --show-error https://api.filfitclub.ru/health
 docker compose --env-file backend/.env.production ps -a
 ```
 

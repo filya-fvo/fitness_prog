@@ -63,13 +63,18 @@ OpenAI. Допустим локальный rule-based ответ без вне�
 
 ### Инфраструктура
 
-- Локальный публичный режим: FastAPI отдаёт API и `frontend/dist`, HTTPS даёт
-  Tailscale Funnel. Ngrok запрещён и отбрасывается кодом.
-- VPS production: Ubuntu 24.04 + Docker Compose; Caddy публикует отдельные
-  frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API и Nginx остаются
-  во внутренней Docker-сети. Полный порядок — `docs/VPS_DEPLOYMENT_GUIDE.md`.
-- Production-манифесты: `render.yaml`, `docker-compose.yml`, Dockerfile каждого
-  приложения.
+- Локальный Windows-режим: FastAPI отдаёт API и `frontend/dist` только на
+  `127.0.0.1:8001`; он предназначен для разработки и локальной проверки. Ngrok,
+  Cloudflare Tunnel и Tailscale Funnel не входят в production runtime-схему.
+- Основной production: Timeweb App Platform собирает корневой `Dockerfile`; один
+  контейнер обслуживает React/FastAPI на порту 8000 и запускает ARQ worker.
+  Данные находятся в Timeweb DBaaS PostgreSQL 18 с
+  pgvector и Valkey в одной приватной сети. Порядок —
+  `docs/TIMEWEB_DOMAIN_CUTOVER.md`.
+- Ubuntu VPS + Docker Compose/Caddy сохраняется как альтернативный вариант и
+  описан в `docs/VPS_DEPLOYMENT_GUIDE.md`.
+- Production-манифесты: `deploy/timeweb/`, `render.yaml`, `docker-compose.yml` и
+  Dockerfile каждого отдельного приложения.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
   `DATABASE_URL`; SQL-схема версионируется в `supabase/migrations/`.
   `tools/redis/dump.rdb` — локальный runtime-снимок Redis, не PostgreSQL;
@@ -143,10 +148,16 @@ services → SQLAlchemy models → PostgreSQL
 ### Данные и операции
 
 - `supabase/migrations/` — append-only миграции PostgreSQL.
-- `scripts/` — Windows/local/server/supervisor/Tailscale/Redis команды.
+- корневой `Dockerfile` и `deploy/timeweb/` — production-образ App Platform,
+  совместный запуск API/worker и безопасный шаблон переменных без секретов.
+- `scripts/` — Windows/local/server/supervisor/Tailscale/Redis команды;
+  `cleanup-local.ps1` безопасно чистит восстанавливаемые локальные артефакты,
+  а `install-local-cleanup-task.ps1` ставит ежедневную очистку старше двух суток.
 - `.github/workflows/ci.yml` — обязательные автоматические проверки.
 - `artifacts/` и `frontend/artifacts/` — результаты проверок, не runtime source.
 - `backups/` — резервные копии; не редактировать и не считать исходниками.
+  Исключение: `backups/exercises-dataset-src` — входные данные media rebuild,
+  поэтому локальная очистка обязана его сохранять.
 
 ## 6. Куда идти за изменением
 
@@ -320,14 +331,33 @@ cd backend
 Не запускать mutating seed/reset/rebuild против production без явного поручения,
 backup и dry-run, если он предусмотрен.
 
+### Локальная очистка
+
+```powershell
+# Dry-run по умолчанию; удаление только после просмотра списка.
+.\scripts\cleanup-local.ps1
+.\scripts\cleanup-local.ps1 -Apply -OlderThanDays 2
+
+# Ручное удаление также восстанавливаемых зависимостей и локального ngrok.
+.\scripts\cleanup-local.ps1 -Deep
+.\scripts\cleanup-local.ps1 -Apply -Deep
+```
+
+Плановая задача ставится через `scripts/install-local-cleanup-task.ps1` и не
+использует `-Deep`. Не расширяйте очистку на `.env*`, базы/runtime Redis,
+`backend/.venv`, `frontend/dist`, `frontend/public`, `supabase`, документацию,
+`backups/vps` или `backups/exercises-dataset-src`.
+
 ## 10. Активная документация
 
 - `README.md` — обзор и быстрые ссылки.
 - `RUN.md` — короткий локальный запуск.
 - `docs/USER_GUIDE.md` — инструкция пользователя.
-- `docs/LOCAL_ADMIN_GUIDE.md` — Windows/Tailscale/supervisor/диагностика.
-- `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
-  перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
+- `docs/LOCAL_ADMIN_GUIDE.md` — локальный Windows/supervisor/диагностика.
+- `docs/TIMEWEB_DOMAIN_CUTOVER.md` — основной production в Timeweb App Platform,
+  DBaaS, секреты, GitHub, DNS `filfitclub.ru` и отключение прежнего Tunnel.
+- `docs/VPS_DEPLOYMENT_GUIDE.md` — альтернативный VPS-вариант: Ubuntu/Docker,
+  GitHub deploy key, перенос PostgreSQL, HTTPS, backup и диагностика.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
 - `docs/ADMIN_AI_MODEL_RUNBOOK.md` — Groq-модели и диагностика ИИ.
 - `docs/PROD_CHECKLIST.md` — выпуск.
@@ -384,4 +414,4 @@ backup и dry-run, если он предусмотрен.
 
 Ручной device QA обязателен перед релизом для Telegram-свайпа назад, системной
 камеры, PWA install/update, push-уведомлений и поведения при реальном обрыве
-Tailscale/сети. Автотест не заменяет эти проверки; он лишь сокращает их объём.
+сети. Автотест не заменяет эти проверки; он лишь сокращает их объём.

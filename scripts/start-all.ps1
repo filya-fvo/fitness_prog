@@ -1,10 +1,7 @@
 #Requires -Version 5.1
-# Full local launch: backend + frontend + Tailscale Funnel + Telegram webhook.
+# Full local launch: backend + built frontend. Production runs on the VPS.
 # Entry point: <project>\start-all.cmd
 param(
-  [switch]$SkipTunnel,
-  [switch]$SkipNgrok,
-  [switch]$SkipTelegram,
   [switch]$SkipBuild,
   [switch]$Development,
   [switch]$Reload
@@ -21,9 +18,6 @@ $BackendPort = 8001
 $FrontendPort = 5173
 $PublicPort = $BackendPort
 $Uvicorn = Join-Path $BackendDir ".venv\Scripts\uvicorn.exe"
-$SetupTg = Join-Path $ScriptsDir "setup_telegram_bot.ps1"
-$StartTailscale = Join-Path $ScriptsDir "start-tailscale-funnel.ps1"
-$UrlsOut = Join-Path $ScriptsDir "tailscale-url.local.env"
 $DevPs1 = Join-Path $ScriptsDir "dev.ps1"
 
 function Info([string]$m) { Write-Host "[start-all] $m" -ForegroundColor Cyan }
@@ -222,97 +216,7 @@ if ($Development) {
   Ok "Production app OK http://127.0.0.1:$PublicPort"
 }
 
-$publicUrl = ""
-$skipPublicTunnel = $SkipTunnel -or $SkipNgrok
-if ($Development) { $skipPublicTunnel = $true }
-
-# --- public HTTPS through Tailscale Funnel ---
-if (-not $skipPublicTunnel) {
-  if (-not (Test-Path -LiteralPath $StartTailscale)) {
-    Warn "scripts\start-tailscale-funnel.ps1 not found - skip tunnel"
-  } else {
-    try {
-      $saved = Read-DotEnv $UrlsOut
-      if ($saved["TUNNEL_PROVIDER"] -eq "tailscale" -and $saved["FRONTEND_PUBLIC_URL"] -like "https://*.ts.net") {
-        $publicUrl = [string]$saved["FRONTEND_PUBLIC_URL"]
-        Info "Using saved Tailscale Funnel: $publicUrl"
-      }
-      # A reachable saved URL is not sufficient: it can still point to an old
-      # Vite port. Explicitly re-assert the production target on every publish.
-      Info "Ensuring Tailscale Funnel target -> :$PublicPort (UAC prompt)..."
-      $arguments = @(
-        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $StartTailscale,
-        "-Port", [string]$PublicPort, "-OutputFile", $UrlsOut
-      )
-      $funnel = Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Verb RunAs -Wait -PassThru
-      if ($funnel.ExitCode -ne 0) { throw "Funnel setup exited with code $($funnel.ExitCode)" }
-      $saved = Read-DotEnv $UrlsOut
-      $publicUrl = [string]$saved["FRONTEND_PUBLIC_URL"]
-    } catch {
-      Warn "Tailscale Funnel not ready: $($_.Exception.Message)"
-      Warn "Open Tailscale, log in once, then run start-all.cmd again."
-      $publicUrl = ""
-    }
-
-    if ($publicUrl -like "https://*") {
-      Info "Waiting for public HTTPS readiness..."
-      if (-not (Wait-Http $publicUrl 60)) {
-        throw "Public Funnel did not become reachable: $publicUrl"
-      }
-      $publicHealth = "$publicUrl/health"
-      if (-not (Wait-Http $publicHealth 30)) {
-        throw "Public health endpoint did not become ready: $publicHealth"
-      }
-      Ok "Public HTTPS ready: $publicUrl"
-      $beEnv = Join-Path $BackendDir ".env"
-      if (Test-Path -LiteralPath $beEnv) {
-        $currentBackendEnv = Read-DotEnv $beEnv
-        if ([string]$currentBackendEnv["MINI_APP_URL"] -ne $publicUrl) {
-          $raw = Get-Content -LiteralPath $beEnv -Raw
-          if ($raw -match "(?m)^\s*MINI_APP_URL\s*=") {
-            $raw = [regex]::Replace($raw, "(?m)^\s*MINI_APP_URL\s*=.*$", "MINI_APP_URL=$publicUrl")
-          } else {
-            if (-not $raw.EndsWith("`n")) { $raw += "`r`n" }
-            $raw += "MINI_APP_URL=$publicUrl`r`n"
-          }
-          Set-Content -LiteralPath $beEnv -Value $raw -Encoding utf8
-          Info "Updated backend\.env MINI_APP_URL; restarting backend once..."
-          Stop-Port $BackendPort "backend"
-          $be2 = "Set-Location -LiteralPath '$BackendDir'; & '$Uvicorn' app.main:app --host 127.0.0.1 --port $BackendPort"
-          Start-PsWindow "BACKEND uvicorn :$BackendPort (env reload)" $be2
-          if (-not (Wait-Http "http://127.0.0.1:$BackendPort/health" 45)) {
-            Die "Backend did not recover after MINI_APP_URL update"
-          }
-          Ok "Backend reloaded"
-        } else {
-          Ok "backend\.env MINI_APP_URL already matches Funnel"
-        }
-      }
-    } else {
-      Warn "Tailscale HTTPS URL not detected. Local app remains available."
-    }
-  }
-}
-
-# --- telegram ---
-if ((-not $SkipTelegram) -and (-not $skipPublicTunnel) -and $publicUrl) {
-  if (Test-Path -LiteralPath $SetupTg) {
-    Info "Configuring Telegram standard menu + /start webhook..."
-    try {
-      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SetupTg -MiniAppUrl $publicUrl
-      if ($LASTEXITCODE -ne 0) { throw "setup_telegram_bot.ps1 exited with code $LASTEXITCODE" }
-      Ok "Telegram setup done"
-    } catch {
-      Warn "Telegram setup failed: $($_.Exception.Message)"
-      Warn "Retry later: scripts\setup_telegram_bot.ps1"
-    }
-  }
-}
-
 # --- summary ---
-$bot = Get-EnvVal "BOT_USERNAME"
-if (-not $bot) { $bot = "your_bot" }
-
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Magenta
 Write-Host "  fitness_prog is running" -ForegroundColor Magenta
@@ -324,14 +228,8 @@ if ($Development) {
   Write-Host "  Local app   : http://127.0.0.1:$PublicPort"
   Write-Host "  Health      : http://127.0.0.1:$BackendPort/health"
 }
-if ($publicUrl) {
-  Write-Host "  Telegram URL: $publicUrl" -ForegroundColor Green
-  Write-Host "  Tunnel      : Tailscale Funnel (stable HTTPS, no warning page)"
-  Write-Host ""
-  Write-Host "  Telegram: open @$bot -> /start -> inline Open" -ForegroundColor Green
-} else {
-  Write-Host "  Browser only (no public tunnel)" -ForegroundColor Yellow
-}
+Write-Host "  Production  : https://app.filfitclub.ru" -ForegroundColor Green
+Write-Host "  Public API  : https://api.filfitclub.ru" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Status : $Root\status.cmd"
 Write-Host "  Stop   : $Root\stop-all.cmd"

@@ -60,18 +60,8 @@ Register-ScheduledTask `
   -Trigger $triggers `
   -Settings $settings `
   -Principal $principal `
-  -Description "Keeps Fitness Mini App, Redis, notifications and Tailscale Funnel available." `
+  -Description "Keeps the local Fitness Mini App, Redis and notifications available." `
   -Force | Out-Null
-
-$tailscale = Join-Path $env:ProgramFiles "Tailscale\tailscale.exe"
-if (Test-Path -LiteralPath $tailscale) {
-  & $tailscale set --unattended=true
-  if ($LASTEXITCODE -ne 0) {
-    Write-Warning "Task installed, but Tailscale Run unattended could not be enabled automatically."
-  } else {
-    Write-Host "[OK] Tailscale Run unattended enabled" -ForegroundColor Green
-  }
-}
 
 Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 3
