@@ -3,6 +3,29 @@ import { z } from "zod";
 import { apiClient } from "@/api/client";
 import type { Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 
+const workoutPlanSchema = z.object({
+  title: z.string().nullable().optional(),
+  workout_type: z.string().nullable().optional(),
+  day_index: z.number().nullable().optional(),
+  week_phase: z.string().nullable().optional(),
+  week_in_cycle: z.number().nullable().optional(),
+  week_label: z.string().nullable().optional(),
+  week_rir: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  equipment: z.array(z.string()).default([]),
+  limitations: z.array(z.string()).default([]),
+  exercises: z.array(z.object({
+    exercise_id: z.string().uuid(),
+    order: z.number(),
+    target_sets: z.number(),
+    target_reps: z.string().nullable().optional(),
+    rest_sec: z.number().nullable().optional(),
+    name_ru: z.string().nullable().optional(),
+    suggested_weight: z.union([z.number(), z.string()]).nullable().optional(),
+    original_exercise_id: z.string().uuid().nullable().optional(),
+  })),
+});
+
 const setSchema = z.object({
   id: z.string().uuid(),
   workout_id: z.string().uuid(),
@@ -110,6 +133,7 @@ export async function createWorkout(input: {
   title?: string | null;
   workoutType?: string | null;
   setsPerExercise?: number;
+  plan?: WorkoutPlan | null;
 }): Promise<Workout> {
   const { data } = await apiClient.post("/workouts", {
     client_workout_id: input.clientWorkoutId ?? null,
@@ -120,6 +144,7 @@ export async function createWorkout(input: {
     title: input.title ?? null,
     workout_type: input.workoutType ?? null,
     sets_per_exercise: input.setsPerExercise ?? 3,
+    plan: input.plan ?? null,
   });
   return mapWorkout(workoutSchema.parse(data));
 }
@@ -245,4 +270,43 @@ export async function rescheduleWorkout(input: {
     target_time: input.targetTime,
   });
   return scheduleOverviewSchema.parse(data);
+}
+
+export type PlannedWorkoutPlanInput = {
+  programId: string;
+  scheduledDate: string;
+  dayIndex: number;
+  weekPhase?: "light" | "medium" | "heavy" | null;
+};
+
+export async function fetchPlannedWorkoutPlan(
+  input: PlannedWorkoutPlanInput,
+): Promise<WorkoutPlan> {
+  const { data } = await apiClient.get("/workouts/planned-plan", {
+    params: {
+      program_id: input.programId,
+      scheduled_date: input.scheduledDate,
+      day_index: input.dayIndex,
+      week_phase: input.weekPhase ?? undefined,
+    },
+  });
+  return workoutPlanSchema.parse(data) as WorkoutPlan;
+}
+
+export async function savePlannedWorkoutPlan(
+  input: PlannedWorkoutPlanInput & {
+    replacements: Array<{ fromExerciseId: string; toExerciseId: string }>;
+  },
+): Promise<WorkoutPlan> {
+  const { data } = await apiClient.put("/workouts/planned-plan", {
+    program_id: input.programId,
+    scheduled_date: input.scheduledDate,
+    day_index: input.dayIndex,
+    week_phase: input.weekPhase ?? null,
+    replacements: input.replacements.map((item) => ({
+      from_exercise_id: item.fromExerciseId,
+      to_exercise_id: item.toExerciseId,
+    })),
+  });
+  return workoutPlanSchema.parse(data) as WorkoutPlan;
 }

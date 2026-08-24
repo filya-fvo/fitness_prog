@@ -10,6 +10,7 @@ from app.models.program import Program
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
+from app.models.workout_plan_override import WorkoutPlanOverride
 
 __all__ = [
     "User",
@@ -18,6 +19,7 @@ __all__ = [
     "Program",
     "Workout",
     "WorkoutSet",
+    "WorkoutPlanOverride",
     "NutritionProduct",
     "NutritionLog",
     "AIConversation",

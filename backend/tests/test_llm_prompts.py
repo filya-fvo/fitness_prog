@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 
+from app.ai.prompts import SYSTEM_TRAINER
 from app.services.ai_engine import _rule_based_reply
 
 RAG = (
@@ -71,3 +72,10 @@ def test_twenty_fixed_prompts_have_safe_keywords() -> None:
 def test_knee_prompt_mentions_doctor_boundary() -> None:
     reply = _rule_based_reply("Почему болят колени?", RAG)
     assert "врач" in reply.lower()
+
+
+def test_target_weight_timeline_is_explicitly_non_guaranteed() -> None:
+    prompt = SYSTEM_TRAINER.lower()
+    assert "желаемого веса" in prompt
+    assert "без гарантии" in prompt
+    assert "не выдумывай темп" in prompt

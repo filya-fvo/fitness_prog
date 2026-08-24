@@ -1363,19 +1363,9 @@ export function DailyLog() {
               className="w-full rounded-xl bg-tg-secondary px-4 py-2.5 text-sm text-tg-hint disabled:opacity-60"
             >
               Удалить запись
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setBarcodeFallback(null);
-                setScannerOpen(true);
-              }}
-              className="w-full rounded-xl px-3 py-2 text-xs text-tg-link"
-            >
-              Сканировать ещё раз
             </button>
           </div>
+        </div>
       ) : null}
 
       {customOpen ? (

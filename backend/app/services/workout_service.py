@@ -24,6 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
+from app.services import planned_workout
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -293,6 +294,76 @@ async def build_plan_from_program_day(
     }
 
 
+async def build_program_plan_for_user(
+    session: AsyncSession,
+    user: User,
+    program: Program,
+    *,
+    day_index: int,
+    scheduled_date: date,
+    week_phase: str | None,
+    include_saved_override: bool = True,
+    consume_saved_override: bool = False,
+) -> dict[str, Any]:
+    started_raw = (user.goals or {}).get("active_program_started_at")
+    started_at: date | None = None
+    if isinstance(started_raw, str) and len(started_raw) >= 10:
+        try:
+            started_at = date.fromisoformat(started_raw[:10])
+        except ValueError:
+            started_at = None
+    active_id = str((user.goals or {}).get("active_program_id") or "")
+    if active_id and active_id != str(program.id):
+        started_at = scheduled_date
+    elif started_at is None:
+        started_at = scheduled_date
+    plan = await build_plan_from_program_day(
+        session,
+        program,
+        day_index,
+        program_started_at=started_at,
+        today=scheduled_date,
+        week_phase=week_phase,
+    )
+    if not include_saved_override:
+        return plan
+    return await planned_workout.apply_saved_override(
+        session,
+        user_id=user.id,
+        program_id=program.id,
+        scheduled_date=scheduled_date,
+        day_index=day_index,
+        base_plan=plan,
+        consume=consume_saved_override,
+    )
+
+
+async def preview_program_plan(
+    session: AsyncSession,
+    user: User,
+    *,
+    program_id: uuid.UUID,
+    day_index: int,
+    scheduled_date: date,
+    week_phase: str | None,
+    include_saved_override: bool = True,
+) -> dict[str, Any]:
+    program = await session.scalar(
+        select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
+    )
+    if program is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+    return await build_program_plan_for_user(
+        session,
+        user,
+        program,
+        day_index=day_index,
+        scheduled_date=scheduled_date,
+        week_phase=week_phase,
+        include_saved_override=include_saved_override,
+    )
+
+
 async def _plan_from_exercise_ids(
     session: AsyncSession,
     *,
@@ -371,25 +442,14 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             item.setdefault("name_ru", ex_map[eid].name_ru)
     elif program is not None and (data.day_index is not None or not data.exercise_ids):
         day_index = data.day_index or 1
-        started_raw = (user.goals or {}).get("active_program_started_at")
-        started_at: date | None = None
-        if isinstance(started_raw, str) and len(started_raw) >= 10:
-            try:
-                started_at = date.fromisoformat(started_raw[:10])
-            except ValueError:
-                started_at = None
-        active_id = str((user.goals or {}).get("active_program_id") or "")
-        if active_id and active_id != str(program.id):
-            started_at = data.scheduled_date
-        elif started_at is None:
-            started_at = data.scheduled_date
-        plan = await build_plan_from_program_day(
+        plan = await build_program_plan_for_user(
             session,
+            user,
             program,
-            day_index,
-            program_started_at=started_at,
-            today=data.scheduled_date,
-            week_phase=getattr(data, "week_phase", None),
+            day_index=day_index,
+            scheduled_date=data.scheduled_date,
+            week_phase=data.week_phase,
+            consume_saved_override=True,
         )
     elif data.exercise_ids:
         plan = await _plan_from_exercise_ids(

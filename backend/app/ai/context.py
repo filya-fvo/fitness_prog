@@ -30,6 +30,21 @@ def _number(value: Decimal | int | float | None) -> str:
     return text.rstrip("0").rstrip(".") if "." in text else text
 
 
+def _profile_context(goals: dict, anthropometry: dict) -> str:
+    return (
+        f"Профиль: цель={goals.get('primary_goal') or 'не указана'}, "
+        f"уровень={goals.get('level') or 'не указан'}, "
+        f"вес={anthropometry.get('weight_kg') or 'не указан'} кг, "
+        f"желаемый вес={goals.get('target_weight_kg') or 'не указан'} кг, "
+        f"активность={goals.get('activity_level') or anthropometry.get('activity_level') or 'не указана'}, "
+        f"тренировок в неделю={goals.get('days_per_week') or 'не указано'}, "
+        f"коррекция калорий={goals.get('calorie_adjustment_pct') if goals.get('calorie_adjustment_pct') is not None else 'не указана'}%, "
+        f"место={goals.get('location') or 'не указано'}, "
+        f"оборудование={_list_text(goals.get('equipment'))}, "
+        f"ограничения={_list_text(goals.get('limitations'))}."
+    )
+
+
 async def _active_program(session: AsyncSession, user: User) -> Program | None:
     raw_id = str((user.goals or {}).get("active_program_id") or "")
     try:
@@ -147,14 +162,7 @@ async def build_application_context(session: AsyncSession, user: User) -> str:
     lines = [
         "ДАННЫЕ ПРИЛОЖЕНИЯ — единственный источник правды о пользователе:",
         f"Пользователь: {user.username or 'без имени'}.",
-        (
-            f"Профиль: цель={goals.get('primary_goal') or 'не указана'}, "
-            f"уровень={goals.get('level') or 'не указан'}, "
-            f"вес={anthropometry.get('weight_kg') or 'не указан'} кг, "
-            f"место={goals.get('location') or 'не указано'}, "
-            f"оборудование={_list_text(goals.get('equipment'))}, "
-            f"ограничения={_list_text(goals.get('limitations'))}."
-        ),
+        _profile_context(goals, anthropometry),
         *_program_context(program, goals),
     ]
 

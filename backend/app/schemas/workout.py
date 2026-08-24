@@ -50,6 +50,19 @@ class WorkoutCreate(BaseModel):
     sets_per_exercise: int = Field(default=3, ge=1, le=10)
 
 
+class PlannedWorkoutReplacement(BaseModel):
+    from_exercise_id: uuid.UUID
+    to_exercise_id: uuid.UUID
+
+
+class PlannedWorkoutPlanRequest(BaseModel):
+    program_id: uuid.UUID
+    scheduled_date: date
+    day_index: int = Field(..., ge=1)
+    week_phase: str | None = Field(default=None, pattern=r"^(light|medium|heavy)$")
+    replacements: list[PlannedWorkoutReplacement] = Field(default_factory=list, max_length=50)
+
+
 class WorkoutCompleteRequest(BaseModel):
     rpe: int | None = Field(default=None, ge=1, le=10)
     ai_notes: str | None = None

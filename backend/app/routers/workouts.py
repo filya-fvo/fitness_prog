@@ -19,6 +19,7 @@ from app.schemas.scheduler import (
     WorkoutScheduleOverview,
 )
 from app.schemas.workout import (
+    PlannedWorkoutPlanRequest,
     WorkoutCompleteRequest,
     WorkoutCreate,
     WorkoutHistoryResponse,
@@ -28,6 +29,7 @@ from app.schemas.workout import (
     WorkoutSetResponse,
     WorkoutUpdateRequest,
 )
+from app.services import planned_workout
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_service
@@ -111,6 +113,54 @@ async def reschedule_workout_occurrence(
         target_time=body.target_time,
     )
     return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.get("/planned-plan", response_model=WorkoutPlan)
+async def planned_workout_plan(
+    program_id: uuid.UUID,
+    scheduled_date: date,
+    day_index: int = Query(..., ge=1),
+    week_phase: str | None = Query(default=None, pattern=r"^(light|medium|heavy)$"),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutPlan:
+    plan = await workout_service.preview_program_plan(
+        session,
+        user,
+        program_id=program_id,
+        day_index=day_index,
+        scheduled_date=scheduled_date,
+        week_phase=week_phase,
+    )
+    return WorkoutPlan.model_validate(plan)
+
+
+@router.put("/planned-plan", response_model=WorkoutPlan)
+async def save_planned_workout_plan(
+    body: PlannedWorkoutPlanRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutPlan:
+    base_plan = await workout_service.preview_program_plan(
+        session,
+        user,
+        program_id=body.program_id,
+        day_index=body.day_index,
+        scheduled_date=body.scheduled_date,
+        week_phase=body.week_phase,
+        include_saved_override=False,
+    )
+    plan = await planned_workout.save_override(
+        session,
+        user_id=user.id,
+        program_id=body.program_id,
+        scheduled_date=body.scheduled_date,
+        day_index=body.day_index,
+        week_phase=body.week_phase,
+        base_plan=base_plan,
+        replacements=body.replacements,
+    )
+    return WorkoutPlan.model_validate(plan)
 
 
 @router.get("/{workout_id}", response_model=WorkoutResponse)

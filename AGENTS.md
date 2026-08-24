@@ -1,6 +1,6 @@
 # AGENTS.md — карта и правила Fitness Mini App
 
-Обновлено: 2026-08-20. Этот файл — первая точка входа для любого агента,
+Обновлено: 2026-08-24. Этот файл — первая точка входа для любого агента,
 который меняет проект. Он описывает фактическую архитектуру по текущему коду,
 а не первоначальный план разработки.
 
@@ -109,7 +109,8 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/services/scheduler.py` — постоянные тренировочные дни, разовые
   переносы и окно до следующей тренировки; `workout_notifications.py` — расчёт
   workout-reminder; `workout_shift.py` — изолированный legacy API массового
-  сдвига уже созданных тренировок.
+  сдвига уже созданных тренировок; `planned_workout.py` — подготовленные до
+  старта замены упражнений, применяемые к конкретной дате программы.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
 - `backend/app/ai/prompts.py` и `services/ai_engine.py` — системные инструкции,
   контекст, Groq и очистка вывода модели.
@@ -127,6 +128,8 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/features/` — feature pages/components/hooks.
 - `frontend/src/pages/` — общие страницы: Главная, Ещё, справка, админ.
 - `frontend/src/db/syncQueue.ts` — IndexedDB, очередь и снимок активной сессии.
+- `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` — замены
+  упражнений на будущую дату без запуска таймера тренировки.
 - `frontend/src/store/` — Zustand runtime state.
 - `frontend/src/utils/` — чистые правила; рядом размещать `*.test.ts`.
 - `frontend/src/lib/telegram.ts` — Telegram SDK, BackButton, deep links.
@@ -151,7 +154,7 @@ services → SQLAlchemy models → PostgreSQL
 |---|---|---|---|
 | Авторизация Telegram/browser | `Shell.tsx`, `EmailLoginForm.tsx`, `api/auth.ts` | `routers/auth.py`, `auth_service.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth, frontend serving, Telegram bot, browser E2E |
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts` | `daily_metrics` router/schema/service/model, migration 17 | daily metrics + habits tests |
-| Тренировки и автопереход | `ActiveWorkout.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, workout models | load progression, session, completion, recovery E2E |
+| Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
 | Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx` | `exercises.py`, `exercise_service.py`, seed, rebuild/audit/thumbnail scripts | media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |

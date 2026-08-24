@@ -32,12 +32,12 @@ export function OfflineBanner() {
     }
   }, []);
 
-  const runFlush = useCallback(async () => {
+  const runFlush = useCallback(async (retryFailed = false) => {
     if (flushingRef.current || !isOnline()) return;
     flushingRef.current = true;
     setSyncing(true);
     try {
-      await flushSyncQueue();
+      await flushSyncQueue(undefined, { retryFailed });
       await refresh();
     } finally {
       flushingRef.current = false;
@@ -50,10 +50,10 @@ export function OfflineBanner() {
     const onOffline = () => setOnline(false);
     const onOnline = () => {
       setOnline(true);
-      void runFlush();
+      void runFlush(true);
     };
     void refresh();
-    if (isOnline()) void runFlush();
+    if (isOnline()) void runFlush(true);
 
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -108,7 +108,7 @@ export function OfflineBanner() {
         <button
           type="button"
           disabled={syncing}
-          onClick={() => void runFlush()}
+          onClick={() => void runFlush(true)}
           className="rounded-lg bg-tg-button px-2.5 py-1 text-[11px] font-medium text-tg-button-text disabled:opacity-60"
         >
           {syncing ? "Отправляем…" : "Повторить сейчас"}

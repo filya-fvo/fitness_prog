@@ -22,7 +22,7 @@ import { trackEvent } from "@/lib/analytics";
 import { getTelegramWebApp, isTelegramEnvironment } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
-import type { Exercise, LocalSetDraft, Workout } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Workout, WorkoutPlan } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 import { enumLabel } from "@/utils/localization";
 import {
@@ -38,7 +38,7 @@ import {
   resolveWeekPhase,
   type ExerciseHistoryBest,
 } from "@/utils/loadProgression";
-import { toUserMessage } from "@/utils/errors";
+import { isRetryableApiError, toUserMessage } from "@/utils/errors";
 
 const CATALOG_PAGE_SIZE = 20;
 const CATALOG_UI_KEY = "fitness_catalog_ui_v1";
@@ -261,62 +261,61 @@ export function WorkoutCatalogPage() {
 
       let workout: Workout;
       let serverId: string | null = null;
-
-      if (isOnline() && getStoredToken()) {
-        workout = await createWorkout({
-          clientWorkoutId: clientId,
+      const title = `Своя · ${activeTemplate.label}`;
+      const selectedPlan: WorkoutPlan = {
+        title,
+        workout_type: "custom",
+        exercises: selectedExercises.map((item, idx) => ({
+          exercise_id: item.id,
+          order: idx + 1,
+          target_sets: activeTemplate.sets,
+          target_reps: activeTemplate.reps,
+          rest_sec: activeTemplate.restSec,
+          name_ru: item.name_ru,
+        })),
+      };
+      const localWorkout = (): Workout => ({
+        ...makeLocalWorkout(user?.id ?? ""),
+        id: clientId,
+        title,
+        workout_type: "custom",
+        plan: selectedPlan,
+      });
+      const queueCreate = async () => enqueueSync({
+        type: "create_workout",
+        clientWorkoutId: clientId,
+        payload: {
           scheduledDate: todayISO(),
           exerciseIds,
-          title: `Своя · ${activeTemplate.label}`,
+          programId: null,
+          title,
           workoutType: "custom",
           setsPerExercise: activeTemplate.sets,
-        });
-        // enrich local plan targets for UI even if server plan exists
-        workout = {
-          ...workout,
-          plan: {
-            title: workout.title || `Своя · ${activeTemplate.label}`,
-            workout_type: "custom",
-            exercises: selectedExercises.map((item, idx) => ({
-              exercise_id: item.id,
-              order: idx + 1,
-              target_sets: activeTemplate.sets,
-              target_reps: activeTemplate.reps,
-              rest_sec: activeTemplate.restSec,
-              name_ru: item.name_ru,
-            })),
-          },
-        };
-        serverId = workout.id;
-        await rememberWorkoutId(clientId, workout.id);
-      } else {
-        workout = {
-          ...makeLocalWorkout(user?.id ?? ""),
-          id: clientId,
-          title: `Своя · ${activeTemplate.label}`,
-          workout_type: "custom",
-          plan: {
-            title: `Своя · ${activeTemplate.label}`,
-            workout_type: "custom",
-            exercises: selectedExercises.map((item, idx) => ({
-              exercise_id: item.id,
-              order: idx + 1,
-              target_sets: activeTemplate.sets,
-              target_reps: activeTemplate.reps,
-              rest_sec: activeTemplate.restSec,
-              name_ru: item.name_ru,
-            })),
-          },
-        };
-        await enqueueSync({
-          type: "create_workout",
-          clientWorkoutId: clientId,
-          payload: {
+          plan: selectedPlan,
+        },
+      });
+
+      if (isOnline() && getStoredToken()) {
+        try {
+          workout = await createWorkout({
+            clientWorkoutId: clientId,
             scheduledDate: todayISO(),
             exerciseIds,
-            programId: null,
-          },
-        });
+            title,
+            workoutType: "custom",
+            setsPerExercise: activeTemplate.sets,
+            plan: selectedPlan,
+          });
+          serverId = workout.id;
+          await rememberWorkoutId(clientId, workout.id);
+        } catch (err) {
+          if (!isRetryableApiError(err)) throw err;
+          workout = localWorkout();
+          await queueCreate();
+        }
+      } else {
+        workout = localWorkout();
+        await queueCreate();
       }
 
       await saveLocalSession({

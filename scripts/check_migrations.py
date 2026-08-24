@@ -30,6 +30,7 @@ REQUIRED_FILES = [
     "20260820000019_plank_animation.sql",
     "20260820000020_normalize_nutrition_product_names.sql",
     "20260823000021_restore_local_embedding_to_vector.sql",
+    "20260824000022_workout_plan_overrides.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -46,6 +47,7 @@ REQUIRED_TABLES = [
     "web_push_subscriptions",
     "daily_metrics",
     "body_measurements",
+    "workout_plan_overrides",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -67,6 +69,8 @@ REQUIRED_SNIPPETS = [
     "/exercise-gifs/2135-VBAWRPG.gif",
     "ALTER COLUMN embedding TYPE vector(1536)",
     "cardinality(embedding) <> 1536",
+    "uq_workout_plan_overrides_slot",
+    "ck_workout_plan_overrides_replacements_array",
 ]
 
 

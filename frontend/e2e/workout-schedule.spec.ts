@@ -117,3 +117,161 @@ test("one workout can be moved without changing the recurring schedule", async (
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
 });
+
+test("program exercises can be replaced and saved before workout start", async ({ page }) => {
+  const sourceId = "44444444-4444-4444-8444-444444444441";
+  const targetId = "44444444-4444-4444-8444-444444444442";
+  let savedPayload: Record<string, unknown> | null = null;
+  const profile = {
+    id: USER_ID,
+    telegram_id: null,
+    username: "prepare-user",
+    auth_email: "prepare@example.test",
+    anthropometry: { sex: "male" },
+    goals: {
+      onboarding_completed: true,
+      active_program_id: PROGRAM_ID,
+      active_program_next_day: 1,
+      active_program_week_phase: "medium",
+    },
+    subscription_status: "free",
+    stars_balance: 0,
+    onboarding_completed: true,
+  };
+  const plan = {
+    title: "Спина · Средняя",
+    workout_type: "strength",
+    day_index: 1,
+    week_phase: "medium",
+    equipment: ["machines"],
+    limitations: [],
+    exercises: [{
+      exercise_id: sourceId,
+      order: 1,
+      target_sets: 3,
+      target_reps: "8-12",
+      rest_sec: 90,
+      name_ru: "Тяга верхнего блока",
+    }],
+  };
+  const exercises = [
+    {
+      id: sourceId,
+      name_ru: "Тяга верхнего блока",
+      muscle_group: "Спина",
+      equipment: "Тренажёр",
+      description: null,
+      technique: null,
+      common_mistakes: null,
+      difficulty: 2,
+      video_url: null,
+      animation_url: null,
+      thumbnail_url: null,
+      media_duration_sec: null,
+      media_source: "none",
+      tags: [],
+    },
+    {
+      id: targetId,
+      name_ru: "Подтягивания в тренажёре",
+      muscle_group: "Спина",
+      equipment: "Тренажёр",
+      description: null,
+      technique: null,
+      common_mistakes: null,
+      difficulty: 2,
+      video_url: null,
+      animation_url: null,
+      thumbnail_url: null,
+      media_duration_sec: null,
+      media_source: "none",
+      tags: [],
+    },
+  ];
+
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(profile),
+  }));
+  await page.route(/\/programs(?:\?|$)/, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        id: PROGRAM_ID,
+        name: "Спина 1",
+        description: "Тест",
+        target_level: "intermediate",
+        duration_weeks: 8,
+        structure: { schedule: [{ day_index: 1, name: "Спина", exercises: [{ exercise_id: sourceId }] }] },
+        workout_type: "strength",
+        level: "intermediate",
+        is_template: true,
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route(/\/exercises(?:\?|$)/, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: exercises, total: 2, page: 1, page_size: 200 }),
+  }));
+  await page.route("**/workouts/history", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+  await page.route("**/workouts/schedule/overview**", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      requested_date: "2026-08-24",
+      current: null,
+      next: {
+        original_date: "2026-08-25",
+        target_date: "2026-08-25",
+        start_time: "18:30:00",
+        title: "Спина",
+        program_id: PROGRAM_ID,
+        day_index: 1,
+        status: "scheduled",
+        is_override: false,
+        can_reschedule: true,
+        reschedule_until: null,
+      },
+    }),
+  }));
+  await page.route("**/workouts/planned-plan**", async (route) => {
+    if (route.request().method() === "PUT") {
+      savedPayload = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...plan,
+          exercises: [{
+            ...plan.exercises[0],
+            exercise_id: targetId,
+            original_exercise_id: sourceId,
+            name_ru: "Подтягивания в тренажёре",
+          }],
+        }),
+      });
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(plan) });
+  });
+
+  await page.goto("/train");
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  await expect(dialog.getByText("Тяга верхнего блока")).toBeVisible();
+  await dialog.getByRole("button", { name: "Заменить" }).click();
+  await dialog.getByRole("button", { name: /Подтягивания в тренажёре/ }).click();
+  await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
+
+  await expect(dialog.getByText("Подготовка сохранена")).toBeVisible();
+  expect(savedPayload).toMatchObject({
+    program_id: PROGRAM_ID,
+    scheduled_date: "2026-08-25",
+    day_index: 1,
+    replacements: [{ from_exercise_id: sourceId, to_exercise_id: targetId }],
+  });
+});

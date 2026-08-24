@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from app.ai.context import _format_workout, _program_context
+from app.ai.context import _format_workout, _profile_context, _program_context
 from app.models.program import Program
 from app.models.workout import Workout, WorkoutSet
 
@@ -43,6 +43,15 @@ def test_program_context_uses_active_program_cursor_day() -> None:
     assert "Legs A" in context
     assert "Приседания со штангой (4×6-8)" in context
     assert "Приседания со своим весом" not in context
+
+
+def test_profile_context_contains_current_and_target_weight() -> None:
+    context = _profile_context(
+        {"primary_goal": "lose_fat", "target_weight_kg": 75},
+        {"weight_kg": 82.5},
+    )
+    assert "вес=82.5 кг" in context
+    assert "желаемый вес=75 кг" in context
 
 
 def test_workout_context_contains_actual_completed_sets() -> None:

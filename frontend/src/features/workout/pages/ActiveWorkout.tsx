@@ -1379,7 +1379,7 @@ export function ActiveWorkout() {
 
   if (summary) {
     return (
-      <section>
+      <section className="pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <Header title="Тренировка завершена" subtitle={weekPhase.label} />
         <div className="mb-3 rounded-2xl bg-tg-secondary p-4 text-center">
           <p className="text-xs text-tg-hint">Время тренировки</p>
@@ -1448,7 +1448,7 @@ export function ActiveWorkout() {
         ) : null}
         <button
           type="button"
-          className="mt-4 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+          className="mt-4 min-h-[48px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
           onClick={() => navigate("/progress")}
         >
           К прогрессу

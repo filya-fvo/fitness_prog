@@ -85,6 +85,7 @@ export function OnboardingPage() {
   const [daysPerWeek, setDaysPerWeek] = useState<number>(3);
   const [sex, setSex] = useState("male");
   const [weight, setWeight] = useState("");
+  const [targetWeight, setTargetWeight] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -124,6 +125,7 @@ export function OnboardingPage() {
       const w = Number(weight);
       const h = Number(height);
       const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
+      const target = targetWeight ? Number(targetWeight) : null;
       return (
         w >= 20 &&
         w <= 500 &&
@@ -131,6 +133,7 @@ export function OnboardingPage() {
         h <= 250 &&
         resolvedAge >= 10 &&
         resolvedAge <= 100 &&
+        (target == null || (target >= 20 && target <= 500)) &&
         Boolean(sex)
       );
     }
@@ -146,6 +149,7 @@ export function OnboardingPage() {
     primaryGoal,
     sex,
     step,
+    targetWeight,
     weight,
   ]);
 
@@ -175,6 +179,7 @@ export function OnboardingPage() {
         days_per_week: daysPerWeek,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
+        target_weight_kg: Number(targetWeight) || null,
         limitations: jointLimits,
         limitations_note: limitationsNote.trim() || null,
         onboarding_completed: true,
@@ -461,6 +466,19 @@ export function OnboardingPage() {
               onValueChange={setWeight}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             />
+          </label>
+          <label className="block text-xs text-tg-hint">
+            Желаемый вес, кг (необязательно)
+            <DecimalInput
+              min={20}
+              max={500}
+              value={targetWeight}
+              onValueChange={setTargetWeight}
+              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            />
+            <span className="mt-1 block text-[11px] leading-snug">
+              ИИ сможет оценивать путь к цели только как ориентировочный диапазон, без обещания точной даты.
+            </span>
           </label>
           <label className="block text-xs text-tg-hint">
             Рост, см

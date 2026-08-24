@@ -10,6 +10,12 @@ const STATUS_MESSAGES: Record<number, string> = {
   429: "Слишком много запросов. Подождите немного и попробуйте снова.",
 };
 
+export function isRetryableApiError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return !status || status === 408 || status === 429 || status >= 500;
+}
+
 export function toUserMessage(error: unknown, fallback = "Что-то пошло не так. Попробуйте ещё раз."): string {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return "Нет сети. Проверьте подключение или продолжите офлайн.";

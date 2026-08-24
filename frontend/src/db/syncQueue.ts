@@ -286,6 +286,7 @@ let flushing = false;
 
 export async function flushSyncQueue(
   ownerUserId?: string,
+  options: { retryFailed?: boolean } = {},
 ): Promise<{ processed: number; failed: number; dropped: number }> {
   const owner = ownerUserId || currentOwnerUserId();
   if (!owner) return { processed: 0, failed: 0, dropped: 0 };
@@ -299,6 +300,22 @@ export async function flushSyncQueue(
 
   try {
     const items = await db.syncQueue.where("ownerUserId").equals(owner).sortBy("createdAt");
+    if (options.retryFailed) {
+      const failedIds = items
+        .filter((item) => (item.attempts || 0) >= MAX_SYNC_ATTEMPTS)
+        .map((item) => item.id);
+      if (failedIds.length) {
+        await db.syncQueue.bulkUpdate(
+          failedIds.map((key) => ({ key, changes: { attempts: 0, lastError: null } })),
+        );
+        for (const item of items) {
+          if (failedIds.includes(item.id)) {
+            item.attempts = 0;
+            item.lastError = null;
+          }
+        }
+      }
+    }
     for (const item of items) {
       if (useUserStore.getState().user?.id !== owner) break;
       if ((item.attempts || 0) >= MAX_SYNC_ATTEMPTS) {
@@ -340,12 +357,20 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
       scheduledDate: string;
       exerciseIds: string[];
       programId?: string | null;
+      title?: string | null;
+      workoutType?: string | null;
+      setsPerExercise?: number;
+      plan?: WorkoutPlan | null;
     };
     const workout = await createWorkout({
       clientWorkoutId: item.clientWorkoutId,
       scheduledDate: payload.scheduledDate,
       exerciseIds: payload.exerciseIds,
       programId: payload.programId ?? null,
+      title: payload.title ?? null,
+      workoutType: payload.workoutType ?? null,
+      setsPerExercise: payload.setsPerExercise ?? 3,
+      plan: payload.plan ?? null,
     });
     await rememberWorkoutId(item.clientWorkoutId, workout.id, ownerUserId);
     const session = await db.sessions.get(item.clientWorkoutId);
@@ -442,10 +467,12 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
 
 export function startSyncListeners(ownerUserId: string): () => void {
   const onOnline = () => {
-    void flushSyncQueue(ownerUserId);
+    void flushSyncQueue(ownerUserId, { retryFailed: true });
   };
   window.addEventListener("online", onOnline);
-  void flushSyncQueue(ownerUserId);
+  // A Funnel/API outage can leave navigator.onLine=true. Opening the app again
+  // is an explicit recovery signal, so previously exhausted items get one more cycle.
+  void flushSyncQueue(ownerUserId, { retryFailed: true });
   // Periodic background flush while app is open (covers "online but queue stuck")
   const timer = window.setInterval(() => {
     if (navigator.onLine) void flushSyncQueue(ownerUserId);

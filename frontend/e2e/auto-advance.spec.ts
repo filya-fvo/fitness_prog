@@ -68,6 +68,36 @@ test("auto-advance preference is saved when the switch is toggled", async ({ pag
     .toBe("1");
 });
 
+test("target weight is loaded and saved with profile goals", async ({ page }) => {
+  let savedTarget: unknown = null;
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", async (route) => {
+    if (route.request().method() === "PUT") {
+      const body = route.request().postDataJSON() as { goals?: Record<string, unknown> };
+      savedTarget = body.goals?.target_weight_kg;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...profile(true),
+        anthropometry: { sex: "male", weight_kg: 80, height_cm: 180, age: 35 },
+        goals: {
+          ...profile(true).goals,
+          level: "intermediate",
+          target_weight_kg: savedTarget ?? 75,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/profile");
+  const target = page.getByLabel(/^Желаемый вес, кг/);
+  await expect(target).toHaveValue("75");
+  await target.fill("72.5");
+  await page.getByRole("button", { name: "Сохранить тело и калории" }).click();
+  await expect.poll(() => savedTarget).toBe(72.5);
+});
+
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {
   const workout = {
     id: WORKOUT_ID,

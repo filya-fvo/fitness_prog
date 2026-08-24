@@ -243,6 +243,7 @@ test("exercise catalog renders progressively", async ({ page }) => {
 });
 
 test("workout completion is instant and AI coach runs only on request", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
   const startedAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   let aiRequests = 0;
   let completionPayload: Record<string, unknown> | null = null;
@@ -368,4 +369,10 @@ test("workout completion is instant and AI coach runs only on request", async ({
   await page.getByRole("button", { name: "Получить комментарий ИИ" }).click();
   await expect(page.getByText(/Возвращайтесь к плану в комфортном темпе/)).toBeVisible();
   expect(aiRequests).toBe(1);
+  const progressButton = page.getByRole("button", { name: "К прогрессу" });
+  await progressButton.scrollIntoViewIfNeeded();
+  const bottomGap = await progressButton.evaluate(
+    (element) => window.innerHeight - element.getBoundingClientRect().bottom,
+  );
+  expect(bottomGap).toBeGreaterThanOrEqual(20);
 });

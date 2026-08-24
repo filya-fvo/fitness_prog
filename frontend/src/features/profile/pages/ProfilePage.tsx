@@ -326,6 +326,7 @@ export function ProfilePage() {
 
   const [sex, setSex] = useState("male");
   const [weight, setWeight] = useState("");
+  const [targetWeight, setTargetWeight] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -411,6 +412,7 @@ setAuthEmail(p.auth_email ?? null);
           setProgramSexFilter(sexFromProfile);
         }
         setWeight(numOrEmpty(a.weight_kg));
+        setTargetWeight(numOrEmpty(g.target_weight_kg));
         setHeight(numOrEmpty(a.height_cm));
         {
           const bd = String(a.birth_date || "").slice(0, 10);
@@ -675,13 +677,15 @@ setAuthEmail(p.auth_email ?? null);
       const weightNum = Number(weight);
       const heightNum = Number(height);
       const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
+      const targetWeightNum = targetWeight ? Number(targetWeight) : null;
       if (
         weightNum < 20 ||
         weightNum > 500 ||
         heightNum < 80 ||
         heightNum > 250 ||
         resolvedAge < 10 ||
-        resolvedAge > 100
+        resolvedAge > 100 ||
+        (targetWeightNum != null && (targetWeightNum < 20 || targetWeightNum > 500))
       ) {
         throw new Error("Проверьте вес, рост и возраст: значения вне допустимого диапазона");
       }
@@ -701,6 +705,7 @@ setAuthEmail(p.auth_email ?? null);
         primary_goal: primaryGoal,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
+        target_weight_kg: targetWeightNum,
         days_per_week: Number(daysPerWeek) || 3,
         active_program_id: activeProgramId || null,
         sex,
@@ -1206,6 +1211,22 @@ setAuthEmail(p.auth_email ?? null);
                 onChange={(e) => setDaysPerWeek(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
               />
+            </label>
+            <label className="block text-xs text-tg-hint">
+              Желаемый вес, кг (необязательно)
+              <DecimalInput
+                min={20}
+                max={500}
+                value={targetWeight}
+                onValueChange={(value) => {
+                  setTargetWeight(value);
+                  markDirty("body");
+                }}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              />
+              <span className="mt-1 block text-[11px] leading-snug">
+                Используется ИИ-тренером как ориентир вместе с калорийной целью и историей занятий.
+              </span>
             </label>
             <div className="pt-1">
               <p className="text-xs text-tg-hint">Ограничения для подбора программ</p>

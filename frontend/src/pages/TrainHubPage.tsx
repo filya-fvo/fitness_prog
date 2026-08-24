@@ -8,8 +8,13 @@ import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { fetchWorkoutHistory } from "@/api/workouts";
+import {
+  fetchWorkoutHistory,
+  fetchWorkoutSchedule,
+  type WorkoutScheduleOverview,
+} from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorkoutEditor";
 import {
   cacheExercises,
   readCachedExercises,
@@ -77,6 +82,7 @@ export function TrainHubPage() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentTitles, setRecentTitles] = useState<string[]>([]);
+  const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -99,6 +105,9 @@ export function TrainHubPage() {
     const lvl = String(program?.level || program?.target_level || "");
     return lvl ? enumLabel(lvl) : "";
   })();
+  const plannedOccurrence = schedule?.current ?? schedule?.next ?? null;
+  const preparedDate = plannedOccurrence?.target_date ?? localDateKey();
+  const preparedDayIndex = plannedOccurrence?.day_index ?? dayIndex;
 
   useEffect(() => {
     let cancelled = false;
@@ -117,10 +126,11 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, profile, history] = await Promise.all([
+          const [programs, profile, history, scheduleOverview] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
             fetchMyProfile().catch(() => null),
             fetchWorkoutHistory().catch(() => []),
+            fetchWorkoutSchedule().catch(() => null),
           ]);
           const g = (profile?.goals as Record<string, unknown>) || {};
           const activeId = String(g.active_program_id || "");
@@ -129,6 +139,7 @@ export function TrainHubPage() {
           if (!cancelled) {
             setGoals(g);
             setProgram(active);
+            setSchedule(scheduleOverview);
             const titles = (history || [])
               .filter((w: { status?: string }) => w.status === "completed")
               .slice(0, 3)
@@ -299,6 +310,18 @@ export function TrainHubPage() {
             >
               {starting ? "Стартуем…" : `Начать · ${dayTitle}`}
             </button>
+            <PlannedWorkoutEditor
+              programId={program.id}
+              scheduledDate={preparedDate}
+              dayIndex={preparedDayIndex}
+              weekPhase={weekPhase}
+              disabled={starting || !isOnline()}
+            />
+            {!isOnline() ? (
+              <p className="mt-1 text-center text-[11px] text-tg-hint">
+                Подготовка замен доступна после подключения к интернету.
+              </p>
+            ) : null}
             <Link to="/" className="mt-2 block text-center text-xs text-tg-link">
               Выбрать день / неделю на главной
             </Link>

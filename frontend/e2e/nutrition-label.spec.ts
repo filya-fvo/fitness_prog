@@ -151,3 +151,67 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
   await page.getByRole("button", { name: "Ввести вручную" }).click();
   await expect(page.getByRole("dialog", { name: "Новый продукт" })).toBeVisible();
 });
+
+test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
+  const productId = "33333333-3333-4333-8333-333333333333";
+  const logId = "44444444-4444-4444-8444-444444444444";
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: USER_ID,
+      telegram_id: null,
+      username: "nutrition-user",
+      auth_email: null,
+      anthropometry: {},
+      goals: { onboarding_completed: true },
+      subscription_status: "free",
+      stars_balance: 0,
+      onboarding_completed: true,
+    }),
+  }));
+  await page.route(/\/nutrition\/daily(?:\?|$)/, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      date: "2026-08-24",
+      totals: { calories: 100, proteins: 20, fats: 1, carbs: 2 },
+      meals: {
+        breakfast: [{
+          id: logId,
+          user_id: USER_ID,
+          date: "2026-08-24",
+          meal_type: "breakfast",
+          product_id: productId,
+          quantity_grams: 43,
+          calculated_kbj: {},
+          product: {
+            id: productId,
+            name_ru: "Первый русский протеин",
+            barcode: null,
+            calories: 350,
+            proteins: 80,
+            fats: 2,
+            carbs: 4,
+            category: "Протеин",
+            source: "manual",
+          },
+        }],
+        lunch: [],
+        dinner: [],
+        snack: [],
+      },
+      targets: { complete: false },
+    }),
+  }));
+
+  await page.goto("/nutrition");
+  await page.getByRole("button", { name: "Изменить" }).click();
+  const dialog = page.getByRole("dialog", { name: "Изменить запись" });
+  await expect(dialog).toBeVisible();
+  const box = await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box?.width).toBeGreaterThanOrEqual(330);
+  expect(box?.x).toBeGreaterThanOrEqual(10);
+  expect(box ? box.x + box.width : 999).toBeLessThanOrEqual(350);
+});
