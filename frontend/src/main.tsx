@@ -2,10 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { initSentry } from "./lib/sentry";
+import { initializeTheme } from "./theme/theme";
 import "./index.css";
 
 const rootElement = document.getElementById("root");
 document.documentElement.dataset.fitnessBuild = __FITNESS_BUILD_ID__;
+initializeTheme();
 
 const staleChunkReloadKey = "fitness:stale-chunk-reload";
 window.addEventListener("vite:preloadError", (event) => {

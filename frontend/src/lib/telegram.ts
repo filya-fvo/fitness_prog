@@ -3,6 +3,8 @@
  * TZ §7: initData, theme, Haptics, MainButton.
  */
 
+import { initializeTheme } from "@/theme/theme";
+
 export type TelegramThemeParams = {
   bg_color?: string;
   text_color?: string;
@@ -62,6 +64,8 @@ export type TelegramWebApp = {
   };
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
+  onEvent?: (eventType: "themeChanged", callback: () => void) => void;
+  offEvent?: (eventType: "themeChanged", callback: () => void) => void;
   openTelegramLink?: (url: string) => void;
   openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 };
@@ -119,31 +123,12 @@ export function isTelegramEnvironment(): boolean {
   return Boolean(getInitData());
 }
 
-/** Apply Telegram theme CSS variables to :root (Tailwind tg-* colors). */
+/** Apply the Telegram light/dark preference without overriding the app palette. */
 export function applyTelegramTheme(webApp: TelegramWebApp | null = getTelegramWebApp()): void {
-  if (!webApp?.themeParams || typeof document === "undefined") {
+  if (!webApp || typeof document === "undefined") {
     return;
   }
-  const root = document.documentElement;
-  const map: Record<string, string | undefined> = {
-    "--telegram-theme-bg-color": webApp.themeParams.bg_color,
-    "--telegram-theme-text-color": webApp.themeParams.text_color,
-    "--telegram-theme-hint-color": webApp.themeParams.hint_color,
-    "--telegram-theme-link-color": webApp.themeParams.link_color,
-    "--telegram-theme-button-color": webApp.themeParams.button_color,
-    "--telegram-theme-button-text-color": webApp.themeParams.button_text_color,
-    "--telegram-theme-secondary-bg-color": webApp.themeParams.secondary_bg_color,
-  };
-  for (const [key, value] of Object.entries(map)) {
-    if (value) {
-      root.style.setProperty(key, value);
-    }
-  }
-  if (webApp.colorScheme) {
-    root.dataset.colorScheme = webApp.colorScheme;
-  }
-  webApp.setHeaderColor?.("#07111f");
-  webApp.setBackgroundColor?.("#07111f");
+  initializeTheme(webApp);
 }
 
 export function initTelegramApp(): TelegramWebApp | null {

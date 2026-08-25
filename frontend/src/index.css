@@ -36,6 +36,25 @@
   text-size-adjust: 100%;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --app-bg: #f7fbff;
+  --app-bg-deep: #eaf1f8;
+  --app-surface: #ffffff;
+  --app-surface-raised: #edf5fd;
+  --app-text: #102238;
+  --app-hint: #60758d;
+  --app-accent: #087ebd;
+  --app-accent-strong: #0878bd;
+  --app-violet: #6954d9;
+  --app-button: #168bd2;
+  --app-button-text: #ffffff;
+  --border-subtle: rgba(31, 79, 119, 0.16);
+  --color-success: #087c5d;
+  --color-warning: #986100;
+  --color-danger: #c7384d;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -47,6 +66,13 @@ body {
     linear-gradient(165deg, var(--app-bg) 0%, var(--app-bg-deep) 72%);
   background-attachment: fixed;
   color: var(--app-text);
+}
+
+:root[data-theme="light"] body {
+  background-image:
+    radial-gradient(circle at 12% -8%, rgba(36, 151, 233, 0.14), transparent 34rem),
+    radial-gradient(circle at 100% 18%, rgba(130, 86, 255, 0.08), transparent 28rem),
+    linear-gradient(165deg, var(--app-bg) 0%, var(--app-bg-deep) 72%);
 }
 
 #root {
@@ -178,6 +204,32 @@ body {
     transform: scale(0.95);
     background: rgba(27, 57, 87, 0.92);
   }
+
+  .app-bottom-navigation {
+    border-color: var(--border-subtle);
+    background: color-mix(in srgb, var(--app-bg) 90%, transparent);
+    box-shadow: 0 -12px 36px rgba(0, 4, 12, 0.2);
+  }
+
+  @media (min-width: 1024px) {
+    .app-bottom-navigation {
+      box-shadow: 0 12px 36px rgba(0, 4, 12, 0.16);
+    }
+  }
+}
+
+:root[data-theme="light"] .surface-card,
+:root[data-theme="light"] .rounded-2xl.bg-tg-secondary {
+  box-shadow: 0 14px 36px rgba(50, 82, 112, 0.1);
+}
+
+:root[data-theme="light"] .app-back-button {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 24px rgba(50, 82, 112, 0.1);
+}
+
+:root[data-theme="light"] .app-back-button:active {
+  background: rgba(226, 240, 251, 0.95);
 }
 
 /* Common cards inherit one calm visual language without rewriting every page. */
@@ -199,6 +251,12 @@ select,
 textarea {
   border-color: rgba(132, 178, 222, 0.18) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .border-black\/5,

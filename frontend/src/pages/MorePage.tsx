@@ -4,6 +4,7 @@
 import { Link } from "react-router-dom";
 
 import { Header } from "@/components/layout/Header";
+import { ThemeSelector } from "@/features/theme/ThemeSelector";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { subscriptionLabel } from "@/utils/localization";
@@ -23,7 +24,7 @@ function MoreIcon({ name }: { name: MoreIconName }) {
 function MoreLink({ to, icon, title, description }: { to: string; icon: MoreIconName; title: string; description: string }) {
   return (
     <Link to={to} className="group flex min-h-[68px] items-center gap-3 rounded-2xl bg-tg-secondary p-3.5 active:scale-[0.99]">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/15 to-violet-500/15 text-cyan-300 ring-1 ring-cyan-300/15">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/15 to-violet-500/15 text-tg-link ring-1 ring-cyan-300/15">
         <MoreIcon name={icon} />
       </span>
       <span className="min-w-0 flex-1">
@@ -55,6 +56,7 @@ export function MorePage() {
           </span>
         </div>
       ) : null}
+      <ThemeSelector />
       <div className="space-y-3">
         <MoreLink to="/profile" icon="profile" title="Профиль" description="Тело, программа, добавки и уведомления" />
         <MoreLink to="/measurements" icon="measurements" title="Замеры тела" description="Обхваты, сравнение и графики динамики" />

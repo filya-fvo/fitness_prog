@@ -346,6 +346,8 @@ backup и dry-run, если он предусмотрен.
 - `docs/LOCAL_ADMIN_GUIDE.md` — Windows/Tailscale/supervisor/диагностика.
 - `docs/TIMEWEB_DOMAIN_CUTOVER.md` — фактический Timeweb VPS, DNS и безопасное
   переключение с локального Supervisor/Tailscale без потери данных.
+- `docs/VPS_ADMIN_GUIDE.md` — повседневная инструкция владельца: SSH, Compose, логи,
+  PostgreSQL/таблицы, backup, обновление и первичная диагностика production.
 - `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
   перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.

@@ -125,7 +125,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                         <div
                           className="relative w-full max-w-[18px] rounded-b bg-cyan-500/75"
                           style={{ height: `${height}%` }}
-                        >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-cyan-300">{Math.round(delta)}</span> : null}</div>
+                        >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-tg-link">{Math.round(delta)}</span> : null}</div>
                       ) : !day.hasLogs ? (
                         <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-white/15" />
                       ) : (
