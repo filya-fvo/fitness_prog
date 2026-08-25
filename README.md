@@ -16,8 +16,9 @@ docs/       пользовательские, административные �
 
 Агенту перед изменениями: [AGENTS.md](AGENTS.md). Пользователю:
 [docs/USER_GUIDE.md](docs/USER_GUIDE.md). Администратору:
-[docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Развёртывание постоянного
-Linux VPS: [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
+[docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Основной production без
+локального компьютера: [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md).
+Linux VPS остаётся альтернативой: [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
 
 Исторические планы и одноразовые скрипты, не участвующие в приложении, вынесены
 в `_archive_candidates/` и не являются источником требований.
@@ -98,6 +99,7 @@ CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthou
 
 - [docs/CHANGELOG.md](docs/CHANGELOG.md) — все изменения.
 - [docs/PROD_CHECKLIST.md](docs/PROD_CHECKLIST.md) — выпуск.
+- [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md) — основной Timeweb production.
 - [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md) — production VPS.
 - [docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md](docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md) — уведомления.
 - [docs/ADMIN_AI_MODEL_RUNBOOK.md](docs/ADMIN_AI_MODEL_RUNBOOK.md) — Groq.

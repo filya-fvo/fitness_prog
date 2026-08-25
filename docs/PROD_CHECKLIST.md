@@ -27,16 +27,18 @@ Use after P0–P3 code is in place and before inviting real users.
 
 ## Deploy / ops
 
-- [ ] VPS follows [VPS_DEPLOYMENT_GUIDE.md](./VPS_DEPLOYMENT_GUIDE.md); only 80/443 are public
-- [ ] Frontend HTTPS domain live (Caddy → compose `web`)
-- [ ] API HTTPS domain live, `/health` → `{"status":"ok"}`
-- [ ] PostgreSQL uses pinned pgvector/PostgreSQL 18 image; `vector` extension exists
-- [ ] Migrations service completed successfully before API/worker
-- [ ] Seed applied on prod DB
-- [ ] Arq worker running (if reminders needed)
-- [ ] PostgreSQL dump created by `scripts/backup_vps.sh`, copied off VPS and restore-tested
-- [ ] `docker compose down -v` is excluded from operational commands
-- [ ] Telegram Menu Button имеет стандартный тип `commands`/`default`, не `web_app`; inline Open из нового `/start` ведёт на prod URL
+- [ ] Timeweb App Platform follows [TIMEWEB_DOMAIN_CUTOVER.md](./TIMEWEB_DOMAIN_CUTOVER.md)
+- [ ] One replica uses the root `Dockerfile`, port 8000 and health path `/health`
+- [ ] `https://app.filfitclub.ru` and `/health` return 200
+- [ ] PostgreSQL 18 and Valkey use protected public connections (TLS)
+- [ ] Timeweb extensions `pgvector`, `pg_trgm`, `pgcrypto`, `uuid-ossp` are enabled
+- [ ] Logs show validation and migrations completed before API/worker
+- [ ] Versioned exercise/program/nutrition seed completed
+- [ ] ARQ worker is running
+- [ ] Timeweb PostgreSQL backup is enabled; local dump is retained
+- [ ] Domain NS point only to Timeweb; Cloudflare zone/tunnel no longer serves traffic
+- [ ] Telegram Menu Button has type `web_app` and opens `https://app.filfitclub.ru`
+- [ ] Local Supervisor/Tailscale remains available for the first 24 hours
 - [ ] Scheduled workflow `Public health monitor` успешно проверяет публичный `/health`
 - [ ] Sentry DSN set (optional but recommended)
 - [ ] Backup note/job exists ([LOCAL_ADMIN_GUIDE.md](./LOCAL_ADMIN_GUIDE.md))
@@ -59,9 +61,9 @@ npm.cmd run test:e2e
 Публикация выполняется только через `npm.cmd run build:publish`; не копируйте
 проверочную сборку в `dist` вручную.
 
-После изменения backend вызовите `scripts\request-production-restart.ps1`.
-Supervisor отдельно перезапустит API и notification worker и проверит владельцев
-процессов перед остановкой.
+После отправки production-изменения в GitHub дождитесь успешной сборки и
+healthcheck в Timeweb. Локальный Supervisor не управляет production и остаётся
+отдельным резервным контуром.
 
 ## Manual Telegram QA
 
@@ -78,5 +80,5 @@ Supervisor отдельно перезапустит API и notification worker 
 
 - Date:
 - Prod front URL:
-- Prod API URL:
+- Prod health URL:
 - Notes:

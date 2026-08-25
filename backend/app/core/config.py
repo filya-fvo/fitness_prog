@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fitness"
     bot_token: str = "replace_with_telegram_bot_token"
     bot_username: str = ""  # e.g. fil_fit_bot — for Mini App deep links
-    # Public HTTPS Mini App front (Tailscale Funnel or production host).
+    # Public HTTPS Mini App front (local Tailscale or permanent production host).
     mini_app_url: str = ""
     # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
     telegram_webhook_secret: str = ""
@@ -35,10 +35,6 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30
     cors_origins: str = "https://web.telegram.org"
-    r2_access_key: str = ""
-    r2_secret_key: str = ""
-    r2_bucket: str = ""
-    r2_endpoint: str = ""
     # Standards-based Web Push (VAPID). Private key stays backend-only.
     web_push_vapid_public_key: str = ""
     web_push_vapid_private_key: str = ""

@@ -59,7 +59,7 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: true,
-    // Single public host (Tailscale Funnel): browser XHR → API, navigation → SPA.
+    // Local single-origin mode: browser XHR → API, navigation → SPA.
     // Critical: /programs and /workouts exist both as React routes and API paths.
     proxy: (() => {
       const target = process.env.VITE_PROXY_TARGET || "http://127.0.0.1:8001";
