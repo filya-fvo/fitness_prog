@@ -27,11 +27,20 @@ test("theme follows the device and keeps an explicit user choice", async ({ page
 
   await page.goto("/more");
   const selector = page.getByLabel("Тема оформления");
+  const lightOption = selector.locator('option[value="light"]');
   await expect(selector).toHaveValue("system");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect.poll(() => lightOption.evaluate((option) => {
+    const style = getComputedStyle(option);
+    return [style.color, style.backgroundColor];
+  })).toEqual(["rgb(16, 34, 56)", "rgb(255, 255, 255)"]);
 
   await selector.selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect.poll(() => lightOption.evaluate((option) => {
+    const style = getComputedStyle(option);
+    return [style.color, style.backgroundColor];
+  })).toEqual(["rgb(239, 247, 255)", "rgb(16, 31, 50)"]);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_theme_preference"))).toBe("dark");
 
   await page.reload();

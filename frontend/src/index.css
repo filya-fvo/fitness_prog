@@ -253,6 +253,11 @@ textarea {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
+select option {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+}
+
 :root[data-theme="light"] input,
 :root[data-theme="light"] select,
 :root[data-theme="light"] textarea {
