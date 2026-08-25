@@ -14,7 +14,8 @@ param(
   [string]$MiniAppUrl = "",
   [string]$WebhookBase = "",
   [switch]$SkipWebhook,
-  [switch]$SkipMenu
+  [switch]$SkipMenu,
+  [switch]$SkipPersistMiniAppUrl
 )
 
 $ErrorActionPreference = "Stop"
@@ -72,7 +73,7 @@ Write-Host "[telegram] Mini App URL : $MiniAppUrl" -ForegroundColor Cyan
 Write-Host "[telegram] Webhook URL  : $WebhookUrl" -ForegroundColor Cyan
 
 # Persist MINI_APP_URL into backend/.env for uvicorn
-if (Test-Path $BackendEnv) {
+if ((-not $SkipPersistMiniAppUrl) -and (Test-Path $BackendEnv)) {
   $raw = Get-Content $BackendEnv -Raw
   if ($raw -match "(?m)^\s*MINI_APP_URL\s*=") {
     $raw = [regex]::Replace($raw, "(?m)^\s*MINI_APP_URL\s*=.*$", "MINI_APP_URL=$MiniAppUrl")
@@ -127,7 +128,11 @@ if (-not $SkipWebhook) {
 
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
-Write-Host "  1) The production app + Tailscale Funnel must be running (start-all.cmd)"
+Write-Host "  1) The production HTTPS app and API must be reachable"
 Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
-Write-Host "  3) Persistent Open near the message field should be absent"
+if ($SkipMenu) {
+  Write-Host "  3) Existing manual web_app/Menu Button was preserved"
+} else {
+  Write-Host "  3) Persistent Open near the message field should be absent"
+}
 Write-Host ""

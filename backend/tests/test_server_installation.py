@@ -178,6 +178,16 @@ def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
     assert "pg_restore --list" in backup
     assert "--webhook-base" in telegram_sync
     assert "await set_webhook" in telegram_sync
+    assert "--announce-vps-cutover" in telegram_sync
+    assert "--preserve-menu-button" in telegram_sync
+    assert "select(User.telegram_id).distinct()" in telegram_sync
+
+    telegram_setup = (ROOT / "scripts" / "setup_telegram_bot.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "SkipPersistMiniAppUrl" in telegram_setup
+    assert "(-not $SkipPersistMiniAppUrl)" in telegram_setup
+    assert "Existing manual web_app/Menu Button was preserved" in telegram_setup
 
     vector_restore = (
         ROOT
@@ -204,6 +214,12 @@ def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
     restore = (ROOT / "scripts" / "restore-timeweb-postgres.sh").read_text(
         encoding="utf-8"
     )
+    replace = (ROOT / "scripts" / "replace-timeweb-postgres.sh").read_text(
+        encoding="utf-8"
+    )
+    backup_timer = (ROOT / "scripts" / "install-vps-backup-timer.sh").read_text(
+        encoding="utf-8"
+    )
     prepare_env = (ROOT / "scripts" / "prepare-vps-env.ps1").read_text(
         encoding="utf-8"
     )
@@ -214,5 +230,25 @@ def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
     assert "--exit-on-error" in restore
     assert "--no-owner" in restore
     assert "--clean" not in restore
+    assert "backup_vps.sh" in replace
+    assert "SHA256 mismatch" in replace
+    assert "stop worker api web caddy" in replace
+    assert "dropdb" in replace
+    assert "restore-timeweb-postgres.sh" in replace
+    assert "FINAL_DATABASE_RESTORE_OK" in replace
+    assert "/opt/fitness/backups/*" in backup_timer
+    assert "Persistent=true" in backup_timer
+    assert "fitness-backup.service" in backup_timer
+    assert "systemctl enable --now fitness-backup.timer" in backup_timer
     assert "without printing values" in prepare_env
     assert 'EMAIL_OTP_DEV_RETURN_CODE = "false"' in prepare_env
+
+    cutover = (ROOT / "scripts" / "set-local-vps-cutover.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "#Requires -RunAsAdministrator" in cutover
+    assert 'ValidateSet("Stop", "Resume")' in cutover
+    assert 'TaskName = "Fitness App Supervisor"' in cutover
+    assert "LocalPort 8001" in cutover
+    for preserved_service in ("Tailscale", "PostgreSQL", "Redis"):
+        assert preserved_service in cutover

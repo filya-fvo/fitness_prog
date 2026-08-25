@@ -78,6 +78,19 @@ OpenAI. Допустим локальный rule-based ответ без вне�
   `tools/redis/dump.rdb` — локальный runtime-снимок Redis, не PostgreSQL;
   он меняется при работе Redis и поэтому игнорируется Git.
 
+### Куда публиковать production-изменения
+
+- Единственный production-репозиторий: `https://github.com/filya-fvo/fitness_prog.git`.
+- Production-ветка: `timeweb-production-20260825`. Копия на VPS находится в
+  `/opt/fitness/source` и должна оставаться на той же ветке.
+- Локальный commit не является публикацией. После зелёных проверок агент
+  должен: (1) закоммитить, (2) выполнить `git push origin timeweb-production-20260825`,
+  (3) на VPS сделать backup, `git pull --ff-only`, rebuild/migrations/`docker compose up -d`,
+  (4) проверить Compose, `https://api.filfitclub.ru/health` и `https://app.filfitclub.ru`.
+  Не завершать production-задачу только с локальным commit.
+- Точные команды обновления и rollback — в разделе «Обновление приложения»
+  `docs/TIMEWEB_DOMAIN_CUTOVER.md`. Реальные `.env.production`, SSH-ключи и токены в Git не попадают.
+
 ## 4. Поток выполнения
 
 ```text

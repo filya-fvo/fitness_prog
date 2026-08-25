@@ -18,6 +18,7 @@ from app.services.telegram_bot import (
     send_start_welcome,
     set_default_chat_menu_button,
     set_webhook,
+    vps_cutover_announcement_text,
 )
 
 
@@ -41,6 +42,16 @@ async def main() -> None:
         help="send a fresh /start-equivalent welcome and persistent keyboard to all users",
     )
     parser.add_argument(
+        "--announce-vps-cutover",
+        action="store_true",
+        help="send the new permanent address and ask all users to press /start",
+    )
+    parser.add_argument(
+        "--preserve-menu-button",
+        action="store_true",
+        help="do not change the global or per-chat Menu Button configuration",
+    )
+    parser.add_argument(
         "--webhook-base",
         default="",
         help="public API origin; registers <origin>/telegram/webhook",
@@ -49,14 +60,15 @@ async def main() -> None:
 
     settings = get_settings()
     public_url = safe_public_url(settings.mini_app_url)
-    await set_default_chat_menu_button(settings)
+    if not args.preserve_menu_button:
+        await set_default_chat_menu_button(settings)
 
     async with AsyncSessionLocal() as session:
         telegram_ids = [
             int(item)
             for item in (
                 await session.scalars(
-                    select(User.telegram_id).where(
+                    select(User.telegram_id).distinct().where(
                         User.telegram_id.is_not(None),
                         User.is_deleted.is_(False),
                     )
@@ -66,12 +78,13 @@ async def main() -> None:
 
     updated = 0
     failed: list[int] = []
-    for telegram_id in telegram_ids:
-        try:
-            await set_default_chat_menu_button(settings, chat_id=telegram_id)
-            updated += 1
-        except Exception:  # noqa: BLE001 - continue syncing other chats
-            failed.append(telegram_id)
+    if not args.preserve_menu_button:
+        for telegram_id in telegram_ids:
+            try:
+                await set_default_chat_menu_button(settings, chat_id=telegram_id)
+                updated += 1
+            except Exception:  # noqa: BLE001 - continue syncing other chats
+                failed.append(telegram_id)
 
     known = set(telegram_ids)
     for telegram_id in dict.fromkeys(args.send_open_to):
@@ -105,8 +118,25 @@ async def main() -> None:
             # Keep broadcasts comfortably below Telegram's free limits.
             await asyncio.sleep(0.1)
 
+    announcement_sent = 0
+    announcement_failed = 0
+    if args.announce_vps_cutover:
+        announcement = vps_cutover_announcement_text(mini_app_url=public_url)
+        for telegram_id in telegram_ids:
+            try:
+                await send_message(
+                    settings,
+                    chat_id=telegram_id,
+                    text=announcement,
+                    reply_markup=open_app_markup(settings),
+                )
+                announcement_sent += 1
+            except Exception:  # noqa: BLE001 - one blocked chat must not stop broadcast
+                announcement_failed += 1
+            await asyncio.sleep(0.1)
+
     print(f"URL={public_url}")
-    print("DEFAULT_MENU=standard")
+    print("MENU_BUTTON=preserved" if args.preserve_menu_button else "DEFAULT_MENU=standard")
     print(f"CHAT_MENUS_UPDATED={updated}")
     print(f"CHAT_MENUS_FAILED={len(failed)}")
     if args.webhook_base:
@@ -123,6 +153,9 @@ async def main() -> None:
     if args.send_welcome_all:
         print(f"WELCOME_SENT={welcome_sent}")
         print(f"WELCOME_FAILED={welcome_failed}")
+    if args.announce_vps_cutover:
+        print(f"ANNOUNCEMENT_SENT={announcement_sent}")
+        print(f"ANNOUNCEMENT_FAILED={announcement_failed}")
 
 
 if __name__ == "__main__":

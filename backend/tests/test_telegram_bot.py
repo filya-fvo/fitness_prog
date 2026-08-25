@@ -22,8 +22,23 @@ from app.services.telegram_bot import (
     start_welcome_text,
     supplement_intake_keyboard,
     user_guide_path,
+    vps_cutover_announcement_text,
     water_intake_keyboard,
 )
+
+
+def test_vps_cutover_announcement_has_permanent_url_and_start_request() -> None:
+    text = vps_cutover_announcement_text(mini_app_url="https://app.filfitclub.ru/")
+
+    assert "https://app.filfitclub.ru" in text
+    assert "круглосуточно" in text
+    assert "/start" in text
+    assert "домашнего компьютера" in text
+
+
+def test_vps_cutover_announcement_rejects_non_https_url() -> None:
+    with pytest.raises(ValueError):
+        vps_cutover_announcement_text(mini_app_url="http://localhost:8001")
 
 
 async def test_set_webhook_subscribes_to_inline_button_callbacks(

@@ -127,7 +127,10 @@ curl.exe -sS --max-time 20 -o NUL -w "status=%{http_code}`n" https://app.filfitc
 
 Этот шаг выполняется вместе с владельцем в короткое окно обслуживания.
 
-1. Остановить локальный API и локальный worker, чтобы данные перестали меняться.
+1. Дважды кликнуть `pause-local-for-vps-cutover.cmd`. Скрипт с правами
+   администратора остановит только локальные Supervisor, API и worker. Tailscale,
+   PostgreSQL, Redis, файлы и данные останутся на месте. Для отката предусмотрен
+   `resume-local-after-vps-cutover.cmd`.
 2. Создать новый дамп скриптом `export-local-postgres-for-timeweb.ps1`.
 3. Сделать резервную копию VPS-базы командой:
 
@@ -137,8 +140,10 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 ```
 
 4. Остановить VPS API/web, пересоздать только базу `fitness` и восстановить новый
-   дамп. Это намеренно заменяет предварительный снимок и требует отдельного
-   подтверждения владельца непосредственно перед выполнением.
+   дамп через `replace-timeweb-postgres.sh`. Скрипт требует ожидаемую SHA-256 и
+   перед заменой сам делает дополнительный backup VPS. Это намеренно заменяет
+   предварительный снимок и требует отдельного подтверждения владельца
+   непосредственно перед выполнением.
 5. Повторно сверить количества строк и выполнить миграции.
 6. Запустить `api`, `web`, `caddy` и один VPS-worker.
 
@@ -152,16 +157,40 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\setup_telegram_bot.ps1 `
   -MiniAppUrl "https://app.filfitclub.ru" `
-  -WebhookBase "https://api.filfitclub.ru"
+  -WebhookBase "https://api.filfitclub.ru" `
+  -SkipMenu `
+  -SkipPersistMiniAppUrl
 ```
 
-`web_app` в BotFather остаётся ручной настройкой и не удаляется. Проверить:
+Флаги сохраняют ручную настройку `web_app` в BotFather и локальный rollback-env;
+меняется только webhook. Проверить:
 
 1. `/start` открывает `https://app.filfitclub.ru`;
 2. авторизация Telegram проходит;
 3. главная, история и подготовка тренировки показывают перенесённые данные;
 4. тестовое уведомление приходит один раз;
 5. API, web, db, redis и worker не перезапускаются.
+
+После успешного переключения один раз отправить всем привязанным Telegram-пользователям
+новый адрес и просьбу повторить `/start`. Ручной `web_app`/Menu Button не меняется:
+
+```bash
+docker compose --env-file backend/.env.production run --rm api \
+  python scripts/sync_telegram_entrypoints.py \
+  --announce-vps-cutover \
+  --preserve-menu-button
+```
+
+Повторно команду без необходимости не запускать: это массовая рассылка.
+
+Ежедневный backup PostgreSQL в 03:15 UTC включается один раз:
+
+```bash
+sh scripts/install-vps-backup-timer.sh
+```
+
+Копии лежат в `/opt/fitness/backups/daily`. Они защищают от ошибки в БД, но не от потери
+всего VPS-диска; поэтому хотя бы раз в неделю скачивайте свежий `.dump` на другое устройство.
 
 ## Шаг 6. Наблюдение и отключение локального контура
 

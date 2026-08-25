@@ -366,6 +366,25 @@ def start_welcome_text(
     return "\n".join(lines)
 
 
+def vps_cutover_announcement_text(*, mini_app_url: str) -> str:
+    """One-time notice sent after moving the public app to the permanent VPS."""
+    browser_url = mini_app_url.strip().rstrip("/")
+    if not browser_url.startswith("https://") or "ngrok" in browser_url.lower():
+        raise ValueError("A permanent HTTPS Mini App URL is required")
+    escaped_url = escape(browser_url, quote=True)
+    return "\n".join(
+        [
+            "✅ <b>Fitness Mini App переехал на постоянный сервер.</b>",
+            "",
+            f'Новый адрес: <a href="{escaped_url}">{escaped_url}</a>',
+            "",
+            "Теперь приложение работает круглосуточно и не зависит от включённого домашнего компьютера.",
+            "",
+            "Пожалуйста, ещё раз отправьте боту <b>/start</b> и открывайте приложение кнопкой <b>Open</b> из нового сообщения. Старые кнопки могут вести на прежний адрес.",
+        ]
+    )
+
+
 def user_guide_path() -> Path:
     """Path to docs/USER_GUIDE.md (repo root / docs)."""
     # backend/app/services/telegram_bot.py -> repo root
