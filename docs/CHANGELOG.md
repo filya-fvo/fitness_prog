@@ -5,6 +5,32 @@
 
 ---
 
+## 0.20.23 — 2026-08-25
+
+### Timeweb VPS вместо второй управляемой БД
+
+- Production-схема переведена на один Timeweb VPS: PostgreSQL 18 + pgvector,
+  Redis 7.4, FastAPI, ARQ worker, Nginx и Caddy работают в Docker Compose. Наружу
+  публикуются только `app.filfitclub.ru` и `api.filfitclub.ru`; Cloudflare не
+  используется.
+- Добавлены безопасные сценарии подготовки Ubuntu, официального Docker-зеркала
+  Timeweb, генерации production env без печати секретов, восстановления только в
+  пустую PostgreSQL и точной сверки количества строк.
+- Worker больше не наследует HTTP-healthcheck API. В инструкции отдельно
+  зафиксировано, что VPS-worker нельзя включать до финальной синхронизации, пока
+  локальный worker продолжает отправлять уведомления.
+- Фактически проверено на VPS: Docker Compose собрал API/frontend/worker,
+  PostgreSQL и Redis healthy, миграции завершились `MIGRATIONS_OK`, внутренние
+  API `/health` и frontend отвечают. В 14 таблицах VPS точные количества строк
+  совпали с локальной базой. HTTPS и Telegram ещё не переключены до завершения DNS.
+
+### Проверка
+
+- `bash -n` трёх серверных сценариев выполнен на Ubuntu VPS.
+- Проверено локально: `199 passed`, Ruff без замечаний, PowerShell-сценарий
+  подготовки env успешно разобран parser-ом. Bash-сценарии дополнительно
+  проверены через `bash -n` на Ubuntu VPS.
+
 ## 0.20.22 — 2026-08-25
 
 ### Timeweb production без Cloudflare и без отключения локального резерва

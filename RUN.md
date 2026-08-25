@@ -11,9 +11,9 @@ install-server.cmd
 После успешной установки запустите `install-supervisor.cmd`. Он установит и сразу запустит системную задачу; проверка — `supervisor-status.cmd`. Подробности, включая перенос базы данных: [docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md).
 
 Основной production, который не зависит от Windows-компьютера, разворачивается
-в Timeweb App Platform по инструкции [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md).
+на Timeweb VPS по инструкции [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md).
 Локальный Supervisor/Tailscale не отключайте, пока Timeweb не пройдёт финальную
-проверку. Linux VPS остаётся альтернативой: [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
+проверку. Универсальный VPS-runbook: [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
 
 ## Обычный полный запуск
 

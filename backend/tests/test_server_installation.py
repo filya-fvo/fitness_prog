@@ -108,6 +108,9 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "20260823000021_restore_local_embedding_to_vector.sql" in compose
     assert 'psql -v ON_ERROR_STOP=1 -f "$$bootstrap"' in compose
     assert "condition: service_completed_successfully" in compose
+    worker_section = compose.split("  worker:\n", 1)[1].split("\n  web:\n", 1)[0]
+    assert "healthcheck:" in worker_section
+    assert "disable: true" in worker_section
     assert '"80:80"' in compose
     assert '"443:443"' in compose
     for forbidden_port in ('"5432:5432"', '"6379:6379"', '"8000:8000"', '"8080:80"'):
@@ -192,3 +195,24 @@ def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
     assert 'if ($file.Name -eq "20260823000021_restore_local_embedding_to_vector.sql")' in (
         local_migrations
     )
+
+
+def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
+    provision = (ROOT / "scripts" / "provision_timeweb_vps.sh").read_text(
+        encoding="utf-8"
+    )
+    restore = (ROOT / "scripts" / "restore-timeweb-postgres.sh").read_text(
+        encoding="utf-8"
+    )
+    prepare_env = (ROOT / "scripts" / "prepare-vps-env.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "https://dockerhub.timeweb.cloud" in provision
+    assert "ufw default deny incoming" in provision
+    assert "Refusing to restore" in restore
+    assert "--exit-on-error" in restore
+    assert "--no-owner" in restore
+    assert "--clean" not in restore
+    assert "without printing values" in prepare_env
+    assert 'EMAIL_OTP_DEV_RETURN_CODE = "false"' in prepare_env

@@ -1,89 +1,71 @@
-# Timeweb production без локального компьютера
+# Timeweb VPS: перенос без Cloudflare и без потери данных
 
-Эта инструкция рассчитана на текущую конфигурацию проекта и панели Timeweb.
-Действуйте по порядку. Локальный Supervisor и Tailscale продолжают работать до
-самого конца и остаются способом быстрого отката.
+Эта инструкция описывает фактическую production-схему проекта на 25 августа
+2026 года. Локальный Windows-сервер с Supervisor и Tailscale остаётся включённым
+до финальной проверки Timeweb.
 
-## Что уже готово
-
-По состоянию на 25 августа 2026 года:
-
-- создана приватная сеть `fitness-prod` (`192.168.0.0/24`, Москва);
-- создан PostgreSQL-кластер `fitness-prog`;
-- создана база `fitness` и пользователь `fitness_app`;
-- база подключена к сети как `192.168.0.4`;
-- базе выдан публичный IPv4; защищённое подключение включено;
-- включены `pgvector`, `pg_trgm`, `pgcrypto`, `uuid-ossp`.
-
-В панели расширение называется `pgvector`, а внутри PostgreSQL — `vector`. Это
-правильно.
-
-## Итоговая схема
+## Текущая схема
 
 ```text
 Telegram / браузер
-        ↓
-https://app.filfitclub.ru
-        ↓
-Timeweb App Platform
-React + FastAPI + ARQ worker
-        ├── TLS → Timeweb PostgreSQL
-        └── TLS → Timeweb Valkey
+        ├── https://app.filfitclub.ru → Caddy → Nginx → React
+        └── https://api.filfitclub.ru → Caddy → FastAPI
+                                              ├── PostgreSQL 18 + pgvector
+                                              └── Redis 7.4 → ARQ worker
 ```
 
-Cloudflare в этой схеме не используется. Интерфейс, API и Telegram webhook
-работают на одном домене `app.filfitclub.ru`.
+Все компоненты находятся на одном VPS `fitness-prod-vps` в закрытой Docker-сети.
+Наружу открыты только SSH, HTTP и HTTPS. PostgreSQL, Redis, API и Nginx не
+публикуют свои порты напрямую. Cloudflare в схеме нет.
 
-App Platform не добавляется в пользовательскую VPC как облачный сервер. Поэтому
-для PostgreSQL и Valkey нужны защищённые публичные адреса. Их пароли должны быть
-длинными, а в строках подключения обязателен TLS.
+## Что уже сделано
 
-## Важные правила
+- VPS Timeweb: Ubuntu 24.04, 2 CPU, 4 ГБ RAM, 50 ГБ NVMe;
+- публичный IPv4: `201.24.48.145`;
+- установлены Docker и Compose, UFW, fail2ban, автообновления и swap 2 ГБ;
+- подключено официальное зеркало Docker Hub от Timeweb;
+- код находится в `/opt/fitness/source`, production-ветка —
+  `timeweb-production-20260825`;
+- PostgreSQL и Redis работают только во внутренней Docker-сети;
+- дамп локальной PostgreSQL проверен по SHA-256 и восстановлен;
+- все 14 таблиц и количество строк сверены с локальной базой;
+- миграции завершились сообщением `MIGRATIONS_OK`;
+- API и frontend внутри VPS проходят healthcheck;
+- VPS-worker остановлен до финального переключения, чтобы не дублировать
+  уведомления локального worker.
 
-1. Не отключайте локальный Supervisor и Tailscale.
-2. Не переключайте Telegram до отдельного финального шага.
-3. Не запускайте первый deploy до импорта данных в пустую Timeweb-базу.
-4. Не отправляйте пароли, токены или строки подключения в чат и GitHub.
-5. Не удаляйте локальную PostgreSQL и резервные копии после переключения.
+Управляемый кластер PostgreSQL `fitness-prog` пока не удалять. Он не участвует в
+работе VPS, но удалять его следует только после полной проверки и подтверждения
+владельца.
 
-## Шаг 1. Создать Valkey
+## Правила безопасного переключения
 
-Valkey нужен для уведомлений, очередей и ограничения запросов.
+1. Не выключать локальный Supervisor и Tailscale до финального шага.
+2. Не запускать одновременно локальный и VPS-worker: они отправят дубли.
+3. Не менять Telegram Menu Button и webhook до рабочего HTTPS на обоих доменах.
+4. Не удалять локальную PostgreSQL и дампы после переключения.
+5. Перед финальным переключением сделать свежий дамп: текущая VPS-база — снимок,
+   а локальное приложение продолжает принимать изменения.
+6. Никогда не выполнять `docker compose down -v`: ключ `-v` удаляет данные.
 
-1. В Timeweb откройте **Базы данных**.
-2. Нажмите **Добавить**.
-3. Выберите **Valkey 7**.
-4. Регион — **Москва**, как у PostgreSQL.
-5. Имя — `fitness-valkey`.
-6. Выберите минимальную подходящую конфигурацию.
-7. Подключите сеть `fitness-prod`.
-8. Включите публичный IPv4 и защищённое подключение.
-9. Сохраните пароль пользователя `default` в менеджере паролей.
+## Шаг 1. Подготовить DNS-зону Timeweb
 
-Для Valkey потребуется отдельный публичный IP: один IP нельзя одновременно
-привязать к PostgreSQL и Valkey.
+Откройте **Домены и SSL** → `filfitclub.ru` → **DNS**. До смены NS проверьте или
+создайте записи:
 
-После создания на вкладке **Подключение** выберите публичный IPv4 и защищённое
-подключение. Итоговая строка должна начинаться с `rediss://`, не `redis://`.
+| Тип | Хост | Значение | Приоритет |
+|---|---|---|---|
+| A | `app` | `201.24.48.145` | — |
+| A | `api` | `201.24.48.145` | — |
+| MX | `@` | `mx1.timeweb.ru` | 10 |
+| MX | `@` | `mx2.timeweb.ru` | 20 |
+| TXT | `@` | `v=spf1 include:_spf.timeweb.ru ~all` | — |
 
-## Шаг 2. Перенести DNS с Cloudflare в Timeweb
+Старые CNAME на `cfargotunnel.com` и другие Cloudflare-записи не переносить.
+AAAA для `app` и `api` пока не добавлять. TTL оставить стандартным.
 
-Сейчас NS домена указывают на Cloudflare. Сначала подготовьте зону в Timeweb, и
-только потом меняйте NS.
-
-1. Откройте Timeweb → **Домены и SSL** → **Добавить домен**.
-2. Добавьте `filfitclub.ru` как технический перенос.
-3. До изменения NS проверьте записи в Timeweb:
-
-```text
-MX   @   10 mx1.timeweb.ru
-MX   @   20 mx2.timeweb.ru
-TXT  @   v=spf1 include:_spf.timeweb.ru ~all
-```
-
-4. Если в старой DNS-зоне есть другие нужные записи почты или подтверждений,
-   перенесите их в Timeweb без изменений.
-5. У регистратора домена установите все четыре NS:
+Затем на вкладке **Управление** нажмите **Установить NS-серверы Timeweb**. Должны
+быть указаны:
 
 ```text
 ns1.timeweb.ru
@@ -92,239 +74,138 @@ ns3.timeweb.org
 ns4.timeweb.org
 ```
 
-6. Дождитесь применения. Обычно это занимает от 3 до 24 часов.
-
-Проверка в PowerShell:
+Делегирование обычно занимает от 3 до 24 часов. Проверка из PowerShell:
 
 ```powershell
 Resolve-DnsName filfitclub.ru -Type NS
+Resolve-DnsName app.filfitclub.ru -Type A
+Resolve-DnsName api.filfitclub.ru -Type A
+Resolve-DnsName filfitclub.ru -Type MX
 ```
 
-Продолжайте только когда в ответе видны NS Timeweb. Локальная Telegram Mini App
-всё это время продолжает открываться через Tailscale.
+Продолжать можно, когда NS показывают только Timeweb, а оба A-домена —
+`201.24.48.145`.
 
-## Шаг 3. Подготовить код для App Platform
+Официальная инструкция: [DNS и NS Timeweb](https://timeweb.cloud/docs/domains/dns-records-management).
 
-Timeweb собирает корневой `Dockerfile` из GitHub. Production-ветка проекта:
+## Шаг 2. Включить HTTPS без worker
 
-```text
-timeweb-production-20260825
+На VPS:
+
+```bash
+cd /opt/fitness/source
+docker compose --env-file backend/.env.production up -d db redis api web caddy
+docker compose --env-file backend/.env.production ps
 ```
 
-Перед созданием приложения ветка должна быть отправлена в GitHub, а GitHub CI —
-завершиться без ошибок.
-
-## Шаг 4. Сделать свежую копию локальной базы
-
-Локальное приложение останавливать не нужно: `pg_dump` создаёт согласованный
-снимок работающей PostgreSQL.
-
-В PowerShell из `C:\fitness_prog` выполните:
+Caddy автоматически получит сертификаты после обновления DNS. Проверка с
+Windows:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\export-local-postgres-for-timeweb.ps1
-```
-
-Скрипт выведет путь, размер и SHA-256 файла. Архив сохраняется в
-`backups\timeweb-cutover` и не попадает в Git.
-
-С момента создания этого дампа и до переключения Telegram не записывайте новые
-тренировки или питание. Сам локальный сайт остаётся включённым.
-
-## Шаг 5. Импортировать данные в Timeweb
-
-Убедитесь, что приложение App Platform ещё не запускалось и база `fitness`
-остаётся без таблиц. Затем выполните:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File .\scripts\import-postgres-to-timeweb.ps1 `
-  -DumpPath "ПОЛНЫЙ_ПУТЬ_К_DUMP"
-```
-
-Скрипт скрыто попросит публичную строку подключения PostgreSQL. Используйте
-вариант с защищённым подключением из панели Timeweb. Пароль не появится на экране
-и не будет записан в файл.
-
-Если в базе уже есть хотя бы одна таблица, импорт остановится без изменений.
-Не удаляйте таблицы вручную и не используйте `--clean`.
-
-## Шаг 6. Создать приложение App Platform
-
-1. Откройте **App Platform** → **Создать приложение**.
-2. Выберите деплой из **Dockerfile**.
-3. Подключите GitHub и выберите репозиторий Fitness Mini App.
-4. Ветка — `timeweb-production-20260825`.
-5. Путь к директории проекта оставьте пустым: Dockerfile находится в корне.
-6. Регион — Москва.
-7. Один экземпляр, 1 CPU и 2 ГБ RAM для первого запуска.
-8. Порт — `8000`.
-9. Путь проверки состояния — `/health`.
-10. Автодеплой можно включить после первого успешного запуска.
-
-Timeweb выдаст бесплатный технический HTTPS-домен. Сохраните его для первой
-проверки.
-
-## Шаг 7. Добавить переменные приложения
-
-Откройте приложение → **Переменные**. Шаблон находится в
-`deploy/timeweb/timeweb.env.example`.
-
-Обязательные переменные:
-
-```dotenv
-ENVIRONMENT=production
-MINI_APP_URL=https://app.filfitclub.ru
-CORS_ORIGINS=https://web.telegram.org,https://app.filfitclub.ru
-EMAIL_OTP_DEV_RETURN_CODE=false
-DATABASE_URL=postgresql+asyncpg://...
-REDIS_URL=rediss://...
-JWT_SECRET=...
-BOT_TOKEN=...
-TELEGRAM_WEBHOOK_SECRET=...
-BOT_USERNAME=fil_fit_bot
-```
-
-Для `DATABASE_URL`:
-
-1. Возьмите публичную защищённую строку PostgreSQL из Timeweb.
-2. Замените начало `postgresql://` на `postgresql+asyncpg://`.
-3. Добавьте в конец `?ssl=require`.
-
-Пример формы, не готовое значение:
-
-```text
-postgresql+asyncpg://fitness_app:ПАРОЛЬ@ПУБЛИЧНЫЙ_IP:5432/fitness?ssl=require
-```
-
-Для `REDIS_URL` скопируйте защищённую строку Valkey. Она должна начинаться с
-`rediss://`. Если пароль содержит `@`, `:`, `/`, `?` или `#`, используйте уже
-URL-кодированный вариант из панели Timeweb.
-
-Чтобы сохранить все функции приложения, перенесите из локального `backend/.env`
-также Groq, SMTP, VAPID и административные переменные. Значения показывать в чате
-не нужно.
-
-## Шаг 8. Первый deploy и проверка технического домена
-
-Запустите deploy. В логах должны появиться строки:
-
-```text
-[timeweb] production environment validated
-[migration] complete ...
-[timeweb] starting API and notification worker
-```
-
-Проверьте технический домен:
-
-```powershell
-curl.exe --fail https://ТЕХНИЧЕСКИЙ-ДОМЕН/health
-curl.exe -sS --max-time 20 -o NUL -w "status=%{http_code}`n" https://ТЕХНИЧЕСКИЙ-ДОМЕН/
-```
-
-Ожидается `{"status":"ok"}` и `status=200`. Если deploy красный, не меняйте
-Telegram: откройте лог и исправьте первую ошибку.
-
-## Шаг 9. Подключить app.filfitclub.ru
-
-1. App Platform → приложение → **Настройки** → **Домены** → **Редактировать**.
-2. Выберите домен из панели Timeweb.
-3. Добавьте поддомен `app.filfitclub.ru`.
-4. Сохраните и дождитесь автоматического SSL.
-
-Timeweb сам создаст или обновит нужную A-запись, если домен уже делегирован на
-его NS.
-
-Проверка:
-
-```powershell
-curl.exe --fail https://app.filfitclub.ru/health
+curl.exe --fail https://api.filfitclub.ru/health
 curl.exe -sS --max-time 20 -o NUL -w "status=%{http_code}`n" https://app.filfitclub.ru/
 ```
 
-Ожидается `{"status":"ok"}` и `status=200`.
+Ожидаются `{"status":"ok"}` и `status=200`. Worker на этом шаге должен
+оставаться остановленным.
 
-## Шаг 10. Проверить данные без переключения Telegram
+## Шаг 3. Проверить интерфейс до переключения Telegram
 
-Пока Telegram всё ещё открывает Tailscale, проверьте Timeweb напрямую в обычном
-браузере:
+Откройте `https://app.filfitclub.ru` в обычном браузере и войдите по email OTP.
+Проверьте чтение данных:
 
-1. откройте `https://app.filfitclub.ru`;
-2. войдите через email OTP;
-3. убедитесь, что видны программа, история и последние записи;
-4. не создавайте тестовую тренировку в production-базе;
-5. в логах Timeweb убедитесь, что API и worker не перезапускаются.
+- профиль и программа;
+- история тренировок;
+- питание и дневные показатели;
+- каталог упражнений и изображения;
+- страница подготовки следующей тренировки.
 
-## Шаг 11. Переключить Telegram
+Не создавайте тренировку или запись питания: перед финальным переносом эта
+тестовая база всё равно будет заменена свежим снимком локальной PostgreSQL.
 
-Только после успешных шагов 8–10 выполните из `C:\fitness_prog`:
+## Шаг 4. Финальная синхронизация данных
+
+Этот шаг выполняется вместе с владельцем в короткое окно обслуживания.
+
+1. Остановить локальный API и локальный worker, чтобы данные перестали меняться.
+2. Создать новый дамп скриптом `export-local-postgres-for-timeweb.ps1`.
+3. Сделать резервную копию VPS-базы командой:
+
+```bash
+cd /opt/fitness/source
+BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
+```
+
+4. Остановить VPS API/web, пересоздать только базу `fitness` и восстановить новый
+   дамп. Это намеренно заменяет предварительный снимок и требует отдельного
+   подтверждения владельца непосредственно перед выполнением.
+5. Повторно сверить количества строк и выполнить миграции.
+6. Запустить `api`, `web`, `caddy` и один VPS-worker.
+
+До этого шага VPS-worker не включать.
+
+## Шаг 5. Переключить Telegram
+
+Только после зелёных HTTPS-проверок и финальной синхронизации:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\setup_telegram_bot.ps1 `
   -MiniAppUrl "https://app.filfitclub.ru" `
-  -WebhookBase "https://app.filfitclub.ru"
+  -WebhookBase "https://api.filfitclub.ru"
 ```
 
-Проверьте:
+`web_app` в BotFather остаётся ручной настройкой и не удаляется. Проверить:
 
-1. тип Menu Button — `web_app`;
-2. адрес — `https://app.filfitclub.ru`;
-3. `/start` открывает новую версию;
-4. авторизация, главная, история и уведомления работают.
+1. `/start` открывает `https://app.filfitclub.ru`;
+2. авторизация Telegram проходит;
+3. главная, история и подготовка тренировки показывают перенесённые данные;
+4. тестовое уведомление приходит один раз;
+5. API, web, db, redis и worker не перезапускаются.
 
-## Шаг 12. Удалить остатки Cloudflare
+## Шаг 6. Наблюдение и отключение локального контура
 
-Когда `Resolve-DnsName filfitclub.ru -Type NS` показывает только Timeweb и новое
-приложение стабильно работает:
+Минимум 24 часа сохранять локальную PostgreSQL, Supervisor, Tailscale и исходный
+дамп как резерв. Локальный worker после переключения должен оставаться
+остановленным, иначе появятся дубли уведомлений.
 
-1. удалите зону `filfitclub.ru` из панели Cloudflare;
-2. если в Windows был установлен `cloudflared`, остановите и отключите его;
-3. не удаляйте и не отключайте Tailscale/Supervisor ещё 24 часа.
+После суток стабильной работы:
 
-Проверка Windows:
+- повторно проверить Telegram и browser OTP;
+- проверить автоматический backup VPS;
+- отключить Windows-службу `cloudflared`, если она ещё установлена;
+- только с отдельного подтверждения удалить неиспользуемую управляемую БД
+  `fitness-prog`, чтобы прекратить её оплату;
+- локальные PostgreSQL и дампы не удалять.
 
-```powershell
-Get-Service cloudflared -ErrorAction SilentlyContinue
+## Обновление приложения
+
+```bash
+cd /opt/fitness/source
+BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
+git pull --ff-only
+docker compose --env-file backend/.env.production build --pull api worker web
+docker compose --env-file backend/.env.production up -d
+docker compose --env-file backend/.env.production ps
 ```
 
-Если сервис существует, запустите PowerShell от администратора:
+Если Docker Hub возвращает `429 Too Many Requests`, проверить зеркало:
 
-```powershell
-Stop-Service cloudflared
-Set-Service cloudflared -StartupType Disabled
+```bash
+docker info --format '{{json .RegistryConfig.Mirrors}}'
 ```
 
-## Шаг 13. Отключить зависимость от локального компьютера
+Ожидается `https://dockerhub.timeweb.cloud/`.
 
-После минимум 24 часов стабильной работы Timeweb:
+## Быстрая диагностика
 
-1. проверьте Telegram ещё раз с телефона;
-2. проверьте email OTP и уведомление;
-3. включите backup PostgreSQL в Timeweb;
-4. задайте в GitHub Actions variable:
-
-```text
-PUBLIC_HEALTH_URL=https://app.filfitclub.ru/health
+```bash
+cd /opt/fitness/source
+docker compose --env-file backend/.env.production ps
+docker compose --env-file backend/.env.production logs --tail=100 api worker caddy
+docker compose --env-file backend/.env.production exec -T db pg_isready -U fitness -d fitness
+docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 ```
 
-5. только теперь локальный Supervisor/Tailscale можно остановить.
-
-Локальную PostgreSQL и дампы не удаляйте. Они остаются аварийной копией.
-
-## Откат
-
-Пока локальный Supervisor/Tailscale работает, откат простой: снова укажите его
-URL в Telegram Menu Button и webhook. Переключение Telegram не удаляет данные ни
-в локальной, ни в Timeweb-базе.
-
-Официальные инструкции Timeweb:
-
-- [деплой из Dockerfile](https://timeweb.cloud/docs/apps/deploying-with-dockerfile);
-- [переменные App Platform](https://timeweb.cloud/docs/apps/variables);
-- [healthcheck](https://timeweb.cloud/docs/apps/healthcheck-path);
-- [домены App Platform](https://timeweb.cloud/docs/apps/upravlenie-apps-v-paneli);
-- [технический перенос домена](https://timeweb.cloud/docs/domains/domain-technical-transfer);
-- [DNS и NS Timeweb](https://timeweb.cloud/docs/domains/dns-records-management);
-- [публичный доступ PostgreSQL](https://timeweb.cloud/docs/dbaas/dbaas-manage/public-ip-access);
-- [создание PostgreSQL/Valkey](https://timeweb.cloud/docs/dbaas/dbaas-create).
+Логи не должны содержать токены, OTP и пароли. Telegram-токен в HTTP-логах
+редактируется как `[REDACTED]`.

@@ -109,6 +109,10 @@ services:
       context: ./backend
     restart: unless-stopped
     command: ["arq", "app.tasks.notifications.WorkerSettings"]
+    # The backend image checks its HTTP port by default. ARQ has no HTTP server,
+    # so its liveness is confirmed from startup/task logs instead.
+    healthcheck:
+      disable: true
     env_file:
       - ./backend/.env.production
     environment:

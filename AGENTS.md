@@ -65,15 +65,13 @@ OpenAI. Допустим локальный rule-based ответ без вне�
 
 - Локальный публичный режим: FastAPI отдаёт API и `frontend/dist`, HTTPS даёт
   Tailscale Funnel. Ngrok запрещён и отбрасывается кодом.
-- Основной production: один контейнер Timeweb App Platform отдаёт React, API и
-  запускает ARQ worker; PostgreSQL 18 и Valkey — управляемые Timeweb DBaaS с
-  защищёнными публичными подключениями. DNS делегирован Timeweb, внешнего proxy
-  или tunnel перед приложением нет. Полный порядок —
-  `docs/TIMEWEB_DOMAIN_CUTOVER.md`.
-- VPS production: Ubuntu 24.04 + Docker Compose; Caddy публикует отдельные
+- Основной production: Timeweb VPS на Ubuntu 24.04 + Docker Compose; Caddy публикует отдельные
   frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API и Nginx остаются
-  во внутренней Docker-сети. Полный порядок — `docs/VPS_DEPLOYMENT_GUIDE.md`.
-- Production-манифесты: корневой `Dockerfile` для Timeweb, `render.yaml`,
+  во внутренней Docker-сети. DNS делегируется Timeweb, Cloudflare не используется.
+  Фактический порядок переключения — `docs/TIMEWEB_DOMAIN_CUTOVER.md`, полный
+  универсальный runbook — `docs/VPS_DEPLOYMENT_GUIDE.md`.
+- Production-манифесты: `docker-compose.yml`, Dockerfile каждого приложения,
+  корневой альтернативный `Dockerfile` для App Platform и `render.yaml`.
   `docker-compose.yml` и Dockerfile каждого приложения.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
   `DATABASE_URL`; SQL-схема версионируется в `supabase/migrations/`.
@@ -148,7 +146,8 @@ services → SQLAlchemy models → PostgreSQL
 ### Данные и операции
 
 - `supabase/migrations/` — append-only миграции PostgreSQL.
-- `deploy/timeweb/` и корневой `Dockerfile` — запуск общего контейнера App Platform.
+- `deploy/timeweb/` и корневой `Dockerfile` — сохранённый альтернативный запуск
+  общего контейнера App Platform; текущий Timeweb production использует Compose.
 - `scripts/` — Windows/local/server/supervisor/Tailscale/Redis команды.
 - `.github/workflows/ci.yml` — обязательные автоматические проверки.
 - `artifacts/` и `frontend/artifacts/` — результаты проверок, не runtime source.
@@ -332,8 +331,8 @@ backup и dry-run, если он предусмотрен.
 - `RUN.md` — короткий локальный запуск.
 - `docs/USER_GUIDE.md` — инструкция пользователя.
 - `docs/LOCAL_ADMIN_GUIDE.md` — Windows/Tailscale/supervisor/диагностика.
-- `docs/TIMEWEB_DOMAIN_CUTOVER.md` — основной production в Timeweb App Platform,
-  DBaaS, DNS и безопасное переключение с локального контура.
+- `docs/TIMEWEB_DOMAIN_CUTOVER.md` — фактический Timeweb VPS, DNS и безопасное
+  переключение с локального Supervisor/Tailscale без потери данных.
 - `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
   перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
