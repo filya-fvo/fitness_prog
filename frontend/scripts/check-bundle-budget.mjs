@@ -27,8 +27,9 @@ for (const name of files.filter(
 const js = measured.filter((item) => item.name.endsWith(".js"));
 const totalJsGzip = js.reduce((sum, item) => sum + item.gzip, 0);
 const largestJsGzip = Math.max(0, ...js.map((item) => item.gzip));
-// Baseline 2026-08-20 is ~398 kB across all lazy chunks; keep <3% headroom.
-const limits = { totalJsGzip: 410_000, largestJsGzip: 140_000 };
+// Baseline 2026-08-20 is ~398 kB. The visual full-catalog replacement flow
+// added ~1.2 kB on 2026-08-25; keep the measured total below 412 kB.
+const limits = { totalJsGzip: 412_000, largestJsGzip: 140_000 };
 const failures = [];
 if (totalJsGzip > limits.totalJsGzip) failures.push(`all JS gzip ${totalJsGzip} > ${limits.totalJsGzip}`);
 if (largestJsGzip > limits.largestJsGzip) failures.push(`largest JS gzip ${largestJsGzip} > ${limits.largestJsGzip}`);

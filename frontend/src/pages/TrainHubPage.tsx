@@ -42,6 +42,11 @@ import {
 } from "@/utils/programProgress";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import { toUserMessage } from "@/utils/errors";
+import {
+  canStartProgramFromSchedule,
+  plannedWorkoutOccurrence,
+  startableWorkoutOccurrence,
+} from "@/utils/workoutSchedule";
 
 function draftsFromWorkout(workout: {
   plan?: WorkoutPlan | Record<string, unknown> | null;
@@ -98,16 +103,19 @@ export function TrainHubPage() {
   );
   const dayIndex = cursor?.nextDayIndex ?? 1;
   const weekPhase: WeekPhase = cursor?.weekPhase ?? "medium";
+  const startableOccurrence = startableWorkoutOccurrence(schedule);
+  const plannedOccurrence = plannedWorkoutOccurrence(schedule);
+  const canStartProgramNow = canStartProgramFromSchedule(schedule);
+  const preparedDayIndex = plannedOccurrence?.day_index ?? dayIndex;
   const dayTitle =
-    (program ? listProgramDays(program) : []).find((d) => d.dayIndex === dayIndex)?.title ||
-    `День ${dayIndex}`;
+    (program ? listProgramDays(program) : []).find((d) => d.dayIndex === preparedDayIndex)?.title ||
+    `День ${preparedDayIndex}`;
   const levelLabel = (() => {
     const lvl = String(program?.level || program?.target_level || "");
     return lvl ? enumLabel(lvl) : "";
   })();
-  const plannedOccurrence = schedule?.current ?? schedule?.next ?? null;
+  const todayProgramCompleted = schedule?.current?.status === "completed";
   const preparedDate = plannedOccurrence?.target_date ?? localDateKey();
-  const preparedDayIndex = plannedOccurrence?.day_index ?? dayIndex;
 
   useEffect(() => {
     let cancelled = false;
@@ -171,12 +179,21 @@ export function TrainHubPage() {
 
   async function startToday() {
     if (!program || starting) return;
+    if (todayProgramCompleted) {
+      setError("Сегодняшняя тренировка программы уже выполнена.");
+      return;
+    }
+    if (!canStartProgramNow) {
+      setError("Следующая тренировка ещё не наступила. Пока можно подготовить замены.");
+      return;
+    }
     if (canResume && resumeId) {
       navigate(`/workouts/active/${resumeId}`);
       return;
     }
     setStarting(true);
     setError(null);
+    const startDayIndex = startableOccurrence?.day_index ?? dayIndex;
     try {
       if (isOnline() && getStoredToken()) {
         const ex = await fetchExercises({ pageSize: 200 });
@@ -191,7 +208,7 @@ export function TrainHubPage() {
       const cursorPatch = cursorGoalsPatch(
         program.id,
         {
-          nextDayIndex: dayIndex,
+          nextDayIndex: startDayIndex,
           weekPhase,
           phaseSource: cursor?.phaseSource ?? "auto",
           workoutsInPhase: cursor?.workoutsInPhase ?? 0,
@@ -213,7 +230,11 @@ export function TrainHubPage() {
 
       const workout = await startProgramWorkout({
         programId: program.id,
-        dayIndex,
+        dayIndex: startDayIndex,
+        scheduledDate:
+          startableOccurrence?.status === "scheduled"
+            ? startableOccurrence.target_date
+            : undefined,
         weekPhase,
       });
       const clientId = crypto.randomUUID();
@@ -261,7 +282,7 @@ export function TrainHubPage() {
       setCurrentExerciseIndex(0);
       trackEvent("program_started", {
         program_id: program.id,
-        day_index: dayIndex,
+        day_index: startDayIndex,
         source: "train_hub",
         week_phase: phaseMeta.phase,
       });
@@ -294,22 +315,53 @@ export function TrainHubPage() {
               Продолжить
             </button>
           </div>
-        ) : program ? (
+        ) : program && todayProgramCompleted ? (
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Моя программа</p>
+            <p className="mt-1 text-base font-semibold">Тренировка выполнена</p>
+            <p className="mt-1 text-xs text-tg-hint">
+              {schedule?.current?.title || programDayLabel(program.name)} — результат сохранён.
+            </p>
+            <Link
+              to="/progress"
+              className="mt-3 block min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+            >
+              Открыть прогресс
+            </Link>
+            {plannedOccurrence ? (
+              <PlannedWorkoutEditor
+                programId={program.id}
+                scheduledDate={preparedDate}
+                dayIndex={preparedDayIndex}
+                weekPhase={weekPhase}
+                disabled={!isOnline()}
+              />
+            ) : null}
+          </div>
+        ) : program ? (
+          <div className="rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">
+              {canStartProgramNow ? "Моя программа" : "Следующая тренировка"}
+            </p>
             <p className="mt-1 text-base font-semibold">{programDayLabel(program.name)}</p>
             <p className="mt-1 text-sm text-tg-hint">
               {dayTitle} · {phaseMetaFromName(weekPhase).label}
               {levelLabel ? ` · ${levelLabel}` : ""}
             </p>
-            <button
-              type="button"
-              disabled={starting}
-              onClick={() => void startToday()}
-              className="mt-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-            >
-              {starting ? "Стартуем…" : `Начать · ${dayTitle}`}
-            </button>
+            {canStartProgramNow ? (
+              <button
+                type="button"
+                disabled={starting}
+                onClick={() => void startToday()}
+                className="mt-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+              >
+                {starting ? "Стартуем…" : `Начать · ${dayTitle}`}
+              </button>
+            ) : (
+              <p className="mt-3 rounded-xl bg-tg-bg px-3 py-2.5 text-center text-xs text-tg-hint">
+                До дня тренировки доступны просмотр плана и подготовка замен.
+              </p>
+            )}
             <PlannedWorkoutEditor
               programId={program.id}
               scheduledDate={preparedDate}

@@ -4,6 +4,12 @@ import { WheelPicker } from "@/components/WheelPicker";
 import { DecimalInput } from "@/components/DecimalInput";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, LocalSetDraft } from "@/types/workout";
+import {
+  buildCardioMachineParams,
+  cardioMachineFields,
+  initialCardioParamValues,
+  type CardioParamKey,
+} from "@/utils/cardioMachineParams";
 import { rangeInts } from "@/utils/range";
 import {
   type CardioMachineKind,
@@ -57,6 +63,7 @@ export function AddSetModal({
     () => inferCardioMachineKind(exercise),
     [exercise],
   );
+  const machineFields = useMemo(() => cardioMachineFields(machineKind), [machineKind]);
 
   const initWeight = Number(initial?.weight) || 0;
   const { whole: w0, tenth: t0 } = splitWeight(initWeight);
@@ -85,13 +92,9 @@ export function AddSetModal({
         : "total",
   );
 
-  // machine params
-  const mp = (initial?.machineParams || {}) as Record<string, number>;
-  const [speed, setSpeed] = useState(Number(mp.speed) || 6);
-  const [incline, setIncline] = useState(Number(mp.incline) || 1);
-  const [resistance, setResistance] = useState(Number(mp.resistance) || 5);
-  const [cadence, setCadence] = useState(Number(mp.cadence) || 70);
-  const [pace, setPace] = useState(Number(mp.pace) || 2.3);
+  const [machineValues, setMachineValues] = useState(() =>
+    initialCardioParamValues(initial?.machineParams),
+  );
 
   if (!open) return null;
 
@@ -103,11 +106,14 @@ export function AddSetModal({
 
   function machineParams(): Record<string, string | number> | null {
     if (loadType !== "cardio_machine") return null;
-    if (machineKind === "treadmill") return { speed, incline };
-    if (machineKind === "elliptical") return { resistance, speed };
-    if (machineKind === "bike") return { resistance, cadence };
-    if (machineKind === "rower") return { resistance, pace };
-    return { resistance };
+    return buildCardioMachineParams(machineKind, machineValues);
+  }
+
+  function setMachineValue(key: CardioParamKey, value: string) {
+    setMachineValues((current) => ({
+      ...current,
+      [key]: Number(value) || 0,
+    }));
   }
 
   return (
@@ -178,90 +184,26 @@ export function AddSetModal({
               {formatDurationLabel(durationSec)}
             </p>
             {loadType === "cardio_machine" ? (
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-black/25 p-3 text-xs">
-                {machineKind === "treadmill" || machineKind === "other" ? (
-                  <>
-                    <label className="text-white/60">
-                      Скорость
-                      <DecimalInput
-                        step={0.1}
-                        value={speed}
-                        onValueChange={(value) => setSpeed(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                    <label className="text-white/60">
-                      Наклон
-                      <DecimalInput
-                        step={0.5}
-                        value={incline}
-                        onValueChange={(value) => setIncline(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                  </>
-                ) : null}
-                {machineKind === "elliptical" ? (
-                  <>
-                    <label className="text-white/60">
-                      Уровень
-                      <DecimalInput
-                        value={resistance}
-                        onValueChange={(value) => setResistance(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                    <label className="text-white/60">
-                      Скорость
-                      <DecimalInput
-                        step={0.1}
-                        value={speed}
-                        onValueChange={(value) => setSpeed(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                  </>
-                ) : null}
+              <div
+                className={`grid gap-2 rounded-xl bg-black/25 p-3 text-xs ${
+                  machineFields.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
+                {machineFields.map((field) => (
+                  <label key={field.key} className="text-white/60">
+                    {field.label}
+                    <DecimalInput
+                      step={field.step}
+                      value={machineValues[field.key]}
+                      onValueChange={(value) => setMachineValue(field.key, value)}
+                      className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
+                    />
+                  </label>
+                ))}
                 {machineKind === "bike" ? (
-                  <>
-                    <label className="text-white/60">
-                      Сопротивление
-                      <DecimalInput
-                        value={resistance}
-                        onValueChange={(value) => setResistance(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                    <label className="text-white/60">
-                      Каденс (об/мин)
-                      <DecimalInput
-                        value={cadence}
-                        onValueChange={(value) => setCadence(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                  </>
-                ) : null}
-                {machineKind === "rower" ? (
-                  <>
-                    <label className="text-white/60">
-                      Сопротивление
-                      <DecimalInput
-                        value={resistance}
-                        onValueChange={(value) => setResistance(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                    <label className="text-white/60">
-                      Темп /500 м
-                      <DecimalInput
-                        step={0.1}
-                        value={pace}
-                        onValueChange={(value) => setPace(Number(value) || 0)}
-                        className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
-                      />
-                    </label>
-                  </>
+                  <p className="col-span-2 text-[11px] text-white/50">
+                    Укажите скорость и/или сопротивление по экрану тренажёра.
+                  </p>
                 ) : null}
               </div>
             ) : null}

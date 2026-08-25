@@ -38,7 +38,7 @@ class WorkoutScheduleOccurrence(BaseModel):
     title: str
     program_id: uuid.UUID | None = None
     day_index: int | None = None
-    status: str = Field(pattern=r"^(scheduled|moved|missed)$")
+    status: str = Field(pattern=r"^(scheduled|moved|missed|completed)$")
     is_override: bool = False
     can_reschedule: bool = False
     reschedule_until: date | None = None

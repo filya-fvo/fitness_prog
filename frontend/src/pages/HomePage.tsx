@@ -58,6 +58,11 @@ import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
+import {
+  canStartProgramFromSchedule,
+  plannedWorkoutOccurrence,
+  startableWorkoutOccurrence,
+} from "@/utils/workoutSchedule";
 
 function planHasReplacements(plan: WorkoutPlan | Record<string, unknown> | null | undefined): boolean {
   if (!plan || typeof plan !== "object") return false;
@@ -126,6 +131,7 @@ export function HomePage() {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -141,11 +147,18 @@ export function HomePage() {
   }, [activeWorkout, sessionHasReplacements]);
 
   const todayProgram = recommended[0] ?? null;
+  const todayProgramCompleted = Boolean(
+    workoutSchedule?.current?.status === "completed" ||
+      (todayProgram && completedProgramIdsToday.includes(todayProgram.id)),
+  );
   const programCursor = useMemo(
     () => (todayProgram ? readProgramCursor(profileGoals, todayProgram) : null),
     [profileGoals, todayProgram],
   );
-  const todayDay = programCursor?.nextDayIndex ?? 1;
+  const startableOccurrence = startableWorkoutOccurrence(workoutSchedule);
+  const plannedOccurrence = plannedWorkoutOccurrence(workoutSchedule);
+  const canStartProgramNow = canStartProgramFromSchedule(workoutSchedule);
+  const todayDay = plannedOccurrence?.day_index ?? programCursor?.nextDayIndex ?? 1;
   const todayPhase: WeekPhase = programCursor?.weekPhase ?? "medium";
   const dayOptions = useMemo(
     () => (todayProgram ? listProgramDays(todayProgram) : []),
@@ -262,13 +275,22 @@ export function HomePage() {
           setStreak(computeStreak(workouts));
           const completed = workouts.filter((w) => w.status === "completed");
           setCompletedCount(completed.length);
+          const today = progressLocalDate(new Date());
+          setCompletedProgramIdsToday(
+            Array.from(
+              new Set(
+                completed
+                  .filter((workout) => workout.scheduled_date === today && workout.program_id)
+                  .map((workout) => String(workout.program_id)),
+              ),
+            ),
+          );
           let latest: string | null = null;
           for (const w of completed) {
             const k = workoutDateKey(w);
             if (k && (!latest || k > latest)) latest = k;
           }
           if (latest) {
-            const today = progressLocalDate(new Date());
             const t0 = new Date(today + "T12:00:00");
             const t1 = new Date(latest + "T12:00:00");
             const diff = Math.max(0, Math.round((t0.getTime() - t1.getTime()) / 86400000));
@@ -529,11 +551,15 @@ export function HomePage() {
   }
 
   async function startToday() {
-    const scheduled = workoutSchedule?.current?.status === "scheduled"
-      ? workoutSchedule.current
+    if (!canStartProgramNow) {
+      setError("Следующая тренировка ещё не наступила. Пока можно подготовить замены.");
+      return;
+    }
+    const scheduled = startableOccurrence?.status === "scheduled"
+      ? startableOccurrence
       : null;
     await startProgramDay({
-      dayIndex: scheduled?.day_index ?? todayDay,
+      dayIndex: startableOccurrence?.day_index ?? todayDay,
       weekPhase: todayPhase,
       phaseSource: programCursor?.phaseSource ?? "auto",
       scheduledDate: scheduled?.target_date,
@@ -633,9 +659,45 @@ export function HomePage() {
               Чтобы выбрать другой день — сначала завершите текущую сессию.
             </p>
           </div>
+        ) : todayProgram && todayProgramCompleted ? (
+          <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl bg-tg-secondary p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
+              <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
+                Тренировка выполнена
+              </p>
+              <p className="mt-1 break-words text-xs text-tg-hint [overflow-wrap:anywhere]">
+                {workoutSchedule?.current?.title || todayProgram.name}
+              </p>
+              <p className="mt-2 text-xs text-tg-hint">
+                Результат сохранён. Повторно начинать этот день программы не нужно.
+              </p>
+            </div>
+            <WorkoutSchedulePanel
+              overview={workoutSchedule}
+              disabled={!online || starting}
+              onChange={setWorkoutSchedule}
+            />
+            {workoutSchedule?.next ? (
+              <Link
+                to="/train"
+                className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium text-tg-link"
+              >
+                Подготовить следующую тренировку
+              </Link>
+            ) : null}
+            <Link
+              to="/progress"
+              className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+            >
+              Открыть прогресс
+            </Link>
+          </div>
         ) : todayProgram ? (
           <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">
+              {canStartProgramNow ? "Сегодня" : "Следующая тренировка"}
+            </p>
             <p className="break-words text-base font-semibold [overflow-wrap:anywhere]">{todayProgram.name}</p>
             <p className="break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
               {todayDayTitle}
@@ -660,7 +722,9 @@ export function HomePage() {
                   className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left"
                   onClick={() => setTodayPlanOpen((open) => !open)}
                 >
-                  <span className="text-xs font-semibold">План на сегодня</span>
+                  <span className="text-xs font-semibold">
+                    {canStartProgramNow ? "План на сегодня" : "План следующей тренировки"}
+                  </span>
                   <span className="shrink-0 text-[11px] text-tg-link">
                     {todayExercises.length} упр. · {todayPlanOpen ? "Свернуть ↑" : "Развернуть ↓"}
                   </span>
@@ -697,6 +761,12 @@ export function HomePage() {
                 ) : null}
               </div>
             ) : null}
+            <Link
+              to="/train"
+              className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium text-tg-link"
+            >
+              Заменить упражнения до старта
+            </Link>
             {(() => {
               const mismatches = compareProgramToProfile(todayProgram, {
                 primaryGoal: String(profileGoals.primary_goal || ""),
@@ -716,32 +786,38 @@ export function HomePage() {
                 </div>
               ) : null;
             })()}
-            <div className="flex overflow-hidden rounded-xl bg-tg-button">
-              <button
-                type="button"
-                disabled={starting}
-                onClick={() => void startToday()}
-                className="min-w-0 flex-1 break-words px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text [overflow-wrap:anywhere] disabled:opacity-60"
-              >
-                {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
-                <span className="mt-0.5 block text-[10px] font-normal opacity-80">
-                  {phaseMetaFromName(todayPhase).label} неделя
-                </span>
-              </button>
-              <button
-                type="button"
-                disabled={starting}
-                aria-label="Выбрать день и неделю программы"
-                onClick={() => {
-                  setPickDay(todayDay);
-                  setPickPhase(todayPhase);
-                  setPickerOpen(true);
-                }}
-                className="shrink-0 border-l border-black/10 px-4 py-3 text-lg font-semibold text-tg-button-text disabled:opacity-60"
-              >
-                ▾
-              </button>
-            </div>
+            {canStartProgramNow ? (
+              <div className="flex overflow-hidden rounded-xl bg-tg-button">
+                <button
+                  type="button"
+                  disabled={starting}
+                  onClick={() => void startToday()}
+                  className="min-w-0 flex-1 break-words px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text [overflow-wrap:anywhere] disabled:opacity-60"
+                >
+                  {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
+                  <span className="mt-0.5 block text-[10px] font-normal opacity-80">
+                    {phaseMetaFromName(todayPhase).label} неделя
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={starting}
+                  aria-label="Выбрать день и неделю программы"
+                  onClick={() => {
+                    setPickDay(todayDay);
+                    setPickPhase(todayPhase);
+                    setPickerOpen(true);
+                  }}
+                  className="shrink-0 border-l border-black/10 px-4 py-3 text-lg font-semibold text-tg-button-text disabled:opacity-60"
+                >
+                  ▾
+                </button>
+              </div>
+            ) : (
+              <p className="rounded-xl bg-tg-bg px-3 py-2.5 text-center text-xs text-tg-hint">
+                Начать её можно в день тренировки. Сейчас доступны просмотр плана и замены.
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">

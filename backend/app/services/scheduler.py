@@ -232,9 +232,44 @@ async def get_schedule_overview(
     user: User,
     requested_day: date,
 ) -> dict[str, Any]:
-    overview = schedule_overview(user.goals or {}, requested_day)
+    goals = user.goals or {}
+    overview = schedule_overview(goals, requested_day)
+    current = overview.get("current")
+    if isinstance(current, dict) and current.get("status") == "scheduled":
+        completed_filters = [
+            Workout.user_id == user.id,
+            Workout.scheduled_date == current["target_date"],
+            Workout.status == "completed",
+            Workout.is_deleted.is_(False),
+        ]
+        if current.get("program_id") is not None:
+            completed_filters.append(Workout.program_id == current["program_id"])
+        completed = await session.scalar(
+            select(Workout)
+            .where(*completed_filters)
+            .order_by(Workout.completed_at.desc(), Workout.created_at.desc())
+        )
+        if completed is not None:
+            plan = completed.plan if isinstance(completed.plan, dict) else {}
+            current["status"] = "completed"
+            current["program_id"] = completed.program_id or current.get("program_id")
+            current["title"] = str(
+                completed.title or plan.get("title") or current.get("title") or "Тренировка"
+            )
+            try:
+                current["day_index"] = int(
+                    plan.get("day_index") or current.get("day_index") or 0
+                ) or None
+            except (TypeError, ValueError):
+                current["day_index"] = current.get("day_index")
+            current["can_reschedule"] = False
+            current["reschedule_until"] = None
+
+            # Today appears as both current and next in the pure schedule. Once
+            # completed, expose the first future occurrence for preparation.
+            future = schedule_overview(goals, requested_day + timedelta(days=1))
+            overview["next"] = future.get("next")
     if overview.get("current") is None:
-        goals = user.goals or {}
         for offset in range(1, MAX_RESCHEDULE_LOOKBACK_DAYS + 1):
             original = requested_day - timedelta(days=offset)
             if original.weekday() not in workout_days(goals):

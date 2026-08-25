@@ -65,7 +65,7 @@ const scheduleOccurrenceSchema = z.object({
   title: z.string(),
   program_id: z.string().uuid().nullable().optional(),
   day_index: z.number().nullable().optional(),
-  status: z.enum(["scheduled", "moved", "missed"]),
+  status: z.enum(["scheduled", "moved", "missed", "completed"]),
   is_override: z.boolean(),
   can_reschedule: z.boolean(),
   reschedule_until: z.string().nullable().optional(),

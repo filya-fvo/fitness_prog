@@ -42,10 +42,8 @@ import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout
 import {
   buildExerciseHistory,
   draftReadyToComplete,
-  localDateKey,
   resolveWeekPhase,
   suggestLoad,
-  type WeekPhase,
   type WeekPhaseMeta,
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
@@ -55,7 +53,6 @@ import {
   equipmentGroup,
   type BulkReplacementPlan,
 } from "@/utils/exerciseAlternatives";
-import { advanceCursorAfterWorkout, cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
 import { buildWarmupPlan } from "@/utils/warmupPlan";
 import {
   draftsFromWorkoutSnapshot,
@@ -64,7 +61,6 @@ import {
   resolveAutoAdvanceSetting,
   shouldStartRestAfterSet,
 } from "@/utils/workoutSession";
-import { fetchPrograms } from "@/api/programs";
 import { toUserMessage } from "@/utils/errors";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import {
@@ -914,44 +910,6 @@ export function ActiveWorkout() {
       setActiveWorkout(result);
       await persistSession(result, drafts);
 
-      // Advance program day + week phase after full split cycle
-      try {
-        if (activeWorkout.program_id && isOnline()) {
-          const [profile, programs] = await Promise.all([
-            fetchMyProfile().catch(() => null),
-            fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] })),
-          ]);
-          const goals = (profile?.goals as Record<string, unknown>) || {};
-          const prog = programs.items.find((x) => x.id === activeWorkout.program_id) || null;
-          if (prog) {
-            const dayIndex = Number(plan.day_index) || 1;
-            const phase = (
-              plan.week_phase === "light" ||
-              plan.week_phase === "medium" ||
-              plan.week_phase === "heavy"
-                ? plan.week_phase
-                : weekPhase.phase
-            ) as WeekPhase;
-            const cur = readProgramCursor(goals, prog);
-            const next = advanceCursorAfterWorkout(prog, cur, dayIndex, phase);
-            const patch = cursorGoalsPatch(
-              prog.id,
-              {
-                nextDayIndex: next.nextDayIndex,
-                weekPhase: next.weekPhase,
-                phaseSource: next.phaseSource,
-                workoutsInPhase: next.workoutsInPhase,
-                startedAt: String(goals.active_program_started_at || localDateKey()),
-              },
-              localDateKey(),
-            );
-            await updateMyProfile({ goals: { ...goals, ...patch } });
-          }
-        }
-      } catch {
-        // soft fail
-      }
-
       await deleteLocalSession(clientId);
       resetSession();
       hapticNotification("success");
@@ -980,8 +938,6 @@ export function ActiveWorkout() {
     exerciseIds,
     notes,
     persistSession,
-    plan.day_index,
-    plan.week_phase,
     resetSession,
     rpe,
     setActiveWorkout,

@@ -3,7 +3,13 @@ import { useMemo, useState } from "react";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import { DecimalInput } from "@/components/DecimalInput";
 import type { Exercise } from "@/types/workout";
-import { formatDurationLabel } from "@/utils/exerciseLoadType";
+import {
+  buildCardioMachineParams,
+  cardioMachineFields,
+  initialCardioParamValues,
+  type CardioParamKey,
+} from "@/utils/cardioMachineParams";
+import { formatDurationLabel, inferCardioMachineKind } from "@/utils/exerciseLoadType";
 import {
   type WarmupPlan,
   type WarmupStep,
@@ -44,11 +50,16 @@ export function WarmupPanel({
     const c = plan.steps.find((s) => s.kind === "cardio");
     return Math.max(1, Math.round((c?.durationSec || 300) / 60));
   });
-  const lp = lastCardioParams || {};
-  const [speed, setSpeed] = useState(Number(lp.speed) || 6);
-  const [incline, setIncline] = useState(Number(lp.incline) || 1);
-  const [resistance, setResistance] = useState(Number(lp.resistance) || 5);
+  const [machineValues, setMachineValues] = useState(() =>
+    initialCardioParamValues(lastCardioParams),
+  );
   const [mediaOpenId, setMediaOpenId] = useState<string | null>(null);
+  const selectedMachine = useMemo(
+    () => machines.find((machine) => machine.id === cardioId) ?? null,
+    [cardioId, machines],
+  );
+  const machineKind = selectedMachine ? inferCardioMachineKind(selectedMachine) : "other";
+  const machineFields = useMemo(() => cardioMachineFields(machineKind), [machineKind]);
 
   const remaining = steps.filter((s) => !s.done && !s.skipped);
   const allDone = remaining.length === 0;
@@ -57,6 +68,13 @@ export function WarmupPanel({
     setSteps((prev) =>
       prev.map((s) => (s.id === id ? { ...s, done: !skipped, skipped } : s)),
     );
+  }
+
+  function setMachineValue(key: CardioParamKey, value: string) {
+    setMachineValues((current) => ({
+      ...current,
+      [key]: Number(value) || 0,
+    }));
   }
 
   function finish() {
@@ -68,12 +86,11 @@ export function WarmupPanel({
       params: Record<string, string | number>;
     } | null = null;
     if (cardioStep && !cardioStep.skipped) {
-      const ex = machines.find((m) => m.id === cardioId) || null;
       cardio = {
         exerciseId: cardioId,
-        title: ex?.name_ru || cardioStep.title,
+        title: selectedMachine?.name_ru || cardioStep.title,
         durationSec: cardioMin * 60,
-        params: { speed, incline, resistance },
+        params: buildCardioMachineParams(machineKind, machineValues),
       };
     }
     onCompleteAll({ cardio });
@@ -146,33 +163,27 @@ export function WarmupPanel({
                         className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm"
                       />
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <label className="text-[11px] text-tg-hint">
-                        Скор.
-                        <DecimalInput
-                          step={0.1}
-                          value={speed}
-                          onValueChange={(value) => setSpeed(Number(value) || 0)}
-                          className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
-                        />
-                      </label>
-                      <label className="text-[11px] text-tg-hint">
-                        Накл.
-                        <DecimalInput
-                          step={0.5}
-                          value={incline}
-                          onValueChange={(value) => setIncline(Number(value) || 0)}
-                          className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
-                        />
-                      </label>
-                      <label className="text-[11px] text-tg-hint">
-                        Ур.
-                        <DecimalInput
-                          value={resistance}
-                          onValueChange={(value) => setResistance(Number(value) || 0)}
-                          className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
-                        />
-                      </label>
+                    <div
+                      className={`grid gap-2 ${
+                        machineFields.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                      }`}
+                    >
+                      {machineFields.map((field) => (
+                        <label key={field.key} className="text-[11px] text-tg-hint">
+                          {field.shortLabel}
+                          <DecimalInput
+                            step={field.step}
+                            value={machineValues[field.key]}
+                            onValueChange={(value) => setMachineValue(field.key, value)}
+                            className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
+                          />
+                        </label>
+                      ))}
+                      {machineKind === "bike" ? (
+                        <p className="col-span-2 text-[11px] text-tg-hint">
+                          Укажите скорость и/или сопротивление по экрану тренажёра.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ) : (

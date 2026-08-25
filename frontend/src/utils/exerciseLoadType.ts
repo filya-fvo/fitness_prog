@@ -25,6 +25,11 @@ export function inferLoadType(exercise: Pick<Exercise, "name_ru" | "muscle_group
   const equip = (exercise.equipment || "").toLowerCase();
   const tags = (exercise.tags || []).map((t) => t.toLowerCase());
 
+  // Known machines stay configurable even if an older catalog row still has
+  // the legacy load:timed tag.
+  if (CARDIO_MACHINE_RE.test(name) || CARDIO_MACHINE_RE.test(equip)) {
+    return "cardio_machine";
+  }
   if (tags.includes("cardio_machine") || tags.includes("load:cardio_machine")) {
     return "cardio_machine";
   }
@@ -38,9 +43,6 @@ export function inferLoadType(exercise: Pick<Exercise, "name_ru" | "muscle_group
     return "weight_reps";
   }
 
-  if (CARDIO_MACHINE_RE.test(name) || CARDIO_MACHINE_RE.test(equip)) {
-    return "cardio_machine";
-  }
   if (muscle === "кардио" && (CARDIO_BODY_RE.test(name) || /свой вес|body/.test(equip))) {
     // bodyweight cardio often logged as time
     if (CARDIO_BODY_RE.test(name)) return "timed";

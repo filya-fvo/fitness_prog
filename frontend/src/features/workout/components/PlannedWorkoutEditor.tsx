@@ -8,9 +8,11 @@ import {
   type PlannedWorkoutPlanInput,
 } from "@/api/workouts";
 import { cacheExercises, readCachedExercises } from "@/db/syncQueue";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { rankEquivalentExercises } from "@/utils/exerciseAlternatives";
 import { toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
 
@@ -29,7 +31,7 @@ export function PlannedWorkoutEditor(props: Props) {
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const dialogRef = useModalAccessibility(open, () => setOpen(false));
@@ -45,15 +47,6 @@ export function PlannedWorkoutEditor(props: Props) {
     () => new Set((plan?.exercises || []).map((item) => item.exercise_id)),
     [plan],
   );
-  const alternatives = useMemo(() => {
-    if (!sourceExercise) return [];
-    const ranked = rankEquivalentExercises(sourceExercise, catalog, { excludedIds: occupiedIds });
-    const normalized = query.trim().toLowerCase();
-    return ranked
-      .filter((item) => !normalized || [item.name_ru, item.muscle_group, item.equipment || ""]
-        .join(" ").toLowerCase().includes(normalized))
-      .slice(0, 30);
-  }, [catalog, occupiedIds, query, sourceExercise]);
 
   async function showEditor() {
     if (loading || props.disabled) return;
@@ -99,7 +92,6 @@ export function PlannedWorkoutEditor(props: Props) {
       }),
     });
     setEditingSourceId(null);
-    setQuery("");
     setSaved(false);
   }
 
@@ -179,36 +171,45 @@ export function PlannedWorkoutEditor(props: Props) {
               {loading ? <p className="text-sm text-tg-hint">Загрузка плана…</p> : null}
               {error ? <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p> : null}
               {editingSourceId ? (
-                <div>
-                  <button type="button" onClick={() => setEditingSourceId(null)} className="mb-2 min-h-[44px] text-sm text-tg-link">← К плану</button>
-                  <p className="text-sm font-semibold">Замена: {sourceExercise?.name_ru || "упражнение"}</p>
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Поиск безопасной альтернативы"
-                    className="mt-3 w-full rounded-xl bg-tg-secondary px-3 py-3 text-base"
+                sourceExercise ? (
+                  <PlannedExercisePicker
+                    key={editingSourceId}
+                    source={sourceExercise}
+                    catalog={catalog}
+                    occupiedIds={occupiedIds}
+                    onBack={() => setEditingSourceId(null)}
+                    onChoose={chooseReplacement}
+                    onOpenDetail={setDetailExercise}
                   />
-                  <div className="mt-3 space-y-2">
-                    {alternatives.map((item) => (
-                      <button key={item.id} type="button" onClick={() => chooseReplacement(item)} className="min-h-[52px] w-full rounded-xl bg-tg-secondary px-3 py-2 text-left">
-                        <span className="block text-sm font-medium">{item.name_ru}</span>
-                        <span className="block text-xs text-tg-hint">{item.muscle_group}{item.equipment ? ` · ${item.equipment}` : ""}</span>
-                      </button>
-                    ))}
-                    {!alternatives.length ? <p className="text-xs text-tg-hint">Подходящих альтернатив в каталоге не найдено.</p> : null}
+                ) : (
+                  <div className="rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
+                    <p>Исходное упражнение не найдено в каталоге.</p>
+                    <button type="button" onClick={() => setEditingSourceId(null)} className="mt-2 min-h-[44px] text-tg-link">← К плану</button>
                   </div>
-                </div>
+                )
               ) : plan ? (
                 <div className="space-y-2">
-                  {plan.exercises.map((item) => (
-                    <div key={item.order} className="rounded-xl bg-tg-secondary p-3">
-                      <p className="text-sm font-medium">{item.name_ru || byId.get(item.exercise_id)?.name_ru || "Упражнение"}</p>
-                      <p className="mt-0.5 text-xs text-tg-hint">{item.target_sets} × {item.target_reps || "по плану"}</p>
-                      {item.original_exercise_id ? <p className="mt-1 text-[11px] text-tg-link">Подготовлена замена</p> : null}
-                      <button type="button" onClick={() => setEditingSourceId(item.original_exercise_id || item.exercise_id)} className="mt-2 min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
-                    </div>
-                  ))}
+                  {plan.exercises.map((item) => {
+                    const exercise = byId.get(item.exercise_id) ?? null;
+                    return (
+                      <div key={item.order} className="rounded-xl bg-tg-secondary p-3">
+                        <div className="flex items-center gap-3">
+                          {exercise ? <ExerciseThumbnail exercise={exercise} /> : null}
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words text-sm font-medium">{item.name_ru || exercise?.name_ru || "Упражнение"}</p>
+                            <p className="mt-0.5 text-xs text-tg-hint">{item.target_sets} × {item.target_reps || "по плану"}</p>
+                            {item.original_exercise_id ? <p className="mt-1 text-[11px] text-tg-link">Подготовлена замена</p> : null}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => setEditingSourceId(item.original_exercise_id || item.exercise_id)} className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
+                          {exercise ? (
+                            <button type="button" onClick={() => setDetailExercise(exercise)} className="min-h-[44px] rounded-lg px-2 text-xs text-tg-link">Техника и описание</button>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -221,6 +222,12 @@ export function PlannedWorkoutEditor(props: Props) {
             ) : null}
           </div>
         </div>
+      ) : null}
+      {detailExercise ? (
+        <ExerciseDetailModal
+          exercise={detailExercise}
+          onClose={() => setDetailExercise(null)}
+        />
       ) : null}
     </>
   );

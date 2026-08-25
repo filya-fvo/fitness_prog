@@ -517,13 +517,109 @@ async def start_program_workout(
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
+    target_date = scheduled_date or date.today()
+    existing = await session.scalar(
+        select(Workout)
+        .where(
+            Workout.user_id == user.id,
+            Workout.program_id == program_id,
+            Workout.scheduled_date == target_date,
+            Workout.is_deleted.is_(False),
+        )
+        .order_by(Workout.created_at.desc())
+    )
+    if existing is not None:
+        if existing.status == "completed":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Тренировка по этой программе на сегодня уже выполнена",
+            )
+        return await _get_workout_for_user(
+            session,
+            workout_id=existing.id,
+            user_id=user.id,
+        )
+
     payload = WorkoutCreate(
-        scheduled_date=scheduled_date or date.today(),
+        scheduled_date=target_date,
         program_id=program_id,
         day_index=day_index,
         week_phase=week_phase,
     )
     return await create_workout(session, user, payload)
+
+
+async def _advance_program_cursor_for_completed_workout(
+    session: AsyncSession,
+    user: User,
+    workout: Workout,
+) -> bool:
+    """Advance the active program cursor once for its latest completed day.
+
+    Completion is also retried by the offline queue. The cursor guard and the
+    latest-completion check make this repair safe for repeated and delayed calls.
+    """
+    if workout.program_id is None:
+        return False
+    goals = dict(user.goals or {})
+    if str(goals.get("active_program_id") or "") != str(workout.program_id):
+        return False
+
+    program = await session.scalar(
+        select(Program).where(Program.id == workout.program_id, Program.is_deleted.is_(False))
+    )
+    if program is None:
+        return False
+    structure = program.structure if isinstance(program.structure, dict) else {}
+    schedule = structure.get("schedule") or structure.get("days") or []
+    if not isinstance(schedule, list) or not schedule:
+        return False
+    day_index = _program_day_index(workout, schedule)
+    if day_index < 1:
+        return False
+    try:
+        cursor_day = int(goals.get("active_program_next_day") or 0)
+    except (TypeError, ValueError):
+        cursor_day = 0
+    if cursor_day != day_index:
+        return False
+
+    latest_completed_id = await session.scalar(
+        select(Workout.id)
+        .where(
+            Workout.user_id == user.id,
+            Workout.program_id == workout.program_id,
+            Workout.status == "completed",
+            Workout.is_deleted.is_(False),
+        )
+        .order_by(
+            Workout.scheduled_date.desc(),
+            Workout.completed_at.desc().nullslast(),
+            Workout.created_at.desc(),
+        )
+        .limit(1)
+    )
+    if latest_completed_id != workout.id:
+        return False
+
+    plan = workout.plan if isinstance(workout.plan, dict) else {}
+    phase = str(plan.get("week_phase") or "").strip().lower()
+    if phase not in {"light", "medium", "heavy"}:
+        current_phase = str(goals.get("active_program_week_phase") or "").strip().lower()
+        phase = current_phase if current_phase in {"light", "medium", "heavy"} else "medium"
+
+    next_day = (day_index % len(schedule)) + 1
+    if next_day == 1 and day_index == len(schedule):
+        phase = next_phase_after_split_cycle(phase)
+        goals["active_program_phase_source"] = "manual"
+        goals["active_program_workouts_in_phase"] = 0
+    else:
+        goals["active_program_workouts_in_phase"] = day_index
+    goals["active_program_next_day"] = next_day
+    goals["active_program_week_phase"] = phase
+    user.goals = goals
+    flag_modified(user, "goals")
+    return True
 
 
 async def complete_workout(
@@ -534,6 +630,11 @@ async def complete_workout(
 ) -> Workout:
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
     if workout.status == "completed":
+        # Also repairs cursors from older/client-only completion flows.
+        repaired = await _advance_program_cursor_for_completed_workout(session, user, workout)
+        if repaired:
+            await session.commit()
+            return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
         # Offline clients may retry after the server committed but the response was lost.
         return workout
 
@@ -550,6 +651,7 @@ async def complete_workout(
             started = started.replace(tzinfo=UTC)
         workout.duration_sec = max(0, int((now - started).total_seconds()))
 
+    await _advance_program_cursor_for_completed_workout(session, user, workout)
     await session.commit()
     return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
 
