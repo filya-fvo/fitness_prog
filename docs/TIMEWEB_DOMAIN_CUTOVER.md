@@ -174,6 +174,16 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 Если в BotFather вручную настроен постоянный `web_app`/Menu Button, сама настройка остаётся ручной.
 В BotFather нужно изменить только её URL на `https://app.filfitclub.ru`, не удаляя саму кнопку.
 `Повторный /start` обновляет inline-кнопку в новом сообщении, но не переписывает ручную BotFather-кнопку.
+Для безопасной смены только URL без удаления `web_app` можно выполнить:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\setup_telegram_bot.ps1 `
+  -MiniAppUrl "https://app.filfitclub.ru" `
+  -WebhookBase "https://api.filfitclub.ru" `
+  -UpdateWebAppMenu `
+  -SkipPersistMiniAppUrl
+```
 
 После успешного переключения один раз отправить всем привязанным Telegram-пользователям
 новый адрес и просьбу повторить `/start`. Ручной `web_app`/Menu Button не меняется:

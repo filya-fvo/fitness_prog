@@ -15,10 +15,14 @@ param(
   [string]$WebhookBase = "",
   [switch]$SkipWebhook,
   [switch]$SkipMenu,
+  [switch]$UpdateWebAppMenu,
   [switch]$SkipPersistMiniAppUrl
 )
 
 $ErrorActionPreference = "Stop"
+if ($SkipMenu -and $UpdateWebAppMenu) {
+  throw "Use either -SkipMenu or -UpdateWebAppMenu, not both."
+}
 $Root = Split-Path -Parent $PSScriptRoot
 $BackendEnv = Join-Path $Root "backend\.env"
 $UrlsFile = Join-Path $Root "scripts\tailscale-url.local.env"
@@ -87,7 +91,18 @@ if ((-not $SkipPersistMiniAppUrl) -and (Test-Path $BackendEnv)) {
 
 $api = "https://api.telegram.org/bot$token"
 
-if (-not $SkipMenu) {
+if ($UpdateWebAppMenu) {
+  $menuBody = @{
+    menu_button = @{
+      type = "web_app"
+      text = "Open"
+      web_app = @{ url = $MiniAppUrl }
+    }
+  } | ConvertTo-Json -Depth 6
+  $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
+  if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
+  Write-Host "[telegram] Existing web_app Menu Button now opens $MiniAppUrl" -ForegroundColor Green
+} elseif (-not $SkipMenu) {
   $menuBody = @{
     menu_button = @{ type = "default" }
   } | ConvertTo-Json -Depth 6
@@ -130,7 +145,9 @@ Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
 Write-Host "  1) The production HTTPS app and API must be reachable"
 Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
-if ($SkipMenu) {
+if ($UpdateWebAppMenu) {
+  Write-Host "  3) Existing web_app/Menu Button URL was updated without removing the button"
+} elseif ($SkipMenu) {
   Write-Host "  3) Existing manual web_app/Menu Button was preserved"
 } else {
   Write-Host "  3) Persistent Open near the message field should be absent"

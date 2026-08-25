@@ -32,6 +32,8 @@
   даёт новый адрес и просит повторить `/start`; ручной `web_app` остаётся без изменений.
 - Добавлен systemd timer ежедневной резервной копии PostgreSQL в `/opt/fitness/backups/daily`.
   `AGENTS.md` фиксирует production-репозиторий, ветку, путь VPS и обязательную публикацию после commit.
+- Telegram setup умеет обновить только URL уже существующей ручной `web_app`/Menu Button,
+  не удаляя и не заменяя её стандартным меню.
 - Фактически проверено на VPS: Docker Compose собрал API/frontend/worker,
   PostgreSQL и Redis healthy, миграции завершились `MIGRATIONS_OK`, внутренние
   API `/health` и frontend отвечают. В 14 таблицах VPS точные количества строк
@@ -47,6 +49,8 @@
 - После публикации commit `0f95ab2` API и frontend ответили `200`, все шесть Compose-сервисов
   работают, daily backup создал первый проверенный dump, timer активен. Одноразовую
   Telegram-рассылку получили 6 привязанных чатов; один сохранённый Telegram ID недоступен (`chat not found`).
+- Telegram Bot API после обновления подтвердил: Menu Button сохранил тип `web_app`, а его URL теперь
+  `https://app.filfitclub.ru/`; webhook направлен на Timeweb, pending updates — 0.
 
 ## 0.20.22 — 2026-08-25
 

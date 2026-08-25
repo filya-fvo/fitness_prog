@@ -187,6 +187,9 @@ def test_vps_runbook_requires_backup_and_safe_volume_handling() -> None:
     )
     assert "SkipPersistMiniAppUrl" in telegram_setup
     assert "(-not $SkipPersistMiniAppUrl)" in telegram_setup
+    assert "UpdateWebAppMenu" in telegram_setup
+    assert 'type = "web_app"' in telegram_setup
+    assert 'web_app = @{ url = $MiniAppUrl }' in telegram_setup
     assert "Existing manual web_app/Menu Button was preserved" in telegram_setup
 
     vector_restore = (
