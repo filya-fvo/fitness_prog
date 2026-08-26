@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.request_id import get_request_id
 from app.deps import require_admin
 from app.models.user import User
 from app.schemas.admin import AdminActionResponse, AdminClearRequest, AdminUserListResponse
-from app.services import admin_users
+from app.services import admin_audit, admin_users
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -47,7 +48,8 @@ async def admin_clear_user_data(
     body: AdminClearRequest,
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> AdminActionResponse:
     """Clear an explicitly selected data domain; body is required for safety."""
     if body.scope == "all" and not body.confirm_full_reset:
@@ -62,7 +64,17 @@ async def admin_clear_user_data(
         scope=body.scope,
         settings=settings,
         notify=body.notify,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
     )
+    notification_status = meta.get("notification_status")
+    if notification_status in {"sent", "failed"}:
+        await admin_audit.record_notification_delivery(
+            session,
+            context=admin_audit.AuditContext(admin.id, correlation_id),
+            user_id=user_id,
+            status=notification_status,
+            requested=body.notify,
+        )
     details = {
         "all": "Профиль очищен. Пользователю нужно заново пройти анкету.",
         "workouts": "Тренировки и подходы очищены. Профиль и программа сохранены.",
@@ -86,6 +98,7 @@ async def admin_delete_user(
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
     admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> AdminActionResponse:
     user = await admin_users.get_user_or_404(session, user_id)
     meta = await admin_users.delete_user(
@@ -94,7 +107,17 @@ async def admin_delete_user(
         settings=settings,
         notify=notify,
         actor_id=admin.id,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
     )
+    notification_status = meta.get("notification_status")
+    if notification_status in {"sent", "failed"}:
+        await admin_audit.record_notification_delivery(
+            session,
+            context=admin_audit.AuditContext(admin.id, correlation_id),
+            user_id=user_id,
+            status=notification_status,
+            requested=notify,
+        )
     return AdminActionResponse(
         ok=True,
         user_id=user_id,

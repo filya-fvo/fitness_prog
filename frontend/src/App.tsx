@@ -53,6 +53,11 @@ const AdminSystemPage = lazy(() =>
     default: module.AdminSystemPage,
   })),
 );
+const AdminAuditPage = lazy(() =>
+  import("@/features/admin-audit/pages/AdminAuditPage").then((module) => ({
+    default: module.AdminAuditPage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -111,6 +116,7 @@ export function App() {
             <Route path="more" element={<MorePage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="admin/system" element={<AdminSystemPage />} />
+            <Route path="admin/audit" element={<AdminAuditPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

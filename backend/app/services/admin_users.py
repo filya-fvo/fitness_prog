@@ -21,6 +21,7 @@ from app.models.nutrition import NutritionLog
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
 from app.schemas.admin import AdminResetScope, AdminUserRow
+from app.services import admin_audit
 from app.services.telegram_bot import TelegramBotError, send_app_notification
 
 
@@ -250,10 +251,17 @@ async def clear_user_data(
     scope: AdminResetScope,
     settings: Settings,
     notify: bool = True,
+    audit_context: admin_audit.AuditContext | None = None,
 ) -> dict[str, Any]:
     """Clear one data domain without resetting the rest of the profile."""
     if scope == "all":
-        return await reset_user_profile(session, user, settings=settings, notify=notify)
+        return await reset_user_profile(
+            session,
+            user,
+            settings=settings,
+            notify=notify,
+            audit_context=audit_context,
+        )
 
     if scope == "workouts":
         stats = await _delete_workout_rows(session, user.id)
@@ -283,10 +291,27 @@ async def clear_user_data(
     goals["data_reset_scope"] = scope
     user.goals = goals
     flag_modified(user, "goals")
+    initial_notification_status: admin_audit.NotificationStatus = (
+        "not_requested" if not notify else "pending" if user.telegram_id is not None else "unavailable"
+    )
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action=f"user.clear.{scope}",
+            object_type="user",
+            object_id=user.id,
+            result="success",
+            description="Выбранный раздел данных пользователя очищен.",
+            before=admin_audit.user_change_snapshot(scope=scope),
+            after=admin_audit.user_change_snapshot(scope=scope, stats=stats),
+            notification_status=initial_notification_status,
+        )
     await session.commit()
     await session.refresh(user)
 
     notified = False
+    notification_status = initial_notification_status
     if notify and user.telegram_id is not None:
         try:
             await send_app_notification(
@@ -297,7 +322,9 @@ async def clear_user_data(
                 startapp="home",
             )
             notified = True
+            notification_status = "sent"
         except TelegramBotError as exc:
+            notification_status = "failed"
             logger.warning(
                 "admin_scoped_reset_notify_failed user={} scope={} err={}",
                 user.id,
@@ -305,7 +332,12 @@ async def clear_user_data(
                 exc,
             )
 
-    return {"stats": stats, "notified": notified, "scope": scope}
+    return {
+        "stats": stats,
+        "notified": notified,
+        "scope": scope,
+        "notification_status": notification_status,
+    }
 
 
 def _preserve_identity_anthropometry(user: User) -> dict[str, Any]:
@@ -324,6 +356,7 @@ async def reset_user_profile(
     *,
     settings: Settings,
     notify: bool = True,
+    audit_context: admin_audit.AuditContext | None = None,
 ) -> dict[str, Any]:
     """
     Clear personal data so user must re-do onboarding.
@@ -341,10 +374,28 @@ async def reset_user_profile(
     }
     flag_modified(user, "goals")
 
+    initial_notification_status: admin_audit.NotificationStatus = (
+        "not_requested" if not notify else "pending" if user.telegram_id is not None else "unavailable"
+    )
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="user.clear.all",
+            object_type="user",
+            object_id=user.id,
+            result="success",
+            description="Профиль и пользовательские данные очищены.",
+            before=admin_audit.user_change_snapshot(scope="all"),
+            after=admin_audit.user_change_snapshot(scope="all", stats=stats),
+            notification_status=initial_notification_status,
+        )
+
     await session.commit()
     await session.refresh(user)
 
     notified = False
+    notification_status = initial_notification_status
     if notify and user.telegram_id is not None:
         try:
             await send_app_notification(
@@ -360,10 +411,16 @@ async def reset_user_profile(
                 startapp="profile",
             )
             notified = True
+            notification_status = "sent"
         except TelegramBotError as exc:
+            notification_status = "failed"
             logger.warning("admin_reset_notify_failed user={} err={}", user.id, exc)
 
-    return {"stats": stats, "notified": notified}
+    return {
+        "stats": stats,
+        "notified": notified,
+        "notification_status": notification_status,
+    }
 
 
 async def delete_user(
@@ -373,6 +430,7 @@ async def delete_user(
     settings: Settings,
     notify: bool = True,
     actor_id: uuid.UUID | None = None,
+    audit_context: admin_audit.AuditContext | None = None,
 ) -> dict[str, Any]:
     """Soft-delete user + wipe owned rows. Cannot delete self."""
     if actor_id is not None and user.id == actor_id:
@@ -400,9 +458,27 @@ async def delete_user(
     user.anthropometry = _preserve_identity_anthropometry(user)
     flag_modified(user, "anthropometry")
 
+    initial_notification_status: admin_audit.NotificationStatus = (
+        "not_requested" if not notify else "pending" if tg_id is not None else "unavailable"
+    )
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="user.archive",
+            object_type="user",
+            object_id=user.id,
+            result="success",
+            description="Пользователь перемещён в архив, его данные очищены.",
+            before=admin_audit.user_change_snapshot(is_deleted=False),
+            after=admin_audit.user_change_snapshot(is_deleted=True, stats=stats),
+            notification_status=initial_notification_status,
+        )
+
     await session.commit()
 
     notified = False
+    notification_status = initial_notification_status
     if notify and tg_id is not None:
         try:
             await send_app_notification(
@@ -417,7 +493,14 @@ async def delete_user(
                 startapp="home",
             )
             notified = True
+            notification_status = "sent"
         except TelegramBotError as exc:
+            notification_status = "failed"
             logger.warning("admin_delete_notify_failed user={} err={}", user.id, exc)
 
-    return {"stats": stats, "notified": notified, "former_telegram_id": tg_id}
+    return {
+        "stats": stats,
+        "notified": notified,
+        "former_telegram_id": tg_id,
+        "notification_status": notification_status,
+    }

@@ -1,6 +1,7 @@
 """SQLAlchemy models."""
 
 from app.models.ai_conversation import AIConversation
+from app.models.admin_audit_log import AdminAuditLog
 from app.models.body_measurement import BodyMeasurement
 from app.models.daily_metric import DailyMetric
 from app.models.email_otp import EmailOtpCode
@@ -23,6 +24,7 @@ __all__ = [
     "NutritionProduct",
     "NutritionLog",
     "AIConversation",
+    "AdminAuditLog",
     "BodyMeasurement",
     "DailyMetric",
     "SupplementIntake",

@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "20260820000020_normalize_nutrition_product_names.sql",
     "20260823000021_restore_local_embedding_to_vector.sql",
     "20260824000022_workout_plan_overrides.sql",
+    "20260826000023_admin_audit_log.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -48,6 +49,7 @@ REQUIRED_TABLES = [
     "daily_metrics",
     "body_measurements",
     "workout_plan_overrides",
+    "admin_audit_log",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -71,6 +73,8 @@ REQUIRED_SNIPPETS = [
     "cardinality(embedding) <> 1536",
     "uq_workout_plan_overrides_slot",
     "ck_workout_plan_overrides_replacements_array",
+    "prevent_admin_audit_mutation",
+    "trg_admin_audit_immutable",
 ]
 
 

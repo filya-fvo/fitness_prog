@@ -77,4 +77,4 @@ backups/
 # Bot first-/start guide delivery markers
 backend/data/
 
-models/
+/models/

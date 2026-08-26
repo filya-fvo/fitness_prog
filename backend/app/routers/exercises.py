@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.request_id import get_request_id
 from app.deps import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.exercise import (
@@ -16,7 +17,7 @@ from app.schemas.exercise import (
     ExerciseResponse,
     ExerciseUpdate,
 )
-from app.services import exercise_service
+from app.services import admin_audit, exercise_service
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
 
@@ -65,10 +66,15 @@ async def get_exercise(
 async def create_exercise(
     body: ExerciseCreate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> ExerciseResponse:
     """Admin-only create."""
-    exercise = await exercise_service.create_exercise(session, body)
+    exercise = await exercise_service.create_exercise(
+        session,
+        body,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
     return ExerciseResponse.model_validate(exercise)
 
 
@@ -77,12 +83,18 @@ async def update_exercise(
     exercise_id: uuid.UUID,
     body: ExerciseUpdate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> ExerciseResponse:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
-    updated = await exercise_service.update_exercise(session, exercise, body)
+    updated = await exercise_service.update_exercise(
+        session,
+        exercise,
+        body,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
     return ExerciseResponse.model_validate(updated)
 
 
@@ -90,9 +102,14 @@ async def update_exercise(
 async def delete_exercise(
     exercise_id: uuid.UUID,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> None:
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
-    await exercise_service.soft_delete_exercise(session, exercise)
+    await exercise_service.soft_delete_exercise(
+        session,
+        exercise,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )

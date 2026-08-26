@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.request_id import get_request_id
 from app.deps import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.program import (
@@ -18,7 +19,7 @@ from app.schemas.program import (
     ProgramUpdate,
 )
 from app.schemas.workout import WorkoutResponse
-from app.services import program_service, workout_service
+from app.services import admin_audit, program_service, workout_service
 
 router = APIRouter(prefix="/programs", tags=["programs"])
 
@@ -78,9 +79,14 @@ async def start_program(
 async def create_program(
     body: ProgramCreate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> ProgramResponse:
-    program = await program_service.create_program(session, body)
+    program = await program_service.create_program(
+        session,
+        body,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
     return ProgramResponse.model_validate(program)
 
 
@@ -89,12 +95,18 @@ async def update_program(
     program_id: uuid.UUID,
     body: ProgramUpdate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> ProgramResponse:
     program = await program_service.get_program(session, program_id)
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
-    updated = await program_service.update_program(session, program, body)
+    updated = await program_service.update_program(
+        session,
+        program,
+        body,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
     return ProgramResponse.model_validate(updated)
 
 
@@ -102,9 +114,14 @@ async def update_program(
 async def delete_program(
     program_id: uuid.UUID,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
 ) -> None:
     program = await program_service.get_program(session, program_id)
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
-    await program_service.soft_delete_program(session, program)
+    await program_service.soft_delete_program(
+        session,
+        program,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )

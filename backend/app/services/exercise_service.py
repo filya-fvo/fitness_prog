@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.exercise import Exercise
 from app.schemas.exercise import ExerciseCreate, ExerciseUpdate
+from app.services import admin_audit
 
 
 async def list_exercises(
@@ -56,9 +57,26 @@ async def get_exercise(session: AsyncSession, exercise_id: uuid.UUID) -> Exercis
     return result.scalar_one_or_none()
 
 
-async def create_exercise(session: AsyncSession, data: ExerciseCreate) -> Exercise:
+async def create_exercise(
+    session: AsyncSession,
+    data: ExerciseCreate,
+    *,
+    audit_context: admin_audit.AuditContext | None = None,
+) -> Exercise:
     exercise = Exercise(**data.model_dump())
     session.add(exercise)
+    await session.flush()
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="exercise.create",
+            object_type="exercise",
+            object_id=exercise.id,
+            result="success",
+            description="Упражнение добавлено в каталог.",
+            after=admin_audit.exercise_snapshot(exercise),
+        )
     await session.commit()
     await session.refresh(exercise)
     return exercise
@@ -68,14 +86,47 @@ async def update_exercise(
     session: AsyncSession,
     exercise: Exercise,
     data: ExerciseUpdate,
+    *,
+    audit_context: admin_audit.AuditContext | None = None,
 ) -> Exercise:
+    before = admin_audit.exercise_snapshot(exercise)
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(exercise, key, value)
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="exercise.update",
+            object_type="exercise",
+            object_id=exercise.id,
+            result="success",
+            description="Упражнение изменено.",
+            before=before,
+            after=admin_audit.exercise_snapshot(exercise),
+        )
     await session.commit()
     await session.refresh(exercise)
     return exercise
 
 
-async def soft_delete_exercise(session: AsyncSession, exercise: Exercise) -> None:
+async def soft_delete_exercise(
+    session: AsyncSession,
+    exercise: Exercise,
+    *,
+    audit_context: admin_audit.AuditContext | None = None,
+) -> None:
+    before = admin_audit.exercise_snapshot(exercise)
     exercise.is_deleted = True
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="exercise.archive",
+            object_type="exercise",
+            object_id=exercise.id,
+            result="success",
+            description="Упражнение перемещено в архив.",
+            before=before,
+            after=admin_audit.exercise_snapshot(exercise),
+        )
     await session.commit()

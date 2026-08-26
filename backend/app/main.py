@@ -12,9 +12,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging
+from app.core.request_id import parse_or_create_request_id
 from app.core.sentry import init_sentry
 from app.frontend import register_frontend
 from app.routers import admin as admin_router
+from app.routers import admin_audit as admin_audit_router
 from app.routers import admin_system as admin_system_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
@@ -55,14 +57,25 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    correlation_id = parse_or_create_request_id(request.headers.get("X-Request-ID"))
+    request.state.correlation_id = correlation_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = str(correlation_id)
+    return response
 
 app.include_router(auth_router.router)
 app.include_router(body_measurements_router.router)
 app.include_router(daily_metrics_router.router)
 app.include_router(users_router.router)
 app.include_router(admin_router.router)
+app.include_router(admin_audit_router.router)
 app.include_router(admin_system_router.router)
 app.include_router(exercises_router.router)
 app.include_router(programs_router.router)
