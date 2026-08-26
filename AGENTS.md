@@ -1,6 +1,6 @@
 # AGENTS.md — карта и правила Fitness Mini App
 
-Обновлено: 2026-08-25. Этот файл — первая точка входа для любого агента,
+Обновлено: 2026-08-26. Этот файл — первая точка входа для любого агента,
 который меняет проект. Он описывает фактическую архитектуру по текущему коду,
 а не первоначальный план разработки.
 
@@ -17,7 +17,7 @@ Fitness Mini App — русскоязычный дневник трениров�
 Основные возможности: готовые программы и свои тренировки, подсказка прошлого
 рабочего веса, таймер и опциональный автопереход, питание со сценарием
 «штрихкод → фото этикетки → ручной ввод», ручной дневной чек-ин сна/шагов/
-активности/воды/веса, обхваты, графики, добавки, уведомления, Groq ИИ-тренер,
+активности/воды/веса, обхваты, графики, добавки, уведомления, локальный ИИ-тренер,
 пользовательская обратная связь и админ-раздел.
 
 HealthKit и Health Connect не интегрированы. Эти показатели вводятся вручную.
@@ -45,12 +45,13 @@ HealthKit и Health Connect не интегрированы. Эти показа
 - Redis + ARQ worker для фоновых уведомлений.
 - HTTPX для внешних API; Loguru; Sentry опционально.
 - JWT для сессии приложения; Telegram `initData` и email OTP для входа.
-- Groq Chat Completions для текста и распознавания этикетки.
+- Локальный `llama.cpp` + Qwen2.5-1.5B-Instruct Q4_K_M для текста; отдельный
+  Tesseract `rus+eng` для фото этикетки.
 
-В проекте нет платного OpenAI fallback. Значение `llm_base_url` по умолчанию
-`https://api.groq.com/openai/v1` — это совместимый протокол Groq, не сервис
-OpenAI. Не добавляйте `OPENAI_API_KEY`, OpenAI SDK или автоматический переход к
-OpenAI. Допустим локальный rule-based ответ без внешнего провайдера.
+Production не отправляет данные во внешние AI API и не имеет Groq/OpenAI
+fallback. `llm_base_url` указывает только на внутренний Docker-сервис `llm`;
+код отклоняет внешний host. Не добавляйте внешнего AI-провайдера без отдельного
+решения владельца. При недоступности модели допустим безопасный rule-based ответ.
 
 ### Frontend
 
@@ -66,8 +67,9 @@ OpenAI. Допустим локальный rule-based ответ без вне�
 - Локальный публичный режим: FastAPI отдаёт API и `frontend/dist`, HTTPS даёт
   Tailscale Funnel. Ngrok запрещён и отбрасывается кодом.
 - Основной production: Timeweb VPS на Ubuntu 24.04 + Docker Compose; Caddy публикует отдельные
-  frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API и Nginx остаются
-  во внутренней Docker-сети. DNS делегируется Timeweb, Cloudflare не используется.
+  frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API, Nginx, Qwen и
+  Tesseract остаются во внутренних Docker-сетях. DNS делегируется Timeweb,
+  Cloudflare не используется.
   Фактический порядок переключения — `docs/TIMEWEB_DOMAIN_CUTOVER.md`, полный
   универсальный runbook — `docs/VPS_DEPLOYMENT_GUIDE.md`.
 - Production-манифесты: `docker-compose.yml`, Dockerfile каждого приложения,
@@ -102,7 +104,7 @@ FastAPI routers (backend/app/routers)
         ↓
 services → SQLAlchemy models → PostgreSQL
         ├→ Redis / ARQ → Telegram + Web Push notifications
-        ├→ Groq text/vision
+        ├→ internal llama.cpp/Qwen (text) + Tesseract OCR (label image)
         ├→ SMTP email OTP / browser feedback
         └→ Open Food Facts barcode lookup
 ```
@@ -128,8 +130,9 @@ services → SQLAlchemy models → PostgreSQL
   сдвига уже созданных тренировок; `planned_workout.py` — подготовленные до
   старта замены упражнений, применяемые к конкретной дате программы.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
-- `backend/app/ai/prompts.py` и `services/ai_engine.py` — системные инструкции,
-  контекст, Groq и очистка вывода модели.
+- `backend/app/ai/prompts.py`, `services/ai_engine.py` и `services/local_llm.py` —
+  системные инструкции, контекст, локальный Qwen и очистка вывода модели;
+  `app/ocr_main.py` — закрытый Tesseract-сервис.
 - `backend/tests/` — pytest; тесты не должны требовать реальных внешних сервисов.
 - `backend/scripts/` — эксплуатация, seed, безопасный smoke и media audit.
 - `backend/scripts/seed_content/` — версионированный каталог упражнений,
@@ -255,7 +258,8 @@ component/hook/utility/service, особенно если изменение д�
 
 - DB/auth: `DATABASE_URL`, `JWT_SECRET`, `BOT_TOKEN`, webhook secret, CORS.
 - Public URL: `MINI_APP_URL`, `BOT_USERNAME`; только постоянный HTTPS, не ngrok.
-- AI: `LLM_API_KEY`, Groq URL/model/fallback-models, nutrition vision model.
+- AI/OCR: внутренние `LLM_BASE_URL`, `LLM_MODEL`, лимиты timeout/output и
+  `OCR_BASE_URL`; модель лежит вне Git в `/opt/fitness/models`.
 - Email: SMTP host/port/user/password/from, admin feedback email, OTP policy.
 - Queue/push: `REDIS_URL`, VAPID public/private/subject.
 - Ops: admin Telegram IDs/usernames, Sentry, log directory/retention.
@@ -288,7 +292,7 @@ cd backend
 ```
 
 Smoke по умолчанию только читает DB и `/health`. `--write` явно создаёт
-синтетические записи; `--external` дополнительно вызывает Telegram/Groq и
+синтетические записи; `--external` дополнительно вызывает Telegram и локальный ИИ и
 разрешён только вместе с `--write`.
 
 ### Frontend
@@ -348,10 +352,12 @@ backup и dry-run, если он предусмотрен.
   переключение с локального Supervisor/Tailscale без потери данных.
 - `docs/VPS_ADMIN_GUIDE.md` — повседневная инструкция владельца: SSH, Compose, логи,
   PostgreSQL/таблицы, backup, обновление и первичная диагностика production.
+- `docs/ADMIN_PANEL_ROADMAP.md` — последовательный план развития админки: состояние
+  системы, аудит, карточка пользователя, рассылки, контент, аналитика и безопасность.
 - `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
   перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
-- `docs/ADMIN_AI_MODEL_RUNBOOK.md` — Groq-модели и диагностика ИИ.
+- `docs/ADMIN_AI_MODEL_RUNBOOK.md` — локальные Qwen/Tesseract и диагностика ИИ.
 - `docs/PROD_CHECKLIST.md` — выпуск.
 - `docs/DESIGN_SYSTEM.md` — UI-токены и паттерны.
 - `docs/exercise-gifs.md`, `docs/EXERCISE_MEDIA_AUDIT_2026-08-20.md` — media pipeline/status.
@@ -381,7 +387,7 @@ backup и dry-run, если он предусмотрен.
 | Таблица/поле/enum/index | новая SQL migration + model/schema/service + migration check + тест сохранения/чтения |
 | Offline/session/reconnect | Dexie schema/queue при необходимости + recovery/reconnect E2E + PWA build |
 | Уведомления/добавки | `ADMIN_SUPPLEMENT_NOTIFICATIONS.md`, prefs/task/Telegram tests |
-| Groq/ИИ/prompt | `ADMIN_AI_MODEL_RUNBOOK.md`, tests русского ответа, sanitization и no-`<think>` |
+| Qwen/ИИ/OCR/prompt | `ADMIN_AI_MODEL_RUNBOOK.md`, tests русского ответа, OCR-парсера, sanitization и no-`<think>` |
 | Упражнения/программы/GIF | seed + manifest/checklist + media audit/program matrix + content docs |
 | Новая зависимость | lockfile, audit, bundle/license/security оценка; пояснить необходимость |
 | Архитектура, путь файла, команда или правило | этот `AGENTS.md` и при необходимости `README.md` |

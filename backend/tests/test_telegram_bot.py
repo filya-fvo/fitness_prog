@@ -17,6 +17,7 @@ from app.services.telegram_bot import (
     extract_web_app_data,
     load_admin_guide_bytes,
     load_user_guide_bytes,
+    local_ai_restored_announcement_text,
     mini_app_keyboard,
     open_web_app_keyboard,
     start_welcome_text,
@@ -25,6 +26,15 @@ from app.services.telegram_bot import (
     vps_cutover_announcement_text,
     water_intake_keyboard,
 )
+
+
+def test_local_ai_announcement_mentions_restoration_and_no_daily_limit() -> None:
+    text = local_ai_restored_announcement_text()
+
+    assert "снова работают" in text
+    assert "Дневной лимит запросов снят" in text
+    assert "фото этикетки" in text
+    assert "без внешних AI-сервисов" in text
 
 
 def test_vps_cutover_announcement_has_permanent_url_and_start_request() -> None:

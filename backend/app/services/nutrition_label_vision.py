@@ -1,10 +1,10 @@
-"""Extract editable nutrition facts from a package-label photo with Groq vision."""
+"""Local nutrition-label OCR and conservative nutrient extraction."""
 
 from __future__ import annotations
 
-import base64
 import json
 import re
+from urllib.parse import urlsplit
 
 import httpx
 from loguru import logger
@@ -12,9 +12,20 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 from app.schemas.nutrition import NutritionLabelRecognitionResponse
+from app.services.local_llm import call_local_chat
 
 MAX_LABEL_IMAGE_BYTES = 8 * 1024 * 1024
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_NUMBER_RE = r"(\d{1,4}(?:[.,]\d{1,3})?)"
+_NUTRIENT_ALIASES = {
+    "proteins_g": ("белк", "protein"),
+    "fats_g": ("жир", "fat"),
+    "carbs_g": ("углевод", "carbohydrate", "carbs"),
+    "fiber_g": ("клетчат", "пищев волок", "fiber", "fibre"),
+    "sugars_g": ("сахар", "sugars"),
+    "salt_g": ("соль", "salt"),
+}
+_LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
 
 
 class NutritionLabelImageError(ValueError):
@@ -22,11 +33,16 @@ class NutritionLabelImageError(ValueError):
 
 
 class NutritionLabelUnavailable(RuntimeError):
-    """Vision recognition is not configured or the provider is unavailable."""
+    """The local OCR service is unavailable."""
 
 
 class NutritionLabelInvalidResponse(RuntimeError):
-    """The provider returned no usable structured result."""
+    """A local service returned no usable structured result."""
+
+
+def is_local_ocr_config(settings: Settings) -> bool:
+    parsed = urlsplit(settings.ocr_base_url.strip())
+    return parsed.scheme == "http" and (parsed.hostname or "").casefold() in _LOCAL_OCR_HOSTS
 
 
 def detect_image_mime(data: bytes) -> str | None:
@@ -55,85 +71,154 @@ async def read_label_image(upload) -> tuple[bytes, str]:
     return data, detected
 
 
-def build_label_request(
-    data: bytes,
-    mime_type: str,
-    settings: Settings,
-    *,
-    model: str | None = None,
-) -> dict:
-    encoded = base64.b64encode(data).decode("ascii")
-    instructions = (
-        "Ты извлекаешь пищевую ценность только из видимого текста упаковки. "
-        "Не угадывай отсутствующие числа. Переведи название продукта на русский. "
-        "Верни калории, белки, жиры, углеводы и дополнительные нутриенты строго на 100 г. "
-        "Если таблица дана на порцию и масса порции видна, пересчитай на 100 г. "
-        "Не путай кДж и ккал. В basis_label кратко укажи исходную базу и пересчёт. "
-        "Для отсутствующих значений используй null, а сомнения перечисли в warnings. "
-        "recognized=true, если видна хотя бы часть пищевой ценности."
-    )
-    instructions += (
-        " Верни только JSON-объект ровно с ключами: recognized, name_ru, basis_label, "
-        "serving_grams, calories_kcal, proteins_g, fats_g, carbs_g, fiber_g, sugars_g, "
-        "salt_g, confidence, warnings. Не добавляй markdown или другие ключи."
-    )
-    selected_model = model or settings.nutrition_vision_model.strip() or "qwen/qwen3.6-27b"
-    task = (
-        "Распознай название и таблицу пищевой ценности на фото упаковки. "
-        "Подготовь проверяемый черновик для дневника питания."
-    )
-    # Groq documents Qwen Vision through chat.completions. JSON mode and
-    # disabled reasoning keep hidden-thought text out of the editable draft.
-    return {
-        "model": selected_model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": f"{instructions} {task}"},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{mime_type};base64,{encoded}"},
-                    },
-                ],
-            }
-        ],
-        "response_format": {"type": "json_object"},
-        "reasoning_effort": "none",
-        "temperature": 0.7,
-        "top_p": 0.8,
-        "max_completion_tokens": 800,
-    }
+def _decimal(raw: str) -> float:
+    return float(raw.replace(",", "."))
 
 
-def _response_text(payload: dict) -> str | None:
-    choices = payload.get("choices") or []
-    if choices and isinstance(choices[0], dict):
-        message = choices[0].get("message")
-        if isinstance(message, dict):
-            content = message.get("content")
-            if isinstance(content, str) and content.strip():
-                return content.strip()
+def _line_value(lines: list[str], aliases: tuple[str, ...]) -> float | None:
+    for line in lines:
+        lowered = line.casefold()
+        positions = [lowered.find(alias) for alias in aliases if alias in lowered]
+        if not positions:
+            continue
+        match = re.search(_NUMBER_RE, line[min(positions) :])
+        if match:
+            return _decimal(match.group(1))
     return None
 
 
-def parse_label_response(payload: dict) -> NutritionLabelRecognitionResponse:
-    raw = _response_text(payload)
+def _energy_kcal(lines: list[str]) -> float | None:
+    for line in lines:
+        lowered = line.casefold()
+        if not any(word in lowered for word in ("энерг", "energy", "ккал", "kcal")):
+            continue
+        kcal = re.search(_NUMBER_RE + r"\s*(?:ккал|kcal)", lowered)
+        if kcal:
+            return _decimal(kcal.group(1))
+        kj = re.search(_NUMBER_RE + r"\s*(?:кдж|кд?ж|kj)", lowered)
+        if kj:
+            return round(_decimal(kj.group(1)) / 4.184, 1)
+    return None
+
+
+def parse_ocr_text(text: str, *, ocr_confidence: float = 0.0) -> NutritionLabelRecognitionResponse:
+    """Extract only explicit values; never infer a missing nutrient."""
+    normalized = re.sub(r"[ \t]+", " ", text.replace("\u00a0", " ")).strip()
+    lines = [line.strip() for line in normalized.splitlines() if line.strip()]
+    joined = "\n".join(lines).casefold()
+    values = {field: _line_value(lines, aliases) for field, aliases in _NUTRIENT_ALIASES.items()}
+    calories = _energy_kcal(lines)
+
+    basis_100 = re.search(r"(?:на|per)\s*100\s*(?:г|g|мл|ml)\b", joined)
+    serving_match = re.search(
+        r"(?:порц\w*|serving)[^\d]{0,20}" + _NUMBER_RE + r"\s*(?:г|g|мл|ml)\b",
+        joined,
+    )
+    serving = _decimal(serving_match.group(1)) if serving_match else None
+    warnings: list[str] = []
+    basis_label: str | None = None
+    factor = 1.0
+    if basis_100:
+        basis_label = "На 100 г/мл"
+    elif serving:
+        basis_label = f"Порция {serving:g} г/мл; пересчитано на 100"
+        factor = 100.0 / serving
+    elif any(value is not None for value in [calories, *values.values()]):
+        basis_label = "Основа не распознана"
+        warnings.append("Проверьте, указаны ли значения на 100 г или на порцию")
+
+    def scaled(value: float | None, maximum: float) -> float | None:
+        if value is None:
+            return None
+        result = round(value * factor, 2)
+        return result if 0 <= result <= maximum else None
+
+    nutrients = {field: scaled(value, 100) for field, value in values.items()}
+    calories = scaled(calories, 1200)
+    recognized = calories is not None or any(value is not None for value in nutrients.values())
+    if not recognized:
+        warnings.append("Пищевая ценность не распознана; попробуйте снять этикетку крупнее")
+    confidence = min(max(float(ocr_confidence), 0.0), 1.0)
+    if recognized and confidence == 0:
+        confidence = 0.45
+    return NutritionLabelRecognitionResponse(
+        recognized=recognized,
+        name_ru=None,
+        basis_label=basis_label,
+        serving_grams=serving,
+        calories_kcal=calories,
+        confidence=round(confidence, 2),
+        warnings=warnings,
+        **nutrients,
+    )
+
+
+def _label_schema() -> dict:
+    nullable_number = {"type": ["number", "null"]}
+    nullable_string = {"type": ["string", "null"]}
+    properties = {
+        "recognized": {"type": "boolean"},
+        "name_ru": nullable_string,
+        "basis_label": nullable_string,
+        "serving_grams": nullable_number,
+        "calories_kcal": nullable_number,
+        "proteins_g": nullable_number,
+        "fats_g": nullable_number,
+        "carbs_g": nullable_number,
+        "fiber_g": nullable_number,
+        "sugars_g": nullable_number,
+        "salt_g": nullable_number,
+        "confidence": {"type": "number"},
+        "warnings": {"type": "array", "items": {"type": "string"}},
+    }
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
+
+
+def parse_label_json(raw: str | None) -> NutritionLabelRecognitionResponse | None:
     if not raw:
-        raise NutritionLabelInvalidResponse("empty_provider_response")
-    # Vision-capable reasoning models occasionally wrap otherwise valid JSON in
-    # hidden-thought tags or a markdown fence despite JSON mode.
-    raw = re.sub(r"<think\b[^>]*>.*?</think\s*>", "", raw, flags=re.IGNORECASE | re.DOTALL).strip()
-    if re.search(r"<think\b[^>]*>", raw, flags=re.IGNORECASE):
-        raise NutritionLabelInvalidResponse("unfinished_reasoning")
-    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", raw, flags=re.IGNORECASE | re.DOTALL)
+        return None
+    cleaned = re.sub(r"<think\b[^>]*>.*?</think\s*>", "", raw, flags=re.I | re.S).strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", cleaned, flags=re.I | re.S)
     if fenced:
-        raw = fenced.group(1).strip()
+        cleaned = fenced.group(1).strip()
     try:
-        parsed = json.loads(raw)
-        return NutritionLabelRecognitionResponse.model_validate(parsed)
-    except (json.JSONDecodeError, ValidationError) as exc:
-        raise NutritionLabelInvalidResponse("invalid_provider_response") from exc
+        return NutritionLabelRecognitionResponse.model_validate(json.loads(cleaned))
+    except (json.JSONDecodeError, ValidationError):
+        return None
+
+
+def _merge_results(
+    deterministic: NutritionLabelRecognitionResponse,
+    model: NutritionLabelRecognitionResponse | None,
+) -> NutritionLabelRecognitionResponse:
+    if model is None:
+        return deterministic
+    update: dict = {}
+    for field in (
+        "name_ru",
+        "basis_label",
+        "serving_grams",
+        "calories_kcal",
+        "proteins_g",
+        "fats_g",
+        "carbs_g",
+        "fiber_g",
+        "sugars_g",
+        "salt_g",
+    ):
+        trusted = getattr(deterministic, field)
+        update[field] = trusted if trusted is not None else getattr(model, field)
+    update["recognized"] = deterministic.recognized or model.recognized
+    update["confidence"] = min(deterministic.confidence, model.confidence)
+    if deterministic.confidence == 0:
+        update["confidence"] = min(model.confidence, 0.55)
+    update["warnings"] = list(dict.fromkeys([*deterministic.warnings, *model.warnings]))[:10]
+    return deterministic.model_copy(update=update)
 
 
 async def recognize_nutrition_label(
@@ -141,34 +226,37 @@ async def recognize_nutrition_label(
     mime_type: str,
     settings: Settings,
 ) -> NutritionLabelRecognitionResponse:
-    if not settings.llm_api_key:
-        raise NutritionLabelUnavailable("vision_not_configured")
-    base_url = settings.llm_base_url.rstrip("/")
-    model = settings.nutrition_vision_model.strip() or "qwen/qwen3.6-27b"
-    body = build_label_request(data, mime_type, settings, model=model)
-    async with httpx.AsyncClient(timeout=45.0) as client:
-        try:
+    """Run local OCR, deterministic parsing, then bounded local normalization."""
+    if not is_local_ocr_config(settings):
+        logger.error("local_ocr_rejected_non_local_configuration")
+        raise NutritionLabelUnavailable("local_ocr_non_local_url")
+    try:
+        async with httpx.AsyncClient(timeout=settings.ocr_timeout_seconds) as client:
             response = await client.post(
-                f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.llm_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=body,
+                f"{settings.ocr_base_url.rstrip('/')}/recognize",
+                headers={"Content-Type": mime_type},
+                content=data,
             )
             response.raise_for_status()
-            return parse_label_response(response.json())
-        except NutritionLabelInvalidResponse as exc:
-            logger.warning("nutrition_label_invalid_response provider=groq model={}", model)
-            raise NutritionLabelUnavailable("provider_invalid_response") from exc
-        except (httpx.HTTPError, ValueError) as exc:
-            status_code = (
-                exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
-            )
-            logger.warning(
-                "nutrition_label_recognition_failed provider=groq model={} status={} err_type={}",
-                model,
-                status_code,
-                type(exc).__name__,
-            )
-            raise NutritionLabelUnavailable("provider_unavailable") from exc
+        payload = response.json()
+        text = str(payload["text"]).strip()
+        confidence = float(payload.get("confidence") or 0)
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        logger.warning("local_ocr_failed err_type={}", type(exc).__name__)
+        raise NutritionLabelUnavailable("local_ocr_unavailable") from exc
+
+    deterministic = parse_ocr_text(text, ocr_confidence=confidence)
+    prompt = (
+        "Ниже сырой текст OCR с пищевой этикетки. Исправь только очевидные ошибки OCR. "
+        "Не угадывай отсутствующие числа, не путай кДж и ккал. Все нутриенты верни на "
+        "100 г/мл; если основа неясна, оставь числа null. Только JSON.\n\n" + text[:4_000]
+    )
+    raw = await call_local_chat(
+        settings,
+        "Ты локально нормализуешь OCR пищевой этикетки в строгую схему.",
+        prompt,
+        temperature=0.0,
+        max_tokens=240,
+        json_schema=_label_schema(),
+    )
+    return _merge_results(deterministic, parse_label_json(raw))

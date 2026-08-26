@@ -8,11 +8,6 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.rate_limiter import (
-    RateLimitBackendUnavailable,
-    RateLimitExceeded,
-    consume_ai_quota,
-)
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import get_current_user
@@ -144,19 +139,6 @@ async def recognize_label(
         raise HTTPException(status_code=code, detail=detail) from exc
 
     try:
-        remaining = await consume_ai_quota(str(user.id), settings)
-    except RateLimitExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Дневной лимит ИИ исчерпан ({settings.ai_daily_limit} запросов)",
-        ) from exc
-    except RateLimitBackendUnavailable as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Распознавание временно недоступно",
-        ) from exc
-
-    try:
         result = await nutrition_label_vision.recognize_nutrition_label(
             data, mime_type, settings
         )
@@ -170,7 +152,7 @@ async def recognize_label(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Распознавание этикетки временно недоступно",
         ) from exc
-    return result.model_copy(update={"remaining_requests": remaining})
+    return result.model_copy(update={"remaining_requests": None})
 
 
 @router.get("/categories")

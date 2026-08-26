@@ -23,7 +23,7 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe scripts\smoke_api.py --help
 ```
 
-Smoke read-only по умолчанию. Запись требует `--write`, внешние Telegram/Groq
+Smoke read-only по умолчанию. Запись требует `--write`, Telegram и локальный ИИ
 вызовы — дополнительного `--external`.
 
 ## API docs

@@ -1,28 +1,27 @@
-"""Groq request profile, model fallback, and output safety tests."""
+"""Local AI request profile and output safety tests."""
 
 from __future__ import annotations
 
-import httpx
 import pytest
+from types import SimpleNamespace
+import uuid
 
 from app.core.config import Settings
-from app.services import ai_engine
+from app.routers.ai import ai_chat
+from app.schemas.ai import AIChatRequest
+from app.services import ai_engine, local_llm
 
 
 class FakeResponse:
-    def __init__(self, payload: dict) -> None:
-        self.payload = payload
-
     def raise_for_status(self) -> None:
         return None
 
     def json(self) -> dict:
-        return self.payload
+        return {"choices": [{"message": {"content": " Короткий локальный ответ "}}]}
 
 
 class FakeAsyncClient:
     requests: list[dict] = []
-    rate_limited_models: set[str] = set()
 
     def __init__(self, **_kwargs: object) -> None:
         pass
@@ -33,94 +32,83 @@ class FakeAsyncClient:
     async def __aexit__(self, *_args: object) -> None:
         return None
 
-    async def post(
-        self,
-        url: str,
-        *,
-        headers: dict,
-        json: dict,
-    ) -> FakeResponse | httpx.Response:
+    async def post(self, url: str, *, headers: dict, json: dict) -> FakeResponse:
         self.requests.append({"url": url, "headers": headers, "json": json})
-        if url.endswith("/chat/completions"):
-            if json["model"] in self.rate_limited_models:
-                return httpx.Response(
-                    429,
-                    headers={"retry-after": "120"},
-                    json={"error": {"code": "rate_limit_exceeded"}},
-                    request=httpx.Request("POST", url),
-                )
-            return FakeResponse({"choices": [{"message": {"content": " Ответ Groq "}}]})
-        raise AssertionError(f"Unexpected external endpoint: {url}")
+        return FakeResponse()
 
 
 @pytest.fixture(autouse=True)
 def reset_requests(monkeypatch: pytest.MonkeyPatch) -> None:
     FakeAsyncClient.requests.clear()
-    FakeAsyncClient.rate_limited_models.clear()
-    ai_engine._groq_model_cooldowns.clear()
-    monkeypatch.setattr(ai_engine.httpx, "AsyncClient", FakeAsyncClient)
+    monkeypatch.setattr(local_llm.httpx, "AsyncClient", FakeAsyncClient)
 
 
-def groq_settings() -> Settings:
+def local_settings() -> Settings:
     return Settings(
-        llm_api_key="groq-test-key",
-        llm_base_url="https://api.groq.com/openai/v1",
-        llm_model="qwen/qwen3.6-27b",
+        llm_provider="local",
+        llm_api_key="internal-test-key",
+        llm_base_url="http://llm:8080/v1",
+        llm_model="qwen2.5-1.5b-instruct",
     )
 
 
-async def test_groq_uses_chat_completions_without_reasoning_for_chat() -> None:
-    result = await ai_engine._call_groq_chat(
-        groq_settings(),
-        "system",
-        "question",
+async def test_chat_route_has_no_daily_quota(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_chat(*_args: object, **_kwargs: object) -> tuple[uuid.UUID, str, str]:
+        return uuid.uuid4(), "Ответ", "local"
+
+    monkeypatch.setattr(ai_engine, "chat", fake_chat)
+    response = await ai_chat(
+        AIChatRequest(message="Как тренироваться?"),
+        session=object(),  # type: ignore[arg-type]
+        user=SimpleNamespace(id=uuid.uuid4()),  # type: ignore[arg-type]
+        settings=local_settings(),
     )
 
-    assert result == "Ответ Groq"
+    assert response.reply == "Ответ"
+    assert response.remaining_requests is None
+
+
+async def test_local_ai_uses_internal_chat_completions() -> None:
+    result = await local_llm.call_local_chat(local_settings(), "system", "question")
+
+    assert result == "Короткий локальный ответ"
     request = FakeAsyncClient.requests[0]
-    assert request["url"] == "https://api.groq.com/openai/v1/chat/completions"
+    assert request["url"] == "http://llm:8080/v1/chat/completions"
+    assert request["headers"]["Authorization"] == "Bearer internal-test-key"
     assert request["json"] == {
-        "model": "qwen/qwen3.6-27b",
+        "model": "qwen2.5-1.5b-instruct",
         "messages": [
             {"role": "system", "content": "system"},
             {"role": "user", "content": "question"},
         ],
-        "temperature": 0.3,
-        "max_completion_tokens": 600,
-        "reasoning_effort": "none",
-        "reasoning_format": "hidden",
+        "temperature": 0.2,
+        "max_tokens": 320,
     }
-    assert request["headers"]["Authorization"] == "Bearer groq-test-key"
 
 
-async def test_configured_groq_analysis_disables_hidden_reasoning() -> None:
-    reply, source = await ai_engine._call_configured_ai(
-        groq_settings(),
-        "system",
-        "analyze",
+async def test_external_ai_host_is_rejected_without_http_request() -> None:
+    configured = local_settings().model_copy(
+        update={"llm_base_url": "https://api.groq.com/openai/v1"}
     )
 
-    assert reply == "Ответ Groq"
-    assert source == "groq"
-    assert FakeAsyncClient.requests[0]["json"]["reasoning_effort"] == "none"
-    assert FakeAsyncClient.requests[0]["json"]["reasoning_format"] == "hidden"
+    result = await local_llm.call_local_chat(configured, "system", "question")
+
+    assert result is None
+    assert FakeAsyncClient.requests == []
 
 
-async def test_groq_rotates_to_next_model_after_rate_limit() -> None:
-    FakeAsyncClient.rate_limited_models.add("qwen/qwen3.6-27b")
-    configured = groq_settings().model_copy(
-        update={"llm_fallback_models": "llama-3.1-8b-instant"}
-    )
+async def test_configured_ai_reports_local_source() -> None:
+    reply, source = await ai_engine._call_configured_ai(local_settings(), "system", "question")
 
-    result = await ai_engine._call_groq_chat(configured, "system", "question")
+    assert reply == "Короткий локальный ответ"
+    assert source == "local"
 
-    assert result == "Ответ Groq"
-    assert [request["json"]["model"] for request in FakeAsyncClient.requests] == [
-        "qwen/qwen3.6-27b",
-        "llama-3.1-8b-instant",
-    ]
-    assert ai_engine._groq_model_cooldowns["qwen/qwen3.6-27b"] > 0
-    assert "reasoning_effort" not in FakeAsyncClient.requests[1]["json"]
+
+def test_urgent_health_question_never_reaches_model() -> None:
+    assert ai_engine._requires_rule_only("После подхода резкая боль в груди") is True
+    reply = ai_engine._rule_based_reply("После подхода резкая боль в груди", "")
+    assert "Прекратите тренировку" in reply
+    assert "медицинской помощью" in reply
 
 
 def test_english_only_model_reply_is_rejected() -> None:

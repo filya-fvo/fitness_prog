@@ -1,24 +1,19 @@
-"""AI trainer routes with a configurable per-user daily limit."""
+"""AI trainer routes backed by the unlimited local inference service."""
 
 from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.rate_limiter import (
-    RateLimitBackendUnavailable,
-    RateLimitExceeded,
-    consume_ai_quota,
-)
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import get_current_user
-from app.models.user import User
 from app.models.ai_conversation import AIConversation
+from app.models.user import User
 from app.schemas.ai import (
     AIAnalyzeRequest,
     AIAnalyzeResponse,
@@ -39,7 +34,7 @@ async def ai_history(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AIHistoryResponse:
-    """Return the user's messages for one local calendar day without consuming AI quota."""
+    """Return the user's messages for one local calendar day."""
     local_tz = timezone(timedelta(minutes=-timezone_offset_minutes))
     start = datetime.combine(day, time.min, tzinfo=local_tz).astimezone(UTC)
     end = start + timedelta(days=1)
@@ -85,22 +80,6 @@ async def ai_chat(
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ) -> AIChatResponse:
-    try:
-        remaining = await consume_ai_quota(str(user.id), settings)
-    except RateLimitExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=(
-                f"Дневной лимит ИИ исчерпан ({settings.ai_daily_limit} запросов). "
-                "Он обновится завтра."
-            ),
-        ) from exc
-    except RateLimitBackendUnavailable as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Сервис ограничения запросов ИИ временно недоступен",
-        ) from exc
-
     sid, reply, source = await ai_engine.chat(
         session,
         user,
@@ -112,7 +91,7 @@ async def ai_chat(
         session_id=sid,
         reply=reply,
         source=source,
-        remaining_requests=remaining,
+        remaining_requests=None,
     )
 
 
@@ -123,22 +102,6 @@ async def ai_analyze(
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ) -> AIAnalyzeResponse:
-    try:
-        remaining = await consume_ai_quota(str(user.id), settings)
-    except RateLimitExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=(
-                f"Дневной лимит ИИ исчерпан ({settings.ai_daily_limit} запросов). "
-                "Он обновится завтра."
-            ),
-        ) from exc
-    except RateLimitBackendUnavailable as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Сервис ограничения запросов ИИ временно недоступен",
-        ) from exc
-
     report, source = await ai_engine.analyze_progress(
         session,
         user,
@@ -159,5 +122,5 @@ async def ai_analyze(
         report=report,
         source=source,
         session_id=history_session_id,
-        remaining_requests=remaining,
+        remaining_requests=None,
     )

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import uuid
-import time
 import re
+import uuid
 from datetime import date, timedelta
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -19,8 +17,7 @@ from app.core.config import Settings
 from app.models.ai_conversation import AIConversation
 from app.models.user import User
 from app.models.workout import Workout
-
-_groq_model_cooldowns: dict[str, float] = {}
+from app.services.local_llm import call_local_chat
 
 _THINK_BLOCK_RE = re.compile(r"<think\b[^>]*>.*?</think\s*>", re.IGNORECASE | re.DOTALL)
 _THINK_OPEN_RE = re.compile(r"<think\b[^>]*>", re.IGNORECASE)
@@ -58,26 +55,31 @@ def sanitize_ai_output(reply: str | None) -> str | None:
     return text or None
 
 
-def _groq_models(settings: Settings) -> list[str]:
-    candidates = [settings.llm_model, *settings.llm_fallback_models.split(",")]
-    result: list[str] = []
-    for candidate in candidates:
-        model = candidate.strip()
-        if model and model not in result:
-            result.append(model)
-    return result or ["llama-3.1-8b-instant"]
+_URGENT_HEALTH_MARKERS = (
+    "боль в груди",
+    "не могу дышать",
+    "потерял сознание",
+    "потеряла сознание",
+    "сильное кровотечение",
+    "резкая боль",
+    "острая боль",
+    "сильный отёк",
+    "сильный отек",
+)
 
 
-def _groq_retry_after_seconds(response: httpx.Response, *, default: float) -> float:
-    raw = response.headers.get("retry-after", "").strip()
-    try:
-        return max(float(raw), 1.0)
-    except ValueError:
-        return default
+def _requires_rule_only(message: str) -> bool:
+    return any(marker in message.casefold() for marker in _URGENT_HEALTH_MARKERS)
 
 
 def _rule_based_reply(message: str, rag_block: str) -> str:
     lower = message.lower()
+    if _requires_rule_only(message):
+        return (
+            "⚠️ Прекратите тренировку. При резкой боли, затруднённом дыхании, "
+            "потере сознания или сильном кровотечении срочно обратитесь за медицинской "
+            "помощью. Я не ставлю диагнозы и не предлагаю продолжать нагрузку при таких симптомах."
+        )
     if "колен" in lower:
         return (
             "⚠️ Боль в коленях — не игнорьте.\n"
@@ -104,88 +106,9 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
         )
     return (
         "💪 На связи AI-тренер\n"
-        "Внешняя модель сейчас недоступна. Данные программы и тренировок загружены, "
-        "но локальный режим не будет придумывать ответ по ним. Повторите запрос позже."
+        "Локальная модель сейчас недоступна. Данные программы и тренировок сохранены, "
+        "но безопасный режим не будет придумывать ответ по ним. Повторите запрос позже."
     )
-
-
-async def _call_groq_chat(
-    settings: Settings,
-    instructions: str,
-    user_prompt: str,
-    *,
-    reasoning_effort: str = "none",
-) -> str | None:
-    if not settings.llm_api_key:
-        return None
-    base = settings.llm_base_url.rstrip("/")
-    models = _groq_models(settings)
-    now = time.monotonic()
-    available = [model for model in models if _groq_model_cooldowns.get(model, 0) <= now]
-    if not available:
-        available = [min(models, key=lambda model: _groq_model_cooldowns.get(model, 0))]
-
-    from loguru import logger
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        for index, model in enumerate(available):
-            body = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": instructions},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_completion_tokens": 600,
-            }
-            if model.startswith("qwen/"):
-                body["reasoning_effort"] = reasoning_effort
-                body["reasoning_format"] = "hidden"
-            try:
-                response = await client.post(
-                    f"{base}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.llm_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=body,
-                )
-                response.raise_for_status()
-                content = response.json()["choices"][0]["message"]["content"]
-                if content is not None and str(content).strip():
-                    _groq_model_cooldowns.pop(model, None)
-                    if index:
-                        logger.info("groq_fallback_succeeded model={} position={}", model, index + 1)
-                    return str(content).strip()
-                logger.warning("groq_empty_response model={}", model)
-                return None
-            except httpx.HTTPStatusError as exc:
-                status = exc.response.status_code
-                retryable = status == 429 or status in {403, 404} or status >= 500
-                if not retryable:
-                    logger.warning(
-                        "groq_response_failed model={} status={} fallback=false",
-                        model,
-                        status,
-                    )
-                    return None
-                default_cooldown = 3600.0 if status in {403, 404} else 30.0
-                cooldown = _groq_retry_after_seconds(
-                    exc.response,
-                    default=default_cooldown,
-                )
-                _groq_model_cooldowns[model] = time.monotonic() + cooldown
-                logger.warning(
-                    "groq_model_skipped model={} status={} cooldown_sec={} next={}",
-                    model,
-                    status,
-                    round(cooldown, 1),
-                    index + 1 < len(available),
-                )
-            except (httpx.RequestError, KeyError, TypeError, ValueError) as exc:
-                logger.warning("groq_response_failed model={} base={} err={}", model, base, exc)
-                return None
-    return None
 
 
 async def _call_configured_ai(
@@ -193,14 +116,13 @@ async def _call_configured_ai(
     instructions: str,
     user_prompt: str,
 ) -> tuple[str | None, str]:
-    reply = await _call_groq_chat(
+    reply = await call_local_chat(
         settings,
         instructions,
         user_prompt,
-        reasoning_effort="none",
     )
     checked = _russian_only(sanitize_ai_output(reply))
-    return checked, "groq" if checked else "rule"
+    return checked, "local" if checked else "rule"
 
 
 def _russian_only(reply: str | None) -> str | None:
@@ -224,14 +146,14 @@ async def chat(
     settings: Settings,
 ) -> tuple[uuid.UUID, str, str]:
     sid = session_id or uuid.uuid4()
-    rag_items = await retrieve_exercise_context(session, message, limit=5)
+    rag_items = await retrieve_exercise_context(session, message, limit=3)
     rag_block = format_rag_block(rag_items)
     app_context = await build_application_context(session, user)
     history = await conversation_history(
         session,
         user_id=user.id,
         session_id=sid,
-        limit=8,
+        limit=4,
     )
     system = f"{SYSTEM_TRAINER}\n\n{app_context}"
     if rag_items:
@@ -254,11 +176,16 @@ async def chat(
             "Предыдущая локальная история этого пользователя:\n"
             f"{transcript}\n\n{user_prompt}"
         )
-    llm_reply, llm_source = await _call_configured_ai(
-        settings,
-        system,
-        user_prompt,
-    )
+    # Medical red flags are handled by deterministic rules. A small language
+    # model must never be allowed to improvise whether exercise is safe.
+    if _requires_rule_only(message):
+        llm_reply, llm_source = None, "rule"
+    else:
+        llm_reply, llm_source = await _call_configured_ai(
+            settings,
+            system,
+            user_prompt[-8_000:],
+        )
     if llm_reply:
         reply = llm_reply
         source = llm_source

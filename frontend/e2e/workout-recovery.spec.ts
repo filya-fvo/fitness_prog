@@ -348,7 +348,7 @@ test("workout completion is instant and AI coach runs only on request", async ({
       body: JSON.stringify({
         session_id: "44444444-4444-4444-8444-444444444444",
         reply: "Вы сохранили 2 запланированных подхода и честно отметили нагрузку. Возвращайтесь к плану в комфортном темпе.",
-        source: "groq",
+        source: "local",
         remaining_requests: 9,
       }),
     });

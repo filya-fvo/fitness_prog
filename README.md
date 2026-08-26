@@ -8,7 +8,7 @@
 
 ```text
 frontend/   React 18 + TypeScript + Vite + Tailwind + Dexie/PWA
-backend/    FastAPI + SQLAlchemy async + ARQ/Redis + Groq
+backend/    FastAPI + SQLAlchemy async + ARQ/Redis + local Qwen/Tesseract
 supabase/   последовательные PostgreSQL-миграции
 scripts/    запуск Windows, supervisor, Tailscale, Redis, миграции
 docs/       пользовательские, административные и QA-документы
@@ -19,7 +19,8 @@ docs/       пользовательские, административные �
 [docs/VPS_ADMIN_GUIDE.md](docs/VPS_ADMIN_GUIDE.md). Локальный Windows-резерв:
 [docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Фактическое переключение на Timeweb:
 [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md). Полная первоначальная установка VPS:
-[docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md).
+[docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md). План развития админки:
+[docs/ADMIN_PANEL_ROADMAP.md](docs/ADMIN_PANEL_ROADMAP.md).
 
 Исторические планы и одноразовые скрипты, не участвующие в приложении, вынесены
 в `_archive_candidates/` и не являются источником требований.
@@ -91,7 +92,7 @@ CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthou
 
 - PostgreSQL задаётся через `DATABASE_URL`; файла PostgreSQL в проекте нет.
 - Redis/ARQ обслуживает фоновые уведомления и catch-up.
-- Groq — единственный внешний LLM/vision provider; OpenAI fallback отсутствует.
+- Qwen2.5 и Tesseract работают локально на VPS; внешнего LLM/vision API нет.
 - Open Food Facts используется для поиска продуктов по штрихкоду.
 - SMTP отправляет browser OTP и обратную связь без Telegram ID.
 - HealthKit/Health Connect пока не подключены; дневные показатели вводятся вручную.
@@ -103,6 +104,6 @@ CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthou
 - [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md) — основной Timeweb production.
 - [docs/VPS_DEPLOYMENT_GUIDE.md](docs/VPS_DEPLOYMENT_GUIDE.md) — production VPS.
 - [docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md](docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md) — уведомления.
-- [docs/ADMIN_AI_MODEL_RUNBOOK.md](docs/ADMIN_AI_MODEL_RUNBOOK.md) — Groq.
+- [docs/ADMIN_AI_MODEL_RUNBOOK.md](docs/ADMIN_AI_MODEL_RUNBOOK.md) — локальные Qwen/Tesseract.
 - [docs/exercise-gifs.md](docs/exercise-gifs.md) — media pipeline.
 - [docs/QA_AUDIT_2026-08-20_DEEP.md](docs/QA_AUDIT_2026-08-20_DEEP.md) — последний глубокий аудит.

@@ -21,6 +21,7 @@ dependencies = [
     "tzdata>=2025.2",
     "greenlet>=3.1.0",
     "sentry-sdk[fastapi]>=2.19.0",
+    "Pillow>=11.3.0",
 ]
 
 [project.optional-dependencies]

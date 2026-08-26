@@ -39,6 +39,10 @@ install-supervisor.cmd
 
 Supervisor стартует вместе с Windows, проверяет приложение и Tailscale Funnel каждые 30 секунд и восстанавливает их после сбоя. Статус: `supervisor-status.cmd`; обслуживание: `pause-supervisor.cmd`, затем `resume-supervisor.cmd`.
 
+Если production уже окончательно перенесён на VPS, используйте
+`disable-local-fitness-runtime.cmd`: локальные fitness-задачи и Funnel будут удалены,
+PostgreSQL остановлен и переведён в ручной запуск, а данные останутся на диске.
+
 Worker уведомлений работает без отдельного окна. Его состояние видно в `supervisor-status.cmd` и `status-notifications.cmd`, события рассылки — в `logs\worker-YYYY-MM-DD.log`. После изменения supervisor-скриптов повторно запустите `install-supervisor.cmd`, чтобы текущая системная задача сразу загрузила новую версию.
 
 ## Разработка и публикация

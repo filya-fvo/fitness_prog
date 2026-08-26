@@ -18,6 +18,7 @@ from app.services.telegram_bot import (
     send_start_welcome,
     set_default_chat_menu_button,
     set_webhook,
+    local_ai_restored_announcement_text,
     vps_cutover_announcement_text,
 )
 
@@ -45,6 +46,11 @@ async def main() -> None:
         "--announce-vps-cutover",
         action="store_true",
         help="send the new permanent address and ask all users to press /start",
+    )
+    parser.add_argument(
+        "--announce-local-ai",
+        action="store_true",
+        help="announce restored local AI, label OCR, and removal of the daily limit",
     )
     parser.add_argument(
         "--preserve-menu-button",
@@ -135,6 +141,23 @@ async def main() -> None:
                 announcement_failed += 1
             await asyncio.sleep(0.1)
 
+    local_ai_sent = 0
+    local_ai_failed = 0
+    if args.announce_local_ai:
+        announcement = local_ai_restored_announcement_text()
+        for telegram_id in telegram_ids:
+            try:
+                await send_message(
+                    settings,
+                    chat_id=telegram_id,
+                    text=announcement,
+                    reply_markup=open_app_markup(settings),
+                )
+                local_ai_sent += 1
+            except Exception:  # noqa: BLE001 - one blocked chat must not stop broadcast
+                local_ai_failed += 1
+            await asyncio.sleep(0.1)
+
     print(f"URL={public_url}")
     print("MENU_BUTTON=preserved" if args.preserve_menu_button else "DEFAULT_MENU=standard")
     print(f"CHAT_MENUS_UPDATED={updated}")
@@ -156,6 +179,9 @@ async def main() -> None:
     if args.announce_vps_cutover:
         print(f"ANNOUNCEMENT_SENT={announcement_sent}")
         print(f"ANNOUNCEMENT_FAILED={announcement_failed}")
+    if args.announce_local_ai:
+        print(f"LOCAL_AI_ANNOUNCEMENT_SENT={local_ai_sent}")
+        print(f"LOCAL_AI_ANNOUNCEMENT_FAILED={local_ai_failed}")
 
 
 if __name__ == "__main__":

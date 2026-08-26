@@ -1,14 +1,12 @@
-import json
-
 import pytest
 
 from app.core.config import Settings
+from app.services import nutrition_label_vision
 from app.services.nutrition_label_vision import (
     MAX_LABEL_IMAGE_BYTES,
     NutritionLabelImageError,
-    build_label_request,
     detect_image_mime,
-    parse_label_response,
+    parse_ocr_text,
     read_label_image,
 )
 
@@ -20,6 +18,38 @@ class FakeUpload:
 
     async def read(self, size: int) -> bytes:
         return self.data[:size]
+
+
+class FakeOcrResponse:
+    def raise_for_status(self) -> None:
+        return None
+
+    def json(self) -> dict:
+        return {
+            "text": (
+                "Пищевая ценность на 100 г\n"
+                "Энергетическая ценность 929 кДж / 222 ккал\n"
+                "Белки 7,5 г\nЖиры 12 г\nУглеводы 21 г"
+            ),
+            "confidence": 0.86,
+        }
+
+
+class FakeOcrClient:
+    requests: list[dict] = []
+
+    def __init__(self, **_kwargs: object) -> None:
+        pass
+
+    async def __aenter__(self) -> "FakeOcrClient":
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        return None
+
+    async def post(self, url: str, *, headers: dict, content: bytes) -> FakeOcrResponse:
+        self.requests.append({"url": url, "headers": headers, "content": content})
+        return FakeOcrResponse()
 
 
 def test_detect_image_mime_uses_magic_bytes():
@@ -37,70 +67,72 @@ async def test_read_label_image_rejects_oversize_and_fake_image():
         await read_label_image(FakeUpload(b"plain text"))
 
 
-def test_label_request_uses_groq_vision_and_json_mode():
-    settings = Settings(nutrition_vision_model="qwen/qwen3.6-27b")
-    body = build_label_request(b"\xff\xd8\xffphoto", "image/jpeg", settings)
-
-    assert body["model"] == "qwen/qwen3.6-27b"
-    assert body["response_format"] == {"type": "json_object"}
-    assert body["reasoning_effort"] == "none"
-    assert body["messages"][0]["content"][1]["type"] == "image_url"
-    assert body["messages"][0]["content"][1]["image_url"]["url"].startswith(
-        "data:image/jpeg;base64,"
+def test_parser_keeps_kilojoules_separate_and_reads_decimal_comma():
+    parsed = parse_ocr_text(
+        "Пищевая ценность на 100 г\n"
+        "Энергетическая ценность 929 кДж / 222 ккал\n"
+        "Белки 7,5 г\nЖиры 12 г\nУглеводы 21 г",
+        ocr_confidence=0.84,
     )
-    assert "ровно с ключами" in body["messages"][0]["content"][0]["text"]
+
+    assert parsed.recognized is True
+    assert parsed.calories_kcal == 222
+    assert parsed.proteins_g == 7.5
+    assert parsed.fats_g == 12
+    assert parsed.carbs_g == 21
+    assert parsed.basis_label == "На 100 г/мл"
 
 
-def test_parse_label_response_accepts_chat_completion():
-    result = {
-        "recognized": False,
-        "name_ru": None,
-        "basis_label": None,
-        "serving_grams": None,
-        "calories_kcal": None,
-        "proteins_g": None,
-        "fats_g": None,
-        "carbs_g": None,
-        "fiber_g": None,
-        "sugars_g": None,
-        "salt_g": None,
-        "confidence": 0,
-        "warnings": ["Текст не виден"],
-    }
-    payload = {
-        "choices": [{"message": {"content": json.dumps(result, ensure_ascii=False)}}]
-    }
+def test_parser_converts_explicit_serving_values_to_per_100():
+    parsed = parse_ocr_text(
+        "Порция 40 г\nЭнергетическая ценность 100 ккал\nБелки 4 г\nЖиры 2 г\nУглеводы 10 г"
+    )
 
-    parsed = parse_label_response(payload)
-
-    assert parsed.recognized is False
-    assert parsed.warnings == ["Текст не виден"]
+    assert parsed.calories_kcal == 250
+    assert parsed.proteins_g == 10
+    assert parsed.fats_g == 5
+    assert parsed.carbs_g == 25
+    assert parsed.serving_grams == 40
 
 
-def test_parse_label_response_strips_reasoning_and_json_fence():
-    raw = {
-        "recognized": True,
-        "name_ru": "Йогурт",
-        "basis_label": "На 100 г",
-        "serving_grams": None,
-        "calories_kcal": 80,
-        "proteins_g": 5,
-        "fats_g": 2,
-        "carbs_g": 10,
-        "fiber_g": None,
-        "sugars_g": None,
-        "salt_g": None,
-        "confidence": 0.9,
-        "warnings": [],
-    }
-    payload = {
-        "choices": [{
-            "message": {
-                "content": "<think>internal OCR reasoning</think>```json\n"
-                + json.dumps(raw, ensure_ascii=False)
-                + "\n```"
-            }
-        }]
-    }
+@pytest.mark.asyncio
+async def test_recognition_sends_image_only_to_local_ocr_and_works_without_model(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    FakeOcrClient.requests.clear()
+    monkeypatch.setattr(nutrition_label_vision.httpx, "AsyncClient", FakeOcrClient)
 
-    assert parse_label_response(payload).name_ru == "Йогурт"
+    async def no_model(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(nutrition_label_vision, "call_local_chat", no_model)
+    settings = Settings(
+        ocr_base_url="http://ocr:8090",
+        llm_provider="local",
+        llm_base_url="http://llm:8080/v1",
+    )
+
+    result = await nutrition_label_vision.recognize_nutrition_label(
+        b"\xff\xd8\xffphoto", "image/jpeg", settings
+    )
+
+    assert result.calories_kcal == 222
+    assert result.proteins_g == 7.5
+    assert FakeOcrClient.requests[0]["url"] == "http://ocr:8090/recognize"
+    assert FakeOcrClient.requests[0]["content"] == b"\xff\xd8\xffphoto"
+
+
+@pytest.mark.asyncio
+async def test_external_ocr_host_is_rejected_before_sending_image(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    FakeOcrClient.requests.clear()
+    monkeypatch.setattr(nutrition_label_vision.httpx, "AsyncClient", FakeOcrClient)
+    settings = Settings(ocr_base_url="https://vision.example.com")
+
+    with pytest.raises(nutrition_label_vision.NutritionLabelUnavailable):
+        await nutrition_label_vision.recognize_nutrition_label(
+            b"\xff\xd8\xffphoto", "image/jpeg", settings
+        )
+
+    assert FakeOcrClient.requests == []

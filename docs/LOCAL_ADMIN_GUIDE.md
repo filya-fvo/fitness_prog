@@ -115,6 +115,13 @@ uninstall-supervisor.cmd  — удалить системную задачу
 
 Если supervisor установлен, обычный `stop-all.cmd` остановит API/UI только временно: supervisor сочтёт это сбоем и вернёт их. Перед обслуживанием сначала используйте `pause-supervisor.cmd`.
 
+После окончательного перехода production на VPS локальный runtime можно полностью
+отключить командой `disable-local-fitness-runtime.cmd` из корня проекта. Она удаляет
+fitness-задачи автозапуска, останавливает локальные API/worker/Vite/portable Redis,
+сбрасывает старый Tailscale Funnel и переводит локальный PostgreSQL в
+`Stopped / Manual`. Файлы PostgreSQL, проект и Tailscale не удаляются. Уведомления
+после этого продолжает отправлять единственный production-worker на VPS.
+
 Команда `scripts\dev.cmd restart-backend` теперь также определяет процесс supervisor через `netstat`. Если backend запущен с повышенными правами, команда не сообщает ложное «порт свободен», а просит сначала выполнить `pause-supervisor.cmd`.
 
 Закрытие крышки должно быть настроено как **«Действие не требуется»**. `Run unattended` не отменяет настоящий сон Windows: оно лишь сохраняет Tailscale активным без вошедшего пользователя. Supervisor использует системный power request вместо имитации движений мыши.

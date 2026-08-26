@@ -188,6 +188,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 После успешного переключения один раз отправить всем привязанным Telegram-пользователям
 новый адрес и просьбу повторить `/start`. Ручной `web_app`/Menu Button не меняется:
 
+Когда VPS стабильно работает и локальный откат больше не должен запускаться после
+перезагрузки Windows, выполните `disable-local-fitness-runtime.cmd`. В отличие от
+временной паузы, команда удаляет fitness-задачи автозапуска, выключает старый Funnel
+и переводит локальный PostgreSQL в ручной запуск, не удаляя его данные.
+
 ```bash
 docker compose --env-file backend/.env.production run --rm api \
   python scripts/sync_telegram_entrypoints.py \

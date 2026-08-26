@@ -93,6 +93,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
       LOG_DIR: /app/logs
+      LLM_PROVIDER: local
+      LLM_BASE_URL: http://llm:8080/v1
+      LLM_MODEL: qwen2.5-1.5b-instruct
+      OCR_BASE_URL: http://ocr:8090
     volumes:
       - backend_logs:/app/logs
       - backend_data:/app/data
@@ -103,6 +107,67 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    networks:
+      - default
+      - ai_internal
+
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server@sha256:db8e923e6edc9241ad788979af79543a1e1ba55dbb7d41e62490ef0d0ad3c8e7
+    restart: unless-stopped
+    command:
+      - --model
+      - /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+      - --alias
+      - qwen2.5-1.5b-instruct
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size
+      - "4096"
+      - --parallel
+      - "1"
+      - --threads
+      - "2"
+      - --no-warmup
+    volumes:
+      - ${LOCAL_AI_MODELS_DIR:-./models}:/models:ro
+    expose:
+      - "8080"
+    mem_limit: 1536m
+    cpus: 1.5
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ai_internal
+
+  ocr:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ["uvicorn", "app.ocr_main:app", "--host", "0.0.0.0", "--port", "8090"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    expose:
+      - "8090"
+    mem_limit: 384m
+    cpus: 1.0
+    pids_limit: 96
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ai_internal
 
   worker:
     build:
@@ -178,3 +243,7 @@ volumes:
   frontend_releases:
   caddy_data:
   caddy_config:
+
+networks:
+  ai_internal:
+    internal: true

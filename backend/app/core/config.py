@@ -39,16 +39,18 @@ class Settings(BaseSettings):
     web_push_vapid_public_key: str = ""
     web_push_vapid_private_key: str = ""
     web_push_vapid_subject: str = "mailto:admin@example.com"
-    # Groq uses an OpenAI-compatible Chat Completions protocol. This URL is
-    # hosted and billed by Groq; the application has no OpenAI Platform fallback.
+    # Local llama.cpp server. Production rejects non-local hosts, so user data is
+    # never sent to an external AI provider by a configuration mistake.
+    llm_provider: str = "local"
     llm_api_key: str = ""
-    llm_base_url: str = "https://api.groq.com/openai/v1"
-    llm_model: str = "qwen/qwen3.6-27b"
-    # Comma-separated Groq cascade, tried only when a preceding model is rate-limited/unavailable.
-    llm_fallback_models: str = ""
-    # Package-label OCR uses Groq vision; override its model independently.
-    nutrition_vision_model: str = "qwen/qwen3.6-27b"
-    ai_daily_limit: int = 10
+    llm_base_url: str = "http://llm:8080/v1"
+    llm_model: str = "qwen2.5-1.5b-instruct"
+    llm_timeout_seconds: float = 75.0
+    llm_max_output_tokens: int = 320
+    # Tesseract is a separate internal-only container. The API sends it the
+    # image, then gives only extracted text to the local language model.
+    ocr_base_url: str = "http://ocr:8090"
+    ocr_timeout_seconds: float = 35.0
     redis_url: str = "redis://localhost:6379/0"
     environment: str = "development"
     sentry_dsn: str = ""

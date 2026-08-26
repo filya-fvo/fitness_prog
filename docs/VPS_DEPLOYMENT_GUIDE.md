@@ -52,10 +52,13 @@ Internet :80/:443
         └──── api.example.ru ──── FastAPI
                                       ├── PostgreSQL 18 + pgvector
                                       └── Redis 7.4 ← ARQ worker
+                                      └── закрытая AI-сеть
+                                          ├── llama.cpp + Qwen2.5 1.5B
+                                          └── Tesseract rus+eng
 ```
 
-Наружу опубликованы только 80/443. PostgreSQL, Redis, API и Nginx не имеют
-host-портов. Caddy получает и продлевает TLS-сертификаты автоматически. Миграции
+Наружу опубликованы только 80/443. PostgreSQL, Redis, API, Nginx, Qwen и
+Tesseract не имеют host-портов. Caddy получает и продлевает TLS-сертификаты автоматически. Миграции
 запускаются до API и worker; неуспешная миграция не пропускается.
 
 PostgreSQL хранит пользователей, тренировки, питание, настройки и подписки.
@@ -323,13 +326,17 @@ DATABASE_URL=postgresql+asyncpg://fitness:ОДНО_И_ТО_ЖЕ_HEX_ЗНАЧЕН
 
 CORS_ORIGINS=https://web.telegram.org,https://app.example.ru
 EMAIL_OTP_DEV_RETURN_CODE=false
+LLM_PROVIDER=local
+LLM_BASE_URL=http://llm:8080/v1
+LLM_MODEL=qwen2.5-1.5b-instruct
+OCR_BASE_URL=http://ocr:8090
+LOCAL_AI_MODELS_DIR=/opt/fitness/models
 ```
 
 Из текущего `backend/.env` аккуратно перенесите **значения**, не сам файл:
 
 - `BOT_TOKEN`, `BOT_USERNAME`;
 - `JWT_SECRET` — лучше сохранить прежний, если он уже был production-secret;
-- `LLM_API_KEY` и настройки Groq;
 - SMTP-поля и `ADMIN_FEEDBACK_EMAIL`;
 - `ADMIN_TELEGRAM_USERNAMES`, `ADMIN_TELEGRAM_IDS`;
 - прежнюю пару `WEB_PUSH_VAPID_*` и `WEB_PUSH_VAPID_SUBJECT`;
@@ -441,20 +448,31 @@ docker compose --env-file backend/.env.production exec -T db psql \
 
 ## 11. Первый запуск
 
+Один раз загрузите официальную локальную модель и проверьте её контрольную сумму:
+
 ```bash
 cd /opt/fitness
-docker compose --env-file backend/.env.production pull db redis caddy
+sudo sh scripts/install-local-ai-model.sh /opt/fitness/models
+```
+
+Интернет нужен только для этой загрузки и обновления Docker-образов. Runtime
+ИИ не обращается к внешним AI API. Подробности — в
+`docs/ADMIN_AI_MODEL_RUNBOOK.md`.
+
+```bash
+cd /opt/fitness
+docker compose --env-file backend/.env.production pull db redis caddy llm
 docker compose --env-file backend/.env.production build --pull
 docker compose --env-file backend/.env.production up -d --remove-orphans
 docker compose --env-file backend/.env.production ps -a
 ```
 
 `migrate` должен завершиться с кодом 0; постоянно `Up/healthy` должны быть `db`,
-`redis`, `api`, `worker`, `web`, `caddy`. Посмотрите только последние строки:
+`redis`, `api`, `worker`, `web`, `caddy`, `llm`, `ocr`. Посмотрите только последние строки:
 
 ```bash
 docker compose --env-file backend/.env.production logs --tail=100 migrate
-docker compose --env-file backend/.env.production logs --tail=100 api worker caddy
+docker compose --env-file backend/.env.production logs --tail=100 api worker caddy llm ocr
 ```
 
 Загрузите версионированный каталог. Оба seed идемпотентны:
@@ -514,7 +532,7 @@ free -h
 2. Telegram-авторизацию, старт и завершение тестовой тренировки.
 3. Browser email OTP. При неработающем SMTP production API не должен возвращать
    `dev_code`.
-4. Чат ИИ, если задан `LLM_API_KEY`.
+4. Чат локального ИИ и распознавание КБЖУ по фото этикетки; дневного лимита нет.
 5. Тестовое уведомление добавки и Web Push.
 6. Перезагрузку VPS: `sudo reboot`, затем `docker compose ps` и `/health`.
 

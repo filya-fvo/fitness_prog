@@ -22,7 +22,7 @@ const WELCOME_MESSAGE: Msg = {
   id: "welcome",
   role: "assistant",
   content:
-    "Привет! Я ИИ-тренер. Спросите про технику, замену упражнений или прогресс. Лимит: 10 запросов в сутки. Это не медицинская консультация.",
+    "Привет! Я локальный ИИ-тренер. Спросите про технику, замену упражнений или прогресс. Запросы без дневного лимита. Это не медицинская консультация.",
 };
 
 function localDayKey(value = new Date()): string {
@@ -57,7 +57,6 @@ export function Chat() {
   const [sending, setSending] = useState(false);
   const [historyReady, setHistoryReady] = useState(false);
   const sendingRef = useRef(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -85,7 +84,6 @@ export function Chat() {
           message: trimmed,
         });
         if (result.session_id) sessionIdRef.current = result.session_id;
-        setRemaining(result.remaining_requests ?? null);
         setMessages((prev) => [
           ...prev,
           {
@@ -98,7 +96,6 @@ export function Chat() {
       } else {
         const result = await sendAIChat({ message: trimmed, sessionId: sessionIdRef.current });
         sessionIdRef.current = result.session_id;
-        setRemaining(result.remaining_requests ?? null);
         setMessages((prev) => [
           ...prev,
           {
@@ -169,7 +166,7 @@ export function Chat() {
     <section className="flex min-h-[70vh] flex-col">
       <Header
         title="ИИ-тренер"
-        subtitle={!historyReady ? "Загрузка истории…" : remaining == null ? "Сегодня" : `Осталось: ${remaining}`}
+        subtitle={!historyReady ? "Загрузка истории…" : "Локально · без дневного лимита"}
       />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 

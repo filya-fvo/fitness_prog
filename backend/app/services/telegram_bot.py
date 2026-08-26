@@ -385,6 +385,23 @@ def vps_cutover_announcement_text(*, mini_app_url: str) -> str:
     )
 
 
+def local_ai_restored_announcement_text() -> str:
+    """One-time notice after moving AI and label OCR onto the production VPS."""
+    return "\n".join(
+        [
+            "🤖 <b>ИИ-функции Fitness Mini App снова работают.</b>",
+            "",
+            "• ИИ-тренер доступен круглосуточно.",
+            "• Дневной лимит запросов снят.",
+            "• Распознавание КБЖУ по фото этикетки восстановлено.",
+            "",
+            "Обработка теперь выполняется локально на сервере приложения — без внешних AI-сервисов. При высокой нагрузке ответ может занять несколько секунд.",
+            "",
+            "Откройте приложение кнопкой <b>Open</b> и попробуйте обновлённые функции.",
+        ]
+    )
+
+
 def user_guide_path() -> Path:
     """Path to docs/USER_GUIDE.md (repo root / docs)."""
     # backend/app/services/telegram_bot.py -> repo root
