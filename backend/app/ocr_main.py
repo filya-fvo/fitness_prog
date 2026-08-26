@@ -31,6 +31,26 @@ def _prepare_image(data: bytes) -> bytes:
         return output.getvalue()
 
 
+def _parse_tesseract_tsv(data: bytes) -> tuple[str, float]:
+    """Reassemble words by block/paragraph/line, not by word number."""
+    lines: dict[tuple[str, str, str], list[str]] = defaultdict(list)
+    confidences: list[float] = []
+    for row in data.decode("utf-8", errors="replace").splitlines()[1:]:
+        columns = row.split("\t", 11)
+        if len(columns) != 12 or not columns[11].strip():
+            continue
+        lines[(columns[2], columns[3], columns[4])].append(columns[11].strip())
+        try:
+            confidence = float(columns[10])
+            if confidence >= 0:
+                confidences.append(confidence)
+        except ValueError:
+            pass
+    text = "\n".join(" ".join(words) for words in lines.values())
+    score = sum(confidences) / len(confidences) / 100 if confidences else 0.0
+    return text, round(min(max(score, 0.0), 1.0), 3)
+
+
 def _run_tesseract(data: bytes) -> tuple[str, float]:
     prepared = _prepare_image(data)
     completed = subprocess.run(
@@ -52,22 +72,7 @@ def _run_tesseract(data: bytes) -> tuple[str, float]:
         timeout=25,
         check=True,
     )
-    lines: dict[tuple[str, str, str, str], list[str]] = defaultdict(list)
-    confidences: list[float] = []
-    for row in completed.stdout.decode("utf-8", errors="replace").splitlines()[1:]:
-        columns = row.split("\t", 11)
-        if len(columns) != 12 or not columns[11].strip():
-            continue
-        lines[(columns[2], columns[3], columns[4], columns[5])].append(columns[11].strip())
-        try:
-            confidence = float(columns[10])
-            if confidence >= 0:
-                confidences.append(confidence)
-        except ValueError:
-            pass
-    text = "\n".join(" ".join(words) for words in lines.values())
-    score = sum(confidences) / len(confidences) / 100 if confidences else 0.0
-    return text, round(min(max(score, 0.0), 1.0), 3)
+    return _parse_tesseract_tsv(completed.stdout)
 
 
 @app.get("/health")
