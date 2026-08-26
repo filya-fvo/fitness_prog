@@ -184,3 +184,58 @@ async def test_completion_wraps_program_and_phase(monkeypatch) -> None:
     assert user.goals["active_program_week_phase"] == "heavy"
     assert user.goals["active_program_phase_source"] == "manual"
     assert user.goals["active_program_workouts_in_phase"] == 0
+
+
+@pytest.mark.asyncio
+async def test_completion_flushes_before_latest_completed_guard(monkeypatch) -> None:
+    user_id, program_id, workout_id = uuid4(), uuid4(), uuid4()
+    user = User(
+        id=user_id,
+        telegram_id=None,
+        anthropometry={},
+        goals={
+            "active_program_id": str(program_id),
+            "active_program_next_day": 4,
+            "active_program_week_phase": "medium",
+            "active_program_phase_source": "auto",
+            "active_program_workouts_in_phase": 3,
+        },
+    )
+    workout = Workout(
+        id=workout_id,
+        user_id=user_id,
+        program_id=program_id,
+        scheduled_date=date(2026, 8, 26),
+        status="planned",
+        plan={"day_index": 4, "week_phase": "medium"},
+    )
+
+    async def fake_get(*_args, **_kwargs):
+        return workout
+
+    monkeypatch.setattr(workout_service, "_get_workout_for_user", fake_get)
+    session = AsyncMock()
+    flushed = False
+
+    async def mark_flushed() -> None:
+        nonlocal flushed
+        flushed = True
+
+    async def scalar_after_flush(*_args, **_kwargs):
+        if session.scalar.await_count == 1:
+            return four_day_program(program_id)
+        return workout_id if flushed else uuid4()
+
+    session.flush.side_effect = mark_flushed
+    session.scalar.side_effect = scalar_after_flush
+
+    await workout_service.complete_workout(
+        session,
+        user,
+        workout_id,
+        WorkoutCompleteRequest(),
+    )
+
+    session.flush.assert_awaited_once()
+    assert user.goals["active_program_next_day"] == 1
+    assert user.goals["active_program_week_phase"] == "heavy"

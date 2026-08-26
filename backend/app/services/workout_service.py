@@ -651,6 +651,9 @@ async def complete_workout(
             started = started.replace(tzinfo=UTC)
         workout.duration_sec = max(0, int((now - started).total_seconds()))
 
+    # AsyncSessionLocal has autoflush disabled. Persist the completed status in
+    # this transaction before the latest-completion guard queries the database.
+    await session.flush()
     await _advance_program_cursor_for_completed_workout(session, user, workout)
     await session.commit()
     return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
