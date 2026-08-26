@@ -234,6 +234,7 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 git pull --ff-only
 docker compose --env-file backend/.env.production build --pull api worker web
 docker compose --env-file backend/.env.production up -d
+sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
 ```
 

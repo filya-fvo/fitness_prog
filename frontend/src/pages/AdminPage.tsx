@@ -371,9 +371,20 @@ export function AdminPage() {
 
   return (
     <section>
-      <Header title="Админка" subtitle="Пользователи · каталог" />
+      <Header title="Админка" subtitle="Пользователи · каталог · система" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {okNote ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-hint">{okNote}</div> : null}
+
+      <Link
+        to="/admin/system"
+        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+      >
+        <span>
+          <span className="block font-medium text-tg-text">Состояние системы</span>
+          <span className="mt-0.5 block text-xs text-tg-hint">API, база, Redis, worker и backup</span>
+        </span>
+        <span aria-hidden="true" className="text-tg-link">→</span>
+      </Link>
 
       <div className="mb-3 flex rounded-full bg-tg-secondary p-0.5 text-xs">
         <button

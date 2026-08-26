@@ -99,6 +99,11 @@ Supervisor и worker держат межпроцессные lock-файлы в 
 
 Worker supervisor запускает без интерактивного окна. Рабочие события и результаты рассылки находятся в `logs\worker-YYYY-MM-DD.log`, старт и код завершения — в `logs\notification-worker-launcher.log`, необработанный вывод процесса — в `logs\notification-worker-stdout.log` и `logs\notification-worker-stderr.log`. Если обновлялись сами supervisor-скрипты, снова запустите `install-supervisor.cmd`: установщик остановит старый экземпляр системной задачи, зарегистрирует новую версию и сразу её запустит.
 
+Настроенный администратор может открыть **Ещё → Админ → Состояние системы**.
+Локально API/DB/Redis/worker и очередь проверяются напрямую. Backup, commit/deploy
+и HTTPS показывают **Нет данных**, пока `ADMIN_SYSTEM_STATUS_DIR` пуст: host
+status-файлы обязательны только для VPS production и не дают API доступа к Docker.
+
 Команды управления:
 
 ```text

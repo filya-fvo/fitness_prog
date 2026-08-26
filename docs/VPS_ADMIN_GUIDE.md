@@ -77,6 +77,13 @@ curl --fail --silent --output /dev/null --write-out '%{http_code}\n' https://app
 
 Ожидается `{"status":"ok"}` и код `200`.
 
+Без SSH тот же срез доступен настроенному администратору в приложении:
+**Ещё → Админ → Состояние системы**. Экран работает только на чтение и не
+перезапускает сервисы.
+Чтобы карточка PostgreSQL оставалась доступна при полном отказе БД, у владельца
+должен быть указан стабильный numeric ID в `ADMIN_TELEGRAM_IDS`: backend сверяет
+его только с подписанным JWT. Username-доступ без живой БД намеренно не используется.
+
 ## 4. Как смотреть логи
 
 Последние 100 строк основных сервисов:
@@ -229,6 +236,8 @@ BACKUP_DIR=/opt/fitness/backups/manual sh scripts/backup_vps.sh
 ```
 
 Сценарий сам проверит, что dump читается, и создаст файл `.sha256`.
+Он также атомарно обновит `/opt/fitness/status/backup.json`; в файл попадают
+только результат и UTC-время, без пути к dump и параметров базы.
 
 Скачать копию с VPS на Windows, выполняя команду уже в локальном PowerShell:
 
@@ -262,12 +271,17 @@ docker compose --env-file backend/.env.production config --quiet
 docker compose --env-file backend/.env.production build api worker web
 docker compose --env-file backend/.env.production run --rm migrate
 docker compose --env-file backend/.env.production up -d
+sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
 curl --fail --silent https://api.filfitclub.ru/health
 ```
 
 `git status --short` перед обновлением должен быть пустым. Если там появились файлы,
 не удаляйте и не перезаписывайте их вслепую — сначала выясните происхождение.
+
+`write-admin-system-status.sh` записывает текущий commit, версию, время deploy и,
+если сертификат доступен, срок его действия в `/opt/fitness/status`. API видит этот
+каталог через read-only mount; скрипт не читает и не печатает секреты из env.
 
 Секреты находятся только в `backend/.env.production`. Этот файл не коммитится и не
 должен заменяться примером `.env.production.example`.

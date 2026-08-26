@@ -48,6 +48,11 @@ const ProfilePage = lazy(() =>
 const AdminPage = lazy(() =>
   import("@/pages/AdminPage").then((module) => ({ default: module.AdminPage })),
 );
+const AdminSystemPage = lazy(() =>
+  import("@/features/admin-system/pages/AdminSystemPage").then((module) => ({
+    default: module.AdminSystemPage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -105,6 +110,7 @@ export function App() {
             <Route path="ai" element={<Chat />} />
             <Route path="more" element={<MorePage />} />
             <Route path="admin" element={<AdminPage />} />
+            <Route path="admin/system" element={<AdminSystemPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

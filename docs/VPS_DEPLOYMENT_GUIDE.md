@@ -464,6 +464,7 @@ cd /opt/fitness
 docker compose --env-file backend/.env.production pull db redis caddy llm
 docker compose --env-file backend/.env.production build --pull
 docker compose --env-file backend/.env.production up -d --remove-orphans
+sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps -a
 ```
 

@@ -82,6 +82,7 @@ install -d -m 0750 -o root -g root \
   /opt/fitness \
   /opt/fitness/backups \
   /opt/fitness/logs
+install -d -m 0755 -o root -g root /opt/fitness/status
 
 echo "PROVISION_OK"
 docker version --format 'docker={{.Server.Version}}'

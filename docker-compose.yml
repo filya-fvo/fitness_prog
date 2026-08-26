@@ -93,6 +93,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
       LOG_DIR: /app/logs
+      ADMIN_SYSTEM_STATUS_DIR: /app/host-status
       LLM_PROVIDER: local
       LLM_BASE_URL: http://llm:8080/v1
       LLM_MODEL: qwen2.5-1.5b-instruct
@@ -100,6 +101,7 @@ services:
     volumes:
       - backend_logs:/app/logs
       - backend_data:/app/data
+      - /opt/fitness/status:/app/host-status:ro
     expose:
       - "8000"
     depends_on:

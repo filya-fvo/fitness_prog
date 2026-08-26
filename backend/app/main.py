@@ -15,6 +15,7 @@ from app.core.logging import setup_logging
 from app.core.sentry import init_sentry
 from app.frontend import register_frontend
 from app.routers import admin as admin_router
+from app.routers import admin_system as admin_system_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import body_measurements as body_measurements_router
@@ -62,6 +63,7 @@ app.include_router(body_measurements_router.router)
 app.include_router(daily_metrics_router.router)
 app.include_router(users_router.router)
 app.include_router(admin_router.router)
+app.include_router(admin_system_router.router)
 app.include_router(exercises_router.router)
 app.include_router(programs_router.router)
 app.include_router(workouts_router.router)

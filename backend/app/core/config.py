@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # Optional comma-separated Telegram numeric IDs (more stable than username).
     # Required for reliable feedback delivery if admin never opened the Mini App.
     admin_telegram_ids: str = ""
+    # Optional directory with small allowlisted host status JSON files.
+    # It is mounted read-only in production; the API never receives Docker access.
+    admin_system_status_dir: str = ""
     jwt_secret: str = "replace_with_long_random_secret"
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30

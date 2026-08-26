@@ -64,7 +64,7 @@ export function MorePage() {
         <MoreLink to="/help" icon="help" title="Как пользоваться" description="Короткая инструкция по основным разделам" />
         <MoreLink to="/knowledge" icon="knowledge" title="Справочник" description="Питание, нагрузка, разминка и восстановление" />
         {isAdmin ? (
-          <MoreLink to="/admin" icon="admin" title="Админ" description="Пользователи, данные и каталог" />
+          <MoreLink to="/admin" icon="admin" title="Админ" description="Пользователи, каталог и состояние системы" />
         ) : null}
       </div>
     </section>

@@ -1,6 +1,7 @@
 """Regression tests for timer locking and paged notification dispatch."""
 
 import asyncio
+import json
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -84,12 +85,14 @@ async def test_dispatch_all_users_reads_until_empty_page(monkeypatch) -> None:
 class FakeDispatchRedis:
     def __init__(self) -> None:
         self.keys: set[str] = set()
+        self.values: dict[str, str] = {}
 
     async def set(self, key, _value, *, nx=False, ex=None):
         del ex
         if nx and key in self.keys:
             return False
         self.keys.add(key)
+        self.values[key] = _value
         return True
 
 
@@ -98,6 +101,24 @@ async def test_scheduled_dispatch_is_claimed_once_per_minute() -> None:
     redis = FakeDispatchRedis()
     assert await notification_tasks._claim_dispatch_minute(redis) is True
     assert await notification_tasks._claim_dispatch_minute(redis) is False
+
+
+@pytest.mark.asyncio
+async def test_worker_status_contains_only_safe_operational_fields() -> None:
+    redis = FakeDispatchRedis()
+    await notification_tasks._record_worker_status(
+        redis,
+        task="Проверка уведомлений",
+        state="completed",
+        notification_result={"processed": 5, "sent": 2, "errors": 0},
+    )
+
+    worker = json.loads(redis.values[notification_tasks.WORKER_STATUS_KEY])
+    notifications_status = json.loads(
+        redis.values[notification_tasks.NOTIFICATION_STATUS_KEY]
+    )
+    assert set(worker) == {"recorded_at", "task", "state"}
+    assert set(notifications_status) == {"recorded_at", "processed", "sent", "errors"}
 
 
 class FakeNotificationSession:
