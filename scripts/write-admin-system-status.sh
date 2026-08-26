@@ -27,7 +27,7 @@ printf '{"version":"%s","commit":"%s","deployed_at":"%s"}\n' \
 chmod 0644 "$deployment_tmp"
 mv "$deployment_tmp" "$STATUS_DIR/deployment.json"
 
-domain="$(sed -n 's/^API_DOMAIN=//p' "$ENV_FILE" | tail -n 1 | tr -d '\r' | sed 's/^"//;s/"$//')"
+domain="$(sed -n 's/^API_DOMAIN=//p' "$ENV_FILE" | tail -n 1 | tr -d '\r' | sed "s/^[[:space:]\"']//;s/[[:space:]\"']$//")"
 if [ -n "$domain" ]; then
   certificate_end="$({
     timeout 10 openssl s_client -servername "$domain" -connect "$domain:443" </dev/null 2>/dev/null \

@@ -18,6 +18,7 @@
   токены, URL подключений и тексты сообщений в диагностику не попадают.
 - Backup, commit/deploy и срок HTTPS передаются API через ограниченные JSON-файлы
   хоста, смонтированные только для чтения. Docker socket в API не добавлялся.
+  Host-скрипт корректно читает домен и из quoted production env.
 - Добавлены защищённый `/admin/system/status`, отдельный lazy route
   `/admin/system`, повторная проверка и состояния loading/error/retry.
 
