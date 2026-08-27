@@ -17,11 +17,10 @@ import { apiClient, getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
 import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
-import { clearLocalWorkoutData } from "@/db/syncQueue";
+import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import type { Exercise } from "@/types/workout";
-import { clearMeasurementHistory, clearWaterHistory } from "@/utils/habits";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
 import { confirmAction } from "@/lib/telegram";
@@ -163,24 +162,6 @@ export function AdminPage() {
     setResetTarget(u);
     setResetScope("workouts");
     setError(null);
-  }
-
-  async function clearCurrentUserLocalData(scope: AdminResetScope) {
-    if (scope === "workouts" || scope === "all") {
-      await clearLocalWorkoutData();
-      localStorage.removeItem("fitness_active_workout_started_ms");
-    }
-    if (scope === "nutrition" || scope === "all") {
-      if (scope === "all") {
-        localStorage.removeItem("fitness_nutrition_recent_v1");
-        localStorage.removeItem("fitness_nutrition_favorites_v1");
-        localStorage.removeItem("fitness_habits_v1");
-      } else {
-        clearWaterHistory();
-      }
-    }
-    if (scope === "measurements") clearMeasurementHistory();
-    if (scope === "all") localStorage.removeItem("fitness_profile_draft");
   }
 
   async function confirmResetUser() {
@@ -482,6 +463,12 @@ export function AdminPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Link
+                      to={`/admin/users/${u.id}`}
+                      className="text-[11px] font-medium text-tg-link"
+                    >
+                      Карточка
+                    </Link>
                     <button
                       type="button"
                       disabled={busy}

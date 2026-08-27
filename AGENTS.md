@@ -133,6 +133,8 @@ services → SQLAlchemy models → PostgreSQL
   DB/Redis/worker/очереди и allowlist сведений из host status-файлов.
 - `backend/app/services/admin_audit.py` — allowlist снимков и append-only журнал
   административных изменений; таблица защищена PostgreSQL-триггером.
+- `backend/app/services/admin_user_detail.py`, `admin_user_actions.py`, `admin_user_export.py` — подробная
+  карточка пользователя, безопасные действия и allowlist выгрузки без OTP/Web Push секретов.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
 - `backend/app/ai/prompts.py`, `services/ai_engine.py` и `services/local_llm.py` —
   системные инструкции, контекст, локальный Qwen и очистка вывода модели;
@@ -153,6 +155,8 @@ services → SQLAlchemy models → PostgreSQL
   не раздувающий legacy `AdminPage.tsx`.
 - `frontend/src/features/admin-audit/` — отдельный журнал действий с фильтрами и
   серверной пагинацией.
+- `frontend/src/features/admin-user/` — отдельная карточка пользователя с ленивыми
+  блоками активности/связи и визуально отделёнными опасными действиями.
 - `frontend/src/pages/` — общие страницы: Главная, Ещё, справка, админ.
 - `frontend/src/db/syncQueue.ts` — IndexedDB, очередь и снимок активной сессии.
 - `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` — замены
@@ -194,7 +198,7 @@ services → SQLAlchemy models → PostgreSQL
 | Обратная связь | `FeedbackModal.tsx`, `api/feedback.ts` | `feedback.py`, Telegram/SMTP delivery | feedback tests + browser scenario |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
-| Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py` | permissions, immutable audit, system states and affected CRUD tests |
+| Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_detail.py`, `admin_user_actions.py`, `admin_user_export.py` | permissions, immutable audit, system states, export allowlist and affected CRUD tests |
 
 Перед редактированием большого файла сначала найдите уже существующий component,
 hook, service или pure utility. Не создавайте вторую реализацию того же состояния.

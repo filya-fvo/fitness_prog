@@ -27,9 +27,10 @@ for (const name of files.filter(
 const js = measured.filter((item) => item.name.endsWith(".js"));
 const totalJsGzip = js.reduce((sum, item) => sum + item.gzip, 0);
 const largestJsGzip = Math.max(0, ...js.map((item) => item.gzip));
-// Baseline 2026-08-20 is ~398 kB. Admin system diagnostics and immutable audit
-// journal are isolated admin-only lazy chunks (~2.1 + 3.6 kB); stay below 419 kB.
-const limits = { totalJsGzip: 419_000, largestJsGzip: 140_000 };
+// Baseline 2026-08-20 is ~398 kB. Three admin-only stages are isolated lazy
+// chunks (system, audit, user detail); stay below 425 kB without relaxing the
+// per-chunk ceiling used by regular user routes.
+const limits = { totalJsGzip: 425_000, largestJsGzip: 140_000 };
 const failures = [];
 if (totalJsGzip > limits.totalJsGzip) failures.push(`all JS gzip ${totalJsGzip} > ${limits.totalJsGzip}`);
 if (largestJsGzip > limits.largestJsGzip) failures.push(`largest JS gzip ${largestJsGzip} > ${limits.largestJsGzip}`);
