@@ -130,7 +130,7 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "Test production migrations and Windows fallback restore" in ci
     assert "ALTER TABLE exercises ADD COLUMN embedding double precision[]" in ci
     assert 'test "$actual" = "vector(1536)"' in ci
-    assert "docker build -t fitness-api:ci ./backend" in ci
+    assert "docker build -f backend/Dockerfile -t fitness-api:ci ." in ci
     assert "-t fitness-web:ci ./frontend" in ci
 
 
@@ -144,7 +144,8 @@ def test_vps_images_and_production_env_cover_runtime_requirements() -> None:
         encoding="utf-8"
     )
 
-    assert "COPY scripts ./scripts" in backend_dockerfile
+    assert "COPY backend/scripts ./scripts" in backend_dockerfile
+    assert "COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/" in backend_dockerfile
     assert "mkdir -p /app/logs /app/data" in backend_dockerfile
     assert "npm run build:publish" in frontend_dockerfile
     assert "COPY --from=build /app/dist /opt/fitness-release" in frontend_dockerfile

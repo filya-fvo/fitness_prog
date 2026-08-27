@@ -33,6 +33,7 @@ RUN apt-get update \
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/app ./app
 COPY backend/scripts ./scripts
+COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/
 COPY supabase/migrations ./supabase/migrations
 COPY deploy/timeweb/run_api_and_worker.py ./run_api_and_worker.py
 COPY deploy/timeweb/start.sh ./start.sh

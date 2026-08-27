@@ -6,7 +6,7 @@ services:
     name: fitness-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerContext: .
     plan: free
     healthCheckPath: /health
     envVars:
@@ -47,7 +47,7 @@ services:
     name: fitness-worker
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerContext: .
     dockerCommand: arq app.tasks.notifications.WorkerSettings
     plan: free
     envVars:

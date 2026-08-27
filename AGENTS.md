@@ -74,7 +74,10 @@ fallback. `llm_base_url` указывает только на внутренни
   универсальный runbook — `docs/VPS_DEPLOYMENT_GUIDE.md`.
 - Production-манифесты: `docker-compose.yml`, Dockerfile каждого приложения,
   корневой альтернативный `Dockerfile` для App Platform и `render.yaml`.
-  `docker-compose.yml` и Dockerfile каждого приложения.
+  Backend-образ собирается из корня репозитория: так канонические
+  `docs/USER_GUIDE.md` и `docs/LOCAL_ADMIN_GUIDE.md` попадают в `/docs` для
+  Telegram `/help` и административной повторной отправки. Не возвращайте context
+  к `backend/` без эквивалентной упаковки этих файлов и обновления теста образа.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
   `DATABASE_URL`; SQL-схема версионируется в `supabase/migrations/`.
   `tools/redis/dump.rdb` — локальный runtime-снимок Redis, не PostgreSQL;

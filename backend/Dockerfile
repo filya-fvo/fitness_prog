@@ -15,9 +15,12 @@ RUN apt-get update \
         tesseract-ocr-rus \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml README.md ./
-COPY app ./app
-COPY scripts ./scripts
+COPY backend/pyproject.toml backend/README.md ./
+COPY backend/app ./app
+COPY backend/scripts ./scripts
+# Telegram /help and the admin resend action attach these canonical documents.
+# Keep them in /docs because telegram_bot resolves that path inside the image.
+COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/
 
 RUN pip install --upgrade pip \
     && pip install .

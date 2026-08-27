@@ -402,6 +402,18 @@ docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 
 Ожидается `PONG`. В строках `scheduled_dispatch` поле `errors` должно быть `0`.
 
+Если из карточки пользователя не отправляется инструкция, проверьте, что оба
+канонических документа вошли в текущий API-образ:
+
+```bash
+docker compose --env-file backend/.env.production exec -T api test -s /docs/USER_GUIDE.md
+docker compose --env-file backend/.env.production exec -T api test -s /docs/LOCAL_ADMIN_GUIDE.md
+```
+
+Обе команды должны завершиться с кодом `0`. Ошибка `User guide not found` в
+логах `api` означает, что запущен старый образ: обновите репозиторий и пересоберите
+`api` из корневого Docker context по штатной процедуре обновления.
+
 ### Не приходит письмо с OTP
 
 ```bash

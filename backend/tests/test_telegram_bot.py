@@ -1,5 +1,7 @@
 """Unit tests for Telegram helpers (/start, menu, keyboards)."""
 
+from pathlib import Path
+
 import pytest
 
 from app.core.config import Settings
@@ -335,6 +337,20 @@ def test_user_guide_file_exists_and_loads() -> None:
     text = data.decode("utf-8")
     assert "Fitness" in text
     assert "\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u044f" in text or "Инструкция" in text
+
+
+def test_production_images_include_telegram_guides() -> None:
+    root = Path(__file__).resolve().parents[2]
+    backend_dockerfile = (root / "backend" / "Dockerfile").read_text(encoding="utf-8")
+    combined_dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+    compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
+    render = (root / "render.yaml").read_text(encoding="utf-8")
+
+    copy_instruction = "COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/"
+    assert copy_instruction in backend_dockerfile
+    assert copy_instruction in combined_dockerfile
+    assert compose.count("dockerfile: backend/Dockerfile") == 3
+    assert render.count("dockerContext: .") == 2
 
 
 def test_admin_guide_file_exists_and_loads() -> None:

@@ -163,7 +163,7 @@ jobs:
           test "$actual" = "vector(1536)"
           "${compose[@]}" stop db
       - name: Build backend image
-        run: docker build -t fitness-api:ci ./backend
+        run: docker build -f backend/Dockerfile -t fitness-api:ci .
       - name: Build frontend image
         run: >-
           docker build
