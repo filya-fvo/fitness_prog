@@ -8,21 +8,25 @@ type Props = {
   error?: string | null;
 };
 
-function formatValue(value: number | null | undefined): string {
-  return value == null ? "—" : `${String(value).replace(".", ",")} см`;
+function formatValue(value: number | null | undefined, unit: string): string {
+  return value == null ? "—" : `${String(value).replace(".", ",")} ${unit}`;
 }
 
-function formatDelta(current: number | null | undefined, previous: number | null | undefined) {
+function formatDelta(
+  current: number | null | undefined,
+  previous: number | null | undefined,
+  unit: string,
+) {
   if (current == null || previous == null) return null;
   const value = Math.round((current - previous) * 10) / 10;
-  return `${value > 0 ? "+" : ""}${String(value).replace(".", ",")} см`;
+  return `${value > 0 ? "+" : ""}${String(value).replace(".", ",")} ${unit}`;
 }
 
 export function BodyMeasurementsSummary({ items, error }: Props) {
   const latest = items.at(-1) ?? null;
   const previous = items.length > 1 ? items.at(-2) ?? null : null;
   const featured = BODY_MEASURE_FIELDS.filter((field) =>
-    ["waist_cm", "chest_cm", "hips_cm", "bicep_cm"].includes(field.key),
+    ["weight_kg", "waist_cm", "chest_cm", "hips_cm"].includes(field.key),
   );
 
   return (
@@ -44,11 +48,11 @@ export function BodyMeasurementsSummary({ items, error }: Props) {
         <div className="mt-3 grid grid-cols-2 gap-2">
           {featured.map((field) => {
             const key = field.key as BodyMeasurementField;
-            const delta = formatDelta(latest[key], previous?.[key]);
+            const delta = formatDelta(latest[key], previous?.[key], field.unit);
             return (
               <div key={field.key} className="rounded-xl bg-tg-bg p-2.5">
-                <p className="text-[10px] text-tg-hint">{field.label.replace(", см", "")}</p>
-                <p className="mt-1 text-base font-semibold tabular-nums">{formatValue(latest[key])}</p>
+                <p className="text-[10px] text-tg-hint">{field.label.split(",")[0]}</p>
+                <p className="mt-1 text-base font-semibold tabular-nums">{formatValue(latest[key], field.unit)}</p>
                 <p className="text-[10px] text-tg-hint">{delta ? `к прошлому ${delta}` : "нет сравнения"}</p>
               </div>
             );

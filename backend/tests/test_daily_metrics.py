@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from app.models.daily_metric import DailyMetric
 from app.models.user import User
-from app.schemas.daily_metrics import DailyMetricUpdate
+from app.schemas.daily_metrics import DailyMetricResponse, DailyMetricUpdate
 from app.services.daily_metrics import save_for_day
 
 
@@ -40,6 +40,11 @@ def test_daily_metric_schema_rejects_impossible_values() -> None:
         DailyMetricUpdate(steps=-1)
     with pytest.raises(ValidationError):
         DailyMetricUpdate()
+    with pytest.raises(ValidationError):
+        DailyMetricUpdate(weight_kg=82)
+    legacy = DailyMetricUpdate(weight_kg=82, steps=5000)
+    assert legacy.steps == 5000
+    assert DailyMetricResponse(date=date(2026, 8, 27)).model_dump()["weight_kg"] is None
 
 
 @pytest.mark.asyncio
@@ -65,3 +70,4 @@ async def test_save_daily_metrics_sets_and_clears_manual_source() -> None:
     assert row.sleep_minutes == 450
     assert row.steps is None
     assert row.sources == {"sleep_minutes": "manual"}
+    assert not hasattr(row, "weight_kg")

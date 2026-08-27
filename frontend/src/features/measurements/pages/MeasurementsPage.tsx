@@ -36,10 +36,14 @@ function valueText(value: number | null | undefined): string {
   return value == null ? "" : String(value);
 }
 
-function deltaText(current: number | null | undefined, previous: number | null | undefined): string {
+function deltaText(
+  current: number | null | undefined,
+  previous: number | null | undefined,
+  unit: string,
+): string {
   if (current == null || previous == null) return "—";
   const delta = Math.round((current - previous) * 10) / 10;
-  return `${delta > 0 ? "+" : ""}${String(delta).replace(".", ",")} см`;
+  return `${delta > 0 ? "+" : ""}${String(delta).replace(".", ",")} ${unit}`;
 }
 
 function MeasurementChart({
@@ -49,6 +53,7 @@ function MeasurementChart({
   items: BodyMeasurement[];
   field: BodyMeasurementField;
 }) {
+  const config = BODY_MEASURE_FIELDS.find((item) => item.key === field)!;
   const points = items
     .filter((item) => item[field] != null)
     .slice(-12)
@@ -76,12 +81,12 @@ function MeasurementChart({
         {points.map((point, index) => {
           const [x, y] = polyline.split(" ")[index].split(",");
           const showLabel = index === 0 || index === points.length - 1;
-          return <g key={`${point.date}-${index}`}><circle cx={x} cy={y} r="4" fill="currentColor" className="text-tg-button"><title>{point.date}: {point.value} см</title></circle>{showLabel ? <text x={x} y={Math.max(10, Number(y) - 8)} textAnchor={index === 0 ? "start" : "end"} className="fill-tg-text text-[10px] font-semibold">{String(point.value).replace(".", ",")}</text> : null}</g>;
+          return <g key={`${point.date}-${index}`}><circle cx={x} cy={y} r="4" fill="currentColor" className="text-tg-button"><title>{point.date}: {point.value} {config.unit}</title></circle>{showLabel ? <text x={x} y={Math.max(10, Number(y) - 8)} textAnchor={index === 0 ? "start" : "end"} className="fill-tg-text text-[10px] font-semibold">{String(point.value).replace(".", ",")}</text> : null}</g>;
         })}
       </svg>
       <div className="flex justify-between text-[10px] text-tg-hint">
         <span>{points[0].date.slice(5)}</span>
-        <span>{min.toFixed(1).replace(".", ",")}–{max.toFixed(1).replace(".", ",")} см</span>
+        <span>{min.toFixed(1).replace(".", ",")}–{max.toFixed(1).replace(".", ",")} {config.unit}</span>
         <span>{points[points.length - 1].date.slice(5)}</span>
       </div>
     </div>
@@ -143,7 +148,7 @@ export function MeasurementsPage() {
     for (const field of BODY_MEASURE_FIELDS) {
       const raw = values[field.key]?.trim() ?? "";
       const number = raw ? Number(raw) : null;
-      if (number != null && (!Number.isFinite(number) || number < 1 || number > 500)) {
+      if (number != null && (!Number.isFinite(number) || number < field.min || number > field.max)) {
         toast(`Проверьте поле «${field.label}»`, "error");
         return;
       }
@@ -190,14 +195,14 @@ export function MeasurementsPage() {
               <label key={field.key} className="text-xs text-tg-hint">
                 {field.label}
                 <DecimalInput
-                  min={1}
-                  max={500}
+                  min={field.min}
+                  max={field.max}
                   value={values[field.key] ?? ""}
                   onValueChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
                   placeholder="—"
                   className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
                 />
-                {previous ? <span className="mt-0.5 block text-[10px]">к прошлому: {deltaText(Number(values[field.key]) || null, previous[field.key as BodyMeasurementField])}</span> : null}
+                {previous ? <span className="mt-0.5 block text-[10px]">к прошлому: {deltaText(Number(values[field.key]) || null, previous[field.key as BodyMeasurementField], field.unit)}</span> : null}
               </label>
             ))}
           </div>
@@ -217,7 +222,7 @@ export function MeasurementsPage() {
               <p className="text-[11px] text-tg-hint">До 12 последних точек</p>
             </div>
             <select aria-label="Показатель на графике" value={chartField} onChange={(event) => setChartField(event.target.value as BodyMeasurementField)} className="rounded-lg bg-tg-bg px-2 py-1.5 text-xs">
-              {BODY_MEASURE_FIELDS.map((field) => <option key={field.key} value={field.key}>{field.label.replace(", см", "")}</option>)}
+              {BODY_MEASURE_FIELDS.map((field) => <option key={field.key} value={field.key}>{field.label.split(",")[0]}</option>)}
             </select>
           </div>
           <MeasurementChart items={history} field={chartField} />
@@ -229,7 +234,7 @@ export function MeasurementsPage() {
                 <button key={item.date} type="button" onClick={() => setDate(item.date)} className="w-full rounded-xl bg-tg-bg p-3 text-left">
                   <p className="text-xs font-medium">{displayDate(item.date)}</p>
                   <p className="mt-1 text-[11px] text-tg-hint">
-                    {BODY_MEASURE_FIELDS.filter((field) => item[field.key as BodyMeasurementField] != null).slice(0, 3).map((field) => `${field.label.replace(", см", "")} ${item[field.key as BodyMeasurementField]}`).join(" · ") || "Только заметка"}
+                    {BODY_MEASURE_FIELDS.filter((field) => item[field.key as BodyMeasurementField] != null).slice(0, 3).map((field) => `${field.label.split(",")[0]} ${item[field.key as BodyMeasurementField]} ${field.unit}`).join(" · ") || "Только заметка"}
                   </p>
                 </button>
               ))}

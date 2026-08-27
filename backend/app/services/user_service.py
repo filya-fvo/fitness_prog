@@ -7,6 +7,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.schemas.user import UserProfileResponse, UserProfileUpdate
+from app.services.scheduler import local_schedule_day
 
 
 def _onboarding_completed(user: User) -> bool:
@@ -38,6 +39,28 @@ async def update_profile(
         flag_modified(user, "anthropometry")
     if data.goals is not None:
         merged = {**(user.goals or {}), **data.goals}
+        previous_program_id = str((user.goals or {}).get("active_program_id") or "")
+        selected_program_id = str(merged.get("active_program_id") or "")
+        if selected_program_id != previous_program_id:
+            if selected_program_id:
+                merged.update(
+                    {
+                        "active_program_started_at": local_schedule_day(merged).isoformat(),
+                        "active_program_next_day": 1,
+                        "active_program_week_phase": "light",
+                        "active_program_phase_source": "auto",
+                        "active_program_workouts_in_phase": 0,
+                    }
+                )
+            else:
+                for key in (
+                    "active_program_started_at",
+                    "active_program_next_day",
+                    "active_program_week_phase",
+                    "active_program_phase_source",
+                    "active_program_workouts_in_phase",
+                ):
+                    merged.pop(key, None)
         # Completing onboarding when core fields present
         if merged.get("primary_goal") and merged.get("level"):
             merged["onboarding_completed"] = True

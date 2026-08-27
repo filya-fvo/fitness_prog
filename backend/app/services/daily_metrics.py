@@ -11,7 +11,7 @@ from app.models.daily_metric import DailyMetric
 from app.models.user import User
 from app.schemas.daily_metrics import DailyMetricUpdate
 
-METRIC_FIELDS = ("sleep_minutes", "steps", "active_minutes", "weight_kg")
+METRIC_FIELDS = ("sleep_minutes", "steps", "active_minutes")
 
 
 async def get_for_day(

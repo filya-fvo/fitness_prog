@@ -1,4 +1,4 @@
-/** Manual daily sleep, movement, water and weight check-in. */
+/** Manual daily sleep, movement and water check-in. */
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -35,7 +35,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
   const [internalDate, setInternalDate] = useState(today);
   const selectedDate = date ?? internalDate;
   const [day, setDay] = useState<HabitDay>(() => getHabitDay(selectedDate));
-  const [weight, setWeight] = useState("");
   const [sleep, setSleep] = useState("");
   const [steps, setSteps] = useState("");
   const [activeMinutes, setActiveMinutes] = useState("");
@@ -58,7 +57,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
     let cancelled = false;
     const local = getHabitDay(selectedDate);
     setDay(local);
-    setWeight(valueOrEmpty(local.weightKg));
     setSleep(valueOrEmpty(local.sleepHours));
     setSteps(valueOrEmpty(local.steps));
     setActiveMinutes(valueOrEmpty(local.activeMinutes));
@@ -72,19 +70,16 @@ export function HabitsCheckin({ date, onSaved }: Props) {
         const merged: HabitDay = {
           ...local,
           waterMl: Math.max(local.waterMl || 0, Number(water.ml) || 0),
-          weightKg: metrics.weight_kg ?? local.weightKg,
           sleepHours:
             metrics.sleep_minutes != null ? metrics.sleep_minutes / 60 : local.sleepHours,
           steps: metrics.steps ?? local.steps ?? null,
           activeMinutes: metrics.active_minutes ?? local.activeMinutes ?? null,
         };
         setDay(saveHabitDay(merged));
-        setWeight(valueOrEmpty(merged.weightKg));
         setSleep(valueOrEmpty(merged.sleepHours));
         setSteps(valueOrEmpty(merged.steps));
         setActiveMinutes(valueOrEmpty(merged.activeMinutes));
         const hasOfflineMetrics =
-          (metrics.weight_kg == null && local.weightKg != null) ||
           (metrics.sleep_minutes == null && local.sleepHours != null) ||
           (metrics.steps == null && local.steps != null) ||
           (metrics.active_minutes == null && local.activeMinutes != null);
@@ -95,7 +90,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
                 merged.sleepHours != null ? Math.round(merged.sleepHours * 60) : null,
               steps: merged.steps ?? null,
               activeMinutes: merged.activeMinutes ?? null,
-              weightKg: merged.weightKg,
             },
             selectedDate,
           )
@@ -131,12 +125,10 @@ export function HabitsCheckin({ date, onSaved }: Props) {
   }
 
   async function saveCheckin() {
-    const weightValue = parseNullable(weight);
     const sleepHours = parseNullable(sleep);
     const stepsValue = parseNullable(steps);
     const activeValue = parseNullable(activeMinutes);
     if (
-      (weight.trim() && (weightValue == null || weightValue < 20 || weightValue > 500)) ||
       (sleep.trim() && (sleepHours == null || sleepHours < 0 || sleepHours > 24)) ||
       (steps.trim() && (stepsValue == null || stepsValue < 0 || stepsValue > 200_000)) ||
       (activeMinutes.trim() && (activeValue == null || activeValue < 0 || activeValue > 1440))
@@ -146,7 +138,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
     }
     const next = saveHabitDay({
       ...getHabitDay(selectedDate),
-      weightKg: weightValue != null && weightValue >= 20 && weightValue <= 500 ? weightValue : null,
       sleepHours: sleepHours != null && sleepHours >= 0 && sleepHours <= 24 ? sleepHours : null,
       steps:
         stepsValue != null && stepsValue >= 0 && stepsValue <= 200_000
@@ -167,7 +158,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
               next.sleepHours != null ? Math.round(next.sleepHours * 60) : null,
             steps: next.steps ?? null,
             activeMinutes: next.activeMinutes ?? null,
-            weightKg: next.weightKg,
           },
           selectedDate,
         );
@@ -179,7 +169,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
       trackEvent("habit_checked", {
         source: "manual",
         water_ml: next.waterMl,
-        has_weight: next.weightKg != null,
         has_sleep: next.sleepHours != null,
         steps: next.steps ?? 0,
         active_minutes: next.activeMinutes ?? 0,
@@ -275,17 +264,6 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             value={activeMinutes}
             onValueChange={setActiveMinutes}
             placeholder="например, 45"
-            className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="min-w-0 text-xs text-tg-hint">
-          Вес, кг
-          <DecimalInput
-            min={20}
-            max={500}
-            value={weight}
-            onValueChange={setWeight}
-            placeholder="например, 75,2"
             className="mt-1 min-w-0 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>

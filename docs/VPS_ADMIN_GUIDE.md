@@ -152,8 +152,8 @@ docker compose --env-file backend/.env.production exec db psql -U fitness -d fit
 | `workout_plan_overrides` | замены упражнений, подготовленные до старта |
 | `nutrition_products` | справочник продуктов |
 | `nutrition_logs` | записи дневника питания |
-| `daily_metrics` | сон, шаги, активность и вес по дням |
-| `body_measurements` | обхваты и замеры тела |
+| `daily_metrics` | сон, шаги и активность по дням |
+| `body_measurements` | вес, обхваты и остальные замеры тела |
 | `supplement_intakes` | приём добавок |
 | `web_push_subscriptions` | подписки браузеров на push |
 | `email_otp_codes` | временные коды входа по email |
@@ -196,9 +196,19 @@ WHERE telegram_id IS NOT NULL AND is_deleted = false;
 Последние дневные показатели:
 
 ```sql
-SELECT user_id, date, sleep_minutes, steps, active_minutes, weight_kg
+SELECT user_id, date, sleep_minutes, steps, active_minutes
 FROM daily_metrics
 WHERE is_deleted = false
+ORDER BY date DESC
+LIMIT 20;
+```
+
+Последние замеры веса:
+
+```sql
+SELECT user_id, date, weight_kg
+FROM body_measurements
+WHERE is_deleted = false AND weight_kg IS NOT NULL
 ORDER BY date DESC
 LIMIT 20;
 ```

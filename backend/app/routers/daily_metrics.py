@@ -1,4 +1,4 @@
-"""Manual daily sleep, movement and weight API."""
+"""Manual daily sleep and movement API."""
 
 from __future__ import annotations
 
@@ -30,7 +30,6 @@ def _response(row: DailyMetric | None, day: date) -> DailyMetricResponse:
         sleep_minutes=row.sleep_minutes,
         steps=row.steps,
         active_minutes=row.active_minutes,
-        weight_kg=float(row.weight_kg) if row.weight_kg is not None else None,
         sources=dict(row.sources or {}),
     )
 

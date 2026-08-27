@@ -79,7 +79,8 @@ class AdminUserRecordCounts(BaseModel):
     completed_workouts: int = 0
     nutrition_logs: int = 0
     body_measurements: int = 0
-    daily_weight_entries: int = 0
+    weight_entries: int = 0
+    daily_weight_entries: int = Field(default=0, deprecated=True)
 
 
 class AdminUserActivity(BaseModel):

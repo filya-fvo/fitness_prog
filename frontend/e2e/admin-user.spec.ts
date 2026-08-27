@@ -58,7 +58,7 @@ test("admin user card loads blocks and confirms notification change", async ({ p
       recent_workouts: [],
       counts: {
         workouts: 4, completed_workouts: 4, nutrition_logs: 12,
-        body_measurements: 2, daily_weight_entries: 8,
+        body_measurements: 2, weight_entries: 8, daily_weight_entries: 8,
       },
     }),
   }));

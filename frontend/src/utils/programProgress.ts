@@ -8,6 +8,7 @@ import { programDayLabel } from "@/utils/localization";
 import { programDays } from "@/utils/programRecommend";
 import {
   WEEK_PHASES,
+  localDateKey,
   type WeekPhase,
   type WeekPhaseMeta,
   resolveWeekPhase,
@@ -143,6 +144,24 @@ export function listProgramDays(program: Program): Array<{ dayIndex: number; tit
     out.push({ dayIndex: i, title });
   }
   return out;
+}
+
+export function programSelectionGoalsPatch(
+  goals: Record<string, unknown>,
+  programId: string,
+  todayISO = localDateKey(),
+): Record<string, unknown> {
+  if (String(goals.active_program_id || "") === programId) {
+    return { active_program_id: programId };
+  }
+  return {
+    active_program_id: programId,
+    active_program_started_at: todayISO,
+    active_program_next_day: 1,
+    active_program_week_phase: "light",
+    active_program_phase_source: "auto",
+    active_program_workouts_in_phase: 0,
+  };
 }
 
 export type ProgramDayExerciseRow = {

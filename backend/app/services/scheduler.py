@@ -64,6 +64,17 @@ def local_schedule_day(goals: dict[str, Any], now: datetime | None = None) -> da
     return (now or datetime.now(UTC)).astimezone(_schedule_timezone(goals)).date()
 
 
+def program_schedule_start(goals: dict[str, Any]) -> date | None:
+    """Return the first calendar day that belongs to the active program."""
+    raw = str(goals.get("active_program_started_at") or "").strip()[:10]
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
 def _schedule_overrides(goals: dict[str, Any]) -> list[dict[str, Any]]:
     raw = goals.get(OVERRIDES_KEY)
     if not isinstance(raw, list):
@@ -99,6 +110,16 @@ def next_base_workout_date(goals: dict[str, Any], after: date) -> date | None:
 
 def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any]:
     """Resolve whether a local day is training after one-off overrides."""
+    schedule_start = program_schedule_start(goals)
+    if schedule_start is not None and day < schedule_start:
+        return {
+            "is_workout_day": False,
+            "original_date": day,
+            "target_date": day,
+            "start_time": workout_start_time(goals),
+            "override": None,
+            "moved_away": False,
+        }
     overrides = _schedule_overrides(goals)
     day_key = day.isoformat()
     target = next((row for row in overrides if row["target_date"] == day_key), None)
@@ -270,8 +291,14 @@ async def get_schedule_overview(
             future = schedule_overview(goals, requested_day + timedelta(days=1))
             overview["next"] = future.get("next")
     if overview.get("current") is None:
+        schedule_start = program_schedule_start(goals)
+        created_at = getattr(user, "created_at", None)
+        if schedule_start is None and created_at is not None:
+            schedule_start = created_at.astimezone(_schedule_timezone(goals)).date()
         for offset in range(1, MAX_RESCHEDULE_LOOKBACK_DAYS + 1):
             original = requested_day - timedelta(days=offset)
+            if schedule_start is not None and original < schedule_start:
+                break
             if original.weekday() not in workout_days(goals):
                 continue
             next_base = next_base_workout_date(goals, original)

@@ -150,7 +150,7 @@ export function AdminUserPage() {
       <LoadBlock title="Тренировки и записи" loaded={activity != null} loading={loading === "activity"} error={activityError} onLoad={() => void loadActivity()}>
         {activity ? <div className="space-y-3 text-sm">
           <p className="rounded-xl bg-tg-bg p-3">Следующая: {activity.next_workout ? `${activity.next_workout.target_date} · ${activity.next_workout.start_time.slice(0, 5)} · ${activity.next_workout.title}` : "не запланирована"}</p>
-          <p className="text-xs text-tg-hint">Тренировки {activity.counts.completed_workouts}/{activity.counts.workouts} · питание {activity.counts.nutrition_logs} · замеры {activity.counts.body_measurements} · записи веса {activity.counts.daily_weight_entries}</p>
+          <p className="text-xs text-tg-hint">Тренировки {activity.counts.completed_workouts}/{activity.counts.workouts} · питание {activity.counts.nutrition_logs} · замеры {activity.counts.body_measurements} · записи веса {activity.counts.weight_entries}</p>
           {activity.recent_workouts.map((item) => <div key={item.id} className="rounded-xl bg-tg-bg p-3"><p className="font-medium">{item.title}</p><p className="mt-1 text-xs text-tg-hint">{item.scheduled_date} · {enumLabel(item.status)} · подходы {item.completed_sets}/{item.sets_count}{item.rpe ? ` · RPE ${item.rpe}` : ""}</p></div>)}
           {!activity.recent_workouts.length ? <p className="text-tg-hint">Тренировок пока нет.</p> : null}
         </div> : null}

@@ -1,6 +1,6 @@
 import type { AdminResetScope } from "@/api/admin";
 import { clearLocalWorkoutData } from "@/db/syncQueue";
-import { clearMeasurementHistory, clearWaterHistory } from "@/utils/habits";
+import { clearLegacyWeightHistory, clearWaterHistory } from "@/utils/habits";
 
 export async function clearCurrentUserLocalData(scope: AdminResetScope): Promise<void> {
   if (scope === "workouts" || scope === "all") {
@@ -16,6 +16,6 @@ export async function clearCurrentUserLocalData(scope: AdminResetScope): Promise
       clearWaterHistory();
     }
   }
-  if (scope === "measurements") clearMeasurementHistory();
+  if (scope === "measurements") clearLegacyWeightHistory();
   if (scope === "all") localStorage.removeItem("fitness_profile_draft");
 }

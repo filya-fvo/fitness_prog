@@ -24,6 +24,7 @@ class BodyMeasurement(Base, TimestampSoftDeleteMixin):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
     neck_cm: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
     shoulders_cm: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
     chest_cm: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)

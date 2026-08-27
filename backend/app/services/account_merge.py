@@ -144,7 +144,7 @@ async def _merge_daily_metrics(
         ).all()
     )
     target_by_date = {row.date: row for row in target_rows}
-    fields = ("sleep_minutes", "steps", "active_minutes", "weight_kg")
+    fields = ("sleep_minutes", "steps", "active_minutes")
     for source_row in source_rows:
         target_row = target_by_date.get(source_row.date)
         if target_row is None:
@@ -189,6 +189,7 @@ async def _merge_body_measurements(
     )
     target_by_date = {row.date: row for row in target_rows}
     fields = (
+        "weight_kg",
         "neck_cm",
         "shoulders_cm",
         "chest_cm",

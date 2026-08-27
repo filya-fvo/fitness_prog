@@ -209,6 +209,7 @@ def _clear_measurements(user: User) -> dict[str, int]:
     anthropometry = dict(user.anthropometry or {})
     measurements = anthropometry.pop("measurements", None)
     anthropometry.pop("measurements_updated_at", None)
+    anthropometry.pop("weight_kg", None)
     user.anthropometry = anthropometry
     flag_modified(user, "anthropometry")
 
@@ -223,25 +224,6 @@ def _clear_measurements(user: User) -> dict[str, int]:
     user.goals = goals
     flag_modified(user, "goals")
     return {"measurements": len(measurements) if isinstance(measurements, dict) else 0}
-
-
-async def _clear_daily_weights(session: AsyncSession, user_id: uuid.UUID) -> int:
-    rows = list(
-        (
-            await session.scalars(
-                select(DailyMetric).where(
-                    DailyMetric.user_id == user_id,
-                    DailyMetric.weight_kg.is_not(None),
-                )
-            )
-        ).all()
-    )
-    for row in rows:
-        row.weight_kg = None
-        sources = dict(row.sources or {})
-        sources.pop("weight_kg", None)
-        row.sources = sources
-    return len(rows)
 
 
 async def clear_user_data(
@@ -278,13 +260,12 @@ async def clear_user_data(
         text = "Администратор очистил дневник питания и воду. Профиль и цели сохранены."
     else:
         stats = _clear_measurements(user)
-        stats["weight_days"] = await _clear_daily_weights(session, user.id)
         result = await session.execute(
             delete(BodyMeasurement).where(BodyMeasurement.user_id == user.id)
         )
         stats["body_measurements"] = int(result.rowcount or 0)
         title = "Замеры очищены"
-        text = "Администратор очистил замеры тела. Анкета, рост, вес и остальные настройки сохранены."
+        text = "Администратор очистил замеры тела и историю веса. Остальная анкета и настройки сохранены."
 
     goals = dict(user.goals or {})
     goals["data_reset_at"] = datetime.now(timezone.utc).isoformat()

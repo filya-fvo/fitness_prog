@@ -1,5 +1,5 @@
 /**
- * Lightweight daily habits (water / weight / sleep) — local only.
+ * Lightweight daily habits (water / sleep / movement) — local only.
  */
 import { localDateKey } from "@/utils/progress";
 
@@ -8,7 +8,6 @@ const KEY = "fitness_habits_v1";
 export type HabitDay = {
   date: string;
   waterMl: number;
-  weightKg: number | null;
   sleepHours: number | null;
   steps?: number | null;
   activeMinutes?: number | null;
@@ -48,7 +47,6 @@ export function getHabitDay(date = localDateKey(new Date())): HabitDay {
     : {
       date,
       waterMl: 0,
-      weightKg: null,
       sleepHours: null,
       steps: null,
       activeMinutes: null,
@@ -77,10 +75,12 @@ export function clearWaterHistory(): void {
   writeStore(store);
 }
 
-export function clearMeasurementHistory(): void {
+export function clearLegacyWeightHistory(): void {
   const store = readStore();
   for (const [date, day] of Object.entries(store)) {
-    store[date] = { ...day, weightKg: null };
+    const withoutWeight = { ...day } as HabitDay & { weightKg?: number | null };
+    delete withoutWeight.weightKg;
+    store[date] = withoutWeight;
   }
   writeStore(store);
 }

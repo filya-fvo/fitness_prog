@@ -63,8 +63,20 @@ async def _sync_latest_profile_snapshot(session: AsyncSession, user: User) -> No
         for field in MEASUREMENT_FIELDS
         if getattr(latest, field) is not None
     }
+    latest_weight = await session.scalar(
+        select(BodyMeasurement)
+        .where(
+            BodyMeasurement.user_id == user.id,
+            BodyMeasurement.weight_kg.is_not(None),
+            BodyMeasurement.is_deleted.is_(False),
+        )
+        .order_by(BodyMeasurement.date.desc(), BodyMeasurement.updated_at.desc())
+        .limit(1)
+    )
     anthropometry = dict(user.anthropometry or {})
     anthropometry["measurements"] = values
+    if latest_weight is not None:
+        anthropometry["weight_kg"] = float(latest_weight.weight_kg)
     anthropometry["measurements_updated_at"] = datetime.combine(
         latest.date, datetime.min.time(), tzinfo=timezone.utc
     ).isoformat()

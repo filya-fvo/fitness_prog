@@ -8,6 +8,7 @@ from datetime import date
 from pydantic import BaseModel, Field, model_validator
 
 MEASUREMENT_FIELDS = (
+    "weight_kg",
     "neck_cm",
     "shoulders_cm",
     "chest_cm",
@@ -20,6 +21,7 @@ MEASUREMENT_FIELDS = (
 
 
 class BodyMeasurementUpdate(BaseModel):
+    weight_kg: float | None = Field(default=None, ge=20, le=500)
     neck_cm: float | None = Field(default=None, ge=1, le=500)
     shoulders_cm: float | None = Field(default=None, ge=1, le=500)
     chest_cm: float | None = Field(default=None, ge=1, le=500)
@@ -40,6 +42,7 @@ class BodyMeasurementUpdate(BaseModel):
 class BodyMeasurementResponse(BaseModel):
     id: uuid.UUID | None = None
     date: date
+    weight_kg: float | None = None
     neck_cm: float | None = None
     shoulders_cm: float | None = None
     chest_cm: float | None = None

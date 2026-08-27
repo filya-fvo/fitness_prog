@@ -62,7 +62,7 @@ def test_to_admin_row_onboarding_flag() -> None:
     assert row.primary_goal == "maintain"
 
 
-def test_clear_measurements_preserves_base_profile() -> None:
+def test_clear_measurements_removes_weight_but_preserves_other_base_profile() -> None:
     user = User(
         anthropometry={
             "first_name": "Иван",
@@ -88,7 +88,6 @@ def test_clear_measurements_preserves_base_profile() -> None:
     assert user.anthropometry == {
         "first_name": "Иван",
         "height_cm": 180,
-        "weight_kg": 82,
     }
     assert user.goals["onboarding_completed"] is True
     assert user.goals["active_program_id"] == "program-1"

@@ -187,6 +187,26 @@ async def test_overview_does_not_offer_a_performed_workout_as_missed() -> None:
 
 
 @pytest.mark.asyncio
+async def test_new_program_does_not_offer_occurrence_before_its_start_date() -> None:
+    session = AsyncMock()
+    session.scalar = AsyncMock(return_value=None)
+    goals = _schedule_goals()
+    goals["active_program_started_at"] = "2026-08-27"  # Thursday
+    user = SimpleNamespace(
+        id="user-1",
+        goals=goals,
+        created_at=datetime(2026, 8, 27, 9, 0, tzinfo=timezone.utc),
+    )
+
+    overview = await get_schedule_overview(session, user, date(2026, 8, 27))
+
+    assert overview["current"] is None
+    assert overview["next"]["target_date"] == date(2026, 8, 28)
+    assert overview["next"]["status"] == "scheduled"
+    assert overview["next"]["day_index"] == 3
+
+
+@pytest.mark.asyncio
 async def test_overview_marks_todays_completed_occurrence_and_advances_next() -> None:
     completed = SimpleNamespace(
         program_id=None,

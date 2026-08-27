@@ -5,6 +5,7 @@ import { apiClient } from "@/api/client";
 export const bodyMeasurementSchema = z.object({
   id: z.string().uuid().nullable().optional(),
   date: z.string(),
+  weight_kg: z.number().nullable().optional(),
   neck_cm: z.number().nullable().optional(),
   shoulders_cm: z.number().nullable().optional(),
   chest_cm: z.number().nullable().optional(),

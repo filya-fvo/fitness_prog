@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import type { DailyMetric } from "@/api/dailyMetrics";
 
 type Props = { days: DailyMetric[]; error?: string | null };
-type MetricId = "steps" | "sleep" | "active" | "weight";
+type MetricId = "steps" | "sleep" | "active";
 type Period = 7 | 14 | 30;
 type MetricConfig = {
   label: string;
@@ -19,7 +19,6 @@ const METRICS: Record<MetricId, MetricConfig> = {
   steps: { label: "Шаги", shortLabel: "Шаги", goal: 8000, value: (day) => day.steps, format: (value) => Math.round(value).toLocaleString("ru-RU"), axisFormat: (value) => value >= 1000 ? `${(value / 1000).toFixed(1)}к` : String(Math.round(value)) },
   sleep: { label: "Сон", shortLabel: "Сон", goal: 480, value: (day) => day.sleep_minutes, format: (value) => `${Math.floor(value / 60)} ч ${Math.round(value % 60)} мин`, axisFormat: (value) => `${(value / 60).toFixed(1)} ч` },
   active: { label: "Активность", shortLabel: "Активн.", goal: 30, value: (day) => day.active_minutes, format: (value) => `${Math.round(value)} мин`, axisFormat: (value) => `${Math.round(value)} м` },
-  weight: { label: "Вес", shortLabel: "Вес", goal: null, value: (day) => day.weight_kg, format: (value) => `${value.toFixed(1).replace(".", ",")} кг`, axisFormat: (value) => value.toFixed(1).replace(".", ",") },
 };
 
 function localIso(date: Date): string {
@@ -126,7 +125,7 @@ export function WellnessSummary({ days, error }: Props) {
           {([7, 14, 30] as const).map((value) => <button key={value} type="button" onClick={() => setPeriod(value)} className={`rounded-full px-2.5 py-1 ${period === value ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>{value} дн.</button>)}
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-4 gap-1 rounded-xl bg-tg-bg p-1" role="tablist" aria-label="Показатель">
+      <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-tg-bg p-1" role="tablist" aria-label="Показатель">
         {(Object.keys(METRICS) as MetricId[]).map((id) => <button key={id} type="button" role="tab" aria-selected={metric === id} onClick={() => setMetric(id)} className={`min-w-0 rounded-lg px-1 py-2 text-[11px] ${metric === id ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}>{METRICS[id].shortLabel}</button>)}
       </div>
       {error ? <p className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{error}</p> : <>
@@ -138,7 +137,7 @@ export function WellnessSummary({ days, error }: Props) {
         </div>
         <MetricChart series={series} config={config} />
       </>}
-      <Link to="/" className="mt-3 block text-center text-xs text-tg-link">Внести сон, шаги, активность или вес →</Link>
+      <Link to="/" className="mt-3 block text-center text-xs text-tg-link">Внести сон, шаги или активность →</Link>
     </section>
   );
 }

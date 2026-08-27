@@ -55,6 +55,7 @@ import { programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { confirmAction } from "@/lib/telegram";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
+import { programSelectionGoalsPatch } from "@/utils/programProgress";
 import {
   currentWebPushEnabled,
   disableWebPush,
@@ -467,7 +468,7 @@ setAuthEmail(p.auth_email ?? null);
                 await updateMyProfile({
                   goals: {
                     ...g,
-                    active_program_id: rec[0].id,
+                    ...programSelectionGoalsPatch(g, rec[0].id),
                     recommended_program_id: rec[0].id,
                     recommended_program_at: new Date().toISOString(),
                   },
@@ -475,7 +476,7 @@ setAuthEmail(p.auth_email ?? null);
                 setProfileGoalsKeep((prev) => ({
                   ...prev,
                   ...g,
-                  active_program_id: rec[0].id,
+                  ...programSelectionGoalsPatch(g, rec[0].id),
                   recommended_program_id: rec[0].id,
                 }));
               } catch {
@@ -674,26 +675,22 @@ setAuthEmail(p.auth_email ?? null);
     setError(null);
     setOk(null);
     try {
-      const weightNum = Number(weight);
       const heightNum = Number(height);
       const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
       const targetWeightNum = targetWeight ? Number(targetWeight) : null;
       if (
-        weightNum < 20 ||
-        weightNum > 500 ||
         heightNum < 80 ||
         heightNum > 250 ||
         resolvedAge < 10 ||
         resolvedAge > 100 ||
         (targetWeightNum != null && (targetWeightNum < 20 || targetWeightNum > 500))
       ) {
-        throw new Error("Проверьте вес, рост и возраст: значения вне допустимого диапазона");
+        throw new Error("Проверьте рост и возраст: значения вне допустимого диапазона");
       }
       const ageFromBirth = ageFromBirthDate(birthDate);
       const ageNum = ageFromBirth ?? (Number(age) || null);
       const anthropometry = {
         sex,
-        weight_kg: Number(weight) || null,
         height_cm: Number(height) || null,
         age: ageNum,
         birth_date: birthDate || null,
@@ -707,7 +704,9 @@ setAuthEmail(p.auth_email ?? null);
         calorie_adjustment_pct: Number(adjPct),
         target_weight_kg: targetWeightNum,
         days_per_week: Number(daysPerWeek) || 3,
-        active_program_id: activeProgramId || null,
+        ...(activeProgramId
+          ? programSelectionGoalsPatch(profileGoalsKeep, activeProgramId)
+          : { active_program_id: null }),
         sex,
         auto_advance_exercises: autoAdvanceExercises,
       };
@@ -744,16 +743,19 @@ setAuthEmail(p.auth_email ?? null);
     setError(null);
     setOk(null);
     try {
+      const programPatch = activeProgramId
+        ? programSelectionGoalsPatch(profileGoalsKeep, activeProgramId)
+        : { active_program_id: null };
       await updateMyProfile({
         goals: {
           ...profileGoalsKeep,
-          active_program_id: activeProgramId || null,
+          ...programPatch,
           days_per_week: Number(daysPerWeek) || 3,
         },
       });
       setProfileGoalsKeep((prev) => ({
         ...prev,
-        active_program_id: activeProgramId || null,
+        ...programPatch,
         days_per_week: Number(daysPerWeek) || 3,
       }));
       setAutoAssignedProgram(false);
@@ -1080,16 +1082,17 @@ setAuthEmail(p.auth_email ?? null);
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
             <p className="text-sm font-medium">Базовые данные</p>
-            <label className="block text-xs text-tg-hint">
-              Вес, кг
-              <DecimalInput
-                min={20}
-                max={500}
-                value={weight}
-                onValueChange={setWeight}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
+            <div className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
+              <div className="flex items-center justify-between gap-3">
+                <span>Текущий вес</span>
+                <span className="font-medium text-tg-text">
+                  {weight ? `${String(weight).replace(".", ",")} кг` : "не указан"}
+                </span>
+              </div>
+              <Link to="/measurements" className="mt-2 inline-block min-h-[44px] py-3 font-medium text-tg-link">
+                Изменить в замерах →
+              </Link>
+            </div>
             <label className="block text-xs text-tg-hint">
               Рост, см
               <DecimalInput

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
 import {
+  fetchAdminUserActivity,
   fetchAdminUserSummary,
   sendAdminUserMessage,
   toggleAdminUserNotifications,
@@ -41,6 +42,24 @@ describe("admin user API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith(`/admin/users/${id}/summary`);
     expect(result.questionnaire.weight_kg).toBe(80);
+  });
+
+  it("accepts the legacy admin weight counter during a rolling update", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: {
+      next_workout: null,
+      recent_workouts: [],
+      counts: {
+        workouts: 1,
+        completed_workouts: 1,
+        nutrition_logs: 0,
+        body_measurements: 2,
+        daily_weight_entries: 3,
+      },
+    } });
+
+    const result = await fetchAdminUserActivity(id);
+
+    expect(result.counts.weight_entries).toBe(3);
   });
 
   it("sends exact action payloads including explicit user confirmation", async () => {

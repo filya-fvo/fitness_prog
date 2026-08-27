@@ -33,6 +33,7 @@ REQUIRED_FILES = [
     "20260824000022_workout_plan_overrides.sql",
     "20260826000023_admin_audit_log.sql",
     "20260827000024_admin_broadcasts.sql",
+    "20260827000025_move_weight_to_body_measurements.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -80,6 +81,8 @@ REQUIRED_SNIPPETS = [
     "trg_admin_audit_immutable",
     "idempotency_key UUID NOT NULL UNIQUE",
     "uq_admin_broadcast_delivery_user",
+    "DROP COLUMN IF EXISTS weight_kg",
+    "Dated body weight in kilograms",
 ]
 
 

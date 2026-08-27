@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-  clearMeasurementHistory,
+  clearLegacyWeightHistory,
   clearWaterHistory,
   getHabitDay,
   saveHabitDay,
@@ -33,7 +33,6 @@ describe("habit history clearing", () => {
     saveHabitDay({
       date: "2026-08-10",
       waterMl: 1800,
-      weightKg: 82,
       sleepHours: 7.5,
       checkedIn: true,
     });
@@ -42,34 +41,33 @@ describe("habit history clearing", () => {
 
     expect(getHabitDay("2026-08-10")).toMatchObject({
       waterMl: 0,
-      weightKg: 82,
       sleepHours: 7.5,
     });
   });
 
-  it("clears only local weight measurements", () => {
-    saveHabitDay({
-      date: "2026-08-10",
-      waterMl: 1800,
-      weightKg: 82,
-      sleepHours: 7.5,
-      checkedIn: true,
-    });
+  it("removes a legacy daily weight without touching activity", () => {
+    localStorage.setItem("fitness_habits_v1", JSON.stringify({
+      "2026-08-10": {
+        date: "2026-08-10", waterMl: 1800, weightKg: 82,
+        sleepHours: 7.5, steps: 9000, activeMinutes: 40, checkedIn: true,
+      },
+    }));
 
-    clearMeasurementHistory();
+    clearLegacyWeightHistory();
 
     expect(getHabitDay("2026-08-10")).toMatchObject({
       waterMl: 1800,
-      weightKg: null,
       sleepHours: 7.5,
+      steps: 9000,
+      activeMinutes: 40,
     });
+    expect(localStorage.getItem("fitness_habits_v1")).not.toContain("weightKg");
   });
 
   it("keeps manual movement fields in the offline copy", () => {
     saveHabitDay({
       date: "2026-08-10",
       waterMl: 1000,
-      weightKg: 82,
       sleepHours: 8,
       steps: 9500,
       activeMinutes: 55,

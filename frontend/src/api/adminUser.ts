@@ -57,6 +57,18 @@ const workoutSchema = z.object({
   completed_at: z.string().nullable(),
 });
 
+const adminUserCountsSchema = z.object({
+  workouts: z.number(),
+  completed_workouts: z.number(),
+  nutrition_logs: z.number(),
+  body_measurements: z.number(),
+  weight_entries: z.number().optional(),
+  daily_weight_entries: z.number().optional(),
+}).transform((counts) => ({
+  ...counts,
+  weight_entries: counts.weight_entries ?? counts.daily_weight_entries ?? 0,
+}));
+
 export const adminUserActivitySchema = z.object({
   next_workout: z.object({
     target_date: z.string(),
@@ -67,13 +79,7 @@ export const adminUserActivitySchema = z.object({
     status: z.string(),
   }).nullable(),
   recent_workouts: z.array(workoutSchema),
-  counts: z.object({
-    workouts: z.number(),
-    completed_workouts: z.number(),
-    nutrition_logs: z.number(),
-    body_measurements: z.number(),
-    daily_weight_entries: z.number(),
-  }),
+  counts: adminUserCountsSchema,
 });
 
 export const adminUserCommunicationsSchema = z.object({
@@ -126,7 +132,11 @@ function apiError(error: unknown, fallback: string): Error {
   return error instanceof Error ? error : new Error(fallback);
 }
 
-async function getParsed<T>(path: string, schema: z.ZodType<T>, fallback: string): Promise<T> {
+async function getParsed<S extends z.ZodType>(
+  path: string,
+  schema: S,
+  fallback: string,
+): Promise<z.output<S>> {
   try {
     return schema.parse((await apiClient.get(path)).data);
   } catch (error) {

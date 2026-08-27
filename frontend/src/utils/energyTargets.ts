@@ -158,14 +158,15 @@ export function previewEnergyTargets(input: EnergyInput) {
 }
 
 export const BODY_MEASURE_FIELDS = [
-  { key: "neck_cm", label: "Шея, см" },
-  { key: "shoulders_cm", label: "Плечи, см" },
-  { key: "chest_cm", label: "Грудь, см" },
-  { key: "waist_cm", label: "Талия, см" },
-  { key: "hips_cm", label: "Бёдра, см" },
-  { key: "bicep_cm", label: "Бицепс, см" },
-  { key: "thigh_cm", label: "Бедро, см" },
-  { key: "calf_cm", label: "Голень, см" },
+  { key: "weight_kg", label: "Вес, кг", unit: "кг", min: 20, max: 500 },
+  { key: "neck_cm", label: "Шея, см", unit: "см", min: 1, max: 500 },
+  { key: "shoulders_cm", label: "Плечи, см", unit: "см", min: 1, max: 500 },
+  { key: "chest_cm", label: "Грудь, см", unit: "см", min: 1, max: 500 },
+  { key: "waist_cm", label: "Талия, см", unit: "см", min: 1, max: 500 },
+  { key: "hips_cm", label: "Бёдра, см", unit: "см", min: 1, max: 500 },
+  { key: "bicep_cm", label: "Бицепс, см", unit: "см", min: 1, max: 500 },
+  { key: "thigh_cm", label: "Бедро, см", unit: "см", min: 1, max: 500 },
+  { key: "calf_cm", label: "Голень, см", unit: "см", min: 1, max: 500 },
 ] as const;
 
 export const ACTIVITY_OPTIONS = [

@@ -8,7 +8,6 @@ const dailyMetricSchema = z.object({
   sleep_minutes: z.number().int().nullable().optional(),
   steps: z.number().int().nullable().optional(),
   active_minutes: z.number().int().nullable().optional(),
-  weight_kg: z.number().nullable().optional(),
   sources: z.record(z.string()).default({}),
 });
 
@@ -33,7 +32,6 @@ export async function saveDailyMetrics(
     sleepMinutes: number | null;
     steps: number | null;
     activeMinutes: number | null;
-    weightKg: number | null;
   },
   date?: string,
 ): Promise<DailyMetric> {
@@ -43,7 +41,6 @@ export async function saveDailyMetrics(
       sleep_minutes: input.sleepMinutes,
       steps: input.steps,
       active_minutes: input.activeMinutes,
-      weight_kg: input.weightKg,
     },
     { params: date ? { date } : undefined },
   );

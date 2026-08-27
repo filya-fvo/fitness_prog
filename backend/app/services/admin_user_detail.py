@@ -265,10 +265,10 @@ async def get_activity(session: AsyncSession, user_id: uuid.UUID) -> AdminUserAc
         )
     )
     weight_count = await session.scalar(
-        select(func.count(DailyMetric.id)).where(
-            DailyMetric.user_id == user.id,
-            DailyMetric.weight_kg.is_not(None),
-            DailyMetric.is_deleted.is_(False),
+        select(func.count(BodyMeasurement.id)).where(
+            BodyMeasurement.user_id == user.id,
+            BodyMeasurement.weight_kg.is_not(None),
+            BodyMeasurement.is_deleted.is_(False),
         )
     )
     return AdminUserActivity(
@@ -279,6 +279,7 @@ async def get_activity(session: AsyncSession, user_id: uuid.UUID) -> AdminUserAc
             completed_workouts=int(counts_row[1] or 0),
             nutrition_logs=int(nutrition_count or 0),
             body_measurements=int(measurement_count or 0),
+            weight_entries=int(weight_count or 0),
             daily_weight_entries=int(weight_count or 0),
         ),
     )
