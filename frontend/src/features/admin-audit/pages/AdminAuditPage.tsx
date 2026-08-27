@@ -31,6 +31,13 @@ const ACTION_LABELS: Record<string, string> = {
   "program.create": "Добавление программы",
   "program.update": "Изменение программы",
   "program.archive": "Архивирование программы",
+  "broadcast.create": "Создание черновика рассылки",
+  "broadcast.update": "Изменение черновика рассылки",
+  "broadcast.test": "Тест рассылки",
+  "broadcast.launch": "Запуск рассылки",
+  "broadcast.retry": "Повтор ошибок рассылки",
+  "broadcast.resume": "Возобновление очереди рассылки",
+  "broadcast.complete": "Завершение рассылки",
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -51,12 +58,21 @@ const FIELD_LABELS: Record<string, string> = {
   duration_weeks: "Недель",
   is_template: "Шаблон",
   days_count: "Тренировочных дней",
+  audience: "Аудитория",
+  expected: "Получателей",
+  pending: "Ожидает",
+  sent: "Доставлено",
+  failed: "Ошибок",
+  skipped: "Пропущено",
+  status: "Статус",
+  scheduled: "По расписанию",
 };
 
 const OBJECT_LABELS: Record<string, string> = {
   user: "Пользователь",
   exercise: "Упражнение",
   program: "Программа",
+  broadcast: "Рассылка",
 };
 
 const NOTIFICATION_LABELS: Record<string, string> = {

@@ -43,6 +43,16 @@ _PROGRAM_FIELDS = {
     "days_count",
     "is_deleted",
 }
+_BROADCAST_FIELDS = {
+    "audience",
+    "expected",
+    "pending",
+    "sent",
+    "failed",
+    "skipped",
+    "status",
+    "scheduled",
+}
 _STAT_FIELDS = {
     "workout_sets",
     "workouts",
@@ -138,6 +148,7 @@ def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, 
         "user": _USER_FIELDS,
         "exercise": _EXERCISE_FIELDS,
         "program": _PROGRAM_FIELDS,
+        "broadcast": _BROADCAST_FIELDS,
     }.get(object_type, set())
     return {key: item for key, item in value.items() if key in allowed}
 

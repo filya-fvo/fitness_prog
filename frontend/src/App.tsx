@@ -63,6 +63,11 @@ const AdminUserPage = lazy(() =>
     default: module.AdminUserPage,
   })),
 );
+const AdminBroadcastsPage = lazy(() =>
+  import("@/features/admin-broadcasts/pages/AdminBroadcastsPage").then((module) => ({
+    default: module.AdminBroadcastsPage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -123,6 +128,7 @@ export function App() {
             <Route path="admin/system" element={<AdminSystemPage />} />
             <Route path="admin/audit" element={<AdminAuditPage />} />
             <Route path="admin/users/:userId" element={<AdminUserPage />} />
+            <Route path="admin/broadcasts" element={<AdminBroadcastsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

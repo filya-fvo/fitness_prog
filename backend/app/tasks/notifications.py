@@ -18,6 +18,7 @@ from app.core.logging import setup_logging
 from app.models.user import User
 from app.routers.notifications import dispatch_all_users
 from app.services.admin_system import NOTIFICATION_STATUS_KEY, WORKER_STATUS_KEY
+from app.services.admin_broadcast_delivery import deliver_batch
 from app.services.telegram_bot import TelegramBotError, send_app_notification, send_workout_reminder
 from app.services.web_push import send_user_web_push
 
@@ -194,6 +195,11 @@ async def send_timer_finished_task(
     return {"ok": delivered > 0, "delivered": delivered}
 
 
+async def send_broadcast_batch_task(ctx: dict[str, Any], broadcast_id: str) -> dict[str, Any]:
+    """Deliver one rate-limited broadcast batch; the service schedules the next batch."""
+    return await deliver_batch(ctx, uuid.UUID(broadcast_id))
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     setup_logging(
@@ -215,10 +221,16 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 class WorkerSettings:
     """arq worker settings — run: arq app.tasks.notifications.WorkerSettings"""
 
-    functions = [send_reminder_task, dispatch_scheduled_notifications_task, send_timer_finished_task]
+    functions = [
+        send_reminder_task,
+        dispatch_scheduled_notifications_task,
+        send_timer_finished_task,
+        send_broadcast_batch_task,
+    ]
     cron_jobs = [
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
+    job_timeout = 900

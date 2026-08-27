@@ -378,6 +378,17 @@ export function AdminPage() {
         <span aria-hidden="true" className="text-tg-link">→</span>
       </Link>
 
+      <Link
+        to="/admin/broadcasts"
+        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+      >
+        <span>
+          <span className="block font-medium text-tg-text">Центр рассылок</span>
+          <span className="mt-0.5 block text-xs text-tg-hint">Тест, аудитория, расписание и прогресс</span>
+        </span>
+        <span aria-hidden="true" className="text-tg-link">→</span>
+      </Link>
+
       <div className="mb-3 flex rounded-full bg-tg-secondary p-0.5 text-xs">
         <button
           type="button"

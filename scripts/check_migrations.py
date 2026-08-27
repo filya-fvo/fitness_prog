@@ -32,6 +32,7 @@ REQUIRED_FILES = [
     "20260823000021_restore_local_embedding_to_vector.sql",
     "20260824000022_workout_plan_overrides.sql",
     "20260826000023_admin_audit_log.sql",
+    "20260827000024_admin_broadcasts.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -50,6 +51,8 @@ REQUIRED_TABLES = [
     "body_measurements",
     "workout_plan_overrides",
     "admin_audit_log",
+    "admin_broadcasts",
+    "admin_broadcast_deliveries",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -75,6 +78,8 @@ REQUIRED_SNIPPETS = [
     "ck_workout_plan_overrides_replacements_array",
     "prevent_admin_audit_mutation",
     "trg_admin_audit_immutable",
+    "idempotency_key UUID NOT NULL UNIQUE",
+    "uq_admin_broadcast_delivery_user",
 ]
 
 
