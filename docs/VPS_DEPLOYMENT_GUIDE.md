@@ -94,6 +94,25 @@ Get-Content $env:USERPROFILE\.ssh\fitness_vps.pub
 ssh -i $env:USERPROFILE\.ssh\fitness_vps root@VPS_IP
 ```
 
+До переноса секретов и пользовательской базы проверьте с VPS критичные внешние
+адреса:
+
+```bash
+curl -4 -sS -o /dev/null -w 'Telegram IPv4: %{http_code} connect=%{time_connect}\n' \
+  --connect-timeout 10 https://api.telegram.org
+curl -6 -sS -o /dev/null -w 'Telegram IPv6: %{http_code} connect=%{time_connect}\n' \
+  --connect-timeout 10 https://api.telegram.org
+curl -4 -sS -o /dev/null -w 'GitHub: %{http_code} connect=%{time_connect}\n' \
+  --connect-timeout 10 https://github.com
+```
+
+Любой полученный HTTP-код подтверждает TCP/TLS-доступ; `000` вместе с timeout
+означает сетевую проблему. Если Telegram недоступен и по IPv4, и по IPv6, не
+переключайте production и не переносите на VPS реальные токены или дамп. Сначала
+попросите провайдера изменить маршрут, IPv4-подсеть или ноду и повторите тест.
+Обычная доступность GitHub/Docker не компенсирует этот блок: без Telegram API не
+работают webhook бота и Telegram-уведомления.
+
 ## 4. Базовая защита Ubuntu
 
 В первой SSH-сессии под `root` выполните:
@@ -132,7 +151,7 @@ sudo -v
 Только после успешного второго входа запретите парольный SSH-вход:
 
 ```bash
-sudo nano /etc/ssh/sshd_config.d/99-fitness.conf
+sudo nano /etc/ssh/sshd_config.d/00-fitness.conf
 ```
 
 Содержимое:
@@ -148,7 +167,14 @@ PermitRootLogin prohibit-password
 ```bash
 sudo sshd -t
 sudo systemctl reload ssh
+sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) '
 ```
+
+Имя начинается с `00-`, потому что OpenSSH сохраняет первое найденное значение
+параметра. На Ubuntu более поздний `99-fitness.conf` не перекрывает ранний
+`50-cloud-init.conf`, если тот разрешает парольный вход. В выводе проверки должны
+быть `passwordauthentication no`, `kbdinteractiveauthentication no` и
+`permitrootlogin without-password`.
 
 Снова проверьте новую SSH-сессию. Если провайдер не перенёс root-ключ в
 `authorized_keys`, сначала добавьте содержимое `fitness_vps.pub` вручную и лишь
