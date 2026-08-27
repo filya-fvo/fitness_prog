@@ -45,7 +45,7 @@ HealthKit и Health Connect не интегрированы. Эти показа
 - Redis + ARQ worker для фоновых уведомлений.
 - HTTPX для внешних API; Loguru; Sentry опционально.
 - JWT для сессии приложения; Telegram `initData` и email OTP для входа.
-- Локальный `llama.cpp` + Qwen2.5-1.5B-Instruct Q4_K_M для текста; отдельный
+- Локальный `llama.cpp` + Qwen2.5-3B-Instruct Q4_K_M для текста; отдельный
   Tesseract `rus+eng` для фото этикетки.
 
 Production не отправляет данные во внешние AI API и не имеет Groq/OpenAI

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     llm_provider: str = "local"
     llm_api_key: str = ""
     llm_base_url: str = "http://llm:8080/v1"
-    llm_model: str = "qwen2.5-1.5b-instruct"
+    llm_model: str = "qwen2.5-3b-instruct"
     llm_timeout_seconds: float = 75.0
     llm_max_output_tokens: int = 320
     # Tesseract is a separate internal-only container. The API sends it the

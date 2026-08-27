@@ -53,7 +53,7 @@ Internet :80/:443
                                       ├── PostgreSQL 18 + pgvector
                                       └── Redis 7.4 ← ARQ worker
                                       └── закрытая AI-сеть
-                                          ├── llama.cpp + Qwen2.5 1.5B
+                                          ├── llama.cpp + Qwen2.5 3B
                                           └── Tesseract rus+eng
 ```
 
@@ -354,7 +354,7 @@ CORS_ORIGINS=https://web.telegram.org,https://app.example.ru
 EMAIL_OTP_DEV_RETURN_CODE=false
 LLM_PROVIDER=local
 LLM_BASE_URL=http://llm:8080/v1
-LLM_MODEL=qwen2.5-1.5b-instruct
+LLM_MODEL=qwen2.5-3b-instruct
 OCR_BASE_URL=http://ocr:8090
 LOCAL_AI_MODELS_DIR=/opt/fitness/models
 ```

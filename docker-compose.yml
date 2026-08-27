@@ -96,7 +96,7 @@ services:
       ADMIN_SYSTEM_STATUS_DIR: /app/host-status
       LLM_PROVIDER: local
       LLM_BASE_URL: http://llm:8080/v1
-      LLM_MODEL: qwen2.5-1.5b-instruct
+      LLM_MODEL: qwen2.5-3b-instruct
       OCR_BASE_URL: http://ocr:8090
     volumes:
       - backend_logs:/app/logs
@@ -118,9 +118,9 @@ services:
     restart: unless-stopped
     command:
       - --model
-      - /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+      - /models/qwen2.5-3b-instruct-q4_k_m.gguf
       - --alias
-      - qwen2.5-1.5b-instruct
+      - qwen2.5-3b-instruct
       - --host
       - 0.0.0.0
       - --port
@@ -136,8 +136,8 @@ services:
       - ${LOCAL_AI_MODELS_DIR:-./models}:/models:ro
     expose:
       - "8080"
-    mem_limit: 1536m
-    cpus: 1.5
+    mem_limit: 2800m
+    cpus: 2.0
     pids_limit: 128
     read_only: true
     tmpfs:

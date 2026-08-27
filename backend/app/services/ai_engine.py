@@ -30,6 +30,9 @@ _REASONING_LEAK_MARKERS = (
     "system prompt",
     "developer message",
 )
+_FOREIGN_SCRIPT_RE = re.compile(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]")
+_LONG_LATIN_WORD_RE = re.compile(r"[a-z]{4,}", re.IGNORECASE)
+_ALLOWED_LATIN_WORDS = {"crossfit", "fitness", "hiit"}
 
 
 def sanitize_ai_output(reply: str | None) -> str | None:
@@ -66,15 +69,30 @@ _URGENT_HEALTH_MARKERS = (
     "сильный отёк",
     "сильный отек",
 )
+_PAIN_MARKERS = (
+    "боль",
+    "боле",
+    "болит",
+    "болят",
+    "забол",
+    "ноет",
+    "дискомфорт",
+)
+
+
+def _has_urgent_health_marker(message: str) -> bool:
+    lowered = message.casefold()
+    return any(marker in lowered for marker in _URGENT_HEALTH_MARKERS)
 
 
 def _requires_rule_only(message: str) -> bool:
-    return any(marker in message.casefold() for marker in _URGENT_HEALTH_MARKERS)
+    lowered = message.casefold()
+    return any(marker in lowered for marker in (*_URGENT_HEALTH_MARKERS, *_PAIN_MARKERS))
 
 
 def _rule_based_reply(message: str, rag_block: str) -> str:
     lower = message.lower()
-    if _requires_rule_only(message):
+    if _has_urgent_health_marker(message):
         return (
             "⚠️ Прекратите тренировку. При резкой боли, затруднённом дыхании, "
             "потере сознания или сильном кровотечении срочно обратитесь за медицинской "
@@ -89,6 +107,14 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
             "• следите за коленом над стопой\n\n"
             f"Из базы упражнений:\n{rag_block}\n\n"
             "Если боль острая/отёчная — к врачу, я не ставлю диагнозы."
+        )
+    if any(marker in lower for marker in _PAIN_MARKERS):
+        return (
+            "⚠️ Остановите упражнение или движение, которое вызывает боль, и не пытайтесь "
+            "доработать подход через неё. Уберите болезненную нагрузку, оцените самочувствие "
+            "в покое и возвращайтесь к упражнению только без боли, с меньшим весом и проверкой "
+            "техники. Если боль острая, нарастает, сопровождается отёком, слабостью или онемением "
+            "либо не проходит — обратитесь к врачу. Я не ставлю диагнозы."
         )
     if "замен" in lower or "вместо" in lower:
         return (
@@ -115,6 +141,8 @@ async def _call_configured_ai(
     settings: Settings,
     instructions: str,
     user_prompt: str,
+    *,
+    echo_source: str | None = None,
 ) -> tuple[str | None, str]:
     reply = await call_local_chat(
         settings,
@@ -122,6 +150,8 @@ async def _call_configured_ai(
         user_prompt,
     )
     checked = _russian_only(sanitize_ai_output(reply))
+    if checked and echo_source and _looks_like_context_echo(checked, echo_source):
+        return None, "rule"
     return checked, "local" if checked else "rule"
 
 
@@ -130,11 +160,72 @@ def _russian_only(reply: str | None) -> str | None:
     if not reply or not reply.strip():
         return None
     text = reply.strip()
+    if _FOREIGN_SCRIPT_RE.search(text):
+        return None
+    foreign_words = {
+        word.casefold()
+        for word in _LONG_LATIN_WORD_RE.findall(text)
+        if word.casefold() not in _ALLOWED_LATIN_WORDS
+    }
+    if foreign_words:
+        return None
     cyrillic = sum("а" <= char.lower() <= "я" or char.lower() == "ё" for char in text)
     latin = sum("a" <= char.lower() <= "z" for char in text)
     if (latin >= 3 and cyrillic < 3) or (latin >= 12 and cyrillic < max(8, latin // 4)):
         return None
     return text
+
+
+def _normalized_words(text: str) -> list[str]:
+    return re.findall(r"[а-яёa-z0-9]+", text.casefold())
+
+
+def _looks_like_context_echo(reply: str, context: str) -> bool:
+    """Reject a response that starts by copying a long application-context fragment."""
+    reply_words = _normalized_words(reply)
+    context_words = _normalized_words(context)
+    if len(reply_words) < 8:
+        return False
+    prefix = " ".join(reply_words[:8])
+    return prefix in " ".join(context_words)
+
+
+def _bounded_context(text: str, *, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    head_size = max_chars // 3
+    tail_size = max_chars - head_size
+    return f"{text[:head_size]}\n…\n{text[-tail_size:]}"
+
+
+def _build_chat_prompt(
+    *,
+    message: str,
+    app_context: str,
+    catalog_context: str,
+    history: list[dict[str, str]],
+) -> str:
+    history_lines = []
+    for item in history:
+        content = item["content"].strip()
+        if item["role"] == "assistant" and _looks_like_context_echo(content, app_context):
+            continue
+        history_lines.append(f"{item['role']}: {content[:1_200]}")
+    history_block = "\n".join(history_lines) or "История этого диалога пуста."
+    return (
+        "ЗАДАЧА: ответь на последний вопрос пользователя.\n\n"
+        "<application_context>\n"
+        f"{_bounded_context(app_context, max_chars=5_500)}\n"
+        "</application_context>\n\n"
+        "<catalog_context>\n"
+        f"{_bounded_context(catalog_context, max_chars=1_200)}\n"
+        "</catalog_context>\n\n"
+        "<conversation_history>\n"
+        f"{_bounded_context(history_block, max_chars=1_600)}\n"
+        "</conversation_history>\n\n"
+        f"ПОСЛЕДНИЙ ВОПРОС: {message}\n"
+        "Начни сразу с полезного ответа на этот вопрос. Не пересказывай контекст."
+    )
 
 
 async def chat(
@@ -155,7 +246,7 @@ async def chat(
         session_id=sid,
         limit=4,
     )
-    system = f"{SYSTEM_TRAINER}\n\n{app_context}"
+    system = SYSTEM_TRAINER
     if rag_items:
         catalog_context = f"Совпадения в каталоге упражнений:\n{rag_block}"
     else:
@@ -163,19 +254,12 @@ async def chat(
             "По этому вопросу релевантные упражнения в каталоге не найдены. "
             "Не подставляй случайные упражнения."
         )
-    user_prompt = (
-        f"Новый вопрос пользователя: {message}\n\n"
-        f"{catalog_context}\n\n"
-        "Ответь по фактам из данных приложения и текущей истории."
+    user_prompt = _build_chat_prompt(
+        message=message,
+        app_context=app_context,
+        catalog_context=catalog_context,
+        history=history,
     )
-    if history:
-        transcript = "\n".join(
-            f"{item['role']}: {item['content']}" for item in history
-        )
-        user_prompt = (
-            "Предыдущая локальная история этого пользователя:\n"
-            f"{transcript}\n\n{user_prompt}"
-        )
     # Medical red flags are handled by deterministic rules. A small language
     # model must never be allowed to improvise whether exercise is safe.
     if _requires_rule_only(message):
@@ -184,7 +268,8 @@ async def chat(
         llm_reply, llm_source = await _call_configured_ai(
             settings,
             system,
-            user_prompt[-8_000:],
+            user_prompt,
+            echo_source=app_context,
         )
     if llm_reply:
         reply = llm_reply

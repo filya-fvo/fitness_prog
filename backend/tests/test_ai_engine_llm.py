@@ -48,7 +48,7 @@ def local_settings() -> Settings:
         llm_provider="local",
         llm_api_key="internal-test-key",
         llm_base_url="http://llm:8080/v1",
-        llm_model="qwen2.5-1.5b-instruct",
+        llm_model="qwen2.5-3b-instruct",
     )
 
 
@@ -76,7 +76,7 @@ async def test_local_ai_uses_internal_chat_completions() -> None:
     assert request["url"] == "http://llm:8080/v1/chat/completions"
     assert request["headers"]["Authorization"] == "Bearer internal-test-key"
     assert request["json"] == {
-        "model": "qwen2.5-1.5b-instruct",
+        "model": "qwen2.5-3b-instruct",
         "messages": [
             {"role": "system", "content": "system"},
             {"role": "user", "content": "question"},
@@ -111,9 +111,65 @@ def test_urgent_health_question_never_reaches_model() -> None:
     assert "медицинской помощью" in reply
 
 
+def test_non_urgent_pain_question_uses_safe_rule_reply() -> None:
+    message = "Что лучше делать, если начинает болеть плечо?"
+
+    assert ai_engine._requires_rule_only(message) is True
+    reply = ai_engine._rule_based_reply(message, "")
+
+    assert "Остановите" in reply
+    assert "через неё" in reply
+    assert "обратитесь к врачу" in reply
+
+
 def test_english_only_model_reply_is_rejected() -> None:
     assert ai_engine._russian_only("Here is your detailed workout recommendation") is None
     assert ai_engine._russian_only("Увеличьте вес на 2.5 kg, если техника стабильна") is not None
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Не забывайте оhydration и выпейте适量 воды.",
+        "Добавьте немного protein после тренировки.",
+    ],
+)
+def test_mixed_foreign_model_reply_is_rejected(reply: str) -> None:
+    assert ai_engine._russian_only(reply) is None
+
+
+def test_context_echo_is_detected_by_long_prefix() -> None:
+    context = (
+        "Пользователь выполнил тренировку полностью, используя 6 упражнений и 23 подхода. "
+        "Объём составил 14976 кг."
+    )
+    reply = (
+        "Пользователь выполнил тренировку полностью, используя 6 упражнений и 23 подхода. "
+        "Продолжайте в том же духе."
+    )
+
+    assert ai_engine._looks_like_context_echo(reply, context) is True
+    assert ai_engine._looks_like_context_echo("Отдыхайте между подходами 2–3 минуты.", context) is False
+
+
+def test_chat_prompt_keeps_latest_question_last_and_drops_echo_history() -> None:
+    context = (
+        "Пользователь выполнил тренировку полностью, используя 6 упражнений и 23 подхода."
+    )
+    question = "Сколько отдыхать между тяжёлыми подходами?"
+    prompt = ai_engine._build_chat_prompt(
+        message=question,
+        app_context=context,
+        catalog_context="Совпадений нет.",
+        history=[
+            {"role": "user", "content": "Прокомментируй тренировку"},
+            {"role": "assistant", "content": context},
+        ],
+    )
+
+    assert prompt.count(context) == 1
+    assert prompt.rfind(question) > prompt.rfind("</conversation_history>")
+    assert prompt.endswith("Не пересказывай контекст.")
 
 
 @pytest.mark.parametrize(
