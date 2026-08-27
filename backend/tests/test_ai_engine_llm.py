@@ -122,6 +122,18 @@ def test_non_urgent_pain_question_uses_safe_rule_reply() -> None:
     assert "обратитесь к врачу" in reply
 
 
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Сколько отдыхать между тяжёлыми подходами?", "2–4 минуты"),
+        ("Что есть после тренировки?", "белка и углеводов"),
+    ],
+)
+def test_basic_safety_facts_use_deterministic_reply(message: str, expected: str) -> None:
+    assert ai_engine._requires_rule_only(message) is True
+    assert expected in ai_engine._rule_based_reply(message, "")
+
+
 def test_english_only_model_reply_is_rejected() -> None:
     assert ai_engine._russian_only("Here is your detailed workout recommendation") is None
     assert ai_engine._russian_only("Увеличьте вес на 2.5 kg, если техника стабильна") is not None

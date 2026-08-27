@@ -78,6 +78,17 @@ _PAIN_MARKERS = (
     "ноет",
     "дискомфорт",
 )
+_REST_TIMING_MARKERS = (
+    "сколько отдых",
+    "отдыхать между",
+    "отдых между",
+)
+_POST_WORKOUT_FOOD_MARKERS = (
+    "что есть после трен",
+    "что поесть после трен",
+    "еда после трен",
+    "питание после трен",
+)
 
 
 def _has_urgent_health_marker(message: str) -> bool:
@@ -87,7 +98,13 @@ def _has_urgent_health_marker(message: str) -> bool:
 
 def _requires_rule_only(message: str) -> bool:
     lowered = message.casefold()
-    return any(marker in lowered for marker in (*_URGENT_HEALTH_MARKERS, *_PAIN_MARKERS))
+    direct_markers = (
+        *_URGENT_HEALTH_MARKERS,
+        *_PAIN_MARKERS,
+        *_REST_TIMING_MARKERS,
+        *_POST_WORKOUT_FOOD_MARKERS,
+    )
+    return any(marker in lowered for marker in direct_markers)
 
 
 def _rule_based_reply(message: str, rag_block: str) -> str:
@@ -115,6 +132,25 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
             "в покое и возвращайтесь к упражнению только без боли, с меньшим весом и проверкой "
             "техники. Если боль острая, нарастает, сопровождается отёком, слабостью или онемением "
             "либо не проходит — обратитесь к врачу. Я не ставлю диагнозы."
+        )
+    if any(marker in lower for marker in _REST_TIMING_MARKERS):
+        if any(marker in lower for marker in ("тяж", "силов", "базов", "многосустав")):
+            return (
+                "Между тяжёлыми рабочими подходами отдыхайте 2–4 минуты. "
+                "После почти предельного подхода допустимо до 5 минут: начинайте следующий, "
+                "когда восстановились дыхание и готовность держать технику."
+            )
+        return (
+            "Для большинства рабочих подходов ориентир — 60–120 секунд, а для тяжёлых "
+            "многосуставных — 2–4 минуты. Начинайте следующий подход, когда можете снова "
+            "стабильно держать технику; короткий отдых не должен ухудшать качество повторов."
+        )
+    if any(marker in lower for marker in _POST_WORKOUT_FOOD_MARKERS):
+        return (
+            "После тренировки подойдёт обычный приём пищи с источником белка и углеводов: "
+            "например, птица, рыба, яйца или творог плюс крупа, картофель или фрукты. "
+            "Специальное короткое «окно» не требуется. Точную порцию выбирайте по дневной "
+            "калорийной цели и уже записанному рациону; также восполните жидкость."
         )
     if "замен" in lower or "вместо" in lower:
         return (
