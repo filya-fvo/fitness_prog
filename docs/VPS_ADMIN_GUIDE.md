@@ -159,6 +159,7 @@ docker compose --env-file backend/.env.production exec db psql -U fitness -d fit
 | `email_otp_codes` | временные коды входа по email |
 | `ai_conversations` | история обращений к ИИ-тренеру |
 | `admin_audit_log` | неизменяемый журнал действий администраторов |
+| `fitness_schema_migrations` | журнал уже применённых production-миграций |
 
 Актуальный список всегда смотрите командой `\dt`: новые миграции могут добавлять таблицы.
 

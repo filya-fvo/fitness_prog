@@ -186,6 +186,8 @@ services → SQLAlchemy models → PostgreSQL
 - `deploy/timeweb/` и корневой `Dockerfile` — сохранённый альтернативный запуск
   общего контейнера App Platform; текущий Timeweb production использует Compose.
 - `scripts/` — Windows/local/server/supervisor/Tailscale/Redis команды.
+- `scripts/apply_migrations_vps.sh` — production Compose runner: применяет SQL в
+  транзакции и фиксирует имена завершённых файлов в `fitness_schema_migrations`.
 - `.github/workflows/ci.yml` — обязательные автоматические проверки.
 - `artifacts/` и `frontend/artifacts/` — результаты проверок, не runtime source.
 - `backups/` — резервные копии; не редактировать и не считать исходниками.

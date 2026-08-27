@@ -105,8 +105,8 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "pgdata:/var/lib/postgresql\n" in compose
     assert "pgdata:/var/lib/postgresql/data" not in compose
     assert "./supabase/migrations:/migrations:ro" in compose
-    assert "20260823000021_restore_local_embedding_to_vector.sql" in compose
-    assert 'psql -v ON_ERROR_STOP=1 -f "$$bootstrap"' in compose
+    assert "./scripts/apply_migrations_vps.sh:/apply-migrations.sh:ro" in compose
+    assert "/bin/sh /apply-migrations.sh" in compose
     assert "condition: service_completed_successfully" in compose
     worker_section = compose.split("  worker:\n", 1)[1].split("\n  web:\n", 1)[0]
     assert "healthcheck:" in worker_section
@@ -132,6 +132,17 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert 'test "$actual" = "vector(1536)"' in ci
     assert "docker build -f backend/Dockerfile -t fitness-api:ci ." in ci
     assert "-t fitness-web:ci ./frontend" in ci
+
+
+def test_vps_migration_runner_tracks_applied_files_and_repairs_legacy_weight_state() -> None:
+    runner = (ROOT / "scripts" / "apply_migrations_vps.sh").read_text(encoding="utf-8")
+
+    assert "fitness_schema_migrations" in runner
+    assert "20260823000021_restore_local_embedding_to_vector.sql" in runner
+    assert "--single-transaction" in runner
+    assert "RECORD_ALREADY_APPLIED" in runner
+    assert "! column_exists daily_metrics weight_kg" in runner
+    assert "column_exists body_measurements weight_kg" in runner
 
 
 def test_vps_images_and_production_env_cover_runtime_requirements() -> None:

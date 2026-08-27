@@ -65,22 +65,11 @@ services:
       PGDATABASE: ${POSTGRES_DB:-fitness}
     volumes:
       - ./supabase/migrations:/migrations:ro
+      - ./scripts/apply_migrations_vps.sh:/apply-migrations.sh:ro
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        # A Windows pgvector fallback dump can contain double precision[]. Run
-        # its append-only normalizer before the historical HNSW migration.
-        bootstrap=/migrations/20260823000021_restore_local_embedding_to_vector.sql
-        if [ -f "$$bootstrap" ]; then
-          echo "PREPARE $$bootstrap"
-          psql -v ON_ERROR_STOP=1 -f "$$bootstrap"
-        fi
-        for file in $$(find /migrations -maxdepth 1 -type f -name '*.sql' | sort); do
-          [ "$$file" = "$$bootstrap" ] && continue
-          echo "APPLY $$file"
-          psql -v ON_ERROR_STOP=1 -f "$$file"
-        done
-        echo "MIGRATIONS_OK"
+        /bin/sh /apply-migrations.sh
 
   api:
     build:
