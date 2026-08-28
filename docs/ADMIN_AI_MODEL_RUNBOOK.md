@@ -28,6 +28,14 @@ API в Docker-сети `ai_internal`. Код дополнительно откл
 Вывод модели также отклоняется, если он повторяет сводку приложения вместо
 ответа или содержит фрагменты на другом языке.
 
+Сервер классифицирует запросы по доменам `workout_progress`, `strength`,
+`measurements`, `weight`, `nutrition`, `recovery`, `safety`, `general`. Для
+аналитического домена в Qwen передаются только ограниченные агрегаты выбранного
+периода. «Месяц» означает 30 дней; явный период ограничен 1–365 днями. Если в
+домене нет фактов, модель не вызывается: пользователь получает один уточняющий
+вопрос. Тоннаж считается единым backend-правилом: `per_hand × 2`, `total × 1`,
+а повторы без веса и интервалы по времени остаются отдельными метриками.
+
 Повышать тариф для этой конфигурации не требуется. Проверьте тариф, если
 доступная память устойчиво ниже 500 МБ, swap постоянно растёт или AI регулярно
 не укладывается в timeout.
@@ -93,7 +101,7 @@ docker compose --env-file backend/.env.production exec api \
 
 ```powershell
 cd C:\fitness_prog\backend
-.\.venv\Scripts\python.exe -m pytest -q tests\test_ai_engine_llm.py tests\test_nutrition_label_vision.py tests\test_llm_prompts.py
+.\.venv\Scripts\python.exe -m pytest -q tests\test_ai_analytics.py tests\test_ai_engine_llm.py tests\test_ai_context.py tests\test_nutrition_label_vision.py tests\test_llm_prompts.py
 .\.venv\Scripts\python.exe -m ruff check app tests
 ```
 
@@ -108,6 +116,8 @@ cd C:\fitness_prog\backend
 | `local_ai_rejected_non_local_configuration` | В `.env.production` должен быть `http://llm:8080/v1`, не внешний домен. |
 | `local_ai_request_failed` | Загружена ли модель, не сработал ли лимит RAM, отвечает ли `/health`. |
 | Вместо ответа повторяется сводка тренировки | Убедитесь, что API и `llm` используют `qwen2.5-3b-instruct`; затем перезапустите оба сервиса. |
+| Вопрос о весе/питании получает отчёт о тренировках | Убедитесь, что API обновлён; запустите `tests/test_ai_analytics.py` и проверьте домен запроса. |
+| «За месяц» показывает 14 дней | Обновите API; период извлекается сервером из исходного вопроса и должен быть 30 дней. |
 | Этикетка не читается | Логи `ocr`, ровное фото без бликов, таблица крупно в кадре. |
 | `local_ocr_failed` | Состояние `ocr`, наличие языков `rus` и `eng`, доступность внутренней сети. |
 | Долгий ответ | Очередь запросов, CPU в `docker stats`, слишком длинный вопрос. |

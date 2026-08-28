@@ -154,7 +154,12 @@ def _format_workout(workout: Workout, exercise_names: dict[uuid.UUID, str]) -> l
     return [heading, *(f"  - {line}" for line in exercise_lines)]
 
 
-async def build_application_context(session: AsyncSession, user: User) -> str:
+async def build_application_context(
+    session: AsyncSession,
+    user: User,
+    *,
+    include_recent_workouts: bool = True,
+) -> str:
     """Build profile, active program and recent workout context without guesses."""
     goals = user.goals or {}
     anthropometry = user.anthropometry or {}
@@ -165,6 +170,8 @@ async def build_application_context(session: AsyncSession, user: User) -> str:
         _profile_context(goals, anthropometry),
         *_program_context(program, goals),
     ]
+    if not include_recent_workouts:
+        return "\n".join(lines)
 
     workouts = list(
         (

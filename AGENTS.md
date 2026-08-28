@@ -143,8 +143,10 @@ services → SQLAlchemy models → PostgreSQL
   `admin_broadcast_delivery.py` — черновики рассылок, allowlist аудиторий и
   пакетная Telegram-доставка с идемпотентностью и ограничением скорости.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
-- `backend/app/ai/prompts.py`, `services/ai_engine.py` и `services/local_llm.py` —
-  системные инструкции, контекст, локальный Qwen и очистка вывода модели;
+- `backend/app/ai/prompts.py`, `backend/app/ai/analytics.py`,
+  `services/ai_engine.py`, `services/workout_metrics.py` и `services/local_llm.py` —
+  системные инструкции, доменная аналитика, единая математика нагрузки,
+  локальный Qwen и очистка вывода модели;
   `app/ocr_main.py` — закрытый Tesseract-сервис.
 - `backend/tests/` — pytest; тесты не должны требовать реальных внешних сервисов.
 - `backend/scripts/` — эксплуатация, seed, безопасный smoke и media audit.

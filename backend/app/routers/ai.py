@@ -107,6 +107,7 @@ async def ai_analyze(
         user,
         days=body.days,
         settings=settings,
+        message=body.message,
     )
     history_session_id: uuid.UUID | None = None
     if body.message:

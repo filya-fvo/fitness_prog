@@ -21,7 +21,7 @@ class AIChatResponse(BaseModel):
 
 
 class AIAnalyzeRequest(BaseModel):
-    days: int = Field(default=14, ge=1, le=60)
+    days: int = Field(default=14, ge=1, le=365)
     session_id: uuid.UUID | None = None
     message: str | None = Field(default=None, min_length=1, max_length=4000)
 

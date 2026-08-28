@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { analyzeProgress, fetchAIHistory, sendAIChat } from "@/api/ai";
+import { fetchAIHistory, sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
 import { toUserMessage } from "@/utils/errors";
@@ -30,15 +30,6 @@ function localDayKey(value = new Date()): string {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function isProgressRequest(message: string): boolean {
-  const text = message.toLowerCase();
-  return (
-    /проанализ|прогресс/.test(text) ||
-    /разбор.*недел/.test(text) ||
-    /объ[её]м.*восстанов/.test(text)
-  );
 }
 
 const QUICK = [
@@ -77,37 +68,19 @@ export function Chat() {
     setText("");
 
     try {
-      const progressRequest = isProgressRequest(trimmed);
-      if (progressRequest) {
-        const result = await analyzeProgress(14, {
-          sessionId: sessionIdRef.current,
-          message: trimmed,
-        });
-        if (result.session_id) sessionIdRef.current = result.session_id;
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: result.report,
-            source: result.source,
-          },
-        ]);
-      } else {
-        const result = await sendAIChat({ message: trimmed, sessionId: sessionIdRef.current });
-        sessionIdRef.current = result.session_id;
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: result.reply,
-            source: result.source,
-          },
-        ]);
-      }
+      const result = await sendAIChat({ message: trimmed, sessionId: sessionIdRef.current });
+      sessionIdRef.current = result.session_id;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: result.reply,
+          source: result.source,
+        },
+      ]);
       trackEvent("ai_message_sent", {
-        kind: progressRequest ? "analyze" : "chat",
+        kind: "chat",
         chars: trimmed.length,
       });
       window.setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);

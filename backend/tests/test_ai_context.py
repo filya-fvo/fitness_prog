@@ -5,7 +5,11 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 
+import pytest
+
+from app.ai import context as ai_context
 from app.ai.context import _format_workout, _profile_context, _program_context
 from app.models.program import Program
 from app.models.workout import Workout, WorkoutSet
@@ -151,3 +155,30 @@ def test_workout_context_marks_replacement_and_hides_stale_empty_original() -> N
 
     assert "Болгарские выпады (замена вместо Выпады назад с гантелями)" in context
     assert "Выпады назад с гантелями: план" not in context
+
+
+async def test_domain_context_can_omit_unrelated_raw_workouts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def no_program(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    class NoWorkoutQuerySession:
+        async def scalars(self, *_args: object, **_kwargs: object) -> object:
+            raise AssertionError("recent workouts must not be queried")
+
+    monkeypatch.setattr(ai_context, "_active_program", no_program)
+    user = SimpleNamespace(
+        username="user",
+        goals={"primary_goal": "maintain"},
+        anthropometry={"weight_kg": 70},
+    )
+
+    result = await ai_context.build_application_context(
+        NoWorkoutQuerySession(),  # type: ignore[arg-type]
+        user,  # type: ignore[arg-type]
+        include_recent_workouts=False,
+    )
+
+    assert "Профиль:" in result
+    assert "Последние тренировки" not in result

@@ -4,19 +4,21 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import date, timedelta
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
+from app.ai.analytics import (
+    AIQueryDomain,
+    build_analysis_evidence,
+    classify_ai_query,
+    extract_period_days,
+    missing_data_question,
+)
 from app.ai.context import build_application_context, conversation_history
 from app.ai.prompts import SYSTEM_TRAINER
 from app.ai.rag import format_rag_block, retrieve_exercise_context
 from app.core.config import Settings
 from app.models.ai_conversation import AIConversation
 from app.models.user import User
-from app.models.workout import Workout
 from app.services.local_llm import call_local_chat
 
 _THINK_BLOCK_RE = re.compile(r"<think\b[^>]*>.*?</think\s*>", re.IGNORECASE | re.DOTALL)
@@ -275,7 +277,44 @@ async def chat(
     sid = session_id or uuid.uuid4()
     rag_items = await retrieve_exercise_context(session, message, limit=3)
     rag_block = format_rag_block(rag_items)
-    app_context = await build_application_context(session, user)
+    domain = classify_ai_query(message)
+    days = extract_period_days(message)
+    analytical_domains = {
+        AIQueryDomain.WORKOUT_PROGRESS,
+        AIQueryDomain.STRENGTH,
+        AIQueryDomain.MEASUREMENTS,
+        AIQueryDomain.WEIGHT,
+        AIQueryDomain.NUTRITION,
+        AIQueryDomain.RECOVERY,
+    }
+    app_context = await build_application_context(
+        session,
+        user,
+        include_recent_workouts=domain in {
+            AIQueryDomain.WORKOUT_PROGRESS,
+            AIQueryDomain.STRENGTH,
+            AIQueryDomain.GENERAL,
+        },
+    )
+    rule_only = _requires_rule_only(message)
+    if domain in analytical_domains and not rule_only:
+        evidence = await build_analysis_evidence(
+            session,
+            user,
+            domain=domain,
+            days=days,
+        )
+        if not evidence.has_data:
+            reply = missing_data_question(domain, days)
+            await store_exchange(
+                session,
+                user_id=user.id,
+                session_id=sid,
+                user_content=message,
+                assistant_content=reply,
+            )
+            return sid, reply, "rule"
+        app_context = f"{app_context}\n\nАНАЛИТИКА ПО ВОПРОСУ:\n{evidence.text}"
     history = await conversation_history(
         session,
         user_id=user.id,
@@ -298,7 +337,7 @@ async def chat(
     )
     # Medical red flags are handled by deterministic rules. A small language
     # model must never be allowed to improvise whether exercise is safe.
-    if _requires_rule_only(message):
+    if rule_only:
         llm_reply, llm_source = None, "rule"
     else:
         llm_reply, llm_source = await _call_configured_ai(
@@ -360,52 +399,35 @@ async def analyze_progress(
     *,
     days: int,
     settings: Settings,
+    message: str | None = None,
 ) -> tuple[str, str]:
-    since = date.today() - timedelta(days=days)
-    result = await session.scalars(
-        select(Workout)
-        .options(selectinload(Workout.sets))
-        .where(
-            Workout.user_id == user.id,
-            Workout.is_deleted.is_(False),
-            Workout.status == "completed",
-            Workout.scheduled_date >= since,
-        )
-        .order_by(Workout.scheduled_date.asc())
+    question = (message or "Проанализируй мой тренировочный прогресс").strip()
+    domain = classify_ai_query(question)
+    if domain in {AIQueryDomain.GENERAL, AIQueryDomain.SAFETY}:
+        domain = AIQueryDomain.WORKOUT_PROGRESS
+    requested_days = extract_period_days(question, default=days) if message else days
+    evidence = await build_analysis_evidence(
+        session,
+        user,
+        domain=domain,
+        days=requested_days,
     )
-    workouts = list(result.all())
-    total_sets = 0
-    volume = 0.0
-    rpe_vals: list[int] = []
-    for w in workouts:
-        if w.rpe is not None:
-            rpe_vals.append(int(w.rpe))
-        for s in w.sets:
-            if not s.is_completed:
-                continue
-            total_sets += 1
-            reps = float(s.reps or 0)
-            weight = float(s.weight or 0)
-            volume += reps * weight
+    if not evidence.has_data:
+        return missing_data_question(domain, requested_days), "rule"
 
-    avg_rpe = round(sum(rpe_vals) / len(rpe_vals), 1) if rpe_vals else None
-    summary = {
-        "days": days,
-        "completed_workouts": len(workouts),
-        "completed_sets": total_sets,
-        "volume": round(volume, 1),
-        "avg_rpe": avg_rpe,
-        "goal": (user.goals or {}).get("primary_goal"),
-    }
-    app_context = await build_application_context(session, user)
-    facts = (
-        f"За {days} дн.: тренировок {summary['completed_workouts']}, "
-        f"подходов {summary['completed_sets']}, объём {summary['volume']} кг·повт, "
-        f"средний RPE {avg_rpe if avg_rpe is not None else 'н/д'}."
+    app_context = await build_application_context(
+        session,
+        user,
+        include_recent_workouts=domain in {
+            AIQueryDomain.WORKOUT_PROGRESS,
+            AIQueryDomain.STRENGTH,
+        },
     )
     system = f"{SYSTEM_TRAINER}\n\n{app_context}"
     prompt = (
-        f"Сделай короткий отчёт прогресса и РОВНО одну конкретную рекомендацию.\n{facts}"
+        "Ответь именно на исходный вопрос по проверяемым данным. "
+        "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
+        f"конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: {question}\n\n{evidence.text}"
     )
     llm_reply, llm_source = await _call_configured_ai(
         settings,
@@ -416,24 +438,11 @@ async def analyze_progress(
         report = llm_reply
         source = llm_source
     else:
-        if summary["completed_workouts"] == 0:
-            report = (
-                f"📭 За {days} дней завершённых тренировок нет.\n"
-                "Рекомендация: запланируйте 2 короткие сессии на этой неделе "
-                "(30–40 мин) и отметьте подходы в приложении."
-            )
-        elif avg_rpe is not None and avg_rpe >= 9:
-            report = (
-                f"📈 {facts}\n"
-                "Рекомендация: снизьте рабочие веса на 5–10% на 1 неделю и "
-                "добавьте +1 минуту отдыха — это снизит риск перегруза."
-            )
-        else:
-            report = (
-                f"📈 {facts}\n"
-                "Рекомендация: на следующей неделе добавьте +1 подход в базовом "
-                "упражнении или +2.5 кг, если техника стабильна."
-            )
+        facts = "\n".join(f"• {line}" for line in evidence.text.splitlines()[1:])
+        report = (
+            f"📊 Данные за {requested_days} дней:\n{facts}\n"
+            "Локальный ИИ сейчас недоступен, поэтому выводы по этим цифрам не додумываю."
+        )
         source = "rule"
 
     return report, source

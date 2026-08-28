@@ -55,6 +55,38 @@ describe("progress utils", () => {
     expect(computeWorkoutVolume(w)).toBe(500);
   });
 
+  it("uses the same per-hand snapshot as backend analytics", () => {
+    const w = workout({
+      id: "canonical-load",
+      status: "completed",
+      scheduled_date: "2026-08-28",
+      sets: [
+        {
+          id: "total", workout_id: "canonical-load", exercise_id: "e1",
+          set_number: 1, reps: 10, weight: 50, weight_mode: "total",
+          is_completed: true, rest_time_sec: 60,
+        },
+        {
+          id: "per-hand", workout_id: "canonical-load", exercise_id: "e2",
+          set_number: 1, reps: 8, weight: 12.5, weight_mode: "per_hand",
+          is_completed: true, rest_time_sec: 60,
+        },
+        {
+          id: "reps-only", workout_id: "canonical-load", exercise_id: "e3",
+          set_number: 1, reps: 15, weight: null,
+          is_completed: true, rest_time_sec: 60,
+        },
+        {
+          id: "timed", workout_id: "canonical-load", exercise_id: "e4",
+          set_number: 1, reps: null, weight: null, duration_sec: 60,
+          is_completed: true, rest_time_sec: 60,
+        },
+      ],
+    });
+
+    expect(computeWorkoutVolume(w)).toBe(700);
+  });
+
   it("computes streak ending today", () => {
     // Local noon avoids DST edge cases
     const today = new Date(2026, 6, 22, 12, 0, 0);
