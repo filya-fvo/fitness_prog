@@ -380,6 +380,9 @@ backup и dry-run, если он предусмотрен.
   PostgreSQL/таблицы, backup, обновление и первичная диагностика production.
 - `docs/ADMIN_PANEL_ROADMAP.md` — последовательный план развития админки: состояние
   системы, аудит, карточка пользователя, рассылки, контент, аналитика и безопасность.
+- `docs/QA_PRODUCT_BACKLOG_2026-08-28.md` — предрелизный аудит 18 персон,
+  замеров/ИИ/Admin 1–5 и исполнимый backlog соревнований, приглашений и Telegram
+  OIDC; содержит обязательный gate перед Admin 6.
 - `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
   перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
