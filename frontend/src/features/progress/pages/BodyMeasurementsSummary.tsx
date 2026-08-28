@@ -2,6 +2,10 @@ import { Link } from "react-router-dom";
 
 import type { BodyMeasurement, BodyMeasurementField } from "@/api/bodyMeasurements";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
+import {
+  latestMeasurementComparison,
+  shortMeasurementDate,
+} from "@/utils/bodyMeasurementDeltas";
 
 type Props = {
   items: BodyMeasurement[];
@@ -24,7 +28,6 @@ function formatDelta(
 
 export function BodyMeasurementsSummary({ items, error }: Props) {
   const latest = items.at(-1) ?? null;
-  const previous = items.length > 1 ? items.at(-2) ?? null : null;
   const featured = BODY_MEASURE_FIELDS.filter((field) =>
     ["weight_kg", "waist_cm", "chest_cm", "hips_cm"].includes(field.key),
   );
@@ -48,12 +51,15 @@ export function BodyMeasurementsSummary({ items, error }: Props) {
         <div className="mt-3 grid grid-cols-2 gap-2">
           {featured.map((field) => {
             const key = field.key as BodyMeasurementField;
-            const delta = formatDelta(latest[key], previous?.[key], field.unit);
+            const comparison = latestMeasurementComparison(items, key);
+            const delta = comparison == null
+              ? null
+              : formatDelta(comparison.current.value, comparison.previous?.value, field.unit);
             return (
               <div key={field.key} className="rounded-xl bg-tg-bg p-2.5">
                 <p className="text-[10px] text-tg-hint">{field.label.split(",")[0]}</p>
-                <p className="mt-1 text-base font-semibold tabular-nums">{formatValue(latest[key], field.unit)}</p>
-                <p className="text-[10px] text-tg-hint">{delta ? `к прошлому ${delta}` : "нет сравнения"}</p>
+                <p className="mt-1 text-base font-semibold tabular-nums">{formatValue(comparison?.current.value, field.unit)}</p>
+                <p className="text-[10px] text-tg-hint">{comparison?.previous && delta ? `${shortMeasurementDate(comparison.previous.date)} → ${shortMeasurementDate(comparison.current.date)} · ${comparison.days} дн.: ${delta}` : comparison ? `замер ${shortMeasurementDate(comparison.current.date)}` : "нет сравнения"}</p>
               </div>
             );
           })}

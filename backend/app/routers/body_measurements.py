@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -58,6 +58,19 @@ async def put_daily_measurement(
     day = date_value or date.today()
     row = await body_measurements.save_for_day(session, user, day, body)
     return _response(row, day)
+
+
+@router.delete("/daily", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_daily_measurement(
+    date_value: date | None = Query(default=None, alias="date"),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    day = date_value or date.today()
+    deleted = await body_measurements.delete_for_day(session, user, day)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Замер не найден")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/range", response_model=BodyMeasurementRangeResponse)

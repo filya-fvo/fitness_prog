@@ -17,14 +17,16 @@ async def get_for_day(
     session: AsyncSession,
     user: User,
     day: date,
+    *,
+    include_deleted: bool = False,
 ) -> BodyMeasurement | None:
-    return await session.scalar(
-        select(BodyMeasurement).where(
-            BodyMeasurement.user_id == user.id,
-            BodyMeasurement.date == day,
-            BodyMeasurement.is_deleted.is_(False),
-        )
+    statement = select(BodyMeasurement).where(
+        BodyMeasurement.user_id == user.id,
+        BodyMeasurement.date == day,
     )
+    if not include_deleted:
+        statement = statement.where(BodyMeasurement.is_deleted.is_(False))
+    return await session.scalar(statement)
 
 
 async def list_range(
@@ -57,6 +59,11 @@ async def _sync_latest_profile_snapshot(session: AsyncSession, user: User) -> No
         .limit(1)
     )
     if latest is None:
+        anthropometry = dict(user.anthropometry or {})
+        anthropometry.pop("measurements", None)
+        anthropometry.pop("measurements_updated_at", None)
+        user.anthropometry = anthropometry
+        flag_modified(user, "anthropometry")
         return
     values = {
         field: float(getattr(latest, field))
@@ -84,16 +91,54 @@ async def _sync_latest_profile_snapshot(session: AsyncSession, user: User) -> No
     flag_modified(user, "anthropometry")
 
 
+async def delete_for_day(
+    session: AsyncSession,
+    user: User,
+    day: date,
+) -> bool:
+    row = await get_for_day(session, user, day)
+    if row is None:
+        return False
+    removed_weight = float(row.weight_kg) if row.weight_kg is not None else None
+    row.is_deleted = True
+    await session.flush()
+    await _sync_latest_profile_snapshot(session, user)
+    if removed_weight is not None:
+        latest_weight = await session.scalar(
+            select(BodyMeasurement)
+            .where(
+                BodyMeasurement.user_id == user.id,
+                BodyMeasurement.weight_kg.is_not(None),
+                BodyMeasurement.is_deleted.is_(False),
+            )
+            .order_by(BodyMeasurement.date.desc(), BodyMeasurement.updated_at.desc())
+            .limit(1)
+        )
+        if latest_weight is None:
+            anthropometry = dict(user.anthropometry or {})
+            if anthropometry.get("weight_kg") == removed_weight:
+                anthropometry.pop("weight_kg", None)
+                user.anthropometry = anthropometry
+                flag_modified(user, "anthropometry")
+    await session.commit()
+    return True
+
+
 async def save_for_day(
     session: AsyncSession,
     user: User,
     day: date,
     body: BodyMeasurementUpdate,
 ) -> BodyMeasurement:
-    row = await get_for_day(session, user, day)
+    row = await get_for_day(session, user, day, include_deleted=True)
     if row is None:
         row = BodyMeasurement(user_id=user.id, date=day, sources={})
         session.add(row)
+    elif row.is_deleted:
+        for field in MEASUREMENT_FIELDS:
+            setattr(row, field, None)
+        row.note = None
+        row.sources = {}
 
     sources = dict(row.sources or {})
     for field in MEASUREMENT_FIELDS:

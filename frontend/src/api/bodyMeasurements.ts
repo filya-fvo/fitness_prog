@@ -45,6 +45,10 @@ export async function saveBodyMeasurement(
   return bodyMeasurementSchema.parse(data);
 }
 
+export async function deleteBodyMeasurement(date: string): Promise<void> {
+  await apiClient.delete("/measurements/daily", { params: { date } });
+}
+
 export async function fetchBodyMeasurementRange(opts?: {
   days?: number;
   end?: string;

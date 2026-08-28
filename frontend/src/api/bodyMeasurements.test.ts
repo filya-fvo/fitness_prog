@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchBodyMeasurement, saveBodyMeasurement } from "@/api/bodyMeasurements";
+import {
+  deleteBodyMeasurement,
+  fetchBodyMeasurement,
+  saveBodyMeasurement,
+} from "@/api/bodyMeasurements";
 import { apiClient } from "@/api/client";
 
 describe("body measurement weight API", () => {
@@ -22,6 +26,17 @@ describe("body measurement weight API", () => {
     expect(apiClient.put).toHaveBeenCalledWith(
       "/measurements/daily",
       { weight_kg: 79.4 },
+      { params: { date: "2026-08-27" } },
+    );
+  });
+
+  it("deletes only the selected dated measurement", async () => {
+    vi.spyOn(apiClient, "delete").mockResolvedValue({ data: null });
+
+    await deleteBodyMeasurement("2026-08-27");
+
+    expect(apiClient.delete).toHaveBeenCalledWith(
+      "/measurements/daily",
       { params: { date: "2026-08-27" } },
     );
   });

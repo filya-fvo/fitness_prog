@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import {
+  deleteBodyMeasurement,
   fetchBodyMeasurement,
   fetchBodyMeasurementRange,
   saveBodyMeasurement,
@@ -14,6 +15,11 @@ import { toast } from "@/store/toastStore";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
 import { toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
+import {
+  measurementDaysBetween,
+  previousMeasurementPoint,
+  shortMeasurementDate,
+} from "@/utils/bodyMeasurementDeltas";
 
 function todayISO(): string {
   const date = new Date();
@@ -101,6 +107,8 @@ export function MeasurementsPage() {
   const [chartField, setChartField] = useState<BodyMeasurementField>("waist_cm");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -131,12 +139,18 @@ export function MeasurementsPage() {
   }, [date]);
 
   useEffect(() => {
+    setConfirmDelete(false);
     void load();
   }, [load]);
 
   const currentHistory = history.find((item) => item.date === date) ?? null;
-  const previous = useMemo(
-    () => [...history].reverse().find((item) => item.date < date) ?? null,
+  const previousByField = useMemo(
+    () => Object.fromEntries(
+      BODY_MEASURE_FIELDS.map((field) => [
+        field.key,
+        previousMeasurementPoint(history, field.key as BodyMeasurementField, date),
+      ]),
+    ),
     [date, history],
   );
 
@@ -171,6 +185,21 @@ export function MeasurementsPage() {
     }
   }
 
+  async function remove() {
+    if (!currentHistory) return;
+    setDeleting(true);
+    try {
+      await deleteBodyMeasurement(date);
+      setConfirmDelete(false);
+      toast("Замер удалён");
+      await load();
+    } catch (err) {
+      toast(toUserMessage(err, "Не удалось удалить замер"), "error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <section className="mx-auto max-w-3xl">
       <Header title="Замеры тела" subtitle="История обхватов и динамика" />
@@ -191,20 +220,23 @@ export function MeasurementsPage() {
           <h2 className="text-sm font-semibold">Замеры на {date === todayISO() ? "сегодня" : displayDate(date)}</h2>
           <p className="mt-1 text-xs text-tg-hint">Заполняйте только те области, которые измерили.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            {BODY_MEASURE_FIELDS.map((field) => (
-              <label key={field.key} className="text-xs text-tg-hint">
-                {field.label}
-                <DecimalInput
-                  min={field.min}
-                  max={field.max}
-                  value={values[field.key] ?? ""}
-                  onValueChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
-                  placeholder="—"
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                />
-                {previous ? <span className="mt-0.5 block text-[10px]">к прошлому: {deltaText(Number(values[field.key]) || null, previous[field.key as BodyMeasurementField], field.unit)}</span> : null}
-              </label>
-            ))}
+            {BODY_MEASURE_FIELDS.map((field) => {
+              const previousPoint = previousByField[field.key];
+              return (
+                <label key={field.key} className="text-xs text-tg-hint">
+                  {field.label}
+                  <DecimalInput
+                    min={field.min}
+                    max={field.max}
+                    value={values[field.key] ?? ""}
+                    onValueChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
+                    placeholder="—"
+                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                  />
+                  {previousPoint ? <span className="mt-0.5 block text-[10px]">{shortMeasurementDate(previousPoint.date)} → {shortMeasurementDate(date)} · {measurementDaysBetween(previousPoint.date, date)} дн.: {deltaText(Number(values[field.key]) || null, previousPoint.value, field.unit)}</span> : null}
+                </label>
+              );
+            })}
           </div>
           <label className="mt-3 block text-xs text-tg-hint">
             Заметка
@@ -213,6 +245,16 @@ export function MeasurementsPage() {
           <button type="button" disabled={saving || loading || Boolean(error)} onClick={() => void save()} className="mt-3 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
             {saving ? "Сохраняем…" : currentHistory ? "Обновить замер" : "Сохранить замер"}
           </button>
+          {currentHistory ? (
+            <div className="mt-2">
+              {!confirmDelete ? <button type="button" disabled={saving || deleting} onClick={() => setConfirmDelete(true)} className="min-h-11 w-full rounded-xl bg-red-500/10 px-4 text-sm font-semibold text-red-600 disabled:opacity-50">Удалить ошибочный замер</button> : (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
+                  <p className="text-xs">Удалить всю запись за {displayDate(date)}? Остальные даты не изменятся.</p>
+                  <div className="mt-2 flex gap-2"><button type="button" onClick={() => setConfirmDelete(false)} className="min-h-11 flex-1 rounded-xl bg-tg-bg px-3 text-sm">Отмена</button><button type="button" disabled={deleting} onClick={() => void remove()} className="min-h-11 flex-1 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-50">{deleting ? "Удаляем…" : "Удалить"}</button></div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl bg-tg-secondary p-4">
