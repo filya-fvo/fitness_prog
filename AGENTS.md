@@ -163,6 +163,8 @@ services → SQLAlchemy models → PostgreSQL
   не раздувающий legacy `AdminPage.tsx`.
 - `frontend/src/features/admin-audit/` — отдельный журнал действий с фильтрами и
   серверной пагинацией.
+- `frontend/src/features/admin-exercises/` — полный редактор каталога с
+  серверными фильтрами, preflight медиа/дублей и dry-run импорта.
 - `frontend/src/features/admin-user/` — отдельная карточка пользователя с ленивыми
   блоками активности/связи и визуально отделёнными опасными действиями.
 - `frontend/src/features/admin-broadcasts/` — редактор, Telegram-preview,
@@ -210,7 +212,7 @@ services → SQLAlchemy models → PostgreSQL
 | Обратная связь | `FeedbackModal.tsx`, `api/feedback.ts` | `feedback.py`, Telegram/SMTP delivery | feedback tests + browser scenario |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
-| Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit and affected CRUD tests |
+| Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |
 
 Перед редактированием большого файла сначала найдите уже существующий component,
 hook, service или pure utility. Не создавайте вторую реализацию того же состояния.

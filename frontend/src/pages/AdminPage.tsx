@@ -1,6 +1,5 @@
 /**
- * Minimal admin CRUD UI for exercises/programs.
- * P1: media URLs + workout_type/level fields.
+ * Administrator hub and legacy program controls.
  * Access: only configured bot owner (default @Filatov_Slava).
  */
 import { useEffect, useMemo, useState } from "react";
@@ -14,13 +13,11 @@ import {
   type AdminUser,
 } from "@/api/admin";
 import { apiClient, getStoredToken } from "@/api/client";
-import { fetchExercises } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
 import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
-import type { Exercise } from "@/types/workout";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
 import { confirmAction } from "@/lib/telegram";
@@ -80,11 +77,9 @@ export function AdminPage() {
   const user = useUserStore((s) => s.user);
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [editingExId, setEditingExId] = useState<string | null>(null);
   const [tab, setTab] = useState<"users" | "content">("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersTotal, setUsersTotal] = useState(0);
@@ -94,12 +89,6 @@ export function AdminPage() {
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [resetScope, setResetScope] = useState<AdminResetScope>("workouts");
   const resetDialogRef = useModalAccessibility(Boolean(resetTarget), () => setResetTarget(null));
-
-  const [exName, setExName] = useState("");
-  const [exGroup, setExGroup] = useState("ноги");
-  const [exVideo, setExVideo] = useState("");
-  const [exMediaSource, setExMediaSource] = useState("none");
-  const [exThumb, setExThumb] = useState("");
 
   const [progName, setProgName] = useState("");
   const [progType, setProgType] = useState("full_body");
@@ -111,8 +100,6 @@ export function AdminPage() {
       return;
     }
     setError(null);
-    const ex = await fetchExercises({ pageSize: 200 });
-    setExercises(ex.items);
     const { data } = await apiClient.get("/programs");
     setPrograms(
       (data.items as Array<Record<string, unknown>>).map((item) => ({
@@ -213,63 +200,6 @@ export function AdminPage() {
       await loadUsers();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось удалить пользователя"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function fillExerciseForm(item: Exercise) {
-    setEditingExId(item.id);
-    setExName(item.name_ru);
-    setExGroup(item.muscle_group);
-    setExVideo(item.video_url || "");
-    setExMediaSource(item.media_source || "none");
-    setExThumb(item.thumbnail_url || "");
-  }
-
-  function resetExerciseForm() {
-    setEditingExId(null);
-    setExName("");
-    setExGroup("ноги");
-    setExVideo("");
-    setExMediaSource("none");
-    setExThumb("");
-  }
-
-  async function saveExercise() {
-    if (!exName.trim()) return;
-    setBusy(true);
-    try {
-      const payload = {
-        name_ru: exName.trim(),
-        muscle_group: exGroup.trim() || "общее",
-        difficulty: 2,
-        video_url: exVideo.trim() || null,
-        thumbnail_url: exThumb.trim() || null,
-        media_source: exMediaSource || "none",
-      };
-      if (editingExId) {
-        await apiClient.put(`/exercises/${editingExId}`, payload);
-      } else {
-        await apiClient.post("/exercises", payload);
-      }
-      resetExerciseForm();
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось сохранить упражнение"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deleteExercise(id: string) {
-    setBusy(true);
-    try {
-      await apiClient.delete(`/exercises/${id}`);
-      if (editingExId === id) resetExerciseForm();
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось удалить упражнение"));
     } finally {
       setBusy(false);
     }
@@ -506,89 +436,10 @@ export function AdminPage() {
       ) : null}
 
       <div className={tab === "content" ? "space-y-6" : "hidden"}>
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <h2 className="font-medium">
-            Упражнения {editingExId ? "(редактирование)" : "(создание)"}
-          </h2>
-          <div className="mt-3 grid gap-2">
-            <input
-              value={exName}
-              onChange={(e) => setExName(e.target.value)}
-              placeholder="Название"
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <input
-              value={exGroup}
-              onChange={(e) => setExGroup(e.target.value)}
-              placeholder="Группа мышц"
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <select
-              value={exMediaSource}
-              onChange={(e) => setExMediaSource(e.target.value)}
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            >
-              <option value="none">источник медиа: нет</option>
-              <option value="youtube">YouTube</option>
-              <option value="external">внешнее</option>
-            </select>
-            <input
-              value={exVideo}
-              onChange={(e) => setExVideo(e.target.value)}
-              placeholder="ссылка на видео (YouTube / mp4)"
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <input
-              value={exThumb}
-              onChange={(e) => setExThumb(e.target.value)}
-              placeholder="превью (необязательно)"
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void saveExercise()}
-                className="flex-1 rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text"
-              >
-                {editingExId ? "Сохранить" : "Добавить упражнение"}
-              </button>
-              {editingExId ? (
-                <button
-                  type="button"
-                  onClick={resetExerciseForm}
-                  className="rounded-xl bg-tg-bg px-3 py-2 text-sm"
-                >
-                  Отмена
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <ul className="mt-4 max-h-72 space-y-2 overflow-y-auto text-sm">
-            {exercises.map((item) => (
-              <li key={item.id} className="flex items-start justify-between gap-2">
-                <button
-                  type="button"
-                  className="text-left"
-                  onClick={() => fillExerciseForm(item)}
-                >
-                  <span className="font-medium">{item.name_ru}</span>
-                  <span className="block text-[11px] text-tg-hint">
-                    {enumLabel(item.muscle_group)} · источник: {enumLabel(item.media_source || "none")}
-                    {item.video_url ? " · есть видео" : ""}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="shrink-0 text-xs text-tg-link"
-                  onClick={() => void deleteExercise(item.id)}
-                >
-                  Удалить
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Link to="/admin/exercises" className="flex min-h-20 items-center justify-between rounded-2xl bg-tg-secondary p-4">
+          <span><span className="block font-medium">Редактор упражнений</span><span className="mt-1 block text-xs text-tg-hint">Поиск, фильтры, техника, медиа, дубли и безопасная архивация</span></span>
+          <span aria-hidden="true" className="text-tg-link">→</span>
+        </Link>
 
         <div className="rounded-2xl bg-tg-secondary p-4">
           <h2 className="font-medium">Программы</h2>

@@ -18,6 +18,7 @@ from app.frontend import register_frontend
 from app.routers import admin as admin_router
 from app.routers import admin_audit as admin_audit_router
 from app.routers import admin_broadcasts as admin_broadcasts_router
+from app.routers import admin_exercises as admin_exercises_router
 from app.routers import admin_system as admin_system_router
 from app.routers import admin_user_detail as admin_user_detail_router
 from app.routers import ai as ai_router
@@ -79,6 +80,7 @@ app.include_router(users_router.router)
 app.include_router(admin_router.router)
 app.include_router(admin_audit_router.router)
 app.include_router(admin_broadcasts_router.router)
+app.include_router(admin_exercises_router.router)
 app.include_router(admin_system_router.router)
 app.include_router(admin_user_detail_router.router)
 app.include_router(exercises_router.router)

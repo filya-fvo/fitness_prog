@@ -34,6 +34,7 @@ REQUIRED_FILES = [
     "20260826000023_admin_audit_log.sql",
     "20260827000024_admin_broadcasts.sql",
     "20260827000025_move_weight_to_body_measurements.sql",
+    "20260828000026_admin_exercise_editor.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -83,6 +84,8 @@ REQUIRED_SNIPPETS = [
     "uq_admin_broadcast_delivery_user",
     "DROP COLUMN IF EXISTS weight_kg",
     "Dated body weight in kilograms",
+    "exercises_weight_rule_check",
+    "secondary_muscle_groups JSONB",
 ]
 
 

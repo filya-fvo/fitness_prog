@@ -108,8 +108,17 @@ async def delete_exercise(
     exercise = await exercise_service.get_exercise(session, exercise_id)
     if exercise is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
-    await exercise_service.soft_delete_exercise(
-        session,
-        exercise,
-        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
-    )
+    try:
+        await exercise_service.soft_delete_exercise(
+            session,
+            exercise,
+            audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+        )
+    except exercise_service.ExerciseInUseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Упражнение используется в тренировках или программах. "
+                "Сначала замените его во всех связанных записях."
+            ),
+        ) from exc

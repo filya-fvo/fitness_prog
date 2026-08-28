@@ -12,6 +12,13 @@ from app.schemas.exercise import ExerciseCreate, ExerciseUpdate
 from app.services import admin_audit
 
 
+class ExerciseInUseError(RuntimeError):
+    def __init__(self, workout_uses: int, program_uses: int) -> None:
+        super().__init__("Exercise is used by workouts or programs")
+        self.workout_uses = workout_uses
+        self.program_uses = program_uses
+
+
 async def list_exercises(
     session: AsyncSession,
     *,
@@ -115,6 +122,12 @@ async def soft_delete_exercise(
     *,
     audit_context: admin_audit.AuditContext | None = None,
 ) -> None:
+    # Imported lazily to keep regular catalog reads independent from admin helpers.
+    from app.services import admin_exercises
+
+    workout_uses, program_uses = await admin_exercises.usage_counts(session, exercise.id)
+    if workout_uses or program_uses:
+        raise ExerciseInUseError(workout_uses, program_uses)
     before = admin_audit.exercise_snapshot(exercise)
     exercise.is_deleted = True
     if audit_context is not None:

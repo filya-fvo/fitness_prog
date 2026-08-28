@@ -17,6 +17,12 @@ class Exercise(Base, TimestampSoftDeleteMixin):
 
     name_ru: Mapped[str] = mapped_column(Text, nullable=False)
     muscle_group: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    secondary_muscle_groups: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+        server_default="[]",
+    )
     equipment: Mapped[str | None] = mapped_column(Text, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     technique: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -28,5 +34,12 @@ class Exercise(Base, TimestampSoftDeleteMixin):
     media_duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     media_source: Mapped[str] = mapped_column(Text, nullable=False, default="none", server_default="none")
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
+    limitations: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
+    weight_rule: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="total",
+        server_default="total",
+    )
     # Local PG may store double precision[]; production uses vector(1536).
     # Not mapped for ORM reads in Sprint 2 (RAG lands in Sprint 4).

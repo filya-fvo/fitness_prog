@@ -27,13 +27,22 @@ for (const name of files.filter(
 const js = measured.filter((item) => item.name.endsWith(".js"));
 const totalJsGzip = js.reduce((sum, item) => sum + item.gzip, 0);
 const largestJsGzip = Math.max(0, ...js.map((item) => item.gzip));
-// Baseline 2026-08-20 is ~398 kB. Four admin-only stages are isolated lazy
-// chunks (system, audit, user detail, broadcasts); stay below 432 kB without relaxing the
-// per-chunk ceiling used by regular user routes.
-const limits = { totalJsGzip: 432_000, largestJsGzip: 140_000 };
+const adminJs = js.filter((item) => /^Admin[A-Z].*\.js$/.test(item.name));
+const adminJsGzip = adminJs.reduce((sum, item) => sum + item.gzip, 0);
+const productJsGzip = totalJsGzip - adminJsGzip;
+// Admin stages are route-isolated and never downloaded by regular users. Keep
+// their aggregate visible and bounded without consuming the product-route budget.
+const limits = {
+  totalJsGzip: 445_000,
+  productJsGzip: 412_000,
+  adminJsGzip: 32_000,
+  largestJsGzip: 140_000,
+};
 const failures = [];
 if (totalJsGzip > limits.totalJsGzip) failures.push(`all JS gzip ${totalJsGzip} > ${limits.totalJsGzip}`);
+if (productJsGzip > limits.productJsGzip) failures.push(`product JS gzip ${productJsGzip} > ${limits.productJsGzip}`);
+if (adminJsGzip > limits.adminJsGzip) failures.push(`admin JS gzip ${adminJsGzip} > ${limits.adminJsGzip}`);
 if (largestJsGzip > limits.largestJsGzip) failures.push(`largest JS gzip ${largestJsGzip} > ${limits.largestJsGzip}`);
 
-console.log(JSON.stringify({ buildDir, totalJsGzip, largestJsGzip, limits, files: measured }, null, 2));
+console.log(JSON.stringify({ buildDir, totalJsGzip, productJsGzip, adminJsGzip, largestJsGzip, limits, files: measured }, null, 2));
 if (failures.length) throw new Error(`Bundle budget exceeded: ${failures.join("; ")}`);

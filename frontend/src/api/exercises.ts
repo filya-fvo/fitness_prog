@@ -3,10 +3,11 @@ import { z } from "zod";
 import { apiClient } from "@/api/client";
 import type { Exercise } from "@/types/workout";
 
-const exerciseSchema = z.object({
+export const exerciseSchema = z.object({
   id: z.string().uuid(),
   name_ru: z.string(),
   muscle_group: z.string(),
+  secondary_muscle_groups: z.array(z.string()).optional().default([]),
   equipment: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   technique: z.string().nullable().optional(),
@@ -18,6 +19,8 @@ const exerciseSchema = z.object({
   media_duration_sec: z.number().nullable().optional(),
   media_source: z.string().optional().default("none"),
   tags: z.array(z.string()).optional().default([]),
+  limitations: z.array(z.string()).optional().default([]),
+  weight_rule: z.enum(["total", "per_hand", "per_side", "none"]).optional().default("total"),
 });
 
 const listSchema = z.object({
@@ -27,11 +30,12 @@ const listSchema = z.object({
   page_size: z.number(),
 });
 
-function mapExercise(item: z.infer<typeof exerciseSchema>): Exercise {
+export function mapExercise(item: z.infer<typeof exerciseSchema>): Exercise {
   return {
     id: item.id,
     name_ru: item.name_ru,
     muscle_group: item.muscle_group,
+    secondary_muscle_groups: item.secondary_muscle_groups,
     equipment: item.equipment ?? null,
     description: item.description ?? null,
     technique: item.technique ?? null,
@@ -43,6 +47,8 @@ function mapExercise(item: z.infer<typeof exerciseSchema>): Exercise {
     media_duration_sec: item.media_duration_sec ?? null,
     media_source: item.media_source ?? "none",
     tags: item.tags ?? [],
+    limitations: item.limitations,
+    weight_rule: item.weight_rule,
   };
 }
 

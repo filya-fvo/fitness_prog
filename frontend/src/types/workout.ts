@@ -2,6 +2,7 @@ export type Exercise = {
   id: string;
   name_ru: string;
   muscle_group: string;
+  secondary_muscle_groups?: string[];
   equipment: string | null;
   description: string | null;
   technique: string | null;
@@ -13,6 +14,8 @@ export type Exercise = {
   media_duration_sec: number | null;
   media_source: "youtube" | "external" | "none" | string;
   tags: string[];
+  limitations?: string[];
+  weight_rule?: "total" | "per_hand" | "per_side" | "none";
 };
 
 export type WorkoutSet = {

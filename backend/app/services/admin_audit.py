@@ -27,9 +27,11 @@ _USER_FIELDS = {"scope", "stats", "is_deleted", "channel", "requested"}
 _EXERCISE_FIELDS = {
     "name",
     "muscle_group",
+    "secondary_muscle_groups",
     "equipment",
     "difficulty",
     "media_source",
+    "weight_rule",
     "tags",
     "is_deleted",
 }
@@ -92,12 +94,23 @@ def _days_count(structure: object) -> int:
 def exercise_snapshot(exercise: Exercise) -> dict[str, object]:
     """Return only catalog metadata; URLs and long instructional text stay out."""
     tags = exercise.tags if isinstance(exercise.tags, list) else []
+    secondary = (
+        exercise.secondary_muscle_groups
+        if isinstance(exercise.secondary_muscle_groups, list)
+        else []
+    )
     return {
         "name": _short_text(exercise.name_ru),
         "muscle_group": _short_text(exercise.muscle_group, limit=60),
+        "secondary_muscle_groups": [
+            _short_text(value, limit=40)
+            for value in secondary[:12]
+            if _short_text(value, limit=40)
+        ],
         "equipment": _short_text(exercise.equipment, limit=60),
         "difficulty": int(exercise.difficulty),
         "media_source": _short_text(exercise.media_source, limit=40),
+        "weight_rule": _short_text(exercise.weight_rule, limit=20),
         "tags": [_short_text(tag, limit=40) for tag in tags[:20] if _short_text(tag, limit=40)],
         "is_deleted": bool(exercise.is_deleted),
     }
