@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
-import seedPrograms from "../../../backend/scripts/seed_content/programs.json";
 import type { Program } from "@/types/workout";
 import {
   levelOf,
@@ -11,7 +11,14 @@ import {
 } from "@/utils/programRecommend";
 import { compareProgramToProfile } from "@/utils/programCompatibility";
 
-const programs: Program[] = seedPrograms.map((program, index) => ({
+type SeedProgram = Omit<Program, "id">;
+
+const seedPrograms = JSON.parse(readFileSync(
+  new URL("../../../backend/scripts/seed_content/programs.json", import.meta.url),
+  "utf8",
+)) as SeedProgram[];
+
+const programs: Program[] = seedPrograms.map((program: SeedProgram, index: number) => ({
   ...program,
   id: `seed-${index}`,
   structure: program.structure as Record<string, unknown>,
