@@ -30,6 +30,9 @@ type ProgramRow = {
   duration_weeks: number | null;
   workout_type: string;
   level: string | null;
+  publication_status: "draft" | "published" | "archived";
+  version: number;
+  is_current: boolean;
   video_hint?: string;
 };
 
@@ -100,7 +103,7 @@ export function AdminPage() {
       return;
     }
     setError(null);
-    const { data } = await apiClient.get("/programs");
+    const { data } = await apiClient.get("/programs", { params: { admin_view: true } });
     setPrograms(
       (data.items as Array<Record<string, unknown>>).map((item) => ({
         id: String(item.id),
@@ -110,6 +113,9 @@ export function AdminPage() {
         duration_weeks: (item.duration_weeks as number | null) ?? null,
         workout_type: String(item.workout_type || "custom"),
         level: (item.level as string | null) ?? null,
+        publication_status: String(item.publication_status || "draft") as ProgramRow["publication_status"],
+        version: Number(item.version || 1),
+        is_current: Boolean(item.is_current),
       })),
     );
   }
@@ -225,6 +231,7 @@ export function AdminPage() {
         },
       });
       setProgName("");
+      setOkNote("Черновик создан. Он не виден пользователям до заполнения и публикации.");
       await reload();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось создать программу"));
@@ -240,6 +247,21 @@ export function AdminPage() {
       await reload();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось обновить программу"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function publishProgram(id: string) {
+    setBusy(true);
+    setOkNote(null);
+    setError(null);
+    try {
+      await apiClient.post(`/programs/${id}/publish`);
+      setOkNote("Программа опубликована.");
+      await reload();
+    } catch (err) {
+      setError(toUserMessage(err, "Не удалось опубликовать программу"));
     } finally {
       setBusy(false);
     }
@@ -476,7 +498,7 @@ export function AdminPage() {
               onClick={() => void createProgram()}
               className="rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text"
             >
-              Добавить программу
+              Создать черновик
             </button>
           </div>
           <ul className="mt-4 space-y-3 text-sm">
@@ -487,6 +509,13 @@ export function AdminPage() {
                     <p className="font-medium">{programDayLabel(item.name)}</p>
                     <p className="text-[11px] text-tg-hint">
                       {enumLabel(item.workout_type)} · {enumLabel(item.level || item.target_level, "Уровень не указан")}
+                    </p>
+                    <p className="mt-1 text-[11px] text-tg-hint">
+                      {item.publication_status === "draft"
+                        ? "Черновик"
+                        : item.publication_status === "published"
+                          ? item.is_current ? "Опубликована" : "Предыдущая версия"
+                          : "Архив"} · версия {item.version}
                     </p>
                   </div>
                   <button
@@ -499,6 +528,7 @@ export function AdminPage() {
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <select
+                    disabled={item.publication_status !== "draft"}
                     value={item.workout_type}
                     onChange={(e) =>
                       void patchProgram(item.id, {
@@ -514,6 +544,7 @@ export function AdminPage() {
                     ))}
                   </select>
                   <select
+                    disabled={item.publication_status !== "draft"}
                     value={item.level || item.target_level || "beginner"}
                     onChange={(e) =>
                       void patchProgram(item.id, {
@@ -528,6 +559,16 @@ export function AdminPage() {
                     <option value="advanced">продвинутый</option>
                   </select>
                 </div>
+                {item.publication_status === "draft" ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void publishProgram(item.id)}
+                    className="mt-2 min-h-11 w-full rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-50"
+                  >
+                    Проверить и опубликовать
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>

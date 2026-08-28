@@ -56,6 +56,10 @@ async def test_start_program_rejects_second_workout_after_completion() -> None:
         duration_weeks=4,
         structure={"schedule": []},
         is_template=True,
+        publication_status="published",
+        program_key="test-program",
+        version=1,
+        is_current=True,
     )
     completed = Workout(
         id=uuid4(),

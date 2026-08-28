@@ -39,6 +39,7 @@ from sqlalchemy import select  # noqa: E402
 from app.core.database import AsyncSessionLocal  # noqa: E402
 from app.models.exercise import Exercise  # noqa: E402
 from app.models.program import Program  # noqa: E402
+from app.services import program_publication  # noqa: E402
 
 DS_PATH = REPO / "backups" / "exercises-dataset-src" / "data" / "exercises.json"
 GIFS_DIR = REPO / "frontend" / "public" / "exercise-gifs"
@@ -607,11 +608,12 @@ async def apply_db(seed_rows: list[dict], programs: list[dict], *, dry_run: bool
         for row in programs:
             cur = existing_p.get(row["name"])
             if cur is None:
-                session.add(Program(**row))
+                session.add(Program(**program_publication.seed_program_payload(row)))
                 stats["pr_created"] += 1
             else:
                 for k, v in row.items():
                     setattr(cur, k, v)
+                program_publication.mark_seed_program_published(cur)
                 stats["pr_updated"] += 1
         for name, item in existing_p.items():
             if name not in keep_prog and item.is_template:

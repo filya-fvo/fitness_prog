@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import planned_workout
+from app.services import planned_workout, program_publication
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -353,6 +353,10 @@ async def preview_program_plan(
     )
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+    if not program_publication.is_accessible_to_user(
+        program, (user.goals or {}).get("active_program_id")
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     return await build_program_plan_for_user(
         session,
         user,
@@ -431,6 +435,10 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             select(Program).where(Program.id == data.program_id, Program.is_deleted.is_(False))
         )
         if program is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+        if not program_publication.is_accessible_to_user(
+            program, (user.goals or {}).get("active_program_id")
+        ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
     if data.plan is not None and data.plan.exercises:
@@ -515,6 +523,10 @@ async def start_program_workout(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
     )
     if program is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+    if not program_publication.is_accessible_to_user(
+        program, (user.goals or {}).get("active_program_id")
+    ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
     target_date = scheduled_date or date.today()

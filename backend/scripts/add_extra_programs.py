@@ -14,6 +14,7 @@ from sqlalchemy import select  # noqa: E402
 
 from app.core.database import AsyncSessionLocal  # noqa: E402
 from app.models.program import Program  # noqa: E402
+from app.services import program_publication  # noqa: E402
 
 SEED = ROOT / "scripts" / "seed_content" / "programs.json"
 
@@ -199,11 +200,12 @@ async def main() -> None:
         for row in EXTRA:
             cur = existing.get(row["name"])
             if cur is None:
-                session.add(Program(**row))
+                session.add(Program(**program_publication.seed_program_payload(row)))
                 created += 1
             else:
                 for k, v in row.items():
                     setattr(cur, k, v)
+                program_publication.mark_seed_program_published(cur)
                 updated += 1
         await session.commit()
         print("db created", created, "updated", updated)

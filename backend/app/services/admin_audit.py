@@ -42,6 +42,10 @@ _PROGRAM_FIELDS = {
     "target_level",
     "duration_weeks",
     "is_template",
+    "publication_status",
+    "program_key",
+    "version",
+    "is_current",
     "days_count",
     "is_deleted",
 }
@@ -125,6 +129,10 @@ def program_snapshot(program: Program) -> dict[str, object]:
         "target_level": _short_text(program.target_level, limit=40),
         "duration_weeks": program.duration_weeks,
         "is_template": bool(program.is_template),
+        "publication_status": _short_text(program.publication_status, limit=20),
+        "program_key": _short_text(program.program_key, limit=100),
+        "version": int(program.version),
+        "is_current": bool(program.is_current),
         "days_count": _days_count(program.structure),
         "is_deleted": bool(program.is_deleted),
     }

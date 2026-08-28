@@ -17,6 +17,7 @@ from app.core.database import AsyncSessionLocal
 from app.models.exercise import Exercise
 from app.models.program import Program
 from app.models.user import User
+from app.services import program_publication
 
 CONTENT = Path(__file__).resolve().parent / "seed_content"
 
@@ -99,12 +100,13 @@ async def upsert_programs(session) -> tuple[int, int, int]:
     for row in payload:
         current = existing.get(row["name"])
         if current is None:
-            session.add(Program(**row))
+            session.add(Program(**program_publication.seed_program_payload(row)))
             created += 1
             continue
         for key, value in row.items():
             setattr(current, key, value)
         current.is_deleted = False
+        program_publication.mark_seed_program_published(current)
         updated += 1
 
     retired = 0

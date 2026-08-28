@@ -13,6 +13,11 @@ const programSchema = z.object({
   workout_type: z.string().default("custom"),
   level: z.string().nullable().optional(),
   is_template: z.boolean().default(true),
+  publication_status: z.enum(["draft", "published", "archived"]).default("draft"),
+  program_key: z.string().default(""),
+  version: z.number().int().positive().default(1),
+  is_current: z.boolean().default(false),
+  published_at: z.string().nullable().optional(),
 });
 
 const listSchema = z.object({
@@ -62,6 +67,11 @@ function mapProgram(item: z.infer<typeof programSchema>): Program {
     workout_type: item.workout_type ?? "custom",
     level: item.level ?? null,
     is_template: item.is_template ?? true,
+    publication_status: item.publication_status,
+    program_key: item.program_key,
+    version: item.version,
+    is_current: item.is_current,
+    published_at: item.published_at ?? null,
   };
 }
 

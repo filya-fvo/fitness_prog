@@ -43,6 +43,12 @@ class ProgramResponse(BaseModel):
     workout_type: str = "custom"
     level: str | None = None
     is_template: bool = True
+    publication_status: str = "draft"
+    program_key: str
+    version: int = 1
+    is_current: bool = False
+    published_at: datetime | None = None
+    published_by: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -57,3 +63,8 @@ class ProgramStartRequest(BaseModel):
 class ProgramListResponse(BaseModel):
     items: list[ProgramResponse]
     total: int
+
+
+class ProgramPublicationResponse(BaseModel):
+    program: ProgramResponse
+    message: str

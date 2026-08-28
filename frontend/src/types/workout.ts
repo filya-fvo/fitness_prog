@@ -108,4 +108,9 @@ export type Program = {
   workout_type: string;
   level: string | null;
   is_template: boolean;
+  publication_status?: "draft" | "published" | "archived";
+  program_key?: string;
+  version?: number;
+  is_current?: boolean;
+  published_at?: string | null;
 };

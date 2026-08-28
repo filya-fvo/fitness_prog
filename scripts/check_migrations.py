@@ -35,6 +35,7 @@ REQUIRED_FILES = [
     "20260827000024_admin_broadcasts.sql",
     "20260827000025_move_weight_to_body_measurements.sql",
     "20260828000026_admin_exercise_editor.sql",
+    "20260828000027_program_publication.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -86,6 +87,9 @@ REQUIRED_SNIPPETS = [
     "Dated body weight in kilograms",
     "exercises_weight_rule_check",
     "secondary_muscle_groups JSONB",
+    "programs_publication_status_check",
+    "uq_programs_key_version",
+    "uq_programs_current_version",
 ]
 
 
