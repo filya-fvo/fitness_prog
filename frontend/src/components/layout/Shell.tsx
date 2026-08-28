@@ -10,6 +10,7 @@ import { fetchMyProfile } from "@/api/users";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ToastHost } from "@/components/ui/ToastHost";
+import { useTelegramExitGesture } from "@/hooks/useTelegramExitGesture";
 import { trackEvent } from "@/lib/analytics";
 import {
   getStartParam,
@@ -27,6 +28,7 @@ const OfflineBanner = lazy(() =>
 );
 
 export function Shell() {
+  useTelegramExitGesture();
   const navigate = useNavigate();
   const location = useLocation();
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);

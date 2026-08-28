@@ -1,8 +1,7 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { fallbackPathFor, shouldShowPageBack } from "@/lib/appNavigation";
-import { getTelegramWebApp } from "@/lib/telegram";
 
 type HeaderProps = {
   title: string;
@@ -41,21 +40,6 @@ export function Header({ title, subtitle, showBack, fallbackTo }: HeaderProps) {
     }
     navigate(fallbackTo ?? fallbackPathFor(location.pathname), { replace: true });
   }, [fallbackTo, location.pathname, navigate]);
-
-  useEffect(() => {
-    const backButton = getTelegramWebApp()?.BackButton;
-    if (!backButton) return;
-    if (!backVisible) {
-      backButton.hide();
-      return;
-    }
-    backButton.show();
-    backButton.onClick(goBack);
-    return () => {
-      backButton.offClick(goBack);
-      backButton.hide();
-    };
-  }, [backVisible, goBack]);
 
   return (
     <header className="app-page-header mb-5">

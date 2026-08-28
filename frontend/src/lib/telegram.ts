@@ -31,6 +31,8 @@ export type TelegramWebApp = {
   themeParams?: TelegramThemeParams;
   ready: () => void;
   expand: () => void;
+  close?: () => void;
+  enableVerticalSwipes?: () => void;
   /**
    * Closes the Mini App and sends data to the bot.
    * Do NOT use for analytics — only for intentional form submit flows.
@@ -138,6 +140,10 @@ export function initTelegramApp(): TelegramWebApp | null {
   }
   webApp.ready();
   webApp.expand();
+  // Keep the native/OS back action available for leaving the Mini App. In-app
+  // navigation has its own visible arrow and must not capture Android's Back.
+  webApp.BackButton?.hide();
+  webApp.enableVerticalSwipes?.();
   applyTelegramTheme(webApp);
   return webApp;
 }

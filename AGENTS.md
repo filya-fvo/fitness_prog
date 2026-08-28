@@ -155,7 +155,8 @@ services → SQLAlchemy models → PostgreSQL
 
 - `frontend/src/App.tsx` — lazy routes и публичные `/help`, `/knowledge`.
 - `frontend/src/components/layout/Shell.tsx` — авторизация, reconnect, offline
-  sync, общий layout и навигация.
+  sync, общий layout и навигация; `hooks/useTelegramExitGesture.ts` сохраняет
+  системный выход Android и добавляет узкий edge-swipe выхода для Telegram iOS.
 - `frontend/src/api/` — единственное место HTTP-контрактов клиента.
 - `frontend/src/features/` — feature pages/components/hooks.
 - `frontend/src/features/admin-system/` — отдельный экран состояния системы,
