@@ -23,11 +23,14 @@ function campaign(status: "draft" | "tested" | "scheduled") {
     message_text: "Откройте приложение и проверьте новую неделю.",
     audience: { kind: "all_telegram" },
     status,
-    counts: { expected: 2, pending: status === "scheduled" ? 2 : 0, sending: 0, sent: 0, failed: 0, skipped: 0 },
+    counts: { expected: 2, pending: status === "scheduled" ? 2 : 0, sending: 0, sent: 0, failed: 0, skipped: 0, cancelled: 0 },
+    failure_reasons: [],
     tested_at: status === "draft" ? null : "2026-08-27T10:00:00Z",
     scheduled_at: status === "scheduled" ? "2026-08-27T10:01:00Z" : null,
+    scheduled_timezone: "Europe/Moscow",
     started_at: null,
     completed_at: null,
+    cancelled_at: null,
     retry_count: 0,
     created_at: "2026-08-27T09:00:00Z",
     updated_at: "2026-08-27T10:00:00Z",
@@ -46,6 +49,7 @@ test("broadcast requires test and double confirmation before launch", async ({ p
   }));
 
   let launchBody: Record<string, unknown> | null = null;
+  let cancelCalled = false;
   await page.route("**/admin/broadcasts/audience-preview", (route) => route.fulfill({
     contentType: "application/json", body: JSON.stringify({ expected_count: 2 }),
   }));
@@ -55,6 +59,10 @@ test("broadcast requires test and double confirmation before launch", async ({ p
   await page.route(`**/admin/broadcasts/${campaignId}/launch`, async (route) => {
     launchBody = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(campaign("scheduled")) });
+  });
+  await page.route(`**/admin/broadcasts/${campaignId}/cancel`, async (route) => {
+    cancelCalled = true;
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...campaign("scheduled"), status: "cancelled", counts: { ...campaign("scheduled").counts, pending: 0, cancelled: 2 }, cancelled_at: "2026-08-27T10:00:30Z" }) });
   });
   await page.route(/\/admin\/broadcasts(?:\?.*)?$/, async (route) => {
     const request = route.request();
@@ -88,8 +96,12 @@ test("broadcast requires test and double confirmation before launch", async ({ p
     confirmation_text: "РАЗОСЛАТЬ 2",
     expected_recipient_count: 2,
     scheduled_at: null,
+    scheduled_timezone: expect.any(String),
   });
   await expect(page.getByText("Рассылка поставлена в очередь.")).toBeVisible();
+  await page.getByRole("button", { name: "Отменить рассылку" }).click();
+  await page.getByRole("button", { name: "Подтвердить отмену" }).click();
+  await expect.poll(() => cancelCalled).toBe(true);
 
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 850 });

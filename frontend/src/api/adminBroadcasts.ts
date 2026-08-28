@@ -25,6 +25,19 @@ const countsSchema = z.object({
   sent: z.number().int().nonnegative(),
   failed: z.number().int().nonnegative(),
   skipped: z.number().int().nonnegative(),
+  cancelled: z.number().int().nonnegative(),
+});
+
+const failureReasonSchema = z.object({
+  status: z.enum(["failed", "skipped"]),
+  code: z.enum([
+    "telegram_unavailable",
+    "telegram_transport",
+    "telegram_api",
+    "worker_recovered",
+    "unknown",
+  ]),
+  count: z.number().int().positive(),
 });
 
 const campaignSchema = z.object({
@@ -35,10 +48,13 @@ const campaignSchema = z.object({
   audience: audienceSchema,
   status: z.enum(["draft", "tested", "scheduled", "sending", "completed", "cancelled"]),
   counts: countsSchema,
+  failure_reasons: z.array(failureReasonSchema),
   tested_at: z.string().datetime({ offset: true }).nullable(),
   scheduled_at: z.string().datetime({ offset: true }).nullable(),
+  scheduled_timezone: z.string(),
   started_at: z.string().datetime({ offset: true }).nullable(),
   completed_at: z.string().datetime({ offset: true }).nullable(),
+  cancelled_at: z.string().datetime({ offset: true }).nullable(),
   retry_count: z.number().int().nonnegative(),
   created_at: z.string().datetime({ offset: true }),
   updated_at: z.string().datetime({ offset: true }),
@@ -61,8 +77,11 @@ export type AdminBroadcastDraft = {
   audience: AdminBroadcastAudience;
 };
 
-export async function previewBroadcastAudience(audience: AdminBroadcastAudience): Promise<number> {
-  const { data } = await apiClient.post("/admin/broadcasts/audience-preview", audience);
+export async function previewBroadcastAudience(
+  audience: AdminBroadcastAudience,
+  signal?: AbortSignal,
+): Promise<number> {
+  const { data } = await apiClient.post("/admin/broadcasts/audience-preview", audience, { signal });
   return z.object({ expected_count: z.number().int().nonnegative() }).parse(data).expected_count;
 }
 
@@ -94,13 +113,19 @@ export async function testAdminBroadcast(id: string): Promise<AdminBroadcast> {
 
 export async function launchAdminBroadcast(
   id: string,
-  input: { expectedCount: number; confirmationText: string; scheduledAt?: string },
+  input: {
+    expectedCount: number;
+    confirmationText: string;
+    scheduledAt?: string;
+    scheduledTimezone: string;
+  },
 ): Promise<AdminBroadcast> {
   const { data } = await apiClient.post(`/admin/broadcasts/${id}/launch`, {
     confirmed: true,
     confirmation_text: input.confirmationText,
     expected_recipient_count: input.expectedCount,
     scheduled_at: input.scheduledAt || null,
+    scheduled_timezone: input.scheduledTimezone,
   });
   return campaignSchema.parse(data);
 }
@@ -122,5 +147,10 @@ export async function copyAdminBroadcast(id: string): Promise<AdminBroadcast> {
 
 export async function resumeAdminBroadcast(id: string): Promise<AdminBroadcast> {
   const { data } = await apiClient.post(`/admin/broadcasts/${id}/resume`);
+  return campaignSchema.parse(data);
+}
+
+export async function cancelAdminBroadcast(id: string): Promise<AdminBroadcast> {
+  const { data } = await apiClient.post(`/admin/broadcasts/${id}/cancel`);
   return campaignSchema.parse(data);
 }

@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -68,6 +69,7 @@ class AdminBroadcastLaunchRequest(BaseModel):
     confirmation_text: str = Field(min_length=1, max_length=80)
     expected_recipient_count: int = Field(ge=0)
     scheduled_at: datetime | None = None
+    scheduled_timezone: str = Field(default="UTC", min_length=1, max_length=64)
 
     @field_validator("scheduled_at")
     @classmethod
@@ -75,6 +77,16 @@ class AdminBroadcastLaunchRequest(BaseModel):
         if value is not None and value.tzinfo is None:
             raise ValueError("Время отправки должно содержать часовой пояс")
         return value
+
+    @field_validator("scheduled_timezone")
+    @classmethod
+    def require_iana_timezone(cls, value: str) -> str:
+        normalized = value.strip()
+        try:
+            ZoneInfo(normalized)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("Укажите корректный часовой пояс") from exc
+        return normalized
 
 
 class AdminBroadcastRetryRequest(BaseModel):
@@ -93,6 +105,19 @@ class AdminBroadcastCounts(BaseModel):
     sent: int = 0
     failed: int = 0
     skipped: int = 0
+    cancelled: int = 0
+
+
+class AdminBroadcastFailureReason(BaseModel):
+    status: Literal["failed", "skipped"]
+    code: Literal[
+        "telegram_unavailable",
+        "telegram_transport",
+        "telegram_api",
+        "worker_recovered",
+        "unknown",
+    ]
+    count: int = Field(ge=1)
 
 
 class AdminBroadcastResponse(BaseModel):
@@ -103,10 +128,13 @@ class AdminBroadcastResponse(BaseModel):
     audience: AdminBroadcastAudience
     status: BroadcastStatus
     counts: AdminBroadcastCounts
+    failure_reasons: list[AdminBroadcastFailureReason] = Field(default_factory=list)
     tested_at: datetime | None = None
     scheduled_at: datetime | None = None
+    scheduled_timezone: str = "UTC"
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    cancelled_at: datetime | None = None
     retry_count: int = 0
     created_at: datetime
     updated_at: datetime

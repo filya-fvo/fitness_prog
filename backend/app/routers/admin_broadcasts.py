@@ -133,6 +133,7 @@ async def launch_broadcast(
         confirmation_text=body.confirmation_text,
         confirmed=body.confirmed,
         scheduled_at=body.scheduled_at,
+        scheduled_timezone=body.scheduled_timezone,
         context=_context(admin, correlation_id),
     )
     await _enqueue(settings, campaign)
@@ -172,6 +173,18 @@ async def copy_broadcast(
         campaign_id,
         idempotency_key=body.idempotency_key,
         context=_context(admin, correlation_id),
+    )
+
+
+@router.post("/{campaign_id}/cancel", response_model=AdminBroadcastResponse)
+async def cancel_broadcast(
+    campaign_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> AdminBroadcastResponse:
+    return await admin_broadcasts.cancel_scheduled(
+        session, campaign_id, context=_context(admin, correlation_id)
     )
 
 

@@ -415,6 +415,27 @@ docker compose --env-file backend/.env.production exec -T api test -s /docs/LOCA
 логах `api` означает, что запущен старый образ: обновите репозиторий и пересоберите
 `api` из корневого Docker context по штатной процедуре обновления.
 
+После изменений Telegram-доставки используйте только выделенный тестовый аккаунт.
+Добавьте его числовой ID в `ADMIN_SMOKE_TELEGRAM_ID` файла
+`backend/.env.production`, затем сначала выполните read-only проверку:
+
+```bash
+docker compose --env-file backend/.env.production exec -T api \
+  python scripts/smoke_telegram_delivery.py
+```
+
+Для трёх реальных сообщений — служебного, руководства и тестовой рассылки — нужен
+явный флаг:
+
+```bash
+docker compose --env-file backend/.env.production exec -T api \
+  python scripts/smoke_telegram_delivery.py --write
+```
+
+Скрипт не строит аудиторию и не принимает ID из командной строки, поэтому не
+может превратиться в массовую отправку. Без настроенного ID он завершается до
+обращения к Telegram.
+
 ### Не приходит письмо с OTP
 
 ```bash

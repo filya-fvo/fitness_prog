@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  cancelAdminBroadcast,
   copyAdminBroadcast,
   listAdminBroadcasts,
   resumeAdminBroadcast,
@@ -108,6 +109,7 @@ export function AdminBroadcastsPage() {
           })}
           onRetry={(item) => action(() => retryAdminBroadcast(item.id, item.counts.failed))}
           onResume={(item) => action(() => resumeAdminBroadcast(item.id))}
+          onCancel={(item) => action(() => cancelAdminBroadcast(item.id))}
         />
       )}
       {total > PAGE_SIZE ? <div className="mt-3 flex items-center justify-between rounded-2xl bg-tg-secondary p-3 text-xs"><button type="button" disabled={loading || offset === 0} onClick={() => move(Math.max(0, offset - PAGE_SIZE))} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Назад</button><span className="text-tg-hint">{offset + 1}–{Math.min(offset + items.length, total)} из {total}</span><button type="button" disabled={loading || offset + items.length >= total} onClick={() => move(offset + PAGE_SIZE)} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Дальше</button></div> : null}

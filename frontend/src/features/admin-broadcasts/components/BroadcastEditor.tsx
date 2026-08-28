@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createAdminBroadcast,
@@ -20,6 +20,7 @@ type Props = {
 };
 
 const DEFAULT_AUDIENCE: AdminBroadcastAudience = { kind: "all_telegram" };
+const ADMIN_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
 function audienceValid(audience: AdminBroadcastAudience): boolean {
   if (["active", "inactive_workouts"].includes(audience.kind)) return Boolean(audience.days);
@@ -37,12 +38,14 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [checked, setChecked] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledLocal, setScheduledLocal] = useState("");
+  const previewSequence = useRef(0);
 
   useEffect(() => {
     if (!selected) return;
@@ -65,16 +68,29 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
   }, [selected]);
 
   useEffect(() => {
+    const sequence = ++previewSequence.current;
     if (!audienceValid(audience)) {
       setExpected(null);
+      setPreviewError(null);
       return;
     }
+    const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      void previewBroadcastAudience(audience)
-        .then(setExpected)
-        .catch((reason: unknown) => setError(toUserMessage(reason, "Не удалось рассчитать аудиторию.")));
+      void previewBroadcastAudience(audience, controller.signal)
+        .then((count) => {
+          if (sequence !== previewSequence.current) return;
+          setExpected(count);
+          setPreviewError(null);
+        })
+        .catch((reason: unknown) => {
+          if (controller.signal.aborted || sequence !== previewSequence.current) return;
+          setPreviewError(toUserMessage(reason, "Не удалось рассчитать аудиторию."));
+        });
     }, 350);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [audience]);
 
   const draft = useMemo<AdminBroadcastDraft>(
@@ -147,6 +163,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
         scheduledAt: scheduleEnabled && scheduledLocal
           ? new Date(scheduledLocal).toISOString()
           : undefined,
+        scheduledTimezone: ADMIN_TIMEZONE,
       });
       setCampaign(launched);
       setConfirming(false);
@@ -166,6 +183,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
         <p className="mt-1 text-xs text-tg-hint">Сначала сохраните и отправьте тест только себе.</p>
       </div>
       {error ? <p role="alert" className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</p> : null}
+      {previewError ? <p role="alert" className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">{previewError}</p> : null}
       {note ? <p className="rounded-xl bg-tg-bg p-3 text-sm text-tg-hint">{note}</p> : null}
       <label className="block text-xs text-tg-hint">
         Заголовок
@@ -257,7 +275,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
               <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="h-5 w-5" />Я проверил текст, аудиторию и тестовое сообщение</label>
               <label className="block text-xs text-tg-hint">Для второго подтверждения введите <strong>{requiredText}</strong><input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base" /></label>
               <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={scheduleEnabled} onChange={(event) => setScheduleEnabled(event.target.checked)} className="h-5 w-5" />Отправить по расписанию</label>
-              {scheduleEnabled ? <input aria-label="Время отправки" type="datetime-local" value={scheduledLocal} onChange={(event) => setScheduledLocal(event.target.value)} className="min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base" /> : null}
+              {scheduleEnabled ? <label className="block text-xs text-tg-hint">Дата и время · {ADMIN_TIMEZONE}<input aria-label="Время отправки" type="datetime-local" value={scheduledLocal} onChange={(event) => setScheduledLocal(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base" /></label> : null}
               <div className="flex gap-2"><button type="button" onClick={() => setConfirming(false)} className="min-h-11 flex-1 rounded-xl bg-tg-bg px-3 text-sm">Отмена</button><button type="button" disabled={!checked || confirmation !== requiredText || (scheduleEnabled && !scheduledLocal) || Boolean(busy)} onClick={() => void onLaunch()} className="min-h-11 flex-1 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-40">{busy === "launch" ? "Ставим…" : "Запустить"}</button></div>
             </div>
           )}

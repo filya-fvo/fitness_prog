@@ -21,6 +21,7 @@ from app.schemas.admin_broadcast import (
     AdminBroadcastAudience,
     AdminBroadcastCounts,
     AdminBroadcastDraftRequest,
+    AdminBroadcastFailureReason,
     AdminBroadcastListResponse,
     AdminBroadcastResponse,
     AdminBroadcastUpdateRequest,
@@ -28,6 +29,13 @@ from app.schemas.admin_broadcast import (
 from app.services import admin_audit
 from app.services.admin_broadcast_audience import audience_count, audience_recipients
 from app.services.telegram_bot import TelegramBotError, send_app_notification
+
+_VISIBLE_FAILURE_CODES = {
+    "telegram_unavailable",
+    "telegram_transport",
+    "telegram_api",
+    "worker_recovered",
+}
 
 
 def _clean_title(value: str) -> str:
@@ -56,8 +64,10 @@ def _audit_snapshot(campaign: AdminBroadcast, counts: AdminBroadcastCounts) -> d
         "sent": counts.sent,
         "failed": counts.failed,
         "skipped": counts.skipped,
+        "cancelled": counts.cancelled,
         "status": campaign.status,
         "scheduled": campaign.scheduled_at is not None,
+        "timezone": campaign.scheduled_timezone,
     }
 
 
@@ -71,19 +81,44 @@ async def _get(session: AsyncSession, campaign_id: uuid.UUID, *, lock: bool = Fa
     return campaign
 
 
-async def _counts(session: AsyncSession, campaign: AdminBroadcast) -> AdminBroadcastCounts:
+async def _delivery_summary(
+    session: AsyncSession, campaign: AdminBroadcast
+) -> tuple[AdminBroadcastCounts, list[AdminBroadcastFailureReason]]:
     rows = (
         await session.execute(
-            select(AdminBroadcastDelivery.status, func.count())
+            select(
+                AdminBroadcastDelivery.status,
+                AdminBroadcastDelivery.error_code,
+                func.count(),
+            )
             .where(AdminBroadcastDelivery.broadcast_id == campaign.id)
-            .group_by(AdminBroadcastDelivery.status)
+            .group_by(AdminBroadcastDelivery.status, AdminBroadcastDelivery.error_code)
+            .order_by(AdminBroadcastDelivery.status, AdminBroadcastDelivery.error_code)
         )
     ).all()
-    values = {str(key): int(value) for key, value in rows}
-    return AdminBroadcastCounts(expected=campaign.audience_count, **values)
+    values: dict[str, int] = {}
+    for status_value, _error_code, count in rows:
+        key = str(status_value)
+        values[key] = values.get(key, 0) + int(count)
+    reasons = [
+        AdminBroadcastFailureReason(
+            status=status_value,
+            code=error_code if error_code in _VISIBLE_FAILURE_CODES else "unknown",
+            count=int(count),
+        )
+        for status_value, error_code, count in rows
+        if status_value in {"failed", "skipped"}
+    ]
+    return AdminBroadcastCounts(expected=campaign.audience_count, **values), reasons
+
+
+async def _counts(session: AsyncSession, campaign: AdminBroadcast) -> AdminBroadcastCounts:
+    counts, _reasons = await _delivery_summary(session, campaign)
+    return counts
 
 
 async def _response(session: AsyncSession, campaign: AdminBroadcast) -> AdminBroadcastResponse:
+    counts, failure_reasons = await _delivery_summary(session, campaign)
     return AdminBroadcastResponse(
         id=campaign.id,
         actor_user_id=campaign.actor_user_id,
@@ -91,11 +126,14 @@ async def _response(session: AsyncSession, campaign: AdminBroadcast) -> AdminBro
         message_text=campaign.message_text,
         audience=AdminBroadcastAudience.model_validate(campaign.audience),
         status=campaign.status,
-        counts=await _counts(session, campaign),
+        counts=counts,
+        failure_reasons=failure_reasons,
         tested_at=campaign.tested_at,
         scheduled_at=campaign.scheduled_at,
+        scheduled_timezone=campaign.scheduled_timezone,
         started_at=campaign.started_at,
         completed_at=campaign.completed_at,
+        cancelled_at=campaign.cancelled_at,
         retry_count=campaign.retry_count,
         created_at=campaign.created_at,
         updated_at=campaign.updated_at,
@@ -192,12 +230,11 @@ async def test_delivery(
     if admin.telegram_id is None:
         raise HTTPException(status_code=409, detail="У администратора не подключён Telegram")
     try:
-        await send_app_notification(
+        await send_broadcast_test_message(
             settings,
             telegram_id=int(admin.telegram_id),
-            title=html.escape(campaign.title),
-            text=html.escape(campaign.message_text),
-            startapp="home",
+            title=campaign.title,
+            message=campaign.message_text,
         )
     except TelegramBotError as exc:
         raise HTTPException(status_code=502, detail="Тестовое сообщение не доставлено") from exc
@@ -227,6 +264,7 @@ async def launch(
     confirmation_text: str,
     confirmed: bool,
     scheduled_at: datetime | None,
+    scheduled_timezone: str,
     context: admin_audit.AuditContext,
 ) -> AdminBroadcastResponse:
     campaign = await _get(session, campaign_id, lock=True)
@@ -252,6 +290,7 @@ async def launch(
     )
     campaign.audience_count = count
     campaign.scheduled_at = scheduled_at or datetime.now(UTC)
+    campaign.scheduled_timezone = scheduled_timezone
     campaign.status = "scheduled"
     campaign.correlation_id = context.correlation_id
     counts = AdminBroadcastCounts(expected=count, pending=count)
@@ -265,6 +304,53 @@ async def launch(
         description="Рассылка подтверждена и поставлена в очередь.",
         after=_audit_snapshot(campaign, counts),
         notification_status="pending",
+    )
+    await session.commit()
+    return await _response(session, campaign)
+
+
+async def cancel_scheduled(
+    session: AsyncSession,
+    campaign_id: uuid.UUID,
+    *,
+    context: admin_audit.AuditContext,
+) -> AdminBroadcastResponse:
+    campaign = await _get(session, campaign_id, lock=True)
+    if campaign.status != "scheduled" or campaign.started_at is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Можно отменить только запланированную рассылку до начала отправки",
+        )
+    before_counts = await _counts(session, campaign)
+    await session.execute(
+        update(AdminBroadcastDelivery)
+        .where(
+            AdminBroadcastDelivery.broadcast_id == campaign.id,
+            AdminBroadcastDelivery.status == "pending",
+        )
+        .values(status="cancelled", error_code="admin_cancelled")
+    )
+    campaign.status = "cancelled"
+    campaign.cancelled_at = datetime.now(UTC)
+    campaign.correlation_id = context.correlation_id
+    after_counts = AdminBroadcastCounts(
+        expected=before_counts.expected,
+        sent=before_counts.sent,
+        failed=before_counts.failed,
+        skipped=before_counts.skipped,
+        cancelled=before_counts.pending,
+    )
+    admin_audit.add_event(
+        session,
+        context=context,
+        action="broadcast.cancel",
+        object_type="broadcast",
+        object_id=campaign.id,
+        result="success",
+        description="Запланированная рассылка отменена до начала отправки.",
+        before=_audit_snapshot(campaign, before_counts) | {"status": "scheduled"},
+        after=_audit_snapshot(campaign, after_counts),
+        notification_status="not_requested",
     )
     await session.commit()
     return await _response(session, campaign)
@@ -402,6 +488,23 @@ async def enqueue_campaign(settings: Settings, campaign: AdminBroadcastResponse)
         )
     finally:
         await redis.close()
+
+
+async def send_broadcast_test_message(
+    settings: Settings,
+    *,
+    telegram_id: int,
+    title: str,
+    message: str,
+) -> None:
+    """Send one broadcast-formatted message without resolving a mass audience."""
+    await send_app_notification(
+        settings,
+        telegram_id=telegram_id,
+        title=html.escape(title),
+        text=html.escape(message),
+        startapp="home",
+    )
 
 
 async def revert_failed_enqueue(session: AsyncSession, campaign_id: uuid.UUID) -> None:

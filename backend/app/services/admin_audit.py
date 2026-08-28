@@ -56,8 +56,10 @@ _BROADCAST_FIELDS = {
     "sent",
     "failed",
     "skipped",
+    "cancelled",
     "status",
     "scheduled",
+    "timezone",
 }
 _STAT_FIELDS = {
     "workout_sets",
