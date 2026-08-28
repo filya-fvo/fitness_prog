@@ -59,3 +59,25 @@ class BodyMeasurementRangeResponse(BaseModel):
     start: date
     end: date
     items: list[BodyMeasurementResponse]
+
+
+class BodyMeasurementAnalyticsItem(BaseModel):
+    field: str
+    points: int = Field(ge=0)
+    baseline_value: float | None = None
+    baseline_date: date | None = None
+    latest_value: float | None = None
+    latest_date: date | None = None
+    delta: float | None = None
+    percent_change: float | None = None
+    target_value: float | None = None
+    target_gap: float | None = None
+    interpretation: str
+
+
+class BodyMeasurementAnalyticsResponse(BaseModel):
+    months: int
+    start: date
+    end: date
+    primary_goal: str | None = None
+    items: list[BodyMeasurementAnalyticsItem]

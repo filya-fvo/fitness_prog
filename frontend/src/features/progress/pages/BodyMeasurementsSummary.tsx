@@ -1,68 +1,109 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { BodyMeasurement, BodyMeasurementField } from "@/api/bodyMeasurements";
+import type {
+  BodyMeasurementAnalyticsItem,
+  BodyMeasurementPeriod,
+} from "@/api/bodyMeasurements";
+import { useBodyMeasurementAnalytics } from "@/features/progress/hooks/useBodyMeasurementAnalytics";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
-import {
-  latestMeasurementComparison,
-  shortMeasurementDate,
-} from "@/utils/bodyMeasurementDeltas";
 
-type Props = {
-  items: BodyMeasurement[];
-  error?: string | null;
+const PERIODS: BodyMeasurementPeriod[] = [1, 3, 6, 12];
+const FEATURED_FIELDS = new Set(["weight_kg", "waist_cm", "chest_cm", "hips_cm"]);
+
+const GOAL_LABELS: Record<string, string> = {
+  lose_fat: "снижение жировой массы",
+  gain_muscle: "набор мышечной массы",
+  maintain: "поддержание формы",
 };
 
-function formatValue(value: number | null | undefined, unit: string): string {
-  return value == null ? "—" : `${String(value).replace(".", ",")} ${unit}`;
+function numberText(value: number): string {
+  return String(value).replace(".", ",");
 }
 
-function formatDelta(
-  current: number | null | undefined,
-  previous: number | null | undefined,
-  unit: string,
-) {
-  if (current == null || previous == null) return null;
-  const value = Math.round((current - previous) * 10) / 10;
-  return `${value > 0 ? "+" : ""}${String(value).replace(".", ",")} ${unit}`;
+function signedText(value: number, unit: string): string {
+  return `${value > 0 ? "+" : ""}${numberText(value)} ${unit}`;
 }
 
-export function BodyMeasurementsSummary({ items, error }: Props) {
-  const latest = items.at(-1) ?? null;
-  const featured = BODY_MEASURE_FIELDS.filter((field) =>
-    ["weight_kg", "waist_cm", "chest_cm", "hips_cm"].includes(field.key),
+function shortDate(value: string | null): string {
+  return value ? value.split("-").reverse().slice(0, 2).join(".") : "—";
+}
+
+function MeasurementAnalyticsCard({ item }: { item: BodyMeasurementAnalyticsItem }) {
+  const config = BODY_MEASURE_FIELDS.find((field) => field.key === item.field);
+  if (!config || item.latest_value == null) return null;
+  return (
+    <div className="rounded-xl bg-tg-bg p-2.5">
+      <p className="text-[10px] text-tg-hint">{config.label.split(",")[0]}</p>
+      <p className="mt-1 text-base font-semibold tabular-nums">
+        {numberText(item.latest_value)} {config.unit}
+      </p>
+      {item.baseline_value != null && item.baseline_date ? (
+        <p className="text-[10px] text-tg-hint">
+          База {shortDate(item.baseline_date)}: {numberText(item.baseline_value)} {config.unit}
+        </p>
+      ) : null}
+      {item.delta != null ? (
+        <p className="mt-1 text-[11px] tabular-nums">
+          {signedText(item.delta, config.unit)}
+          {item.percent_change != null ? ` · ${signedText(item.percent_change, "%")}` : ""}
+        </p>
+      ) : null}
+      {item.target_value != null ? (
+        <p className="mt-1 text-[10px] text-tg-hint">
+          Цель: {numberText(item.target_value)} {config.unit}
+          {item.target_gap != null ? ` · разница ${signedText(item.target_gap, config.unit)}` : ""}
+        </p>
+      ) : null}
+      <p className="mt-1 text-[10px] text-tg-hint">{item.interpretation}</p>
+    </div>
   );
+}
+
+export function BodyMeasurementsSummary() {
+  const [months, setMonths] = useState<BodyMeasurementPeriod>(3);
+  const { data, loading, error } = useBodyMeasurementAnalytics(months);
+  const items = (data?.items ?? []).filter((item) => FEATURED_FIELDS.has(item.field));
+  const hasData = items.some((item) => item.latest_value != null);
+  const goalLabel = data?.primary_goal ? GOAL_LABELS[data.primary_goal] : null;
 
   return (
     <section className="rounded-2xl bg-tg-secondary p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold">Замеры тела</h2>
-          <p className="mt-0.5 text-[11px] text-tg-hint">
-            {latest ? `Последняя запись · ${latest.date.split("-").reverse().join(".")}` : "История обхватов"}
-          </p>
+          <p className="mt-0.5 text-[11px] text-tg-hint">База и изменение за период</p>
         </div>
         <Link to="/measurements" className="text-xs font-medium text-tg-link">Открыть →</Link>
       </div>
-      {error ? <p className="mt-3 text-xs text-tg-hint">{error}</p> : null}
-      {!error && !latest ? (
-        <p className="mt-3 text-xs text-tg-hint">Добавьте первый замер, чтобы видеть изменения.</p>
+      <div className="mt-3 grid grid-cols-4 gap-1" aria-label="Период аналитики замеров">
+        {PERIODS.map((period) => (
+          <button
+            key={period}
+            type="button"
+            onClick={() => setMonths(period)}
+            aria-pressed={months === period}
+            className={`min-h-11 rounded-lg px-2 text-xs ${months === period ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}
+          >
+            {period} мес.
+          </button>
+        ))}
+      </div>
+      {goalLabel ? (
+        <p className="mt-2 text-[10px] text-tg-hint">
+          Цель профиля: {goalLabel}. Обхваты оцениваются нейтрально.
+        </p>
       ) : null}
-      {latest ? (
+      {loading ? <p className="mt-3 text-xs text-tg-hint">Загружаем аналитику…</p> : null}
+      {error ? <p className="mt-3 text-xs text-tg-hint">{error}</p> : null}
+      {!loading && !error && !hasData ? (
+        <p className="mt-3 text-xs text-tg-hint">
+          За этот период замеров нет. Выберите больший период или добавьте запись.
+        </p>
+      ) : null}
+      {hasData ? (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {featured.map((field) => {
-            const key = field.key as BodyMeasurementField;
-            const comparison = latestMeasurementComparison(items, key);
-            const delta = comparison == null
-              ? null
-              : formatDelta(comparison.current.value, comparison.previous?.value, field.unit);
-            return (
-              <div key={field.key} className="rounded-xl bg-tg-bg p-2.5">
-                <p className="text-[10px] text-tg-hint">{field.label.split(",")[0]}</p>
-                <p className="mt-1 text-base font-semibold tabular-nums">{formatValue(comparison?.current.value, field.unit)}</p>
-                <p className="text-[10px] text-tg-hint">{comparison?.previous && delta ? `${shortMeasurementDate(comparison.previous.date)} → ${shortMeasurementDate(comparison.current.date)} · ${comparison.days} дн.: ${delta}` : comparison ? `замер ${shortMeasurementDate(comparison.current.date)}` : "нет сравнения"}</p>
-              </div>
-            );
-          })}
+          {items.map((item) => <MeasurementAnalyticsCard key={item.field} item={item} />)}
         </div>
       ) : null}
     </section>

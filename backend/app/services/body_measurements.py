@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 from datetime import date, datetime, timezone
 
 from sqlalchemy import select
@@ -10,7 +11,130 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.body_measurement import BodyMeasurement
 from app.models.user import User
-from app.schemas.body_measurements import BodyMeasurementUpdate, MEASUREMENT_FIELDS
+from app.schemas.body_measurements import (
+    BodyMeasurementAnalyticsItem,
+    BodyMeasurementAnalyticsResponse,
+    BodyMeasurementUpdate,
+    MEASUREMENT_FIELDS,
+)
+
+
+def _period_start(end: date, months: int) -> date:
+    month_index = end.year * 12 + end.month - 1 - months
+    year, zero_based_month = divmod(month_index, 12)
+    month = zero_based_month + 1
+    day = min(end.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _round_measurement(value: float) -> float:
+    return round(value, 2)
+
+
+def _interpret_change(
+    *,
+    baseline: float,
+    latest: float,
+    target: float | None,
+) -> tuple[float | None, str]:
+    if target is None:
+        if abs(latest - baseline) < 0.01:
+            return None, "Без изменения за выбранный период"
+        return None, "Изменение показано без оценки результата"
+    baseline_gap = abs(baseline - target)
+    latest_gap = abs(latest - target)
+    if latest_gap < baseline_gap - 0.01:
+        interpretation = "Значение стало ближе к заданной цели"
+    elif latest_gap > baseline_gap + 0.01:
+        interpretation = "Расстояние до заданной цели увеличилось"
+    else:
+        interpretation = "Расстояние до заданной цели не изменилось"
+    return _round_measurement(latest - target), interpretation
+
+
+def build_analytics(
+    rows: list[BodyMeasurement],
+    user: User,
+    *,
+    months: int,
+    start: date,
+    end: date,
+) -> BodyMeasurementAnalyticsResponse:
+    rows = sorted(rows, key=lambda row: row.date)
+    goals = dict(user.goals or {})
+    target_weight = goals.get("target_weight_kg")
+    target_weight_value = (
+        float(target_weight)
+        if isinstance(target_weight, (int, float)) and not isinstance(target_weight, bool)
+        else None
+    )
+    items: list[BodyMeasurementAnalyticsItem] = []
+    for field in MEASUREMENT_FIELDS:
+        points = [
+            (row.date, float(value))
+            for row in rows
+            if (value := getattr(row, field)) is not None
+        ]
+        if not points:
+            items.append(
+                BodyMeasurementAnalyticsItem(
+                    field=field,
+                    points=0,
+                    interpretation="Нет данных за выбранный период",
+                )
+            )
+            continue
+        baseline_date, baseline = points[0]
+        latest_date, latest = points[-1]
+        delta = _round_measurement(latest - baseline) if len(points) > 1 else None
+        percent = (
+            round((latest - baseline) / baseline * 100, 1)
+            if len(points) > 1 and baseline != 0
+            else None
+        )
+        target = target_weight_value if field == "weight_kg" else None
+        target_gap, interpretation = (
+            _interpret_change(baseline=baseline, latest=latest, target=target)
+            if len(points) > 1
+            else (
+                _round_measurement(latest - target) if target is not None else None,
+                "Нужен ещё один замер для сравнения",
+            )
+        )
+        items.append(
+            BodyMeasurementAnalyticsItem(
+                field=field,
+                points=len(points),
+                baseline_value=_round_measurement(baseline),
+                baseline_date=baseline_date,
+                latest_value=_round_measurement(latest),
+                latest_date=latest_date,
+                delta=delta,
+                percent_change=percent,
+                target_value=target,
+                target_gap=target_gap,
+                interpretation=interpretation,
+            )
+        )
+    return BodyMeasurementAnalyticsResponse(
+        months=months,
+        start=start,
+        end=end,
+        primary_goal=str(goals.get("primary_goal") or "") or None,
+        items=items,
+    )
+
+
+async def get_analytics(
+    session: AsyncSession,
+    user: User,
+    *,
+    months: int,
+    end: date,
+) -> BodyMeasurementAnalyticsResponse:
+    start = _period_start(end, months)
+    rows = await list_range(session, user, start, end)
+    return build_analytics(rows, user, months=months, start=start, end=end)
 
 
 async def get_for_day(

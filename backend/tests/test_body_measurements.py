@@ -51,6 +51,71 @@ def test_body_measurement_daily_route_supports_confirmed_ui_delete() -> None:
     assert set(app.openapi()["paths"]["/measurements/daily"]) == {"get", "put", "delete"}
 
 
+def test_measurement_analytics_route_is_available() -> None:
+    assert "get" in app.openapi()["paths"]["/measurements/analytics"]
+
+
+def test_measurement_analytics_uses_field_baselines_and_explicit_weight_goal() -> None:
+    user = User(
+        id=uuid.uuid4(),
+        anthropometry={},
+        goals={"primary_goal": "lose_fat", "target_weight_kg": 75},
+    )
+    rows = [
+        BodyMeasurement(user_id=user.id, date=date(2026, 5, 28), weight_kg=82, chest_cm=101),
+        BodyMeasurement(user_id=user.id, date=date(2026, 6, 28), waist_cm=88),
+        BodyMeasurement(user_id=user.id, date=date(2026, 8, 28), weight_kg=79, chest_cm=100),
+    ]
+
+    result = body_measurements.build_analytics(
+        rows,
+        user,
+        months=3,
+        start=date(2026, 5, 28),
+        end=date(2026, 8, 28),
+    )
+
+    by_field = {item.field: item for item in result.items}
+    assert result.primary_goal == "lose_fat"
+    assert by_field["weight_kg"].baseline_value == 82
+    assert by_field["weight_kg"].latest_value == 79
+    assert by_field["weight_kg"].delta == -3
+    assert by_field["weight_kg"].percent_change == -3.7
+    assert by_field["weight_kg"].target_value == 75
+    assert by_field["weight_kg"].target_gap == 4
+    assert by_field["weight_kg"].interpretation == "Значение стало ближе к заданной цели"
+    assert by_field["chest_cm"].baseline_date == date(2026, 5, 28)
+    assert by_field["chest_cm"].latest_date == date(2026, 8, 28)
+    assert by_field["chest_cm"].interpretation == "Изменение показано без оценки результата"
+    assert by_field["waist_cm"].points == 1
+    assert by_field["hips_cm"].points == 0
+
+
+def test_measurement_analytics_does_not_call_weight_loss_a_success_without_target() -> None:
+    user = User(id=uuid.uuid4(), anthropometry={}, goals={"primary_goal": "lose_fat"})
+    rows = [
+        BodyMeasurement(user_id=user.id, date=date(2026, 7, 28), weight_kg=82),
+        BodyMeasurement(user_id=user.id, date=date(2026, 8, 28), weight_kg=80),
+    ]
+
+    result = body_measurements.build_analytics(
+        rows,
+        user,
+        months=1,
+        start=date(2026, 7, 28),
+        end=date(2026, 8, 28),
+    )
+
+    weight = next(item for item in result.items if item.field == "weight_kg")
+    assert weight.target_value is None
+    assert weight.interpretation == "Изменение показано без оценки результата"
+
+
+def test_measurement_period_start_uses_calendar_months() -> None:
+    assert body_measurements._period_start(date(2026, 3, 31), 1) == date(2026, 2, 28)
+    assert body_measurements._period_start(date(2026, 8, 28), 12) == date(2025, 8, 28)
+
+
 @pytest.mark.asyncio
 async def test_save_body_measurement_updates_profile_snapshot() -> None:
     user = User(id=uuid.uuid4(), anthropometry={"height_cm": 180}, goals={})

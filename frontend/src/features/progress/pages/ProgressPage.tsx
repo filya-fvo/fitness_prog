@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 
 import { analyzeProgress } from "@/api/ai";
-import { fetchBodyMeasurementRange, type BodyMeasurement } from "@/api/bodyMeasurements";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchDailyMetricsRange, type DailyMetric } from "@/api/dailyMetrics";
@@ -60,8 +59,6 @@ export function ProgressPage() {
   const [nutritionError, setNutritionError] = useState<string | null>(null);
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [dailyMetricsError, setDailyMetricsError] = useState<string | null>(null);
-  const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
-  const [bodyMeasurementsError, setBodyMeasurementsError] = useState<string | null>(null);
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
@@ -75,7 +72,6 @@ export function ProgressPage() {
       setError(null);
       setNutritionError(null);
       setDailyMetricsError(null);
-      setBodyMeasurementsError(null);
       try {
         const cached = await readCachedWorkouts();
         const cachedEx = await readCachedExercises();
@@ -87,7 +83,7 @@ export function ProgressPage() {
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range, ex, metrics, measurements] = await Promise.all([
+          const [items, range, ex, metrics] = await Promise.all([
             fetchWorkoutHistory(),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
@@ -104,12 +100,6 @@ export function ProgressPage() {
               }
               return null;
             }),
-            fetchBodyMeasurementRange({ days: 3650 }).catch((err: unknown) => {
-              if (!cancelled) {
-                setBodyMeasurementsError(toUserMessage(err, "Не удалось загрузить замеры"));
-              }
-              return null;
-            }),
           ]);
           await cacheWorkouts(items);
           if (ex?.items?.length) {
@@ -121,7 +111,6 @@ export function ProgressPage() {
             setSource("network");
             if (range) setNutrition(buildNutritionBalance(range));
             if (metrics) setDailyMetrics(metrics.days);
-            if (measurements) setBodyMeasurements(measurements.items);
           }
         } else if (cached.length) {
           if (!cancelled) {
@@ -246,7 +235,7 @@ export function ProgressPage() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <WellnessSummary days={dailyMetrics} error={dailyMetricsError} />
-        <BodyMeasurementsSummary items={bodyMeasurements} error={bodyMeasurementsError} />
+        <BodyMeasurementsSummary />
         <WeeklyOverview
           overview={weekOverview}
           onAskAi={() => void askWeekAi()}

@@ -12,6 +12,7 @@ from app.deps import get_current_user
 from app.models.body_measurement import BodyMeasurement
 from app.models.user import User
 from app.schemas.body_measurements import (
+    BodyMeasurementAnalyticsResponse,
     BodyMeasurementRangeResponse,
     BodyMeasurementResponse,
     BodyMeasurementUpdate,
@@ -87,4 +88,21 @@ async def get_measurement_range(
         start=start_day,
         end=end_day,
         items=[_response(row, row.date) for row in rows],
+    )
+
+
+@router.get("/analytics", response_model=BodyMeasurementAnalyticsResponse)
+async def get_measurement_analytics(
+    months: int = Query(default=3),
+    end: date | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BodyMeasurementAnalyticsResponse:
+    if months not in {1, 3, 6, 12}:
+        raise HTTPException(status_code=422, detail="Доступны периоды 1, 3, 6 или 12 месяцев")
+    return await body_measurements.get_analytics(
+        session,
+        user,
+        months=months,
+        end=end or date.today(),
     )

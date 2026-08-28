@@ -24,11 +24,36 @@ const bodyMeasurementRangeSchema = z.object({
   items: z.array(bodyMeasurementSchema),
 });
 
+const bodyMeasurementAnalyticsItemSchema = z.object({
+  field: z.string(),
+  points: z.number().int().nonnegative(),
+  baseline_value: z.number().nullable(),
+  baseline_date: z.string().nullable(),
+  latest_value: z.number().nullable(),
+  latest_date: z.string().nullable(),
+  delta: z.number().nullable(),
+  percent_change: z.number().nullable(),
+  target_value: z.number().nullable(),
+  target_gap: z.number().nullable(),
+  interpretation: z.string(),
+});
+
+const bodyMeasurementAnalyticsSchema = z.object({
+  months: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)]),
+  start: z.string(),
+  end: z.string(),
+  primary_goal: z.string().nullable(),
+  items: z.array(bodyMeasurementAnalyticsItemSchema),
+});
+
 export type BodyMeasurement = z.infer<typeof bodyMeasurementSchema>;
 export type BodyMeasurementField = Exclude<
   keyof BodyMeasurement,
   "id" | "date" | "note" | "sources"
 >;
+export type BodyMeasurementPeriod = 1 | 3 | 6 | 12;
+export type BodyMeasurementAnalytics = z.infer<typeof bodyMeasurementAnalyticsSchema>;
+export type BodyMeasurementAnalyticsItem = z.infer<typeof bodyMeasurementAnalyticsItemSchema>;
 
 export async function fetchBodyMeasurement(date?: string): Promise<BodyMeasurement> {
   const { data } = await apiClient.get("/measurements/daily", {
@@ -57,4 +82,16 @@ export async function fetchBodyMeasurementRange(opts?: {
     params: { days: opts?.days ?? 365, end: opts?.end },
   });
   return bodyMeasurementRangeSchema.parse(data);
+}
+
+export async function fetchBodyMeasurementAnalytics(opts: {
+  months: BodyMeasurementPeriod;
+  end: string;
+  signal?: AbortSignal;
+}): Promise<BodyMeasurementAnalytics> {
+  const { data } = await apiClient.get("/measurements/analytics", {
+    params: { months: opts.months, end: opts.end },
+    signal: opts.signal,
+  });
+  return bodyMeasurementAnalyticsSchema.parse(data);
 }

@@ -122,7 +122,7 @@ export function MeasurementsPage() {
     try {
       const [current, range] = await Promise.all([
         fetchBodyMeasurement(date),
-        fetchBodyMeasurementRange({ days: 3650, end: todayISO() }),
+        fetchBodyMeasurementRange({ days: 366, end: todayISO() }),
       ]);
       const next: Record<string, string> = {};
       for (const field of BODY_MEASURE_FIELDS) {
