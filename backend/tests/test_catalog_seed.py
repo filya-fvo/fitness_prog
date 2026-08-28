@@ -60,6 +60,48 @@ def test_programs_only_reference_known_exercises() -> None:
     assert not bad, bad[:20]
 
 
+def test_regular_programs_cover_the_full_sex_location_level_matrix() -> None:
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    regular = [
+        program
+        for program in programs
+        if not (program.get("structure") or {}).get("limitations")
+    ]
+    expected = {
+        (sex, location, level)
+        for sex in ("male", "female")
+        for location in ("gym", "home", "outdoor")
+        for level in ("beginner", "intermediate", "advanced")
+    }
+    actual = {
+        (
+            program["structure"]["sex"][0],
+            program["structure"]["location"],
+            program["structure"]["level"],
+        )
+        for program in regular
+    }
+    assert expected <= actual
+
+    outdoor_advanced = [
+        program
+        for program in regular
+        if program["structure"]["location"] == "outdoor"
+        and program["structure"]["level"] == "advanced"
+    ]
+    assert len(outdoor_advanced) == 4
+    for sex in ("male", "female"):
+        variants = [
+            program for program in outdoor_advanced
+            if program["structure"]["sex"] == [sex]
+        ]
+        assert {program["workout_type"] for program in variants} == {
+            "strength", "conditioning",
+        }
+        assert all(program["structure"]["days_per_week"] == 3 for program in variants)
+        assert all(program["structure"]["equipment"] == ["bodyweight"] for program in variants)
+
+
 def test_gym_no_knee_programs_use_loaded_knee_sparing_leg_variants() -> None:
     exercise_rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
     exercises = {row["name_ru"]: row for row in exercise_rows}

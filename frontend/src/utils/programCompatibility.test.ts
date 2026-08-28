@@ -17,6 +17,8 @@ const program: Program = {
     sex: ["male"],
     equipment: ["barbell", "machines"],
     limitations: [],
+    days_per_week: 4,
+    schedule: [{}, {}, {}, {}],
   },
 };
 
@@ -54,5 +56,14 @@ describe("program compatibility", () => {
     });
     expect(result[0]).toMatchObject({ field: "limitations", critical: true });
     expect(result[0]?.message).toContain("плеч");
+  });
+
+  it("warns when the program has a different weekly frequency", () => {
+    const result = compareProgramToProfile(program, { daysPerWeek: 3 });
+    expect(result).toContainEqual({
+      field: "days",
+      critical: false,
+      message: "4 дн./нед. вместо выбранных 3",
+    });
   });
 });

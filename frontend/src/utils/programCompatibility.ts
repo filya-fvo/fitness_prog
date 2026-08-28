@@ -3,6 +3,7 @@ import { enumLabel } from "@/utils/localization";
 import {
   levelOf,
   programEquipment,
+  programDays,
   programLimitations,
   programLocation,
   programSex,
@@ -10,7 +11,7 @@ import {
 } from "@/utils/programRecommend";
 
 export type ProgramMismatch = {
-  field: "limitations" | "location" | "equipment" | "level" | "sex";
+  field: "limitations" | "location" | "equipment" | "level" | "days" | "sex";
   message: string;
   critical: boolean;
 };
@@ -70,6 +71,16 @@ export function compareProgramToProfile(
       field: "level",
       critical: false,
       message: `уровень: ${enumLabel(actualLevel)} вместо «${enumLabel(wantedLevel)}»`,
+    });
+  }
+
+  const wantedDays = profile.daysPerWeek;
+  const actualDays = programDays(program);
+  if (wantedDays && actualDays && wantedDays !== actualDays) {
+    result.push({
+      field: "days",
+      critical: false,
+      message: `${actualDays} дн./нед. вместо выбранных ${wantedDays}`,
     });
   }
 

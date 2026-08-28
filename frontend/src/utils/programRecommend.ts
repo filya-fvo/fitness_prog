@@ -70,6 +70,36 @@ function normalizeLimitations(input: RecommendInput["limitations"]): string[] {
   return asStringArray(input);
 }
 
+function matchesCoreProfile(program: Program, input: RecommendInput): boolean {
+  const sex = (input.sex || "").toLowerCase();
+  const allowedSex = programSex(program);
+  if (
+    sex
+    && allowedSex.length
+    && !allowedSex.includes(sex)
+    && !allowedSex.includes("any")
+    && !allowedSex.includes("unisex")
+  ) {
+    return false;
+  }
+
+  const location = (input.location || "").toLowerCase();
+  if (location && programLocation(program) && programLocation(program) !== location) return false;
+
+  const level = (input.level || "").toLowerCase();
+  if (level && levelOf(program) && levelOf(program) !== level) return false;
+
+  const requiredLimitations = normalizeLimitations(input.limitations);
+  const supportedLimitations = new Set(programLimitations(program));
+  if (requiredLimitations.some((item) => !supportedLimitations.has(item))) return false;
+  if (!requiredLimitations.length && supportedLimitations.size) return false;
+
+  const equipment = new Set((input.equipment || []).map((item) => item.toLowerCase()));
+  return !programEquipment(program).some(
+    (item) => item !== "bodyweight" && equipment.size > 0 && !equipment.has(item),
+  );
+}
+
 export type ProgramScoreBreakdown = {
   program: Program;
   score: number;
@@ -185,7 +215,15 @@ export function scorePrograms(
   const scored = programs
     .map((p) => scoreProgram(p, input))
     .filter((x) => x.score > -5000);
-  scored.sort((a, b) => b.score - a.score || a.program.name.localeCompare(b.program.name, "ru"));
+  const requestedDays = input.daysPerWeek ?? 3;
+  scored.sort((a, b) => {
+    if (matchesCoreProfile(a.program, input) && matchesCoreProfile(b.program, input)) {
+      const aExactDays = programDays(a.program) === requestedDays;
+      const bExactDays = programDays(b.program) === requestedDays;
+      if (aExactDays !== bExactDays) return aExactDays ? -1 : 1;
+    }
+    return b.score - a.score || a.program.name.localeCompare(b.program.name, "ru");
+  });
   const top = scored.slice(0, Math.max(1, limit));
   return top.length ? top : programs.slice(0, Math.max(1, limit)).map((p) => scoreProgram(p, input));
 }

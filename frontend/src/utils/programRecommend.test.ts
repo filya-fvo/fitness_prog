@@ -208,6 +208,41 @@ describe("programRecommend", () => {
     expect(top[0]?.name).toBe("F Home No Knee DB");
   });
 
+  it("keeps an exact-days core match above a higher goal-type score", () => {
+    const candidates = [
+      prog({
+        id: "days-4",
+        name: "Preferred type, wrong days",
+        workout_type: "hypertrophy",
+        level: "advanced",
+        structure: {
+          sex: ["female"], location: "outdoor", equipment: ["bodyweight"],
+          limitations: [], days_per_week: 4, schedule: [{}, {}, {}, {}],
+        },
+      }),
+      prog({
+        id: "days-3",
+        name: "Exact days",
+        workout_type: "strength",
+        level: "advanced",
+        structure: {
+          sex: ["female"], location: "outdoor", equipment: ["bodyweight"],
+          limitations: [], days_per_week: 3, schedule: [{}, {}, {}],
+        },
+      }),
+    ];
+
+    const top = recommendPrograms(candidates, {
+      primaryGoal: "gain_muscle",
+      level: "advanced",
+      daysPerWeek: 3,
+      equipment: ["bodyweight"],
+      sex: "female",
+      location: "outdoor",
+    });
+    expect(top[0]?.name).toBe("Exact days");
+  });
+
   it("pickTodayDayIndex cycles within program length", () => {
     const p = catalog[1]!;
     const idx = pickTodayDayIndex(p, new Date("2026-07-22T12:00:00"));
