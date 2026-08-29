@@ -64,39 +64,52 @@ export function AdminUserPage() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [communicationsError, setCommunicationsError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<string | null>("summary");
-  const started = useRef(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [communicationsLoading, setCommunicationsLoading] = useState(false);
+  const startedUserId = useRef<string | null>(null);
+  const detailsStartedUserId = useRef<string | null>(null);
 
   const loadSummary = useCallback(async () => {
-    setLoading("summary");
+    setSummaryLoading(true);
     setSummaryError(null);
     try { setSummary(await fetchAdminUserSummary(userId)); }
     catch (error) { setSummaryError(toUserMessage(error, "Не удалось загрузить карточку")); }
-    finally { setLoading(null); }
+    finally { setSummaryLoading(false); }
   }, [userId]);
 
   const loadActivity = useCallback(async () => {
-    setLoading("activity");
+    setActivityLoading(true);
     setActivityError(null);
     try { setActivity(await fetchAdminUserActivity(userId)); }
     catch (error) { setActivityError(toUserMessage(error, "Не удалось загрузить активность")); }
-    finally { setLoading(null); }
+    finally { setActivityLoading(false); }
   }, [userId]);
 
   const loadCommunications = useCallback(async () => {
-    setLoading("communications");
+    setCommunicationsLoading(true);
     setCommunicationsError(null);
     try { setCommunications(await fetchAdminUserCommunications(userId)); }
     catch (error) { setCommunicationsError(toUserMessage(error, "Не удалось загрузить настройки связи")); }
-    finally { setLoading(null); }
+    finally { setCommunicationsLoading(false); }
   }, [userId]);
 
   useEffect(() => {
-    if (!isAuthLoading && allowed && !started.current) {
-      started.current = true;
+    if (!isAuthLoading && allowed && startedUserId.current !== userId) {
+      startedUserId.current = userId;
+      detailsStartedUserId.current = null;
+      setSummary(null);
+      setActivity(null);
+      setCommunications(null);
       void loadSummary();
     }
-  }, [allowed, isAuthLoading, loadSummary]);
+  }, [allowed, isAuthLoading, loadSummary, userId]);
+
+  useEffect(() => {
+    if (!summary || detailsStartedUserId.current === summary.id) return;
+    detailsStartedUserId.current = summary.id;
+    void Promise.all([loadActivity(), loadCommunications()]);
+  }, [loadActivity, loadCommunications, summary]);
 
   if (isAuthLoading) return <section><Header title="Карточка пользователя" fallbackTo="/admin" /><PageSkeleton cards={4} /></section>;
   if (!allowed) return (
@@ -105,7 +118,7 @@ export function AdminUserPage() {
       <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Раздел доступен только администраторам.<Link to="/" className="mt-3 block text-tg-link">На главную</Link></div>
     </section>
   );
-  if (!summary && loading === "summary") return <section><Header title="Карточка пользователя" fallbackTo="/admin" /><PageSkeleton cards={4} /></section>;
+  if (!summary && summaryLoading) return <section><Header title="Карточка пользователя" fallbackTo="/admin" /><PageSkeleton cards={4} /></section>;
   if (!summary) return (
     <section>
       <Header title="Карточка пользователя" fallbackTo="/admin" />
@@ -147,7 +160,7 @@ export function AdminUserPage() {
         </dl>
       </section>
 
-      <LoadBlock title="Тренировки и записи" loaded={activity != null} loading={loading === "activity"} error={activityError} onLoad={() => void loadActivity()}>
+      <LoadBlock title="Тренировки и записи" loaded={activity != null} loading={activityLoading} error={activityError} onLoad={() => void loadActivity()}>
         {activity ? <div className="space-y-3 text-sm">
           <p className="rounded-xl bg-tg-bg p-3">Следующая: {activity.next_workout ? `${activity.next_workout.target_date} · ${activity.next_workout.start_time.slice(0, 5)} · ${activity.next_workout.title}` : "не запланирована"}</p>
           <p className="text-xs text-tg-hint">Тренировки {activity.counts.completed_workouts}/{activity.counts.workouts} · питание {activity.counts.nutrition_logs} · замеры {activity.counts.body_measurements} · записи веса {activity.counts.weight_entries}</p>
@@ -156,9 +169,9 @@ export function AdminUserPage() {
         </div> : null}
       </LoadBlock>
 
-      <LoadBlock title="Связь и уведомления" loaded={communications != null} loading={loading === "communications"} error={communicationsError} onLoad={() => void loadCommunications()}>
+      <LoadBlock title="Связь и уведомления" loaded={communications != null} loading={communicationsLoading} error={communicationsError} onLoad={() => void loadCommunications()}>
         {communications ? <div className="space-y-3 text-sm">
-          <p className="text-xs text-tg-hint">Telegram: {communications.telegram_available ? "доступен" : "не подключён"} · Web Push: {communications.web_push.active}/{communications.web_push.total} · часовой пояс: {communications.timezone}</p>
+          <p className="text-xs text-tg-hint">Telegram: {communications.telegram_available ? "доступен" : "не подключён"} · Web Push: {communications.web_push.active}/{communications.web_push.total} · Email: {!communications.email_available ? "не подключён" : communications.email_service_messages_allowed ? "разрешён" : "нет согласия"} · часовой пояс: {communications.timezone}</p>
           {communications.categories.map((item) => <div key={item.key} className="flex justify-between gap-3 rounded-xl bg-tg-bg p-3"><div><p className="font-medium">{item.title}</p><p className="text-xs text-tg-hint">{item.details}</p></div><span className={item.enabled ? "text-emerald-600" : "text-tg-hint"}>{item.enabled ? "Вкл." : "Выкл."}</span></div>)}
           <div><h3 className="text-xs font-semibold uppercase text-tg-hint">Последние действия</h3>{communications.recent_events.map((item) => <div key={item.id} className="mt-2 rounded-xl bg-tg-bg p-3"><p>{item.description}</p><p className="mt-1 text-xs text-tg-hint">{item.actor_label} · {formatDate(item.created_at)}</p></div>)}{!communications.recent_events.length ? <p className="mt-2 text-tg-hint">Действий пока нет.</p> : null}</div>
         </div> : null}
@@ -169,7 +182,12 @@ export function AdminUserPage() {
         displayName={summary.display_name}
         currentUserId={currentUser?.id}
         telegramAvailable={summary.telegram_id != null}
+        emailAvailable={communications?.email_available ?? summary.auth_email != null}
+        emailAllowed={communications?.email_service_messages_allowed ?? false}
+        webPushActive={communications?.web_push.active ?? 0}
         remindersEnabled={communications?.reminders_enabled ?? null}
+        communicationsLoading={communicationsLoading}
+        communicationsError={communicationsError}
         onCommunicationsChanged={loadCommunications}
         onDataChanged={async () => {
           await loadSummary();

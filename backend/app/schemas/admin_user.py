@@ -115,6 +115,8 @@ class AdminUserSafeEvent(BaseModel):
 
 class AdminUserCommunications(BaseModel):
     telegram_available: bool
+    email_available: bool
+    email_service_messages_allowed: bool
     reminders_enabled: bool
     timezone: str
     categories: list[AdminNotificationCategory] = Field(default_factory=list)
@@ -124,6 +126,8 @@ class AdminUserCommunications(BaseModel):
 
 class AdminServiceMessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
+    channel: Literal["telegram", "web_push", "email"] = "telegram"
+    confirmed_user_consent: bool = False
 
     @field_validator("text")
     @classmethod

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 import httpx
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.core.config import Settings, get_settings
@@ -30,6 +31,11 @@ class AddCommitSession:
 
     async def commit(self) -> None:
         self.commits += 1
+
+
+class ScalarAddCommitSession(AddCommitSession):
+    async def scalar(self, _statement):
+        return uuid.uuid4()
 
 
 class AuthSession:
@@ -126,6 +132,107 @@ async def test_service_message_is_escaped_and_never_written_to_audit(monkeypatch
     assert raw not in " ".join(event.description for event in session.added)
     assert raw not in str([event.before_data for event in session.added])
     assert raw not in str([event.after_data for event in session.added])
+
+
+@pytest.mark.asyncio
+async def test_service_email_requires_and_records_user_consent(monkeypatch) -> None:
+    user = SimpleNamespace(
+        id=uuid.uuid4(),
+        telegram_id=None,
+        auth_email="athlete@example.test",
+        goals={
+            "notification_settings": {
+                "service_messages": {"email_enabled": True},
+            },
+        },
+    )
+    session = AddCommitSession()
+    sent: dict[str, str] = {}
+
+    async def fake_user(_session, _user_id):
+        return user
+
+    async def fake_email(*, to_email: str, message: str, **_kwargs):
+        sent.update(to_email=to_email, message=message)
+        return True
+
+    monkeypatch.setattr(admin_user_actions.admin_users, "get_user_or_404", fake_user)
+    monkeypatch.setattr(admin_user_actions, "send_service_email", fake_email)
+
+    with pytest.raises(HTTPException) as missing_consent:
+        await admin_user_actions.send_service_message(  # type: ignore[arg-type]
+            session,
+            user.id,
+            text="Проверьте настройки",
+            channel="email",
+            confirmed_user_consent=False,
+            settings=Settings(jwt_secret="test"),
+            context=AuditContext(uuid.uuid4(), uuid.uuid4()),
+        )
+    assert missing_consent.value.status_code == 400
+
+    result = await admin_user_actions.send_service_message(  # type: ignore[arg-type]
+        session,
+        user.id,
+        text="Проверьте настройки",
+        channel="email",
+        confirmed_user_consent=True,
+        settings=Settings(jwt_secret="test"),
+        context=AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+
+    assert sent == {
+        "to_email": "athlete@example.test",
+        "message": "Проверьте настройки",
+    }
+    assert result.detail == "Сообщение отправлено через email."
+    assert session.commits == 1
+    assert all(event.after_data.get("channel") == "email" for event in session.added)
+
+
+@pytest.mark.asyncio
+async def test_service_web_push_requires_consent_and_active_subscription(monkeypatch) -> None:
+    user = SimpleNamespace(id=uuid.uuid4(), telegram_id=None)
+    session = ScalarAddCommitSession()
+    sent: dict[str, object] = {}
+
+    async def fake_user(_session, _user_id):
+        return user
+
+    async def fake_push(_session, _settings, **kwargs):
+        sent.update(kwargs)
+        return 1
+
+    monkeypatch.setattr(admin_user_actions.admin_users, "get_user_or_404", fake_user)
+    monkeypatch.setattr(admin_user_actions, "send_user_web_push", fake_push)
+
+    with pytest.raises(HTTPException) as missing_consent:
+        await admin_user_actions.send_service_message(  # type: ignore[arg-type]
+            session,
+            user.id,
+            text="Изменения готовы",
+            channel="web_push",
+            confirmed_user_consent=False,
+            settings=Settings(jwt_secret="test"),
+            context=AuditContext(uuid.uuid4(), uuid.uuid4()),
+        )
+    assert missing_consent.value.status_code == 400
+
+    result = await admin_user_actions.send_service_message(  # type: ignore[arg-type]
+        session,
+        user.id,
+        text="Изменения готовы",
+        channel="web_push",
+        confirmed_user_consent=True,
+        settings=Settings(jwt_secret="test"),
+        context=AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+
+    assert sent["user_id"] == user.id
+    assert sent["body"] == "Изменения готовы"
+    assert result.detail == "Сообщение отправлено через Web Push."
+    assert session.commits == 1
+    assert all(event.after_data.get("channel") == "web_push" for event in session.added)
 
 
 def test_admin_user_routes_and_export_allowlist() -> None:

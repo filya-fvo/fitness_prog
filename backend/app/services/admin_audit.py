@@ -218,12 +218,19 @@ async def record_notification_delivery(
     user_id: uuid.UUID,
     status: NotificationStatus,
     requested: bool,
+    channel: str = "telegram",
 ) -> None:
+    channel_labels = {
+        "telegram": "Telegram",
+        "web_push": "Web Push",
+        "email": "email",
+    }
+    channel_label = channel_labels.get(channel, "выбранный канал")
     descriptions = {
-        "sent": "Служебное уведомление доставлено в Telegram.",
-        "failed": "Служебное уведомление не доставлено в Telegram.",
+        "sent": f"Служебное уведомление доставлено через {channel_label}.",
+        "failed": f"Служебное уведомление не доставлено через {channel_label}.",
         "not_requested": "Отправка служебного уведомления не запрашивалась.",
-        "unavailable": "У пользователя нет доступного Telegram-канала.",
+        "unavailable": f"У пользователя нет доступного канала {channel_label}.",
         "pending": "Служебное уведомление ожидает отправки.",
     }
     add_event(
@@ -234,7 +241,7 @@ async def record_notification_delivery(
         object_id=user_id,
         result="failure" if status == "failed" else "success",
         description=descriptions[status],
-        after=user_change_snapshot(channel="telegram", requested=requested),
+        after=user_change_snapshot(channel=channel, requested=requested),
         notification_status=status,
     )
     await session.commit()

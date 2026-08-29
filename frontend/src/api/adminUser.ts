@@ -84,6 +84,8 @@ export const adminUserActivitySchema = z.object({
 
 export const adminUserCommunicationsSchema = z.object({
   telegram_available: z.boolean(),
+  email_available: z.boolean().default(false),
+  email_service_messages_allowed: z.boolean().default(false),
   reminders_enabled: z.boolean(),
   timezone: z.string(),
   categories: z.array(z.object({
@@ -165,8 +167,18 @@ async function postAction(path: string, body?: object, method: "post" | "patch" 
   }
 }
 
-export const sendAdminUserMessage = (id: string, text: string) =>
-  postAction(`/admin/users/${id}/message`, { text });
+export type AdminMessageChannel = "telegram" | "web_push" | "email";
+
+export const sendAdminUserMessage = (
+  id: string,
+  text: string,
+  channel: AdminMessageChannel,
+  confirmedUserConsent: boolean,
+) => postAction(`/admin/users/${id}/message`, {
+  text,
+  channel,
+  confirmed_user_consent: confirmedUserConsent,
+});
 export const resendAdminUserGuide = (id: string, kind: "start" | "guide") =>
   postAction(`/admin/users/${id}/resend-guide`, { kind });
 export const toggleAdminUserNotifications = (id: string, enabled: boolean) =>

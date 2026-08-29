@@ -70,11 +70,13 @@ describe("admin user API", () => {
       ok: true, user_id: id, action: "notifications_disabled", notified: false, meta: {},
     } });
 
-    await sendAdminUserMessage(id, "Здравствуйте");
+    await sendAdminUserMessage(id, "Здравствуйте", "web_push", true);
     await toggleAdminUserNotifications(id, false);
 
     expect(apiClient.post).toHaveBeenCalledWith(`/admin/users/${id}/message`, {
       text: "Здравствуйте",
+      channel: "web_push",
+      confirmed_user_consent: true,
     });
     expect(apiClient.patch).toHaveBeenCalledWith(`/admin/users/${id}/notifications`, {
       enabled: false,

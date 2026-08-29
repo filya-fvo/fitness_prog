@@ -6,10 +6,21 @@ from app.services.notification_prefs import (
     apply_state_updates,
     due_notifications,
     format_calorie_reminder_text,
+    merge_notification_settings,
     set_water_ml_for_day,
     water_ml_for_day,
     water_slots,
 )
+
+
+def test_service_email_consent_is_opt_in_and_preserved() -> None:
+    defaults = merge_notification_settings(None)
+    opted_in = merge_notification_settings(
+        {"service_messages": {"email_enabled": True}}
+    )
+
+    assert defaults["service_messages"]["email_enabled"] is False
+    assert opted_in["service_messages"]["email_enabled"] is True
 
 
 def test_workout_due_on_configured_day() -> None:

@@ -31,6 +31,7 @@ import { DecimalInput } from "@/components/DecimalInput";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
+import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
 import { WorkoutReminderSettings } from "@/features/profile/components/WorkoutReminderSettings";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { fetchExercises } from "@/api/exercises";
@@ -358,6 +359,7 @@ export function ProfilePage() {
   const [intakes, setIntakes] = useState<SupplementIntakeDay | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushAvailable, setPushAvailable] = useState(false);
+  const [serviceEmailEnabled, setServiceEmailEnabled] = useState(false);
 
   const [tz, setTz] = useState("Europe/Moscow");
   const [measEnabled, setMeasEnabled] = useState(true);
@@ -532,6 +534,8 @@ setAuthEmail(p.auth_email ?? null);
             ? cal.times.map((x) => String(x)).join(", ")
             : String(cal.times || "14:00, 20:00");
           setCalTimes(times || "14:00, 20:00");
+          const serviceMessages = asRecord(s.service_messages);
+          setServiceEmailEnabled(Boolean(serviceMessages.email_enabled));
         }
       } catch (err) {
         if (!cancelled) setError(toUserMessage(err, "Не удалось загрузить профиль"));
@@ -909,6 +913,9 @@ setAuthEmail(p.auth_email ?? null);
         calories: {
           enabled: calEnabled,
           times: calTimesList.length ? calTimesList : ["14:00", "20:00"],
+        },
+        service_messages: {
+          email_enabled: Boolean(authEmail && serviceEmailEnabled),
         },
       };
       await saveNotificationSettings(settings);
@@ -2477,6 +2484,13 @@ setAuthEmail(p.auth_email ?? null);
               </p>
             ) : null}
           </div>
+
+          <ServiceMessageConsentCard
+            emailAvailable={Boolean(authEmail)}
+            emailEnabled={serviceEmailEnabled}
+            disabled={saving}
+            onEmailEnabledChange={setServiceEmailEnabled}
+          />
 
           <button
             type="button"

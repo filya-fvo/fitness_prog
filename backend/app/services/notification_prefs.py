@@ -109,6 +109,9 @@ def default_notification_settings() -> dict[str, Any]:
             "enabled": False,
             "times": ["14:00", "20:00"],
         },
+        "service_messages": {
+            "email_enabled": False,
+        },
     }
 
 
@@ -117,7 +120,14 @@ def merge_notification_settings(raw: dict[str, Any] | None) -> dict[str, Any]:
     if not raw:
         return base
     out = {**base, **raw}
-    for key in ("measurements", "workouts", "supplements", "water", "calories"):
+    for key in (
+        "measurements",
+        "workouts",
+        "supplements",
+        "water",
+        "calories",
+        "service_messages",
+    ):
         if isinstance(raw.get(key), dict):
             out[key] = {**base.get(key, {}), **raw[key]}
     workouts = out.get("workouts") or {}

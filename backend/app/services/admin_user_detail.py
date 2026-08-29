@@ -356,6 +356,10 @@ async def get_communications(
     success_dates = [item.last_success_at for item in push_rows if item.last_success_at]
     return AdminUserCommunications(
         telegram_available=user.telegram_id is not None,
+        email_available=bool(user.auth_email),
+        email_service_messages_allowed=bool(
+            _mapping(settings.get("service_messages")).get("email_enabled")
+        ),
         reminders_enabled=any(item.enabled for item in categories),
         timezone=str(settings.get("timezone") or "Europe/Moscow"),
         categories=categories,

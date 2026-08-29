@@ -15,7 +15,7 @@ const adminProfile = {
   onboarding_completed: true,
 };
 
-test("admin user card loads blocks and confirms notification change", async ({ page }) => {
+test("admin user card loads detail blocks automatically and confirms notification change", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "admin-e2e-token"));
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
@@ -66,6 +66,8 @@ test("admin user card loads blocks and confirms notification change", async ({ p
     contentType: "application/json",
     body: JSON.stringify({
       telegram_available: true,
+      email_available: true,
+      email_service_messages_allowed: true,
       reminders_enabled: true,
       timezone: "Europe/Moscow",
       categories: [{ key: "workouts", title: "Тренировки", enabled: true, details: "18:30" }],
@@ -90,10 +92,11 @@ test("admin user card loads blocks and confirms notification change", async ({ p
   await expect(page.getByRole("heading", { name: "Иван Тестовый" })).toBeVisible();
   await expect(page.getByText("Telegram + Email")).toBeVisible();
 
-  await page.getByRole("button", { name: "Загрузить" }).first().click();
   await expect(page.getByText(/Грудь \+ спина/)).toBeVisible();
-  await page.getByRole("button", { name: "Загрузить" }).click();
   await expect(page.getByText("Web Push: 1/1", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Канал сообщения")).toHaveValue("telegram");
+  await expect(page.getByRole("option", { name: "Web Push — устройств: 1" })).toBeEnabled();
+  await expect(page.getByRole("option", { name: "Email" })).toBeEnabled();
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Выключить все напоминания" }).click();

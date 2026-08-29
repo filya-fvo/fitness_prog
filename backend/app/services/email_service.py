@@ -67,6 +67,25 @@ def _build_feedback_message(
     return msg
 
 
+def _build_service_message(
+    *,
+    settings: Settings,
+    to_email: str,
+    message: str,
+) -> EmailMessage:
+    msg = EmailMessage()
+    msg["Subject"] = "Сообщение от поддержки Fil Fit"
+    msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+    msg["To"] = to_email
+    msg.set_content(
+        "Здравствуйте!\n\n"
+        "Сообщение от поддержки Fil Fit:\n\n"
+        f"{message}\n\n"
+        "Управлять согласием на такие письма можно в настройках уведомлений.\n"
+    )
+    return msg
+
+
 def _send_smtp_sync(settings: Settings, msg: EmailMessage) -> None:
     host = settings.smtp_host
     port = int(settings.smtp_port)
@@ -140,3 +159,30 @@ async def send_feedback_email(
     except Exception:
         logger.exception("feedback_email_send_failed")
         raise
+
+
+async def send_service_email(
+    *,
+    settings: Settings,
+    to_email: str,
+    message: str,
+) -> bool:
+    """Deliver one admin service message after verified user opt-in."""
+    if not settings.smtp_password or not to_email:
+        logger.warning("service_message_smtp_not_configured")
+        return False
+    email = _build_service_message(
+        settings=settings,
+        to_email=to_email,
+        message=message,
+    )
+    try:
+        await asyncio.to_thread(_send_smtp_sync, settings, email)
+        logger.info("service_message_email_sent")
+        return True
+    except Exception as exc:
+        logger.warning(
+            "service_message_email_failed error_type={}",
+            type(exc).__name__,
+        )
+        return False

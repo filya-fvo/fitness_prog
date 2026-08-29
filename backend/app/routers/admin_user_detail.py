@@ -69,6 +69,8 @@ async def admin_user_message(
         session,
         user_id,
         text=body.text,
+        channel=body.channel,
+        confirmed_user_consent=body.confirmed_user_consent,
         settings=settings,
         context=admin_audit.AuditContext(admin.id, correlation_id),
     )
