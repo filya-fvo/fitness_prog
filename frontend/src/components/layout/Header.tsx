@@ -8,6 +8,7 @@ type HeaderProps = {
   subtitle?: string;
   showBack?: boolean;
   fallbackTo?: string;
+  beforeBack?: () => boolean | Promise<boolean>;
 };
 
 function BrandMark() {
@@ -27,19 +28,20 @@ function BackIcon() {
   );
 }
 
-export function Header({ title, subtitle, showBack, fallbackTo }: HeaderProps) {
+export function Header({ title, subtitle, showBack, fallbackTo, beforeBack }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const backVisible = showBack ?? shouldShowPageBack(location.pathname);
 
-  const goBack = useCallback(() => {
+  const goBack = useCallback(async () => {
+    if (beforeBack && !await beforeBack()) return;
     const historyIndex = Number(window.history.state?.idx ?? 0);
     if (historyIndex > 0) {
       navigate(-1);
       return;
     }
     navigate(fallbackTo ?? fallbackPathFor(location.pathname), { replace: true });
-  }, [fallbackTo, location.pathname, navigate]);
+  }, [beforeBack, fallbackTo, location.pathname, navigate]);
 
   return (
     <header className="app-page-header mb-5">
@@ -47,7 +49,7 @@ export function Header({ title, subtitle, showBack, fallbackTo }: HeaderProps) {
         {backVisible ? (
           <button
             type="button"
-            onClick={goBack}
+            onClick={() => void goBack()}
             className="app-back-button tap-target shrink-0"
             aria-label="Вернуться назад"
           >

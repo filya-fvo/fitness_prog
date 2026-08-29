@@ -11,6 +11,7 @@ const adminExerciseSchema = exerciseSchema.extend({
   media_quality: mediaQualitySchema,
   workout_uses: z.number().int().nonnegative().default(0),
   program_uses: z.number().int().nonnegative().default(0),
+  is_archived: z.boolean().default(false),
   created_at: z.string().datetime({ offset: true }),
   updated_at: z.string().datetime({ offset: true }),
 });
@@ -56,6 +57,7 @@ const importPreviewSchema = z.object({
   total: z.number().int().nonnegative(),
   valid: z.number().int().nonnegative(),
   invalid: z.number().int().nonnegative(),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   rows: z.array(z.object({
     row: z.number().int().positive(),
     name_ru: z.string().nullable(),
@@ -63,6 +65,11 @@ const importPreviewSchema = z.object({
     errors: z.array(z.string()),
     duplicates: z.array(duplicateSchema),
   })),
+});
+
+const importApplySchema = z.object({
+  imported: z.number().int().positive().max(500),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
 export type AdminExercise = z.infer<typeof adminExerciseSchema>;
@@ -101,6 +108,7 @@ export type AdminExerciseFilters = {
   tag?: string;
   weightRule?: WeightRule;
   mediaQuality?: MediaQuality;
+  archived?: boolean;
 };
 
 export async function listAdminExercises(filters: AdminExerciseFilters) {
@@ -114,6 +122,7 @@ export async function listAdminExercises(filters: AdminExerciseFilters) {
     tag: filters.tag || undefined,
     weight_rule: filters.weightRule || undefined,
     media_quality: filters.mediaQuality || undefined,
+    archived: filters.archived || undefined,
   } });
   return listSchema.parse(data);
 }
@@ -151,7 +160,24 @@ export async function archiveAdminExercise(id: string): Promise<void> {
   await apiClient.delete(`/admin/exercises/${id}`);
 }
 
+export async function restoreAdminExercise(id: string): Promise<AdminExercise> {
+  const { data } = await apiClient.post(`/admin/exercises/${id}/restore`);
+  return adminExerciseSchema.parse(data);
+}
+
 export async function previewExerciseImport(items: Array<Record<string, unknown>>) {
   const { data } = await apiClient.post("/admin/exercises/import/preview", { items });
   return importPreviewSchema.parse(data);
+}
+
+export async function applyExerciseImport(
+  items: Array<Record<string, unknown>>,
+  fingerprint: string,
+) {
+  const { data } = await apiClient.post("/admin/exercises/import/apply", {
+    items,
+    fingerprint,
+    confirmed: true,
+  });
+  return importApplySchema.parse(data);
 }

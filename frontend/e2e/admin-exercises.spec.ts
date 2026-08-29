@@ -33,6 +33,7 @@ const exercise = {
   media_quality: "missing",
   workout_uses: 2,
   program_uses: 1,
+  is_archived: false,
   created_at: "2026-08-28T06:00:00Z",
   updated_at: "2026-08-28T06:00:00Z",
 };
@@ -83,4 +84,78 @@ test("admin edits exercise only after server preflight", async ({ page }) => {
 
   await expect(page.getByText("Упражнение обновлено.", { exact: true })).toBeVisible();
   expect(checkedDescription).toBe("Новое описание");
+});
+
+test("admin protects a draft, restores archive and confirms exact JSON import", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "admin-e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(adminProfile),
+  }));
+  await page.route("**/admin/exercises/options", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ muscle_groups: ["грудь"], equipment: ["гантели"], tags: [] }),
+  }));
+  let restored = false;
+  await page.route(/\/admin\/exercises(?:\?.*)?$/, (route) => {
+    if (route.request().resourceType() === "document") return route.continue();
+    const archived = new URL(route.request().url()).searchParams.get("archived") === "true";
+    const items = archived && !restored ? [{ ...exercise, is_archived: true, workout_uses: 0, program_uses: 0 }] : [];
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items, total: items.length, page: 1, page_size: 20 }),
+    });
+  });
+  await page.route(`**/admin/exercises/${exercise.id}/restore`, (route) => {
+    restored = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ...exercise, is_archived: false, workout_uses: 0, program_uses: 0 }),
+    });
+  });
+  await page.route("**/admin/exercises/import/preview", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      total: 1,
+      valid: 1,
+      invalid: 0,
+      fingerprint: "a".repeat(64),
+      rows: [{ row: 1, name_ru: "Планка", valid: true, errors: [], duplicates: [] }],
+    }),
+  }));
+  let importConfirmed = false;
+  await page.route("**/admin/exercises/import/apply", async (route) => {
+    const body = route.request().postDataJSON() as { fingerprint: string; confirmed: boolean };
+    importConfirmed = body.confirmed && body.fingerprint === "a".repeat(64);
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ imported: 1, fingerprint: "a".repeat(64) }),
+    });
+  });
+
+  await page.goto("/admin/exercises");
+  await page.getByLabel("Название").fill("Несохранённая планка");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "Архив", exact: true }).click();
+  await expect(page.getByLabel("Название")).toHaveValue("Несохранённая планка");
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Архив", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Восстановить" })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Восстановить" }).click();
+  await expect(page.getByText("Упражнение восстановлено из архива.")).toBeVisible();
+
+  await page.getByText("Предварительная проверка импорта").click();
+  await page.locator("textarea").last().fill('[{"name_ru":"Планка","muscle_group":"кор"}]');
+  await page.getByRole("button", { name: "Проверить без импорта" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Импортировать 1" }).click();
+  await expect(page.getByText("Импортировано упражнений: 1.")).toBeVisible();
+  expect(importConfirmed).toBe(true);
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 852 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
 });

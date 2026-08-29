@@ -17,6 +17,7 @@ class AdminExerciseItem(ExerciseResponse):
     media_quality: MediaQuality
     workout_uses: int = 0
     program_uses: int = 0
+    is_archived: bool = False
 
 
 class AdminExerciseListResponse(BaseModel):
@@ -81,7 +82,18 @@ class ExerciseImportPreviewResponse(BaseModel):
     total: int
     valid: int
     invalid: int
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     rows: list[ExerciseImportPreviewRow]
+
+
+class ExerciseImportApplyRequest(ExerciseImportPreviewRequest):
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    confirmed: bool
+
+
+class ExerciseImportApplyResponse(BaseModel):
+    imported: int = Field(ge=1, le=500)
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 class ExerciseArchiveConflict(BaseModel):

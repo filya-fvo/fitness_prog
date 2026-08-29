@@ -10,7 +10,6 @@ from difflib import SequenceMatcher
 from urllib.parse import urljoin, urlparse
 
 import httpx
-from pydantic import ValidationError
 from sqlalchemy import String, and_, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,15 +21,12 @@ from app.schemas.admin_exercise import (
     AdminExerciseItem,
     AdminExerciseOptions,
     ExerciseDuplicateCandidate,
-    ExerciseImportPreviewResponse,
-    ExerciseImportPreviewRow,
     ExerciseMediaCheckRequest,
     ExerciseMediaCheckResponse,
     ExercisePreflightRequest,
     ExercisePreflightResponse,
     MediaQuality,
 )
-from app.schemas.exercise import ExerciseCreate
 
 _MEDIA_LIMITS = {
     "video_url": 25 * 1024 * 1024,
@@ -153,8 +149,9 @@ async def list_admin_exercises(
     tag: str | None = None,
     weight_rule: str | None = None,
     quality: MediaQuality | None = None,
+    archived: bool = False,
 ) -> tuple[list[AdminExerciseItem], int]:
-    filters = [Exercise.is_deleted.is_(False)]
+    filters = [Exercise.is_deleted.is_(archived)]
     if q and q.strip():
         like = f"%{q.strip()}%"
         filters.append(or_(Exercise.name_ru.ilike(like), Exercise.tags.cast(String).ilike(like)))
@@ -190,6 +187,7 @@ async def list_admin_exercises(
                 "media_quality": media_quality(item),
                 "workout_uses": workout_counts.get(item.id, 0),
                 "program_uses": program_counts.get(item.id, 0),
+                "is_archived": bool(item.is_deleted),
             }
         )
         for item in exercises
@@ -217,7 +215,7 @@ async def get_options(session: AsyncSession) -> AdminExerciseOptions:
     )
 
 
-def _normalized_name(value: str) -> str:
+def normalize_exercise_name(value: str) -> str:
     return " ".join(value.casefold().replace("ё", "е").split())
 
 
@@ -228,21 +226,21 @@ async def find_duplicates(
     exclude_id: uuid.UUID | None = None,
 ) -> list[ExerciseDuplicateCandidate]:
     result = await session.execute(select(Exercise).where(Exercise.is_deleted.is_(False)))
-    return _duplicate_candidates(list(result.scalars().all()), name, exclude_id=exclude_id)
+    return duplicate_candidates(list(result.scalars().all()), name, exclude_id=exclude_id)
 
 
-def _duplicate_candidates(
+def duplicate_candidates(
     exercises: list[Exercise],
     name: str,
     *,
     exclude_id: uuid.UUID | None = None,
 ) -> list[ExerciseDuplicateCandidate]:
-    target = _normalized_name(name)
+    target = normalize_exercise_name(name)
     candidates: list[ExerciseDuplicateCandidate] = []
     for item in exercises:
         if item.id == exclude_id:
             continue
-        ratio = SequenceMatcher(None, target, _normalized_name(item.name_ru)).ratio()
+        ratio = SequenceMatcher(None, target, normalize_exercise_name(item.name_ru)).ratio()
         if ratio >= 0.72:
             candidates.append(
                 ExerciseDuplicateCandidate(id=item.id, name_ru=item.name_ru, similarity=round(ratio, 3))
@@ -366,47 +364,4 @@ async def preflight(
         media=media,
         duplicates=duplicates,
         errors=errors,
-    )
-
-
-async def preview_import(
-    session: AsyncSession,
-    raw_items: list[dict[str, object]],
-) -> ExerciseImportPreviewResponse:
-    rows: list[ExerciseImportPreviewRow] = []
-    seen: set[str] = set()
-    catalog_result = await session.execute(select(Exercise).where(Exercise.is_deleted.is_(False)))
-    catalog = list(catalog_result.scalars().all())
-    for index, raw in enumerate(raw_items, start=1):
-        errors: list[str] = []
-        name = str(raw.get("name_ru") or "").strip() or None
-        try:
-            item = ExerciseCreate.model_validate(raw)
-        except ValidationError as exc:
-            errors.extend(
-                f"{'.'.join(str(part) for part in issue['loc'])}: {issue['msg']}"
-                for issue in exc.errors(include_url=False)[:8]
-            )
-            item = None
-        duplicates: list[ExerciseDuplicateCandidate] = []
-        if name:
-            normalized = _normalized_name(name)
-            if normalized in seen:
-                errors.append("Название повторяется внутри файла.")
-            seen.add(normalized)
-            duplicates = _duplicate_candidates(catalog, name)
-            if any(candidate.similarity == 1 for candidate in duplicates):
-                errors.append("Такое название уже есть в каталоге.")
-        rows.append(
-            ExerciseImportPreviewRow(
-                row=index,
-                name_ru=item.name_ru if item else name,
-                valid=not errors,
-                errors=errors,
-                duplicates=duplicates,
-            )
-        )
-    valid = sum(row.valid for row in rows)
-    return ExerciseImportPreviewResponse(
-        total=len(rows), valid=valid, invalid=len(rows) - valid, rows=rows
     )

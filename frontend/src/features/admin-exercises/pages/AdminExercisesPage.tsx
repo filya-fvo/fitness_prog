@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   archiveAdminExercise,
@@ -7,6 +7,7 @@ import {
   getAdminExerciseOptions,
   listAdminExercises,
   preflightAdminExercise,
+  restoreAdminExercise,
   updateAdminExercise,
   type AdminExercise,
   type AdminExerciseFilters,
@@ -26,6 +27,7 @@ import { ExerciseEditorForm } from "../components/ExerciseEditorForm";
 import { ExerciseImportPreviewPanel } from "../components/ExerciseImportPreview";
 import {
   draftFromExercise,
+  draftsEqual,
   EMPTY_EXERCISE_DRAFT,
   payloadFromDraft,
   type ExerciseDraft,
@@ -47,6 +49,7 @@ const weightLabels: Record<WeightRule, string> = {
 };
 
 export function AdminExercisesPage() {
+  const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const isAuthLoading = useUserStore((state) => state.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
@@ -64,6 +67,46 @@ export function AdminExercisesPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const loaded = useRef(false);
+  const navigationApproved = useRef(false);
+  const baselineDraft = useMemo(
+    () => editing ? draftFromExercise(editing) : EMPTY_EXERCISE_DRAFT,
+    [editing],
+  );
+  const isDirty = !draftsEqual(draft, baselineDraft);
+
+  const confirmDiscard = useCallback(async () => {
+    if (!isDirty) return true;
+    return confirmAction("Есть несохранённые изменения. Уйти без сохранения?");
+  }, [isDirty]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (navigationApproved.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const interceptLink = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!target || target.target === "_blank") return;
+      const url = new URL(target.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void confirmDiscard().then((accepted) => {
+        if (!accepted) return;
+        navigationApproved.current = true;
+        navigate(`${url.pathname}${url.search}${url.hash}`);
+      });
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    document.addEventListener("click", interceptLink, true);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("click", interceptLink, true);
+    };
+  }, [confirmDiscard, isDirty, navigate]);
 
   const load = useCallback(async (
     nextPage: number,
@@ -95,7 +138,14 @@ export function AdminExercisesPage() {
     void load(1, next);
   }
 
-  function edit(item: AdminExercise) {
+  function resetEditor() {
+    setEditing(null);
+    setDraft({ ...EMPTY_EXERCISE_DRAFT });
+    setPreflight(null);
+  }
+
+  async function edit(item: AdminExercise) {
+    if (!await confirmDiscard()) return;
     setEditing(item);
     setDraft(draftFromExercise(item));
     setPreflight(null);
@@ -103,10 +153,9 @@ export function AdminExercisesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function cancelEdit() {
-    setEditing(null);
-    setDraft({ ...EMPTY_EXERCISE_DRAFT });
-    setPreflight(null);
+  async function cancelEdit() {
+    if (!await confirmDiscard()) return;
+    resetEditor();
   }
 
   async function check() {
@@ -136,7 +185,7 @@ export function AdminExercisesPage() {
       if (editing) await updateAdminExercise(editing.id, payload);
       else await createAdminExercise(payload);
       setNotice(editing ? "Упражнение обновлено." : "Упражнение добавлено.");
-      cancelEdit();
+      resetEditor();
       await load(page, filters);
       void getAdminExerciseOptions().then(setOptions).catch(() => undefined);
     } catch (reason) {
@@ -156,11 +205,36 @@ export function AdminExercisesPage() {
     try {
       await archiveAdminExercise(item.id);
       setNotice("Упражнение перемещено в архив.");
-      if (editing?.id === item.id) cancelEdit();
+      if (editing?.id === item.id) resetEditor();
       await load(page, filters);
     } catch (reason) {
       setError(toUserMessage(reason, "Не удалось архивировать упражнение."));
     }
+  }
+
+  async function restore(item: AdminExercise) {
+    if (!await confirmAction(`Восстановить «${item.name_ru}» в активный каталог?`)) return;
+    setError(null);
+    try {
+      await restoreAdminExercise(item.id);
+      setNotice("Упражнение восстановлено из архива.");
+      await load(page, filters);
+      void getAdminExerciseOptions().then(setOptions).catch(() => undefined);
+    } catch (reason) {
+      setError(toUserMessage(reason, "Не удалось восстановить упражнение."));
+    }
+  }
+
+  async function imported(count: number) {
+    setNotice(`Импортировано упражнений: ${count}.`);
+    await load(page, filters);
+    void getAdminExerciseOptions().then(setOptions).catch(() => undefined);
+  }
+
+  async function switchCatalog(archived: boolean) {
+    if (!await confirmDiscard()) return;
+    resetEditor();
+    applyFilters({ ...filters, archived: archived || undefined });
   }
 
   function move(nextPage: number) {
@@ -173,14 +247,18 @@ export function AdminExercisesPage() {
 
   return (
     <section>
-      <Header title="Редактор упражнений" subtitle="Каталог, медиа и безопасная архивация" fallbackTo="/admin" />
+      <Header title="Редактор упражнений" subtitle="Каталог, медиа и безопасная архивация" fallbackTo="/admin" beforeBack={confirmDiscard} />
       {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
       {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
 
-      <ExerciseEditorForm draft={draft} options={options} editing={Boolean(editing)} busy={busy} preflight={preflight} onChange={(next) => { setDraft(next); setPreflight(null); }} onCheck={() => void check()} onSave={() => void save()} onCancel={cancelEdit} />
+      {!filters.archived ? <ExerciseEditorForm draft={draft} options={options} editing={Boolean(editing)} busy={busy} preflight={preflight} onChange={(next) => { setDraft(next); setPreflight(null); }} onCheck={() => void check()} onSave={() => void save()} onCancel={() => void cancelEdit()} /> : null}
 
       <div className="my-5 space-y-3 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-center justify-between gap-2"><h2 className="font-semibold">Каталог</h2><span className="text-xs text-tg-hint">{total} упражнений</span></div>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Состояние каталога">
+          <button type="button" aria-pressed={!filters.archived} onClick={() => void switchCatalog(false)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${!filters.archived ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>Активные</button>
+          <button type="button" aria-pressed={Boolean(filters.archived)} onClick={() => void switchCatalog(true)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${filters.archived ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>Архив</button>
+        </div>
         <div className="flex gap-2">
           <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") applyFilters({ ...filters, q: query.trim() || undefined }); }} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base" placeholder="Название или тег" />
           <button type="button" onClick={() => applyFilters({ ...filters, q: query.trim() || undefined })} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text">Найти</button>
@@ -200,13 +278,19 @@ export function AdminExercisesPage() {
           {items.map((item) => (
             <li key={item.id} className="rounded-2xl bg-tg-secondary p-4">
               <div className="flex items-start justify-between gap-3">
-                <button type="button" onClick={() => edit(item)} className="min-w-0 flex-1 text-left">
+                <button type="button" disabled={item.is_archived} onClick={() => void edit(item)} className="min-w-0 flex-1 text-left disabled:cursor-default">
                   <span className="block font-medium">{item.name_ru}</span>
                   <span className="mt-1 block text-xs text-tg-hint">{item.muscle_group}{item.equipment ? ` · ${item.equipment}` : ""} · сложность {item.difficulty}</span>
                   <span className="mt-1 block text-xs text-tg-hint">Медиа: {qualityLabels[item.media_quality]} · вес: {weightLabels[item.weight_rule]}</span>
                   <span className="mt-1 block text-xs text-tg-hint">Используется: тренировки {item.workout_uses}, программы {item.program_uses}</span>
                 </button>
-                <div className="flex shrink-0 flex-col gap-1 text-right"><button type="button" onClick={() => edit(item)} className="min-h-11 text-sm text-tg-link">Изменить</button><button type="button" onClick={() => void archive(item)} className="min-h-11 text-sm text-red-500">В архив</button></div>
+                <div className="flex shrink-0 flex-col gap-1 text-right">
+                  {item.is_archived ? (
+                    <button type="button" onClick={() => void restore(item)} className="min-h-11 text-sm text-emerald-600 dark:text-emerald-300">Восстановить</button>
+                  ) : (
+                    <><button type="button" onClick={() => void edit(item)} className="min-h-11 text-sm text-tg-link">Изменить</button><button type="button" onClick={() => void archive(item)} className="min-h-11 text-sm text-red-500">В архив</button></>
+                  )}
+                </div>
               </div>
             </li>
           ))}
@@ -215,7 +299,7 @@ export function AdminExercisesPage() {
 
       <div className="my-4 flex items-center justify-between gap-3"><button type="button" disabled={page <= 1 || loading} onClick={() => move(page - 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Назад</button><span className="text-xs text-tg-hint">Страница {page} из {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span><button type="button" disabled={page * PAGE_SIZE >= total || loading} onClick={() => move(page + 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Дальше</button></div>
 
-      <ExerciseImportPreviewPanel />
+      <ExerciseImportPreviewPanel onImported={imported} />
     </section>
   );
 }

@@ -19,6 +19,10 @@ class ExerciseInUseError(RuntimeError):
         self.program_uses = program_uses
 
 
+class ExerciseRestoreConflictError(RuntimeError):
+    """An active exercise already has the same normalized name."""
+
+
 async def list_exercises(
     session: AsyncSession,
     *,
@@ -60,6 +64,13 @@ async def list_exercises(
 async def get_exercise(session: AsyncSession, exercise_id: uuid.UUID) -> Exercise | None:
     result = await session.execute(
         select(Exercise).where(Exercise.id == exercise_id, Exercise.is_deleted.is_(False))
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_archived_exercise(session: AsyncSession, exercise_id: uuid.UUID) -> Exercise | None:
+    result = await session.execute(
+        select(Exercise).where(Exercise.id == exercise_id, Exercise.is_deleted.is_(True))
     )
     return result.scalar_one_or_none()
 
@@ -143,3 +154,33 @@ async def soft_delete_exercise(
             after=admin_audit.exercise_snapshot(exercise),
         )
     await session.commit()
+
+
+async def restore_exercise(
+    session: AsyncSession,
+    exercise: Exercise,
+    *,
+    audit_context: admin_audit.AuditContext | None = None,
+) -> Exercise:
+    from app.services import admin_exercises
+
+    duplicates = await admin_exercises.find_duplicates(session, exercise.name_ru)
+    if any(item.similarity == 1 for item in duplicates):
+        raise ExerciseRestoreConflictError("Active exercise with this name already exists")
+    before = admin_audit.exercise_snapshot(exercise)
+    exercise.is_deleted = False
+    if audit_context is not None:
+        admin_audit.add_event(
+            session,
+            context=audit_context,
+            action="exercise.restore",
+            object_type="exercise",
+            object_id=exercise.id,
+            result="success",
+            description="Упражнение восстановлено из архива.",
+            before=before,
+            after=admin_audit.exercise_snapshot(exercise),
+        )
+    await session.commit()
+    await session.refresh(exercise)
+    return exercise

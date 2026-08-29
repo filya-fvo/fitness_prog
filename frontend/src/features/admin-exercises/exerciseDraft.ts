@@ -94,3 +94,8 @@ export function payloadFromDraft(draft: ExerciseDraft): AdminExercisePayload {
     weight_rule: draft.weightRule,
   };
 }
+
+export function draftsEqual(left: ExerciseDraft, right: ExerciseDraft): boolean {
+  return (Object.keys(EMPTY_EXERCISE_DRAFT) as Array<keyof ExerciseDraft>)
+    .every((key) => left[key] === right[key]);
+}

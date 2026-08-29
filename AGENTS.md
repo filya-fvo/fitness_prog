@@ -137,6 +137,9 @@ services → SQLAlchemy models → PostgreSQL
   DB/Redis/worker/очереди и allowlist сведений из host status-файлов.
 - `backend/app/services/admin_audit.py` — allowlist снимков и append-only журнал
   административных изменений; таблица защищена PostgreSQL-триггером.
+- `backend/app/services/admin_exercises.py` — поиск, фильтры, media preflight и
+  безопасный архив каталога; `admin_exercise_import.py` — проверенный по отпечатку
+  транзакционный JSON-import до 500 упражнений с итоговым audit.
 - `backend/app/services/admin_user_detail.py`, `admin_user_actions.py`, `admin_user_export.py` — подробная
   карточка пользователя, безопасные действия и allowlist выгрузки без OTP/Web Push секретов.
 - `backend/app/services/admin_broadcasts.py`, `admin_broadcast_audience.py`,

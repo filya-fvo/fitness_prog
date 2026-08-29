@@ -20,7 +20,7 @@ from app.schemas.admin_exercise import (
     ExercisePreflightRequest,
 )
 from app.schemas.exercise import ExerciseCreate, ExerciseResponse
-from app.services import admin_exercises, exercise_service
+from app.services import admin_audit, admin_exercise_import, admin_exercises, exercise_service
 
 
 def exercise(**overrides) -> Exercise:
@@ -171,7 +171,7 @@ async def test_import_preview_validates_batch_without_writes_or_repeated_catalog
             return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: []))
 
     session = CatalogSession()
-    result = await admin_exercises.preview_import(
+    result = await admin_exercise_import.preview_import(
         session,  # type: ignore[arg-type]
         [
             {"name_ru": "Планка", "muscle_group": "кор"},
@@ -180,8 +180,114 @@ async def test_import_preview_validates_batch_without_writes_or_repeated_catalog
         ],
     )
     assert (result.total, result.valid, result.invalid) == (3, 1, 2)
+    assert len(result.fingerprint) == 64
     assert "внутри файла" in result.rows[1].errors[0]
     assert session.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_confirmed_import_is_atomic_and_adds_one_safe_summary_audit() -> None:
+    class ImportSession:
+        added_exercises: list[Exercise]
+        audit_events: list[object]
+        commits = 0
+        rollbacks = 0
+
+        def __init__(self) -> None:
+            self.added_exercises = []
+            self.audit_events = []
+
+        async def execute(self, _statement):
+            return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: []))
+
+        def add_all(self, values):
+            self.added_exercises = list(values)
+
+        def add(self, value):
+            self.audit_events.append(value)
+
+        async def flush(self):
+            for item in self.added_exercises:
+                if item.id is None:
+                    item.id = uuid.uuid4()
+
+        async def commit(self):
+            self.commits += 1
+
+        async def rollback(self):
+            self.rollbacks += 1
+
+    items = [
+        {"name_ru": "Планка", "muscle_group": "кор"},
+        {"name_ru": "Лодочка", "muscle_group": "спина"},
+    ]
+    fingerprint = admin_exercise_import.import_fingerprint(items)
+    session = ImportSession()
+    result = await admin_exercise_import.apply_import(
+        session,  # type: ignore[arg-type]
+        items,
+        fingerprint=fingerprint,
+        confirmed=True,
+        audit_context=admin_audit.AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+    assert result.imported == 2
+    assert session.commits == 1
+    assert session.rollbacks == 0
+    assert len(session.added_exercises) == 2
+    assert len(session.audit_events) == 1
+    event = session.audit_events[0]
+    assert event.object_type == "exercise_import"
+    assert event.after_data == {"imported_count": 2, "source": "json"}
+
+
+@pytest.mark.asyncio
+async def test_import_rejects_package_changed_after_preview_without_writes() -> None:
+    session = SimpleNamespace()
+    with pytest.raises(admin_exercise_import.ExerciseImportError):
+        await admin_exercise_import.apply_import(
+            session,  # type: ignore[arg-type]
+            [{"name_ru": "Планка", "muscle_group": "кор"}],
+            fingerprint="0" * 64,
+            confirmed=True,
+            audit_context=admin_audit.AuditContext(uuid.uuid4(), uuid.uuid4()),
+        )
+
+
+@pytest.mark.asyncio
+async def test_archived_exercise_restores_only_without_active_exact_duplicate(monkeypatch) -> None:
+    class RestoreSession:
+        commits = 0
+        refreshed = 0
+        events: list[object]
+
+        def __init__(self) -> None:
+            self.events = []
+
+        def add(self, value):
+            self.events.append(value)
+
+        async def commit(self):
+            self.commits += 1
+
+        async def refresh(self, _value):
+            self.refreshed += 1
+
+    async def no_duplicates(_session, _name, *, exclude_id=None):
+        assert exclude_id is None
+        return []
+
+    monkeypatch.setattr(admin_exercises, "find_duplicates", no_duplicates)
+    item = exercise(is_deleted=True)
+    session = RestoreSession()
+    restored = await exercise_service.restore_exercise(
+        session,  # type: ignore[arg-type]
+        item,
+        audit_context=admin_audit.AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+    assert restored.is_deleted is False
+    assert session.commits == 1
+    assert session.refreshed == 1
+    assert session.events[0].action == "exercise.restore"
 
 
 def test_media_response_does_not_echo_transport_exception() -> None:

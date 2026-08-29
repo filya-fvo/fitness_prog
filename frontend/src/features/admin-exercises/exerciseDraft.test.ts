@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { EMPTY_EXERCISE_DRAFT, payloadFromDraft, splitValues } from "./exerciseDraft";
+import {
+  draftsEqual,
+  EMPTY_EXERCISE_DRAFT,
+  payloadFromDraft,
+  splitValues,
+} from "./exerciseDraft";
 
 describe("exercise editor draft", () => {
   it("normalizes comma and line separated values", () => {
@@ -24,5 +29,13 @@ describe("exercise editor draft", () => {
       weight_rule: "per_hand",
       equipment: null,
     });
+  });
+
+  it("detects a real unsaved field change", () => {
+    expect(draftsEqual(EMPTY_EXERCISE_DRAFT, { ...EMPTY_EXERCISE_DRAFT })).toBe(true);
+    expect(draftsEqual(EMPTY_EXERCISE_DRAFT, {
+      ...EMPTY_EXERCISE_DRAFT,
+      technique: "Новая подсказка",
+    })).toBe(false);
   });
 });
