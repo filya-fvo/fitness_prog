@@ -13,7 +13,6 @@ import {
   fetchWorkoutSchedule,
   type WorkoutScheduleOverview,
 } from "@/api/workouts";
-import { FeedbackModal } from "@/components/FeedbackModal";
 import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
@@ -116,7 +115,6 @@ export function HomePage() {
   const [starting, setStarting] = useState(false);
   const [restoringDefaults, setRestoringDefaults] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
   /** True when today's in-progress session has user exercise swaps. */
   const [sessionHasReplacements, setSessionHasReplacements] = useState(false);
@@ -1050,13 +1048,6 @@ export function HomePage() {
         >
           Замеры тела и динамика
         </Link>
-        <button
-          type="button"
-          onClick={() => setFeedbackOpen(true)}
-          className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
-        >
-          Обратная связь
-        </button>
         {isAdmin ? (
           <Link to="/admin" className="block text-center text-xs text-tg-link">
             Админка exercises/programs
@@ -1064,7 +1055,6 @@ export function HomePage() {
         ) : null}
       </div>
 
-      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </section>
   );
 }

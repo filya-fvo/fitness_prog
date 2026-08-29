@@ -86,7 +86,7 @@ export default defineConfig({
         "/supplements": { ...toApi },
         "/ai": { ...toApi },
         "/notifications": { ...toApi },
-        "/feedback": { ...toApi },
+        "/support": { ...toApi },
         // Admin CRM (users list/reset/delete) — same-origin via Vite proxy
         "/admin": { ...toApi },
         // Telegram webhook must always hit API (no HTML bypass needed for POST)

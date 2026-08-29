@@ -58,7 +58,7 @@ export function HelpPage() {
         <Link to="/knowledge" className="rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium text-tg-text underline">Справочник</Link>
       </div>
       <p className="mt-4 text-center text-xs text-tg-hint">
-        Не получается выполнить действие? Откройте Главную → Обратная связь и опишите, что произошло.
+        Не получается выполнить действие? Откройте Ещё → Поддержка и создайте обращение.
       </p>
     </section>
   );

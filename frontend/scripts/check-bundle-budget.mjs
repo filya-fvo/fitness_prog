@@ -33,9 +33,11 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
-  totalJsGzip: 445_000,
-  productJsGzip: 412_000,
-  adminJsGzip: 32_000,
+  // In-app support adds two lazy user routes and one lazy admin route. The
+  // ceilings include a small margin above that measured route-isolated cost.
+  totalJsGzip: 455_000,
+  productJsGzip: 420_000,
+  adminJsGzip: 37_000,
   largestJsGzip: 140_000,
 };
 const failures = [];

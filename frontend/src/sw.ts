@@ -24,7 +24,7 @@ self.addEventListener("activate", (event: ExtendableEvent) => {
 
 const apiPrefixes = [
   "/auth", "/exercises", "/programs", "/workouts", "/users", "/health",
-  "/nutrition", "/metrics", "/measurements", "/ai", "/notifications", "/supplements", "/feedback", "/telegram", "/admin",
+  "/nutrition", "/metrics", "/measurements", "/ai", "/notifications", "/supplements", "/support", "/telegram", "/admin",
 ];
 registerRoute(
   ({ request, url }) =>

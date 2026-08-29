@@ -36,6 +36,7 @@ _EXERCISE_FIELDS = {
     "is_deleted",
 }
 _EXERCISE_IMPORT_FIELDS = {"imported_count", "source"}
+_SUPPORT_TICKET_FIELDS = {"status", "category", "delivery"}
 _PROGRAM_FIELDS = {
     "name",
     "workout_type",
@@ -172,6 +173,7 @@ def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, 
         "user": _USER_FIELDS,
         "exercise": _EXERCISE_FIELDS,
         "exercise_import": _EXERCISE_IMPORT_FIELDS,
+        "support_ticket": _SUPPORT_TICKET_FIELDS,
         "program": _PROGRAM_FIELDS,
         "broadcast": _BROADCAST_FIELDS,
     }.get(object_type, set())

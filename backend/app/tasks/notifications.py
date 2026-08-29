@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from html import escape
 import json
 import uuid
 from typing import Any
@@ -16,6 +17,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import AsyncSessionLocal
 from app.core.logging import setup_logging
 from app.models.user import User
+from app.models.support import SupportMessage, SupportTicket
 from app.routers.notifications import dispatch_all_users
 from app.services.admin_system import NOTIFICATION_STATUS_KEY, WORKER_STATUS_KEY
 from app.services.admin_broadcast_delivery import deliver_batch
@@ -200,6 +202,56 @@ async def send_broadcast_batch_task(ctx: dict[str, Any], broadcast_id: str) -> d
     return await deliver_batch(ctx, uuid.UUID(broadcast_id))
 
 
+async def send_support_reply_task(ctx: dict[str, Any], message_id: str) -> dict[str, Any]:
+    """Notify a Telegram-linked user that support answered; the thread stays in-app."""
+    redis = ctx.get("redis")
+    await _record_worker_status(redis, task="Ответ поддержки", state="running")
+    settings = notification_settings()
+    async with AsyncSessionLocal() as session:
+        row = (
+            await session.execute(
+                select(SupportMessage, SupportTicket, User)
+                .join(SupportTicket, SupportTicket.id == SupportMessage.ticket_id)
+                .join(User, User.id == SupportTicket.user_id)
+                .where(SupportMessage.id == uuid.UUID(message_id))
+            )
+        ).one_or_none()
+        if row is None:
+            await _record_worker_status(redis, task="Ответ поддержки", state="failed")
+            return {"ok": False, "detail": "message_not_found"}
+        message, ticket, user = row
+        if message.delivery_status != "pending":
+            return {"ok": message.delivery_status == "sent", "detail": message.delivery_status}
+        if user.telegram_id is None:
+            message.delivery_status = "unavailable"
+            await session.commit()
+            return {"ok": False, "detail": "telegram_unavailable"}
+        try:
+            await send_app_notification(
+                settings,
+                telegram_id=int(user.telegram_id),
+                title="Ответ поддержки Fil Fit",
+                text=escape(message.body[:500]),
+                startapp=f"support_{ticket.id}",
+                button_text="Открыть обращение",
+            )
+            message.delivery_status = "sent"
+            message.delivered_at = datetime.now(UTC)
+            await session.commit()
+            await _record_worker_status(redis, task="Ответ поддержки", state="completed")
+            return {"ok": True}
+        except TelegramBotError as exc:
+            message.delivery_status = "failed"
+            await session.commit()
+            logger.warning(
+                "support_reply_telegram_failed message={} error_type={}",
+                message.id,
+                type(exc).__name__,
+            )
+            await _record_worker_status(redis, task="Ответ поддержки", state="failed")
+            return {"ok": False, "detail": "telegram_failed"}
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     setup_logging(
@@ -226,6 +278,7 @@ class WorkerSettings:
         dispatch_scheduled_notifications_task,
         send_timer_finished_task,
         send_broadcast_batch_task,
+        send_support_reply_task,
     ]
     cron_jobs = [
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),

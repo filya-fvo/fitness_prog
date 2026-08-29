@@ -237,6 +237,10 @@ def build_mini_app_open_url(
     elif key in {"ai", "coach", "chat"}:
         path = "/ai"
         query["startapp"] = key
+    elif key.startswith("support_") and len(key) > len("support_"):
+        ticket_id = key[len("support_") :]
+        path = f"/support/{quote(ticket_id, safe='')}"
+        query["startapp"] = key
     else:
         path = "/"
         if key:

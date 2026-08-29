@@ -20,17 +20,18 @@ from app.routers import admin_audit as admin_audit_router
 from app.routers import admin_broadcasts as admin_broadcasts_router
 from app.routers import admin_exercises as admin_exercises_router
 from app.routers import admin_system as admin_system_router
+from app.routers import admin_support as admin_support_router
 from app.routers import admin_user_detail as admin_user_detail_router
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import body_measurements as body_measurements_router
 from app.routers import daily_metrics as daily_metrics_router
 from app.routers import exercises as exercises_router
-from app.routers import feedback as feedback_router
 from app.routers import notifications as notifications_router
 from app.routers import nutrition as nutrition_router
 from app.routers import programs as programs_router
 from app.routers import supplements as supplements_router
+from app.routers import support as support_router
 from app.routers import telegram as telegram_router
 from app.routers import users as users_router
 from app.routers import workouts as workouts_router
@@ -82,6 +83,7 @@ app.include_router(admin_audit_router.router)
 app.include_router(admin_broadcasts_router.router)
 app.include_router(admin_exercises_router.router)
 app.include_router(admin_system_router.router)
+app.include_router(admin_support_router.router)
 app.include_router(admin_user_detail_router.router)
 app.include_router(exercises_router.router)
 app.include_router(programs_router.router)
@@ -90,7 +92,7 @@ app.include_router(nutrition_router.router)
 app.include_router(supplements_router.router)
 app.include_router(ai_router.router)
 app.include_router(notifications_router.router)
-app.include_router(feedback_router.router)
+app.include_router(support_router.router)
 app.include_router(telegram_router.router)
 
 

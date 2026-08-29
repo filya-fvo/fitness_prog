@@ -73,6 +73,19 @@ const AdminExercisesPage = lazy(() =>
     default: module.AdminExercisesPage,
   })),
 );
+const AdminSupportPage = lazy(() =>
+  import("@/features/admin-support/pages/AdminSupportPage").then((module) => ({
+    default: module.AdminSupportPage,
+  })),
+);
+const SupportPage = lazy(() =>
+  import("@/features/support/pages/SupportPage").then((module) => ({ default: module.SupportPage })),
+);
+const SupportTicketPage = lazy(() =>
+  import("@/features/support/pages/SupportTicketPage").then((module) => ({
+    default: module.SupportTicketPage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -129,12 +142,15 @@ export function App() {
             <Route path="progress" element={<ProgressPage />} />
             <Route path="ai" element={<Chat />} />
             <Route path="more" element={<MorePage />} />
+            <Route path="support" element={<SupportPage />} />
+            <Route path="support/:ticketId" element={<SupportTicketPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="admin/system" element={<AdminSystemPage />} />
             <Route path="admin/audit" element={<AdminAuditPage />} />
             <Route path="admin/users/:userId" element={<AdminUserPage />} />
             <Route path="admin/broadcasts" element={<AdminBroadcastsPage />} />
             <Route path="admin/exercises" element={<AdminExercisesPage />} />
+            <Route path="admin/support" element={<AdminSupportPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

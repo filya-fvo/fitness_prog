@@ -368,7 +368,7 @@ LOCAL_AI_MODELS_DIR=/opt/fitness/models
 
 - `BOT_TOKEN`, `BOT_USERNAME`;
 - `JWT_SECRET` — лучше сохранить прежний, если он уже был production-secret;
-- SMTP-поля и `ADMIN_FEEDBACK_EMAIL`;
+- SMTP-поля для browser OTP и разрешённых служебных писем;
 - `ADMIN_TELEGRAM_USERNAMES`, `ADMIN_TELEGRAM_IDS`;
 - прежнюю пару `WEB_PUSH_VAPID_*` и `WEB_PUSH_VAPID_SUBJECT`;
 - Sentry, если он используется.

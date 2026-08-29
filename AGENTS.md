@@ -108,7 +108,7 @@ FastAPI routers (backend/app/routers)
 services → SQLAlchemy models → PostgreSQL
         ├→ Redis / ARQ → Telegram + Web Push notifications
         ├→ internal llama.cpp/Qwen (text) + Tesseract OCR (label image)
-        ├→ SMTP email OTP / browser feedback
+        ├→ SMTP email OTP / consented service email
         └→ Open Food Facts barcode lookup
 ```
 
@@ -214,7 +214,7 @@ services → SQLAlchemy models → PostgreSQL
 | Замеры тела | `features/measurements`, `api/bodyMeasurements.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests |
 | Добавки/уведомления | profile/home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot | concurrency, prefs, Telegram tests |
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |
-| Обратная связь | `FeedbackModal.tsx`, `api/feedback.ts` | `feedback.py`, Telegram/SMTP delivery | feedback tests + browser scenario |
+| Поддержка | `features/support`, `api/support.ts`; админ: `features/admin-support` | `support.py`, `admin_support.py`, `support_service.py`, ARQ/Telegram notification, migration 30 | support API/task tests + user/admin browser scenario |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
 | Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |
@@ -291,7 +291,7 @@ component/hook/utility/service, особенно если изменение д�
 - Public URL: `MINI_APP_URL`, `BOT_USERNAME`; только постоянный HTTPS, не ngrok.
 - AI/OCR: внутренние `LLM_BASE_URL`, `LLM_MODEL`, лимиты timeout/output и
   `OCR_BASE_URL`; модель лежит вне Git в `/opt/fitness/models`.
-- Email: SMTP host/port/user/password/from, admin feedback email, OTP policy.
+- Email: SMTP host/port/user/password/from and OTP policy.
 - Queue/push: `REDIS_URL`, VAPID public/private/subject.
 - Ops: admin Telegram IDs/usernames, Sentry, log directory/retention.
 

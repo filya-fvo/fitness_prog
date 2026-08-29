@@ -23,4 +23,9 @@ describe("pathFromStartParam", () => {
   it("opens the water controls in the daily check-in", () => {
     expect(pathFromStartParam("water")).toBe("/?checkin=water");
   });
+
+  it("opens the addressed in-app support thread", () => {
+    expect(pathFromStartParam("support_3f56b158-86e3-4a3f-8e38-0112f2a4cf1f"))
+      .toBe("/support/3f56b158-86e3-4a3f-8e38-0112f2a4cf1f");
+  });
 });

@@ -202,6 +202,9 @@ export function pathFromStartParam(start: string): string | null {
   if (key === "workouts") return "/workouts";
   if (key === "progress") return "/progress";
   if (key === "ai") return "/ai";
+  if (key.startsWith("support_") && key.length > "support_".length) {
+    return `/support/${encodeURIComponent(key.slice("support_".length))}`;
+  }
   return null;
 }
 

@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     mini_app_url: str = ""
     # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
     telegram_webhook_secret: str = ""
-    # Comma-separated Telegram usernames (without @) allowed to use admin CRUD / feedback target.
+    # Comma-separated Telegram usernames (without @) allowed to use admin tools.
     # Example: Filatov_Slava
     admin_telegram_usernames: str = ""
     # Optional comma-separated Telegram numeric IDs (more stable than username).
-    # Required for reliable feedback delivery if admin never opened the Mini App.
+    # Optional stable alternative to username-based administrator access.
     admin_telegram_ids: str = ""
     # Dedicated private chat used by the explicit write Telegram delivery smoke.
     admin_smoke_telegram_id: int | None = None
@@ -74,9 +74,6 @@ class Settings(BaseSettings):
     # Mailbox password or Mail.ru app password. Empty → codes only logged in development.
     smtp_password: str = ""
     smtp_use_ssl: bool = True
-    # Browser feedback is delivered server-side. Empty means smtp_from_email.
-    admin_feedback_email: str = ""
-    feedback_hourly_limit: int = 8
     # OTP policy
     email_otp_ttl_minutes: int = 10
     email_otp_length: int = 6
