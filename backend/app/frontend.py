@@ -25,6 +25,7 @@ SPA_ROUTES = {
     "/profile",
     "/programs",
     "/progress",
+    "/support",
     "/train",
     "/workouts",
 }
@@ -44,7 +45,11 @@ def _is_spa_navigation(request: Request) -> bool:
         return True
     if "text/html" not in request.headers.get("accept", ""):
         return False
-    return path in SPA_ROUTES or path.startswith("/workouts/active/")
+    return (
+        path in SPA_ROUTES
+        or path.startswith("/support/")
+        or path.startswith("/workouts/active/")
+    )
 
 
 def _safe_frontend_file(dist_dir: Path, request_path: str) -> Path | None:

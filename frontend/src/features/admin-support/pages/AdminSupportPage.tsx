@@ -13,6 +13,7 @@ import { supportCategories, supportStatuses, type SupportCategory, type SupportS
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { categoryLabels, formatSupportDate, statusLabels } from "@/features/support/supportLabels";
+import { SupportScreenshot } from "@/features/support/components/SupportScreenshot";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
@@ -120,9 +121,9 @@ export function AdminSupportPage() {
           <div className="my-4 space-y-3">{selected.messages.map((message) => {
             const fromAdmin = message.author_type === "admin";
             const delivery = message.delivery_status === "sent" ? "Telegram: доставлено" : message.delivery_status === "pending" ? "Telegram: в очереди" : message.delivery_status === "failed" ? "Telegram: ошибка" : message.delivery_status === "unavailable" ? "только в приложении" : "";
-            return <article key={message.id} className={`max-w-[92%] rounded-2xl p-3 ${fromAdmin ? "ml-auto bg-tg-button text-tg-button-text" : "bg-tg-secondary"}`}><p className="whitespace-pre-wrap break-words text-sm">{message.body}</p><p className={`mt-2 text-xs ${fromAdmin ? "opacity-75" : "text-tg-hint"}`}>{fromAdmin ? "Поддержка Fil Fit" : selected.user_label} · {formatSupportDate(message.created_at)}{fromAdmin && delivery ? ` · ${delivery}` : ""}</p></article>;
+            return <article key={message.id} className={`max-w-[92%] rounded-2xl p-3 ${fromAdmin ? "ml-auto bg-tg-button text-tg-button-text" : "bg-tg-secondary"}`}><p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>{message.attachments.map((attachment) => <SupportScreenshot key={attachment.id} attachment={attachment} />)}<p className={`mt-2 text-xs ${fromAdmin ? "opacity-75" : "text-tg-hint"}`}>{fromAdmin ? "Поддержка Fitness Trainer" : selected.user_label} · {formatSupportDate(message.created_at)}{fromAdmin && delivery ? ` · ${delivery}` : ""}</p></article>;
           })}</div>
-          {selected.status !== "closed" ? <form onSubmit={sendReply} className="space-y-2"><textarea value={reply} onChange={(event) => setReply(event.target.value)} rows={4} maxLength={3500} aria-label="Ответ пользователю" placeholder="Ответ от имени Поддержки Fil Fit…" className="w-full rounded-xl bg-tg-secondary p-3 text-base text-tg-text" /><button type="submit" disabled={sending || !reply.trim()} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">{sending ? "Отправляем…" : "Ответить"}</button></form> : null}
+          {selected.status !== "closed" ? <form onSubmit={sendReply} className="space-y-2"><textarea value={reply} onChange={(event) => setReply(event.target.value)} rows={4} maxLength={3500} aria-label="Ответ пользователю" placeholder="Ответ от имени Поддержки Fitness Trainer…" className="w-full rounded-xl bg-tg-secondary p-3 text-base text-tg-text" /><button type="submit" disabled={sending || !reply.trim()} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">{sending ? "Отправляем…" : "Ответить"}</button></form> : null}
         </div>
       </div> : null}
     </section>

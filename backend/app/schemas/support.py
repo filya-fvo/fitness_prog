@@ -26,6 +26,15 @@ class SupportMessageCreate(BaseModel):
     idempotency_key: uuid.UUID
 
 
+class SupportAttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"]
+    size_bytes: int
+    created_at: datetime
+
+
 class SupportMessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +44,7 @@ class SupportMessageResponse(BaseModel):
     delivery_channel: Literal["in_app", "telegram"]
     delivery_status: Literal["pending", "sent", "failed", "not_requested", "unavailable"]
     created_at: datetime
+    attachments: list[SupportAttachmentResponse] = Field(default_factory=list)
 
 
 class SupportTicketSummary(BaseModel):

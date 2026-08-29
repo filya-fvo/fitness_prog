@@ -230,7 +230,7 @@ async def send_support_reply_task(ctx: dict[str, Any], message_id: str) -> dict[
             await send_app_notification(
                 settings,
                 telegram_id=int(user.telegram_id),
-                title="Ответ поддержки Fil Fit",
+                title="Ответ поддержки Fitness Trainer",
                 text=escape(message.body[:500]),
                 startapp=f"support_{ticket.id}",
                 button_text="Открыть обращение",

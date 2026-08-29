@@ -64,6 +64,10 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
             "/knowledge",
             headers={"Accept": "text/html"},
         )
+        support_thread = await client.get(
+            "/support/123",
+            headers={"Accept": "text/html"},
+        )
         service_worker = await client.get("/sw.js")
         legacy_favicon = await client.get("/favicon.ico")
         missing_api = await client.get("/auth/not-a-route", headers={"Accept": "application/json"})
@@ -76,6 +80,8 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
     assert "fitness-spa" in measurements.text
     assert knowledge.status_code == 200
     assert "fitness-spa" in knowledge.text
+    assert support_thread.status_code == 200
+    assert "fitness-spa" in support_thread.text
     assert service_worker.text == "self.skipWaiting()"
     assert service_worker.headers["cache-control"] == "no-cache"
     assert legacy_favicon.status_code == 200

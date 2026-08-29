@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const adminId = "42424242-4242-4424-8424-424242424242";
 const userId = "11111111-1111-4111-8111-111111111111";
 const ticketId = "22222222-2222-4222-8222-222222222222";
+const attachmentId = "55555555-5555-4555-8555-555555555555";
 const createdAt = "2026-08-29T12:00:00Z";
 
 const adminProfile = {
@@ -15,6 +16,7 @@ const userMessage = {
   id: "33333333-3333-4333-8333-333333333333", author_type: "user",
   body: "Не сохраняется выбранное упражнение", delivery_channel: "in_app",
   delivery_status: "not_requested", created_at: createdAt,
+  attachments: [{ id: attachmentId, mime_type: "image/png", size_bytes: 68, created_at: createdAt }],
 };
 
 const summary = {
@@ -32,6 +34,7 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
 
   let createdBody: Record<string, unknown> | null = null;
   let replyBody: Record<string, unknown> | null = null;
+  let uploadContentType = "";
   await page.route(/\/support\/tickets(?:\?.*)?$/, async (route) => {
     if (route.request().resourceType() === "document") return route.continue();
     if (route.request().method() === "POST") {
@@ -44,14 +47,25 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
     contentType: "application/json",
     body: JSON.stringify({ ...summary, unread: false, source_page: "/workouts", client: "browser", app_version: "e2e", messages: [userMessage] }),
   }));
+  await page.route(`**/support/tickets/${ticketId}/attachments`, (route) => {
+    uploadContentType = route.request().headers()["content-type"] || "";
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify(userMessage.attachments[0]) });
+  });
+  await page.route(`**/support/attachments/${attachmentId}`, (route) => route.fulfill({
+    contentType: "image/png",
+    body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+  }));
 
   await page.goto("/support");
   await page.locator("select").selectOption("bug");
   await page.getByPlaceholder("Опишите, что произошло или что хотите узнать").fill(userMessage.body);
+  await page.locator('input[type="file"]').setInputFiles({ name: "problem.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64") });
   await page.getByRole("button", { name: "Отправить в поддержку" }).click();
   await expect(page).toHaveURL(`/support/${ticketId}`);
   await expect(page.getByText(userMessage.body, { exact: true })).toBeVisible();
+  await expect(page.getByAltText("Скриншот обращения")).toBeVisible();
   await expect.poll(() => createdBody).toMatchObject({ category: "bug", message: userMessage.body });
+  expect(uploadContentType).toContain("multipart/form-data; boundary=");
 
   await page.route(/\/admin\/support(?:\?.*)?$/, async (route) => {
     if (route.request().resourceType() === "document") return route.continue();
@@ -76,6 +90,7 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
   await page.goto("/admin/support");
   await page.getByRole("button", { name: /@athlete/ }).click();
   await expect(page.getByRole("dialog")).toContainText(userMessage.body);
+  await expect(page.getByRole("dialog").getByAltText("Скриншот обращения")).toBeVisible();
   await page.getByLabel("Ответ пользователю").fill("Спасибо, проверяем исправление.");
   await page.getByRole("button", { name: "Ответить" }).click();
   await expect.poll(() => replyBody).toMatchObject({ message: "Спасибо, проверяем исправление." });

@@ -25,7 +25,7 @@ def _build_otp_message(
     msg["To"] = to_email
     msg.set_content(
         "Здравствуйте!\n\n"
-        f"Ваш код для входа в Fil Fit: {code}\n\n"
+        f"Ваш код для входа в Fitness Trainer: {code}\n\n"
         f"Код действует {ttl} мин. Если вы не запрашивали вход — просто игнорируйте письмо.\n"
     )
     msg.add_alternative(
@@ -33,7 +33,7 @@ def _build_otp_message(
 <html>
   <body style="font-family: system-ui, sans-serif; line-height: 1.5;">
     <p>Здравствуйте!</p>
-    <p>Ваш код для входа в <strong>Fil Fit</strong>:</p>
+    <p>Ваш код для входа в <strong>Fitness Trainer</strong>:</p>
     <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">{code}</p>
     <p style="color:#666;">Код действует {ttl} мин. Если вы не запрашивали вход — просто игнорируйте письмо.</p>
   </body>
@@ -51,12 +51,12 @@ def _build_service_message(
     message: str,
 ) -> EmailMessage:
     msg = EmailMessage()
-    msg["Subject"] = "Сообщение от поддержки Fil Fit"
+    msg["Subject"] = "Сообщение от поддержки Fitness Trainer"
     msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
     msg["To"] = to_email
     msg.set_content(
         "Здравствуйте!\n\n"
-        "Сообщение от поддержки Fil Fit:\n\n"
+        "Сообщение от поддержки Fitness Trainer:\n\n"
         f"{message}\n\n"
         "Управлять согласием на такие письма можно в настройках уведомлений.\n"
     )

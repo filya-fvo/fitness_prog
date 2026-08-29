@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # --- Email OTP login (browser) ---
     # From-address / SMTP login (Mail.ru: full mailbox address).
     smtp_from_email: str = "fil_fit_bot@mail.ru"
-    smtp_from_name: str = "Fil Fit"
+    smtp_from_name: str = "Fitness Trainer"
     smtp_host: str = "smtp.mail.ru"
     smtp_port: int = 465
     smtp_username: str = "fil_fit_bot@mail.ru"

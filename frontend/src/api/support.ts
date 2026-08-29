@@ -6,13 +6,21 @@ import { isTelegramEnvironment } from "@/lib/telegram";
 export const supportCategories = ["bug", "question", "idea", "other"] as const;
 export const supportStatuses = ["waiting_support", "waiting_user", "resolved", "closed"] as const;
 
-const messageSchema = z.object({
+export const supportAttachmentSchema = z.object({
+  id: z.string().uuid(),
+  mime_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  size_bytes: z.number().int().positive(),
+  created_at: z.string().datetime({ offset: true }),
+});
+
+export const supportMessageSchema = z.object({
   id: z.string().uuid(),
   author_type: z.enum(["user", "admin", "system"]),
   body: z.string(),
   delivery_channel: z.enum(["in_app", "telegram"]),
   delivery_status: z.enum(["pending", "sent", "failed", "not_requested", "unavailable"]),
   created_at: z.string().datetime({ offset: true }),
+  attachments: z.array(supportAttachmentSchema).default([]),
 });
 
 const summarySchema = z.object({
@@ -30,14 +38,15 @@ const detailSchema = summarySchema.extend({
   source_page: z.string().nullable(),
   client: z.string(),
   app_version: z.string().nullable(),
-  messages: z.array(messageSchema),
+  messages: z.array(supportMessageSchema),
 });
 
 const listSchema = z.object({ items: z.array(summarySchema), total: z.number().int().nonnegative() });
 
 export type SupportCategory = (typeof supportCategories)[number];
 export type SupportStatus = (typeof supportStatuses)[number];
-export type SupportMessage = z.infer<typeof messageSchema>;
+export type SupportAttachment = z.infer<typeof supportAttachmentSchema>;
+export type SupportMessage = z.infer<typeof supportMessageSchema>;
 export type SupportTicketSummary = z.infer<typeof summarySchema>;
 export type SupportTicketDetail = z.infer<typeof detailSchema>;
 
@@ -73,7 +82,22 @@ export async function sendSupportMessage(ticketId: string, message: string): Pro
     message,
     idempotency_key: crypto.randomUUID(),
   });
-  return messageSchema.parse(data);
+  return supportMessageSchema.parse(data);
+}
+
+export async function uploadSupportScreenshot(ticketId: string, image: File): Promise<SupportAttachment> {
+  const form = new FormData();
+  form.append("image", image);
+  form.append("idempotency_key", crypto.randomUUID());
+  const { data } = await apiClient.post(`/support/tickets/${ticketId}/attachments`, form);
+  return supportAttachmentSchema.parse(data);
+}
+
+export async function fetchSupportScreenshot(attachmentId: string): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/support/attachments/${attachmentId}`, {
+    responseType: "blob",
+  });
+  return data;
 }
 
 export async function closeSupportTicket(ticketId: string): Promise<void> {

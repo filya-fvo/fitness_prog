@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
-import { supportCategories, supportStatuses, type SupportCategory, type SupportStatus } from "@/api/support";
+import { supportCategories, supportMessageSchema, supportStatuses, type SupportCategory, type SupportStatus } from "@/api/support";
 
 const adminSummarySchema = z.object({
   id: z.string().uuid(),
@@ -16,20 +16,11 @@ const adminSummarySchema = z.object({
   user_label: z.string(),
 });
 
-const messageSchema = z.object({
-  id: z.string().uuid(),
-  author_type: z.enum(["user", "admin", "system"]),
-  body: z.string(),
-  delivery_channel: z.enum(["in_app", "telegram"]),
-  delivery_status: z.enum(["pending", "sent", "failed", "not_requested", "unavailable"]),
-  created_at: z.string().datetime({ offset: true }),
-});
-
 const adminDetailSchema = adminSummarySchema.extend({
   source_page: z.string().nullable(),
   client: z.string(),
   app_version: z.string().nullable(),
-  messages: z.array(messageSchema),
+  messages: z.array(supportMessageSchema),
 });
 
 const listSchema = z.object({

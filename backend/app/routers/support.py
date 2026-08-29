@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, user_is_admin
 from app.models.support import SupportTicket
 from app.models.user import User
 from app.schemas.support import (
+    SupportAttachmentResponse,
     SupportMessageCreate,
     SupportMessageResponse,
     SupportTicketCreate,
@@ -19,9 +21,23 @@ from app.schemas.support import (
     SupportTicketListResponse,
     SupportTicketSummary,
 )
-from app.services import support_service
+from app.services import support_attachments, support_service
 
 router = APIRouter(prefix="/support", tags=["support"])
+
+
+def _screenshot_error(exc: support_attachments.SupportScreenshotError) -> HTTPException:
+    details = {
+        "empty_image": "Файл изображения пуст",
+        "image_too_large": "Скриншот слишком большой (максимум 8 МБ)",
+        "unsupported_image": "Поддерживаются JPEG, PNG и WebP",
+        "message_not_found": "Нет сообщения, к которому можно прикрепить скриншот",
+        "attachment_limit": "К одному обращению можно прикрепить не более 5 скриншотов",
+    }
+    code = 413 if str(exc) == "image_too_large" else 415
+    if str(exc) in {"message_not_found", "attachment_limit"}:
+        code = 409
+    return HTTPException(status_code=code, detail=details.get(str(exc), "Некорректный скриншот"))
 
 
 def _detail(ticket: SupportTicket, messages) -> SupportTicketDetail:
@@ -62,6 +78,57 @@ async def list_tickets(
 ) -> SupportTicketListResponse:
     items = await support_service.list_user_tickets(session, user.id)
     return SupportTicketListResponse(items=items, total=len(items))
+
+
+@router.post(
+    "/tickets/{ticket_id}/attachments",
+    response_model=SupportAttachmentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_attachment(
+    ticket_id: uuid.UUID,
+    image: UploadFile = File(...),
+    idempotency_key: uuid.UUID = Form(...),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> SupportAttachmentResponse:
+    try:
+        data, mime_type = await support_attachments.read_screenshot(image)
+        attachment = await support_attachments.attach_to_latest_user_message(
+            session,
+            ticket_id=ticket_id,
+            user_id=user.id,
+            idempotency_key=idempotency_key,
+            data=data,
+            mime_type=mime_type,
+        )
+    except support_attachments.SupportScreenshotError as exc:
+        raise _screenshot_error(exc) from exc
+    return SupportAttachmentResponse.model_validate(attachment)
+
+
+@router.get("/attachments/{attachment_id}")
+async def download_attachment(
+    attachment_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    result = await support_attachments.get_attachment(session, attachment_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Скриншот не найден")
+    attachment, owner_id = result
+    if owner_id != user.id and not user_is_admin(user, settings):
+        raise HTTPException(status_code=404, detail="Скриншот не найден")
+    return Response(
+        content=attachment.image_data,
+        media_type=attachment.mime_type,
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": "inline",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @router.post(

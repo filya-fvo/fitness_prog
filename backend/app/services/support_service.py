@@ -105,6 +105,7 @@ async def create_ticket(
         delivery_channel="in_app",
         delivery_status="not_requested",
         created_at=now,
+        attachments=[],
     )
     session.add(ticket)
     await session.flush()
@@ -149,6 +150,7 @@ async def add_user_message(
         delivery_channel="in_app",
         delivery_status="not_requested",
         created_at=now,
+        attachments=[],
     )
     ticket.status = "waiting_support"
     ticket.last_message_at = now
@@ -345,6 +347,7 @@ async def add_admin_reply(
         delivery_channel="telegram" if can_telegram else "in_app",
         delivery_status="pending" if can_telegram else "unavailable",
         created_at=now,
+        attachments=[],
     )
     ticket.status = "waiting_user"
     ticket.last_message_at = now
