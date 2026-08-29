@@ -181,6 +181,7 @@ async def create_draft(
         after=_audit_snapshot(campaign, counts),
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -213,6 +214,7 @@ async def update_draft(
         after=_audit_snapshot(campaign, AdminBroadcastCounts(expected=campaign.audience_count)),
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -253,6 +255,7 @@ async def test_delivery(
         notification_status="sent",
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -306,6 +309,7 @@ async def launch(
         notification_status="pending",
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -353,6 +357,7 @@ async def cancel_scheduled(
         notification_status="not_requested",
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -406,6 +411,7 @@ async def retry_failed(
         notification_status="pending",
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 
@@ -474,6 +480,7 @@ async def record_resume(
         notification_status="pending",
     )
     await session.commit()
+    await session.refresh(campaign)
     return await _response(session, campaign)
 
 

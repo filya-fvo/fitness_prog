@@ -31,6 +31,7 @@ class MutationSession:
     def __init__(self) -> None:
         self.added: list[object] = []
         self.commits = 0
+        self.refreshes = 0
 
     def add(self, value: object) -> None:
         self.added.append(value)
@@ -40,6 +41,9 @@ class MutationSession:
 
     async def commit(self) -> None:
         self.commits += 1
+
+    async def refresh(self, _value: object) -> None:
+        self.refreshes += 1
 
     async def execute(self, _statement):
         return SimpleNamespace()
@@ -157,6 +161,7 @@ async def test_launch_requires_test_and_double_confirmation(monkeypatch) -> None
     assert result.status == "scheduled"
     assert result.scheduled_timezone == "Europe/Moscow"
     assert session.commits == 1
+    assert session.refreshes == 1
     assert len([item for item in session.added if item.__class__.__name__ == "AdminBroadcastDelivery"]) == 2
 
 
@@ -197,6 +202,7 @@ async def test_cancel_stops_only_not_started_scheduled_campaign(monkeypatch) -> 
     assert result.status == "cancelled"
     assert result.cancelled_at is not None
     assert session.commits == 1
+    assert session.refreshes == 1
     assert any(getattr(item, "action", "") == "broadcast.cancel" for item in session.added)
 
     campaign.status = "sending"
