@@ -12,6 +12,7 @@ import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetai
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+import { toast } from "@/store/toastStore";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
@@ -33,7 +34,6 @@ export function PlannedWorkoutEditor(props: Props) {
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const dialogRef = useModalAccessibility(open, () => setOpen(false));
 
   const byId = useMemo(() => new Map(catalog.map((item) => [item.id, item])), [catalog]);
@@ -53,7 +53,6 @@ export function PlannedWorkoutEditor(props: Props) {
     setOpen(true);
     setLoading(true);
     setError(null);
-    setSaved(false);
     try {
       const cached = await readCachedExercises();
       if (cached.length) setCatalog(cached);
@@ -92,7 +91,6 @@ export function PlannedWorkoutEditor(props: Props) {
       }),
     });
     setEditingSourceId(null);
-    setSaved(false);
   }
 
   function restoreDefaults() {
@@ -113,7 +111,6 @@ export function PlannedWorkoutEditor(props: Props) {
       }),
     });
     setEditingSourceId(null);
-    setSaved(false);
   }
 
   async function save() {
@@ -128,7 +125,9 @@ export function PlannedWorkoutEditor(props: Props) {
       );
       const stored = await savePlannedWorkoutPlan({ ...props, replacements });
       setPlan(stored);
-      setSaved(true);
+      setEditingSourceId(null);
+      setOpen(false);
+      toast("Подготовка сохранена");
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить подготовку"));
     } finally {
@@ -215,7 +214,6 @@ export function PlannedWorkoutEditor(props: Props) {
             </div>
             {plan && !editingSourceId ? (
               <div className="space-y-2 border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                {saved ? <p role="status" className="text-center text-xs text-emerald-600">Подготовка сохранена</p> : null}
                 <button type="button" disabled={saving} onClick={() => void save()} className="min-h-[48px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
                 {replacementCount ? <button type="button" disabled={saving} onClick={restoreDefaults} className="min-h-[44px] w-full text-xs text-tg-hint">Вернуть упражнения программы</button> : null}
               </div>

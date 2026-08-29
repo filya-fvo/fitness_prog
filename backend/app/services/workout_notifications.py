@@ -8,6 +8,7 @@ from typing import Any
 from app.services.notification_prefs import merge_notification_settings, parse_hhmm
 from app.services.scheduler import (
     _fallback_title,
+    _cancellation_for_day,
     _override_for_original,
     _schedule_timezone,
     effective_workout_context,
@@ -41,6 +42,8 @@ def due_workout_notification(
     for offset in range(-7, 9):
         original = local_now.date() + timedelta(days=offset)
         if original.weekday() not in days:
+            continue
+        if _cancellation_for_day(goals, original) is not None:
             continue
         override = _override_for_original(goals, original)
         target_date = date.fromisoformat(str(override["target_date"])) if override else original

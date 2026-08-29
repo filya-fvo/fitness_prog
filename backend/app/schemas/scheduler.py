@@ -31,6 +31,12 @@ class WorkoutRescheduleRequest(BaseModel):
     target_time: time
 
 
+class WorkoutCancellationRequest(BaseModel):
+    """Cancel one effective occurrence without advancing the program cursor."""
+
+    scheduled_date: date
+
+
 class WorkoutScheduleOccurrence(BaseModel):
     original_date: date
     target_date: date
@@ -38,10 +44,12 @@ class WorkoutScheduleOccurrence(BaseModel):
     title: str
     program_id: uuid.UUID | None = None
     day_index: int | None = None
-    status: str = Field(pattern=r"^(scheduled|moved|missed|completed)$")
+    status: str = Field(pattern=r"^(scheduled|moved|missed|completed|cancelled)$")
     is_override: bool = False
     can_reschedule: bool = False
     reschedule_until: date | None = None
+    can_cancel: bool = False
+    cancel_to: date | None = None
 
 
 class WorkoutScheduleOverview(BaseModel):

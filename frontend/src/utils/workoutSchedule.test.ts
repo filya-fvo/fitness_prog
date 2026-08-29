@@ -8,7 +8,7 @@ import {
 } from "@/utils/workoutSchedule";
 
 function occurrence(
-  status: "scheduled" | "moved" | "missed" | "completed",
+  status: "scheduled" | "moved" | "missed" | "completed" | "cancelled",
   dayIndex: number,
 ) {
   return {
@@ -22,6 +22,8 @@ function occurrence(
     is_override: false,
     can_reschedule: true,
     reschedule_until: null,
+    can_cancel: status === "scheduled" || status === "missed",
+    cancel_to: null,
   } as const;
 }
 
@@ -59,6 +61,24 @@ describe("program schedule actions", () => {
     };
 
     expect(plannedWorkoutOccurrence(overview)?.day_index).toBe(4);
+    expect(canStartProgramFromSchedule(overview)).toBe(false);
+  });
+
+  it("keeps a cancelled day blocked and exposes the same program day next", () => {
+    const cancelled = occurrence("cancelled", 3);
+    const next = {
+      ...occurrence("scheduled", 3),
+      original_date: "2026-08-31",
+      target_date: "2026-08-31",
+    };
+    const overview: WorkoutScheduleOverview = {
+      requested_date: "2026-08-28",
+      current: cancelled,
+      next,
+    };
+
+    expect(startableWorkoutOccurrence(overview)).toBeNull();
+    expect(plannedWorkoutOccurrence(overview)).toBe(next);
     expect(canStartProgramFromSchedule(overview)).toBe(false);
   });
 });

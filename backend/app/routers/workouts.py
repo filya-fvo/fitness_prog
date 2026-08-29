@@ -15,6 +15,7 @@ from app.schemas.scheduler import (
     ShiftScheduleRequest,
     ShiftScheduleResponse,
     SkipWorkoutRequest,
+    WorkoutCancellationRequest,
     WorkoutRescheduleRequest,
     WorkoutScheduleOverview,
 )
@@ -111,6 +112,20 @@ async def reschedule_workout_occurrence(
         original_date=body.original_date,
         target_date=body.target_date,
         target_time=body.target_time,
+    )
+    return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.post("/schedule/cancel", response_model=WorkoutScheduleOverview)
+async def cancel_workout_occurrence(
+    body: WorkoutCancellationRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleOverview:
+    overview = await scheduler_service.cancel_workout_occurrence(
+        session,
+        user,
+        scheduled_date=body.scheduled_date,
     )
     return WorkoutScheduleOverview.model_validate(overview)
 

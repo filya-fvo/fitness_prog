@@ -232,9 +232,7 @@ export function TrainHubPage() {
         programId: program.id,
         dayIndex: startDayIndex,
         scheduledDate:
-          startableOccurrence?.status === "scheduled"
-            ? startableOccurrence.target_date
-            : undefined,
+          startableOccurrence?.target_date,
         weekPhase,
       });
       const clientId = crypto.randomUUID();

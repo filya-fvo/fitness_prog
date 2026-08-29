@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from app.models.user import User
 from app.services import supplement_intakes
 from app.services.scheduler import (
+    cancel_workout_occurrence,
     get_schedule_overview,
     next_base_workout_date,
     reschedule_workout_occurrence,
@@ -99,6 +100,29 @@ def test_one_off_friday_move_keeps_monday_schedule() -> None:
     assert next_base_workout_date(goals, friday) == monday
 
 
+def test_cancelled_friday_keeps_same_program_day_for_monday() -> None:
+    friday = date(2026, 8, 28)
+    monday = date(2026, 8, 31)
+    goals = _schedule_goals()
+    goals["workout_schedule_cancellations"] = [{
+        "scheduled_date": friday.isoformat(),
+        "source_date": None,
+        "day_index": 3,
+        "title": "Грудь + спина · день 3",
+        "next_date": monday.isoformat(),
+    }]
+
+    friday_view = schedule_overview(goals, friday)
+    monday_view = schedule_overview(goals, monday)
+
+    assert friday_view["current"]["status"] == "cancelled"
+    assert friday_view["current"]["can_cancel"] is False
+    assert friday_view["next"]["target_date"] == monday
+    assert friday_view["next"]["day_index"] == 3
+    assert monday_view["current"]["status"] == "scheduled"
+    assert monday_view["current"]["day_index"] == 3
+
+
 def test_workout_reminder_uses_lead_and_program_day() -> None:
     tz = timezone(timedelta(hours=3))
     goals = _schedule_goals(lead=60)
@@ -141,6 +165,47 @@ def test_moved_workout_reminder_follows_target_day_only() -> None:
     assert item is not None
     assert item["meta"]["original_date"] == "2026-08-21"
     assert "Тяговая тренировка" in item["text"]
+
+
+def test_cancelled_workout_has_no_reminder_and_next_regular_day_remains_due() -> None:
+    tz = timezone(timedelta(hours=3))
+    goals = _schedule_goals(lead=60)
+    goals["workout_schedule_cancellations"] = [{
+        "scheduled_date": "2026-08-28",
+        "source_date": None,
+        "day_index": 3,
+        "title": "Грудь + спина",
+        "next_date": "2026-08-31",
+    }]
+
+    assert due_workout_notification(
+        goals,
+        now=datetime(2026, 8, 28, 5, 15, tzinfo=tz),
+        catch_up=False,
+        window_minutes=1,
+    ) is None
+    monday = due_workout_notification(
+        goals,
+        now=datetime(2026, 8, 31, 5, 15, tzinfo=tz),
+        catch_up=False,
+        window_minutes=1,
+    )
+    assert monday is not None
+    assert monday["meta"]["day_index"] == 3
+
+
+def test_cancellation_from_another_program_does_not_hide_current_schedule() -> None:
+    goals = _schedule_goals()
+    goals["active_program_id"] = "33333333-3333-4333-8333-333333333333"
+    goals["workout_schedule_cancellations"] = [{
+        "scheduled_date": "2026-08-28",
+        "program_id": "44444444-4444-4444-8444-444444444444",
+    }]
+
+    overview = schedule_overview(goals, date(2026, 8, 28))
+
+    assert overview["current"]["status"] == "scheduled"
+    assert overview["next"]["target_date"] == date(2026, 8, 28)
 
 
 def test_starting_early_suppresses_later_notification() -> None:
@@ -223,6 +288,7 @@ async def test_overview_marks_todays_completed_occurrence_and_advances_next() ->
     assert overview["current"]["title"] == "Спина и грудь"
     assert overview["current"]["day_index"] == 2
     assert overview["current"]["can_reschedule"] is False
+    assert overview["current"]["can_cancel"] is False
     assert overview["next"]["target_date"] == date(2026, 8, 24)
 
 
@@ -252,6 +318,40 @@ async def test_reschedule_updates_only_one_occurrence(monkeypatch) -> None:
     assert overview["current"]["status"] == "moved"
     assert next_base_workout_date(locked_user.goals, date(2026, 8, 21)) == date(2026, 8, 24)
     reset_days.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_cancel_occurrence_keeps_cursor_and_moves_prepared_date(monkeypatch) -> None:
+    goals = _schedule_goals()
+    locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[locked_user, None])
+    session.execute = AsyncMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    reset_days = AsyncMock()
+    monkeypatch.setattr(supplement_intakes, "reset_pending_days", reset_days)
+
+    overview = await cancel_workout_occurrence(
+        session,
+        locked_user,
+        scheduled_date=date(2026, 8, 28),
+        now=datetime(2026, 8, 28, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+    )
+
+    cancellation = locked_user.goals["workout_schedule_cancellations"][0]
+    assert cancellation["scheduled_date"] == "2026-08-28"
+    assert cancellation["next_date"] == "2026-08-31"
+    assert locked_user.goals["active_program_next_day"] == 3
+    assert overview["current"]["status"] == "cancelled"
+    assert overview["next"]["target_date"] == date(2026, 8, 31)
+    assert overview["next"]["day_index"] == 3
+    session.execute.assert_awaited_once()
+    reset_days.assert_awaited_once_with(
+        session,
+        locked_user,
+        {date(2026, 8, 28), date(2026, 8, 31)},
+    )
 
 
 @pytest.mark.asyncio

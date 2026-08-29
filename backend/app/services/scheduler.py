@@ -7,16 +7,18 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.program import Program
 from app.models.user import User
 from app.models.workout import Workout
+from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services.notification_prefs import _resolve_tz, merge_notification_settings, parse_hhmm
 
 OVERRIDES_KEY = "workout_schedule_overrides"
+CANCELLATIONS_KEY = "workout_schedule_cancellations"
 MAX_RESCHEDULE_LOOKBACK_DAYS = 6
 MAX_NOTIFICATION_LEAD_MINUTES = 24 * 60
 
@@ -99,6 +101,39 @@ def _override_for_original(goals: dict[str, Any], original: date) -> dict[str, A
     return next((row for row in _schedule_overrides(goals) if row["original_date"] == key), None)
 
 
+def _schedule_cancellations(goals: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = goals.get(CANCELLATIONS_KEY)
+    if not isinstance(raw, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            date.fromisoformat(str(item.get("scheduled_date")))
+            source = item.get("source_date")
+            if source:
+                date.fromisoformat(str(source))
+        except ValueError:
+            continue
+        rows.append(dict(item))
+    return rows
+
+
+def _cancellation_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | None:
+    key = day.isoformat()
+    active_program_id = str(goals.get("active_program_id") or "").strip()
+    return next(
+        (
+            row
+            for row in _schedule_cancellations(goals)
+            if (not row.get("program_id") or str(row.get("program_id")) == active_program_id)
+            and (row["scheduled_date"] == key or row.get("source_date") == key)
+        ),
+        None,
+    )
+
+
 def next_base_workout_date(goals: dict[str, Any], after: date) -> date | None:
     days = workout_days(goals)
     for offset in range(1, 8):
@@ -119,6 +154,17 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "start_time": workout_start_time(goals),
             "override": None,
             "moved_away": False,
+        }
+    cancellation = _cancellation_for_day(goals, day)
+    if cancellation is not None:
+        return {
+            "is_workout_day": False,
+            "original_date": day,
+            "target_date": day,
+            "start_time": workout_start_time(goals),
+            "override": cancellation,
+            "moved_away": False,
+            "cancelled": True,
         }
     overrides = _schedule_overrides(goals)
     day_key = day.isoformat()
@@ -216,6 +262,7 @@ def _occurrence_payload(
         day_index = int((override or {}).get("day_index") or goals.get("active_program_next_day") or 0) or None
     except (TypeError, ValueError):
         day_index = None
+    can_change = status_value in {"scheduled", "missed"} and next_base is not None
     return {
         "original_date": original,
         "target_date": context["target_date"],
@@ -225,8 +272,10 @@ def _occurrence_payload(
         "day_index": day_index,
         "status": status_value,
         "is_override": override is not None,
-        "can_reschedule": next_base is not None,
-        "reschedule_until": next_base - timedelta(days=1) if next_base else None,
+        "can_reschedule": can_change,
+        "reschedule_until": next_base - timedelta(days=1) if can_change and next_base else None,
+        "can_cancel": can_change,
+        "cancel_to": next_base if can_change else None,
     }
 
 
@@ -235,6 +284,8 @@ def schedule_overview(goals: dict[str, Any], requested_day: date) -> dict[str, A
     current: dict[str, Any] | None = None
     if current_context["is_workout_day"]:
         current = _occurrence_payload(goals, current_context, status_value="scheduled")
+    elif current_context.get("cancelled"):
+        current = _occurrence_payload(goals, current_context, status_value="cancelled")
     elif current_context["moved_away"]:
         current = _occurrence_payload(goals, current_context, status_value="moved")
 
@@ -285,6 +336,8 @@ async def get_schedule_overview(
                 current["day_index"] = current.get("day_index")
             current["can_reschedule"] = False
             current["reschedule_until"] = None
+            current["can_cancel"] = False
+            current["cancel_to"] = None
 
             # Today appears as both current and next in the pure schedule. Once
             # completed, expose the first future occurrence for preparation.
@@ -305,6 +358,8 @@ async def get_schedule_overview(
             if next_base is None or requested_day >= next_base:
                 continue
             if _override_for_original(goals, original) is not None:
+                continue
+            if _cancellation_for_day(goals, original) is not None:
                 continue
             performed = await session.scalar(
                 select(Workout.id).where(
@@ -333,6 +388,103 @@ async def get_schedule_overview(
         occurrence["program_id"] = occurrence.get("program_id") or program_id
         occurrence["day_index"] = occurrence.get("day_index") or day_index
     return overview
+
+
+async def cancel_workout_occurrence(
+    session: AsyncSession,
+    user: User,
+    *,
+    scheduled_date: date,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Cancel one occurrence; the unchanged cursor makes it next in program order."""
+    locked_user = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+    if locked_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+    goals = dict(locked_user.goals or {})
+    local_now = (now or datetime.now(UTC)).astimezone(_schedule_timezone(goals))
+    if scheduled_date < local_now.date() - timedelta(days=MAX_RESCHEDULE_LOOKBACK_DAYS):
+        raise HTTPException(status_code=400, detail="Эту тренировку уже нельзя отменить")
+
+    existing_cancellation = _cancellation_for_day(goals, scheduled_date)
+    if existing_cancellation is not None:
+        return await get_schedule_overview(session, locked_user, local_now.date())
+    context = effective_workout_context(goals, scheduled_date)
+    if not context["is_workout_day"]:
+        raise HTTPException(status_code=400, detail="На выбранную дату тренировка не запланирована")
+    next_date = next_base_workout_date(goals, scheduled_date)
+    if next_date is None:
+        raise HTTPException(status_code=400, detail="Не найден следующий тренировочный день")
+
+    completed = await session.scalar(
+        select(Workout.id).where(
+            Workout.user_id == locked_user.id,
+            Workout.scheduled_date == scheduled_date,
+            Workout.status == "completed",
+            Workout.is_deleted.is_(False),
+        )
+    )
+    if completed is not None:
+        raise HTTPException(status_code=409, detail="Выполненную тренировку отменить нельзя")
+
+    context_override = context.get("override") if isinstance(context.get("override"), dict) else {}
+    program_id, day_index, title = await active_program_snapshot(session, locked_user)
+    source_date = context["original_date"]
+    cancellations = [
+        row
+        for row in _schedule_cancellations(goals)
+        if row["scheduled_date"] != scheduled_date.isoformat()
+    ]
+    cancellations.append(
+        {
+            "scheduled_date": scheduled_date.isoformat(),
+            "source_date": source_date.isoformat() if source_date != scheduled_date else None,
+            "program_id": str(context_override.get("program_id") or program_id or "") or None,
+            "day_index": context_override.get("day_index") or day_index,
+            "title": str(context_override.get("title") or title),
+            "next_date": next_date.isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
+        }
+    )
+    cutoff = local_now.date() - timedelta(days=30)
+    goals[CANCELLATIONS_KEY] = [
+        row
+        for row in cancellations
+        if date.fromisoformat(str(row["scheduled_date"])) >= cutoff
+    ]
+    goals[OVERRIDES_KEY] = [
+        row
+        for row in _schedule_overrides(goals)
+        if row["original_date"] != source_date.isoformat()
+        and row["target_date"] != scheduled_date.isoformat()
+    ]
+    locked_user.goals = goals
+    flag_modified(locked_user, "goals")
+
+    plan_override_filters = [
+        WorkoutPlanOverride.user_id == locked_user.id,
+        WorkoutPlanOverride.scheduled_date == scheduled_date,
+        WorkoutPlanOverride.is_deleted.is_(False),
+    ]
+    if program_id is not None:
+        plan_override_filters.append(WorkoutPlanOverride.program_id == program_id)
+    await session.execute(
+        update(WorkoutPlanOverride)
+        .where(*plan_override_filters)
+        .values(scheduled_date=next_date)
+    )
+    await session.commit()
+    await session.refresh(locked_user)
+    user.goals = locked_user.goals
+
+    from app.services import supplement_intakes
+
+    await supplement_intakes.reset_pending_days(
+        session,
+        locked_user,
+        {scheduled_date, next_date},
+    )
+    return await get_schedule_overview(session, locked_user, local_now.date())
 
 
 async def reschedule_workout_occurrence(

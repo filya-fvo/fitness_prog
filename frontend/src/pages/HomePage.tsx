@@ -8,6 +8,7 @@ import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
+  fetchPlannedWorkoutPlan,
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
   type WorkoutScheduleOverview,
@@ -131,6 +132,7 @@ export function HomePage() {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
   const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
@@ -166,10 +168,40 @@ export function HomePage() {
   );
   const todayDayTitle =
     dayOptions.find((d) => d.dayIndex === todayDay)?.title || `День ${todayDay}`;
-  const todayExercises = useMemo(
+  const programExercises = useMemo(
     () => (todayProgram ? listProgramDayExercises(todayProgram, todayDay) : []),
     [todayDay, todayProgram],
   );
+  const todayExercises = useMemo(
+    () => preparedPlan?.exercises.map((exercise, index) => ({
+      key: `${exercise.exercise_id}-${exercise.order || index}`,
+      name: exercise.name_ru || `Упражнение ${index + 1}`,
+      exerciseId: exercise.exercise_id,
+      sets: String(exercise.target_sets),
+      reps: exercise.target_reps ?? undefined,
+    })) ?? programExercises,
+    [preparedPlan, programExercises],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (!todayProgram || !plannedOccurrence || !getStoredToken() || !isOnline()) {
+      setPreparedPlan(null);
+      return () => controller.abort();
+    }
+    setPreparedPlan(null);
+    void fetchPlannedWorkoutPlan({
+      programId: todayProgram.id,
+      scheduledDate: plannedOccurrence.target_date,
+      dayIndex: plannedOccurrence.day_index ?? todayDay,
+      weekPhase: todayPhase,
+    }).then((plan) => {
+      if (!controller.signal.aborted) setPreparedPlan(plan);
+    }).catch(() => {
+      if (!controller.signal.aborted) setPreparedPlan(null);
+    });
+    return () => controller.abort();
+  }, [plannedOccurrence, todayDay, todayPhase, todayProgram]);
 
   useEffect(() => {
     setTodayPlanOpen(false);
@@ -555,14 +587,11 @@ export function HomePage() {
       setError("Следующая тренировка ещё не наступила. Пока можно подготовить замены.");
       return;
     }
-    const scheduled = startableOccurrence?.status === "scheduled"
-      ? startableOccurrence
-      : null;
     await startProgramDay({
       dayIndex: startableOccurrence?.day_index ?? todayDay,
       weekPhase: todayPhase,
       phaseSource: programCursor?.phaseSource ?? "auto",
-      scheduledDate: scheduled?.target_date,
+      scheduledDate: startableOccurrence?.target_date,
     });
   }
 

@@ -118,6 +118,119 @@ test("one workout can be moved without changing the recurring schedule", async (
   )).toBe(true);
 });
 
+test("cancelled workout becomes the same program day on the next schedule date", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+
+  await page.route("**/users/me", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: USER_ID,
+      telegram_id: null,
+      username: "cancel-user",
+      auth_email: "cancel@example.test",
+      anthropometry: { sex: "male" },
+      goals: {
+        onboarding_completed: true,
+        active_program_id: PROGRAM_ID,
+        active_program_next_day: 3,
+        active_program_week_phase: "medium",
+      },
+      subscription_status: "free",
+      stars_balance: 0,
+      onboarding_completed: true,
+    }),
+  }));
+  await page.route(/\/programs(?:\?|$)/, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        id: PROGRAM_ID,
+        name: PROGRAM_NAME,
+        description: "Тест",
+        target_level: "intermediate",
+        duration_weeks: 8,
+        structure: { schedule: [{ day_index: 3, name: DAY_NAME, exercises: [] }] },
+        workout_type: "strength",
+        level: "intermediate",
+        is_template: true,
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route(/\/exercises(?:\?|$)/, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0, page: 1, page_size: 200 }),
+  }));
+  await page.route("**/workouts/history", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+
+  const friday = {
+    original_date: "2026-08-28",
+    target_date: "2026-08-28",
+    start_time: "06:15:00",
+    title: `${PROGRAM_NAME} · ${DAY_NAME}`,
+    program_id: PROGRAM_ID,
+    day_index: 3,
+    status: "scheduled",
+    is_override: false,
+    can_reschedule: true,
+    reschedule_until: "2026-08-30",
+    can_cancel: true,
+    cancel_to: "2026-08-31",
+  };
+  let overview: Record<string, unknown> = {
+    requested_date: "2026-08-28",
+    current: friday,
+    next: friday,
+  };
+  await page.route("**/workouts/schedule/overview**", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(overview),
+  }));
+  let cancelPayload: Record<string, unknown> | null = null;
+  await page.route("**/workouts/schedule/cancel", async (route) => {
+    cancelPayload = route.request().postDataJSON() as Record<string, unknown>;
+    const monday = {
+      ...friday,
+      original_date: "2026-08-31",
+      target_date: "2026-08-31",
+      status: "scheduled",
+      reschedule_until: "2026-09-01",
+      cancel_to: "2026-09-02",
+    };
+    overview = {
+      requested_date: "2026-08-28",
+      current: {
+        ...friday,
+        status: "cancelled",
+        is_override: true,
+        can_reschedule: false,
+        reschedule_until: null,
+        can_cancel: false,
+        cancel_to: null,
+      },
+      next: monday,
+    };
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(overview) });
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Отменить" })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Отменить" }).click();
+
+  expect(cancelPayload).toEqual({ scheduled_date: "2026-08-28" });
+  await expect(page.getByText(/Тренировка отменена · следующая .*31.*августа.*06:15/i)).toBeVisible();
+  await expect(page.getByText("Порядок программы сохранён: эта тренировка станет следующей.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Отменить" })).toHaveCount(0);
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+});
+
 test("home lets program exercises be replaced and saved before workout start", async ({ page }) => {
   const sourceId = "44444444-4444-4444-8444-444444444441";
   const targetId = "44444444-4444-4444-8444-444444444442";
@@ -155,6 +268,7 @@ test("home lets program exercises be replaced and saved before workout start", a
       name_ru: "Тяга верхнего блока",
     }],
   };
+  let savedPlan: Record<string, unknown> | null = null;
   const exercises = [
     {
       id: sourceId,
@@ -263,21 +377,22 @@ test("home lets program exercises be replaced and saved before workout start", a
         to_exercise_id: string;
       }>)[0];
       const selected = exercises.find((item) => item.id === savedReplacement.to_exercise_id)!;
+      savedPlan = {
+        ...plan,
+        exercises: [{
+          ...plan.exercises[0],
+          exercise_id: selected.id,
+          original_exercise_id: sourceId,
+          name_ru: selected.name_ru,
+        }],
+      };
       await route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({
-          ...plan,
-          exercises: [{
-            ...plan.exercises[0],
-            exercise_id: selected.id,
-            original_exercise_id: sourceId,
-            name_ru: selected.name_ru,
-          }],
-        }),
+        body: JSON.stringify(savedPlan),
       });
       return;
     }
-    await route.fulfill({ contentType: "application/json", body: JSON.stringify(plan) });
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(savedPlan ?? plan) });
   });
 
   await page.goto("/");
@@ -304,13 +419,19 @@ test("home lets program exercises be replaced and saved before workout start", a
   await freeChoiceCard.getByRole("button", { name: "Выбрать" }).click();
   await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
 
-  await expect(dialog.getByText("Подготовка сохранена")).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText("Подготовка сохранена")).toBeVisible();
   expect(savedPayload).toMatchObject({
     program_id: PROGRAM_ID,
     scheduled_date: "2026-08-25",
     day_index: 1,
     replacements: [{ from_exercise_id: sourceId, to_exercise_id: freeChoiceId }],
   });
+  await page.getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Главная" }).click();
+  await page.getByRole("button", { name: /План следующей тренировки/ }).click();
+  await expect(page.getByRole("button", { name: /Болгарские выпады с гантелями.*Открыть/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Тяга верхнего блока.*Открыть/ })).toHaveCount(0);
 });
 
 test("completed scheduled workout is not offered for a second start", async ({ page }) => {

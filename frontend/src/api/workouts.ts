@@ -65,10 +65,12 @@ const scheduleOccurrenceSchema = z.object({
   title: z.string(),
   program_id: z.string().uuid().nullable().optional(),
   day_index: z.number().nullable().optional(),
-  status: z.enum(["scheduled", "moved", "missed", "completed"]),
+  status: z.enum(["scheduled", "moved", "missed", "completed", "cancelled"]),
   is_override: z.boolean(),
   can_reschedule: z.boolean(),
   reschedule_until: z.string().nullable().optional(),
+  can_cancel: z.boolean().default(false),
+  cancel_to: z.string().nullable().optional(),
 });
 
 const scheduleOverviewSchema = z.object({
@@ -268,6 +270,13 @@ export async function rescheduleWorkout(input: {
     original_date: input.originalDate,
     target_date: input.targetDate,
     target_time: input.targetTime,
+  });
+  return scheduleOverviewSchema.parse(data);
+}
+
+export async function cancelScheduledWorkout(scheduledDate: string): Promise<WorkoutScheduleOverview> {
+  const { data } = await apiClient.post("/workouts/schedule/cancel", {
+    scheduled_date: scheduledDate,
   });
   return scheduleOverviewSchema.parse(data);
 }

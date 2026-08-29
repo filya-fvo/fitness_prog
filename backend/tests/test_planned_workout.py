@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from app.models.exercise import Exercise
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services.planned_workout import apply_replacements, apply_saved_override
+from app.main import app
 
 
 class ScalarRows:
@@ -51,6 +52,12 @@ def exercise(exercise_id, name: str) -> Exercise:
         difficulty=2,
         tags=[],
     )
+
+
+def test_planned_and_cancel_schedule_routes_are_public_contracts() -> None:
+    paths = app.openapi()["paths"]
+    assert set(paths["/workouts/planned-plan"]) == {"get", "put"}
+    assert set(paths["/workouts/schedule/cancel"]) == {"post"}
 
 
 @pytest.mark.asyncio
