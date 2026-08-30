@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  fetchAdminSystemStatus,
+  checkAdminSystemStatus,
   type AdminSystemCheck,
   type AdminSystemFact,
   type AdminSystemStatus,
@@ -14,6 +14,7 @@ import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
 
 import { adminSystemLoadReducer, initialAdminSystemState } from "../adminSystemState";
+import { SystemStatusHistory } from "../components/SystemStatusHistory";
 
 const STATUS_PRESENTATION: Record<
   AdminSystemStatus,
@@ -93,7 +94,7 @@ export function AdminSystemPage() {
   const load = useCallback(async () => {
     dispatch({ type: "load" });
     try {
-      const data = await fetchAdminSystemStatus();
+      const data = await checkAdminSystemStatus();
       dispatch({ type: "success", data });
     } catch (error) {
       dispatch({
@@ -176,6 +177,7 @@ export function AdminSystemPage() {
           <div className="grid gap-3 md:grid-cols-2">
             {state.data.items.map((item) => <SystemStatusCard key={item.key} item={item} />)}
           </div>
+          <SystemStatusHistory />
         </>
       ) : null}
     </section>

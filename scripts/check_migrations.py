@@ -36,6 +36,7 @@ REQUIRED_FILES = [
     "20260827000025_move_weight_to_body_measurements.sql",
     "20260828000026_admin_exercise_editor.sql",
     "20260828000027_program_publication.sql",
+    "20260830000032_admin_system_status_history.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -56,6 +57,7 @@ REQUIRED_TABLES = [
     "admin_audit_log",
     "admin_broadcasts",
     "admin_broadcast_deliveries",
+    "admin_system_snapshots",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -90,6 +92,8 @@ REQUIRED_SNIPPETS = [
     "programs_publication_status_check",
     "uq_programs_key_version",
     "uq_programs_current_version",
+    "ck_admin_system_snapshot_items_object",
+    "idx_admin_system_snapshots_captured",
 ]
 
 

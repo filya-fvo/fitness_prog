@@ -43,6 +43,22 @@ const systemStatus = {
   ],
 };
 
+const systemHistory = {
+  snapshots: [
+    {
+      id: "00000000-0000-4000-8000-000000000032",
+      captured_at: "2026-08-26T12:00:00Z",
+      overall_status: "attention",
+      source: "manual",
+      items: [
+        { key: "api", status: "normal" },
+        { key: "worker", status: "attention" },
+      ],
+    },
+  ],
+  retention_days: 30,
+};
+
 test("admin system shows loading, error and successful retry", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "admin-e2e-token"));
   await page.route("**/users/me", (route) => route.fulfill({
@@ -51,7 +67,7 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
   }));
 
   let attempts = 0;
-  await page.route("**/admin/system/status", async (route) => {
+  await page.route("**/admin/system/status/check", async (route) => {
     attempts += 1;
     if (attempts === 1) {
       await new Promise((resolve) => setTimeout(resolve, 250));
@@ -64,6 +80,10 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
     }
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(systemStatus) });
   });
+  await page.route("**/admin/system/history?*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(systemHistory),
+  }));
 
   await page.goto("/admin/system");
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
@@ -75,5 +95,8 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
   await expect(page.getByRole("heading", { name: "API", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Фоновый worker" })).toBeVisible();
   await expect(page.getByText("Heartbeat worker задерживается.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "История состояния" })).toBeVisible();
+  await expect(page.getByText("Worker — Требует внимания")).toBeVisible();
+  await expect(page.getByText("Ручная проверка")).toBeVisible();
   expect(attempts).toBe(2);
 });

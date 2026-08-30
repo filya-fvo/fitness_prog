@@ -20,6 +20,7 @@ from app.models.user import User
 from app.models.support import SupportMessage, SupportTicket
 from app.routers.notifications import dispatch_all_users
 from app.services.admin_system import NOTIFICATION_STATUS_KEY, WORKER_STATUS_KEY
+from app.services.admin_system_history import collect_and_record_system_status
 from app.services.admin_broadcast_delivery import deliver_batch
 from app.services.telegram_bot import TelegramBotError, send_app_notification, send_workout_reminder
 from app.services.web_push import send_user_web_push
@@ -146,6 +147,29 @@ async def dispatch_scheduled_notifications_task(ctx: dict[str, Any]) -> dict[str
     )
     logger.info("scheduled_dispatch {}", result)
     return result
+
+
+async def snapshot_admin_system_task(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Cron: persist an allowlisted system-status sample for the admin timeline."""
+    redis = ctx.get("redis")
+    await _record_worker_status(redis, task="Снимок состояния системы", state="running")
+    settings = notification_settings()
+    try:
+        async with AsyncSessionLocal() as session:
+            status, recorded = await collect_and_record_system_status(
+                session,
+                settings,
+                source="scheduled",
+            )
+    except Exception:
+        await _record_worker_status(redis, task="Снимок состояния системы", state="failed")
+        raise
+    await _record_worker_status(
+        redis,
+        task="Снимок состояния системы",
+        state="completed" if recorded else "completed_with_errors",
+    )
+    return {"ok": recorded, "overall_status": status.overall_status}
 
 
 async def send_timer_finished_task(
@@ -276,12 +300,14 @@ class WorkerSettings:
     functions = [
         send_reminder_task,
         dispatch_scheduled_notifications_task,
+        snapshot_admin_system_task,
         send_timer_finished_task,
         send_broadcast_batch_task,
         send_support_reply_task,
     ]
     cron_jobs = [
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),
+        cron(snapshot_admin_system_task, minute={0, 15, 30, 45}, second={30}),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

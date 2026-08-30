@@ -4,11 +4,24 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 AdminSystemStatus = Literal["normal", "attention", "error", "no_data"]
 AdminSystemFactKind = Literal["text", "number", "datetime"]
+AdminSystemCheckKey = Literal[
+    "api",
+    "database",
+    "redis",
+    "worker",
+    "notifications",
+    "queue",
+    "backup",
+    "deployment",
+    "https",
+]
+AdminSystemSnapshotSource = Literal["manual", "scheduled"]
 
 
 class AdminSystemFact(BaseModel):
@@ -18,17 +31,7 @@ class AdminSystemFact(BaseModel):
 
 
 class AdminSystemCheck(BaseModel):
-    key: Literal[
-        "api",
-        "database",
-        "redis",
-        "worker",
-        "notifications",
-        "queue",
-        "backup",
-        "deployment",
-        "https",
-    ]
+    key: AdminSystemCheckKey
     title: str
     status: AdminSystemStatus
     summary: str
@@ -41,3 +44,21 @@ class AdminSystemStatusResponse(BaseModel):
     checked_at: datetime
     overall_status: AdminSystemStatus
     items: list[AdminSystemCheck]
+
+
+class AdminSystemHistoryItem(BaseModel):
+    key: AdminSystemCheckKey
+    status: AdminSystemStatus
+
+
+class AdminSystemHistorySnapshot(BaseModel):
+    id: UUID
+    captured_at: datetime
+    overall_status: AdminSystemStatus
+    source: AdminSystemSnapshotSource
+    items: list[AdminSystemHistoryItem]
+
+
+class AdminSystemHistoryResponse(BaseModel):
+    snapshots: list[AdminSystemHistorySnapshot]
+    retention_days: int = Field(ge=1, le=365)

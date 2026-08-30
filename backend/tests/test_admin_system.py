@@ -237,7 +237,15 @@ async def test_overall_status_uses_worst_independent_check(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_regular_user_cannot_read_system_status() -> None:
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/admin/system/status"),
+        ("POST", "/admin/system/status/check"),
+        ("GET", "/admin/system/history"),
+    ],
+)
+async def test_regular_user_cannot_read_system_status(method: str, path: str) -> None:
     regular_user = SimpleNamespace(telegram_id=100, username="regular")
 
     async def fake_db():
@@ -256,8 +264,9 @@ async def test_regular_user_cannot_read_system_status() -> None:
     try:
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get(
-                "/admin/system/status",
+            response = await client.request(
+                method,
+                path,
                 headers={"Authorization": f"Bearer {token}"},
             )
     finally:
