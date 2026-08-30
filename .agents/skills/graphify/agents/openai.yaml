@@ -1,0 +1,4 @@
+interface:
+  display_name: "Graphify"
+  short_description: "Local project map and queries"
+  default_prompt: "Use the local project graph to answer the question."

@@ -25,6 +25,24 @@ docs/       пользовательские, административные �
 Исторические планы и одноразовые скрипты, не участвующие в приложении, вынесены
 в `_archive_candidates/` и не являются источником требований.
 
+### Локальная карта проекта
+
+Graphify 0.9.52 с локальным SQL-парсером строит производную AST-карту в
+`graphify-out/`. Она ускоряет поиск связей между frontend, API, services, models
+и миграциями, но не заменяет проверку актуального кода и тестов.
+
+```powershell
+.\scripts\install-graphify.cmd
+.\scripts\graphify.cmd query "как проходит отправка уведомлений"
+
+# Полная локальная пересборка без внешнего ИИ
+.\scripts\graphify.cmd extract . --code-only --no-cluster --force
+.\scripts\graphify.cmd cluster-only . --no-label
+```
+
+В Codex карта доступна через `$graphify`. Облачные backend/extras, MCP, strict,
+watch и git hooks намеренно не включены; на production VPS инструмент не ставится.
+
 ## Запуск на Windows
 
 Первая установка на новом компьютере:

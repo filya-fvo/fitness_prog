@@ -1,0 +1,9 @@
+# Derived, historical, runtime, and private areas are not project architecture.
+_archive_candidates/
+artifacts/
+frontend/artifacts/
+backups/
+.tmp/
+models/
+.vscode/mcp.json
+.mcp.json
