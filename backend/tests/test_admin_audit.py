@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,8 +18,9 @@ from app.core.security import create_access_token
 from app.main import app
 from app.models.exercise import Exercise
 from app.models.user import User
+from app.schemas.admin_audit import AdminAuditEntry, AdminAuditExportRequest
 from app.schemas.exercise import ExerciseUpdate
-from app.services import admin_audit, admin_users, exercise_service
+from app.services import admin_audit, admin_audit_export, admin_users, exercise_service
 
 
 class AddOnlySession:
@@ -180,6 +182,7 @@ async def test_user_clear_and_audit_share_one_commit(monkeypatch) -> None:
 def test_audit_api_is_read_only_and_migration_blocks_mutation() -> None:
     methods = app.openapi()["paths"]["/admin/audit"]
     assert set(methods) == {"get"}
+    assert set(app.openapi()["paths"]["/admin/audit/export"]) == {"post"}
 
     migration = (
         Path(__file__).resolve().parents[2]
@@ -251,9 +254,124 @@ async def test_regular_user_cannot_read_audit_journal() -> None:
                     "X-Request-ID": str(request_id),
                 },
             )
+            export_response = await client.post(
+                "/admin/audit/export?format=json",
+                json={},
+                headers={"Authorization": f"Bearer {token}"},
+            )
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 403
     assert response.headers["X-Request-ID"] == str(request_id)
     assert response.json() == {"detail": "Требуются права администратора"}
+    assert export_response.status_code == 403
+
+
+def _export_entry(*, actor_label: str = "@owner") -> AdminAuditEntry:
+    event_id = uuid.uuid4()
+    return AdminAuditEntry(
+        id=event_id,
+        actor_user_id=uuid.uuid4(),
+        actor_label=actor_label,
+        action="exercise.update",
+        object_type="exercise",
+        object_id=uuid.uuid4(),
+        result="success",
+        description="Упражнение изменено.",
+        before={"difficulty": 2},
+        after={"difficulty": 3},
+        notification_status=None,
+        correlation_id=uuid.uuid4(),
+        created_at=datetime.now(UTC),
+    )
+
+
+@pytest.mark.asyncio
+async def test_json_export_is_bounded_and_records_audit_event(monkeypatch) -> None:
+    session = MutationSession()
+    filters = AdminAuditExportRequest(action="exercise.update", result="success")
+
+    async def fake_query(_session, **kwargs):
+        assert kwargs["limit"] == admin_audit_export.AUDIT_EXPORT_MAX_ROWS
+        assert kwargs["max_limit"] == admin_audit_export.AUDIT_EXPORT_MAX_ROWS
+        assert kwargs["action"] == "exercise.update"
+        return [_export_entry()], 1500
+
+    monkeypatch.setattr(admin_audit, "query_event_page", fake_query)
+    artifact = await admin_audit_export.prepare_audit_export(  # type: ignore[arg-type]
+        session,
+        filters,
+        export_format="json",
+        context=admin_audit.AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+
+    payload = json.loads(artifact.content)
+    assert payload["max_rows"] == 1000
+    assert payload["exported_count"] == 1
+    assert payload["total_matches"] == 1500
+    assert payload["truncated"] is True
+    assert session.operations == ["add", "commit"]
+    assert session.added[0].action == "audit.export"
+    assert session.added[0].after_data == {
+        "format": "json",
+        "exported_count": 1,
+        "total_matches": 1500,
+        "truncated": True,
+    }
+
+
+def test_csv_export_has_bom_headers_and_blocks_spreadsheet_formulas() -> None:
+    content = admin_audit_export._csv_content([_export_entry(actor_label="=HYPERLINK(x)")])
+    decoded = content.decode("utf-8")
+
+    assert decoded.startswith("\ufeffid,created_at,actor_user_id")
+    assert "'=HYPERLINK(x)" in decoded
+    assert '"{""difficulty"":2}"' in decoded
+
+
+@pytest.mark.asyncio
+async def test_admin_export_route_returns_download_headers(monkeypatch) -> None:
+    admin = SimpleNamespace(id=uuid.uuid4(), telegram_id=42, username="owner")
+    settings = Settings(admin_telegram_usernames="owner", jwt_secret="test")
+    captured: dict[str, object] = {}
+
+    async def fake_db():
+        yield AuthSession(admin)
+
+    async def fake_prepare(_session, body, *, export_format, context):
+        captured.update(body=body, export_format=export_format, context=context)
+        return admin_audit_export.AuditExportArtifact(
+            content=b"{}",
+            media_type="application/json; charset=utf-8",
+            filename="fitness-admin-audit-20260830-120000.json",
+            exported_count=2,
+            total_matches=3,
+        )
+
+    app.dependency_overrides[get_db] = fake_db
+    app.dependency_overrides[get_settings] = lambda: settings
+    monkeypatch.setattr(admin_audit_export, "prepare_audit_export", fake_prepare)
+    token = create_access_token(
+        subject=str(admin.id),
+        telegram_id=admin.telegram_id,
+        settings=settings,
+    )
+    try:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/admin/audit/export?format=json",
+                json={"action": "exercise.update", "result": "success"},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"].endswith('.json"')
+    assert response.headers["x-exported-count"] == "2"
+    assert response.headers["x-total-count"] == "3"
+    assert response.headers["x-export-truncated"] == "true"
+    assert captured["export_format"] == "json"
+    assert captured["body"].action == "exercise.update"  # type: ignore[union-attr]

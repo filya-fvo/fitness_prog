@@ -69,6 +69,20 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(response(offset)) });
     },
   );
+  let exportedBody: Record<string, unknown> | null = null;
+  await page.route("**/admin/audit/export?format=csv", async (route) => {
+    exportedBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      contentType: "text/csv; charset=utf-8",
+      body: "id,action\n1,exercise.update\n",
+      headers: {
+        "Content-Disposition": 'attachment; filename="fitness-admin-audit.csv"',
+        "X-Exported-Count": "1",
+        "X-Total-Count": "1",
+        "X-Export-Truncated": "false",
+      },
+    });
+  });
 
   await page.goto("/admin/audit");
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
@@ -86,6 +100,16 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   expect(filtered?.get("actor_user_id")).toBe(id);
   expect(filtered?.get("action")).toBe("exercise.update");
   expect(filtered?.get("result")).toBe("success");
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Скачать CSV" }).click();
+  await download;
+  expect(exportedBody).toMatchObject({
+    actor_user_id: id,
+    action: "exercise.update",
+    result: "success",
+  });
+  await expect(page.getByText("Скачано записей: 1.")).toBeVisible();
 
   await page.getByRole("button", { name: "Дальше" }).click();
   await expect(page.getByText("Вторая страница.")).toBeVisible();

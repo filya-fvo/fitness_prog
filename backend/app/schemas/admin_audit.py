@@ -37,3 +37,16 @@ class AdminAuditListResponse(BaseModel):
     offset: int
     actors: list[AdminAuditActor]
     actions: list[str]
+
+
+class AdminAuditExportRequest(BaseModel):
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    actor_user_id: uuid.UUID | None = None
+    action: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=80,
+        pattern=r"^[a-z][a-z0-9_.]+$",
+    )
+    result: Literal["success", "failure"] | None = None

@@ -17,8 +17,10 @@ import {
   formatAuditValue,
   toApiFilters,
 } from "../adminAuditView";
+import { AdminAuditExport } from "../components/AdminAuditExport";
 
 const ACTION_LABELS: Record<string, string> = {
+  "audit.export": "Экспорт журнала",
   "user.clear.workouts": "Очистка тренировок",
   "user.clear.nutrition": "Очистка питания",
   "user.clear.measurements": "Очистка замеров",
@@ -41,6 +43,10 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const FIELD_LABELS: Record<string, string> = {
+  format: "Формат",
+  exported_count: "Выгружено записей",
+  total_matches: "Найдено записей",
+  truncated: "Ограничено лимитом",
   scope: "Раздел",
   stats: "Удалено записей",
   is_deleted: "В архиве",
@@ -69,6 +75,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const OBJECT_LABELS: Record<string, string> = {
+  audit_export: "Выгрузка журнала",
   user: "Пользователь",
   exercise: "Упражнение",
   program: "Программа",
@@ -271,6 +278,8 @@ export function AdminAuditPage() {
           Сбросить
         </button>
       </form>
+
+      {data ? <AdminAuditExport filters={filters} total={data.total} /> : null}
 
       {loading && !data ? <PageSkeleton cards={4} /> : null}
       {error ? (

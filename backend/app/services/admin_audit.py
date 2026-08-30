@@ -63,6 +63,7 @@ _BROADCAST_FIELDS = {
     "scheduled",
     "timezone",
 }
+_AUDIT_EXPORT_FIELDS = {"format", "exported_count", "total_matches", "truncated"}
 _STAT_FIELDS = {
     "workout_sets",
     "workouts",
@@ -176,6 +177,7 @@ def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, 
         "support_ticket": _SUPPORT_TICKET_FIELDS,
         "program": _PROGRAM_FIELDS,
         "broadcast": _BROADCAST_FIELDS,
+        "audit_export": _AUDIT_EXPORT_FIELDS,
     }.get(object_type, set())
     return {key: item for key, item in value.items() if key in allowed}
 
@@ -270,7 +272,56 @@ async def list_events(
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[AdminAuditEntry], int, list[AdminAuditActor], list[str]]:
-    limit = max(1, min(100, limit))
+    items, total = await query_event_page(
+        session,
+        date_from=date_from,
+        date_to=date_to,
+        actor_user_id=actor_user_id,
+        action=action,
+        result=result,
+        limit=limit,
+        offset=offset,
+        max_limit=100,
+    )
+    actor = aliased(User)
+    actor_rows = (
+        await session.execute(
+            select(AdminAuditLog.actor_user_id, actor.username)
+            .outerjoin(actor, actor.id == AdminAuditLog.actor_user_id)
+            .where(AdminAuditLog.actor_user_id.is_not(None))
+            .distinct()
+            .order_by(actor.username.asc().nullslast(), AdminAuditLog.actor_user_id.asc())
+        )
+    ).all()
+    actors = [
+        AdminAuditActor(id=actor_id, label=_actor_label(actor_id, username))
+        for actor_id, username in actor_rows
+        if actor_id is not None
+    ]
+    actions = list(
+        (
+            await session.scalars(
+                select(AdminAuditLog.action).distinct().order_by(AdminAuditLog.action.asc())
+            )
+        ).all()
+    )
+    return items, total, actors, actions
+
+
+async def query_event_page(
+    session: AsyncSession,
+    *,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    actor_user_id: uuid.UUID | None = None,
+    action: str | None = None,
+    result: AuditResult | None = None,
+    limit: int,
+    offset: int = 0,
+    max_limit: int = 100,
+) -> tuple[list[AdminAuditEntry], int]:
+    """Return one newest-first page using a caller-owned fixed upper bound."""
+    limit = max(1, min(max_limit, limit))
     offset = max(0, offset)
     filters = []
     if date_from is not None:
@@ -317,25 +368,4 @@ async def list_events(
         for event, username in rows
     ]
 
-    actor_rows = (
-        await session.execute(
-            select(AdminAuditLog.actor_user_id, actor.username)
-            .outerjoin(actor, actor.id == AdminAuditLog.actor_user_id)
-            .where(AdminAuditLog.actor_user_id.is_not(None))
-            .distinct()
-            .order_by(actor.username.asc().nullslast(), AdminAuditLog.actor_user_id.asc())
-        )
-    ).all()
-    actors = [
-        AdminAuditActor(id=actor_id, label=_actor_label(actor_id, username))
-        for actor_id, username in actor_rows
-        if actor_id is not None
-    ]
-    actions = list(
-        (
-            await session.scalars(
-                select(AdminAuditLog.action).distinct().order_by(AdminAuditLog.action.asc())
-            )
-        ).all()
-    )
-    return items, total, actors, actions
+    return items, total

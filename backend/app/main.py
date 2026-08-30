@@ -61,7 +61,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"],
+    expose_headers=[
+        "X-Request-ID",
+        "X-Exported-Count",
+        "X-Total-Count",
+        "X-Export-Truncated",
+    ],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 

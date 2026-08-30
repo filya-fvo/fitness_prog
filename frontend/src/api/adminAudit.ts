@@ -45,20 +45,56 @@ export type AdminAuditFilters = {
   result?: AdminAuditResult;
 };
 
+export type AdminAuditExportFormat = "csv" | "json";
+export type AdminAuditDownload = {
+  blob: Blob;
+  exportedCount: number;
+  totalMatches: number;
+  truncated: boolean;
+};
+
+function filterPayload(filters: AdminAuditFilters) {
+  return {
+    date_from: filters.dateFrom || undefined,
+    date_to: filters.dateTo || undefined,
+    actor_user_id: filters.actorUserId || undefined,
+    action: filters.action || undefined,
+    result: filters.result || undefined,
+  };
+}
+
+function nonNegativeHeader(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
 export async function fetchAdminAudit(
   filters: AdminAuditFilters,
   options: { limit: number; offset: number },
 ): Promise<AdminAuditResponse> {
   const { data } = await apiClient.get("/admin/audit", {
     params: {
-      date_from: filters.dateFrom || undefined,
-      date_to: filters.dateTo || undefined,
-      actor_user_id: filters.actorUserId || undefined,
-      action: filters.action || undefined,
-      result: filters.result || undefined,
+      ...filterPayload(filters),
       limit: options.limit,
       offset: options.offset,
     },
   });
   return responseSchema.parse(data);
+}
+
+export async function downloadAdminAudit(
+  filters: AdminAuditFilters,
+  format: AdminAuditExportFormat,
+): Promise<AdminAuditDownload> {
+  const response = await apiClient.post<Blob>(
+    "/admin/audit/export",
+    filterPayload(filters),
+    { params: { format }, responseType: "blob" },
+  );
+  return {
+    blob: response.data,
+    exportedCount: nonNegativeHeader(response.headers["x-exported-count"]),
+    totalMatches: nonNegativeHeader(response.headers["x-total-count"]),
+    truncated: response.headers["x-export-truncated"] === "true",
+  };
 }

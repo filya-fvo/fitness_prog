@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
-import { fetchAdminAudit } from "./adminAudit";
+import { downloadAdminAudit, fetchAdminAudit } from "./adminAudit";
 
 describe("fetchAdminAudit", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -52,5 +52,40 @@ describe("fetchAdminAudit", () => {
       },
     });
     expect(result.items[0]?.before).toEqual({ difficulty: 2 });
+  });
+
+  it("downloads a bounded export with the active filters", async () => {
+    const blob = new Blob(["id,action"], { type: "text/csv" });
+    vi.spyOn(apiClient, "post").mockResolvedValue({
+      data: blob,
+      headers: {
+        "x-exported-count": "1000",
+        "x-total-count": "1250",
+        "x-export-truncated": "true",
+      },
+    });
+
+    const result = await downloadAdminAudit(
+      { action: "exercise.update", result: "success" },
+      "csv",
+    );
+
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/admin/audit/export",
+      {
+        date_from: undefined,
+        date_to: undefined,
+        actor_user_id: undefined,
+        action: "exercise.update",
+        result: "success",
+      },
+      { params: { format: "csv" }, responseType: "blob" },
+    );
+    expect(result).toEqual({
+      blob,
+      exportedCount: 1000,
+      totalMatches: 1250,
+      truncated: true,
+    });
   });
 });

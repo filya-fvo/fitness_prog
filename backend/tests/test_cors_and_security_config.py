@@ -2,9 +2,11 @@
 
 import pytest
 from fastapi import HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import Settings, get_settings
 from app.core.security import create_access_token, decode_access_token
+from app.main import app
 from app.routers.telegram import _verify_secret
 
 
@@ -18,6 +20,16 @@ def test_cors_origin_list_strips_blanks() -> None:
         "https://web.telegram.org",
         "https://app.example.com",
     ]
+
+
+def test_cors_exposes_bounded_export_metadata() -> None:
+    cors = next(item for item in app.user_middleware if item.cls is CORSMiddleware)
+    assert set(cors.kwargs["expose_headers"]) >= {
+        "X-Request-ID",
+        "X-Exported-Count",
+        "X-Total-Count",
+        "X-Export-Truncated",
+    }
 
 
 def test_jwt_roundtrip(monkeypatch) -> None:
