@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getAdminExercise,
   listAdminExercises,
   preflightAdminExercise,
   type AdminExercisePayload,
@@ -49,5 +50,21 @@ describe("admin exercise API", () => {
       ...payload,
       exclude_id: "00000000-0000-4000-8000-000000000001",
     });
+  });
+
+  it("loads one exact exercise for an audit link", async () => {
+    const item = {
+      id: "00000000-0000-4000-8000-000000000001",
+      ...payload,
+      media_quality: "missing",
+      workout_uses: 0,
+      program_uses: 0,
+      is_archived: false,
+      created_at: "2026-08-30T10:00:00Z",
+      updated_at: "2026-08-30T10:00:00Z",
+    };
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: item });
+    await expect(getAdminExercise(item.id)).resolves.toMatchObject({ id: item.id });
+    expect(apiClient.get).toHaveBeenCalledWith(`/admin/exercises/${item.id}`);
   });
 });

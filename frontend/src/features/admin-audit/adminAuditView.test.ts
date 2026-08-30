@@ -22,6 +22,7 @@ describe("admin audit view helpers", () => {
       dateFrom: undefined,
       dateTo: undefined,
       actorUserId: undefined,
+      query: undefined,
       action: "exercise.update",
       result: undefined,
     });

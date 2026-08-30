@@ -25,6 +25,7 @@ export function toApiFilters(values: {
   dateFrom: string;
   dateTo: string;
   actorUserId: string;
+  query?: string;
   action: string;
   result: string;
 }): AdminAuditFilters {
@@ -32,6 +33,7 @@ export function toApiFilters(values: {
     dateFrom: localDateTimeToIso(values.dateFrom),
     dateTo: localDateTimeToIso(values.dateTo),
     actorUserId: values.actorUserId || undefined,
+    query: values.query?.trim() || undefined,
     action: values.action || undefined,
     result:
       values.result === "success" || values.result === "failure" ? values.result : undefined,

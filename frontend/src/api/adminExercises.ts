@@ -132,6 +132,11 @@ export async function getAdminExerciseOptions(): Promise<AdminExerciseOptions> {
   return optionsSchema.parse(data);
 }
 
+export async function getAdminExercise(id: string): Promise<AdminExercise> {
+  const { data } = await apiClient.get(`/admin/exercises/${id}`);
+  return adminExerciseSchema.parse(data);
+}
+
 export async function preflightAdminExercise(
   payload: AdminExercisePayload,
   excludeId?: string,

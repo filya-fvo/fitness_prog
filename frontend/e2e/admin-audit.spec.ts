@@ -25,6 +25,7 @@ function response(offset = 0) {
         action: "exercise.update",
         object_type: "exercise",
         object_id: objectId,
+        object_label: "Жим лёжа",
         result: "success",
         description: offset ? "Вторая страница." : "Упражнение изменено.",
         before: { difficulty: 2 },
@@ -47,6 +48,38 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify(adminProfile),
+  }));
+  await page.route(`**/admin/exercises/${objectId}`, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: objectId,
+      name_ru: "Жим лёжа",
+      muscle_group: "грудь",
+      secondary_muscle_groups: [],
+      equipment: "штанга",
+      description: null,
+      technique: null,
+      common_mistakes: null,
+      difficulty: 3,
+      video_url: null,
+      animation_url: null,
+      thumbnail_url: null,
+      media_duration_sec: null,
+      media_source: "none",
+      tags: [],
+      limitations: [],
+      weight_rule: "total",
+      media_quality: "missing",
+      workout_uses: 0,
+      program_uses: 0,
+      is_archived: false,
+      created_at: "2026-08-26T12:00:00Z",
+      updated_at: "2026-08-30T12:00:00Z",
+    }),
+  }));
+  await page.route("**/admin/exercises/options", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ muscle_groups: [], equipment: [], tags: [] }),
   }));
 
   let attempts = 0;
@@ -90,7 +123,12 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   await page.getByRole("button", { name: "Повторить" }).click();
   await expect(page.getByRole("heading", { name: "Изменение упражнения" })).toBeVisible();
   await expect(page.getByText("Сложность").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Открыть" })).toHaveAttribute(
+    "href",
+    `/admin/exercises?focus=${objectId}`,
+  );
 
+  await page.getByLabel("Пользователь или объект").fill("жим");
   await page.getByLabel("Администратор").selectOption(id);
   await page.getByLabel("Действие").selectOption("exercise.update");
   await page.getByLabel("Результат").selectOption("success");
@@ -98,6 +136,7 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
 
   const filtered = requests.at(-1)?.searchParams;
   expect(filtered?.get("actor_user_id")).toBe(id);
+  expect(filtered?.get("q")).toBe("жим");
   expect(filtered?.get("action")).toBe("exercise.update");
   expect(filtered?.get("result")).toBe("success");
 
@@ -106,6 +145,7 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   await download;
   expect(exportedBody).toMatchObject({
     actor_user_id: id,
+    query: "жим",
     action: "exercise.update",
     result: "success",
   });
@@ -119,4 +159,9 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
+
+  await page.getByRole("link", { name: "Открыть" }).click();
+  await expect(page).toHaveURL(`/admin/exercises?focus=${objectId}`);
+  await expect(page.getByText("Открыто упражнение из журнала действий.")).toBeVisible();
+  await expect(page.getByText("Жим лёжа").first()).toBeVisible();
 });

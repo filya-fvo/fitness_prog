@@ -63,13 +63,19 @@ class ListSession:
         self.event = event
         self.actor_id = actor_id
         self.execute_calls = 0
+        self.scalar_statement = None
 
-    async def scalar(self, _statement):
+    async def scalar(self, statement):
+        self.scalar_statement = statement
         return 1
 
     async def execute(self, _statement):
         self.execute_calls += 1
-        rows = [(self.event, "owner")] if self.execute_calls == 1 else [(self.actor_id, "owner")]
+        rows = (
+            [(self.event, "owner", None, "Жим лёжа", None, None)]
+            if self.execute_calls == 1
+            else [(self.actor_id, "owner")]
+        )
         return SimpleNamespace(all=lambda: rows)
 
     async def scalars(self, _statement):
@@ -118,6 +124,10 @@ def test_request_id_accepts_only_uuid() -> None:
     supplied = uuid.uuid4()
     assert parse_or_create_request_id(str(supplied)) == supplied
     assert parse_or_create_request_id("not-a-request-id") != supplied
+
+
+def test_audit_search_accepts_telegram_username_with_at_sign() -> None:
+    assert admin_audit._search_patterns("  @target  ") == ("%@target%", "%target%")
 
 
 @pytest.mark.asyncio
@@ -212,9 +222,11 @@ async def test_list_events_maps_safe_rows_and_filter_options() -> None:
         created_at=datetime.now(UTC),
     )
 
+    session = ListSession(event, actor_id)
     items, total, actors, actions = await admin_audit.list_events(  # type: ignore[arg-type]
-        ListSession(event, actor_id),
+        session,
         actor_user_id=actor_id,
+        query="@owner",
         action="exercise.update",
         result="success",
         limit=30,
@@ -223,9 +235,14 @@ async def test_list_events_maps_safe_rows_and_filter_options() -> None:
 
     assert total == 1
     assert items[0].actor_label == "@owner"
+    assert items[0].object_label == "Жим лёжа"
     assert items[0].before == {"difficulty": 2}
     assert actors[0].id == actor_id
     assert actions == ["exercise.update"]
+    compiled = str(session.scalar_statement)
+    assert "exercises.name_ru" in compiled
+    assert "programs.name" in compiled
+    assert "admin_broadcasts.title" in compiled
 
 
 @pytest.mark.asyncio
@@ -290,12 +307,13 @@ def _export_entry(*, actor_label: str = "@owner") -> AdminAuditEntry:
 @pytest.mark.asyncio
 async def test_json_export_is_bounded_and_records_audit_event(monkeypatch) -> None:
     session = MutationSession()
-    filters = AdminAuditExportRequest(action="exercise.update", result="success")
+    filters = AdminAuditExportRequest(query="жим", action="exercise.update", result="success")
 
     async def fake_query(_session, **kwargs):
         assert kwargs["limit"] == admin_audit_export.AUDIT_EXPORT_MAX_ROWS
         assert kwargs["max_limit"] == admin_audit_export.AUDIT_EXPORT_MAX_ROWS
         assert kwargs["action"] == "exercise.update"
+        assert kwargs["query"] == "жим"
         return [_export_entry()], 1500
 
     monkeypatch.setattr(admin_audit, "query_event_page", fake_query)
@@ -362,7 +380,7 @@ async def test_admin_export_route_returns_download_headers(monkeypatch) -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/admin/audit/export?format=json",
-                json={"action": "exercise.update", "result": "success"},
+                json={"query": "жим", "action": "exercise.update", "result": "success"},
                 headers={"Authorization": f"Bearer {token}"},
             )
     finally:
@@ -375,3 +393,4 @@ async def test_admin_export_route_returns_download_headers(monkeypatch) -> None:
     assert response.headers["x-export-truncated"] == "true"
     assert captured["export_format"] == "json"
     assert captured["body"].action == "exercise.update"  # type: ignore[union-attr]
+    assert captured["body"].query == "жим"  # type: ignore[union-attr]

@@ -18,6 +18,7 @@ import {
   toApiFilters,
 } from "../adminAuditView";
 import { AdminAuditExport } from "../components/AdminAuditExport";
+import { AdminAuditObject } from "../components/AdminAuditObject";
 
 const ACTION_LABELS: Record<string, string> = {
   "audit.export": "Экспорт журнала",
@@ -99,6 +100,7 @@ type FilterForm = {
   dateFrom: string;
   dateTo: string;
   actorUserId: string;
+  query: string;
   action: string;
   result: string;
 };
@@ -107,6 +109,7 @@ const EMPTY_FILTERS: FilterForm = {
   dateFrom: "",
   dateTo: "",
   actorUserId: "",
+  query: "",
   action: "",
   result: "",
 };
@@ -217,6 +220,17 @@ export function AdminAuditPage() {
       />
 
       <form onSubmit={applyFilters} className="mb-4 grid gap-3 rounded-2xl bg-tg-secondary p-4 md:grid-cols-2">
+        <label className="text-xs text-tg-hint md:col-span-2">
+          Пользователь или объект
+          <input
+            type="search"
+            value={form.query}
+            maxLength={120}
+            onChange={(event) => setForm({ ...form, query: event.target.value })}
+            placeholder="@логин, email, Telegram ID, название или UUID"
+            className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base text-tg-text"
+          />
+        </label>
         <label className="text-xs text-tg-hint">
           С даты
           <input
@@ -317,7 +331,17 @@ export function AdminAuditPage() {
                 <Snapshot title="После" values={item.after} />
               </div>
               <dl className="mt-3 space-y-1 border-t border-black/10 pt-3 text-[11px] text-tg-hint">
-                <div className="flex justify-between gap-3"><dt>Объект</dt><dd className="break-all text-right">{OBJECT_LABELS[item.object_type] || "Объект"}{item.object_id ? ` · ${item.object_id}` : ""}</dd></div>
+                <div className="flex justify-between gap-3">
+                  <dt>Объект</dt>
+                  <dd className="max-w-[70%] break-words text-right">
+                    <AdminAuditObject
+                      objectType={item.object_type}
+                      objectId={item.object_id}
+                      objectLabel={item.object_label}
+                      typeLabel={OBJECT_LABELS[item.object_type] || "Объект"}
+                    />
+                  </dd>
+                </div>
                 {item.notification_status ? <div className="flex justify-between gap-3"><dt>Уведомление</dt><dd>{NOTIFICATION_LABELS[item.notification_status] || "Нет данных"}</dd></div> : null}
                 <div className="flex justify-between gap-3"><dt>Код запроса</dt><dd className="break-all text-right">{item.correlation_id}</dd></div>
               </dl>

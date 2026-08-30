@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   cancelAdminBroadcast,
   copyAdminBroadcast,
+  getAdminBroadcast,
   listAdminBroadcasts,
   resumeAdminBroadcast,
   retryAdminBroadcast,
@@ -23,6 +24,8 @@ import { BroadcastHistory } from "../components/BroadcastHistory";
 const PAGE_SIZE = 10;
 
 export function AdminBroadcastsPage() {
+  const [searchParams] = useSearchParams();
+  const focusedBroadcastId = searchParams.get("focus");
   const user = useUserStore((state) => state.user);
   const isAuthLoading = useUserStore((state) => state.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
@@ -53,8 +56,13 @@ export function AdminBroadcastsPage() {
     if (isAuthLoading || !allowed || loaded.current) return;
     loaded.current = true;
     void load(0);
+    if (focusedBroadcastId) {
+      void getAdminBroadcast(focusedBroadcastId)
+        .then(mergeCampaign)
+        .catch((reason) => setError(toUserMessage(reason, "Не удалось открыть рассылку из журнала.")));
+    }
     void fetchPrograms({ templatesOnly: true }).then((response) => setPrograms(response.items)).catch(() => setPrograms([]));
-  }, [allowed, isAuthLoading, load]);
+  }, [allowed, focusedBroadcastId, isAuthLoading, load]);
 
   useEffect(() => {
     const active = items.some((item) => ["scheduled", "sending"].includes(item.status));

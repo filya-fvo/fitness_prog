@@ -8,11 +8,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import String, and_, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.models.admin_audit_log import AdminAuditLog
+from app.models.admin_broadcast import AdminBroadcast
 from app.models.exercise import Exercise
 from app.models.program import Program
 from app.models.user import User
@@ -261,12 +262,18 @@ def _actor_label(actor_id: uuid.UUID | None, username: str | None) -> str:
     return "Удалённый администратор"
 
 
+def _search_patterns(query: str) -> tuple[str, str]:
+    term = query.strip()
+    return f"%{term}%", f"%{term.lstrip('@')}%"
+
+
 async def list_events(
     session: AsyncSession,
     *,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     actor_user_id: uuid.UUID | None = None,
+    query: str | None = None,
     action: str | None = None,
     result: AuditResult | None = None,
     limit: int = 50,
@@ -277,6 +284,7 @@ async def list_events(
         date_from=date_from,
         date_to=date_to,
         actor_user_id=actor_user_id,
+        query=query,
         action=action,
         result=result,
         limit=limit,
@@ -314,6 +322,7 @@ async def query_event_page(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     actor_user_id: uuid.UUID | None = None,
+    query: str | None = None,
     action: str | None = None,
     result: AuditResult | None = None,
     limit: int,
@@ -323,6 +332,30 @@ async def query_event_page(
     """Return one newest-first page using a caller-owned fixed upper bound."""
     limit = max(1, min(max_limit, limit))
     offset = max(0, offset)
+    actor = aliased(User)
+    subject_user = aliased(User)
+    joins = (
+        (actor, actor.id == AdminAuditLog.actor_user_id),
+        (
+            subject_user,
+            and_(AdminAuditLog.object_type == "user", subject_user.id == AdminAuditLog.object_id),
+        ),
+        (
+            Exercise,
+            and_(AdminAuditLog.object_type == "exercise", Exercise.id == AdminAuditLog.object_id),
+        ),
+        (
+            Program,
+            and_(AdminAuditLog.object_type == "program", Program.id == AdminAuditLog.object_id),
+        ),
+        (
+            AdminBroadcast,
+            and_(
+                AdminAuditLog.object_type == "broadcast",
+                AdminBroadcast.id == AdminAuditLog.object_id,
+            ),
+        ),
+    )
     filters = []
     if date_from is not None:
         filters.append(AdminAuditLog.created_at >= date_from)
@@ -330,20 +363,48 @@ async def query_event_page(
         filters.append(AdminAuditLog.created_at <= date_to)
     if actor_user_id is not None:
         filters.append(AdminAuditLog.actor_user_id == actor_user_id)
+    searching = bool(query and query.strip())
+    if searching:
+        like, username_like = _search_patterns(query or "")
+        filters.append(
+            or_(
+                cast(AdminAuditLog.object_id, String).ilike(like),
+                cast(AdminAuditLog.correlation_id, String).ilike(like),
+                AdminAuditLog.object_type.ilike(like),
+                AdminAuditLog.action.ilike(like),
+                AdminAuditLog.description.ilike(like),
+                actor.username.ilike(username_like),
+                subject_user.username.ilike(username_like),
+                subject_user.auth_email.ilike(like),
+                cast(subject_user.telegram_id, String).ilike(like),
+                Exercise.name_ru.ilike(like),
+                Program.name.ilike(like),
+                AdminBroadcast.title.ilike(like),
+            )
+        )
     if action:
         filters.append(AdminAuditLog.action == action)
     if result:
         filters.append(AdminAuditLog.result == result)
 
-    total = int(
-        await session.scalar(select(func.count()).select_from(AdminAuditLog).where(*filters)) or 0
+    count_statement = select(func.count()).select_from(AdminAuditLog)
+    if searching:
+        for entity, condition in joins:
+            count_statement = count_statement.outerjoin(entity, condition)
+    total = int(await session.scalar(count_statement.where(*filters)) or 0)
+    items_statement = select(
+        AdminAuditLog,
+        actor.username,
+        subject_user.username,
+        Exercise.name_ru,
+        Program.name,
+        AdminBroadcast.title,
     )
-    actor = aliased(User)
+    for entity, condition in joins:
+        items_statement = items_statement.outerjoin(entity, condition)
     rows = (
         await session.execute(
-            select(AdminAuditLog, actor.username)
-            .outerjoin(actor, actor.id == AdminAuditLog.actor_user_id)
-            .where(*filters)
+            items_statement.where(*filters)
             .order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())
             .limit(limit)
             .offset(offset)
@@ -357,6 +418,13 @@ async def query_event_page(
             action=event.action,
             object_type=event.object_type,
             object_id=event.object_id,
+            object_label=(
+                (f"@{subject_username.lstrip('@')}" if subject_username else None)
+                or exercise_name
+                or program_name
+                or broadcast_title
+                or (f"{event.object_type} {str(event.object_id)[:8]}" if event.object_id else None)
+            ),
             result=event.result,
             description=event.description,
             before=event.before_data,
@@ -365,7 +433,7 @@ async def query_event_page(
             correlation_id=event.correlation_id,
             created_at=event.created_at,
         )
-        for event, username in rows
+        for event, username, subject_username, exercise_name, program_name, broadcast_title in rows
     ]
 
     return items, total

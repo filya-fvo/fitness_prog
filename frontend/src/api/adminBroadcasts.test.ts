@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "./client";
 import {
   cancelAdminBroadcast,
+  getAdminBroadcast,
   launchAdminBroadcast,
   previewBroadcastAudience,
   retryAdminBroadcast,
@@ -70,5 +71,11 @@ describe("admin broadcasts API", () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { ...campaign, status: "cancelled" } });
     await cancelAdminBroadcast(campaign.id);
     expect(apiClient.post).toHaveBeenCalledWith(`/admin/broadcasts/${campaign.id}/cancel`);
+  });
+
+  it("loads one exact campaign for an audit link", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: campaign });
+    await expect(getAdminBroadcast(campaign.id)).resolves.toMatchObject({ id: campaign.id });
+    expect(apiClient.get).toHaveBeenCalledWith(`/admin/broadcasts/${campaign.id}`);
   });
 });

@@ -90,6 +90,11 @@ export async function listAdminBroadcasts(limit = 20, offset = 0): Promise<Admin
   return listSchema.parse(data);
 }
 
+export async function getAdminBroadcast(id: string): Promise<AdminBroadcast> {
+  const { data } = await apiClient.get(`/admin/broadcasts/${id}`);
+  return campaignSchema.parse(data);
+}
+
 export async function createAdminBroadcast(draft: AdminBroadcastDraft): Promise<AdminBroadcast> {
   const { data } = await apiClient.post("/admin/broadcasts", {
     ...draft,

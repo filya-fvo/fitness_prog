@@ -37,7 +37,9 @@ const limits = {
   // ceilings include a small margin above that measured route-isolated cost.
   totalJsGzip: 455_000,
   productJsGzip: 420_000,
-  adminJsGzip: 37_000,
+  // Linked audit search adds exact, lazy admin destinations without affecting
+  // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
+  adminJsGzip: 38_500,
   largestJsGzip: 140_000,
 };
 const failures = [];

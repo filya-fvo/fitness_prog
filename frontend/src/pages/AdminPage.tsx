@@ -3,7 +3,7 @@
  * Access: only configured bot owner (default @Filatov_Slava).
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   clearAdminUser,
@@ -77,13 +77,17 @@ const RESET_OPTIONS: Array<{
 ];
 
 export function AdminPage() {
+  const [searchParams] = useSearchParams();
+  const focusedProgramId = searchParams.get("focus");
   const user = useUserStore((s) => s.user);
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<"users" | "content">("users");
+  const [tab, setTab] = useState<"users" | "content">(
+    searchParams.get("tab") === "content" ? "content" : "users",
+  );
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersTotal, setUsersTotal] = useState(0);
   const [userQ, setUserQ] = useState("");
@@ -130,6 +134,11 @@ export function AdminPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, isAuthLoading]);
+
+  useEffect(() => {
+    if (!focusedProgramId || !programs.some((item) => item.id === focusedProgramId)) return;
+    document.getElementById(`admin-program-${focusedProgramId}`)?.scrollIntoView({ block: "center" });
+  }, [focusedProgramId, programs]);
 
   async function loadUsers(q = userQ) {
     if (!getStoredToken()) {
@@ -514,7 +523,11 @@ export function AdminPage() {
           </div>
           <ul className="mt-4 space-y-3 text-sm">
             {programs.map((item) => (
-              <li key={item.id} className="rounded-xl bg-tg-bg p-3">
+              <li
+                id={`admin-program-${item.id}`}
+                key={item.id}
+                className={`rounded-xl bg-tg-bg p-3 ${item.id === focusedProgramId ? "ring-2 ring-tg-button" : ""}`}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{programDayLabel(item.name)}</p>

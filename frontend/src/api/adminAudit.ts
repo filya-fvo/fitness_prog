@@ -14,6 +14,7 @@ const entrySchema = z.object({
   action: z.string(),
   object_type: z.string(),
   object_id: z.string().uuid().nullable(),
+  object_label: z.string().max(120).nullable(),
   result: z.enum(["success", "failure"]),
   description: z.string(),
   before: z.record(z.unknown()),
@@ -41,6 +42,7 @@ export type AdminAuditFilters = {
   dateFrom?: string;
   dateTo?: string;
   actorUserId?: string;
+  query?: string;
   action?: string;
   result?: AdminAuditResult;
 };
@@ -53,7 +55,7 @@ export type AdminAuditDownload = {
   truncated: boolean;
 };
 
-function filterPayload(filters: AdminAuditFilters) {
+function commonFilters(filters: AdminAuditFilters) {
   return {
     date_from: filters.dateFrom || undefined,
     date_to: filters.dateTo || undefined,
@@ -74,7 +76,8 @@ export async function fetchAdminAudit(
 ): Promise<AdminAuditResponse> {
   const { data } = await apiClient.get("/admin/audit", {
     params: {
-      ...filterPayload(filters),
+      ...commonFilters(filters),
+      q: filters.query || undefined,
       limit: options.limit,
       offset: options.offset,
     },
@@ -88,7 +91,7 @@ export async function downloadAdminAudit(
 ): Promise<AdminAuditDownload> {
   const response = await apiClient.post<Blob>(
     "/admin/audit/export",
-    filterPayload(filters),
+    { ...commonFilters(filters), query: filters.query || undefined },
     { params: { format }, responseType: "blob" },
   );
   return {

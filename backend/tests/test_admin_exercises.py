@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.security import create_access_token
 from app.main import app
+from app.routers import admin_exercises as admin_exercises_router
 from app.models.exercise import Exercise
 from app.schemas.admin_exercise import (
     ExerciseDuplicateCandidate,
@@ -297,6 +298,29 @@ def test_media_response_does_not_echo_transport_exception() -> None:
     assert isinstance(error, httpx.HTTPError)
 
 
+@pytest.mark.asyncio
+async def test_admin_can_open_exact_archived_exercise_from_audit(monkeypatch) -> None:
+    item = exercise(is_deleted=True)
+
+    async def no_active(_session, _exercise_id):
+        return None
+
+    async def archived(_session, exercise_id):
+        assert exercise_id == item.id
+        return item
+
+    async def unused(_session, _exercise_id):
+        return 0, 0
+
+    monkeypatch.setattr(exercise_service, "get_exercise", no_active)
+    monkeypatch.setattr(exercise_service, "get_archived_exercise", archived)
+    monkeypatch.setattr(admin_exercises, "usage_counts", unused)
+    result = await admin_exercises_router.get_exercise(item.id, SimpleNamespace())  # type: ignore[arg-type]
+
+    assert result.id == item.id
+    assert result.is_archived is True
+
+
 class AuthSession:
     def __init__(self, user) -> None:
         self.user = user
@@ -331,6 +355,11 @@ async def test_regular_user_cannot_open_exercise_editor() -> None:
                 "/admin/exercises",
                 headers={"Authorization": f"Bearer {token}"},
             )
+            detail_response = await client.get(
+                f"/admin/exercises/{uuid.uuid4()}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
         assert response.status_code == 403
+        assert detail_response.status_code == 403
     finally:
         app.dependency_overrides.clear()

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   archiveAdminExercise,
   createAdminExercise,
+  getAdminExercise,
   getAdminExerciseOptions,
   listAdminExercises,
   preflightAdminExercise,
@@ -50,6 +51,8 @@ const weightLabels: Record<WeightRule, string> = {
 
 export function AdminExercisesPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const focusedExerciseId = searchParams.get("focus");
   const user = useUserStore((state) => state.user);
   const isAuthLoading = useUserStore((state) => state.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
@@ -128,9 +131,23 @@ export function AdminExercisesPage() {
   useEffect(() => {
     if (isAuthLoading || !allowed || loaded.current) return;
     loaded.current = true;
-    void load(1, {});
+    if (focusedExerciseId) {
+      setLoading(true);
+      void getAdminExercise(focusedExerciseId)
+        .then((item) => {
+          setItems([item]);
+          setTotal(1);
+          setFilters({ archived: item.is_archived || undefined });
+          setNotice("Открыто упражнение из журнала действий.");
+          setError(null);
+        })
+        .catch((reason) => setError(toUserMessage(reason, "Не удалось открыть упражнение из журнала.")))
+        .finally(() => setLoading(false));
+    } else {
+      void load(1, {});
+    }
     void getAdminExerciseOptions().then(setOptions).catch(() => setOptions(EMPTY_OPTIONS));
-  }, [allowed, isAuthLoading, load]);
+  }, [allowed, focusedExerciseId, isAuthLoading, load]);
 
   function applyFilters(next: typeof filters) {
     setFilters(next);
@@ -276,7 +293,7 @@ export function AdminExercisesPage() {
       {loading ? <PageSkeleton cards={6} /> : items.length ? (
         <ul className="space-y-3">
           {items.map((item) => (
-            <li key={item.id} className="rounded-2xl bg-tg-secondary p-4">
+            <li key={item.id} className={`rounded-2xl bg-tg-secondary p-4 ${item.id === focusedExerciseId ? "ring-2 ring-tg-button" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <button type="button" disabled={item.is_archived} onClick={() => void edit(item)} className="min-w-0 flex-1 text-left disabled:cursor-default">
                   <span className="block font-medium">{item.name_ru}</span>

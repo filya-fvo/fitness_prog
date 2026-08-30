@@ -133,6 +133,21 @@ def _item(exercise, *, workout_uses: int = 0, program_uses: int = 0) -> AdminExe
     )
 
 
+@router.get("/{exercise_id}", response_model=AdminExerciseItem)
+async def get_exercise(
+    exercise_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    _: None = Depends(require_system_admin),
+) -> AdminExerciseItem:
+    exercise = await exercise_service.get_exercise(session, exercise_id)
+    if exercise is None:
+        exercise = await exercise_service.get_archived_exercise(session, exercise_id)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Упражнение не найдено")
+    workout_uses, program_uses = await admin_exercises.usage_counts(session, exercise_id)
+    return _item(exercise, workout_uses=workout_uses, program_uses=program_uses)
+
+
 @router.post("", response_model=AdminExerciseItem, status_code=status.HTTP_201_CREATED)
 async def create_exercise(
     body: ExerciseCreate,

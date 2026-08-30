@@ -18,6 +18,7 @@ describe("fetchAdminAudit", () => {
             action: "exercise.update",
             object_type: "exercise",
             object_id: id,
+            object_label: "Жим лёжа",
             result: "success",
             description: "Упражнение изменено.",
             before: { difficulty: 2 },
@@ -36,7 +37,7 @@ describe("fetchAdminAudit", () => {
     });
 
     const result = await fetchAdminAudit(
-      { actorUserId: id, action: "exercise.update", result: "success" },
+      { actorUserId: id, query: "жим", action: "exercise.update", result: "success" },
       { limit: 30, offset: 0 },
     );
 
@@ -45,6 +46,7 @@ describe("fetchAdminAudit", () => {
         date_from: undefined,
         date_to: undefined,
         actor_user_id: id,
+        q: "жим",
         action: "exercise.update",
         result: "success",
         limit: 30,
@@ -66,7 +68,7 @@ describe("fetchAdminAudit", () => {
     });
 
     const result = await downloadAdminAudit(
-      { action: "exercise.update", result: "success" },
+      { query: "жим", action: "exercise.update", result: "success" },
       "csv",
     );
 
@@ -76,6 +78,7 @@ describe("fetchAdminAudit", () => {
         date_from: undefined,
         date_to: undefined,
         actor_user_id: undefined,
+        query: "жим",
         action: "exercise.update",
         result: "success",
       },

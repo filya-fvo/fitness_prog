@@ -21,6 +21,7 @@ class AdminAuditEntry(BaseModel):
     action: str
     object_type: str
     object_id: uuid.UUID | None = None
+    object_label: str | None = None
     result: Literal["success", "failure"]
     description: str
     before: dict[str, object] = Field(default_factory=dict)
@@ -43,6 +44,7 @@ class AdminAuditExportRequest(BaseModel):
     date_from: datetime | None = None
     date_to: datetime | None = None
     actor_user_id: uuid.UUID | None = None
+    query: str | None = Field(default=None, min_length=2, max_length=120)
     action: str | None = Field(
         default=None,
         min_length=3,
