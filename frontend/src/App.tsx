@@ -86,6 +86,11 @@ const SupportTicketPage = lazy(() =>
     default: module.SupportTicketPage,
   })),
 );
+const InvitePage = lazy(() =>
+  import("@/features/invites/pages/InvitePage").then((module) => ({
+    default: module.InvitePage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -144,6 +149,7 @@ export function App() {
             <Route path="more" element={<MorePage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="support/:ticketId" element={<SupportTicketPage />} />
+            <Route path="invite" element={<InvitePage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="admin/system" element={<AdminSystemPage />} />
             <Route path="admin/audit" element={<AdminAuditPage />} />

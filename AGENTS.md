@@ -18,7 +18,8 @@ Fitness Mini App — русскоязычный дневник трениров�
 рабочего веса, таймер и опциональный автопереход, питание со сценарием
 «штрихкод → фото этикетки → ручной ввод», ручной дневной чек-ин сна/шагов/
 активности/воды, датированные вес и обхваты, графики, добавки, уведомления,
-локальный ИИ-тренер, пользовательская обратная связь и админ-раздел.
+локальный ИИ-тренер, безопасные приглашения по ссылке/коду, пользовательская
+поддержка и админ-раздел.
 
 HealthKit и Health Connect не интегрированы. Эти показатели вводятся вручную.
 Не добавляйте нативную health-интеграцию без отдельного решения владельца.
@@ -127,6 +128,8 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/schemas/` — Pydantic request/response contracts.
 - `backend/app/routers/` — HTTP-слой: валидация контекста, статус, вызов service.
 - `backend/app/services/` — бизнес-логика и внешние интеграции.
+- `backend/app/services/invite_service.py` — HMAC-хэши приглашений, срок/лимиты,
+  preview, явное принятие и отдельная referral attribution без автоматической дружбы.
 - `backend/app/services/scheduler.py` — постоянные тренировочные дни, дата старта
   активной программы как нижняя граница календаря, разовые
   переносы и окно до следующей тренировки; `workout_notifications.py` — расчёт
@@ -164,6 +167,8 @@ services → SQLAlchemy models → PostgreSQL
   системный выход Android и добавляет узкий edge-swipe выхода для Telegram iOS.
 - `frontend/src/api/` — единственное место HTTP-контрактов клиента.
 - `frontend/src/features/` — feature pages/components/hooks.
+- `frontend/src/features/invites/` — создание, отправка, ручной код, preview и
+  явное принятие приглашения; незавершённый `startapp` переживает onboarding.
 - `frontend/src/features/admin-system/` — отдельный экран состояния системы,
   не раздувающий legacy `AdminPage.tsx`.
 - `frontend/src/features/admin-audit/` — отдельный журнал действий с фильтрами и
@@ -218,6 +223,7 @@ services → SQLAlchemy models → PostgreSQL
 | Добавки/уведомления | profile/home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot | concurrency, prefs, Telegram tests |
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |
 | Поддержка | `features/support`, `api/support.ts`; админ: `features/admin-support` | `support.py`, `admin_support.py`, `support_service.py`, `support_attachments.py`, ARQ/Telegram notification, migrations 30–31 | support API/task/attachment tests + user/admin browser scenario |
+| Приглашения | `features/invites`, `api/invites.ts`, `utils/pendingInvite.ts`, `lib/telegram.ts` | `invites.py`, `invite_service.py`, invite models/schema, migration 33 | hash/rate-limit/idempotency tests, deep-link unit + browser E2E |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
 | Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |

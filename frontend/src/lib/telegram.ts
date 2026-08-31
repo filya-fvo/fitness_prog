@@ -205,6 +205,9 @@ export function pathFromStartParam(start: string): string | null {
   if (key.startsWith("support_") && key.length > "support_".length) {
     return `/support/${encodeURIComponent(key.slice("support_".length))}`;
   }
+  if (key.startsWith("i_") && /^[A-Za-z0-9_-]{32,128}$/.test(key.slice(2))) {
+    return `/invite?token=${encodeURIComponent(key.slice(2))}`;
+  }
   return null;
 }
 

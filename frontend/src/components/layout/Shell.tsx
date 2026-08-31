@@ -29,6 +29,7 @@ import {
   readCachedUserProfile,
 } from "@/utils/profileCache";
 import { toUserMessage } from "@/utils/errors";
+import { rememberPendingInvite } from "@/utils/pendingInvite";
 
 const OfflineBanner = lazy(() =>
   import("@/components/OfflineBanner").then((module) => ({ default: module.OfflineBanner })),
@@ -65,6 +66,7 @@ export function Shell() {
       try {
         const start = getStartParam();
         if (start && !cancelled) {
+          if (start.startsWith("i_")) rememberPendingInvite(start.slice(2));
           const target = pathFromStartParam(start);
           if (target && target !== location.pathname + location.search) {
             // ActiveWorkout can restore from IndexedDB or fetch a server-only session.
@@ -170,6 +172,12 @@ export function Shell() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, setAuthError, setAuthLoading, setUser]);
+
+  useEffect(() => {
+    if (location.pathname !== "/invite") return;
+    const token = new URLSearchParams(location.search).get("token");
+    if (token) rememberPendingInvite(token);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (!userId) return;

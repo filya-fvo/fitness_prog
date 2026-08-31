@@ -28,4 +28,10 @@ describe("pathFromStartParam", () => {
     expect(pathFromStartParam("support_3f56b158-86e3-4a3f-8e38-0112f2a4cf1f"))
       .toBe("/support/3f56b158-86e3-4a3f-8e38-0112f2a4cf1f");
   });
+
+  it("opens a validated referral invite without interpreting arbitrary input", () => {
+    const token = "abcdefghijklmnopqrstuvwxyzABCDEFGH123456789";
+    expect(pathFromStartParam(`i_${token}`)).toBe(`/invite?token=${token}`);
+    expect(pathFromStartParam("i_bad token")).toBeNull();
+  });
 });

@@ -33,11 +33,10 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
-  // In-app support adds two lazy user routes and one lazy admin route. The
-  // ceilings include a small margin above that measured route-isolated cost.
-  // Mobile-safe Telegram popup result handling adds less than 0.3 KB gzip.
-  totalJsGzip: 456_000,
-  productJsGzip: 420_000,
+  // The referral foundation is an isolated lazy route (2.8 KB gzip). Keep only
+  // a narrow margin above its measured cost; it does not affect cold startup.
+  totalJsGzip: 459_000,
+  productJsGzip: 421_000,
   // Linked audit search adds exact, lazy admin destinations without affecting
   // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
   adminJsGzip: 38_500,

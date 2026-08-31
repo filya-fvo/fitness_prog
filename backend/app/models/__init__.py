@@ -8,6 +8,7 @@ from app.models.body_measurement import BodyMeasurement
 from app.models.daily_metric import DailyMetric
 from app.models.email_otp import EmailOtpCode
 from app.models.exercise import Exercise
+from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.nutrition import NutritionLog, NutritionProduct
 from app.models.program import Program
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
@@ -20,6 +21,10 @@ __all__ = [
     "User",
     "EmailOtpCode",
     "Exercise",
+    "Invite",
+    "InviteLookupAttempt",
+    "InviteRedemption",
+    "ReferralAttribution",
     "Program",
     "Workout",
     "WorkoutSet",

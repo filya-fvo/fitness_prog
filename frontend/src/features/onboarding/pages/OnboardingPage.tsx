@@ -26,6 +26,7 @@ import { enumLabel } from "@/utils/localization";
 import { isOnline } from "@/utils/network";
 import { cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
 import { recommendPrograms } from "@/utils/programRecommend";
+import { consumePendingInvitePath } from "@/utils/pendingInvite";
 
 const GOALS = [
   { id: "lose_fat", label: "Похудение" },
@@ -273,7 +274,7 @@ export function OnboardingPage() {
         active_program_assigned: Boolean(goalsToSave.active_program_id),
       });
       hapticNotification("success");
-      navigate("/", { replace: true });
+      navigate(consumePendingInvitePath() ?? "/", { replace: true });
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить анкету"));
       setGenerating(false);
