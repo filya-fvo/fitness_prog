@@ -29,7 +29,7 @@ import {
   readCachedUserProfile,
 } from "@/utils/profileCache";
 import { toUserMessage } from "@/utils/errors";
-import { rememberPendingInvite } from "@/utils/pendingInvite";
+import { claimInviteStartParam, rememberPendingInvite } from "@/utils/pendingInvite";
 
 const OfflineBanner = lazy(() =>
   import("@/components/OfflineBanner").then((module) => ({ default: module.OfflineBanner })),
@@ -66,8 +66,9 @@ export function Shell() {
       try {
         const start = getStartParam();
         if (start && !cancelled) {
-          if (start.startsWith("i_")) rememberPendingInvite(start.slice(2));
-          const target = pathFromStartParam(start);
+          const inviteToken = start.startsWith("i_") ? start.slice(2) : null;
+          const shouldHandleInvite = inviteToken ? claimInviteStartParam(inviteToken) : true;
+          const target = shouldHandleInvite ? pathFromStartParam(start) : null;
           if (target && target !== location.pathname + location.search) {
             // ActiveWorkout can restore from IndexedDB or fetch a server-only session.
             navigate(target);

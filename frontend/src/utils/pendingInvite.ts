@@ -1,4 +1,5 @@
 const PENDING_INVITE_KEY = "fitness_pending_invite";
+const HANDLED_INVITE_KEY = "fitness_handled_invite";
 const INVITE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 
 export function validInviteToken(value: string): boolean {
@@ -9,6 +10,15 @@ export function rememberPendingInvite(value: string): void {
   const token = value.trim();
   if (!validInviteToken(token) || typeof sessionStorage === "undefined") return;
   sessionStorage.setItem(PENDING_INVITE_KEY, token);
+}
+
+export function claimInviteStartParam(value: string): boolean {
+  const token = value.trim();
+  if (!validInviteToken(token) || typeof sessionStorage === "undefined") return false;
+  if (sessionStorage.getItem(HANDLED_INVITE_KEY) === token) return false;
+  sessionStorage.setItem(HANDLED_INVITE_KEY, token);
+  rememberPendingInvite(token);
+  return true;
 }
 
 export function pendingInvitePath(): string | null {

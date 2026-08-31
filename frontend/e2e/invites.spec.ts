@@ -81,3 +81,58 @@ test("user explicitly accepts a deep-link invite and can create a share code", a
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
+
+test("accepted Telegram startapp invite does not reopen after back navigation", async ({ page }) => {
+  const initData =
+    "query_id=invite-exit&user=%7B%22id%22%3A803005715%7D&auth_date=1787230000&hash=signed";
+  await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
+    route.abort("blockedbyclient"),
+  );
+  await page.route("**/auth/telegram", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      access_token: "invite-exit-token",
+      token_type: "bearer",
+      expires_in_days: 30,
+      user: {
+        id: profile.id,
+        telegram_id: 803005715,
+        username: "invitee",
+        auth_email: null,
+        subscription_status: "free",
+        onboarding_completed: true,
+      },
+    }),
+  }));
+  await page.route("**/invites/preview", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      inviter_label: "@training_friend",
+      expires_at: expiresAt,
+      already_accepted: false,
+    }),
+  }));
+  await page.route("**/invites/accept", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      accepted: true,
+      already_accepted: false,
+      inviter_label: "@training_friend",
+    }),
+  }));
+
+  const fragment = new URLSearchParams({
+    tgWebAppData: initData,
+    tgWebAppVersion: "8.0",
+    tgWebAppPlatform: "android",
+  });
+  await page.goto(`/?startapp=i_${token}#${fragment.toString()}`);
+  await expect(page.getByText("Вас приглашает @training_friend")).toBeVisible();
+  await page.getByRole("button", { name: "Принять приглашение" }).click();
+  await page.getByRole("button", { name: "Вернуться назад" }).click();
+
+  await expect.poll(() => page.evaluate(() => window.location.pathname)).toBe("/");
+  await page.waitForTimeout(1_000);
+  await expect.poll(() => page.evaluate(() => window.location.pathname)).toBe("/");
+  await expect(page.getByRole("heading", { name: "Пригласить друга" })).toHaveCount(0);
+});

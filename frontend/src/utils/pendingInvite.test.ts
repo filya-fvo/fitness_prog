@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  claimInviteStartParam,
   clearPendingInvite,
   consumePendingInvitePath,
   pendingInvitePath,
@@ -36,5 +37,12 @@ describe("pending invite", () => {
     rememberPendingInvite(token);
     clearPendingInvite();
     expect(pendingInvitePath()).toBeNull();
+  });
+
+  it("claims the same Telegram start parameter only once per webview session", () => {
+    const token = "abcdefghijklmnopqrstuvwxyzABCDEFGH123456789";
+    expect(claimInviteStartParam(token)).toBe(true);
+    expect(claimInviteStartParam(token)).toBe(false);
+    expect(pendingInvitePath()).toBe(`/invite?token=${token}`);
   });
 });
