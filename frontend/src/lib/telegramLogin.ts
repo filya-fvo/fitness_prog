@@ -1,8 +1,11 @@
 const TELEGRAM_LOGIN_SCRIPT = "https://telegram.org/js/telegram-login.js";
+const TELEGRAM_OAUTH_ORIGIN = "https://oauth.telegram.org";
 const TELEGRAM_OAUTH_PREFIX = "https://oauth.telegram.org/auth?";
+const POPUP_RESULT_GRACE_MS = 1_500;
 
 type TelegramLoginResult = {
   id_token?: string;
+  error?: string;
 };
 
 type TelegramLoginSdk = {
@@ -55,6 +58,58 @@ export async function openTelegramLogin(clientId: number, nonce: string): Promis
   const sdk = await loadTelegramLoginSdk();
   return new Promise<string>((resolve, reject) => {
     const nativeOpen = window.open;
+    let settled = false;
+    let popupClosedTimer: number | null = null;
+
+    const cleanup = () => {
+      window.removeEventListener("message", handleMessage);
+      if (popupClosedTimer !== null) window.clearTimeout(popupClosedTimer);
+    };
+    const finish = (idToken?: string, error?: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (idToken) resolve(idToken);
+      else if (error === "popup_closed") {
+        reject(new Error("Окно Telegram закрылось до завершения входа"));
+      } else {
+        reject(new Error("Telegram не подтвердил вход. Попробуйте ещё раз"));
+      }
+    };
+    const handleResult = (result: TelegramLoginResult) => {
+      if (result.id_token) {
+        finish(result.id_token);
+      } else if (result.error === "popup_closed") {
+        // On mobile Chrome the popup can report closed just before postMessage
+        // with the successful auth_result reaches its opener.
+        popupClosedTimer = window.setTimeout(
+          () => finish(undefined, result.error),
+          POPUP_RESULT_GRACE_MS,
+        );
+      } else {
+        finish(undefined, result.error);
+      }
+    };
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== TELEGRAM_OAUTH_ORIGIN) return;
+      let data: unknown = event.data;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data) as unknown;
+        } catch {
+          return;
+        }
+      }
+      if (!data || typeof data !== "object") return;
+      const payload = data as { event?: unknown; result?: unknown; error?: unknown };
+      if (payload.event !== "auth_result") return;
+      handleResult({
+        id_token: typeof payload.result === "string" ? payload.result : undefined,
+        error: typeof payload.error === "string" ? payload.error : undefined,
+      });
+    }
+
+    window.addEventListener("message", handleMessage);
     window.open = ((url?: string | URL, target?: string, features?: string) =>
       nativeOpen.call(
         window,
@@ -63,10 +118,12 @@ export async function openTelegramLogin(clientId: number, nonce: string): Promis
         features,
       )) as typeof window.open;
     try {
-      sdk.auth({ client_id: clientId, scope: ["profile"], lang: "ru", nonce }, (result) => {
-        if (result.id_token) resolve(result.id_token);
-        else reject(new Error("Вход через Telegram не завершён"));
-      });
+      sdk.auth(
+        { client_id: clientId, scope: ["profile"], lang: "ru", nonce },
+        handleResult,
+      );
+    } catch (error) {
+      finish(undefined, error instanceof Error ? error.message : undefined);
     } finally {
       window.open = nativeOpen;
     }

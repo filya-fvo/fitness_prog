@@ -22,7 +22,15 @@ test("browser user signs in through the Telegram OIDC popup SDK", async ({ page 
       window.Telegram.Login = {
         auth: (options, callback) => {
           window.open('https://oauth.telegram.org/auth?response_type=post_message&client_id=' + options.client_id);
-          callback({ id_token: 'telegram-signed-id-token' });
+          callback({ error: 'popup_closed' });
+          setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
+            origin: 'https://example.org',
+            data: { event: 'auth_result', result: 'untrusted-id-token' }
+          })), 5);
+          setTimeout(() => window.dispatchEvent(new MessageEvent('message', {
+            origin: 'https://oauth.telegram.org',
+            data: { event: 'auth_result', result: 'telegram-signed-id-token' }
+          })), 25);
         }
       };`,
   }));

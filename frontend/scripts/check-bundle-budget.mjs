@@ -35,7 +35,8 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 const limits = {
   // In-app support adds two lazy user routes and one lazy admin route. The
   // ceilings include a small margin above that measured route-isolated cost.
-  totalJsGzip: 455_000,
+  // Mobile-safe Telegram popup result handling adds less than 0.3 KB gzip.
+  totalJsGzip: 456_000,
   productJsGzip: 420_000,
   // Linked audit search adds exact, lazy admin destinations without affecting
   // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
