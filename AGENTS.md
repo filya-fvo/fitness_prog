@@ -181,7 +181,9 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/store/` — Zustand runtime state.
 - `frontend/src/utils/` — чистые правила; рядом размещать `*.test.ts`.
 - `frontend/src/lib/telegram.ts` — Telegram Mini App SDK, BackButton, deep links;
-  `lib/telegramLogin.ts` — лениво загружаемый официальный browser Login SDK.
+  `lib/telegramLogin.ts` — лениво загружаемый официальный browser Login SDK;
+  `lib/browserSession.ts` — преобразование профиля и классификация проверки
+  сохранённой браузерной сессии.
 - `frontend/src/sw.ts` — service worker и offline navigation.
 - `frontend/e2e/` — browser, reconnect, nutrition label, a11y и visual tests.
 - `frontend/scripts/` — E2E runner, UX audit, Lighthouse, bundle budget.

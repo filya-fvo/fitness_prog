@@ -6,6 +6,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithTelegram, type AuthUser } from "@/api/auth";
+import { clearStoredToken } from "@/api/client";
 import { fetchMyProfile } from "@/api/users";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
 import { TelegramBrowserLogin } from "@/components/TelegramBrowserLogin";
@@ -13,6 +14,7 @@ import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useTelegramExitGesture } from "@/hooks/useTelegramExitGesture";
 import { trackEvent } from "@/lib/analytics";
+import { authUserFromProfile, isUnauthorizedBrowserSession } from "@/lib/browserSession";
 import {
   getStartParam,
   initTelegramApp,
@@ -21,7 +23,11 @@ import {
 } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { isOnline } from "@/utils/network";
-import { cacheUserProfile, readCachedUserProfile } from "@/utils/profileCache";
+import {
+  cacheUserProfile,
+  clearCachedUserProfile,
+  readCachedUserProfile,
+} from "@/utils/profileCache";
 import { toUserMessage } from "@/utils/errors";
 
 const OfflineBanner = lazy(() =>
@@ -68,41 +74,48 @@ export function Shell() {
 
         if (!isTelegramEnvironment()) {
           // Browser outside Telegram: restore JWT or show email OTP form.
-          if (hasSession() && !isOnline()) {
-            const cachedUser = readCachedUserProfile();
-            if (!cancelled && cachedUser) {
-              setUser(cachedUser);
-              setAuthLoading(false);
-            } else if (!cancelled) {
+          if (!hasSession()) {
+            if (!cancelled) {
               setUser(null);
               setAuthLoading(false);
             }
             return;
           }
-          if (hasSession() && isOnline()) {
-            try {
-              const profile = await fetchMyProfile();
+
+          const cachedUser = readCachedUserProfile();
+          if (cachedUser && !cancelled) {
+            // Render the previous verified session immediately. The server refresh
+            // below updates it without blocking browser/PWA startup.
+            setUser(cachedUser);
+            setAuthLoading(false);
+          }
+          if (!isOnline()) {
+            if (!cachedUser && !cancelled) {
+              setUser(null);
+              setAuthLoading(false);
+            }
+            return;
+          }
+
+          try {
+            const profile = await fetchMyProfile(8_000);
+            if (!cancelled) {
+              const restoredUser = authUserFromProfile(profile);
+              setUser(restoredUser);
+              cacheUserProfile(restoredUser);
+              setAuthLoading(false);
+            }
+          } catch (error) {
+            if (isUnauthorizedBrowserSession(error)) {
+              clearStoredToken();
+              clearCachedUserProfile();
               if (!cancelled) {
-                const restoredUser = {
-                  id: profile.id,
-                  telegram_id: profile.telegram_id ?? null,
-                  username: profile.username ?? null,
-                  auth_email: profile.auth_email ?? null,
-                  subscription_status: profile.subscription_status,
-                  onboarding_completed: profile.onboarding_completed,
-                };
-                setUser(restoredUser);
-                cacheUserProfile(restoredUser);
+                setUser(null);
                 setAuthLoading(false);
               }
-              return;
-            } catch {
-              // stale token — fall through to email login UI
+            } else if (!cachedUser) {
+              throw error;
             }
-          }
-          if (!cancelled) {
-            setUser(null);
-            setAuthLoading(false);
           }
           return;
         }
@@ -193,19 +206,17 @@ export function Shell() {
     const verifyAfterReconnect = async () => {
       if (!isOnline()) return;
       try {
-        const profile = await fetchMyProfile();
-        const verifiedUser = {
-          id: profile.id,
-          telegram_id: profile.telegram_id ?? null,
-          username: profile.username ?? null,
-          auth_email: profile.auth_email ?? null,
-          subscription_status: profile.subscription_status,
-          onboarding_completed: profile.onboarding_completed,
-        };
+        const profile = await fetchMyProfile(8_000);
+        const verifiedUser = authUserFromProfile(profile);
         setUser(verifiedUser);
         cacheUserProfile(verifiedUser);
-      } catch {
-        // Keep the offline context; individual server actions remain unavailable.
+      } catch (error) {
+        if (isUnauthorizedBrowserSession(error)) {
+          clearStoredToken();
+          clearCachedUserProfile();
+          setUser(null);
+        }
+        // Temporary failures keep the cached context; server actions remain unavailable.
       }
     };
     window.addEventListener("online", verifyAfterReconnect);

@@ -3,12 +3,27 @@ import { expect, test } from "@playwright/test";
 test("browser user signs in through the Telegram OIDC popup SDK", async ({ page }) => {
   const nonce = "browser-login-nonce-which-is-long-enough";
   let received: Record<string, string> | null = null;
+  let popupUrl: string | null = null;
+
+  await page.exposeFunction("recordTelegramPopup", (url: string) => {
+    popupUrl = url;
+  });
+  await page.addInitScript(() => {
+    window.open = ((url?: string | URL) => {
+      void (window as unknown as { recordTelegramPopup: (value: string) => Promise<void> })
+        .recordTelegramPopup(url?.toString() ?? "");
+      return null;
+    }) as typeof window.open;
+  });
 
   await page.route("https://telegram.org/js/telegram-login.js", (route) => route.fulfill({
     contentType: "application/javascript",
     body: `window.Telegram = window.Telegram || {};
       window.Telegram.Login = {
-        auth: (options, callback) => callback({ id_token: 'telegram-signed-id-token' })
+        auth: (options, callback) => {
+          window.open('https://oauth.telegram.org/auth?response_type=post_message&client_id=' + options.client_id);
+          callback({ id_token: 'telegram-signed-id-token' });
+        }
       };`,
   }));
   await page.route("**/auth/telegram/browser/config", (route) => route.fulfill({
@@ -42,6 +57,10 @@ test("browser user signs in through the Telegram OIDC popup SDK", async ({ page 
     id_token: "telegram-signed-id-token",
     nonce,
   });
+  await expect.poll(() => popupUrl).not.toBeNull();
+  expect(new URL(popupUrl ?? "https://invalid").searchParams.get("origin")).toBe(
+    "http://127.0.0.1:5173",
+  );
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_jwt"))).toBe(
     "browser-telegram-session",
   );

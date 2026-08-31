@@ -16,8 +16,8 @@ const profileSchema = z.object({
 
 export type UserProfile = z.infer<typeof profileSchema>;
 
-export async function fetchMyProfile(): Promise<UserProfile> {
-  const { data } = await apiClient.get("/users/me");
+export async function fetchMyProfile(timeoutMs?: number): Promise<UserProfile> {
+  const { data } = await apiClient.get("/users/me", { timeout: timeoutMs });
   return profileSchema.parse(data);
 }
 

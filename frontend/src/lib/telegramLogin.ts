@@ -1,4 +1,5 @@
 const TELEGRAM_LOGIN_SCRIPT = "https://telegram.org/js/telegram-login.js";
+const TELEGRAM_OAUTH_PREFIX = "https://oauth.telegram.org/auth?";
 
 type TelegramLoginResult = {
   id_token?: string;
@@ -42,15 +43,32 @@ async function loadTelegramLoginSdk(): Promise<TelegramLoginSdk> {
   return sdk;
 }
 
+export function addTelegramOAuthOrigin(
+  rawUrl: string,
+  applicationOrigin: string,
+): string {
+  if (!rawUrl.startsWith(TELEGRAM_OAUTH_PREFIX)) return rawUrl;
+  return `${rawUrl}&origin=${encodeURIComponent(applicationOrigin)}`;
+}
+
 export async function openTelegramLogin(clientId: number, nonce: string): Promise<string> {
   const sdk = await loadTelegramLoginSdk();
   return new Promise<string>((resolve, reject) => {
-    sdk.auth(
-      { client_id: clientId, scope: ["profile"], lang: "ru", nonce },
-      (result) => {
+    const nativeOpen = window.open;
+    window.open = ((url?: string | URL, target?: string, features?: string) =>
+      nativeOpen.call(
+        window,
+        url ? addTelegramOAuthOrigin(url.toString(), window.location.origin) : url,
+        target,
+        features,
+      )) as typeof window.open;
+    try {
+      sdk.auth({ client_id: clientId, scope: ["profile"], lang: "ru", nonce }, (result) => {
         if (result.id_token) resolve(result.id_token);
         else reject(new Error("Вход через Telegram не завершён"));
-      },
-    );
+      });
+    } finally {
+      window.open = nativeOpen;
+    }
   });
 }
