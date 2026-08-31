@@ -5,9 +5,10 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { hasSession, loginWithTelegram } from "@/api/auth";
+import { hasSession, loginWithTelegram, type AuthUser } from "@/api/auth";
 import { fetchMyProfile } from "@/api/users";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
+import { TelegramBrowserLogin } from "@/components/TelegramBrowserLogin";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useTelegramExitGesture } from "@/hooks/useTelegramExitGesture";
@@ -215,6 +216,12 @@ export function Shell() {
     location.pathname.startsWith("/onboarding") ||
     location.pathname.startsWith("/workouts/active/");
 
+  const completeBrowserLogin = (authenticatedUser: AuthUser) => {
+    setUser(authenticatedUser);
+    cacheUserProfile(authenticatedUser);
+    setAuthError(null);
+  };
+
   return (
     <div className="app-shell min-h-screen bg-transparent text-tg-text">
       <div
@@ -232,13 +239,10 @@ export function Shell() {
         ) : null}
 
         {!isAuthLoading && !isTelegramEnvironment() && !user ? (
-          <EmailLoginForm
-            onSuccess={(u) => {
-              setUser(u);
-              cacheUserProfile(u);
-              setAuthError(null);
-            }}
-          />
+          <>
+            <TelegramBrowserLogin onSuccess={completeBrowserLogin} />
+            <EmailLoginForm onSuccess={completeBrowserLogin} />
+          </>
         ) : null}
 
         {!isAuthLoading && user ? (

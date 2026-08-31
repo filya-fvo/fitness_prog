@@ -10,7 +10,7 @@ Fitness Mini App — русскоязычный дневник трениров�
 замеров. Один React-интерфейс работает:
 
 - внутри Telegram Mini App с авторизацией по `initData`;
-- в обычном браузере/PWA с входом по email OTP;
+- в обычном браузере/PWA с входом через Telegram OIDC или email OTP;
 - частично офлайн: каталог и активная тренировка сохраняются в IndexedDB,
   изменения синхронизируются после восстановления сети.
 
@@ -44,7 +44,7 @@ HealthKit и Health Connect не интегрированы. Эти показа
 - SQLAlchemy 2 async + asyncpg, PostgreSQL.
 - Redis + ARQ worker для фоновых уведомлений.
 - HTTPX для внешних API; Loguru; Sentry опционально.
-- JWT для сессии приложения; Telegram `initData` и email OTP для входа.
+- JWT для сессии приложения; Telegram `initData`, Telegram OIDC и email OTP для входа.
 - Локальный `llama.cpp` + Qwen2.5-3B-Instruct Q4_K_M для текста; отдельный
   Tesseract `rus+eng` для фото этикетки.
 
@@ -180,7 +180,8 @@ services → SQLAlchemy models → PostgreSQL
   упражнений на будущую дату без запуска таймера тренировки.
 - `frontend/src/store/` — Zustand runtime state.
 - `frontend/src/utils/` — чистые правила; рядом размещать `*.test.ts`.
-- `frontend/src/lib/telegram.ts` — Telegram SDK, BackButton, deep links.
+- `frontend/src/lib/telegram.ts` — Telegram Mini App SDK, BackButton, deep links;
+  `lib/telegramLogin.ts` — лениво загружаемый официальный browser Login SDK.
 - `frontend/src/sw.ts` — service worker и offline navigation.
 - `frontend/e2e/` — browser, reconnect, nutrition label, a11y и visual tests.
 - `frontend/scripts/` — E2E runner, UX audit, Lighthouse, bundle budget.
@@ -204,7 +205,7 @@ services → SQLAlchemy models → PostgreSQL
 
 | Область | Frontend | Backend / данные | Обязательные тесты |
 |---|---|---|---|
-| Авторизация Telegram/browser | `Shell.tsx`, `EmailLoginForm.tsx`, `api/auth.ts` | `routers/auth.py`, `auth_service.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth, frontend serving, Telegram bot, browser E2E |
+| Авторизация Telegram/browser | `Shell.tsx`, `TelegramBrowserLogin.tsx`, `EmailLoginForm.tsx`, `api/auth.ts`, `lib/telegramLogin.ts` | `routers/auth.py`, `auth_service.py`, `telegram_browser_auth.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth/OIDC/JWKS, frontend serving, Telegram bot, browser E2E |
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts` | `daily_metrics` router/schema/service/model, migration 17 | daily metrics + habits tests |
 | Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
@@ -287,7 +288,8 @@ component/hook/utility/service, особенно если изменение д�
 
 Критические группы:
 
-- DB/auth: `DATABASE_URL`, `JWT_SECRET`, `BOT_TOKEN`, webhook secret, CORS.
+- DB/auth: `DATABASE_URL`, `JWT_SECRET`, `BOT_TOKEN`, optional public
+  `TELEGRAM_LOGIN_CLIENT_ID`, webhook secret, CORS.
 - Public URL: `MINI_APP_URL`, `BOT_USERNAME`; только постоянный HTTPS, не ngrok.
 - AI/OCR: внутренние `LLM_BASE_URL`, `LLM_MODEL`, лимиты timeout/output и
   `OCR_BASE_URL`; модель лежит вне Git в `/opt/fitness/models`.

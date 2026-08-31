@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fitness"
     bot_token: str = "replace_with_telegram_bot_token"
     bot_username: str = ""  # e.g. fil_fit_bot — for Mini App deep links
+    # Public OIDC client id shown by BotFather for browser Telegram Login.
+    # Telegram currently uses the numeric bot id; when empty, it is derived
+    # from the non-secret prefix of BOT_TOKEN.
+    telegram_login_client_id: str = ""
     # Public HTTPS Mini App front (local Tailscale or permanent production host).
     mini_app_url: str = ""
     # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
@@ -108,6 +112,15 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         """Parse comma-separated CORS origins."""
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def effective_telegram_login_client_id(self) -> str | None:
+        """Return a validated public Telegram Login client id."""
+        explicit = self.telegram_login_client_id.strip()
+        candidate = explicit or self.bot_token.partition(":")[0].strip()
+        if not candidate.isdigit() or int(candidate) <= 0:
+            return None
+        return candidate
 
 
 @lru_cache

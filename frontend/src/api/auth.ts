@@ -24,6 +24,12 @@ const authResponseSchema = z.object({
   user: authUserSchema,
 });
 
+const telegramBrowserConfigSchema = z.object({
+  enabled: z.boolean(),
+  client_id: z.number().int().positive().nullable(),
+  nonce: z.string().min(32).nullable(),
+});
+
 const emailOtpRequestSchema = z.object({
   ok: z.boolean(),
   email: z.string().email(),
@@ -38,6 +44,7 @@ const emailOtpRequestSchema = z.object({
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type EmailOtpRequestResult = z.infer<typeof emailOtpRequestSchema>;
+export type TelegramBrowserConfig = z.infer<typeof telegramBrowserConfigSchema>;
 
 let telegramLoginInFlight: { payload: string; request: Promise<AuthResponse> } | null = null;
 
@@ -65,6 +72,24 @@ export async function loginWithTelegram(initData?: string): Promise<AuthResponse
     });
   telegramLoginInFlight = { payload, request };
   return request;
+}
+
+export async function getTelegramBrowserLoginConfig(): Promise<TelegramBrowserConfig> {
+  const { data } = await apiClient.get("/auth/telegram/browser/config");
+  return telegramBrowserConfigSchema.parse(data);
+}
+
+export async function loginWithTelegramIdToken(
+  idToken: string,
+  nonce: string,
+): Promise<AuthResponse> {
+  const { data } = await apiClient.post("/auth/telegram/browser", {
+    id_token: idToken,
+    nonce,
+  });
+  const parsed = authResponseSchema.parse(data);
+  setStoredToken(parsed.access_token);
+  return parsed;
 }
 
 export async function requestEmailLoginCode(email: string): Promise<EmailOtpRequestResult> {

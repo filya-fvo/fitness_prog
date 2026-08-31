@@ -22,8 +22,10 @@ from app.schemas.auth import (
     EmailOtpVerifyRequest,
     TelegramAuthRequest,
     TelegramAuthResponse,
+    TelegramBrowserAuthRequest,
+    TelegramBrowserLoginConfig,
 )
-from app.services.auth_service import authenticate_telegram
+from app.services.auth_service import authenticate_telegram, authenticate_telegram_browser
 from app.services.email_auth_service import (
     request_link_code,
     request_login_code,
@@ -31,6 +33,11 @@ from app.services.email_auth_service import (
     verify_login_code,
 )
 from app.services.user_service import to_profile
+from app.services.telegram_browser_auth import (
+    TelegramBrowserAuthError,
+    TelegramBrowserAuthUnavailable,
+    create_login_nonce,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -78,6 +85,63 @@ async def auth_telegram(
 
     profile = to_profile(user)
     logger.info("auth_ok telegram_id={} user_id={}", profile.telegram_id, profile.id)
+    return TelegramAuthResponse(
+        access_token=token,
+        expires_in_days=settings.jwt_expire_days,
+        user=_user_response(profile),
+    )
+
+
+@router.get(
+    "/telegram/browser/config",
+    response_model=TelegramBrowserLoginConfig,
+    summary="Get public Telegram Login configuration and a short-lived nonce",
+)
+async def auth_telegram_browser_config(
+    settings: Settings = Depends(get_settings),
+) -> TelegramBrowserLoginConfig:
+    client_id = settings.effective_telegram_login_client_id
+    if client_id is None:
+        return TelegramBrowserLoginConfig(enabled=False)
+    return TelegramBrowserLoginConfig(
+        enabled=True,
+        client_id=int(client_id),
+        nonce=create_login_nonce(settings),
+    )
+
+
+@router.post(
+    "/telegram/browser",
+    response_model=TelegramAuthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Validate Telegram OIDC id_token and issue JWT",
+)
+async def auth_telegram_browser(
+    body: TelegramBrowserAuthRequest,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TelegramAuthResponse:
+    try:
+        user, token = await authenticate_telegram_browser(
+            session,
+            body.id_token,
+            body.nonce,
+            settings,
+        )
+    except TelegramBrowserAuthError as exc:
+        logger.warning("telegram_browser_auth_rejected reason={}", str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не удалось подтвердить вход через Telegram",
+        ) from exc
+    except TelegramBrowserAuthUnavailable as exc:
+        logger.warning("telegram_browser_auth_unavailable err_type={}", type(exc).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Вход через Telegram временно недоступен",
+        ) from exc
+    profile = to_profile(user)
+    logger.info("telegram_browser_auth_ok telegram_id={} user_id={}", profile.telegram_id, profile.id)
     return TelegramAuthResponse(
         access_token=token,
         expires_in_days=settings.jwt_expire_days,

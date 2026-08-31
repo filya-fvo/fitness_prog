@@ -8,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.core.security import (
     InitDataError,
+    TelegramUser,
     create_access_token,
     validate_init_data,
 )
 from app.models.user import User
+from app.services.telegram_browser_auth import validate_telegram_id_token
 
 
 async def authenticate_telegram(
@@ -25,7 +27,26 @@ async def authenticate_telegram(
     except InitDataError:
         raise
 
-    tg_user = validated.user
+    return await authenticate_telegram_user(session, validated.user, settings)
+
+
+async def authenticate_telegram_browser(
+    session: AsyncSession,
+    id_token: str,
+    nonce: str,
+    settings: Settings,
+) -> tuple[User, str]:
+    """Validate Telegram OIDC data and issue the regular application session."""
+    tg_user = await validate_telegram_id_token(id_token, nonce, settings)
+    return await authenticate_telegram_user(session, tg_user, settings)
+
+
+async def authenticate_telegram_user(
+    session: AsyncSession,
+    tg_user: TelegramUser,
+    settings: Settings,
+) -> tuple[User, str]:
+    """Upsert one trusted Telegram identity and issue an application JWT."""
     # Serialize first login for the same Telegram account. Without this lock,
     # two simultaneous WebView requests can both observe no user and race on
     # the unique users.telegram_id constraint.

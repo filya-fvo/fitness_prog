@@ -182,6 +182,12 @@ start_all_comand.bat
 
 ## 6. Telegram и старые кнопки
 
+Browser-вход через Telegram требует отдельного Allowed URL в **@BotFather → бот →
+Login Widget**. Для production это `https://app.filfitclub.ru`. Локальный Funnel
+можно добавить только для ручной проверки, если его постоянный `*.ts.net` origin
+зарегистрирован в BotFather; обычный `http://127.0.0.1:5173` для этого сценария не
+используется. Алгоритм подписи оставьте `RS256`.
+
 URL inline-кнопки хранится внутри конкретного Telegram-сообщения. Telegram не позволяет массово изменить старые сообщения без сохранённых `message_id`.
 
 После смены адреса:

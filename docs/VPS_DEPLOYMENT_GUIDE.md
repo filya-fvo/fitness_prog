@@ -349,6 +349,7 @@ ACME_EMAIL=your-real-email@example.ru
 MINI_APP_URL=https://app.example.ru
 VITE_API_URL=https://api.example.ru
 VITE_BOT_USERNAME=fil_fit_bot
+TELEGRAM_LOGIN_CLIENT_ID=
 
 POSTGRES_USER=fitness
 POSTGRES_PASSWORD=ОДНО_И_ТО_ЖЕ_HEX_ЗНАЧЕНИЕ
@@ -367,6 +368,8 @@ LOCAL_AI_MODELS_DIR=/opt/fitness/models
 Из текущего `backend/.env` аккуратно перенесите **значения**, не сам файл:
 
 - `BOT_TOKEN`, `BOT_USERNAME`;
+- `TELEGRAM_LOGIN_CLIENT_ID` можно оставить пустым: backend возьмёт публичный
+  numeric bot id из префикса `BOT_TOKEN`;
 - `JWT_SECRET` — лучше сохранить прежний, если он уже был production-secret;
 - SMTP-поля для browser OTP и разрешённых служебных писем;
 - `ADMIN_TELEGRAM_USERNAMES`, `ADMIN_TELEGRAM_IDS`;

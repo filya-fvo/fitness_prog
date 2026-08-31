@@ -14,6 +14,21 @@ class TelegramAuthRequest(BaseModel):
     init_data: str = Field(..., min_length=1, description="Raw Telegram WebApp initData string")
 
 
+class TelegramBrowserAuthRequest(BaseModel):
+    """Signed OIDC result returned by Telegram's browser login library."""
+
+    id_token: str = Field(..., min_length=32, max_length=8192)
+    nonce: str = Field(..., min_length=32, max_length=512)
+
+
+class TelegramBrowserLoginConfig(BaseModel):
+    """Public configuration required to open the Telegram Login popup."""
+
+    enabled: bool
+    client_id: int | None = None
+    nonce: str | None = None
+
+
 class AuthUserResponse(BaseModel):
     """Public user fields returned after auth."""
 

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loginWithTelegram } from "./auth";
+import {
+  getTelegramBrowserLoginConfig,
+  loginWithTelegram,
+  loginWithTelegramIdToken,
+} from "./auth";
 import { apiClient } from "./client";
 
 const authResponse = {
@@ -40,6 +44,26 @@ describe("loginWithTelegram", () => {
 
     expect(firstResult).toEqual(secondResult);
     expect(setItem).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("loads browser config and exchanges an OIDC token", async () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("localStorage", { getItem: vi.fn(), setItem, removeItem: vi.fn() });
+    vi.spyOn(apiClient, "get").mockResolvedValue({
+      data: { enabled: true, client_id: 123456, nonce: "n".repeat(40) },
+    });
+    const post = vi.spyOn(apiClient, "post").mockResolvedValue({ data: authResponse });
+
+    await expect(getTelegramBrowserLoginConfig()).resolves.toMatchObject({ client_id: 123456 });
+    await expect(loginWithTelegramIdToken("telegram-id-token", "n".repeat(40))).resolves.toEqual(
+      authResponse,
+    );
+    expect(post).toHaveBeenCalledWith("/auth/telegram/browser", {
+      id_token: "telegram-id-token",
+      nonce: "n".repeat(40),
+    });
+    expect(setItem).toHaveBeenCalledWith("fitness_jwt", "token");
     vi.unstubAllGlobals();
   });
 });

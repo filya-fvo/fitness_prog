@@ -500,31 +500,31 @@ https://t.me/<BOT_USERNAME>?startapp=i_<opaque-token>
 
 ## 9. Telegram Login для сайта
 
-Использовать не старый iframe Login Widget, а актуальный **Log In With Telegram**
-на базе Authorization Code Flow с PKCE/OIDC. Telegram прямо помечает старую
-iframe-документацию как legacy: [Log In With Telegram](https://core.telegram.org/bots/telegram-login).
+Статус: **реализовано 31 августа 2026 года** через актуальный официальный
+JavaScript SDK и OIDC `id_token`; старый iframe Login Widget не используется:
+[Log In With Telegram](https://core.telegram.org/bots/telegram-login).
 
-Рекомендуемый backend/BFF поток:
+Фактический поток:
 
-1. В BotFather зарегистрировать exact Allowed Origin сайта и exact callback URL,
-   получить Client ID/Secret. Secret хранится только в production env.
-2. `GET /auth/telegram-web/start`: создать `state`, `nonce`, PKCE verifier,
-   сохранить одноразовое состояние в Redis на 10 минут и вернуть redirect.
-3. `GET /auth/telegram-web/callback`: проверить state, обменять code сервером,
-   проверить подпись ID token, `iss`, `aud`, `exp`, `iat`, `nonce` и Telegram
-   subject.
-4. Найти пользователя по `telegram_id`. При конфликте с email-only аккаунтом
-   использовать существующий `account_merge`, не сливать данные молча.
-5. Перенаправить в SPA с одноразовым коротким exchange code. Не помещать JWT,
-   ID token или Telegram payload в URL/local logs.
-6. SPA один раз обменивает code на текущую app-сессию; replay отклоняется.
+1. В BotFather регистрируется точный Allowed URL сайта и алгоритм `RS256`.
+2. `GET /auth/telegram/browser/config` возвращает публичный Client ID и подписанный
+   короткоживущий nonce. Секрет бота в браузер не передаётся.
+3. Официальный SDK запрашивает только scope `profile` и возвращает `id_token`
+   callback-функции; токен не помещается в URL.
+4. `POST /auth/telegram/browser` сверяет подпись по Telegram JWKS, `kid`, `alg`,
+   `iss`, `aud`, `exp`, `iat` и nonce, затем находит пользователя по `telegram_id`.
+5. Используется общий с Mini App upsert пользователя и существующий безопасный
+   перенос локальных данных; отдельный Telegram-аккаунт в БД не создаётся.
+6. JWKS ограничен по размеру и схеме, кэшируется и обновляется при ротации `kid`;
+   токены и nonce не журналируются.
 
 Телефон и право писать пользователю по умолчанию не запрашивать. Если позже они
 понадобятся, это отдельное явно объяснённое согласие.
 
-Тесты: happy path, state/nonce mismatch, истёкший code, replay, wrong
-issuer/audience, недоступный JWKS/token endpoint, новый пользователь, существующий
-Telegram user, конфликт с email и merge choice, browser E2E cancel/retry.
+Покрыто тестами: валидная RSA-подпись, nonce mismatch/expiry/tampering, wrong
+audience, новый и существующий Telegram user, API-контракт и browser E2E до
+создания app-сессии. Реальный popup/cancel/retry проверяется вручную после
+регистрации production URL в BotFather.
 
 ## 10. Рекомендуемая последовательность реализации
 
@@ -537,7 +537,7 @@ Telegram user, конфликт с email и merge choice, browser E2E cancel/ret
 7. Foundation приглашений и privacy settings.
 8. Дружба + частное соревнование на регулярность.
 9. Глобальный сезон после накопления данных, anti-abuse и проверки когорт.
-10. Telegram OIDC login можно вести параллельно после стабилизации account merge.
+10. Telegram OIDC login — выполнено 31 августа 2026 года.
 
 Нельзя начинать с общего leaderboard по количеству тренировок или тоннажу: он
 систематически поощрит более частые программы и тяжёлое оборудование, а не

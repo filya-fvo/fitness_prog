@@ -22,6 +22,8 @@ Use after P0–P3 code is in place and before inviting real users.
 - [ ] `CORS_ORIGINS` = Telegram + **only** prod front domain(s)
 - [ ] `ENVIRONMENT=production` (docs disabled, JSON logs)
 - [ ] initData HMAC path only for Telegram auth
+- [ ] BotFather → Login Widget: Allowed URL `https://app.filfitclub.ru`, подпись `RS256`
+- [ ] Browser Telegram Login verifies JWKS, issuer, audience and nonce; phone scope is not requested
 - [ ] AI rate limit uses Redis in prod (`REDIS_URL`)
 - [ ] Dependency audit periodically (`pip` / `npm audit`)
 

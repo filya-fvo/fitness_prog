@@ -359,6 +359,14 @@ docker stats --no-stream
 
 ## 12. HTTPS, домен и Telegram
 
+Для входа через Telegram в обычном браузере откройте **@BotFather → бот → Login
+Widget** и добавьте Allowed URL `https://app.filfitclub.ru`. Алгоритм подписи
+оставьте `RS256`. Backend получает публичные ключи только с
+`https://oauth.telegram.org/.well-known/jwks.json`, проверяет issuer, audience и
+короткоживущий nonce; номер телефона и право писать пользователю не запрашиваются.
+`TELEGRAM_LOGIN_CLIENT_ID` обычно оставляют пустым — numeric bot id безопасно
+извлекается из префикса `BOT_TOKEN`.
+
 DNS управляется в Timeweb. Cloudflare в production не используется. Записи:
 
 - `app.filfitclub.ru` → `201.24.48.145`;
