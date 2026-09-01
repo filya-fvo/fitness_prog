@@ -13,6 +13,7 @@ import {
   type Friend,
 } from "@/api/social";
 import { Header } from "@/components/layout/Header";
+import { GlobalSeasonCard } from "@/features/social/components/GlobalSeasonCard";
 import { toUserMessage } from "@/utils/errors";
 
 function actionError(error: unknown): string {
@@ -133,6 +134,7 @@ export function SocialPage() {
       <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm leading-relaxed text-tg-hint">
         Сравнивается процент выполненных тренировочных дней. Вес, замеры, упражнения и другие личные данные другу не показываются.
       </div>
+      <GlobalSeasonCard />
       {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
       {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
 

@@ -39,6 +39,7 @@ REQUIRED_FILES = [
     "20260830000032_admin_system_status_history.sql",
     "20260831000033_referral_invites.sql",
     "20260831000034_friend_competitions.sql",
+    "20260901000035_global_regularity_seasons.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -67,6 +68,8 @@ REQUIRED_TABLES = [
     "friendships",
     "competitions",
     "competition_participants",
+    "global_competition_seasons",
+    "global_competition_participants",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -107,6 +110,8 @@ REQUIRED_SNIPPETS = [
     "uq_competitions_open_friendship",
     "duration_days IN (14, 28)",
     "'referral_social'",
+    "uq_global_participant_user",
+    "ranked_eligible BOOLEAN NOT NULL",
 ]
 
 

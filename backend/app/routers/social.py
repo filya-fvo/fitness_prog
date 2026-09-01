@@ -17,10 +17,12 @@ from app.schemas.social import (
     CompetitionSummary,
     FriendListResponse,
     FriendSummary,
+    GlobalLeaderboardEntry,
+    GlobalSeasonResponse,
     SocialActionResponse,
 )
 from app.services.competition_scoring import RegularityScore
-from app.services import social_queries, social_service
+from app.services import global_competitions, social_queries, social_service
 
 router = APIRouter(tags=["social"])
 
@@ -68,6 +70,87 @@ def _score(value: RegularityScore | None) -> CompetitionScoreResponse | None:
         completed=value.completed,
         planned=value.planned,
     )
+
+
+def _global_response(view: global_competitions.GlobalSeasonView, user: User) -> GlobalSeasonResponse:
+    mine = view.mine
+    return GlobalSeasonResponse(
+        season_key=view.window.season_key,
+        title=view.window.title,
+        start_date=view.window.start_date,
+        end_date=view.window.end_date,
+        join_deadline=view.window.join_deadline,
+        status=view.status,
+        algorithm_version=view.algorithm_version,
+        cohort=view.cohort,
+        cohort_label=global_competitions.COHORT_LABELS[view.cohort],
+        participant_count=view.participants,
+        minimum_cohort_size=global_competitions.MIN_PUBLIC_COHORT,
+        ranking_unlocked=view.ranking_unlocked,
+        ranked_eligible=view.ranked_eligible,
+        provisional=view.provisional,
+        my_alias=mine.public_alias if mine is not None else None,
+        my_rank=view.my_rank,
+        my_score=_score(view.my_score),
+        leaderboard=[
+            GlobalLeaderboardEntry(
+                rank=item.rank,
+                alias=item.participant.public_alias,
+                score=item.score.score or 0,
+                completed=item.score.completed,
+                planned=item.score.planned,
+                is_me=item.participant.user_id == user.id,
+            )
+            for item in view.leaderboard
+        ],
+    )
+
+
+@router.get("/competitions/global/current", response_model=GlobalSeasonResponse)
+async def global_season(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> GlobalSeasonResponse:
+    view = await global_competitions.current_season_view(session, user)
+    return _global_response(view, user)
+
+
+@router.post(
+    "/competitions/global/current/join",
+    response_model=SocialActionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def join_global_season(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> SocialActionResponse:
+    try:
+        await global_competitions.join_current_season(session, user)
+    except global_competitions.GlobalScheduleError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Сначала настройте дни тренировок в профиле",
+        ) from exc
+    except global_competitions.GlobalRejoinError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="После выхода вернуться в текущий сезон нельзя",
+        ) from exc
+    except global_competitions.GlobalCompetitionError as exc:
+        raise HTTPException(status_code=409, detail="Не удалось присоединиться к сезону") from exc
+    return SocialActionResponse()
+
+
+@router.post(
+    "/competitions/global/current/leave",
+    response_model=SocialActionResponse,
+)
+async def leave_global_season(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> SocialActionResponse:
+    await global_competitions.leave_current_season(session, user)
+    return SocialActionResponse()
 
 
 @router.get("/competitions", response_model=CompetitionListResponse)

@@ -33,10 +33,10 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
-  // Friends and regularity competitions are isolated in a 3.2 KB lazy route.
-  // Keep only a narrow margin above the measured product total.
-  totalJsGzip: 463_000,
-  productJsGzip: 425_000,
+  // Private and global regularity competitions remain isolated in one lazy
+  // product route. Keep a narrow margin above the measured product total.
+  totalJsGzip: 465_000,
+  productJsGzip: 427_000,
   // Linked audit search adds exact, lazy admin destinations without affecting
   // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
   adminJsGzip: 38_500,

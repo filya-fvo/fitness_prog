@@ -140,6 +140,7 @@ test("accepted Telegram startapp invite does not reopen after back navigation", 
 test("existing user explicitly starts a private regularity competition", async ({ page }) => {
   const friendshipId = "33333333-3333-4333-8333-333333333333";
   const competitionId = "44444444-4444-4444-8444-444444444444";
+  let globalJoined = false;
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "social-e2e-token"));
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
@@ -187,6 +188,37 @@ test("existing user explicitly starts a private regularity competition", async (
       friend_score: { score: null, completed: 0, planned: 0 },
     }] }),
   }));
+  await page.route("**/competitions/global/current", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      season_key: "regularity-2026-08-31",
+      title: "Регулярность · 31 августа — 27 сентября",
+      start_date: "2026-08-31",
+      end_date: "2026-09-27",
+      join_deadline: "2026-09-06",
+      status: globalJoined ? "joined" : "not_joined",
+      algorithm_version: "regularity_global_v1",
+      cohort: "days_3",
+      cohort_label: "3 тренировки в неделю",
+      participant_count: globalJoined ? 1 : 0,
+      minimum_cohort_size: 20,
+      ranking_unlocked: false,
+      ranked_eligible: true,
+      provisional: false,
+      my_alias: globalJoined ? "Участник A1B2C3D4" : null,
+      my_rank: null,
+      my_score: globalJoined ? { score: 100, completed: 2, planned: 2 } : null,
+      leaderboard: [],
+    }),
+  }));
+  await page.route("**/competitions/global/current/join", async (route) => {
+    globalJoined = true;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 
   await page.goto(`/invite?token=${token}`);
   await expect(page.getByText(/добавите друг друга в друзья/)).toBeVisible();
@@ -195,6 +227,9 @@ test("existing user explicitly starts a private regularity competition", async (
   await page.getByRole("link", { name: "Открыть друзей и соревнования" }).click();
   await expect(page.getByRole("heading", { name: "Друзья и соревнования" })).toBeVisible();
   await expect(page.getByText("Идёт сейчас")).toBeVisible();
+  await page.getByRole("button", { name: "Участвовать в сезоне" }).click();
+  await expect(page.getByText("Вы участвуете")).toBeVisible();
+  await expect(page.getByText("Публичный рейтинг откроется")).toContainText("Сейчас: 1");
 
   for (const width of [320, 393, 1440]) {
     await page.setViewportSize({ width, height: 850 });

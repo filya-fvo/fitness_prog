@@ -7,6 +7,9 @@ import {
   createFriendCompetition,
   getCompetitions,
   getFriends,
+  getGlobalSeason,
+  joinGlobalSeason,
+  leaveGlobalSeason,
 } from "./social";
 
 describe("social API", () => {
@@ -49,5 +52,44 @@ describe("social API", () => {
     });
     expect(apiClient.post).toHaveBeenNthCalledWith(2, `/competitions/${competitionId}/accept`);
     expect(apiClient.post).toHaveBeenNthCalledWith(3, `/friends/${friendshipId}/block`);
+  });
+
+  it("validates a privacy-safe global season and sends opt-in actions", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: {
+      season_key: "regularity-2026-08-31",
+      title: "Регулярность · 31 августа — 27 сентября",
+      start_date: "2026-08-31",
+      end_date: "2026-09-27",
+      join_deadline: "2026-09-06",
+      status: "joined",
+      algorithm_version: "regularity_global_v1",
+      cohort: "days_3",
+      cohort_label: "3 тренировки в неделю",
+      participant_count: 20,
+      minimum_cohort_size: 20,
+      ranking_unlocked: true,
+      ranked_eligible: true,
+      provisional: false,
+      my_alias: "Участник A1B2C3D4",
+      my_rank: 1,
+      my_score: { score: 100, completed: 2, planned: 2 },
+      leaderboard: [{
+        rank: 1,
+        alias: "Участник A1B2C3D4",
+        score: 100,
+        completed: 2,
+        planned: 2,
+        is_me: true,
+      }],
+    } });
+    vi.spyOn(apiClient, "post").mockResolvedValue({ data: { ok: true } });
+
+    const season = await getGlobalSeason();
+    await joinGlobalSeason();
+    await leaveGlobalSeason();
+
+    expect(season.leaderboard[0]?.alias).toBe("Участник A1B2C3D4");
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, "/competitions/global/current/join");
+    expect(apiClient.post).toHaveBeenNthCalledWith(2, "/competitions/global/current/leave");
   });
 });

@@ -9,11 +9,12 @@ import pytest
 
 from app.main import app
 from app.models.invite import Invite
+from app.models.global_competition import GlobalCompetitionParticipant, GlobalCompetitionSeason
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.user import User
 from app.services import invite_service
-from app.services.competition_scoring import regularity_score
-from app.services import social_service
+from app.services.competition_scoring import RegularityScore, calculate_regularity_score, regularity_score
+from app.services import global_competitions, social_service
 from app.services.social_service import SocialConflictError, ordered_pair
 
 
@@ -24,6 +25,9 @@ def test_social_contract_and_append_only_migration() -> None:
     assert set(paths["/competitions/friend"]) == {"post"}
     assert set(paths["/competitions/{competition_id}/accept"]) == {"post"}
     assert set(paths["/competitions/{competition_id}/leave"]) == {"post"}
+    assert set(paths["/competitions/global/current"]) == {"get"}
+    assert set(paths["/competitions/global/current/join"]) == {"post"}
+    assert set(paths["/competitions/global/current/leave"]) == {"post"}
     assert set(paths["/friends/{friendship_id}/{action}"]) == {"post"}
 
     migration = (
@@ -36,6 +40,17 @@ def test_social_contract_and_append_only_migration() -> None:
     assert "CONSTRAINT uq_friendship_pair UNIQUE" in migration
     assert "duration_days IN (14, 28)" in migration
     assert "uq_competitions_open_friendship" in migration
+
+    global_migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260901000035_global_regularity_seasons.sql"
+    ).read_text(encoding="utf-8")
+    assert "uq_global_participant_user" in global_migration
+    assert "ranked_eligible BOOLEAN NOT NULL" in global_migration
+    assert "public_alias" in global_migration
+    assert "telegram_id" not in global_migration
 
 
 @pytest.mark.asyncio
@@ -52,8 +67,11 @@ async def test_social_routes_require_authentication() -> None:
             await client.post(f"/competitions/{uuid.uuid4()}/accept"),
             await client.post(f"/competitions/{uuid.uuid4()}/leave"),
             await client.post(f"/friends/{uuid.uuid4()}/block"),
+            await client.get("/competitions/global/current"),
+            await client.post("/competitions/global/current/join"),
+            await client.post("/competitions/global/current/leave"),
         ]
-    assert [response.status_code for response in responses] == [401] * 6
+    assert [response.status_code for response in responses] == [401] * 9
 
 
 def test_social_invite_mode_depends_on_account_age_and_new_purpose() -> None:
@@ -214,8 +232,12 @@ async def test_regularity_score_counts_only_planned_training_dates() -> None:
             return [date(2026, 8, 31), date(2026, 9, 1)]
 
     class Session:
-        async def scalars(self, _query):
-            return Scalars()
+        async def execute(self, _query):
+            class Rows:
+                def all(self):
+                    return [(user_id, day) for day in Scalars().all()]
+
+            return Rows()
 
     score = await regularity_score(
         Session(),
@@ -227,3 +249,114 @@ async def test_regularity_score_counts_only_planned_training_dates() -> None:
     assert score.completed == 1
     assert score.planned == 2
     assert score.score == 50.0
+
+
+def test_global_season_window_cohorts_and_score_are_deterministic() -> None:
+    now = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    window = global_competitions.current_season_window(now)
+    assert window.season_key == "regularity-2026-08-31"
+    assert window.start_date == date(2026, 8, 31)
+    assert window.end_date == date(2026, 9, 27)
+    assert window.join_deadline == date(2026, 9, 6)
+    assert global_competitions.schedule_cohort({0, 4}) == "days_1_2"
+    assert global_competitions.schedule_cohort({0, 2, 4}) == "days_3"
+    assert global_competitions.schedule_cohort({0, 1, 3, 5}) == "days_4_plus"
+
+    score = calculate_regularity_score(
+        start_date=window.start_date,
+        end_date=window.end_date,
+        schedule_days=[0, 2, 4],
+        local_day=date(2026, 9, 4),
+        completed_dates=[date(2026, 8, 31), date(2026, 9, 1)],
+    )
+    assert score == RegularityScore(score=50.0, completed=1, planned=2)
+
+
+def test_global_ranking_requires_two_planned_days_and_preserves_ties() -> None:
+    season_id = uuid.uuid4()
+    first_id, second_id, provisional_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    participants = [
+        GlobalCompetitionParticipant(
+            season_id=season_id,
+            user_id=first_id,
+            public_alias="Участник BBBB",
+            cohort="days_3",
+            consented_at=datetime.now(UTC),
+            schedule_days=[0, 2, 4],
+            ranked_eligible=True,
+        ),
+        GlobalCompetitionParticipant(
+            season_id=season_id,
+            user_id=second_id,
+            public_alias="Участник AAAA",
+            cohort="days_3",
+            consented_at=datetime.now(UTC),
+            schedule_days=[0, 2, 4],
+            ranked_eligible=True,
+        ),
+        GlobalCompetitionParticipant(
+            season_id=season_id,
+            user_id=provisional_id,
+            public_alias="Участник CCCC",
+            cohort="days_3",
+            consented_at=datetime.now(UTC),
+            schedule_days=[0, 2, 4],
+            ranked_eligible=True,
+        ),
+    ]
+    ranked = global_competitions.rank_scores(
+        participants,
+        {
+            first_id: RegularityScore(100.0, 3, 3),
+            second_id: RegularityScore(100.0, 2, 2),
+            provisional_id: RegularityScore(100.0, 1, 1),
+        },
+    )
+    assert [(item.participant.user_id, item.rank) for item in ranked] == [
+        (first_id, 1),
+        (second_id, 1),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_late_global_join_is_opt_in_but_not_ranked(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = datetime(2026, 9, 8, 12, tzinfo=UTC)
+    user = User(
+        id=uuid.uuid4(),
+        goals={"notification_settings": {"workouts": {"days": [0, 2, 4]}}},
+    )
+
+    class Session:
+        def __init__(self):
+            self.scalar_values = iter((None, None, None))
+            self.added: list[object] = []
+            self.committed = False
+
+        async def execute(self, _query):
+            return None
+
+        async def scalar(self, _query):
+            return next(self.scalar_values)
+
+        def add(self, item):
+            self.added.append(item)
+
+        async def flush(self):
+            for item in self.added:
+                if isinstance(item, GlobalCompetitionSeason) and item.id is None:
+                    item.id = uuid.uuid4()
+
+        async def commit(self):
+            self.committed = True
+
+    monkeypatch.setattr(global_competitions.secrets, "token_hex", lambda _size: "A1B2C3D4")
+    session = Session()
+    await global_competitions.join_current_season(session, user, now=now)
+
+    participant = next(
+        item for item in session.added if isinstance(item, GlobalCompetitionParticipant)
+    )
+    assert participant.public_alias == "Участник A1B2C3D4"
+    assert participant.schedule_days == [0, 2, 4]
+    assert participant.ranked_eligible is False
+    assert session.committed is True
