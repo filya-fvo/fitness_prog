@@ -17,6 +17,7 @@ const frontendDir = path.resolve(scriptDir, "..");
 const currentManifestName = ".fitness-release.json";
 const previousManifestName = ".fitness-previous-release.json";
 const historyManifestName = ".fitness-release-history.json";
+const publicVersionName = "version.json";
 // Mobile Telegram WebViews can keep a tab alive for days. Retaining several
 // releases is cheap compared with leaving such a tab unable to load a chunk.
 const retainedReleaseCount = 8;
@@ -188,6 +189,13 @@ export async function promoteBuild({ liveDir, stagedDir, buildId = "unknown" }) 
   await writeFile(
     path.join(resolvedLive, historyManifestName),
     `${JSON.stringify({ retainedReleaseCount, releases }, null, 2)}\n`,
+    "utf8",
+  );
+  // Written last: clients only see the new pointer after index.html and every
+  // immutable asset of this release are already available.
+  await writeFile(
+    path.join(resolvedLive, publicVersionName),
+    `${JSON.stringify({ buildId, createdAt })}\n`,
     "utf8",
   );
 

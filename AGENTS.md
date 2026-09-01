@@ -199,6 +199,9 @@ services → SQLAlchemy models → PostgreSQL
   `lib/browserSession.ts` — преобразование профиля и классификация проверки
   сохранённой браузерной сессии.
 - `frontend/src/sw.ts` — service worker и offline navigation.
+- `frontend/src/lib/appUpdate.ts` и публичный `version.json` — обнаружение новой
+  сборки и безопасное автообновление без прерывания тренировки или
+  несохранённой формы.
 - `frontend/e2e/` — browser, reconnect, nutrition label, a11y и visual tests.
 - `frontend/scripts/` — E2E runner, UX audit, Lighthouse, bundle budget.
 - `frontend/scripts/publish-build.mjs` — staging-публикация: новые файлы копируются до `index.html`, immutable-ассеты сохраняются для восьми последних релизов.

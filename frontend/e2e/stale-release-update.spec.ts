@@ -66,6 +66,9 @@ test("an open old client survives publication and then receives the new worker",
   try {
     await writeRelease(stagedDir, "v1");
     await promoteBuild({ liveDir, stagedDir, buildId: "v1" });
+    expect(JSON.parse(await readFile(path.join(liveDir, "version.json"), "utf8"))).toMatchObject({
+      buildId: "v1",
+    });
     await rm(stagedDir, { recursive: true, force: true });
 
     server = staticServer(liveDir);
@@ -87,6 +90,9 @@ test("an open old client survives publication and then receives the new worker",
     await writeRelease(stagedDir, "v2");
     const publication = await promoteBuild({ liveDir, stagedDir, buildId: "v2" });
     expect(publication.retainedPrevious).toBeGreaterThan(0);
+    expect(JSON.parse(await readFile(path.join(liveDir, "version.json"), "utf8"))).toMatchObject({
+      buildId: "v2",
+    });
 
     // This tab still runs v1 and lazy-loads its old chunk after v2 is live.
     await page.locator("#lazy").click();

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { startAppUpdateMonitor } from "./lib/appUpdate";
 import { initSentry } from "./lib/sentry";
 import { initializeTheme } from "./theme/theme";
 import "./index.css";
@@ -36,17 +37,13 @@ createRoot(rootElement).render(
 window.__FITNESS_APP_BOOTED__ = true;
 sessionStorage.removeItem("fitness:boot-recovery");
 
-// The worker activates immediately, but the already running client keeps its
-// current release until the next natural open/navigation. Publishing retains
-// old immutable assets, so a forced post-login refresh is unnecessary.
+// AppUpdateCoordinator compares the running build with version.json and safely
+// reloads it. Registration stays here so web push and offline navigation share
+// the same worker.
 if (import.meta.env.PROD) {
+  startAppUpdateMonitor();
   void navigator.serviceWorker
     ?.register("/sw.js", { scope: "/", updateViaCache: "none" })
-    .then((registration) => {
-      window.setInterval(() => {
-        void registration.update().catch(() => undefined);
-      }, 30 * 60 * 1000);
-    })
     .catch(() => {
       // Offline support is optional; the online application stays usable.
     });

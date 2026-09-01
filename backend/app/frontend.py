@@ -113,11 +113,12 @@ def register_frontend(app: FastAPI, dist_dir: Path) -> bool:
             cache_control = "no-cache" if requested_file.name in {
                 "index.html",
                 "manifest.webmanifest",
+                "version.json",
                 "sw.js",
             } else "public, max-age=3600"
             headers = (
                 HTML_NO_STORE_HEADERS
-                if requested_file.name == "index.html"
+                if requested_file.name in {"index.html", "version.json"}
                 else {"Cache-Control": cache_control}
             )
             return FileResponse(requested_file, headers=headers)

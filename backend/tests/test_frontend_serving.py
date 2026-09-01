@@ -45,6 +45,7 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
     dist.mkdir()
     (dist / "index.html").write_text("<html>fitness-spa</html>", encoding="utf-8")
     (dist / "sw.js").write_text("self.skipWaiting()", encoding="utf-8")
+    (dist / "version.json").write_text('{"buildId":"v2"}', encoding="utf-8")
     (dist / "favicon.svg").write_text("<svg></svg>", encoding="utf-8")
 
     test_app = FastAPI()
@@ -69,6 +70,7 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
             headers={"Accept": "text/html"},
         )
         service_worker = await client.get("/sw.js")
+        version = await client.get("/version.json")
         legacy_favicon = await client.get("/favicon.ico")
         missing_api = await client.get("/auth/not-a-route", headers={"Accept": "application/json"})
 
@@ -84,6 +86,8 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
     assert "fitness-spa" in support_thread.text
     assert service_worker.text == "self.skipWaiting()"
     assert service_worker.headers["cache-control"] == "no-cache"
+    assert version.json() == {"buildId": "v2"}
+    assert version.headers["cache-control"] == "no-store, no-cache, max-age=0, must-revalidate"
     assert legacy_favicon.status_code == 200
     assert legacy_favicon.text == "<svg></svg>"
     assert missing_api.status_code == 404

@@ -19,7 +19,16 @@ cleanupOutdatedCaches();
 // new worker immediately is safe even when an older Telegram WebView is open.
 self.skipWaiting();
 self.addEventListener("activate", (event: ExtendableEvent) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    await self.clients.claim();
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clients) {
+      client.postMessage({
+        type: "FITNESS_RELEASE_READY",
+        buildId: __FITNESS_BUILD_ID__,
+      });
+    }
+  })());
 });
 
 const apiPrefixes = [
