@@ -78,6 +78,8 @@ async def preview_invite(
         inviter_label=preview.inviter_label,
         expires_at=preview.invite.expires_at,
         already_accepted=preview.already_accepted,
+        mode=preview.mode,
+        competition_duration_days=14 if preview.mode == "social" else None,
     )
 
 
@@ -95,6 +97,9 @@ async def accept_invite(
     return InviteAcceptResponse(
         inviter_label=accepted.inviter_label,
         already_accepted=accepted.already_accepted,
+        mode=accepted.mode,
+        friendship_id=accepted.friendship_id,
+        competition_id=accepted.competition_id,
     )
 
 

@@ -12,6 +12,8 @@ from app.main import app
 from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.user import User
 from app.services import invite_service
+from app.services.social_service import SocialLinkResult
+from app.models.social import Competition, Friendship
 
 
 def _settings() -> Settings:
@@ -186,4 +188,48 @@ async def test_short_code_lookup_is_durably_rate_limited() -> None:
 
     assert len(session.added) == 1
     assert isinstance(session.added[0], InviteLookupAttempt)
+    assert session.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_existing_account_accepts_new_link_as_social_offer(monkeypatch) -> None:
+    created = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    inviter = User(id=uuid.uuid4(), username="coach", created_at=created - timedelta(days=10))
+    user = User(id=uuid.uuid4(), username="athlete", created_at=created - timedelta(days=5))
+    invite = _invite(inviter.id)
+    invite.purpose = "referral_social"
+    invite.created_at = created
+    friendship = Friendship(id=uuid.uuid4(), user_low_id=min(inviter.id, user.id), user_high_id=max(inviter.id, user.id), initiated_by_user_id=inviter.id)
+    competition = Competition(id=uuid.uuid4(), friendship_id=friendship.id, created_by_user_id=inviter.id, duration_days=14)
+
+    class Session:
+        responses = iter((invite, inviter, None))
+
+        def __init__(self):
+            self.added: list[object] = []
+            self.commits = 0
+
+        async def scalar(self, _query):
+            return next(self.responses)
+
+        def add(self, item):
+            self.added.append(item)
+
+        async def commit(self):
+            self.commits += 1
+
+    async def link_offer(_session, _inviter, _invitee, *, now):
+        assert now.tzinfo is not None
+        return SocialLinkResult(friendship, competition)
+
+    monkeypatch.setattr(invite_service.social_service, "accept_link_offer", link_offer)
+    session = Session()
+    result = await invite_service.accept_invite(
+        session, user, "abcdefghijklmnopqrstuvwxyzABCDEFGH123456789", _settings(), now=created
+    )
+
+    assert result.mode == "social"
+    assert result.friendship_id == friendship.id
+    assert result.competition_id == competition.id
+    assert not any(isinstance(item, ReferralAttribution) for item in session.added)
     assert session.commits == 1

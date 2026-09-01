@@ -37,6 +37,8 @@ REQUIRED_FILES = [
     "20260828000026_admin_exercise_editor.sql",
     "20260828000027_program_publication.sql",
     "20260830000032_admin_system_status_history.sql",
+    "20260831000033_referral_invites.sql",
+    "20260831000034_friend_competitions.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -58,6 +60,13 @@ REQUIRED_TABLES = [
     "admin_broadcasts",
     "admin_broadcast_deliveries",
     "admin_system_snapshots",
+    "invites",
+    "invite_redemptions",
+    "referral_attributions",
+    "invite_lookup_attempts",
+    "friendships",
+    "competitions",
+    "competition_participants",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -94,6 +103,10 @@ REQUIRED_SNIPPETS = [
     "uq_programs_current_version",
     "ck_admin_system_snapshot_items_object",
     "idx_admin_system_snapshots_captured",
+    "CONSTRAINT uq_invite_redemption_user UNIQUE",
+    "uq_competitions_open_friendship",
+    "duration_days IN (14, 28)",
+    "'referral_social'",
 ]
 
 

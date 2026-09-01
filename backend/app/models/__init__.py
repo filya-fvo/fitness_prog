@@ -11,6 +11,7 @@ from app.models.exercise import Exercise
 from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.nutrition import NutritionLog, NutritionProduct
 from app.models.program import Program
+from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.support import SupportAttachment, SupportMessage, SupportTicket
 from app.models.user import User
@@ -26,6 +27,9 @@ __all__ = [
     "InviteRedemption",
     "ReferralAttribution",
     "Program",
+    "Friendship",
+    "Competition",
+    "CompetitionParticipant",
     "Workout",
     "WorkoutSet",
     "WorkoutPlanOverride",

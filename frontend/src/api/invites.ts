@@ -15,12 +15,17 @@ const invitePreviewSchema = z.object({
   inviter_label: z.string().min(1),
   expires_at: z.string().datetime({ offset: true }),
   already_accepted: z.boolean(),
+  mode: z.enum(["referral", "social"]).default("referral"),
+  competition_duration_days: z.literal(14).nullable().optional(),
 });
 
 const inviteAcceptSchema = z.object({
   accepted: z.boolean(),
   already_accepted: z.boolean(),
   inviter_label: z.string().min(1),
+  mode: z.enum(["referral", "social"]).default("referral"),
+  friendship_id: z.string().uuid().nullable().optional(),
+  competition_id: z.string().uuid().nullable().optional(),
 });
 
 export type CreatedInvite = z.infer<typeof createdInviteSchema>;

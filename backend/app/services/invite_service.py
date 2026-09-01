@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.user import User
+from app.services import social_service
 
 INVITE_TTL_DAYS = 14
 INVITE_MAX_USES = 20
@@ -66,12 +67,16 @@ class InvitePreview:
     invite: Invite
     inviter_label: str
     already_accepted: bool
+    mode: str
 
 
 @dataclass(slots=True)
 class AcceptedInvite:
     inviter_label: str
     already_accepted: bool
+    mode: str
+    friendship_id: uuid.UUID | None = None
+    competition_id: uuid.UUID | None = None
 
 
 def normalize_invite_code(value: str) -> str:
@@ -90,6 +95,17 @@ def hash_invite_credential(value: str, settings: Settings, *, kind: str) -> str:
 def inviter_label(user: User) -> str:
     username = (user.username or "").strip().lstrip("@")
     return f"@{username}" if username else "Пользователь Fitness Trainer"
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _invite_mode(invite: Invite, user: User) -> str:
+    """A social link is an offer only to an account that pre-dates the link."""
+    if invite.purpose != "referral_social" or user.created_at is None:
+        return "referral"
+    return "social" if _as_utc(user.created_at) <= _as_utc(invite.created_at) else "referral"
 
 
 def build_invite_links(token: str, settings: Settings) -> tuple[str, str | None]:
@@ -190,7 +206,7 @@ async def create_invite(
     web_url, telegram_url = build_invite_links(token, settings)
     invite = Invite(
         inviter_user_id=user.id,
-        purpose="referral",
+        purpose="referral_social",
         token_hash=hash_invite_credential(token, settings, kind="token"),
         code_hash=hash_invite_credential(code, settings, kind="code"),
         expires_at=current + timedelta(days=INVITE_TTL_DAYS),
@@ -229,7 +245,13 @@ async def preview_invite(
     )
     if redemption is None:
         _ensure_available(invite, current)
-    return InvitePreview(invite, inviter_label(inviter), redemption is not None)
+    mode = _invite_mode(invite, user)
+    if mode == "social":
+        try:
+            await social_service.ensure_social_allowed(session, inviter.id, user.id)
+        except social_service.SocialBlockedError as exc:
+            raise InviteUnavailableError from exc
+    return InvitePreview(invite, inviter_label(inviter), redemption is not None, mode)
 
 
 async def accept_invite(
@@ -256,26 +278,55 @@ async def accept_invite(
             InviteRedemption.user_id == user.id,
         )
     )
+    mode = _invite_mode(invite, user)
     if existing is not None:
-        return AcceptedInvite(inviter_label(inviter), True)
+        if mode == "social":
+            try:
+                linked = await social_service.accept_link_offer(
+                    session, inviter, user, now=current
+                )
+            except social_service.SocialBlockedError as exc:
+                raise InviteUnavailableError from exc
+            await session.commit()
+            return AcceptedInvite(
+                inviter_label(inviter),
+                True,
+                mode,
+                linked.friendship.id,
+                linked.competition.id if linked.competition else None,
+            )
+        return AcceptedInvite(inviter_label(inviter), True, mode)
 
     _ensure_available(invite, current)
 
     session.add(InviteRedemption(invite_id=invite.id, user_id=user.id, stage="accepted"))
-    attribution = await session.scalar(
-        select(ReferralAttribution).where(ReferralAttribution.referred_user_id == user.id)
-    )
-    if attribution is None:
-        session.add(
-            ReferralAttribution(
-                invite_id=invite.id,
-                inviter_user_id=invite.inviter_user_id,
-                referred_user_id=user.id,
-            )
+    linked: social_service.SocialLinkResult | None = None
+    if mode == "referral":
+        attribution = await session.scalar(
+            select(ReferralAttribution).where(ReferralAttribution.referred_user_id == user.id)
         )
+        if attribution is None:
+            session.add(
+                ReferralAttribution(
+                    invite_id=invite.id,
+                    inviter_user_id=invite.inviter_user_id,
+                    referred_user_id=user.id,
+                )
+            )
+    else:
+        try:
+            linked = await social_service.accept_link_offer(session, inviter, user, now=current)
+        except social_service.SocialBlockedError as exc:
+            raise InviteUnavailableError from exc
     invite.use_count += 1
     await session.commit()
-    return AcceptedInvite(inviter_label(inviter), False)
+    return AcceptedInvite(
+        inviter_label(inviter),
+        False,
+        mode,
+        linked.friendship.id if linked else None,
+        linked.competition.id if linked and linked.competition else None,
+    )
 
 
 async def revoke_invite(session: AsyncSession, user: User, invite_id: uuid.UUID) -> None:

@@ -91,6 +91,11 @@ const InvitePage = lazy(() =>
     default: module.InvitePage,
   })),
 );
+const SocialPage = lazy(() =>
+  import("@/features/social/pages/SocialPage").then((module) => ({
+    default: module.SocialPage,
+  })),
+);
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
@@ -150,6 +155,7 @@ export function App() {
             <Route path="support" element={<SupportPage />} />
             <Route path="support/:ticketId" element={<SupportTicketPage />} />
             <Route path="invite" element={<InvitePage />} />
+            <Route path="social" element={<SocialPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="admin/system" element={<AdminSystemPage />} />
             <Route path="admin/audit" element={<AdminAuditPage />} />

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   acceptInvite,
@@ -8,6 +8,7 @@ import {
   previewInvite,
   revokeInvite,
   type CreatedInvite,
+  type InviteAcceptResult,
   type InvitePreview,
 } from "@/api/invites";
 import { Header } from "@/components/layout/Header";
@@ -54,7 +55,7 @@ export function InvitePage() {
   const [loadingPreview, setLoadingPreview] = useState(Boolean(token));
   const [creating, setCreating] = useState(false);
   const [accepting, setAccepting] = useState(false);
-  const [accepted, setAccepted] = useState(false);
+  const [accepted, setAccepted] = useState<InviteAcceptResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const shareLink = useMemo(
@@ -65,7 +66,7 @@ export function InvitePage() {
   const loadPreview = useCallback(async (value: string) => {
     setLoadingPreview(true);
     setError(null);
-    setAccepted(false);
+    setAccepted(null);
     try {
       setPreview(await previewInvite(value));
       setCredential(value);
@@ -144,9 +145,15 @@ export function InvitePage() {
     setError(null);
     try {
       const result = await acceptInvite(credential);
-      setAccepted(true);
+      setAccepted(result);
       setPreview((current) => current ? { ...current, already_accepted: true } : current);
-      setNotice(result.already_accepted ? "Это приглашение уже принято" : "Приглашение принято");
+      setNotice(
+        result.mode === "social"
+          ? result.competition_id
+            ? "Вы теперь друзья. Соревнование началось"
+            : "Вы теперь друзья. Для соревнования настройте тренировочные дни"
+          : result.already_accepted ? "Это приглашение уже принято" : "Приглашение принято",
+      );
       clearPendingInvite();
       setSearchParams({}, { replace: true });
     } catch (reason) {
@@ -177,12 +184,15 @@ export function InvitePage() {
         <div className="mb-4 rounded-2xl bg-tg-secondary p-4">
           <h2 className="font-semibold">Вас приглашает {preview.inviter_label}</h2>
           <p className="mt-2 text-sm leading-relaxed text-tg-hint">
-            После подтверждения мы сохраним источник приглашения. Друг и соревнование не добавляются автоматически.
+            {preview.mode === "social"
+              ? "После подтверждения вы добавите друг друга в друзья и начнёте соревнование на регулярность длительностью 14 дней. Сравнивается только процент тренировок по личному расписанию — вес, замеры и упражнения не раскрываются."
+              : "После подтверждения мы сохраним источник приглашения. Дружба и соревнование для нового аккаунта не добавляются автоматически."}
           </p>
           <p className="mt-2 text-xs text-tg-hint">Действует до {formatExpiry(preview.expires_at)}</p>
-          <button type="button" onClick={() => void accept()} disabled={accepting || preview.already_accepted || accepted} className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-55">
-            {preview.already_accepted || accepted ? "Приглашение принято" : accepting ? "Подтверждаем…" : "Принять приглашение"}
+          <button type="button" onClick={() => void accept()} disabled={accepting || Boolean(accepted)} className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-55">
+            {accepted ? "Приглашение принято" : accepting ? "Подтверждаем…" : preview.mode === "social" ? "Добавить друга и начать" : "Принять приглашение"}
           </button>
+          {accepted?.mode === "social" ? <Link to="/social" className="mt-2 flex min-h-11 items-center justify-center rounded-xl bg-tg-bg px-4 text-sm font-medium text-tg-link">Открыть друзей и соревнования</Link> : null}
         </div>
       ) : null}
 
@@ -200,7 +210,7 @@ export function InvitePage() {
       <div className="rounded-2xl bg-tg-secondary p-4">
         <h2 className="font-semibold">Моё приглашение</h2>
         <p className="mt-2 text-sm leading-relaxed text-tg-hint">
-          Ссылка не содержит ваши данные. Она действует 14 дней, а принять её нужно отдельно.
+          Ссылка не содержит ваши данные и действует 14 дней. Для существующего пользователя подтверждение добавит вас в друзья и запустит соревнование на регулярность. Для нового пользователя сохранится только источник приглашения.
         </p>
         {!created ? (
           <button type="button" onClick={() => void generate()} disabled={creating} className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-55">

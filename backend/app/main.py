@@ -31,6 +31,7 @@ from app.routers import invites as invites_router
 from app.routers import notifications as notifications_router
 from app.routers import nutrition as nutrition_router
 from app.routers import programs as programs_router
+from app.routers import social as social_router
 from app.routers import supplements as supplements_router
 from app.routers import support as support_router
 from app.routers import telegram as telegram_router
@@ -94,6 +95,7 @@ app.include_router(admin_user_detail_router.router)
 app.include_router(exercises_router.router)
 app.include_router(invites_router.router)
 app.include_router(programs_router.router)
+app.include_router(social_router.router)
 app.include_router(workouts_router.router)
 app.include_router(nutrition_router.router)
 app.include_router(supplements_router.router)

@@ -136,3 +136,68 @@ test("accepted Telegram startapp invite does not reopen after back navigation", 
   await expect.poll(() => page.evaluate(() => window.location.pathname)).toBe("/");
   await expect(page.getByRole("heading", { name: "Пригласить друга" })).toHaveCount(0);
 });
+
+test("existing user explicitly starts a private regularity competition", async ({ page }) => {
+  const friendshipId = "33333333-3333-4333-8333-333333333333";
+  const competitionId = "44444444-4444-4444-8444-444444444444";
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "social-e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(profile),
+  }));
+  await page.route("**/invites/preview", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      inviter_label: "@training_friend",
+      expires_at: expiresAt,
+      already_accepted: false,
+      mode: "social",
+      competition_duration_days: 14,
+    }),
+  }));
+  await page.route("**/invites/accept", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      accepted: true,
+      already_accepted: false,
+      inviter_label: "@training_friend",
+      mode: "social",
+      friendship_id: friendshipId,
+      competition_id: competitionId,
+    }),
+  }));
+  await page.route("**/friends", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [{ id: friendshipId, label: "@training_friend", status: "accepted" }] }),
+  }));
+  await page.route("**/competitions", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [{
+      id: competitionId,
+      friendship_id: friendshipId,
+      friend_label: "@training_friend",
+      status: "active",
+      duration_days: 14,
+      start_date: "2026-09-01",
+      end_date: "2026-09-14",
+      algorithm_version: "regularity_v1",
+      created_by_me: false,
+      can_accept: false,
+      my_score: { score: null, completed: 0, planned: 0 },
+      friend_score: { score: null, completed: 0, planned: 0 },
+    }] }),
+  }));
+
+  await page.goto(`/invite?token=${token}`);
+  await expect(page.getByText(/добавите друг друга в друзья/)).toBeVisible();
+  await page.getByRole("button", { name: "Добавить друга и начать" }).click();
+  await expect(page.getByRole("status")).toContainText("Соревнование началось");
+  await page.getByRole("link", { name: "Открыть друзей и соревнования" }).click();
+  await expect(page.getByRole("heading", { name: "Друзья и соревнования" })).toBeVisible();
+  await expect(page.getByText("Идёт сейчас")).toBeVisible();
+
+  for (const width of [320, 393, 1440]) {
+    await page.setViewportSize({ width, height: 850 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
