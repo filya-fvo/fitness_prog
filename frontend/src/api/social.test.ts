@@ -29,12 +29,25 @@ describe("social API", () => {
         algorithm_version: "regularity_v1",
         created_by_me: true,
         can_accept: false,
+        factors: [{ key: "weight_loss", metric: "weight_loss", label: "Снижение веса", exercise_id: null }],
+        winner: "me",
+        my_analytics: { wins: 1, factors: [{
+          key: "weight_loss", metric: "weight_loss", label: "Снижение веса", status: "ready",
+          value: 9.3, baseline_value: 108, latest_value: 98, unit: "кг", capped: false,
+        }] },
+        friend_analytics: { wins: 0, factors: [{
+          key: "weight_loss", metric: "weight_loss", label: "Снижение веса", status: "ready",
+          value: 8.1, baseline_value: null, latest_value: null, unit: null, capped: false,
+        }] },
         my_score: { score: 100, completed: 2, planned: 2 },
         friend_score: { score: 50, completed: 1, planned: 2 },
       }] } });
 
     expect((await getFriends())[0]?.label).toBe("@friend");
-    expect((await getCompetitions())[0]?.friend_score?.score).toBe(50);
+    const competition = (await getCompetitions())[0];
+    expect(competition?.friend_score?.score).toBe(50);
+    expect(competition?.my_analytics?.factors[0]?.baseline_value).toBe(108);
+    expect(competition?.friend_analytics?.factors[0]?.baseline_value).toBeNull();
   });
 
   it("sends explicit competition and friendship actions", async () => {
@@ -52,6 +65,27 @@ describe("social API", () => {
     });
     expect(apiClient.post).toHaveBeenNthCalledWith(2, `/competitions/${competitionId}/accept`);
     expect(apiClient.post).toHaveBeenNthCalledWith(3, `/friends/${friendshipId}/block`);
+  });
+
+  it("sends a custom period and consented factors", async () => {
+    vi.spyOn(apiClient, "post").mockResolvedValue({ data: { ok: true } });
+    const friendshipId = "11111111-1111-4111-8111-111111111111";
+    const exerciseId = "33333333-3333-4333-8333-333333333333";
+
+    await createFriendCompetition(friendshipId, 180, [
+      { metric: "weight_loss" },
+      { metric: "relative_strength", exercise_id: exerciseId },
+    ], "Спор на полгода");
+
+    expect(apiClient.post).toHaveBeenCalledWith("/competitions/friend", {
+      friendship_id: friendshipId,
+      duration_days: 180,
+      title: "Спор на полгода",
+      factors: [
+        { metric: "weight_loss" },
+        { metric: "relative_strength", exercise_id: exerciseId },
+      ],
+    });
   });
 
   it("validates a privacy-safe global season and sends opt-in actions", async () => {

@@ -55,12 +55,22 @@ class Competition(Base):
     )
     kind: Mapped[str] = mapped_column(String(16), nullable=False, default="friend")
     metric: Mapped[str] = mapped_column(String(32), nullable=False, default="regularity")
+    title: Mapped[str | None] = mapped_column(String(120))
+    factors: Mapped[list[dict]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=lambda: [{"metric": "regularity"}],
+        server_default='[{"metric": "regularity"}]',
+    )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending", index=True)
     duration_days: Mapped[int] = mapped_column(Integer, nullable=False, default=14)
     start_date: Mapped[date | None] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
     algorithm_version: Mapped[str] = mapped_column(
         String(32), nullable=False, default="regularity_v1"
+    )
+    privacy_version: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="aggregate_v1"
     )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
@@ -87,6 +97,7 @@ class CompetitionParticipant(Base):
     consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     schedule_days: Mapped[list[int]] = mapped_column(JSONB, nullable=False, default=list)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="Europe/Moscow")
+    baseline: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default="{}")
     joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(

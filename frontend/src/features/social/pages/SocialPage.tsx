@@ -13,6 +13,8 @@ import {
   type Friend,
 } from "@/api/social";
 import { Header } from "@/components/layout/Header";
+import { CompetitionBuilder } from "@/features/social/components/CompetitionBuilder";
+import { CompetitionCard } from "@/features/social/components/CompetitionCard";
 import { GlobalSeasonCard } from "@/features/social/components/GlobalSeasonCard";
 import { toUserMessage } from "@/utils/errors";
 
@@ -23,36 +25,6 @@ function actionError(error: unknown): string {
   return toUserMessage(error, "Не удалось выполнить действие. Попробуйте ещё раз.");
 }
 
-function formatDay(value: string | null): string {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(
-    new Date(`${value}T12:00:00`),
-  );
-}
-
-function Score({ label, value }: { label: string; value: Competition["my_score"] }) {
-  return (
-    <div className="rounded-xl bg-tg-bg p-3">
-      <p className="truncate text-xs text-tg-hint">{label}</p>
-      {value?.score === null || !value ? (
-        <p className="mt-1 text-sm font-medium">Пока нет расчёта</p>
-      ) : (
-        <>
-          <p className="mt-1 text-xl font-semibold">{value.score}%</p>
-          <p className="text-xs text-tg-hint">{value.completed} из {value.planned} по плану</p>
-        </>
-      )}
-    </div>
-  );
-}
-
-const statusLabel: Record<Competition["status"], string> = {
-  pending: "Ждёт подтверждения",
-  active: "Идёт сейчас",
-  finished: "Завершено",
-  cancelled: "Завершено досрочно",
-};
-
 export function SocialPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -60,8 +32,6 @@ export function SocialPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [selectedFriend, setSelectedFriend] = useState("");
-  const [duration, setDuration] = useState<14 | 28>(14);
 
   const load = useCallback(async () => {
     setError(null);
@@ -72,11 +42,6 @@ export function SocialPage() {
       ]);
       setFriends(friendItems);
       setCompetitions(competitionItems);
-      setSelectedFriend((current) =>
-        friendItems.some((item) => item.id === current && item.status === "accepted")
-          ? current
-          : (friendItems.find((item) => item.status === "accepted")?.id ?? ""),
-      );
     } catch (reason) {
       setError(actionError(reason));
     } finally {
@@ -129,10 +94,10 @@ export function SocialPage() {
 
   return (
     <section>
-      <Header title="Друзья и соревнования" subtitle="Регулярность относительно личного плана" fallbackTo="/more" />
+      <Header title="Друзья и соревнования" subtitle="Честный прогресс относительно своего старта" fallbackTo="/more" />
 
       <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm leading-relaxed text-tg-hint">
-        Сравнивается процент выполненных тренировочных дней. Вес, замеры, упражнения и другие личные данные другу не показываются.
+        Вы сами выбираете срок и до четырёх факторов. Система сравнивает проценты прогресса от личной исходной точки; абсолютный вес и обхваты другу не показываются.
       </div>
       <GlobalSeasonCard />
       {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
@@ -171,44 +136,27 @@ export function SocialPage() {
             )}
           </div>
 
-          {acceptedFriends.length > 0 ? (
-            <div className="mb-4 rounded-2xl bg-tg-secondary p-4">
-              <h2 className="font-semibold">Новое соревнование</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-tg-hint">С кем
-                  <select value={selectedFriend} onChange={(event) => setSelectedFriend(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-base text-tg-text">
-                    {acceptedFriends.map((friend) => <option key={friend.id} value={friend.id}>{friend.label}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm text-tg-hint">Срок
-                  <select value={duration} onChange={(event) => setDuration(Number(event.target.value) as 14 | 28)} className="mt-1 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-base text-tg-text">
-                    <option value={14}>14 дней</option>
-                    <option value={28}>28 дней</option>
-                  </select>
-                </label>
-              </div>
-              <button type="button" disabled={!selectedFriend || busy === "create"} onClick={() => void run("create", () => createFriendCompetition(selectedFriend, duration), "Приглашение на соревнование отправлено")} className="mt-3 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">Предложить соревнование</button>
-            </div>
-          ) : null}
+          {acceptedFriends.length > 0 ? <CompetitionBuilder
+            friends={acceptedFriends}
+            busy={busy === "create"}
+            onCreate={(input) => run(
+              "create",
+              () => createFriendCompetition(input.friendshipId, input.durationDays, input.factors, input.title),
+              "Приглашение на соревнование отправлено",
+            )}
+          /> : null}
 
           <div className="rounded-2xl bg-tg-secondary p-4">
             <h2 className="font-semibold">Соревнования</h2>
             {competitions.length === 0 ? <p className="mt-2 text-sm text-tg-hint">Активных и завершённых соревнований пока нет.</p> : (
               <div className="mt-3 space-y-3">
-                {competitions.map((competition) => (
-                  <article key={competition.id} className="rounded-xl bg-tg-bg p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0"><h3 className="truncate text-sm font-semibold">С {competition.friend_label}</h3><p className="mt-1 text-xs text-tg-hint">{competition.duration_days} дней{competition.start_date ? ` · ${formatDay(competition.start_date)}–${formatDay(competition.end_date)}` : ""}</p></div>
-                      <span className="shrink-0 rounded-full bg-tg-secondary px-2 py-1 text-xs text-tg-hint">{statusLabel[competition.status]}</span>
-                    </div>
-                    {competition.status === "active" || competition.status === "finished" ? <div className="mt-3 grid grid-cols-2 gap-2"><Score label="Вы" value={competition.my_score} /><Score label={competition.friend_label} value={competition.friend_score} /></div> : null}
-                    {competition.status === "pending" ? <p className="mt-3 text-sm text-tg-hint">{competition.created_by_me ? "Ждём согласия друга." : "Друг предлагает сравнить регулярность. Старт произойдёт только после вашего согласия."}</p> : null}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {competition.can_accept ? <button type="button" disabled={busy === competition.id} onClick={() => void run(competition.id, () => acceptCompetition(competition.id), "Соревнование началось")} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">Принять</button> : null}
-                      {competition.status === "pending" || competition.status === "active" ? <button type="button" disabled={busy === competition.id} onClick={() => void endCompetition(competition)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm text-red-500 disabled:opacity-50">{competition.status === "pending" ? "Отказаться" : "Выйти"}</button> : null}
-                    </div>
-                  </article>
-                ))}
+                {competitions.map((competition) => <CompetitionCard
+                  key={competition.id}
+                  competition={competition}
+                  busy={busy === competition.id}
+                  onAccept={() => run(competition.id, () => acceptCompetition(competition.id), "Соревнование началось")}
+                  onLeave={() => endCompetition(competition)}
+                />)}
               </div>
             )}
           </div>

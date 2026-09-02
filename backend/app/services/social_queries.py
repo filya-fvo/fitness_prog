@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.user import User
-from app.services.competition_scoring import RegularityScore, participant_local_day, regularity_score
+from app.services import competition_analytics
+from app.services.competition_analytics import FactorDefinition, ParticipantAnalytics
+from app.services.competition_scoring import RegularityScore, participant_local_day
 
 
 @dataclass(slots=True)
@@ -30,6 +32,10 @@ class CompetitionView:
     status: str
     my_score: RegularityScore | None
     friend_score: RegularityScore | None
+    definitions: list[FactorDefinition]
+    my_analytics: ParticipantAnalytics | None
+    friend_analytics: ParticipantAnalytics | None
+    winner: str | None
 
 
 def user_label(user: User) -> str:
@@ -84,6 +90,7 @@ async def list_competitions(
         select(CompetitionParticipant)
         .where(CompetitionParticipant.user_id == user.id)
         .order_by(CompetitionParticipant.created_at.desc())
+        .limit(50)
     )
     result: list[CompetitionView] = []
     for mine in mine_rows.all():
@@ -111,9 +118,44 @@ async def list_competitions(
             if participant_local_day(mine, current) > competition.end_date:
                 status = "finished"
         my_score = friend_score = None
+        my_analytics = friend_analytics = None
+        winner = None
+        definitions = await competition_analytics.factor_definitions(session, competition)
         if status in ("active", "finished"):
-            my_score = await regularity_score(session, competition, mine, now=current)
-            friend_score = await regularity_score(session, competition, theirs, now=current)
+            my_analytics = await competition_analytics.participant_analytics(
+                session,
+                competition,
+                mine,
+                definitions,
+                as_of=participant_local_day(mine, current),
+            )
+            friend_analytics = await competition_analytics.participant_analytics(
+                session,
+                competition,
+                theirs,
+                definitions,
+                as_of=participant_local_day(theirs, current),
+            )
+            winner = competition_analytics.assign_factor_wins(my_analytics, friend_analytics)
+            if any(item.metric == "regularity" for item in definitions):
+                my_factor = next(
+                    item for item in my_analytics.factors if item.definition.metric == "regularity"
+                )
+                friend_factor = next(
+                    item
+                    for item in friend_analytics.factors
+                    if item.definition.metric == "regularity"
+                )
+                my_score = RegularityScore(
+                    my_factor.value,
+                    my_factor.completed or 0,
+                    my_factor.planned or 0,
+                )
+                friend_score = RegularityScore(
+                    friend_factor.value,
+                    friend_factor.completed or 0,
+                    friend_factor.planned or 0,
+                )
         result.append(
             CompetitionView(
                 competition,
@@ -124,6 +166,10 @@ async def list_competitions(
                 status,
                 my_score,
                 friend_score,
+                definitions,
+                my_analytics,
+                friend_analytics,
+                winner,
             )
         )
     return result

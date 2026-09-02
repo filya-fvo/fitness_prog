@@ -15,6 +15,9 @@ from app.schemas.social import (
     CompetitionListResponse,
     CompetitionScoreResponse,
     CompetitionSummary,
+    CompetitionFactorResult,
+    CompetitionFactorSummary,
+    CompetitionParticipantAnalytics,
     FriendListResponse,
     FriendSummary,
     GlobalLeaderboardEntry,
@@ -22,7 +25,7 @@ from app.schemas.social import (
     SocialActionResponse,
 )
 from app.services.competition_scoring import RegularityScore
-from app.services import global_competitions, social_queries, social_service
+from app.services import competition_analytics, global_competitions, social_queries, social_service
 
 router = APIRouter(tags=["social"])
 
@@ -41,6 +44,8 @@ def _social_error(exc: social_service.SocialError) -> HTTPException:
         )
     if isinstance(exc, social_service.SocialUnavailableError):
         return HTTPException(status_code=409, detail="Пользователь больше недоступен")
+    if isinstance(exc, social_service.SocialBaselineError):
+        return HTTPException(status_code=409, detail=str(exc))
     return HTTPException(status_code=409, detail="Действие сейчас недоступно")
 
 
@@ -69,6 +74,36 @@ def _score(value: RegularityScore | None) -> CompetitionScoreResponse | None:
         score=value.score,
         completed=value.completed,
         planned=value.planned,
+    )
+
+
+def _analytics(
+    value: competition_analytics.ParticipantAnalytics | None,
+    *,
+    mine: bool,
+) -> CompetitionParticipantAnalytics | None:
+    if value is None:
+        return None
+    return CompetitionParticipantAnalytics(
+        wins=value.wins,
+        factors=[
+            CompetitionFactorResult(
+                key=result.definition.key,
+                metric=result.definition.metric,
+                label=result.definition.label,
+                status=result.status,
+                value=result.value,
+                completed=result.completed,
+                planned=result.planned,
+                baseline_value=result.baseline_value if mine else None,
+                latest_value=result.latest_value if mine else None,
+                baseline_date=result.baseline_date if mine else None,
+                latest_date=result.latest_date if mine else None,
+                unit=result.unit if mine else None,
+                capped=result.capped,
+            )
+            for result in value.factors
+        ],
     )
 
 
@@ -159,13 +194,16 @@ async def competitions(
     user: User = Depends(get_current_user),
 ) -> CompetitionListResponse:
     items = await social_queries.list_competitions(session, user)
-    return CompetitionListResponse(
-        items=[
+    response_items: list[CompetitionSummary] = []
+    for item in items:
+        definitions = item.definitions
+        response_items.append(
             CompetitionSummary(
                 id=item.competition.id,
                 friendship_id=item.friendship.id,
                 friend_label=social_queries.user_label(item.friend),
                 status=item.status,
+                title=item.competition.title,
                 duration_days=item.competition.duration_days,
                 start_date=item.competition.start_date,
                 end_date=item.competition.end_date,
@@ -176,12 +214,23 @@ async def competitions(
                     and item.competition.created_by_user_id != user.id
                     and item.mine.consented_at is None
                 ),
+                factors=[
+                    CompetitionFactorSummary(
+                        key=value.key,
+                        metric=value.metric,
+                        label=value.label,
+                        exercise_id=value.exercise_id,
+                    )
+                    for value in definitions
+                ],
+                winner=item.winner,
+                my_analytics=_analytics(item.my_analytics, mine=True),
+                friend_analytics=_analytics(item.friend_analytics, mine=False),
                 my_score=_score(item.my_score),
                 friend_score=_score(item.friend_score),
             )
-            for item in items
-        ]
-    )
+        )
+    return CompetitionListResponse(items=response_items)
 
 
 @router.post(
@@ -200,6 +249,8 @@ async def create_competition(
             user,
             body.friendship_id,
             body.duration_days,
+            title=body.title,
+            factors=body.factors,
         )
     except social_service.SocialError as exc:
         raise _social_error(exc) from exc

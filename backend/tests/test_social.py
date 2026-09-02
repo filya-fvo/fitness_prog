@@ -8,11 +8,20 @@ import httpx
 import pytest
 
 from app.main import app
+from app.routers.social import _analytics
 from app.models.invite import Invite
 from app.models.global_competition import GlobalCompetitionParticipant, GlobalCompetitionSeason
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.user import User
 from app.services import invite_service
+from app.services.competition_analytics import (
+    FactorDefinition,
+    FactorResult,
+    ParticipantAnalytics,
+    assign_factor_wins,
+    estimated_one_rep_max,
+    improvement_percent,
+)
 from app.services.competition_scoring import RegularityScore, calculate_regularity_score, regularity_score
 from app.services import global_competitions, social_service
 from app.services.social_service import SocialConflictError, ordered_pair
@@ -51,6 +60,16 @@ def test_social_contract_and_append_only_migration() -> None:
     assert "ranked_eligible BOOLEAN NOT NULL" in global_migration
     assert "public_alias" in global_migration
     assert "telegram_id" not in global_migration
+
+    custom_migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260901000036_custom_friend_competitions.sql"
+    ).read_text(encoding="utf-8")
+    assert "duration_days BETWEEN 7 AND 365" in custom_migration
+    assert "jsonb_array_length(factors) BETWEEN 1 AND 4" in custom_migration
+    assert "baseline JSONB NOT NULL" in custom_migration
 
 
 @pytest.mark.asyncio
@@ -270,6 +289,61 @@ def test_global_season_window_cohorts_and_score_are_deterministic() -> None:
         completed_dates=[date(2026, 8, 31), date(2026, 9, 1)],
     )
     assert score == RegularityScore(score=50.0, completed=1, planned=2)
+
+
+def test_custom_competition_uses_relative_changes_instead_of_raw_kilograms() -> None:
+    my_weight_loss, _ = improvement_percent(108, 98, decrease=True)
+    wife_weight_loss, _ = improvement_percent(75, 65, decrease=True)
+    assert my_weight_loss == 9.3
+    assert wife_weight_loss == 13.3
+
+    my_baseline = estimated_one_rep_max(80, 10) / 108
+    my_latest = estimated_one_rep_max(110, 10) / 100
+    friend_baseline = estimated_one_rep_max(90, 10) / 106
+    friend_latest = estimated_one_rep_max(110, 5) / 95
+    my_strength, _ = improvement_percent(my_baseline, my_latest)
+    friend_strength, _ = improvement_percent(friend_baseline, friend_latest)
+    assert my_strength == 48.5
+    assert friend_strength == 19.3
+
+
+def test_custom_competition_counts_factor_wins_without_mixing_percent_scales() -> None:
+    weight = FactorDefinition("weight_loss", "weight_loss", "Снижение веса")
+    strength = FactorDefinition("relative_strength:test", "relative_strength", "Сила")
+    mine = ParticipantAnalytics(factors=[
+        FactorResult(weight, "ready", value=9.3),
+        FactorResult(strength, "ready", value=48.5),
+    ])
+    friend = ParticipantAnalytics(factors=[
+        FactorResult(weight, "ready", value=13.3),
+        FactorResult(strength, "ready", value=19.3),
+    ])
+
+    assert assign_factor_wins(mine, friend) == "tie"
+    assert mine.wins == 1
+    assert friend.wins == 1
+
+
+def test_friend_analytics_never_exposes_raw_measurements() -> None:
+    weight = FactorDefinition("weight_loss", "weight_loss", "Снижение веса")
+    source = ParticipantAnalytics(factors=[FactorResult(
+        definition=weight,
+        status="ready",
+        value=9.3,
+        baseline_value=108,
+        latest_value=98,
+        baseline_date=date(2026, 9, 1),
+        latest_date=date(2026, 10, 1),
+        unit="кг",
+    )])
+
+    mine = _analytics(source, mine=True)
+    theirs = _analytics(source, mine=False)
+    assert mine is not None and mine.factors[0].baseline_value == 108
+    assert theirs is not None and theirs.factors[0].value == 9.3
+    assert theirs.factors[0].baseline_value is None
+    assert theirs.factors[0].latest_value is None
+    assert theirs.factors[0].unit is None
 
 
 def test_global_ranking_requires_two_planned_days_and_preserves_ties() -> None:

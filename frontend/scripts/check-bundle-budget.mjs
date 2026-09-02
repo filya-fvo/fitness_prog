@@ -33,10 +33,10 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
-  // The release monitor adds less than 1 KB gzip to the startup bundle so stale
-  // Telegram WebViews can update themselves. Keep a narrow measured margin.
-  totalJsGzip: 466_000,
-  productJsGzip: 428_000,
+  // Custom competition setup and factor analytics add about 1.8 KB gzip to the
+  // lazy social route. Keep a measured margin without relaxing chunk isolation.
+  totalJsGzip: 470_000,
+  productJsGzip: 432_000,
   // Linked audit search adds exact, lazy admin destinations without affecting
   // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
   adminJsGzip: 38_500,

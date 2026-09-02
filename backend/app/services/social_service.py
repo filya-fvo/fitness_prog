@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.user import User
+from app.schemas.social import CompetitionFactor
+from app.services import competition_analytics
 from app.services.notification_prefs import merge_notification_settings
 from app.services.scheduler import local_schedule_day, workout_days
 
@@ -45,6 +47,10 @@ class SocialUnavailableError(SocialError):
     pass
 
 
+class SocialBaselineError(SocialError):
+    pass
+
+
 @dataclass(slots=True)
 class SocialLinkResult:
     friendship: Friendship
@@ -63,12 +69,18 @@ def _timezone_name(user: User) -> str:
     return str(settings.get("timezone") or "Europe/Moscow")
 
 
-def _snapshot_participant(participant: CompetitionParticipant, user: User, now: datetime) -> None:
+def _snapshot_participant(
+    participant: CompetitionParticipant,
+    user: User,
+    now: datetime,
+    baseline: dict[str, object],
+) -> None:
     participant.consented_at = participant.consented_at or now
     participant.joined_at = now
     participant.left_at = None
     participant.schedule_days = sorted(workout_days(user.goals or {}))
     participant.timezone = _timezone_name(user)
+    participant.baseline = baseline
 
 
 async def find_friendship(
@@ -130,16 +142,34 @@ async def _activate(
 ) -> None:
     participants = await _participants(session, competition.id)
     by_user = {row.user_id: row for row in participants}
+    try:
+        definitions = await competition_analytics.factor_definitions(session, competition)
+    except competition_analytics.CompetitionFactorError as exc:
+        raise SocialBaselineError(str(exc)) from exc
+    requires_schedule = any(item.metric == "regularity" for item in definitions)
+    if requires_schedule and not all(workout_days(user.goals or {}) for user in users):
+        raise SocialScheduleError
+    baselines: dict[uuid.UUID, dict[str, object]] = {}
+    start_date = local_schedule_day(users[0].goals or {}, now)
+    try:
+        for user in users:
+            participant = by_user.get(user.id) or CompetitionParticipant(
+                competition_id=competition.id,
+                user_id=user.id,
+            )
+            baselines[user.id] = await competition_analytics.capture_participant_baseline(
+                session, participant, definitions, start_date
+            )
+    except competition_analytics.CompetitionBaselineError as exc:
+        raise SocialBaselineError(str(exc)) from exc
     for user in users:
         participant = by_user.get(user.id)
         if participant is None:
             participant = CompetitionParticipant(competition_id=competition.id, user_id=user.id)
             session.add(participant)
-        _snapshot_participant(participant, user, now)
-    if not all(workout_days(user.goals or {}) for user in users):
-        raise SocialScheduleError
+        _snapshot_participant(participant, user, now, baselines[user.id])
     competition.status = "active"
-    competition.start_date = local_schedule_day(users[0].goals or {}, now)
+    competition.start_date = start_date
     competition.end_date = competition.start_date + timedelta(days=competition.duration_days - 1)
 
 
@@ -231,6 +261,8 @@ async def create_competition(
     user: User,
     friendship_id: uuid.UUID,
     duration_days: int,
+    title: str | None = None,
+    factors: list[CompetitionFactor] | None = None,
     *,
     now: datetime | None = None,
 ) -> Competition:
@@ -259,15 +291,30 @@ async def create_competition(
     )
     if friend is None:
         raise SocialUnavailableError
-    if not workout_days(user.goals or {}) or not workout_days(friend.goals or {}):
+    selected_factors = factors or [CompetitionFactor(metric="regularity")]
+    requires_schedule = any(item.metric == "regularity" for item in selected_factors)
+    if requires_schedule and (not workout_days(user.goals or {}) or not workout_days(friend.goals or {})):
         raise SocialScheduleError
     competition = Competition(
         friendship_id=friendship.id,
         created_by_user_id=user.id,
         status="pending",
+        title=title,
+        metric="custom" if len(selected_factors) > 1 else selected_factors[0].metric,
+        factors=[item.model_dump(mode="json", exclude_none=True) for item in selected_factors],
         duration_days=duration_days,
-        algorithm_version=ALGORITHM_VERSION,
+        algorithm_version=competition_analytics.ALGORITHM_VERSION,
     )
+    try:
+        definitions = await competition_analytics.factor_definitions(session, competition)
+        await competition_analytics.capture_participant_baseline(
+            session,
+            CompetitionParticipant(competition_id=competition.id, user_id=user.id),
+            definitions,
+            local_schedule_day(user.goals or {}, current),
+        )
+    except competition_analytics.CompetitionFactorError as exc:
+        raise SocialBaselineError(str(exc)) from exc
     session.add(competition)
     await session.flush()
     session.add_all(

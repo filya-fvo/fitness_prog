@@ -14,17 +14,54 @@ const scoreSchema = z.object({
   planned: z.number().int().nonnegative(),
 });
 
+const competitionMetricSchema = z.enum([
+  "regularity",
+  "weight_loss",
+  "waist_reduction",
+  "relative_strength",
+]);
+
+const factorSchema = z.object({
+  key: z.string().min(1),
+  metric: competitionMetricSchema,
+  label: z.string().min(1),
+  exercise_id: z.string().uuid().nullable().optional(),
+});
+
+const factorResultSchema = factorSchema.pick({ key: true, metric: true, label: true }).extend({
+  status: z.enum(["ready", "baseline_missing", "no_progress"]),
+  value: z.number().nullable(),
+  completed: z.number().int().nonnegative().nullable().optional(),
+  planned: z.number().int().nonnegative().nullable().optional(),
+  baseline_value: z.number().nullable().optional(),
+  latest_value: z.number().nullable().optional(),
+  baseline_date: z.string().nullable().optional(),
+  latest_date: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
+  capped: z.boolean().default(false),
+});
+
+const participantAnalyticsSchema = z.object({
+  wins: z.number().int().nonnegative(),
+  factors: z.array(factorResultSchema),
+});
+
 const competitionSchema = z.object({
   id: z.string().uuid(),
   friendship_id: z.string().uuid(),
   friend_label: z.string().min(1),
   status: z.enum(["pending", "active", "finished", "cancelled"]),
-  duration_days: z.union([z.literal(14), z.literal(28)]),
+  title: z.string().nullable().optional(),
+  duration_days: z.number().int().min(7).max(365),
   start_date: z.string().nullable(),
   end_date: z.string().nullable(),
   algorithm_version: z.string(),
   created_by_me: z.boolean(),
   can_accept: z.boolean(),
+  factors: z.array(factorSchema).default([]),
+  winner: z.enum(["me", "friend", "tie"]).nullable().optional(),
+  my_analytics: participantAnalyticsSchema.nullable().optional(),
+  friend_analytics: participantAnalyticsSchema.nullable().optional(),
   my_score: scoreSchema.nullable(),
   friend_score: scoreSchema.nullable(),
 });
@@ -61,6 +98,11 @@ const globalSeasonSchema = z.object({
 
 export type Friend = z.infer<typeof friendSchema>;
 export type Competition = z.infer<typeof competitionSchema>;
+export type CompetitionMetric = z.infer<typeof competitionMetricSchema>;
+export type CompetitionFactorInput = {
+  metric: CompetitionMetric;
+  exercise_id?: string;
+};
 export type GlobalSeason = z.infer<typeof globalSeasonSchema>;
 
 export async function getFriends(): Promise<Friend[]> {
@@ -75,11 +117,15 @@ export async function getCompetitions(): Promise<Competition[]> {
 
 export async function createFriendCompetition(
   friendshipId: string,
-  durationDays: 14 | 28,
+  durationDays: number,
+  factors?: CompetitionFactorInput[],
+  title?: string,
 ): Promise<void> {
   await apiClient.post("/competitions/friend", {
     friendship_id: friendshipId,
     duration_days: durationDays,
+    ...(factors ? { factors } : {}),
+    ...(title ? { title } : {}),
   });
 }
 

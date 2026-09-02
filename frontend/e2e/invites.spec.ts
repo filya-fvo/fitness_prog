@@ -236,3 +236,55 @@ test("existing user explicitly starts a private regularity competition", async (
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
+
+test("friend competition accepts a custom period and fair progress factors", async ({ page }) => {
+  const friendshipId = "33333333-3333-4333-8333-333333333333";
+  const exerciseId = "55555555-5555-4555-8555-555555555555";
+  let submitted: Record<string, unknown> | null = null;
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "custom-social-token"));
+  await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(profile) }));
+  await page.route("**/friends", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [{ id: friendshipId, label: "@training_friend", status: "accepted" }] }),
+  }));
+  await page.route("**/competitions", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [] }) }));
+  await page.route("**/competitions/global/current", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      season_key: "regularity-2026-08-31", title: "Регулярность", start_date: "2026-08-31",
+      end_date: "2026-09-27", join_deadline: "2026-09-06", status: "not_joined",
+      algorithm_version: "regularity_global_v1", cohort: "days_3", cohort_label: "3 тренировки в неделю",
+      participant_count: 0, minimum_cohort_size: 20, ranking_unlocked: false,
+      ranked_eligible: true, provisional: false, my_alias: null, my_rank: null,
+      my_score: null, leaderboard: [],
+    }),
+  }));
+  await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [{
+      id: exerciseId, name_ru: "Жим штанги лёжа", muscle_group: "Грудь", difficulty: 2,
+      secondary_muscle_groups: [], equipment: "Штанга", limitations: [], tags: [], weight_rule: "total",
+    }], total: 1, page: 1, page_size: 50 }),
+  }));
+  await page.route("**/competitions/friend", async (route) => {
+    submitted = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+  });
+
+  await page.goto("/social");
+  await page.getByLabel("Срок, дней").fill("180");
+  await page.getByRole("checkbox", { name: /Снижение веса/ }).check();
+  await page.getByRole("checkbox", { name: /Относительная сила/ }).check();
+  await page.getByLabel("Общее упражнение").selectOption(exerciseId);
+  await page.getByRole("button", { name: "Предложить соревнование" }).click();
+
+  await expect.poll(() => submitted).toMatchObject({
+    friendship_id: friendshipId,
+    duration_days: 180,
+    factors: [
+      { metric: "regularity" },
+      { metric: "weight_loss" },
+      { metric: "relative_strength", exercise_id: exerciseId },
+    ],
+  });
+});
