@@ -22,8 +22,8 @@ const LABELS: Record<string, string> = {
   light: "Лёгкая",
   medium: "Средняя",
   heavy: "Тяжёлая",
-  no_knee: "Без нагрузки на колени",
-  no_spine: "Без нагрузки на позвоночник",
+  no_knee: "Щадящая нагрузка на колени",
+  no_spine: "Щадящая нагрузка на позвоночник",
   shoulder_sensitive: "Щадящая нагрузка на плечи",
   lose_fat: "Снижение веса",
   gain_muscle: "Набор мышц",
@@ -129,8 +129,8 @@ export const exercisesCount = (count: number) =>
 
 const DAY_TERMS: Array<[RegExp, string]> = [
   [/\bFB\b/g, "Всё тело"],
-  [/Spine-safe/gi, "Без нагрузки на позвоночник"],
-  [/No-knee/gi, "Без нагрузки на колени"],
+  [/Spine-safe/gi, "Щадящая нагрузка на позвоночник"],
+  [/No-knee/gi, "Щадящая нагрузка на колени"],
   [/Full Body/gi, "Всё тело"],
   [/Outdoor/gi, "Улица"],
   [/Machine/gi, "Тренажёры"],

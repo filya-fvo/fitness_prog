@@ -250,8 +250,8 @@ export const LOCATION_LABELS: Record<string, string> = {
 };
 
 export const LIMITATION_LABELS: Record<string, string> = {
-  no_knee: "Без нагрузки на колени",
-  no_spine: "Без нагрузки на позвоночник",
+  no_knee: "Щадящая нагрузка на колени",
+  no_spine: "Щадящая нагрузка на позвоночник",
   shoulder_sensitive: "Щадящая нагрузка на плечи",
 };
 

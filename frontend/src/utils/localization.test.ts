@@ -33,7 +33,7 @@ describe("localization", () => {
   it("localizes legacy English day titles", () => {
     expect(programDayLabel("Full Body A")).toBe("Всё тело A");
     expect(programDayLabel("Push + legs")).toBe("Жим + Ноги");
-    expect(programDayLabel("Spine-safe home B")).toBe("Без нагрузки на позвоночник Дом B");
+    expect(programDayLabel("Spine-safe home B")).toBe("Щадящая нагрузка на позвоночник Дом B");
     expect(programDayLabel("Сила FB 3 дня")).toBe("Сила Всё тело 3 дня");
   });
 

@@ -107,8 +107,8 @@ function limitationConflict(program: Program, userLimits: string[]): string | nu
   const missing = userLimits.filter((l) => !pLim.has(l));
   if (!missing.length) return null;
   const labels: Record<string, string> = {
-    no_knee: "без нагрузки на колени",
-    no_spine: "без нагрузки на позвоночник",
+    no_knee: "щадящая нагрузка на колени",
+    no_spine: "щадящая нагрузка на позвоночник",
     shoulder_sensitive: "щадящая нагрузка на плечи",
   };
   return missing.map((m) => labels[m] || m).join(", ");

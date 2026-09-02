@@ -123,7 +123,7 @@ def test_gym_no_knee_programs_use_loaded_knee_sparing_leg_variants() -> None:
         if program["structure"].get("location") == "gym"
         and "no_knee" in program["structure"].get("limitations", [])
     ]
-    assert len(gym_no_knee) == 2
+    assert len(gym_no_knee) == 6
     knee_dominant = ("присед", "выпад", "разгибания ног", "жим ногами", "прыж")
     for program in gym_no_knee:
         all_names = [
@@ -138,7 +138,11 @@ def test_gym_no_knee_programs_use_loaded_knee_sparing_leg_variants() -> None:
             for token in knee_dominant
         )
 
-    female = next(program for program in gym_no_knee if program["structure"]["sex"] == ["female"])
+    female = next(
+        program for program in gym_no_knee
+        if program["structure"]["sex"] == ["female"]
+        and program["structure"]["level"] == "beginner"
+    )
     female_days = female["structure"]["schedule"]
     assert female_days[0]["exercises"][4]["exercise_name"] == "Отведение ноги назад в кроссовере"
     assert female_days[1]["exercises"][3]["exercise_name"] == "Ягодичный мост с гантелью"
@@ -186,15 +190,12 @@ def test_shoulder_sensitive_program_matrix_and_exercises() -> None:
         p for p in programs
         if "shoulder_sensitive" in (p.get("structure") or {}).get("limitations", [])
     ]
-    assert len(shoulder_programs) == 10
+    assert len(shoulder_programs) == 18
     expected = {
         (sex, location, level)
         for sex in ("male", "female")
-        for location, levels in (
-            ("home", ("beginner", "intermediate")),
-            ("gym", ("beginner", "intermediate", "advanced")),
-        )
-        for level in levels
+        for location in ("gym", "home", "outdoor")
+        for level in ("beginner", "intermediate", "advanced")
     }
     actual = {
         (p["structure"]["sex"][0], p["structure"]["location"], p["structure"]["level"])
@@ -213,6 +214,48 @@ def test_shoulder_sensitive_program_matrix_and_exercises() -> None:
             for item in day["exercises"]:
                 name = item["exercise_name"].lower()
                 assert not any(token in name for token in unsafe), item["exercise_name"]
+
+
+def test_each_single_limitation_covers_full_persona_matrix_safely() -> None:
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    expected = {
+        (sex, location, level)
+        for sex in ("male", "female")
+        for location in ("gym", "home", "outdoor")
+        for level in ("beginner", "intermediate", "advanced")
+    }
+    unsafe_by_limitation = {
+        "no_knee": ("присед", "выпад", "разгибания ног", "жим ногами", "прыж", "зашагив"),
+        "no_spine": (
+            "станов", "румын", "наклоне", "приседания со штангой",
+            "фронтальные приседания", "гудморнинг",
+        ),
+    }
+
+    for limitation in ("no_knee", "no_spine", "shoulder_sensitive"):
+        matching = [
+            program for program in programs
+            if limitation in program["structure"].get("limitations", [])
+        ]
+        actual = {
+            (
+                program["structure"]["sex"][0],
+                program["structure"]["location"],
+                program["structure"]["level"],
+            )
+            for program in matching
+        }
+        assert actual == expected
+        assert all("При боли остановите" in program["description"] for program in matching)
+
+        for program in matching:
+            for workout_day in program["structure"]["schedule"]:
+                for item in workout_day["exercises"]:
+                    lowered = item["exercise_name"].lower()
+                    assert not any(
+                        token in lowered
+                        for token in unsafe_by_limitation.get(limitation, ())
+                    ), f"{program['name']}: {item['exercise_name']}"
 
 
 def test_key_compound_lifts_present() -> None:

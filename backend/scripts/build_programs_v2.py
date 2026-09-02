@@ -799,7 +799,7 @@ def outdoor_no_knee_b():
         ex("Отжимания с возвышения", 3, "8-15", 60),
         ex("Австралийские подтягивания", 3, "6-12", 75),
         ex("Ягодичный мост", 3, "15-20", 45),
-        ex("Медвежья походка", 3, "20-30с", 45),
+        ex("Удержание «лодочки»", 3, "20-30с", 45),
         ex("Планка с касанием плеч", 3, "8-12/стор", 40),
         ex("Скручивания", 3, "12-15", 35),
     ]
@@ -1006,6 +1006,242 @@ def shoulder_gym(sex: str, sets=3, reps="10-15", rest=70):
             ex("Мёртвый жук", sets, "8-12/стор", 45),
         ],
     ]
+
+
+def outdoor_no_spine(sets=3, reps="10-15", rest=60):
+    """Outdoor plan without axial loading or unsupported hip hinges."""
+    return [
+        [
+            ex("Отжимания с возвышения", sets, reps, rest),
+            ex("Тяга резинки к поясу", sets, "12-15", rest),
+            ex("Ягодичный мост", sets, "12-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+            ex("Скручивания", sets, "12-20", 45),
+        ],
+        [
+            ex("Отжимания с колен", sets, reps, rest),
+            ex("Тяга резинки к поясу", sets, "12-15", rest),
+            ex("Ягодичный мост", sets, "15-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Велосипед", sets, "12-20/стор", 45),
+            ex("Подъёмы ног лёжа", sets, "8-15", 45),
+        ],
+        [
+            ex("Отжимания узким хватом", sets, "6-12", rest),
+            ex("Австралийские подтягивания", sets, "6-12", rest + 10),
+            ex("Ягодичный мост", sets, "12-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Боковая планка", sets, "20-40с/стор", 45),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+        ],
+    ]
+
+
+def shoulder_outdoor(sets=3, reps="10-15", rest=60):
+    """Outdoor lower-body/core plan without upper-body loading or arm support."""
+    return [
+        [
+            ex("Приседания со своим весом", sets, reps, rest),
+            ex("Выпады вперёд", sets, "8-12/стор", rest),
+            ex("Ягодичный мост", sets, "12-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Подъёмы ног лёжа", sets, "8-15", 45),
+        ],
+        [
+            ex("Боковые выпады", sets, "8-12/стор", rest),
+            ex("Болгарские выпады", sets, "8-12/стор", rest),
+            ex("Ягодичный мост", sets, "15-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Велосипед", sets, "12-20/стор", 45),
+            ex("Русские скручивания", sets, "12-20/стор", 45),
+        ],
+        [
+            ex("Приседания со своим весом", sets, "15-20", rest),
+            ex("Обратные выпады с поворотом", sets, "8-12/стор", rest),
+            ex("Ягодичный мост", sets, "12-20", 50),
+            ex("Подъёмы на носки стоя", sets, "15-20", 45),
+            ex("Скручивания", sets, "12-20", 45),
+            ex("Мёртвый жук", sets, "8-12/стор", 45),
+        ],
+    ]
+
+
+def adjusted_for_level(items: list[dict], level: str) -> list[dict]:
+    """Create a level-specific copy without mutating shared exercise templates."""
+    if level == "beginner":
+        return [dict(item) for item in items]
+    set_delta = 0 if level == "intermediate" else 1
+    rest_delta = 5 if level == "intermediate" else 15
+    return [
+        {
+            **item,
+            "sets": min(5, max(4, int(item["sets"]) + set_delta)),
+            "rest_sec": int(item["rest_sec"]) + rest_delta,
+        }
+        for item in items
+    ]
+
+
+def limitation_matrix_extensions() -> list[dict]:
+    """Fill sex × location × level gaps for each supported single limitation."""
+    result: list[dict] = []
+    level_names = {"beginner": "Новичок", "intermediate": "Опытный", "advanced": "Продвинутый"}
+
+    def add_program(
+        *, sex: str, location: str, level: str, limitation: str,
+        equipment: list[str], description: str, raw_days: list[list[dict]],
+        session_min: int, workout_type: str = "full_body",
+    ) -> None:
+        sex_name = "М" if sex == "male" else "Ж"
+        place_name = {"gym": "Зал", "home": "Дом", "outdoor": "Улица"}[location]
+        limitation_name = {
+            "no_knee": "Щадящая нагрузка на колени",
+            "no_spine": "Щадящая нагрузка на позвоночник",
+            "shoulder_sensitive": "Щадящая нагрузка на плечи",
+        }[limitation]
+        result.append(prog(
+            name=f"{sex_name} · {place_name} · {level_names[level]} · {limitation_name}",
+            description=description,
+            level=level,
+            workout_type=workout_type,
+            sex=[sex],
+            location=location,
+            equipment=equipment,
+            limitations=[limitation],
+            days_per_week=3,
+            session_min=session_min,
+            duration_weeks=8 if level == "advanced" else 6,
+            schedule=[
+                day(index, f"Щадящий день {index}", "full", adjusted_for_level(items, level))
+                for index, items in enumerate(raw_days, start=1)
+            ],
+        ))
+
+    # Existing beginner records remain unchanged; add the missing experienced levels.
+    for sex, builders in (
+        ("male", (no_knee_male_a, no_knee_male_b, no_knee_male_c)),
+        ("female", (no_knee_female_a, no_knee_female_b, no_knee_female_c)),
+    ):
+        for level, minutes in (("intermediate", 55), ("advanced", 60)):
+            add_program(
+                sex=sex, location="gym", level=level, limitation="no_knee",
+                equipment=["machines", "dumbbells", "barbell"],
+                description=(
+                    "Зал без приседаний, выпадов, прыжков и жима ногами; верх тела, "
+                    "ягодицы и задняя поверхность бедра."
+                ),
+                raw_days=[builder() for builder in builders], session_min=minutes,
+                workout_type="hypertrophy",
+            )
+
+    for sex, builders in (
+        ("male", (home_no_knee_male_a, home_no_knee_male_b, home_no_knee_male_c)),
+        ("female", (home_no_knee_female_a, home_no_knee_female_b, home_no_knee_female_c)),
+    ):
+        for level, minutes in (("intermediate", 45), ("advanced", 50)):
+            add_program(
+                sex=sex, location="home", level=level, limitation="no_knee",
+                equipment=["dumbbells", "bodyweight"],
+                description=(
+                    "Дом без приседаний, выпадов и прыжков: гантели, ягодичный мост, "
+                    "верх тела и упражнения для корпуса."
+                ),
+                raw_days=[builder() for builder in builders], session_min=minutes,
+                workout_type="home_express",
+            )
+
+    outdoor_knee_days = [outdoor_no_knee_a(), outdoor_no_knee_b(), outdoor_no_knee_c()]
+    for sex in ("male", "female"):
+        for level, minutes in (("intermediate", 40), ("advanced", 45)):
+            add_program(
+                sex=sex, location="outdoor", level=level, limitation="no_knee",
+                equipment=["bodyweight", "bands"],
+                description=(
+                    "Улица без приседаний, выпадов и прыжков: верх тела, ягодичный мост "
+                    "и упражнения для корпуса."
+                ),
+                raw_days=outdoor_knee_days, session_min=minutes,
+                workout_type="conditioning",
+            )
+
+    for sex, builders in (
+        ("male", (no_spine_int_male_a, no_spine_int_male_b, no_spine_int_male_c)),
+        ("female", (no_spine_int_female_a, no_spine_int_female_b, no_spine_int_female_c)),
+    ):
+        add_program(
+            sex=sex, location="gym", level="advanced", limitation="no_spine",
+            equipment=["machines", "dumbbells", "barbell"],
+            description=(
+                "Зал с опорой и тренажёрами, без становой тяги, наклонных тяг "
+                "и приседаний со свободным весом."
+            ),
+            raw_days=[builder() for builder in builders], session_min=60,
+            workout_type="upper_lower",
+        )
+
+    home_spine_days = [home_no_spine_a(), home_no_spine_b(), home_no_spine_c()]
+    for sex in ("male", "female"):
+        for level, minutes in (("intermediate", 45), ("advanced", 50)):
+            add_program(
+                sex=sex, location="home", level=level, limitation="no_spine",
+                equipment=["dumbbells", "bands", "bodyweight"],
+                description=(
+                    "Дом без становой тяги и наклонных тяг: упражнения с опорой, "
+                    "резинка, ягодичный мост и корпус."
+                ),
+                raw_days=home_spine_days, session_min=minutes,
+                workout_type="home_express",
+            )
+
+    for sex in ("male", "female"):
+        for level, sets, reps, rest, minutes in (
+            ("beginner", 3, "10-15", 60, 35),
+            ("intermediate", 4, "8-12", 70, 40),
+            ("advanced", 4, "6-10", 85, 45),
+        ):
+            add_program(
+                sex=sex, location="outdoor", level=level, limitation="no_spine",
+                equipment=["bodyweight", "bands"],
+                description=(
+                    "Улица без осевой нагрузки и наклонов с весом: резинка, упражнения "
+                    "с опорой, ягодичный мост и корпус."
+                ),
+                raw_days=outdoor_no_spine(sets, reps, rest), session_min=minutes,
+                workout_type="conditioning",
+            )
+
+    for sex, builder in (("male", shoulder_home_male), ("female", shoulder_home_female)):
+        add_program(
+            sex=sex, location="home", level="advanced", limitation="shoulder_sensitive",
+            equipment=["dumbbells", "bodyweight"],
+            description=(
+                "Дом: ноги, ягодицы и корпус без жимов, тяг, отжиманий, подтягиваний, "
+                "упоров на руки и движений над головой."
+            ),
+            raw_days=builder(sets=4, reps="6-10", rest=85), session_min=55,
+            workout_type="home_express",
+        )
+
+    for sex in ("male", "female"):
+        for level, sets, reps, rest, minutes in (
+            ("beginner", 3, "10-15", 60, 35),
+            ("intermediate", 4, "8-12", 70, 40),
+            ("advanced", 4, "6-10", 85, 45),
+        ):
+            add_program(
+                sex=sex, location="outdoor", level=level, limitation="shoulder_sensitive",
+                equipment=["bodyweight"],
+                description=(
+                    "Улица: ноги, ягодицы и корпус без нагрузки на руки, жимов, тяг, "
+                    "отжиманий, подтягиваний и движений над головой."
+                ),
+                raw_days=shoulder_outdoor(sets, reps, rest), session_min=minutes,
+                workout_type="conditioning",
+            )
+
+    return result
 
 
 def serious_gym_programs() -> list[dict]:
@@ -2306,7 +2542,16 @@ def build_all() -> list[dict]:
                 ],
             ))
 
+    programs.extend(limitation_matrix_extensions())
     programs.extend(serious_gym_programs())
+
+    limitation_notice = (
+        " Это не лечебная программа. При боли остановите тренировку и согласуйте "
+        "нагрузку с врачом или реабилитологом."
+    )
+    for program in programs:
+        if program["structure"].get("limitations") and "При боли остановите" not in program["description"]:
+            program["description"] += limitation_notice
     return programs
 
 
@@ -2321,6 +2566,11 @@ def validate(programs: list[dict]) -> None:
         "отжим", "брусь", "подтягив", "верхнего блока", "горизонтального блока",
         "тяга штанги", "тяга гантели", "пуловер", "развод", "развед", "махи",
         "планка", "птица-собака", "фермер", "из-за головы", "француз",
+    )
+    knee_unsafe = ("присед", "выпад", "разгибания ног", "жим ногами", "прыж", "зашагив")
+    spine_unsafe = (
+        "станов", "румын", "наклоне", "приседания со штангой",
+        "фронтальные приседания", "гудморнинг",
     )
     for p in programs:
         structure = p["structure"]
@@ -2347,6 +2597,31 @@ def validate(programs: list[dict]) -> None:
                     lowered = n.lower()
                     if any(token in lowered for token in shoulder_unsafe):
                         invalid.append(f"{p['name']} / {d['name']}: shoulder-risk exercise {n}")
+                if "no_knee" in structure.get("limitations", []):
+                    lowered = n.lower()
+                    if any(token in lowered for token in knee_unsafe):
+                        invalid.append(f"{p['name']} / {d['name']}: knee-risk exercise {n}")
+                if "no_spine" in structure.get("limitations", []):
+                    lowered = n.lower()
+                    if any(token in lowered for token in spine_unsafe):
+                        invalid.append(f"{p['name']} / {d['name']}: spine-risk exercise {n}")
+
+    expected_matrix = {
+        (limitation, sex, location, level)
+        for limitation in ("no_knee", "no_spine", "shoulder_sensitive")
+        for sex in ("male", "female")
+        for location in ("gym", "home", "outdoor")
+        for level in ("beginner", "intermediate", "advanced")
+    }
+    actual_matrix = {
+        (limitation, structure["sex"][0], structure["location"], structure["level"])
+        for p in programs
+        for structure in [p["structure"]]
+        for limitation in structure.get("limitations", [])
+    }
+    missing_matrix = expected_matrix - actual_matrix
+    if missing_matrix:
+        invalid.append(f"limitation matrix gaps: {sorted(missing_matrix)}")
     if missing:
         raise SystemExit("Unknown exercises:\n- " + "\n- ".join(sorted(missing)))
     if invalid:

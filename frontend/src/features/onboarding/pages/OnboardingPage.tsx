@@ -55,8 +55,8 @@ const EQUIPMENT = [
 ] as const;
 
 const JOINT_LIMITS = [
-  { id: "no_knee", label: "Без нагрузки на колени" },
-  { id: "no_spine", label: "Без нагрузки на позвоночник" },
+  { id: "no_knee", label: "Щадящая нагрузка на колени" },
+  { id: "no_spine", label: "Щадящая нагрузка на позвоночник" },
   { id: "shoulder_sensitive", label: "Щадящая нагрузка на плечевые суставы" },
 ] as const;
 
