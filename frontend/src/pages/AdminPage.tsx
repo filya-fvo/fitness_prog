@@ -8,18 +8,24 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   clearAdminUser,
   deleteAdminUser,
+  downloadAdminUsersSummary,
   fetchAdminUsers,
   type AdminResetScope,
   type AdminUser,
 } from "@/api/admin";
 import { apiClient, getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
-import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
+import {
+  EMPTY_USER_FILTERS,
+  type AdminUserFilterForm,
+} from "@/features/admin-user/adminUserFilters";
+import { AdminUserListControls } from "@/features/admin-user/components/AdminUserListControls";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
+import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { confirmAction } from "@/lib/telegram";
 
 type ProgramRow = {
@@ -90,7 +96,8 @@ export function AdminPage() {
   );
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersTotal, setUsersTotal] = useState(0);
-  const [userQ, setUserQ] = useState("");
+  const [userFilters, setUserFilters] = useState<AdminUserFilterForm>(EMPTY_USER_FILTERS);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
   const [usersLoading, setUsersLoading] = useState(false);
   const [okNote, setOkNote] = useState<string | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
@@ -129,7 +136,7 @@ export function AdminPage() {
     void reload().catch((err: unknown) => {
       setError(toUserMessage(err, "Не удалось загрузить админку"));
     });
-    void loadUsers("").catch(() => {
+    void loadUsers(EMPTY_USER_FILTERS).catch(() => {
       /* loadUsers sets error */
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,7 +147,7 @@ export function AdminPage() {
     document.getElementById(`admin-program-${focusedProgramId}`)?.scrollIntoView({ block: "center" });
   }, [focusedProgramId, programs]);
 
-  async function loadUsers(q = userQ) {
+  async function loadUsers(filters = userFilters) {
     if (!getStoredToken()) {
       setError("Нужен JWT (войдите через Telegram auth).");
       return;
@@ -148,9 +155,19 @@ export function AdminPage() {
     setUsersLoading(true);
     setError(null);
     try {
-      const res = await fetchAdminUsers({ q: q.trim() || undefined, limit: 200 });
+      const res = await fetchAdminUsers({
+        q: filters.q.trim() || undefined,
+        subscriptionStatus: filters.subscriptionStatus as "free" | "pro_stars" || undefined,
+        onboardingCompleted: filters.onboardingCompleted === "" ? undefined : filters.onboardingCompleted === "true",
+        level: filters.level as "beginner" | "intermediate" | "advanced" || undefined,
+        primaryGoal: filters.primaryGoal as "lose_fat" | "gain_muscle" | "maintain" || undefined,
+        limit: 200,
+      });
       setUsers(res.items);
       setUsersTotal(res.total);
+      setSelectedUserIds((current) => new Set(
+        [...current].filter((id) => res.items.some((item) => item.id === id)),
+      ));
     } catch (err) {
       setError(toUserMessage(err, "Не удалось загрузить пользователей"));
       setUsers([]);
@@ -164,6 +181,35 @@ export function AdminPage() {
     setResetTarget(u);
     setResetScope("workouts");
     setError(null);
+  }
+
+  function applySavedUserFilters(values: Record<string, string>) {
+    const next: AdminUserFilterForm = { ...EMPTY_USER_FILTERS, ...values };
+    setUserFilters(next);
+    void loadUsers(next);
+  }
+
+  async function exportSelectedUsers() {
+    const ids = [...selectedUserIds];
+    if (!ids.length) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const blob = await downloadAdminUsersSummary(ids);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `fitness-users-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setOkNote(`Скачан безопасный реестр: ${ids.length} польз.`);
+    } catch (err) {
+      setError(toUserMessage(err, "Не удалось скачать групповой реестр"));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function confirmResetUser() {
@@ -397,25 +443,19 @@ export function AdminPage() {
               {usersLoading ? "…" : "Обновить"}
             </button>
           </div>
-          <div className="flex gap-2">
-            <input
-              value={userQ}
-              onChange={(e) => setUserQ(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void loadUsers(userQ);
-              }}
-              placeholder="Поиск: фамилия, @логин, почта, Telegram ID"
-              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              disabled={usersLoading}
-              onClick={() => void loadUsers(userQ)}
-              className="shrink-0 rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text"
-            >
-              Найти
-            </button>
-          </div>
+          <AdminUserListControls
+            adminId={user!.id}
+            filters={userFilters}
+            setFilters={setUserFilters}
+            users={users}
+            selectedUserIds={selectedUserIds}
+            setSelectedUserIds={setSelectedUserIds}
+            loading={usersLoading}
+            busy={busy}
+            onApply={(next) => void loadUsers(next)}
+            onApplySaved={applySavedUserFilters}
+            onExport={() => void exportSelectedUsers()}
+          />
           <p className="text-[11px] text-tg-hint">
             Всего: {usersTotal}. Очистка сбрасывает данные и обновляет экран пользователя. Удаление
             архивирует аккаунт без физического удаления записи.
@@ -430,6 +470,19 @@ export function AdminPage() {
             {users.map((u) => (
               <li key={u.id} className="rounded-xl bg-tg-bg px-3 py-2.5 text-sm">
                 <div className="flex items-start justify-between gap-2">
+                  <label className="flex min-h-11 min-w-11 shrink-0 items-start justify-center pt-1" aria-label={`Выбрать ${u.display_name}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedUserIds.has(u.id)}
+                      onChange={(event) => setSelectedUserIds((current) => {
+                        const next = new Set(current);
+                        if (event.target.checked && next.size < 50) next.add(u.id);
+                        if (!event.target.checked) next.delete(u.id);
+                        return next;
+                      })}
+                      className="h-5 w-5"
+                    />
+                  </label>
                   <div className="min-w-0">
                     <p className="font-medium leading-snug">{u.display_name}</p>
                     <p className="mt-0.5 text-[11px] text-tg-hint">

@@ -61,6 +61,10 @@ function adminApiError(err: unknown, fallback: string): Error {
 
 export async function fetchAdminUsers(opts?: {
   q?: string;
+  subscriptionStatus?: "free" | "pro_stars";
+  onboardingCompleted?: boolean;
+  level?: "beginner" | "intermediate" | "advanced";
+  primaryGoal?: "lose_fat" | "gain_muscle" | "maintain";
   limit?: number;
   offset?: number;
 }): Promise<{ items: AdminUser[]; total: number }> {
@@ -68,6 +72,10 @@ export async function fetchAdminUsers(opts?: {
     const { data } = await apiClient.get("/admin/users", {
       params: {
         q: opts?.q || undefined,
+        subscription_status: opts?.subscriptionStatus,
+        onboarding_completed: opts?.onboardingCompleted,
+        level: opts?.level,
+        primary_goal: opts?.primaryGoal,
         limit: opts?.limit ?? 100,
         offset: opts?.offset ?? 0,
       },
@@ -75,6 +83,19 @@ export async function fetchAdminUsers(opts?: {
     return listSchema.parse(data);
   } catch (err) {
     throw adminApiError(err, "Не удалось загрузить пользователей");
+  }
+}
+
+export async function downloadAdminUsersSummary(userIds: string[]): Promise<Blob> {
+  if (userIds.length < 1 || userIds.length > 50) {
+    throw new Error("Выберите от 1 до 50 пользователей");
+  }
+  try {
+    return (await apiClient.post("/admin/users/export-summary", {
+      user_ids: userIds,
+    }, { responseType: "blob" })).data as Blob;
+  } catch (err) {
+    throw adminApiError(err, "Не удалось подготовить групповой реестр");
   }
 }
 

@@ -8,6 +8,8 @@ import {
 } from "@/api/adminAudit";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { SavedAdminFilters } from "@/features/admin-filters/components/SavedAdminFilters";
+import { adminFilterStorageKey } from "@/features/admin-filters/savedAdminFilters";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
@@ -27,6 +29,7 @@ const ACTION_LABELS: Record<string, string> = {
   "user.clear.measurements": "Очистка замеров",
   "user.clear.all": "Полная очистка профиля",
   "user.archive": "Архивирование пользователя",
+  "user.export.group": "Групповой реестр пользователей",
   "notification.delivery": "Доставка уведомления",
   "exercise.create": "Добавление упражнения",
   "exercise.update": "Изменение упражнения",
@@ -113,6 +116,7 @@ const EMPTY_FILTERS: FilterForm = {
   action: "",
   result: "",
 };
+const AUDIT_FILTER_KEYS = Object.freeze(Object.keys(EMPTY_FILTERS));
 
 function Snapshot({ title, values }: { title: string; values: Record<string, unknown> }) {
   const entries = Object.entries(values);
@@ -185,6 +189,15 @@ export function AdminAuditPage() {
     void load({}, 0);
   }
 
+  function applySavedFilters(values: Record<string, string>) {
+    const nextForm: FilterForm = { ...EMPTY_FILTERS, ...values };
+    const nextFilters = toApiFilters(nextForm);
+    setForm(nextForm);
+    setFilters(nextFilters);
+    setOffset(0);
+    void load(nextFilters, 0);
+  }
+
   function movePage(nextOffset: number) {
     setOffset(nextOffset);
     void load(filters, nextOffset);
@@ -220,6 +233,12 @@ export function AdminAuditPage() {
       />
 
       <form onSubmit={applyFilters} className="mb-4 grid gap-3 rounded-2xl bg-tg-secondary p-4 md:grid-cols-2">
+        <SavedAdminFilters
+          storageKey={adminFilterStorageKey(user!.id, "audit")}
+          allowedKeys={AUDIT_FILTER_KEYS}
+          value={{ ...form }}
+          onApply={applySavedFilters}
+        />
         <label className="text-xs text-tg-hint md:col-span-2">
           Пользователь или объект
           <input

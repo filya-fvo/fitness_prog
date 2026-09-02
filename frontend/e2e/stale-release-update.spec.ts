@@ -129,3 +129,50 @@ test("an open old client survives publication and then receives the new worker",
     await rm(temporaryRoot, { recursive: true, force: true });
   }
 });
+
+test("publication updates a source map when its runtime chunk is unchanged", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "fitness-release-map-"));
+  const liveDir = path.join(temporaryRoot, "live");
+  const stagedDir = path.join(temporaryRoot, "staged");
+  try {
+    await mkdir(path.join(stagedDir, "assets"), { recursive: true });
+    await writeFile(path.join(stagedDir, "index.html"), "<!doctype html><p>v1</p>");
+    await writeFile(path.join(stagedDir, "assets", "stable.js"), "export const value = 1;");
+    await writeFile(path.join(stagedDir, "assets", "stable.js.map"), '{"version":3,"sources":["v1.ts"]}');
+    await promoteBuild({ liveDir, stagedDir, buildId: "v1" });
+
+    await rm(stagedDir, { recursive: true, force: true });
+    await mkdir(path.join(stagedDir, "assets"), { recursive: true });
+    await writeFile(path.join(stagedDir, "index.html"), "<!doctype html><p>v2</p>");
+    await writeFile(path.join(stagedDir, "assets", "stable.js"), "export const value = 1;");
+    await writeFile(path.join(stagedDir, "assets", "stable.js.map"), '{"version":3,"sources":["v2.ts"]}');
+
+    await expect(promoteBuild({ liveDir, stagedDir, buildId: "v2" })).resolves.toBeTruthy();
+    await expect(readFile(path.join(liveDir, "assets", "stable.js.map"), "utf8")).resolves.toContain("v2.ts");
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("publication still rejects a changed runtime asset with the same name", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "fitness-release-collision-"));
+  const liveDir = path.join(temporaryRoot, "live");
+  const stagedDir = path.join(temporaryRoot, "staged");
+  try {
+    await mkdir(path.join(stagedDir, "assets"), { recursive: true });
+    await writeFile(path.join(stagedDir, "index.html"), "<!doctype html><p>v1</p>");
+    await writeFile(path.join(stagedDir, "assets", "stable.js"), "export const value = 1;");
+    await promoteBuild({ liveDir, stagedDir, buildId: "v1" });
+
+    await rm(stagedDir, { recursive: true, force: true });
+    await mkdir(path.join(stagedDir, "assets"), { recursive: true });
+    await writeFile(path.join(stagedDir, "index.html"), "<!doctype html><p>v2</p>");
+    await writeFile(path.join(stagedDir, "assets", "stable.js"), "export const value = 2;");
+
+    await expect(promoteBuild({ liveDir, stagedDir, buildId: "v2" })).rejects.toThrow(
+      "Immutable asset collision: assets/stable.js",
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});

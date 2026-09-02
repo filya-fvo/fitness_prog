@@ -190,7 +190,9 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/features/admin-broadcasts/` — редактор, Telegram-preview,
   подтверждение запуска, прогресс и серверная история рассылок.
 - `frontend/src/pages/` — общие страницы: Главная, Ещё, справка, админ.
-- `frontend/src/db/syncQueue.ts` — IndexedDB, очередь и снимок активной сессии.
+- `frontend/src/db/syncQueue.ts` — IndexedDB, общая очередь тренировок, профиля и
+  замеров, а также снимок активной сессии; `db/bodyMeasurements.ts` —
+  пользовательский кэш и объединение операций замера по дате.
 - `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` — замены
   упражнений на будущую дату без запуска таймера тренировки.
 - `frontend/src/store/` — Zustand runtime state.
@@ -232,7 +234,7 @@ services → SQLAlchemy models → PostgreSQL
 | Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx` | `exercises.py`, `exercise_service.py`, seed, rebuild/audit/thumbnail scripts | media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |
 | Прогресс/графики | `ProgressPage.tsx`, `WeeklyOverview.tsx`, progress utils | workout/nutrition/daily metric range endpoints | weekly/progress tests + visual/mobile checks |
-| Замеры тела | `features/measurements`, `api/bodyMeasurements.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests |
+| Замеры тела | `features/measurements`, `api/bodyMeasurements.ts`, `db/bodyMeasurements.ts`, `db/syncQueue.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests + offline reconnect E2E |
 | Добавки/уведомления | profile/home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot | concurrency, prefs, Telegram tests |
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |
 | Поддержка | `features/support`, `api/support.ts`; админ: `features/admin-support` | `support.py`, `admin_support.py`, `support_service.py`, `support_attachments.py`, ARQ/Telegram notification, migrations 30–31 | support API/task/attachment tests + user/admin browser scenario |
@@ -240,7 +242,7 @@ services → SQLAlchemy models → PostgreSQL
 | Друзья и соревнования | `features/social`, `api/social.ts` | `social.py`, `social_service.py`, `social_queries.py`, `global_competitions.py`, `competition_scoring.py`, `competition_analytics.py`, migrations 34–37 | consent/privacy, baseline/scoring, cohort threshold, block/idempotency unit + mobile browser E2E |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
-| Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |
+| Админка | `AdminPage.tsx`, `features/admin-filters`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, saved-filter allowlist, bounded group export, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |
 
 Перед редактированием большого файла сначала найдите уже существующий component,
 hook, service или pure utility. Не создавайте вторую реализацию того же состояния.

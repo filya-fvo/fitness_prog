@@ -132,6 +132,9 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   await page.getByLabel("Администратор").selectOption(id);
   await page.getByLabel("Действие").selectOption("exercise.update");
   await page.getByLabel("Результат").selectOption("success");
+  await page.getByPlaceholder("Название текущего набора").fill("Ошибки упражнений");
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.getByRole("option", { name: "Ошибки упражнений" })).toBeAttached();
   await page.getByRole("button", { name: "Применить" }).click();
 
   const filtered = requests.at(-1)?.searchParams;

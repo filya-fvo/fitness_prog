@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import uuid
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -12,8 +15,13 @@ from app.core.database import get_db
 from app.core.request_id import get_request_id
 from app.deps import require_admin
 from app.models.user import User
-from app.schemas.admin import AdminActionResponse, AdminClearRequest, AdminUserListResponse
-from app.services import admin_audit, admin_users
+from app.schemas.admin import (
+    AdminActionResponse,
+    AdminClearRequest,
+    AdminUserBulkExportRequest,
+    AdminUserListResponse,
+)
+from app.services import admin_audit, admin_user_export, admin_users
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -21,13 +29,47 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/users", response_model=AdminUserListResponse)
 async def admin_list_users(
     q: str | None = Query(default=None, description="Search name/username/email/tg id"),
+    subscription_status: str | None = Query(default=None, pattern="^(free|pro_stars)$"),
+    onboarding_completed: bool | None = Query(default=None),
+    level: str | None = Query(default=None, pattern="^(beginner|intermediate|advanced)$"),
+    primary_goal: str | None = Query(default=None, pattern="^(lose_fat|gain_muscle|maintain)$"),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> AdminUserListResponse:
-    items, total = await admin_users.list_users(session, q=q, limit=limit, offset=offset)
+    items, total = await admin_users.list_users(
+        session,
+        q=q,
+        subscription_status=subscription_status,
+        onboarding_completed=onboarding_completed,
+        level=level,
+        primary_goal=primary_goal,
+        limit=limit,
+        offset=offset,
+    )
     return AdminUserListResponse(items=items, total=total)
+
+
+@router.post("/users/export-summary")
+async def admin_export_users_summary(
+    body: AdminUserBulkExportRequest,
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> Response:
+    payload = await admin_user_export.prepare_users_summary_export(
+        session,
+        body.user_ids,
+        context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
+    content = json.dumps(jsonable_encoder(payload), ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"fitness-users-{datetime.now(UTC):%Y%m%d}.json"
+    return Response(
+        content=content,
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/users/{user_id}/reset", response_model=AdminActionResponse)

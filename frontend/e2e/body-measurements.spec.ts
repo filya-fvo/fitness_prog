@@ -63,6 +63,58 @@ test("measurement uses the previous filled field and supports confirmed deletion
   await expect(page.getByText("новый замер")).toBeVisible();
 });
 
+test("measurement saved offline is sent once after reconnect", async ({ page, context }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "measurement-e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(profile),
+  }));
+
+  const savedBodies: Array<Record<string, unknown>> = [];
+  let savedDate = "";
+  await page.route(/\/measurements\/daily(?:\?.*)?$/, async (route) => {
+    const date = new URL(route.request().url()).searchParams.get("date") ?? "2026-09-02";
+    if (route.request().method() === "PUT") {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      savedBodies.push(body);
+      savedDate = date;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ id: "22222222-2222-4222-8222-222222222222", date, ...body, sources: { weight_kg: "manual" } }),
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(savedDate === date
+        ? { id: "22222222-2222-4222-8222-222222222222", date, weight_kg: 79.5, sources: { weight_kg: "manual" } }
+        : { date, sources: {} }),
+    });
+  });
+  await page.route(/\/measurements\/range(?:\?.*)?$/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      start: "2025-09-02",
+      end: "2026-09-02",
+      items: savedDate ? [{ id: "22222222-2222-4222-8222-222222222222", date: savedDate, weight_kg: 79.5, sources: { weight_kg: "manual" } }] : [],
+    }),
+  }));
+
+  await page.goto("/measurements");
+  await expect(page.getByText("новый замер")).toBeVisible();
+  await context.setOffline(true);
+  await expect(page.getByText("Нет сети", { exact: true })).toBeVisible();
+  await page.getByLabel("Вес, кг").fill("79,5");
+  await page.getByRole("button", { name: "Сохранить замер" }).click();
+  await expect(page.getByText("ждёт синхронизации")).toBeVisible();
+  expect(savedBodies).toHaveLength(0);
+
+  await context.setOffline(false);
+  await expect.poll(() => savedBodies).toHaveLength(1);
+  expect(savedBodies[0].weight_kg).toBe(79.5);
+  await expect(page.getByText("замер сохранён")).toBeVisible();
+});
+
 test("progress measurement analytics switches bounded server periods", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "measurement-e2e-token"));
   await page.route("**/users/me", (route) => route.fulfill({

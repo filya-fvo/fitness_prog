@@ -79,14 +79,31 @@ async def list_users(
     session: AsyncSession,
     *,
     q: str | None = None,
+    subscription_status: str | None = None,
+    onboarding_completed: bool | None = None,
+    level: str | None = None,
+    primary_goal: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> tuple[list[AdminUserRow], int]:
     limit = max(1, min(500, limit))
     offset = max(0, offset)
 
-    base = select(User).where(User.is_deleted.is_(False))
-    count_q = select(func.count()).select_from(User).where(User.is_deleted.is_(False))
+    filters = [User.is_deleted.is_(False)]
+    if subscription_status:
+        filters.append(User.subscription_status == subscription_status)
+    if onboarding_completed is not None:
+        filters.append(
+            func.coalesce(User.goals["onboarding_completed"].as_boolean(), False)
+            == onboarding_completed
+        )
+    if level:
+        filters.append(User.goals["level"].as_string() == level)
+    if primary_goal:
+        filters.append(User.goals["primary_goal"].as_string() == primary_goal)
+
+    base = select(User).where(*filters)
+    count_q = select(func.count()).select_from(User).where(*filters)
 
     needle = (q or "").strip().lstrip("@").lower()
 

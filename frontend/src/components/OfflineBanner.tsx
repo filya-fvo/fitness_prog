@@ -81,7 +81,7 @@ export function OfflineBanner() {
       >
         <p className="font-semibold">Нет сети</p>
         <p className="mt-0.5 opacity-90">
-          Тренировки и подходы сохраняются на устройстве
+          Изменения сохраняются на устройстве
           {pending > 0 ? ` (${pending} в очереди)` : ""}. Отправим, когда появится интернет.
         </p>
       </div>

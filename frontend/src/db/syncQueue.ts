@@ -3,8 +3,21 @@
  * Flushes offline workout mutations when the network is back.
  * Keeps clientWorkoutId stable and remaps server ids into the live store.
  */
+import axios from "axios";
+
+import {
+  deleteBodyMeasurement,
+  saveBodyMeasurement,
+  type BodyMeasurement,
+  type BodyMeasurementField,
+} from "@/api/bodyMeasurements";
 import { addWorkoutSet, completeWorkout, createWorkout, deleteWorkout, updateWorkoutPlan } from "@/api/workouts";
 import { updateMyProfile } from "@/api/users";
+import {
+  measurementDateFromQueueItem,
+  putCachedBodyMeasurement,
+  removeCachedBodyMeasurement,
+} from "@/db/bodyMeasurements";
 import {
   mergeProfileUpdates,
   type ProfileUpdatePayload,
@@ -98,11 +111,81 @@ export async function dropFailedSyncItems(maxAttempts = MAX_SYNC_ATTEMPTS): Prom
 export async function clearSyncQueue(): Promise<number> {
   const owner = currentOwnerUserId();
   if (!owner) return 0;
-  const keys = await db.syncQueue.where("ownerUserId").equals(owner).primaryKeys();
-  const n = keys.length;
-  await db.syncQueue.bulkDelete(keys);
+  const items = await db.syncQueue.where("ownerUserId").equals(owner).toArray();
+  const n = items.length;
+  const measurementDates = items
+    .map(measurementDateFromQueueItem)
+    .filter((date): date is string => Boolean(date));
+  await db.transaction("rw", db.syncQueue, db.bodyMeasurements, async () => {
+    await db.syncQueue.bulkDelete(items.map((item) => item.id));
+    await db.bodyMeasurements.bulkDelete(
+      measurementDates.map((date) => `${owner}:${date}`),
+    );
+  });
   localStorage.removeItem(profileDraftKey(owner));
   return n;
+}
+
+type BodyMeasurementValues = Partial<Record<BodyMeasurementField, number | null>> & {
+  note?: string | null;
+};
+
+async function replaceQueuedMeasurement(
+  ownerUserId: string,
+  date: string,
+  type: "upsert_measurement" | "delete_measurement",
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const existing = await db.syncQueue
+    .where("ownerUserId")
+    .equals(ownerUserId)
+    .and((item) => measurementDateFromQueueItem(item) === date)
+    .primaryKeys();
+  if (existing.length) await db.syncQueue.bulkDelete(existing);
+  await enqueueSync({
+    ownerUserId,
+    type,
+    clientWorkoutId: `measurement:${date}`,
+    payload: { date, ...payload },
+  });
+}
+
+export async function enqueueBodyMeasurementUpsert(
+  date: string,
+  values: BodyMeasurementValues,
+  ownerUserId?: string,
+): Promise<BodyMeasurement> {
+  const owner = requireOwnerUserId(ownerUserId);
+  const measurement: BodyMeasurement = { date, ...values, sources: {} };
+  await db.transaction("rw", db.syncQueue, db.bodyMeasurements, async () => {
+    await replaceQueuedMeasurement(owner, date, "upsert_measurement", { values });
+    await putCachedBodyMeasurement(owner, measurement);
+  });
+  return measurement;
+}
+
+export async function enqueueBodyMeasurementDelete(
+  date: string,
+  ownerUserId?: string,
+): Promise<void> {
+  const owner = requireOwnerUserId(ownerUserId);
+  await db.transaction("rw", db.syncQueue, db.bodyMeasurements, async () => {
+    await replaceQueuedMeasurement(owner, date, "delete_measurement", {});
+    await removeCachedBodyMeasurement(owner, date);
+  });
+}
+
+export async function clearQueuedBodyMeasurement(
+  date: string,
+  ownerUserId?: string,
+): Promise<void> {
+  const owner = requireOwnerUserId(ownerUserId);
+  const existing = await db.syncQueue
+    .where("ownerUserId")
+    .equals(owner)
+    .and((item) => measurementDateFromQueueItem(item) === date)
+    .primaryKeys();
+  if (existing.length) await db.syncQueue.bulkDelete(existing);
 }
 
 /** Clear all local workout state after an explicit admin reset of the current user. */
@@ -119,7 +202,11 @@ export async function clearLocalWorkoutData(): Promise<void> {
       await Promise.all([
         db.workouts.where("user_id").equals(owner).delete(),
         db.sessions.where("ownerUserId").equals(owner).delete(),
-        db.syncQueue.where("ownerUserId").equals(owner).delete(),
+        db.syncQueue
+          .where("ownerUserId")
+          .equals(owner)
+          .and((item) => !["update_profile", "upsert_measurement", "delete_measurement"].includes(item.type))
+          .delete(),
         db.workoutIdMap.where("ownerUserId").equals(owner).delete(),
         db.meta.delete("workouts_cached_at"),
       ]);
@@ -342,6 +429,10 @@ export async function flushSyncQueue(
     flushing = false;
   }
 
+  if (processed > 0 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("fitness:sync-complete", { detail: { processed } }));
+  }
+
   return { processed, failed, dropped };
 }
 
@@ -396,6 +487,24 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
     };
     await updateMyProfile(payload);
     localStorage.removeItem(profileDraftKey(ownerUserId));
+    return;
+  }
+
+  if (item.type === "upsert_measurement") {
+    const payload = item.payload as { date: string; values: BodyMeasurementValues };
+    const measurement = await saveBodyMeasurement(payload.date, payload.values);
+    await putCachedBodyMeasurement(ownerUserId, measurement);
+    return;
+  }
+
+  if (item.type === "delete_measurement") {
+    const payload = item.payload as { date: string };
+    try {
+      await deleteBodyMeasurement(payload.date);
+    } catch (error) {
+      if (!axios.isAxiosError(error) || error.response?.status !== 404) throw error;
+    }
+    await removeCachedBodyMeasurement(ownerUserId, payload.date);
     return;
   }
 

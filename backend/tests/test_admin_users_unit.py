@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from app.main import app
 from app.models.user import User
 from app.routers.admin import admin_clear_user_data, admin_reset_user
-from app.schemas.admin import AdminClearRequest
+from app.schemas.admin import AdminClearRequest, AdminUserBulkExportRequest
 from app.services.admin_users import _clear_measurements, display_name, to_admin_row
 
 
@@ -118,6 +118,16 @@ def test_partial_clear_requires_separate_endpoint_and_explicit_scope() -> None:
         "nutrition",
         "measurements",
     ]
+
+
+def test_group_export_is_bounded_and_exposed() -> None:
+    ids = [uuid4() for _ in range(50)]
+    assert len(AdminUserBulkExportRequest(user_ids=ids).user_ids) == 50
+    with pytest.raises(ValidationError):
+        AdminUserBulkExportRequest(user_ids=[])
+    with pytest.raises(ValidationError):
+        AdminUserBulkExportRequest(user_ids=[uuid4() for _ in range(51)])
+    assert set(app.openapi()["paths"]["/admin/users/export-summary"]) == {"post"}
 
 
 @pytest.mark.asyncio

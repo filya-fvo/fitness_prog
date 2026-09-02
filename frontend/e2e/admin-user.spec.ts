@@ -112,3 +112,62 @@ test("admin user card loads detail blocks automatically and confirms notificatio
     )).toBe(true);
   }
 });
+
+test("admin filters users and exports only selected rows", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "admin-e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(adminProfile),
+  }));
+  await page.route(/\/programs(?:\?.*)?$/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+  const listRequests: URL[] = [];
+  await page.route(/\/admin\/users(?:\?.*)?$/, (route) => {
+    listRequests.push(new URL(route.request().url()));
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: userId,
+          telegram_id: 77,
+          username: "athlete",
+          display_name: "Иван Тестовый",
+          auth_email: null,
+          subscription_status: "free",
+          onboarding_completed: false,
+          workouts_count: 2,
+          completed_workouts: 1,
+          has_water_log: false,
+          primary_goal: "lose_fat",
+          level: "beginner",
+        }],
+        total: 1,
+      }),
+    });
+  });
+  let exportBody: Record<string, unknown> | null = null;
+  await page.route("**/admin/users/export-summary", async (route) => {
+    exportBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] }),
+      headers: { "Content-Disposition": 'attachment; filename="fitness-users.json"' },
+    });
+  });
+
+  await page.goto("/admin");
+  await expect(page.getByText("Иван Тестовый")).toBeVisible();
+  await page.getByLabel("Статус анкеты").selectOption("false");
+  await page.getByLabel("Уровень пользователя").selectOption("beginner");
+  await page.getByRole("button", { name: "Применить фильтры" }).click();
+  await expect.poll(() => listRequests.at(-1)?.searchParams.get("onboarding_completed")).toBe("false");
+  expect(listRequests.at(-1)?.searchParams.get("level")).toBe("beginner");
+
+  await page.getByLabel("Выбрать Иван Тестовый").check();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Скачать реестр (1)" }).click();
+  await download;
+  expect(exportBody).toEqual({ user_ids: [userId] });
+});

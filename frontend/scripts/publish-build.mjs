@@ -51,7 +51,16 @@ async function walkFiles(rootDir, currentDir = rootDir) {
 }
 
 function isVersionedAsset(relativePath) {
-  return relativePath.startsWith("assets/") || /^workbox-[^/]+\.js(?:\.map)?$/.test(relativePath);
+  // Source maps are diagnostics rather than runtime assets. Rollup can keep a
+  // JavaScript chunk name when its executable bytes are unchanged while the
+  // map changes because sourcesContent changed. Treating maps as immutable
+  // would then reject an otherwise safe publication.
+  if (relativePath.endsWith(".map")) return false;
+  return relativePath.startsWith("assets/") || /^workbox-[^/]+\.js$/.test(relativePath);
+}
+
+function isSourceMap(relativePath) {
+  return relativePath.endsWith(".map");
 }
 
 async function fileHash(filePath) {
@@ -167,6 +176,22 @@ export async function promoteBuild({ liveDir, stagedDir, buildId = "unknown" }) 
   ]);
   const stale = [...knownVersioned].filter((item) => !keep.has(item));
   for (const relative of stale) {
+    const target = path.join(resolvedLive, relative);
+    await rm(target, { force: true });
+    await rm(`${target}.map`, { force: true });
+    await removeEmptyParents(target, resolvedLive);
+  }
+
+  // Old manifests used to retain maps as versioned files. Maps whose runtime
+  // asset no longer exists can now be removed without affecting old clients.
+  const orphanMaps = (await walkFiles(resolvedLive)).filter(isSourceMap);
+  for (const relative of orphanMaps) {
+    const runtimePath = path.join(resolvedLive, relative.slice(0, -".map".length));
+    try {
+      if ((await stat(runtimePath)).isFile()) continue;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
     const target = path.join(resolvedLive, relative);
     await rm(target, { force: true });
     await removeEmptyParents(target, resolvedLive);

@@ -27,19 +27,20 @@ for (const name of files.filter(
 const js = measured.filter((item) => item.name.endsWith(".js"));
 const totalJsGzip = js.reduce((sum, item) => sum + item.gzip, 0);
 const largestJsGzip = Math.max(0, ...js.map((item) => item.gzip));
-const adminJs = js.filter((item) => /^Admin[A-Z].*\.js$/.test(item.name));
+const adminJs = js.filter((item) => (
+  /^Admin[A-Z].*\.js$/.test(item.name) || /^SavedAdminFilters-.*\.js$/.test(item.name)
+));
 const adminJsGzip = adminJs.reduce((sum, item) => sum + item.gzip, 0);
 const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
-  // Custom competition setup and factor analytics add about 1.8 KB gzip to the
-  // lazy social route. Keep a measured margin without relaxing chunk isolation.
-  totalJsGzip: 470_000,
+  // Durable measurement sync adds about 2.7 KB gzip to the already lazy storage
+  // route. Keep a narrow measured margin without relaxing chunk isolation.
+  totalJsGzip: 473_000,
   productJsGzip: 432_000,
-  // Linked audit search adds exact, lazy admin destinations without affecting
-  // regular product routes. Keep a narrow ceiling above the measured 37.8 KB.
-  adminJsGzip: 38_500,
+  // Saved filter sets and bounded group export remain isolated in admin routes.
+  adminJsGzip: 41_500,
   largestJsGzip: 140_000,
 };
 const failures = [];

@@ -41,6 +41,10 @@ class AdminUserListResponse(BaseModel):
     total: int
 
 
+class AdminUserBulkExportRequest(BaseModel):
+    user_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
+
+
 class AdminActionResponse(BaseModel):
     ok: bool = True
     user_id: uuid.UUID

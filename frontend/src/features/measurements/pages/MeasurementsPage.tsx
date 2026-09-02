@@ -2,18 +2,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import {
-  deleteBodyMeasurement,
   fetchBodyMeasurement,
   fetchBodyMeasurementRange,
-  saveBodyMeasurement,
   type BodyMeasurement,
   type BodyMeasurementField,
 } from "@/api/bodyMeasurements";
 import { DecimalInput } from "@/components/DecimalInput";
 import { Header } from "@/components/layout/Header";
+import {
+  cacheServerBodyMeasurements,
+  getPendingBodyMeasurementDates,
+  readCachedBodyMeasurements,
+  removeCachedBodyMeasurement,
+} from "@/db/bodyMeasurements";
+import {
+  enqueueBodyMeasurementDelete,
+  enqueueBodyMeasurementUpsert,
+  flushSyncQueue,
+} from "@/db/syncQueue";
 import { toast } from "@/store/toastStore";
+import { useUserStore } from "@/store/userStore";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
-import { toUserMessage } from "@/utils/errors";
+import { isRetryableApiError, toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
 import {
   measurementDaysBetween,
@@ -40,6 +50,14 @@ function displayDate(iso: string): string {
 
 function valueText(value: number | null | undefined): string {
   return value == null ? "" : String(value);
+}
+
+function measurementHasContent(item: BodyMeasurement): boolean {
+  return Boolean(
+    item.id ||
+    item.note?.trim() ||
+    BODY_MEASURE_FIELDS.some((field) => item[field.key as BodyMeasurementField] != null),
+  );
 }
 
 function deltaText(
@@ -100,6 +118,7 @@ function MeasurementChart({
 }
 
 export function MeasurementsPage() {
+  const ownerUserId = useUserStore((state) => state.user?.id ?? null);
   const [date, setDate] = useState(todayISO);
   const [values, setValues] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
@@ -110,37 +129,72 @@ export function MeasurementsPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [pendingDates, setPendingDates] = useState<Set<string>>(() => new Set());
+
+  const showCached = useCallback(async (owner: string) => {
+    const rows = await readCachedBodyMeasurements(owner);
+    const current = rows.find((item) => item.date === date);
+    const next: Record<string, string> = {};
+    for (const field of BODY_MEASURE_FIELDS) {
+      next[field.key] = valueText(current?.[field.key as BodyMeasurementField]);
+    }
+    setValues(next);
+    setNote(current?.note ?? "");
+    setHistory(rows);
+    setPendingDates(await getPendingBodyMeasurementDates(owner));
+    return rows;
+  }, [date]);
 
   const load = useCallback(async () => {
-    if (!getStoredToken() || !isOnline()) {
+    if (!getStoredToken() || !ownerUserId) {
       setLoading(false);
-      setError("История замеров доступна после входа и подключения к сети");
+      setError("Войдите в приложение, чтобы открыть замеры");
       return;
     }
     setLoading(true);
     setError(null);
+    setNotice(null);
+    if (!isOnline()) {
+      await showCached(ownerUserId);
+      setNotice("Нет сети. Можно сохранить или удалить замер — отправим изменения позже.");
+      setLoading(false);
+      return;
+    }
     try {
       const [current, range] = await Promise.all([
         fetchBodyMeasurement(date),
         fetchBodyMeasurementRange({ days: 366, end: todayISO() }),
       ]);
-      const next: Record<string, string> = {};
-      for (const field of BODY_MEASURE_FIELDS) {
-        next[field.key] = valueText(current[field.key as BodyMeasurementField]);
+      const pending = await getPendingBodyMeasurementDates(ownerUserId);
+      const serverItems = range.items.filter((item) => item.date !== date);
+      if (measurementHasContent(current)) serverItems.push(current);
+      if (!pending.has(date) && !measurementHasContent(current)) {
+        await removeCachedBodyMeasurement(ownerUserId, date);
       }
-      setValues(next);
-      setNote(current.note ?? "");
-      setHistory(range.items);
+      await cacheServerBodyMeasurements(ownerUserId, serverItems);
+      await showCached(ownerUserId);
     } catch (err) {
-      setError(toUserMessage(err, "Не удалось загрузить замеры"));
+      const cached = await showCached(ownerUserId);
+      if (cached.length && isRetryableApiError(err)) {
+        setNotice("Сервер временно недоступен. Показаны сохранённые на устройстве данные.");
+      } else {
+        setError(toUserMessage(err, "Не удалось загрузить замеры"));
+      }
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [date, ownerUserId, showCached]);
 
   useEffect(() => {
     setConfirmDelete(false);
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const onSyncComplete = () => void load();
+    window.addEventListener("fitness:sync-complete", onSyncComplete);
+    return () => window.removeEventListener("fitness:sync-complete", onSyncComplete);
   }, [load]);
 
   const currentHistory = history.find((item) => item.date === date) ?? null;
@@ -175,9 +229,14 @@ export function MeasurementsPage() {
     }
     setSaving(true);
     try {
-      await saveBodyMeasurement(date, payload);
-      toast("Замеры сохранены");
-      await load();
+      if (!ownerUserId) throw new Error("Войдите в приложение, чтобы сохранить замер");
+      await enqueueBodyMeasurementUpsert(date, payload, ownerUserId);
+      if (isOnline()) await flushSyncQueue(ownerUserId, { retryFailed: true });
+      await showCached(ownerUserId);
+      const pending = await getPendingBodyMeasurementDates(ownerUserId);
+      toast(pending.has(date)
+        ? "Сохранено на устройстве. Отправим при подключении."
+        : "Замеры сохранены");
     } catch (err) {
       toast(toUserMessage(err, "Не удалось сохранить замеры"), "error");
     } finally {
@@ -189,10 +248,15 @@ export function MeasurementsPage() {
     if (!currentHistory) return;
     setDeleting(true);
     try {
-      await deleteBodyMeasurement(date);
+      if (!ownerUserId) throw new Error("Войдите в приложение, чтобы удалить замер");
+      await enqueueBodyMeasurementDelete(date, ownerUserId);
+      if (isOnline()) await flushSyncQueue(ownerUserId, { retryFailed: true });
       setConfirmDelete(false);
-      toast("Замер удалён");
-      await load();
+      await showCached(ownerUserId);
+      const pending = await getPendingBodyMeasurementDates(ownerUserId);
+      toast(pending.has(date)
+        ? "Удаление сохранено. Отправим при подключении."
+        : "Замер удалён");
     } catch (err) {
       toast(toUserMessage(err, "Не удалось удалить замер"), "error");
     } finally {
@@ -208,12 +272,13 @@ export function MeasurementsPage() {
         <button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg">‹</button>
         <div className="text-center">
           <p className="text-sm font-semibold">{date === todayISO() ? "Сегодня" : displayDate(date)}</p>
-          {currentHistory ? <p className="text-[10px] text-tg-hint">замер сохранён</p> : <p className="text-[10px] text-tg-hint">новый замер</p>}
+          {currentHistory ? <p className="text-[10px] text-tg-hint">{pendingDates.has(date) ? "ждёт синхронизации" : "замер сохранён"}</p> : <p className="text-[10px] text-tg-hint">новый замер</p>}
         </div>
         <button type="button" disabled={date >= todayISO()} onClick={() => setDate((value) => shiftDate(value, 1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg disabled:opacity-40">›</button>
       </div>
 
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {notice ? <div role="status" className="mb-3 rounded-xl bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">{notice}</div> : null}
 
       <div className="grid gap-3 md:grid-cols-2">
         <section className="rounded-2xl bg-tg-secondary p-4">
@@ -274,7 +339,7 @@ export function MeasurementsPage() {
             <div className="mt-2 space-y-2">
               {[...history].reverse().slice(0, 8).map((item) => (
                 <button key={item.date} type="button" onClick={() => setDate(item.date)} className="w-full rounded-xl bg-tg-bg p-3 text-left">
-                  <p className="text-xs font-medium">{displayDate(item.date)}</p>
+                  <p className="text-xs font-medium">{displayDate(item.date)}{pendingDates.has(item.date) ? " · ждёт отправки" : ""}</p>
                   <p className="mt-1 text-[11px] text-tg-hint">
                     {BODY_MEASURE_FIELDS.filter((field) => item[field.key as BodyMeasurementField] != null).slice(0, 3).map((field) => `${field.label.split(",")[0]} ${item[field.key as BodyMeasurementField]} ${field.unit}`).join(" · ") || "Только заметка"}
                   </p>
