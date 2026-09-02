@@ -1,6 +1,6 @@
 # AGENTS.md — карта и правила Fitness Mini App
 
-Обновлено: 2026-09-01. Этот файл — первая точка входа для любого агента,
+Обновлено: 2026-09-02. Этот файл — первая точка входа для любого агента,
 который меняет проект. Он описывает фактическую архитектуру по текущему коду,
 а не первоначальный план разработки.
 
@@ -237,7 +237,7 @@ services → SQLAlchemy models → PostgreSQL
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |
 | Поддержка | `features/support`, `api/support.ts`; админ: `features/admin-support` | `support.py`, `admin_support.py`, `support_service.py`, `support_attachments.py`, ARQ/Telegram notification, migrations 30–31 | support API/task/attachment tests + user/admin browser scenario |
 | Приглашения | `features/invites`, `api/invites.ts`, `utils/pendingInvite.ts`, `lib/telegram.ts` | `invites.py`, `invite_service.py`, invite models/schema, migration 33 | hash/rate-limit/idempotency tests, deep-link unit + browser E2E |
-| Друзья и соревнования | `features/social`, `api/social.ts` | `social.py`, `social_service.py`, `social_queries.py`, `global_competitions.py`, `competition_scoring.py`, `competition_analytics.py`, migrations 34–36 | consent/privacy, baseline/scoring, cohort threshold, block/idempotency unit + mobile browser E2E |
+| Друзья и соревнования | `features/social`, `api/social.ts` | `social.py`, `social_service.py`, `social_queries.py`, `global_competitions.py`, `competition_scoring.py`, `competition_analytics.py`, migrations 34–37 | consent/privacy, baseline/scoring, cohort threshold, block/idempotency unit + mobile browser E2E |
 | Справка | `HelpPage.tsx`, `KnowledgeBasePage.tsx` | нет runtime backend | axe, visual snapshot, USER_GUIDE |
 | PWA/offline/reconnect/release update | `main.tsx`, `sw.ts`, `syncQueue.ts`, `Shell.tsx`, `publish-build.mjs` | idempotent workout APIs | reconnect/recovery, stale-release и WebKit/iPhone E2E, production publish |
 | Админка | `AdminPage.tsx`, `features/admin-system`, `features/admin-audit`, `features/admin-user`, `features/admin-broadcasts`, `features/admin-exercises`, admin API | `admin.py`, `admin_users.py`, `admin_system.py`, `admin_audit.py`, `admin_user_*`, `admin_broadcast*`, `admin_exercises.py` | permissions, immutable audit, system states, export allowlist, broadcast idempotency/rate-limit, exercise media/usage safety and affected CRUD tests |

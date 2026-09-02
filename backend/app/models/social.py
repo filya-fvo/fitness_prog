@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -45,6 +45,13 @@ class Friendship(Base):
 
 class Competition(Base):
     __tablename__ = "competitions"
+    __table_args__ = (
+        CheckConstraint(
+            "metric IN ('regularity', 'weight_loss', 'waist_reduction', "
+            "'relative_strength', 'custom')",
+            name="competitions_metric_check",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     friendship_id: Mapped[uuid.UUID] = mapped_column(

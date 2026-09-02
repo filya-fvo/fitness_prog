@@ -71,6 +71,23 @@ def test_social_contract_and_append_only_migration() -> None:
     assert "jsonb_array_length(factors) BETWEEN 1 AND 4" in custom_migration
     assert "baseline JSONB NOT NULL" in custom_migration
 
+    metric_fix_migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260902000037_fix_custom_competition_metric.sql"
+    ).read_text(encoding="utf-8")
+    assert "DROP CONSTRAINT IF EXISTS competitions_metric_check" in metric_fix_migration
+    for metric in ("regularity", "weight_loss", "waist_reduction", "relative_strength", "custom"):
+        assert f"'{metric}'" in metric_fix_migration
+
+    model_constraint = next(
+        constraint
+        for constraint in Competition.__table__.constraints
+        if constraint.name == "competitions_metric_check"
+    )
+    assert "custom" in str(model_constraint.sqltext)
+
 
 @pytest.mark.asyncio
 async def test_social_routes_require_authentication() -> None:

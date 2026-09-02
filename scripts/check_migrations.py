@@ -36,10 +36,15 @@ REQUIRED_FILES = [
     "20260827000025_move_weight_to_body_measurements.sql",
     "20260828000026_admin_exercise_editor.sql",
     "20260828000027_program_publication.sql",
+    "20260828000029_admin_broadcast_controls.sql",
+    "20260829000030_support_tickets.sql",
+    "20260829000031_support_attachments.sql",
     "20260830000032_admin_system_status_history.sql",
     "20260831000033_referral_invites.sql",
     "20260831000034_friend_competitions.sql",
     "20260901000035_global_regularity_seasons.sql",
+    "20260901000036_custom_friend_competitions.sql",
+    "20260902000037_fix_custom_competition_metric.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -112,6 +117,11 @@ REQUIRED_SNIPPETS = [
     "'referral_social'",
     "uq_global_participant_user",
     "ranked_eligible BOOLEAN NOT NULL",
+    "duration_days BETWEEN 7 AND 365",
+    "jsonb_array_length(factors) BETWEEN 1 AND 4",
+    "DROP CONSTRAINT IF EXISTS competitions_metric_check",
+    "'relative_strength'",
+    "'custom'",
 ]
 
 
@@ -119,6 +129,14 @@ def main() -> int:
     missing_files = [name for name in REQUIRED_FILES if not (MIGRATIONS / name).exists()]
     if missing_files:
         raise SystemExit(f"Missing migration files: {missing_files}")
+
+    actual_files = sorted(path.name for path in MIGRATIONS.glob("*.sql"))
+    unlisted_files = [name for name in actual_files if name not in REQUIRED_FILES]
+    if unlisted_files:
+        raise SystemExit(
+            "Migration files are not covered by the static check: "
+            f"{unlisted_files}. Add them to REQUIRED_FILES and validate their required snippets."
+        )
 
     combined = "\n".join((MIGRATIONS / name).read_text(encoding="utf-8") for name in REQUIRED_FILES)
 
