@@ -12,10 +12,10 @@ export type Badge = {
   earned: boolean;
 };
 
-export function computeBadges(workouts: Workout[]): Badge[] {
+export function computeBadges(workouts: Workout[], ownerUserId?: string | null): Badge[] {
   const completed = workouts.filter((w) => w.status === "completed");
   const streak = computeStreak(workouts);
-  const hStreak = habitStreak();
+  const hStreak = habitStreak(new Date(), ownerUserId);
   const totalSets = completed.reduce(
     (acc, w) => acc + (w.sets || []).filter((s) => s.is_completed).length,
     0,

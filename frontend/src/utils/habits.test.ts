@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  addWater,
+  adoptHabitHistory,
   clearLegacyWeightHistory,
   clearWaterHistory,
   getHabitDay,
@@ -78,5 +80,49 @@ describe("habit history clearing", () => {
       steps: 9500,
       activeMinutes: 55,
     });
+  });
+
+  it("keeps water pending until the server acknowledges it", () => {
+    const pending = addWater(250, "2026-08-10", "user-a");
+
+    expect(pending).toMatchObject({ waterMl: 250, waterPending: true });
+    expect(getHabitDay("2026-08-10", "user-a").waterPending).toBe(true);
+  });
+
+  it("isolates device caches for different accounts", () => {
+    saveHabitDay({
+      date: "2026-08-10",
+      waterMl: 1250,
+      sleepHours: 8,
+      checkedIn: true,
+    }, "user-a");
+
+    expect(getHabitDay("2026-08-10", "user-a").waterMl).toBe(1250);
+    expect(getHabitDay("2026-08-10", "user-b").waterMl).toBe(0);
+  });
+
+  it("moves the legacy cache once to the authenticated account", () => {
+    saveHabitDay({
+      date: "2026-08-10",
+      waterMl: 900,
+      sleepHours: 7,
+      checkedIn: true,
+    });
+
+    expect(getHabitDay("2026-08-10", "user-a").waterMl).toBe(900);
+    expect(localStorage.getItem("fitness_habits_v1")).toBeNull();
+    expect(getHabitDay("2026-08-10", "user-b").waterMl).toBe(0);
+  });
+
+  it("moves an old account cache after account merge", () => {
+    addWater(500, "2026-08-10", "old-user");
+
+    adoptHabitHistory("old-user", "new-user");
+
+    expect(getHabitDay("2026-08-10", "new-user")).toMatchObject({
+      waterMl: 500,
+      waterPending: true,
+    });
+    expect(getHabitDay("2026-08-10", "old-user").waterMl).toBe(0);
   });
 });

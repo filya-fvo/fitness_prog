@@ -50,7 +50,7 @@ import {
   readProgramCursor,
 } from "@/utils/programProgress";
 import { toast } from "@/store/toastStore";
-import { getHabitDay } from "@/utils/habits";
+import { cacheHabitDay, getHabitDay } from "@/utils/habits";
 import { buildHomeTips } from "@/utils/homeTips";
 import { recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
@@ -125,7 +125,7 @@ export function HomePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCalories, setTodayCalories] = useState<number | null>(null);
   const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
-  const [waterMl, setWaterMl] = useState(() => getHabitDay().waterMl);
+  const [waterMl, setWaterMl] = useState(() => getHabitDay(undefined, user?.id).waterMl);
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
@@ -213,6 +213,16 @@ export function HomePage() {
       window.removeEventListener("online", onStatus);
       window.removeEventListener("offline", onStatus);
     };
+  }, []);
+
+  useEffect(() => {
+    const today = progressLocalDate(new Date());
+    const onWaterUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ date?: string; ml?: number }>).detail;
+      if (detail?.date === today && typeof detail.ml === "number") setWaterMl(detail.ml);
+    };
+    window.addEventListener("fitness:water-updated", onWaterUpdated);
+    return () => window.removeEventListener("fitness:water-updated", onWaterUpdated);
   }, []);
 
   useEffect(() => {
@@ -328,7 +338,7 @@ export function HomePage() {
           } else {
             setDaysSinceLastWorkout(null);
           }
-          setWaterMl(getHabitDay().waterMl);
+          setWaterMl(getHabitDay(undefined, user?.id).waterMl);
         }
 
         if (getStoredToken() && isOnline()) {
@@ -347,7 +357,12 @@ export function HomePage() {
             if (!cancelled && water) {
               if (water.daily_target_ml != null) setWaterTargetMl(water.daily_target_ml);
               if (typeof water.ml === "number") {
-                setWaterMl(Math.max(getHabitDay().waterMl, water.ml));
+                const local = getHabitDay(undefined, user?.id);
+                const value = local.waterPending ? local.waterMl : water.ml;
+                if (!local.waterPending) {
+                  cacheHabitDay({ ...local, waterMl: water.ml, waterPending: false }, user?.id);
+                }
+                setWaterMl(value);
               }
             }
           } catch {
@@ -362,7 +377,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [setCatalog]);
+  }, [setCatalog, user?.id]);
 
   const homeTips = useMemo(
     () =>

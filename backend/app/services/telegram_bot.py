@@ -184,17 +184,20 @@ async def send_document(
     files = {
         "document": (filename, content, "text/markdown; charset=utf-8"),
     }
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(url, data=data, files=files)
-        body = resp.json()
-        if resp.status_code >= 400 or not body.get("ok"):
-            logger.error(
-                "telegram_api_failed method=sendDocument status={} body={}",
-                resp.status_code,
-                body,
-            )
-            raise TelegramBotError(str(body.get("description") or resp.text))
-        return body
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, data=data, files=files)
+            body = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+    if resp.status_code >= 400 or not body.get("ok"):
+        logger.error(
+            "telegram_api_failed method=sendDocument status={} body={}",
+            resp.status_code,
+            body,
+        )
+        raise TelegramBotError(str(body.get("description") or resp.text))
+    return body
 
 
 def build_mini_app_open_url(
@@ -545,27 +548,20 @@ async def send_start_welcome(
     first_name: str | None = None,
     send_full_guide: bool = False,
 ) -> dict[str, Any]:
-    """Reply to /start with short welcome + Open (inline) + reply keyboard (/start, /help)."""
+    """Reply to /start without blocking on global Telegram configuration calls."""
     text = start_welcome_text(
         first_name=first_name,
         mini_app_url=resolve_mini_app_url(settings),
     )
-    # Inline Open is the most reliable Mini App entry on mobile + desktop.
-    # Reply keyboard cannot be combined with inline_keyboard on the same message,
-    # so we send Open inline first, then attach the persistent /start+/help keyboard.
+    # Inline Open is the most reliable Mini App entry on mobile + desktop. Slash
+    # commands stay available in Telegram's native menu, so one concise message is
+    # enough and repeated /start does not flood the chat.
     inline_open = open_app_markup(settings)
     result = await send_message(
         settings,
         chat_id=chat_id,
         text=text,
         reply_markup=inline_open,
-    )
-    # Persistent reply keyboard under the composer contains commands only.
-    await send_message(
-        settings,
-        chat_id=chat_id,
-        text="Команды под полем ввода: /start и /help",
-        reply_markup=bot_commands_reply_keyboard(settings),
     )
     if send_full_guide:
         await send_user_guide(settings, chat_id=chat_id, with_open_button=True)

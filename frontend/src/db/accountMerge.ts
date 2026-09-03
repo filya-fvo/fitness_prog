@@ -1,5 +1,6 @@
 import type { AuthUser } from "@/api/auth";
 import { db } from "@/db/schema";
+import { adoptHabitHistory } from "@/utils/habits";
 
 function profileDraftKey(userId: string): string {
   return `fitness_profile_draft_v2:${userId}`;
@@ -41,6 +42,7 @@ export async function adoptMergedLocalData(user: AuthUser): Promise<void> {
           localStorage.setItem(profileDraftKey(user.id), oldDraft);
         }
         localStorage.removeItem(profileDraftKey(oldId));
+        adoptHabitHistory(oldId, user.id);
       }
     },
   );

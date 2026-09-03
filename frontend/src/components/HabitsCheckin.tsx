@@ -1,5 +1,5 @@
 /** Manual daily sleep, movement and water check-in. */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -8,7 +8,15 @@ import { fetchWaterLog, saveWaterLog } from "@/api/notifications";
 import { DecimalInput } from "@/components/DecimalInput";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "@/store/toastStore";
-import { addWater, getHabitDay, habitStreak, saveHabitDay, type HabitDay } from "@/utils/habits";
+import { useUserStore } from "@/store/userStore";
+import {
+  addWater,
+  cacheHabitDay,
+  getHabitDay,
+  habitStreak,
+  saveHabitDay,
+  type HabitDay,
+} from "@/utils/habits";
 import { isOnline } from "@/utils/network";
 import { localDateKey } from "@/utils/progress";
 
@@ -29,12 +37,14 @@ function parseNullable(raw: string): number | null {
 
 export function HabitsCheckin({ date, onSaved }: Props) {
   const location = useLocation();
+  const ownerUserId = useUserStore((state) => state.user?.id);
   const checkinRef = useRef<HTMLElement>(null);
   const waterRef = useRef<HTMLDivElement>(null);
+  const waterSyncQueue = useRef<Promise<void>>(Promise.resolve());
   const today = localDateKey(new Date());
   const [internalDate, setInternalDate] = useState(today);
   const selectedDate = date ?? internalDate;
-  const [day, setDay] = useState<HabitDay>(() => getHabitDay(selectedDate));
+  const [day, setDay] = useState<HabitDay>(() => getHabitDay(selectedDate, ownerUserId));
   const [sleep, setSleep] = useState("");
   const [steps, setSteps] = useState("");
   const [activeMinutes, setActiveMinutes] = useState("");
@@ -42,7 +52,43 @@ export function HabitsCheckin({ date, onSaved }: Props) {
   const [syncingWater, setSyncingWater] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const streak = habitStreak();
+  const streak = habitStreak(new Date(), ownerUserId);
+
+  const syncPendingWater = useCallback((targetDate: string) => {
+    setSyncingWater(true);
+    const sync = async () => {
+      if (!getStoredToken() || !isOnline()) return;
+      const pending = getHabitDay(targetDate, ownerUserId);
+      if (!pending.waterPending) return;
+      try {
+        const response = await saveWaterLog({
+          ml: pending.waterMl,
+          date: targetDate,
+          mode: "set",
+        });
+        const latest = getHabitDay(targetDate, ownerUserId);
+        if (latest.waterPending && latest.waterMl === pending.waterMl) {
+          cacheHabitDay({ ...latest, waterPending: false }, ownerUserId);
+        }
+        if (response.daily_target_ml != null) setWaterTargetMl(response.daily_target_ml);
+        window.dispatchEvent(new CustomEvent("fitness:water-updated", {
+          detail: { date: targetDate, ml: response.ml },
+        }));
+      } catch {
+        // Keep the pending local value; the online event or next load retries it.
+      }
+    };
+    const queued = waterSyncQueue.current.then(sync, sync);
+    waterSyncQueue.current = queued;
+    void queued.then(
+      () => {
+        if (waterSyncQueue.current === queued) setSyncingWater(false);
+      },
+      () => {
+        if (waterSyncQueue.current === queued) setSyncingWater(false);
+      },
+    );
+  }, [ownerUserId]);
 
   useEffect(() => {
     const metric = new URLSearchParams(location.search).get("checkin");
@@ -55,7 +101,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    const local = getHabitDay(selectedDate);
+    const local = getHabitDay(selectedDate, ownerUserId);
     setDay(local);
     setSleep(valueOrEmpty(local.sleepHours));
     setSteps(valueOrEmpty(local.steps));
@@ -67,15 +113,17 @@ export function HabitsCheckin({ date, onSaved }: Props) {
       .then(([metrics, water]) => {
         if (cancelled) return;
         if (water.daily_target_ml != null) setWaterTargetMl(water.daily_target_ml);
+        const serverWaterMl = Number(water.ml) || 0;
         const merged: HabitDay = {
           ...local,
-          waterMl: Math.max(local.waterMl || 0, Number(water.ml) || 0),
+          waterMl: local.waterPending ? local.waterMl : serverWaterMl,
+          waterPending: local.waterPending,
           sleepHours:
             metrics.sleep_minutes != null ? metrics.sleep_minutes / 60 : local.sleepHours,
           steps: metrics.steps ?? local.steps ?? null,
           activeMinutes: metrics.active_minutes ?? local.activeMinutes ?? null,
         };
-        setDay(saveHabitDay(merged));
+        setDay(cacheHabitDay(merged, ownerUserId));
         setSleep(valueOrEmpty(merged.sleepHours));
         setSteps(valueOrEmpty(merged.steps));
         setActiveMinutes(valueOrEmpty(merged.activeMinutes));
@@ -96,11 +144,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
             .then((saved) => onSaved?.(saved))
             .catch(() => null);
         }
-        if ((Number(water.ml) || 0) < merged.waterMl) {
-          void saveWaterLog({ ml: merged.waterMl, date: selectedDate, mode: "set" }).catch(
-            () => null,
-          );
-        }
+        if (merged.waterPending) syncPendingWater(selectedDate);
       })
       .catch(() => null)
       .finally(() => {
@@ -109,20 +153,13 @@ export function HabitsCheckin({ date, onSaved }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [onSaved, selectedDate]);
+  }, [onSaved, ownerUserId, selectedDate, syncPendingWater]);
 
-  async function syncWater(ml: number) {
-    if (!getStoredToken() || !isOnline()) return;
-    setSyncingWater(true);
-    try {
-      const res = await saveWaterLog({ ml, date: selectedDate, mode: "set" });
-      if (res.daily_target_ml != null) setWaterTargetMl(res.daily_target_ml);
-    } catch {
-      // The local copy remains available and will be merged on the next load.
-    } finally {
-      setSyncingWater(false);
-    }
-  }
+  useEffect(() => {
+    const retry = () => syncPendingWater(selectedDate);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [selectedDate, syncPendingWater]);
 
   async function saveCheckin() {
     const sleepHours = parseNullable(sleep);
@@ -137,7 +174,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
       return;
     }
     const next = saveHabitDay({
-      ...getHabitDay(selectedDate),
+      ...getHabitDay(selectedDate, ownerUserId),
       sleepHours: sleepHours != null && sleepHours >= 0 && sleepHours <= 24 ? sleepHours : null,
       steps:
         stepsValue != null && stepsValue >= 0 && stepsValue <= 200_000
@@ -147,7 +184,7 @@ export function HabitsCheckin({ date, onSaved }: Props) {
         activeValue != null && activeValue >= 0 && activeValue <= 1440
           ? Math.round(activeValue)
           : null,
-    });
+    }, ownerUserId);
     setDay(next);
     setSaving(true);
     try {
@@ -285,9 +322,9 @@ export function HabitsCheckin({ date, onSaved }: Props) {
               key={ml}
               type="button"
               onClick={() => {
-                const next = addWater(ml, selectedDate);
+                const next = addWater(ml, selectedDate, ownerUserId);
                 setDay(next);
-                void syncWater(next.waterMl);
+                syncPendingWater(selectedDate);
               }}
               className="tap-target-x min-h-[40px] rounded-full bg-tg-secondary px-3 py-2 text-xs"
             >
@@ -297,9 +334,13 @@ export function HabitsCheckin({ date, onSaved }: Props) {
           <button
             type="button"
             onClick={() => {
-              const next = saveHabitDay({ ...getHabitDay(selectedDate), waterMl: 0 });
+              const next = saveHabitDay({
+                ...getHabitDay(selectedDate, ownerUserId),
+                waterMl: 0,
+                waterPending: true,
+              }, ownerUserId);
               setDay(next);
-              void syncWater(0);
+              syncPendingWater(selectedDate);
             }}
             className="tap-target-x min-h-[40px] rounded-full bg-tg-secondary px-3 py-2 text-xs text-tg-hint"
           >

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -133,6 +133,36 @@ async def _ensure_bot_commands(settings: Settings) -> None:
         logger.warning("set_bot_commands_failed err={}", exc)
 
 
+async def _send_help_response(settings: Settings, command: dict[str, Any]) -> None:
+    chat_id = int(command["chat_id"])
+    try:
+        await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
+        _mark_guide_sent(command.get("user_id"), chat_id)
+    except TelegramBotError as exc:
+        logger.error("telegram_help_reply_failed chat={} err={}", chat_id, exc)
+
+
+async def _send_start_response(
+    settings: Settings,
+    command: dict[str, Any],
+    *,
+    first_time: bool,
+) -> None:
+    chat_id = int(command["chat_id"])
+    user_id = command.get("user_id")
+    try:
+        await send_start_welcome(
+            settings,
+            chat_id=chat_id,
+            first_name=str(command.get("first_name")) if command.get("first_name") else None,
+            send_full_guide=first_time,
+        )
+        if first_time:
+            _mark_guide_sent(user_id if isinstance(user_id, int) else None, chat_id)
+    except TelegramBotError as exc:
+        logger.error("telegram_start_reply_failed chat={} err={}", chat_id, exc)
+
+
 def _telegram_actor_is_admin(settings: Settings, command: dict[str, Any]) -> bool:
     """Authorize the hidden command using Telegram's signed webhook identity."""
     user_id = command.get("user_id")
@@ -148,6 +178,7 @@ def _telegram_actor_is_admin(settings: Settings, command: dict[str, Any]) -> boo
 @router.post("/webhook")
 async def telegram_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     settings: Settings = Depends(get_settings),
     x_telegram_bot_api_secret_token: str | None = Header(default=None),
 ) -> dict[str, Any]:
@@ -240,13 +271,7 @@ async def telegram_webhook(
             help_cmd.get("user_id"),
             help_cmd.get("username"),
         )
-        try:
-            await _ensure_default_menu_button(settings, chat_id)
-            await _ensure_bot_commands(settings)
-            await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
-            _mark_guide_sent(help_cmd.get("user_id"), chat_id)
-        except TelegramBotError as exc:
-            logger.error("telegram_help_reply_failed chat={} err={}", chat_id, exc)
+        background_tasks.add_task(_send_help_response, settings, help_cmd)
         return {"ok": True}
 
     start = extract_start_command(update)
@@ -254,7 +279,6 @@ async def telegram_webhook(
         return {"ok": True}
 
     chat_id = start["chat_id"]
-    first_name = start.get("first_name")
     user_id = start.get("user_id")
     first_time = _is_first_start(user_id if isinstance(user_id, int) else None, chat_id)
     logger.info(
@@ -265,19 +289,7 @@ async def telegram_webhook(
         first_time,
     )
 
-    try:
-        await _ensure_bot_commands(settings)
-        await _ensure_default_menu_button(settings, chat_id)
-        await send_start_welcome(
-            settings,
-            chat_id=chat_id,
-            first_name=str(first_name) if first_name else None,
-            send_full_guide=first_time,
-        )
-        if first_time:
-            _mark_guide_sent(user_id if isinstance(user_id, int) else None, chat_id)
-    except TelegramBotError as exc:
-        logger.error("telegram_start_reply_failed chat={} err={}", chat_id, exc)
+    background_tasks.add_task(_send_start_response, settings, start, first_time=first_time)
 
     return {"ok": True}
 

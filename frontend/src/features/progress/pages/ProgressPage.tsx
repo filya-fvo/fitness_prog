@@ -41,10 +41,12 @@ import {
 import { buildLiftTrends } from "@/utils/strengthProgress";
 import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { toUserMessage } from "@/utils/errors";
+import { useUserStore } from "@/store/userStore";
 
 type NutritionRangeMode = "day" | "week";
 
 export function ProgressPage() {
+  const ownerUserId = useUserStore((state) => state.user?.id);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [monthIndex, setMonthIndex] = useState(now.getMonth());
@@ -146,7 +148,7 @@ export function ProgressPage() {
   const streak = useMemo(() => computeStreak(workouts), [workouts]);
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
   const liftTrends = useMemo(() => buildLiftTrends(workouts, catalog, 6), [workouts, catalog]);
-  const badges = useMemo(() => computeBadges(workouts), [workouts]);
+  const badges = useMemo(() => computeBadges(workouts, ownerUserId), [ownerUserId, workouts]);
   const calendarDays = useMemo(
     () => buildCalendarDays(workouts, year, monthIndex),
     [workouts, year, monthIndex],

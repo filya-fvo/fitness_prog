@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
-from typing import Any
+from datetime import UTC, date as date_cls, datetime
+from typing import Any, Literal
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
@@ -40,6 +40,7 @@ from app.services.notification_prefs import (
     default_notification_settings,
     due_notifications,
     format_calorie_reminder_text,
+    local_now,
     merge_notification_settings,
     set_water_ml_for_day,
     water_ml_for_day,
@@ -100,8 +101,8 @@ class WaterLogBody(BaseModel):
     """Sync daily water intake (ml) for bot reminders."""
 
     ml: int = Field(..., ge=0, le=20000)
-    date: str | None = None
-    mode: str = Field(default="set", description="set | add")
+    date: date_cls | None = None
+    mode: Literal["set", "add"] = "set"
 
 
 
@@ -109,6 +110,26 @@ class WaterLogResponse(BaseModel):
     date: str
     ml: int
     daily_target_ml: int | None = None
+
+
+def _merged_notification_settings(goals: dict[str, Any]) -> dict[str, Any]:
+    raw = goals.get("notification_settings")
+    return merge_notification_settings(raw if isinstance(raw, dict) else None)
+
+
+def _water_day(goals: dict[str, Any], requested: date_cls | None) -> date_cls:
+    if requested is not None:
+        return requested
+    settings = _merged_notification_settings(goals)
+    return local_now(str(settings.get("timezone") or "Europe/Moscow")).date()
+
+
+def _water_target(goals: dict[str, Any]) -> int | None:
+    wcfg = _merged_notification_settings(goals).get("water") or {}
+    try:
+        return int(wcfg.get("daily_ml") or 2500) if wcfg.get("enabled") else None
+    except (TypeError, ValueError):
+        return 2500
 
 
 class PushKeys(BaseModel):
@@ -235,27 +256,17 @@ async def delete_push_subscription(
 
 @router.get("/water", response_model=WaterLogResponse)
 async def get_water_log(
-    date_value: str | None = None,
+    date_value: date_cls | None = Query(default=None, alias="date"),
     user: User = Depends(get_current_user),
 ) -> WaterLogResponse:
-    from datetime import date as date_cls
-
-    day = date_cls.fromisoformat(date_value) if date_value else date_cls.today()
-    goals = user.goals or {}
+    goals = dict(user.goals or {})
+    day = _water_day(goals, date_value)
     ml = water_ml_for_day(goals, day)
-    nset = merge_notification_settings(
-        goals.get("notification_settings")
-        if isinstance(goals.get("notification_settings"), dict)
-        else None
+    return WaterLogResponse(
+        date=day.isoformat(),
+        ml=ml,
+        daily_target_ml=_water_target(goals),
     )
-    wcfg = nset.get("water") or {}
-    target = None
-    try:
-        if wcfg.get("enabled"):
-            target = int(wcfg.get("daily_ml") or 2500)
-    except (TypeError, ValueError):
-        target = 2500
-    return WaterLogResponse(date=day.isoformat(), ml=ml, daily_target_ml=target)
 
 
 @router.put("/water", response_model=WaterLogResponse)
@@ -264,36 +275,32 @@ async def put_water_log(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> WaterLogResponse:
-    from datetime import date as date_cls
+    # Water is stored in the user's JSON goals. Serialize writes for one user so
+    # rapid taps (and Telegram callbacks) cannot overwrite a newer total.
+    locked_user = await session.scalar(
+        select(User)
+        .where(User.id == user.id, User.is_deleted.is_(False))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if locked_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
-    day = date_cls.fromisoformat(body.date) if body.date else date_cls.today()
-    goals = dict(user.goals or {})
+    goals = dict(locked_user.goals or {})
+    day = _water_day(goals, body.date)
     current = water_ml_for_day(goals, day)
-    if (body.mode or "set").lower() == "add":
+    if body.mode == "add":
         new_ml = current + int(body.ml)
     else:
         new_ml = int(body.ml)
     goals = set_water_ml_for_day(goals, day, new_ml)
-    user.goals = goals
-    flag_modified(user, "goals")
+    locked_user.goals = goals
+    flag_modified(locked_user, "goals")
     await session.commit()
-    await session.refresh(user)
-    nset = merge_notification_settings(
-        goals.get("notification_settings")
-        if isinstance(goals.get("notification_settings"), dict)
-        else None
-    )
-    wcfg = nset.get("water") or {}
-    target = None
-    try:
-        if wcfg.get("enabled"):
-            target = int(wcfg.get("daily_ml") or 2500)
-    except (TypeError, ValueError):
-        target = 2500
     return WaterLogResponse(
         date=day.isoformat(),
         ml=water_ml_for_day(goals, day),
-        daily_target_ml=target,
+        daily_target_ml=_water_target(goals),
     )
 
 
@@ -362,9 +369,8 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
         return out
     if item.get("kind") != "calories" and not meta.get("needs_calorie_context"):
         return item
-    from datetime import date as date_cls
-
-    day = date_cls.today()
+    notification_settings = _merged_notification_settings(dict(user.goals or {}))
+    day = local_now(str(notification_settings.get("timezone") or "Europe/Moscow")).date()
     try:
         _logs, totals = await nutrition_service.daily_summary(session, user, day)
         eaten = float((totals or {}).get("calories") or 0)
