@@ -19,6 +19,7 @@ import {
   inferCardioMachineKind,
   inferLoadType,
 } from "@/utils/exerciseLoadType";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 
 type Props = {
   open: boolean;
@@ -81,16 +82,7 @@ export function AddSetModal({
   const [note, setNote] = useState(String(initial?.note || ""));
   const [restSec, setRestSec] = useState(initial?.restTimeSec || defaultRestSec);
   const [startTimer, setStartTimer] = useState(true);
-  const dumbbellExercise = /гантел|dumbbell/i.test(
-    `${exercise.name_ru} ${exercise.equipment || ""}`,
-  );
-  const [weightMode, setWeightMode] = useState<"total" | "per_hand">(
-    initial?.weightMode === "total" || initial?.weightMode === "per_hand"
-      ? initial.weightMode
-      : dumbbellExercise
-        ? "per_hand"
-        : "total",
-  );
+  const weightInput = useMemo(() => exerciseWeightInput(exercise), [exercise]);
 
   const [machineValues, setMachineValues] = useState(() =>
     initialCardioParamValues(initial?.machineParams),
@@ -138,7 +130,7 @@ export function AddSetModal({
           <div>
           <div className="flex gap-2">
             <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
-            <WheelPicker label="кг" value={kgWhole} options={rangeInts(0, 300)} onChange={setKgWhole} />
+            <WheelPicker label={weightInput.label} value={kgWhole} options={rangeInts(0, 300)} onChange={setKgWhole} />
             <WheelPicker
               label=""
               value={kgTenth}
@@ -148,23 +140,7 @@ export function AddSetModal({
               className="max-w-[72px]"
             />
           </div>
-          {dumbbellExercise ? (
-            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-white/5 p-1">
-              {(["per_hand", "total"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setWeightMode(mode)}
-                  className={[
-                    "rounded-lg px-2 py-2 text-xs",
-                    weightMode === mode ? "bg-white text-black" : "text-white/70",
-                  ].join(" ")}
-                >
-                  {mode === "per_hand" ? "На 1 гантель" : "Общий вес"}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          {weightInput.hint ? <p className="mt-2 text-xs text-white/60">{weightInput.hint}</p> : null}
           </div>
         ) : null}
 
@@ -276,7 +252,7 @@ export function AddSetModal({
               reps:
                 loadType === "weight_reps" || loadType === "reps_only" ? String(reps) : "",
               weight: loadType === "weight_reps" ? weightStr : "",
-              weightMode: loadType === "weight_reps" ? weightMode : null,
+              weightMode: loadType === "weight_reps" ? weightInput.mode : null,
               durationSec:
                 loadType === "timed" || loadType === "cardio_machine" ? durationSec : null,
               note: note.trim() || null,

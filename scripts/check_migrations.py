@@ -45,6 +45,7 @@ REQUIRED_FILES = [
     "20260901000035_global_regularity_seasons.sql",
     "20260901000036_custom_friend_competitions.sql",
     "20260902000037_fix_custom_competition_metric.sql",
+    "20260903000038_curate_dumbbell_weight_rules.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -122,6 +123,7 @@ REQUIRED_SNIPPETS = [
     "DROP CONSTRAINT IF EXISTS competitions_metric_check",
     "'relative_strength'",
     "'custom'",
+    "'Разгибания гантели из-за головы'",
 ]
 
 

@@ -214,7 +214,8 @@ describe("workoutStore", () => {
     expect(ok).toBe(true);
     let next = useWorkoutStore.getState();
     expect(next.drafts[0]?.exerciseId).toBe("e2");
-    expect(next.drafts[0]?.weight).toBe("40");
+    expect(next.drafts[0]?.weight).toBe("");
+    expect(next.drafts[0]?.replacementOriginalWeight).toBe("40");
     const planEx = (
       next.activeWorkout?.plan as {
         exercises: Array<{ exercise_id: string; original_exercise_id?: string }>;
@@ -227,6 +228,7 @@ describe("workoutStore", () => {
     expect(restored).toBe(true);
     next = useWorkoutStore.getState();
     expect(next.drafts[0]?.exerciseId).toBe("e1");
+    expect(next.drafts[0]?.weight).toBe("40");
     const planEx2 = (
       next.activeWorkout?.plan as {
         exercises: Array<{ exercise_id: string; original_exercise_id?: string | null }>;

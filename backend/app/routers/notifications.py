@@ -88,6 +88,16 @@ async def _release_timer_lock(redis: Any, lock_key: str, token: str) -> None:
     )
 
 
+async def _request_timer_abort(job: Any) -> None:
+    """Signal cancellation without making a new timer wait for a busy worker."""
+    try:
+        await job.abort(timeout=0.05, poll_delay=0.01)
+    except TimeoutError:
+        # ARQ has already written the abort marker. A busy worker will observe it
+        # later; the replacement timer can be enqueued immediately.
+        logger.info("timer_abort_requested job={}", job.job_id)
+
+
 class NotificationSettingsResponse(BaseModel):
     settings: dict[str, Any]
     defaults: dict[str, Any]
@@ -630,8 +640,8 @@ async def schedule_timer_notification(
         lock_key, lock_token = await _acquire_timer_lock(redis, ref_key)
         previous = await redis.get(ref_key)
         if previous:
-            await Job(previous.decode() if isinstance(previous, bytes) else str(previous), redis).abort(
-                timeout=1
+            await _request_timer_abort(
+                Job(previous.decode() if isinstance(previous, bytes) else str(previous), redis)
             )
         await redis.enqueue_job(
             "send_timer_finished_task",
@@ -668,8 +678,8 @@ async def cancel_timer_notification(
         lock_key, lock_token = await _acquire_timer_lock(redis, ref_key)
         current = await redis.get(ref_key)
         if current:
-            await Job(current.decode() if isinstance(current, bytes) else str(current), redis).abort(
-                timeout=1
+            await _request_timer_abort(
+                Job(current.decode() if isinstance(current, bytes) else str(current), redis)
             )
             await redis.delete(ref_key)
     finally:

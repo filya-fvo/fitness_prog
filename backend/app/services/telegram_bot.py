@@ -72,6 +72,7 @@ async def send_message(
     chat_id: int,
     text: str,
     reply_markup: dict[str, Any] | None = None,
+    timeout: float = 20.0,
 ) -> dict[str, Any]:
     """POST sendMessage to Telegram Bot API."""
     payload: dict[str, Any] = {
@@ -82,7 +83,7 @@ async def send_message(
     }
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
-    return await bot_api(settings, "sendMessage", payload)
+    return await bot_api(settings, "sendMessage", payload, timeout=timeout)
 
 
 async def answer_callback_query(
@@ -642,6 +643,7 @@ async def send_app_notification(
     startapp: str | None = "home",
     water_add_ml: int | None = None,
     button_text: str = "Открыть приложение",
+    timeout: float = 20.0,
 ) -> dict[str, Any]:
     """Send HTML notification with Mini App Open button (web_app preferred)."""
     body = f"🔔 <b>{title}</b>\n{text}"
@@ -671,6 +673,7 @@ async def send_app_notification(
         chat_id=telegram_id,
         text=body,
         reply_markup=markup,
+        timeout=timeout,
     )
 
 

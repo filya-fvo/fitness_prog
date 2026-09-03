@@ -47,6 +47,18 @@ async def test_timer_lock_serializes_same_timer() -> None:
     await notifications._release_timer_lock(redis, next_key, next_token)
 
 
+class SlowAbortJob:
+    job_id = "old-timer"
+
+    async def abort(self, **_kwargs):
+        raise TimeoutError
+
+
+@pytest.mark.asyncio
+async def test_timer_abort_timeout_does_not_block_replacement() -> None:
+    await notifications._request_timer_abort(SlowAbortJob())
+
+
 class FakeScalarResult:
     def __init__(self, rows) -> None:
         self.rows = rows

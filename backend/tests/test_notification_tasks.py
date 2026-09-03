@@ -14,6 +14,14 @@ def test_notification_settings_reloads_current_configuration(monkeypatch) -> Non
     assert notifications.notification_settings() is current
 
 
+def test_timer_delivery_retries_only_transient_undelivered_attempts() -> None:
+    assert notifications._timer_retry_delay(delivered=0, retryable=True, attempt=1) == 2
+    assert notifications._timer_retry_delay(delivered=0, retryable=True, attempt=2) == 5
+    assert notifications._timer_retry_delay(delivered=0, retryable=True, attempt=3) is None
+    assert notifications._timer_retry_delay(delivered=1, retryable=True, attempt=1) is None
+    assert notifications._timer_retry_delay(delivered=0, retryable=False, attempt=1) is None
+
+
 @pytest.mark.asyncio
 async def test_reminder_job_ignores_stale_worker_settings(monkeypatch) -> None:
     stale = Settings(mini_app_url="https://obsolete.example.ts.net")

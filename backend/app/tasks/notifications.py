@@ -8,7 +8,7 @@ import json
 import uuid
 from typing import Any
 
-from arq import cron
+from arq import Retry, cron
 from arq.connections import RedisSettings
 from loguru import logger
 from sqlalchemy import select
@@ -65,6 +65,12 @@ async def _record_worker_status(
 def notification_settings() -> Settings:
     """Reload .env so a long-lived worker never sends buttons with an obsolete URL."""
     return Settings()
+
+
+def _timer_retry_delay(*, delivered: int, retryable: bool, attempt: int) -> int | None:
+    if delivered > 0 or not retryable or attempt >= 3:
+        return None
+    return 2 if attempt <= 1 else 5
 
 
 async def _claim_dispatch_minute(redis: Any, now: datetime | None = None) -> bool:
@@ -192,6 +198,7 @@ async def send_timer_finished_task(
             await _record_worker_status(redis, task="Завершение таймера", state="failed")
             return {"ok": False, "detail": "user_not_found"}
         delivered = 0
+        retry_telegram = False
         if user.telegram_id is not None:
             try:
                 await send_app_notification(
@@ -200,10 +207,13 @@ async def send_timer_finished_task(
                     title=title,
                     text=text,
                     startapp=f"workout_{workout_id}" if workout_id else "home",
+                    timeout=5.0,
                 )
                 delivered += 1
             except TelegramBotError as exc:
                 logger.warning("timer_telegram_failed user={} err={}", user.id, exc)
+                message = str(exc).lower()
+                retry_telegram = "transport error" in message or "timeout" in message
         delivered += await send_user_web_push(
             session,
             settings,
@@ -213,6 +223,19 @@ async def send_timer_finished_task(
             url=f"/workouts/active/{workout_id}" if workout_id else "/",
             tag=f"rest-timer-{workout_id or 'active'}",
         )
+    attempt = max(1, int(ctx.get("job_try", 1)))
+    retry_delay = _timer_retry_delay(
+        delivered=delivered,
+        retryable=retry_telegram,
+        attempt=attempt,
+    )
+    if retry_delay is not None:
+        await _record_worker_status(
+            redis,
+            task="Завершение таймера",
+            state="retrying",
+        )
+        raise Retry(defer=retry_delay)
     await _record_worker_status(
         redis,
         task="Завершение таймера",

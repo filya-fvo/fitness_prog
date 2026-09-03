@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { DailyMetric } from "@/api/dailyMetrics";
+import { buildWellnessChart } from "@/utils/wellnessChart";
 
 type Props = { days: DailyMetric[]; error?: string | null };
 type MetricId = "steps" | "sleep" | "active";
@@ -70,21 +71,17 @@ function MetricChart({ series, config }: { series: DailyMetric[]; config: Metric
   const bottom = 142;
   const x = (index: number) => left + (index / Math.max(1, series.length - 1)) * (right - left);
   const y = (value: number) => bottom - ((value - min) / Math.max(1, max - min)) * (bottom - top);
-  const segments: Array<Array<{ x: number; y: number; value: number }>> = [];
-  let current: Array<{ x: number; y: number; value: number }> = [];
-  values.forEach((value, index) => {
-    if (value == null || !Number.isFinite(value)) {
-      if (current.length) segments.push(current);
-      current = [];
-    } else {
-      current.push({ x: x(index), y: y(value), value });
-    }
-  });
-  if (current.length) segments.push(current);
+  const chart = buildWellnessChart(values, x, y);
+  const missingCount = values.length - chart.points.length;
 
   return (
     <div className="rounded-xl bg-tg-bg p-2">
-      <svg viewBox="0 0 600 174" className="h-44 w-full" role="img" aria-label={`${config.label} по дням`}>
+      <svg
+        viewBox="0 0 600 174"
+        className="h-44 w-full"
+        role="img"
+        aria-label={`${config.label} по дням. Нет данных за ${missingCount} дн.`}
+      >
         <line x1={left} x2={right} y1={bottom} y2={bottom} className="stroke-black/10 dark:stroke-white/15" />
         <line x1={left} x2={right} y1={top} y2={top} className="stroke-black/10 dark:stroke-white/15" />
         <line x1={left} x2={right} y1={(top + bottom) / 2} y2={(top + bottom) / 2} className="stroke-black/10 dark:stroke-white/10" strokeDasharray="4 5" />
@@ -94,14 +91,33 @@ function MetricChart({ series, config }: { series: DailyMetric[]; config: Metric
           <line x1={left} x2={right} y1={y(config.goal)} y2={y(config.goal)} strokeDasharray="6 5" className="stroke-emerald-500/70" />
           <text x={right - 2} y={Math.max(12, y(config.goal) - 5)} textAnchor="end" className="fill-emerald-600 text-[10px]">цель {config.format(config.goal)}</text>
         </> : null}
-        {segments.map((segment, index) => <g key={index}>
-          {segment.length > 1 ? <polyline points={segment.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="stroke-tg-button" /> : null}
-          {segment.map((point, pointIndex) => <g key={`${point.x}-${point.y}`}><circle cx={point.x} cy={point.y} r="5" className="fill-tg-button"><title>{config.format(point.value)}</title></circle>{index === segments.length - 1 && pointIndex === segment.length - 1 ? <text x={point.x} y={Math.max(11, point.y - 9)} textAnchor="end" className="fill-tg-text text-[10px] font-semibold">{config.axisFormat(point.value)}</text> : null}</g>)}
-        </g>)}
+        {chart.connections.map((connection) => (
+          <line
+            key={`${connection.from.index}-${connection.to.index}`}
+            x1={connection.from.x}
+            y1={connection.from.y}
+            x2={connection.to.x}
+            y2={connection.to.y}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={connection.crossesMissingDays ? "7 7" : undefined}
+            className="stroke-tg-button"
+          />
+        ))}
+        {chart.points.map((point, index) => (
+          <g key={`${point.x}-${point.y}`}>
+            <circle cx={point.x} cy={point.y} r="5" className="fill-tg-button">
+              <title>{shortDate(series[point.index].date)}: {config.format(point.value)}</title>
+            </circle>
+            {index === chart.points.length - 1 ? <text x={point.x} y={Math.max(11, point.y - 9)} textAnchor="end" className="fill-tg-text text-[10px] font-semibold">{config.axisFormat(point.value)}</text> : null}
+          </g>
+        ))}
         {values.map((value, index) => value == null ? <circle key={`missing-${series[index].date}`} cx={x(index)} cy={bottom} r="2.5" className="fill-black/20 dark:fill-white/20"><title>{shortDate(series[index].date)}: нет данных</title></circle> : null)}
         {[0, Math.floor((series.length - 1) / 2), series.length - 1].map((index) => <text key={index} x={x(index)} y="164" textAnchor={index === 0 ? "start" : index === series.length - 1 ? "end" : "middle"} className="fill-tg-hint text-[10px]">{shortDate(series[index].date)}</text>)}
       </svg>
-      <p className="px-1 text-[10px] text-tg-hint">Точки у нижней оси означают дни без данных.</p>
+      <p className="px-1 text-[10px] text-tg-hint">
+        Пунктир соединяет значения через пропущенные дни; точки у нижней оси — даты без данных.
+      </p>
     </div>
   );
 }

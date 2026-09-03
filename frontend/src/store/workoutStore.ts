@@ -260,7 +260,20 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (occupied.has(toExercise.id)) return false;
 
     const nextDrafts = state.drafts.map((d) =>
-      d.exerciseId === fromExerciseId ? { ...d, exerciseId: toExercise.id } : d,
+      d.exerciseId === fromExerciseId && !d.isCompleted
+        ? {
+            ...d,
+            exerciseId: toExercise.id,
+            // Load belongs to an exercise, not to its slot in the workout.
+            // Empty values are then filled only from the replacement's own history.
+            weight: "",
+            weightMode: null,
+            machineParams: null,
+            replacementOriginalWeight: d.replacementOriginalWeight ?? d.weight,
+            replacementOriginalMachineParams:
+              d.replacementOriginalMachineParams ?? d.machineParams ?? null,
+          }
+        : d,
     );
 
     let nextPlan = plan;
@@ -305,8 +318,18 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       ...state.activeWorkout,
       plan: nextPlan,
       sets: (state.activeWorkout.sets || []).map((setRow) =>
-        setRow.exercise_id === fromExerciseId
-          ? { ...setRow, exercise_id: toExercise.id }
+        setRow.exercise_id === fromExerciseId && !setRow.is_completed
+          ? {
+              ...setRow,
+              exercise_id: toExercise.id,
+              weight: null,
+              weight_mode: null,
+              machine_params: null,
+              replacement_original_weight:
+                setRow.replacement_original_weight ?? setRow.weight,
+              replacement_original_machine_params:
+                setRow.replacement_original_machine_params ?? setRow.machine_params ?? null,
+            }
           : setRow,
       ),
     };
@@ -381,6 +404,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         exerciseId: nextId,
         // A working weight is exercise-specific and must not be copied in bulk.
         weight: "",
+        weightMode: null,
         machineParams: null,
         replacementOriginalWeight: draft.replacementOriginalWeight ?? draft.weight,
         replacementOriginalMachineParams:
@@ -397,6 +421,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
               ...setRow,
               exercise_id: nextId,
               weight: null,
+              weight_mode: null,
               machine_params: null,
               replacement_original_weight:
                 setRow.replacement_original_weight ?? setRow.weight,
