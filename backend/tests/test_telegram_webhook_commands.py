@@ -28,6 +28,18 @@ def command_update(text: str) -> dict:
     }
 
 
+def callback_update(data: str) -> dict:
+    return {
+        "update_id": 3,
+        "callback_query": {
+            "id": "callback-1",
+            "data": data,
+            "message": {"message_id": 2, "chat": {"id": 42, "type": "private"}},
+            "from": {"id": 42},
+        },
+    }
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("command", ["/start", "/help"])
 async def test_user_commands_do_not_wait_for_global_bot_setup(
@@ -97,3 +109,66 @@ async def test_repeat_start_sends_one_concise_message(monkeypatch: pytest.Monkey
 
     assert len(calls) == 1
     assert calls[0]["reply_markup"]["inline_keyboard"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("data", "handler_name"),
+    [("wa:250:2026-09-04", "_handle_water_callback"), ("si:t:deadbeef", "_handle_supplement_callback")],
+)
+async def test_callback_webhook_returns_before_processing(
+    monkeypatch: pytest.MonkeyPatch,
+    data: str,
+    handler_name: str,
+) -> None:
+    calls: list[str] = []
+
+    async def fake_handler(*_args, **_kwargs):
+        calls.append("handled")
+
+    async def fake_answer(*_args, **_kwargs):
+        calls.append("answered")
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram, handler_name, fake_handler)
+    monkeypatch.setattr(telegram, "answer_callback_query", fake_answer)
+    background_tasks = BackgroundTasks()
+
+    result = await telegram.telegram_webhook(
+        JsonRequest(callback_update(data)),  # type: ignore[arg-type]
+        background_tasks=background_tasks,
+        settings=Settings(
+            environment="development",
+            bot_token="test-token",
+            telegram_webhook_secret="unit-test-secret",
+        ),
+        x_telegram_bot_api_secret_token="unit-test-secret",
+    )
+
+    assert result == {"ok": True}
+    assert calls == []
+    await background_tasks()
+    assert calls == ["answered", "handled"]
+
+
+@pytest.mark.asyncio
+async def test_expired_callback_ack_does_not_replay_or_block_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def expired(*_args, **_kwargs):
+        raise telegram.TelegramBotError("query is too old")
+
+    async def fake_handler(*_args, **_kwargs):
+        calls.append("handled")
+
+    monkeypatch.setattr(telegram, "answer_callback_query", expired)
+
+    await telegram._process_callback(
+        Settings(bot_token="test-token"),
+        {"id": "old", "data": "wa:250"},
+        fake_handler,
+    )
+
+    assert calls == ["handled"]

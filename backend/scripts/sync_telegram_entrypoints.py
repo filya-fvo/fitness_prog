@@ -62,7 +62,15 @@ async def main() -> None:
         default="",
         help="public API origin; registers <origin>/telegram/webhook",
     )
+    parser.add_argument(
+        "--drop-pending-updates",
+        action="store_true",
+        help="discard a poisoned Telegram retry queue while re-registering the webhook",
+    )
     args = parser.parse_args()
+
+    if args.drop_pending_updates and not args.webhook_base:
+        raise RuntimeError("--drop-pending-updates requires --webhook-base")
 
     settings = get_settings()
     public_url = safe_public_url(settings.mini_app_url)
@@ -165,7 +173,11 @@ async def main() -> None:
     if args.webhook_base:
         webhook_base = safe_public_url(args.webhook_base)
         webhook_url = f"{webhook_base}/telegram/webhook"
-        await set_webhook(settings, webhook_url=webhook_url)
+        await set_webhook(
+            settings,
+            webhook_url=webhook_url,
+            drop_pending=args.drop_pending_updates,
+        )
         info = (await get_webhook_info(settings)).get("result") or {}
         actual_url = str(info.get("url") or "").rstrip("/")
         if actual_url != webhook_url:

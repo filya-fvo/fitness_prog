@@ -412,6 +412,18 @@ docker compose --env-file backend/.env.production logs --tail=100 api web caddy
 3. Проверьте, что webhook указывает на Timeweb и pending updates не растут.
 4. Не запускайте одновременно локальный и VPS worker.
 
+Если логи показывают повторяющийся старый callback и `query is too old`, после
+установки исправления очистите только очередь Telegram updates и заново
+зарегистрируйте webhook:
+
+```bash
+docker compose --env-file backend/.env.production run --rm api \
+  python scripts/sync_telegram_entrypoints.py \
+  --preserve-menu-button \
+  --webhook-base https://api.filfitclub.ru \
+  --drop-pending-updates
+```
+
 ### Не приходят уведомления
 
 ```bash

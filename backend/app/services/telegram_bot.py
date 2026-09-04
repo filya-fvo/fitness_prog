@@ -313,11 +313,15 @@ def water_intake_keyboard(
     bot_username: str,
     mini_app_url: str = "",
     amount_ml: int = 250,
+    date: str | None = None,
 ) -> dict[str, Any]:
     """Inline water action plus a precise link to the daily water controls."""
     amount = max(50, min(1000, int(amount_ml)))
+    callback_data = f"wa:{amount}"
+    if date:
+        callback_data = f"{callback_data}:{date[:10]}"
     rows: list[list[dict[str, str | dict[str, str]]]] = [
-        [{"text": f"💧 +{amount} мл", "callback_data": f"wa:{amount}"}],
+        [{"text": f"💧 +{amount} мл", "callback_data": callback_data}],
     ]
     if mini_app_url or bot_username:
         open_keyboard = mini_app_keyboard(
@@ -642,6 +646,7 @@ async def send_app_notification(
     text: str,
     startapp: str | None = "home",
     water_add_ml: int | None = None,
+    water_date: str | None = None,
     button_text: str = "Открыть приложение",
     timeout: float = 20.0,
 ) -> dict[str, Any]:
@@ -655,6 +660,7 @@ async def send_app_notification(
             bot_username=settings.bot_username,
             mini_app_url=mini_url,
             amount_ml=water_add_ml,
+            date=water_date,
         )
     elif mini_url:
         markup = open_web_app_keyboard(

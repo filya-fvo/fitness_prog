@@ -3,6 +3,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 
 from app.services.notification_prefs import (
+    add_water_from_telegram_callback,
     apply_state_updates,
     due_notifications,
     format_calorie_reminder_text,
@@ -99,12 +100,41 @@ def test_water_slots_and_due() -> None:
     assert water
     assert "500" in water[0]["text"]
     assert water[0]["meta"]["left_ml"] == 2000
+    assert water[0]["meta"]["date"] == "2026-07-20"
     assert water[0]["startapp"] == "water"
 
 
 def test_water_log_helpers() -> None:
     g = set_water_ml_for_day({}, "2026-07-20", 750)
     assert water_ml_for_day(g, "2026-07-20") == 750
+
+
+def test_telegram_water_callback_is_idempotent_and_bound_to_its_day() -> None:
+    goals = {"water_log": {"2026-07-20": 500, "2026-07-21": 0}}
+
+    updated, total, applied = add_water_from_telegram_callback(
+        goals, "2026-07-20", 250, "callback-1"
+    )
+    replayed, replay_total, replay_applied = add_water_from_telegram_callback(
+        updated, "2026-07-20", 250, "callback-1"
+    )
+
+    assert (total, applied) == (750, True)
+    assert (replay_total, replay_applied) == (750, False)
+    assert water_ml_for_day(replayed, "2026-07-20") == 750
+    assert water_ml_for_day(replayed, "2026-07-21") == 0
+
+
+def test_telegram_water_callback_history_is_bounded() -> None:
+    goals: dict = {}
+    for index in range(120):
+        goals, _, _ = add_water_from_telegram_callback(
+            goals, "2026-07-20", 250, f"callback-{index}"
+        )
+
+    callback_ids = goals["notification_state"]["telegram_water_callback_ids"]
+    assert len(callback_ids) == 100
+    assert callback_ids[0] == "callback-20"
 
 
 def test_calorie_text_deficit_surplus() -> None:

@@ -206,6 +206,30 @@ def set_water_ml_for_day(goals: dict[str, Any], day: date | str, ml: int) -> dic
     return g
 
 
+def add_water_from_telegram_callback(
+    goals: dict[str, Any],
+    day: date | str,
+    ml: int,
+    callback_id: str,
+) -> tuple[dict[str, Any], int, bool]:
+    """Apply one Telegram water callback once, even if Telegram retries it."""
+    g = dict(goals or {})
+    state = _state(g)
+    raw_ids = state.get("telegram_water_callback_ids")
+    seen_ids = [str(value) for value in raw_ids] if isinstance(raw_ids, list) else []
+    safe_callback_id = str(callback_id).strip()[:128]
+    current = water_ml_for_day(g, day)
+    if safe_callback_id and safe_callback_id in seen_ids:
+        return g, current, False
+
+    total = current + max(0, int(ml))
+    g = set_water_ml_for_day(g, day, total)
+    if safe_callback_id:
+        state["telegram_water_callback_ids"] = [*seen_ids, safe_callback_id][-100:]
+        g["notification_state"] = state
+    return g, total, True
+
+
 def water_slots(start: time, end: time, interval_minutes: int) -> list[time]:
     if interval_minutes <= 0:
         interval_minutes = 120
@@ -430,6 +454,7 @@ def due_notifications(
                         else f"water:{now.date().isoformat()}:{slot.strftime('%H:%M')}",
                         "state_values": marks,
                         "meta": {
+                            "date": now.date().isoformat(),
                             "daily_ml": daily_ml,
                             "drunk_ml": drunk,
                             "left_ml": left,
@@ -457,6 +482,7 @@ def due_notifications(
                             "state_key": "water_mark",
                             "state_value": mark,
                             "meta": {
+                                "date": now.date().isoformat(),
                                 "daily_ml": daily_ml,
                                 "drunk_ml": drunk,
                                 "left_ml": left,

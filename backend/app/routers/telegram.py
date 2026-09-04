@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hmac
 import json
+from datetime import date as date_cls
 from pathlib import Path
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
 from loguru import logger
@@ -203,10 +204,20 @@ async def telegram_webhook(
 
     callback = extract_callback_query(update)
     if callback and callback["data"].startswith("si:"):
-        await _handle_supplement_callback(settings, callback)
+        background_tasks.add_task(
+            _process_callback,
+            settings,
+            callback,
+            _handle_supplement_callback,
+        )
         return {"ok": True}
     if callback and callback["data"].startswith("wa:"):
-        await _handle_water_callback(settings, callback)
+        background_tasks.add_task(
+            _process_callback,
+            settings,
+            callback,
+            _handle_water_callback,
+        )
         return {"ok": True}
 
     # Legacy Mini App sendData closes the app and delivers web_app_data here.
@@ -294,12 +305,30 @@ async def telegram_webhook(
     return {"ok": True}
 
 
+async def _process_callback(
+    settings: Settings,
+    callback: dict[str, Any],
+    handler: Callable[[Settings, dict[str, Any]], Awaitable[None]],
+) -> None:
+    """Acknowledge quickly and never let a stale callback poison the webhook queue."""
+    try:
+        await answer_callback_query(
+            settings,
+            callback_query_id=callback["id"],
+            text="Сохраняю…",
+        )
+    except TelegramBotError as exc:
+        logger.warning("telegram_callback_ack_failed kind={} err={}", callback["data"][:2], exc)
+    try:
+        await handler(settings, callback)
+    except Exception as exc:  # noqa: BLE001 - retries must not replay a user action
+        logger.exception("telegram_callback_failed kind={} err={}", callback["data"][:2], exc)
+
+
 async def _handle_supplement_callback(settings: Settings, callback: dict[str, Any]) -> None:
     parts = callback["data"].split(":", 2)
     if len(parts) != 3:
-        await answer_callback_query(
-            settings, callback_query_id=callback["id"], text="Некорректная кнопка"
-        )
+        logger.warning("telegram_supplement_callback_invalid")
         return
     action, raw_id = parts[1], parts[2]
     try:
@@ -307,9 +336,7 @@ async def _handle_supplement_callback(settings: Settings, callback: dict[str, An
 
         intake_id = uuid.UUID(raw_id)
     except ValueError:
-        await answer_callback_query(
-            settings, callback_query_id=callback["id"], text="Приём не найден"
-        )
+        logger.warning("telegram_supplement_callback_invalid_id")
         return
 
     async with AsyncSessionLocal() as session:
@@ -320,15 +347,12 @@ async def _handle_supplement_callback(settings: Settings, callback: dict[str, An
             )
         )
         if user is None:
-            await answer_callback_query(
-                settings, callback_query_id=callback["id"], text="Аккаунт не найден"
-            )
+            logger.warning("telegram_supplement_callback_user_missing")
             return
         if action == "a":
             rows = await supplement_intakes.mark_group(
                 session, user, intake_id, status="taken", source="telegram"
             )
-            answer = "Все добавки отмечены"
         elif action in {"t", "s"}:
             row = await supplement_intakes.mark_intake(
                 session,
@@ -338,15 +362,10 @@ async def _handle_supplement_callback(settings: Settings, callback: dict[str, An
                 source="telegram",
             )
             rows = [row] if row is not None else []
-            answer = "Отмечено: принято" if action == "t" else "Отмечено: пропущено"
         elif action == "z":
             rows = await supplement_intakes.snooze_group(session, user, intake_id, minutes=30)
-            answer = "Напомню через 30 минут"
         else:
             rows = []
-            answer = "Неизвестное действие"
-
-    await answer_callback_query(settings, callback_query_id=callback["id"], text=answer)
     if not rows:
         return
     async with AsyncSessionLocal() as session:
@@ -381,16 +400,13 @@ async def _handle_supplement_callback(settings: Settings, callback: dict[str, An
 
 
 async def _handle_water_callback(settings: Settings, callback: dict[str, Any]) -> None:
+    parts = callback["data"].split(":", 2)
     try:
-        amount = int(callback["data"].split(":", 1)[1])
+        amount = int(parts[1])
     except (IndexError, TypeError, ValueError):
         amount = 0
     if amount not in {250, 500}:
-        await answer_callback_query(
-            settings,
-            callback_query_id=callback["id"],
-            text="Некорректный объём воды",
-        )
+        logger.warning("telegram_water_callback_invalid_amount")
         return
 
     async with AsyncSessionLocal() as session:
@@ -403,11 +419,7 @@ async def _handle_water_callback(settings: Settings, callback: dict[str, Any]) -
             .with_for_update()
         )
         if user is None:
-            await answer_callback_query(
-                settings,
-                callback_query_id=callback["id"],
-                text="Аккаунт не найден",
-            )
+            logger.warning("telegram_water_callback_user_missing")
             return
 
         goals = dict(user.goals or {})
@@ -416,24 +428,35 @@ async def _handle_water_callback(settings: Settings, callback: dict[str, Any]) -
             if isinstance(goals.get("notification_settings"), dict)
             else None
         )
-        today = notification_prefs.local_now(
+        local_today = notification_prefs.local_now(
             str(reminder_settings.get("timezone") or notification_prefs.DEFAULT_TZ)
         ).date()
-        total = notification_prefs.water_ml_for_day(goals, today) + amount
-        user.goals = notification_prefs.set_water_ml_for_day(goals, today, total)
+        water_day = local_today
+        if len(parts) == 3:
+            try:
+                water_day = date_cls.fromisoformat(parts[2])
+            except ValueError:
+                logger.warning("telegram_water_callback_invalid_date")
+                return
+        updated_goals, total, applied = notification_prefs.add_water_from_telegram_callback(
+            goals,
+            water_day,
+            amount,
+            callback["id"],
+        )
+        user.goals = updated_goals
         flag_modified(user, "goals")
         await session.commit()
+
+    if not applied:
+        logger.info("telegram_water_callback_duplicate")
 
     water_settings = reminder_settings.get("water") or {}
     try:
         target = max(500, min(8000, int(water_settings.get("daily_ml") or 2500)))
     except (TypeError, ValueError):
         target = 2500
-    await answer_callback_query(
-        settings,
-        callback_query_id=callback["id"],
-        text=f"Добавлено {amount} мл · сегодня {total} мл",
-    )
+    day_label = "Сегодня" if water_day == local_today else f"За {water_day:%d.%m}"
     try:
         await edit_message_text(
             settings,
@@ -441,12 +464,13 @@ async def _handle_water_callback(settings: Settings, callback: dict[str, Any]) -
             message_id=callback["message_id"],
             text=(
                 "💧 <b>Вода отмечена</b>\n"
-                f"Сегодня: <b>{total} мл</b> из {target} мл."
+                f"{day_label}: <b>{total} мл</b> из {target} мл."
             ),
             reply_markup=water_intake_keyboard(
                 bot_username=settings.bot_username,
                 mini_app_url=resolve_mini_app_url(settings),
                 amount_ml=amount,
+                date=water_day.isoformat(),
             ),
         )
     except TelegramBotError as exc:

@@ -175,6 +175,17 @@ def test_water_keyboard_can_log_or_open_daily_checkin() -> None:
     assert "_fv=" in water_url
 
 
+def test_water_keyboard_binds_callback_to_notification_date() -> None:
+    keyboard = water_intake_keyboard(
+        bot_username="fitness_test_bot",
+        mini_app_url="https://app.example.test",
+        amount_ml=250,
+        date="2026-09-04",
+    )
+
+    assert keyboard["inline_keyboard"][0][0]["callback_data"] == "wa:250:2026-09-04"
+
+
 def test_mini_app_keyboard_prefers_web_app_when_url_set() -> None:
     kb = mini_app_keyboard(
         bot_username="fil_fit_bot",

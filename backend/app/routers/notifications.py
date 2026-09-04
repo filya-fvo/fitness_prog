@@ -431,6 +431,11 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                     text=str(item.get("text") or ""),
                     startapp=str(item.get("startapp") or "home"),
                     water_add_ml=250 if item.get("kind") == "water" else None,
+                    water_date=(
+                        str((item.get("meta") or {}).get("date") or "")
+                        if item.get("kind") == "water"
+                        else None
+                    ),
                     button_text=(
                         "Открыть тренировку"
                         if item.get("kind") == "workout"
