@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     telegram_login_client_id: str = ""
     # Public HTTPS Mini App front (local Tailscale or permanent production host).
     mini_app_url: str = ""
+    # Public API host from the Compose environment. The notification worker uses
+    # it only to restore the same Telegram webhook after a delivery timeout.
+    api_domain: str = ""
     # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
     telegram_webhook_secret: str = ""
     # Comma-separated Telegram usernames (without @) allowed to use admin tools.

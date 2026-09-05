@@ -23,6 +23,7 @@ from app.services.admin_system import NOTIFICATION_STATUS_KEY, WORKER_STATUS_KEY
 from app.services.admin_system_history import collect_and_record_system_status
 from app.services.admin_broadcast_delivery import deliver_batch
 from app.services.telegram_bot import TelegramBotError, send_app_notification, send_workout_reminder
+from app.services.telegram_webhook_watchdog import repair_telegram_webhook
 from app.services.web_push import send_user_web_push
 
 
@@ -81,6 +82,21 @@ async def _claim_dispatch_minute(redis: Any, now: datetime | None = None) -> boo
     return bool(
         await redis.set(
             f"fitness:notifications:dispatch:{minute}",
+            uuid.uuid4().hex,
+            nx=True,
+            ex=180,
+        )
+    )
+
+
+async def _claim_webhook_watchdog(redis: Any, now: datetime | None = None) -> bool:
+    """Keep duplicate worker processes from re-registering the webhook together."""
+    if redis is None:
+        return True
+    minute = (now or datetime.now(UTC)).strftime("%Y%m%d%H%M")
+    return bool(
+        await redis.set(
+            f"fitness:telegram:webhook-watchdog:{minute}",
             uuid.uuid4().hex,
             nx=True,
             ex=180,
@@ -176,6 +192,13 @@ async def snapshot_admin_system_task(ctx: dict[str, Any]) -> dict[str, Any]:
         state="completed" if recorded else "completed_with_errors",
     )
     return {"ok": recorded, "overall_status": status.overall_status}
+
+
+async def repair_telegram_webhook_task(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Recover Telegram delivery after a recent timeout without losing updates."""
+    if not await _claim_webhook_watchdog(ctx.get("redis")):
+        return {"ok": True, "repaired": False, "skipped": "already_checked"}
+    return await repair_telegram_webhook(notification_settings())
 
 
 async def send_timer_finished_task(
@@ -324,6 +347,7 @@ class WorkerSettings:
         send_reminder_task,
         dispatch_scheduled_notifications_task,
         snapshot_admin_system_task,
+        repair_telegram_webhook_task,
         send_timer_finished_task,
         send_broadcast_batch_task,
         send_support_reply_task,
@@ -331,6 +355,7 @@ class WorkerSettings:
     cron_jobs = [
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),
         cron(snapshot_admin_system_task, minute={0, 15, 30, 45}, second={30}),
+        cron(repair_telegram_webhook_task, minute=set(range(0, 60, 2)), second={20}),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

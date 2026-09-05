@@ -660,7 +660,7 @@ volumes не удаляет, но для обновления он не нуже
 | Caddy не получает сертификат | DNS A указывает на VPS; 80/443 разрешены в панели провайдера и UFW; `docker compose logs caddy` |
 | API не стартует | `docker compose logs migrate api`; пароль одинаков в `POSTGRES_PASSWORD` и `DATABASE_URL` |
 | `extension vector is not available` | Должен использоваться pinned image `pgvector/pgvector:0.8.6-pg18-bookworm`, не plain `postgres` |
-| Telegram не отвечает | `BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `getWebhookInfo` через sync-скрипт, публичный `api` HTTPS |
+| Telegram не отвечает | `BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `API_DOMAIN`, `getWebhookInfo` через sync-скрипт, публичный `api` HTTPS. Worker каждые две минуты автоматически перерегистрирует webhook после свежего timeout, не удаляя очередь обновлений. |
 | Email OTP не приходит | SMTP host/port/SSL/login; `EMAIL_OTP_DEV_RETURN_CODE` всё равно оставить `false` |
 | Уведомления не приходят | `worker` Up, Redis `PONG`, VAPID-пара совпадает у API/worker, Telegram webhook принимает callback |
 | Заканчивается диск | `df -h`, размеры `backups/vps`, Docker `docker system df`; сначала выгрузить backup, не удалять volumes |
