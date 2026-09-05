@@ -238,6 +238,26 @@ sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
 ```
 
+API и worker подключены к отдельной dual-stack сети `ipv6_egress`: Telegram Bot
+API в текущей сети Timeweb недоступен по IPv4, но доступен по IPv6. На VPS должен
+быть установлен версионированный sysctl-файл и применены его параметры:
+
+```bash
+install -m 0644 deploy/timeweb/99-fitness-docker-ipv6.conf \
+  /etc/sysctl.d/99-fitness-docker-ipv6.conf
+sysctl --system
+sysctl net.ipv6.conf.all.forwarding net.ipv6.conf.eth0.accept_ra
+```
+
+Ожидаются значения `1` и `2`. `accept_ra=2` обязателен: Timeweb выдаёт default
+IPv6 route через Router Advertisement, и без него маршрут исчезнет после
+включения forwarding. После первого добавления сети проверить исходящий канал:
+
+```bash
+docker compose --env-file backend/.env.production exec -T api \
+  curl -6 -fsS --connect-timeout 5 https://api.telegram.org/ >/dev/null
+```
+
 Если Docker Hub возвращает `429 Too Many Requests`, проверить зеркало:
 
 ```bash

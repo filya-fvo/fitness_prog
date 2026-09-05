@@ -102,6 +102,7 @@ services:
     networks:
       - default
       - ai_internal
+      - ipv6_egress
 
   llm:
     image: ghcr.io/ggml-org/llama.cpp:server@sha256:db8e923e6edc9241ad788979af79543a1e1ba55dbb7d41e62490ef0d0ad3c8e7
@@ -187,6 +188,9 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    networks:
+      - default
+      - ipv6_egress
 
   web:
     build:
@@ -241,3 +245,10 @@ volumes:
 networks:
   ai_internal:
     internal: true
+  # Timeweb currently cannot reach Telegram Bot API over IPv4. Keep dual-stack
+  # outbound traffic isolated to the two services that call external APIs.
+  ipv6_egress:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd42:9b7a:6d31:2::/64

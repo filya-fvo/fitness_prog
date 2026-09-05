@@ -108,7 +108,12 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "./scripts/apply_migrations_vps.sh:/apply-migrations.sh:ro" in compose
     assert "/bin/sh /apply-migrations.sh" in compose
     assert "condition: service_completed_successfully" in compose
+    api_section = compose.split("  api:\n", 1)[1].split("\n  llm:\n", 1)[0]
     worker_section = compose.split("  worker:\n", 1)[1].split("\n  web:\n", 1)[0]
+    assert "- ipv6_egress" in api_section
+    assert "- ipv6_egress" in worker_section
+    assert "  ipv6_egress:\n    enable_ipv6: true" in compose
+    assert "fd42:9b7a:6d31:2::/64" in compose
     assert "healthcheck:" in worker_section
     assert "disable: true" in worker_section
     assert '"80:80"' in compose
@@ -124,6 +129,12 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
         "caddy_data:",
     ):
         assert volume in compose
+
+    ipv6_sysctl = (
+        ROOT / "deploy" / "timeweb" / "99-fitness-docker-ipv6.conf"
+    ).read_text(encoding="utf-8")
+    assert "net.ipv6.conf.all.forwarding = 1" in ipv6_sysctl
+    assert "net.ipv6.conf.eth0.accept_ra = 2" in ipv6_sysctl
 
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "docker compose --env-file backend/.env.production config --quiet" in ci
