@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import httpx
 import pytest
 
 from app.core.config import Settings
@@ -447,3 +448,105 @@ def test_hidden_admin_command_authorization() -> None:
         settings,
         {"chat_id": 99, "user_id": 99, "username": "stranger"},
     )
+
+
+@pytest.mark.asyncio
+async def test_bot_api_prefers_ipv6_without_duplicate_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str | None] = []
+
+    class FakeClient:
+        def __init__(self, *, timeout, transport=None) -> None:
+            del timeout
+            calls.append("ipv6" if transport is not None else None)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, url: str, *, json: dict[str, object]) -> httpx.Response:
+            del json
+            return httpx.Response(
+                200,
+                json={"ok": True},
+                request=httpx.Request("POST", url),
+            )
+
+    monkeypatch.setattr(telegram_bot, "_telegram_ipv6_available", None)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    result = await telegram_bot.bot_api(Settings(bot_token="test-token"), "getMe")
+
+    assert result == {"ok": True}
+    assert len(calls) == 1
+    assert telegram_bot._telegram_ipv6_available is True
+
+
+@pytest.mark.asyncio
+async def test_bot_api_falls_back_only_after_ipv6_connect_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+
+    class FakeClient:
+        def __init__(self, *, timeout, transport=None) -> None:
+            del timeout
+            self.prefer_ipv6 = transport is not None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, url: str, *, json: dict[str, object]) -> httpx.Response:
+            nonlocal attempts
+            del json
+            attempts += 1
+            request = httpx.Request("POST", url)
+            if self.prefer_ipv6:
+                raise httpx.ConnectTimeout("IPv6 unavailable", request=request)
+            return httpx.Response(200, json={"ok": True}, request=request)
+
+    monkeypatch.setattr(telegram_bot, "_telegram_ipv6_available", None)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    result = await telegram_bot.bot_api(Settings(bot_token="test-token"), "getMe")
+
+    assert result == {"ok": True}
+    assert attempts == 2
+    assert telegram_bot._telegram_ipv6_available is False
+
+
+@pytest.mark.asyncio
+async def test_bot_api_does_not_retry_unknown_ipv6_delivery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+
+    class FakeClient:
+        def __init__(self, *, timeout, transport=None) -> None:
+            del timeout, transport
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, url: str, *, json: dict[str, object]) -> httpx.Response:
+            nonlocal attempts
+            del json
+            attempts += 1
+            raise httpx.ReadTimeout("Unknown delivery", request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(telegram_bot, "_telegram_ipv6_available", None)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    with pytest.raises(telegram_bot.TelegramBotError):
+        await telegram_bot.bot_api(Settings(bot_token="test-token"), "sendMessage")
+
+    assert attempts == 1

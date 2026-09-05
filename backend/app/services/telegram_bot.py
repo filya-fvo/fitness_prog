@@ -19,6 +19,7 @@ class TelegramBotError(Exception):
 
 
 TELEGRAM_ALLOWED_UPDATES = ["message", "callback_query"]
+_telegram_ipv6_available: bool | None = None
 
 
 def _token_ready(settings: Settings) -> bool:
@@ -44,17 +45,43 @@ async def bot_api(
     timeout: float = 20.0,
 ) -> dict[str, Any]:
     """Call Telegram Bot API method. Raises TelegramBotError on failure."""
+    global _telegram_ipv6_available
+
     if not _token_ready(settings):
         raise TelegramBotError("BOT_TOKEN is not configured")
 
     url = f"https://api.telegram.org/bot{settings.bot_token}/{method}"
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.post(url, json=payload or {})
-            data = resp.json()
-    except (httpx.HTTPError, ValueError) as exc:
-        # Keep transport outages retryable by the notification dispatcher.
-        raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+    attempts = (True, False) if _telegram_ipv6_available is not False else (False,)
+    resp: httpx.Response | None = None
+    data: Any = None
+    for prefer_ipv6 in attempts:
+        client_timeout = httpx.Timeout(timeout, connect=min(timeout, 2.0))
+        transport = (
+            httpx.AsyncHTTPTransport(local_address="::") if prefer_ipv6 else None
+        )
+        try:
+            async with httpx.AsyncClient(
+                timeout=client_timeout,
+                transport=transport,
+            ) as client:
+                resp = await client.post(url, json=payload or {})
+                data = resp.json()
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            if prefer_ipv6:
+                # A failed connect cannot have delivered the POST, so IPv4 fallback
+                # is safe. Never retry read/protocol failures: delivery is unknown.
+                _telegram_ipv6_available = False
+                continue
+            raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            # Keep transport outages retryable by the notification dispatcher.
+            raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+        if prefer_ipv6:
+            _telegram_ipv6_available = True
+        break
+
+    if resp is None or not isinstance(data, dict):
+        raise TelegramBotError("Telegram returned an invalid response")
     if resp.status_code >= 400 or not data.get("ok"):
         logger.error(
             "telegram_api_failed method={} status={} body={}",
