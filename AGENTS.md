@@ -1,6 +1,6 @@
 # AGENTS.md — карта и правила Fitness Mini App
 
-Обновлено: 2026-09-04. Этот файл — первая точка входа для любого агента,
+Обновлено: 2026-09-05. Этот файл — первая точка входа для любого агента,
 который меняет проект. Он описывает фактическую архитектуру по текущему коду,
 а не первоначальный план разработки.
 
@@ -151,6 +151,9 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/services/admin_exercises.py` — поиск, фильтры, media preflight и
   безопасный архив каталога; `admin_exercise_import.py` — проверенный по отпечатку
   транзакционный JSON-import до 500 упражнений с итоговым audit.
+- `backend/app/services/admin_exercise_media.py` и публичный router
+  `exercise_media.py` — контролируемая загрузка изображений/GIF в PostgreSQL,
+  проверка формата и неизменяемая раздача по непрогнозируемому UUID.
 - `backend/app/services/admin_user_detail.py`, `admin_user_actions.py`, `admin_user_export.py` — подробная
   карточка пользователя, безопасные действия и allowlist выгрузки без OTP/Web Push секретов.
 - `backend/app/services/admin_broadcasts.py`, `admin_broadcast_audience.py`,
@@ -233,7 +236,7 @@ services → SQLAlchemy models → PostgreSQL
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts` | `daily_metrics` router/schema/service/model, migration 17 | daily metrics + habits tests |
 | Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
-| Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx` | `exercises.py`, `exercise_service.py`, seed, rebuild/audit/thumbnail scripts | media audit, catalog quality, progression unit + recovery E2E |
+| Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx`, `features/admin-exercises` | `exercises.py`, `exercise_service.py`, `admin_exercise_media.py`, `exercise_media_assets`, seed, rebuild/audit/thumbnail scripts | media upload/audit, media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |
 | Прогресс/графики | `ProgressPage.tsx`, `WeeklyOverview.tsx`, progress utils | workout/nutrition/daily metric range endpoints | weekly/progress tests + visual/mobile checks |
 | Замеры тела | `features/measurements`, `api/bodyMeasurements.ts`, `db/bodyMeasurements.ts`, `db/syncQueue.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests + offline reconnect E2E |

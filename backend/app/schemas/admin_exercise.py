@@ -11,6 +11,7 @@ from app.schemas.exercise import ExerciseCreate, ExerciseResponse
 
 MediaQuality = Literal["ready", "unverified", "missing", "rejected"]
 MediaField = Literal["video_url", "animation_url", "thumbnail_url"]
+UploadMediaField = Literal["animation_url", "thumbnail_url"]
 
 
 class AdminExerciseItem(ExerciseResponse):
@@ -53,6 +54,11 @@ class ExerciseMediaCheckResponse(BaseModel):
     size_bytes: int | None = None
     status: Literal["ok", "warning", "error"]
     message: str
+
+
+class ExerciseMediaUploadResponse(BaseModel):
+    url: str
+    exercise: AdminExerciseItem
 
 
 class ExercisePreflightRequest(ExerciseCreate):

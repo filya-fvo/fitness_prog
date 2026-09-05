@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.models.exercise import Exercise
+from app.models.exercise_media import ExerciseMediaAsset
 from app.models.program import Program
 from app.models.workout import Workout, WorkoutSet
 from app.schemas.admin_exercise import (
@@ -43,8 +44,13 @@ def media_quality(exercise: Exercise) -> MediaQuality:
     urls = [exercise.animation_url, exercise.video_url, exercise.thumbnail_url]
     if not any(value and value.strip() for value in urls):
         return "missing"
-    if "curated" in tags or "media:verified" in tags or (
-        exercise.animation_url and exercise.animation_url.startswith("/exercise-gifs/")
+    if (
+        "curated" in tags
+        or "media:verified" in tags
+        or any(
+            value and value.startswith(("/exercise-gifs/", "/exercise-media/"))
+            for value in (exercise.animation_url, exercise.thumbnail_url)
+        )
     ):
         return "ready"
     return "unverified"
@@ -61,6 +67,8 @@ def _quality_filter(value: MediaQuality):
         Exercise.tags.contains(["curated"]),
         Exercise.tags.contains(["media:verified"]),
         Exercise.animation_url.like("/exercise-gifs/%"),
+        Exercise.animation_url.like("/exercise-media/%"),
+        Exercise.thumbnail_url.like("/exercise-media/%"),
     )
     if value == "rejected":
         return rejected
@@ -168,7 +176,9 @@ async def list_admin_exercises(
     if quality:
         filters.append(_quality_filter(quality))
 
-    total = int(await session.scalar(select(func.count()).select_from(Exercise).where(*filters)) or 0)
+    total = int(
+        await session.scalar(select(func.count()).select_from(Exercise).where(*filters)) or 0
+    )
     result = await session.execute(
         select(Exercise)
         .where(*filters)
@@ -243,7 +253,9 @@ def duplicate_candidates(
         ratio = SequenceMatcher(None, target, normalize_exercise_name(item.name_ru)).ratio()
         if ratio >= 0.72:
             candidates.append(
-                ExerciseDuplicateCandidate(id=item.id, name_ru=item.name_ru, similarity=round(ratio, 3))
+                ExerciseDuplicateCandidate(
+                    id=item.id, name_ru=item.name_ru, similarity=round(ratio, 3)
+                )
             )
     return sorted(candidates, key=lambda item: (-item.similarity, item.name_ru))[:8]
 
@@ -279,13 +291,48 @@ async def check_media(
     settings: Settings,
     *,
     client: httpx.AsyncClient | None = None,
+    session: AsyncSession | None = None,
 ) -> ExerciseMediaCheckResponse:
     original = request.url.strip()
+    if original.startswith("/exercise-media/"):
+        try:
+            asset_id = uuid.UUID(original.removeprefix("/exercise-media/").split("?", 1)[0])
+        except ValueError:
+            asset_id = None
+        asset = None
+        if asset_id is not None and session is not None:
+            asset = await session.scalar(
+                select(ExerciseMediaAsset).where(
+                    ExerciseMediaAsset.id == asset_id,
+                    ExerciseMediaAsset.field == request.field,
+                )
+            )
+        if asset is None:
+            return ExerciseMediaCheckResponse(
+                field=request.field,
+                url=original,
+                available=False,
+                status="error",
+                message="Загруженное медиа не найдено или привязано к другому полю.",
+            )
+        return ExerciseMediaCheckResponse(
+            field=request.field,
+            url=original,
+            preview_url=original,
+            available=True,
+            mime_type=asset.mime_type,
+            size_bytes=asset.size_bytes,
+            status="ok",
+            message="Загруженное медиа доступно и прошло проверку.",
+        )
     absolute = original
     if original.startswith("/"):
         if not settings.mini_app_url:
             return ExerciseMediaCheckResponse(
-                field=request.field, url=original, available=False, status="error",
+                field=request.field,
+                url=original,
+                available=False,
+                status="error",
                 message="Публичный адрес приложения не настроен.",
             )
         absolute = urljoin(settings.mini_app_url.rstrip("/") + "/", original.lstrip("/"))
@@ -293,13 +340,21 @@ async def check_media(
     host = (parsed.hostname or "").casefold()
     if parsed.scheme != "https" or not host or not await _host_is_public(host):
         return ExerciseMediaCheckResponse(
-            field=request.field, url=original, preview_url=absolute if parsed.scheme == "https" else None,
-            available=False, status="error", message="Разрешены только публичные HTTPS-адреса.",
+            field=request.field,
+            url=original,
+            preview_url=absolute if parsed.scheme == "https" else None,
+            available=False,
+            status="error",
+            message="Разрешены только публичные HTTPS-адреса.",
         )
     if request.field == "video_url" and host in _YOUTUBE_HOSTS:
         return ExerciseMediaCheckResponse(
-            field=request.field, url=original, preview_url=absolute, available=True,
-            mime_type="text/html", status="warning",
+            field=request.field,
+            url=original,
+            preview_url=absolute,
+            available=True,
+            mime_type="text/html",
+            status="warning",
             message="YouTube-ссылка доступна для предпросмотра; размер файла не проверяется.",
         )
 
@@ -322,17 +377,33 @@ async def check_media(
             message = "Тип файла не подходит для выбранного поля."
         else:
             return ExerciseMediaCheckResponse(
-                field=request.field, url=original, preview_url=absolute, available=True,
-                mime_type=mime, size_bytes=size, status="ok", message="Медиа доступно и прошло проверку.",
+                field=request.field,
+                url=original,
+                preview_url=absolute,
+                available=True,
+                mime_type=mime,
+                size_bytes=size,
+                status="ok",
+                message="Медиа доступно и прошло проверку.",
             )
         return ExerciseMediaCheckResponse(
-            field=request.field, url=original, preview_url=absolute, available=False,
-            mime_type=mime, size_bytes=size, status="error", message=message,
+            field=request.field,
+            url=original,
+            preview_url=absolute,
+            available=False,
+            mime_type=mime,
+            size_bytes=size,
+            status="error",
+            message=message,
         )
     except (httpx.HTTPError, ValueError):
         return ExerciseMediaCheckResponse(
-            field=request.field, url=original, preview_url=absolute, available=False,
-            status="error", message="Не удалось проверить доступность медиа.",
+            field=request.field,
+            url=original,
+            preview_url=absolute,
+            available=False,
+            status="error",
+            message="Не удалось проверить доступность медиа.",
         )
     finally:
         if owns_client:
@@ -349,12 +420,19 @@ async def preflight(
         for field in ("video_url", "animation_url", "thumbnail_url")
         if (value := getattr(body, field))
     ]
+    media_by_field: dict[str, ExerciseMediaCheckResponse] = {}
+    external_requests: list[ExerciseMediaCheckRequest] = []
+    for item in media_requests:
+        if item.url.strip().startswith("/exercise-media/"):
+            media_by_field[item.field] = await check_media(item, settings, session=session)
+        else:
+            external_requests.append(item)
     async with httpx.AsyncClient(timeout=6, follow_redirects=False) as client:
-        media = list(
-            await asyncio.gather(
-                *(check_media(item, settings, client=client) for item in media_requests)
-            )
+        external_results = await asyncio.gather(
+            *(check_media(item, settings, client=client) for item in external_requests)
         )
+    media_by_field.update({item.field: item for item in external_results})
+    media = [media_by_field[item.field] for item in media_requests]
     duplicates = await find_duplicates(session, body.name_ru, exclude_id=body.exclude_id)
     errors = [item.message for item in media if item.status == "error"]
     if any(item.similarity == 1 for item in duplicates):

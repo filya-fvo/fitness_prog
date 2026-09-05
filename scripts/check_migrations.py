@@ -46,6 +46,7 @@ REQUIRED_FILES = [
     "20260901000036_custom_friend_competitions.sql",
     "20260902000037_fix_custom_competition_metric.sql",
     "20260903000038_curate_dumbbell_weight_rules.sql",
+    "20260905000039_exercise_media_assets.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -76,6 +77,7 @@ REQUIRED_TABLES = [
     "competition_participants",
     "global_competition_seasons",
     "global_competition_participants",
+    "exercise_media_assets",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -124,6 +126,8 @@ REQUIRED_SNIPPETS = [
     "'relative_strength'",
     "'custom'",
     "'Разгибания гантели из-за головы'",
+    "exercise_media_size_matches",
+    "field <> 'thumbnail_url' OR size_bytes <= 5242880",
 ]
 
 

@@ -4,6 +4,15 @@ import axios from "axios";
 // Timeweb image. Set VITE_API_URL only when the API is intentionally split out.
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
+/** Resolve API-owned immutable media when frontend and API use separate origins. */
+export function resolveApiAssetUrl(
+  value: string | null | undefined,
+  apiUrl = API_URL,
+): string | null | undefined {
+  if (!value?.startsWith("/exercise-media/") || !apiUrl) return value;
+  return `${apiUrl.replace(/\/$/, "")}${value}`;
+}
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {

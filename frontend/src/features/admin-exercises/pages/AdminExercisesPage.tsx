@@ -9,11 +9,13 @@ import {
   listAdminExercises,
   preflightAdminExercise,
   restoreAdminExercise,
+  uploadAdminExerciseMedia,
   updateAdminExercise,
   type AdminExercise,
   type AdminExerciseFilters,
   type AdminExerciseOptions,
   type ExercisePreflight,
+  type ExerciseMediaUploadField,
   type MediaQuality,
   type WeightRule,
 } from "@/api/adminExercises";
@@ -212,6 +214,32 @@ export function AdminExercisesPage() {
     }
   }
 
+  async function uploadMedia(field: ExerciseMediaUploadField, file: File) {
+    if (!editing) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await uploadAdminExerciseMedia(editing.id, field, file);
+      setEditing(result.exercise);
+      setItems((current) => current.map((item) => (
+        item.id === result.exercise.id ? result.exercise : item
+      )));
+      setDraft((current) => ({
+        ...current,
+        animationUrl: field === "animation_url" ? result.url : current.animationUrl,
+        thumbnailUrl: field === "thumbnail_url" ? result.url : current.thumbnailUrl,
+        mediaSource: "none",
+      }));
+      setPreflight(null);
+      setNotice("Медиа загружено и привязано к упражнению.");
+    } catch (reason) {
+      setError(toUserMessage(reason, "Не удалось загрузить медиа упражнения."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function archive(item: AdminExercise) {
     const uses = item.workout_uses + item.program_uses;
     const warning = uses
@@ -268,7 +296,7 @@ export function AdminExercisesPage() {
       {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
       {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
 
-      {!filters.archived ? <ExerciseEditorForm draft={draft} options={options} editing={Boolean(editing)} busy={busy} preflight={preflight} onChange={(next) => { setDraft(next); setPreflight(null); }} onCheck={() => void check()} onSave={() => void save()} onCancel={() => void cancelEdit()} /> : null}
+      {!filters.archived ? <ExerciseEditorForm draft={draft} options={options} editing={Boolean(editing)} busy={busy} preflight={preflight} onChange={(next) => { setDraft(next); setPreflight(null); }} onCheck={() => void check()} onSave={() => void save()} onUploadMedia={uploadMedia} onCancel={() => void cancelEdit()} /> : null}
 
       <div className="my-5 space-y-3 rounded-2xl bg-tg-secondary p-4">
         <div className="flex items-center justify-between gap-2"><h2 className="font-semibold">Каталог</h2><span className="text-xs text-tg-hint">{total} упражнений</span></div>

@@ -73,12 +73,37 @@ test("admin edits exercise only after server preflight", async ({ page }) => {
       body: JSON.stringify({ ...exercise, ...body, updated_at: "2026-08-28T07:00:00Z" }),
     });
   });
+  let uploaded = false;
+  await page.route(`**/admin/exercises/${exercise.id}/media`, async (route) => {
+    uploaded = route.request().postDataBuffer()?.includes(Buffer.from("exercise-image")) ?? false;
+    const mediaUrl = "/exercise-media/22222222-2222-4222-8222-222222222222";
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        field: "animation_url",
+        url: mediaUrl,
+        mime_type: "image/png",
+        size_bytes: 14,
+        width: 320,
+        height: 240,
+        frame_count: 1,
+        exercise: { ...exercise, animation_url: mediaUrl, media_quality: "ready" },
+      }),
+    });
+  });
 
   await page.goto("/admin/exercises");
   await expect(page.getByRole("heading", { name: "Каталог" })).toBeVisible();
   await expect(page.getByText("Используется: тренировки 2, программы 1")).toBeVisible();
 
   await page.getByRole("button", { name: "Изменить" }).click();
+  await page.getByLabel("Загрузить основное медиа").setInputFiles({
+    name: "exercise.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("exercise-image"),
+  });
+  await expect(page.getByText("Медиа загружено и привязано к упражнению.")).toBeVisible();
+  expect(uploaded).toBe(true);
   await page.getByLabel("Описание").fill("Новое описание");
   await page.getByRole("button", { name: "Проверить и сохранить" }).click();
 

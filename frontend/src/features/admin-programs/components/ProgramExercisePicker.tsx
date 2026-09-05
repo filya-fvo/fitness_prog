@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { resolveApiAssetUrl } from "@/api/client";
 import { listAdminExercises, type AdminExercise } from "@/api/adminExercises";
 import { toUserMessage } from "@/utils/errors";
 
@@ -56,7 +57,8 @@ export function ProgramExercisePicker({ selectedIds, onPick }: Props) {
         <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
           {items.map((item) => {
             const selected = selectedIds.has(item.id);
-            const media = item.thumbnail_url || item.animation_url;
+            const rawMedia = item.thumbnail_url || item.animation_url;
+            const media = resolveApiAssetUrl(rawMedia) ?? rawMedia;
             return (
               <li key={item.id} className="flex items-center gap-3 rounded-xl bg-tg-secondary p-2">
                 {media ? (

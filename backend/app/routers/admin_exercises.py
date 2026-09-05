@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -22,12 +22,20 @@ from app.schemas.admin_exercise import (
     ExerciseImportPreviewResponse,
     ExerciseMediaCheckRequest,
     ExerciseMediaCheckResponse,
+    ExerciseMediaUploadResponse,
     ExercisePreflightRequest,
     ExercisePreflightResponse,
     MediaQuality,
+    UploadMediaField,
 )
 from app.schemas.exercise import ExerciseCreate, ExerciseUpdate
-from app.services import admin_audit, admin_exercise_import, admin_exercises, exercise_service
+from app.services import (
+    admin_audit,
+    admin_exercise_import,
+    admin_exercise_media,
+    admin_exercises,
+    exercise_service,
+)
 
 router = APIRouter(prefix="/admin/exercises", tags=["admin-exercises"])
 
@@ -75,9 +83,10 @@ async def options(
 async def media_check(
     body: ExerciseMediaCheckRequest,
     settings: Settings = Depends(get_settings),
+    session: AsyncSession = Depends(get_db),
     _: None = Depends(require_system_admin),
 ) -> ExerciseMediaCheckResponse:
-    return await admin_exercises.check_media(body, settings)
+    return await admin_exercises.check_media(body, settings, session=session)
 
 
 @router.post("/preflight", response_model=ExercisePreflightResponse)
@@ -133,6 +142,28 @@ def _item(exercise, *, workout_uses: int = 0, program_uses: int = 0) -> AdminExe
     )
 
 
+def _upload_error(exc: admin_exercise_media.ExerciseMediaUploadError) -> HTTPException:
+    details = {
+        "empty_image": "Файл изображения пуст",
+        "image_too_large": "Файл превышает допустимый размер",
+        "invalid_image": "Файл повреждён или не является изображением",
+        "unsupported_image": "Для основного медиа подходят GIF, WebP, PNG и JPEG; для миниатюры — WebP, PNG и JPEG",
+        "invalid_dimensions": "Размер изображения не должен превышать 4096×4096 пикселей",
+        "too_many_frames": "В анимации должно быть не более 600 кадров",
+        "idempotency_conflict": "Этот ключ загрузки уже использован для другого файла",
+    }
+    code = (
+        status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        if str(exc) == "image_too_large"
+        else status.HTTP_422_UNPROCESSABLE_ENTITY
+    )
+    if str(exc) == "unsupported_image":
+        code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+    if str(exc) == "idempotency_conflict":
+        code = status.HTTP_409_CONFLICT
+    return HTTPException(status_code=code, detail=details.get(str(exc), "Некорректный файл медиа"))
+
+
 @router.get("/{exercise_id}", response_model=AdminExerciseItem)
 async def get_exercise(
     exercise_id: uuid.UUID,
@@ -146,6 +177,42 @@ async def get_exercise(
         raise HTTPException(status_code=404, detail="Упражнение не найдено")
     workout_uses, program_uses = await admin_exercises.usage_counts(session, exercise_id)
     return _item(exercise, workout_uses=workout_uses, program_uses=program_uses)
+
+
+@router.post(
+    "/{exercise_id}/media",
+    response_model=ExerciseMediaUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_media(
+    exercise_id: uuid.UUID,
+    image: UploadFile = File(...),
+    field: UploadMediaField = Form(...),
+    idempotency_key: uuid.UUID = Form(...),
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> ExerciseMediaUploadResponse:
+    exercise = await exercise_service.get_exercise(session, exercise_id)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Упражнение не найдено")
+    try:
+        media = await admin_exercise_media.read_upload(image, field)
+        await admin_exercise_media.attach_media(
+            session,
+            exercise,
+            field=field,
+            idempotency_key=idempotency_key,
+            media=media,
+            audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+        )
+    except admin_exercise_media.ExerciseMediaUploadError as exc:
+        raise _upload_error(exc) from exc
+    workout_uses, program_uses = await admin_exercises.usage_counts(session, exercise_id)
+    return ExerciseMediaUploadResponse(
+        url=str(getattr(exercise, field)),
+        exercise=_item(exercise, workout_uses=workout_uses, program_uses=program_uses),
+    )
 
 
 @router.post("", response_model=AdminExerciseItem, status_code=status.HTTP_201_CREATED)

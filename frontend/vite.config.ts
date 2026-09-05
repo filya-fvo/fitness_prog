@@ -77,6 +77,7 @@ export default defineConfig({
       return {
         "/auth": { ...toApi },
         "/exercises": { ...toApi },
+        "/exercise-media": { ...toApi },
         "/programs": { ...toApi },
         "/workouts": { ...toApi },
         "/users": { ...toApi },

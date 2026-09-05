@@ -150,6 +150,7 @@ docker compose --env-file backend/.env.production exec db psql -U fitness -d fit
 | `users` | аккаунты, профиль, цели и настройки |
 | `programs` | каталог тренировочных программ |
 | `exercises` | каталог упражнений и ссылки на медиа |
+| `exercise_media_assets` | загруженные администраторами изображения упражнений; входят в PostgreSQL backup |
 | `workouts` | тренировки пользователей и их состояние |
 | `workout_sets` | выполненные подходы внутри тренировок |
 | `workout_plan_overrides` | замены упражнений, подготовленные до старта |

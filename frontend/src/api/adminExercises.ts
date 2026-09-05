@@ -46,6 +46,11 @@ const mediaCheckSchema = z.object({
   message: z.string(),
 });
 
+const mediaUploadSchema = z.object({
+  url: z.string().min(1),
+  exercise: adminExerciseSchema,
+});
+
 const preflightSchema = z.object({
   valid: z.boolean(),
   media: z.array(mediaCheckSchema),
@@ -78,6 +83,7 @@ export type ExercisePreflight = z.infer<typeof preflightSchema>;
 export type ExerciseImportPreview = z.infer<typeof importPreviewSchema>;
 export type MediaQuality = z.infer<typeof mediaQualitySchema>;
 export type WeightRule = z.infer<typeof weightRuleSchema>;
+export type ExerciseMediaUploadField = "animation_url" | "thumbnail_url";
 
 export type AdminExercisePayload = {
   name_ru: string;
@@ -168,6 +174,19 @@ export async function archiveAdminExercise(id: string): Promise<void> {
 export async function restoreAdminExercise(id: string): Promise<AdminExercise> {
   const { data } = await apiClient.post(`/admin/exercises/${id}/restore`);
   return adminExerciseSchema.parse(data);
+}
+
+export async function uploadAdminExerciseMedia(
+  id: string,
+  field: ExerciseMediaUploadField,
+  image: File,
+) {
+  const form = new FormData();
+  form.append("field", field);
+  form.append("idempotency_key", crypto.randomUUID());
+  form.append("image", image);
+  const { data } = await apiClient.post(`/admin/exercises/${id}/media`, form);
+  return mediaUploadSchema.parse(data);
 }
 
 export async function previewExerciseImport(items: Array<Record<string, unknown>>) {

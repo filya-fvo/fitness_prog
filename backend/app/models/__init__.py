@@ -8,6 +8,7 @@ from app.models.body_measurement import BodyMeasurement
 from app.models.daily_metric import DailyMetric
 from app.models.email_otp import EmailOtpCode
 from app.models.exercise import Exercise
+from app.models.exercise_media import ExerciseMediaAsset
 from app.models.global_competition import GlobalCompetitionParticipant, GlobalCompetitionSeason
 from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.nutrition import NutritionLog, NutritionProduct
@@ -23,6 +24,7 @@ __all__ = [
     "User",
     "EmailOtpCode",
     "Exercise",
+    "ExerciseMediaAsset",
     "GlobalCompetitionSeason",
     "GlobalCompetitionParticipant",
     "Invite",

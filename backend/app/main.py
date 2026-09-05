@@ -27,6 +27,7 @@ from app.routers import auth as auth_router
 from app.routers import body_measurements as body_measurements_router
 from app.routers import daily_metrics as daily_metrics_router
 from app.routers import exercises as exercises_router
+from app.routers import exercise_media as exercise_media_router
 from app.routers import invites as invites_router
 from app.routers import notifications as notifications_router
 from app.routers import nutrition as nutrition_router
@@ -92,6 +93,7 @@ app.include_router(admin_exercises_router.router)
 app.include_router(admin_system_router.router)
 app.include_router(admin_support_router.router)
 app.include_router(admin_user_detail_router.router)
+app.include_router(exercise_media_router.router)
 app.include_router(exercises_router.router)
 app.include_router(invites_router.router)
 app.include_router(programs_router.router)

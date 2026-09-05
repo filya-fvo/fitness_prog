@@ -1,4 +1,11 @@
-import type { AdminExerciseOptions, ExercisePreflight } from "@/api/adminExercises";
+import type { ChangeEvent } from "react";
+
+import type {
+  AdminExerciseOptions,
+  ExerciseMediaUploadField,
+  ExercisePreflight,
+} from "@/api/adminExercises";
+import { resolveApiAssetUrl } from "@/api/client";
 
 import type { ExerciseDraft } from "../exerciseDraft";
 
@@ -11,6 +18,7 @@ type Props = {
   onChange: (next: ExerciseDraft) => void;
   onCheck: () => void;
   onSave: () => void;
+  onUploadMedia: (field: ExerciseMediaUploadField, file: File) => Promise<void>;
   onCancel: () => void;
 };
 
@@ -26,12 +34,22 @@ export function ExerciseEditorForm({
   onChange,
   onCheck,
   onSave,
+  onUploadMedia,
   onCancel,
 }: Props) {
   const set = <K extends keyof ExerciseDraft>(key: K, value: ExerciseDraft[K]) => {
     onChange({ ...draft, [key]: value });
   };
-  const preview = draft.animationUrl.trim() || draft.thumbnailUrl.trim();
+  const rawPreview = draft.animationUrl.trim() || draft.thumbnailUrl.trim();
+  const preview = resolveApiAssetUrl(rawPreview) ?? rawPreview;
+  const upload = async (
+    field: ExerciseMediaUploadField,
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file) await onUploadMedia(field, file);
+  };
 
   return (
     <div className="space-y-4 rounded-2xl bg-tg-secondary p-4">
@@ -110,6 +128,29 @@ export function ExerciseEditorForm({
       <label className={labelClass}>Видео
         <input value={draft.videoUrl} onChange={(event) => set("videoUrl", event.target.value)} className={inputClass} placeholder="https://…" maxLength={2000} />
       </label>
+
+      <div className="grid gap-3 rounded-xl bg-tg-bg p-3 sm:grid-cols-2">
+        <label className={labelClass}>Загрузить основное медиа
+          <input
+            type="file"
+            accept="image/gif,image/webp,image/png,image/jpeg"
+            disabled={!editing || busy}
+            onChange={(event) => void upload("animation_url", event)}
+            className="min-h-11 w-full text-sm file:mr-2 file:min-h-11 file:rounded-lg file:border-0 file:bg-tg-button file:px-3 file:text-tg-button-text disabled:opacity-50"
+          />
+          <span>GIF, WebP, PNG или JPEG · до 25 МБ.</span>
+        </label>
+        <label className={labelClass}>Загрузить миниатюру
+          <input
+            type="file"
+            accept="image/webp,image/png,image/jpeg"
+            disabled={!editing || busy}
+            onChange={(event) => void upload("thumbnail_url", event)}
+            className="min-h-11 w-full text-sm file:mr-2 file:min-h-11 file:rounded-lg file:border-0 file:bg-tg-button file:px-3 file:text-tg-button-text disabled:opacity-50"
+          />
+          <span>{editing ? "WebP, PNG или JPEG · до 5 МБ." : "Сначала сохраните упражнение."}</span>
+        </label>
+      </div>
 
       {preview ? (
         <div className="overflow-hidden rounded-xl bg-tg-bg p-3">

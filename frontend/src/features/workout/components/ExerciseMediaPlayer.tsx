@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { resolveApiAssetUrl } from "@/api/client";
 import { trackEvent } from "@/lib/analytics";
 import type { Exercise } from "@/types/workout";
 
@@ -33,7 +34,7 @@ function resolveLocalMedia(url: string | null | undefined): string | null {
   if (!u) return null;
   // Local public path or absolute URL (gif/webp/png/jpg/jpeg)
   if (/^https?:\/\//i.test(u) || u.startsWith("/")) {
-    return u;
+    return resolveApiAssetUrl(u) ?? null;
   }
   return null;
 }
@@ -145,7 +146,7 @@ export function ExerciseMediaPlayer({
           {!showMedia ? (
             exercise.thumbnail_url ? (
               <img
-                src={exercise.thumbnail_url}
+                src={resolveApiAssetUrl(exercise.thumbnail_url) ?? undefined}
                 alt={exercise.name_ru}
                 className={`w-full object-cover ${heightClass}`}
               />
@@ -207,7 +208,7 @@ export function ExerciseMediaPlayer({
             <video
               className={`w-full rounded-xl bg-black object-contain ${heightClass}`}
               src={exercise.video_url ?? undefined}
-              poster={mediaUrl ?? exercise.thumbnail_url ?? undefined}
+              poster={mediaUrl ?? resolveApiAssetUrl(exercise.thumbnail_url) ?? undefined}
               controls
               playsInline
               onPlay={() =>

@@ -44,8 +44,9 @@ const limits = {
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
   totalJsGzip: 483_000,
   productJsGzip: 432_000,
-  // Saved filters, group export and the program editor remain isolated in admin routes.
-  adminJsGzip: 51_000,
+  // Saved filters, group export, program editor and controlled exercise-media upload
+  // remain isolated in admin routes. Product-route and total limits stay unchanged.
+  adminJsGzip: 51_500,
   largestJsGzip: 140_000,
 };
 const failures = [];
