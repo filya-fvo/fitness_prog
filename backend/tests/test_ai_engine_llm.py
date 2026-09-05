@@ -127,7 +127,7 @@ async def test_configured_ai_reports_local_source() -> None:
     assert reply == "Короткий локальный ответ"
     assert source == "local"
     request = FakeAsyncClient.requests[0]
-    assert request["json"]["max_tokens"] == 160
+    assert request["json"]["max_tokens"] == 64
     assert float(FakeAsyncClient.init_kwargs[0]["timeout"]) <= 35
 
 
@@ -229,7 +229,7 @@ def test_chat_prompt_bounds_large_runtime_context() -> None:
         history=[{"role": "user", "content": "история " * 1_000}],
     )
 
-    assert len(prompt) < 5_000
+    assert len(prompt) < 2_500
     assert "…" in prompt
 
 

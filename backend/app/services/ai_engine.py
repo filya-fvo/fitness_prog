@@ -202,7 +202,7 @@ async def _call_configured_ai(
         settings,
         instructions,
         user_prompt,
-        max_tokens=160,
+        max_tokens=64,
         timeout_seconds=35,
         queue_timeout_seconds=1,
     )
@@ -267,20 +267,20 @@ def _build_chat_prompt(
         content = item["content"].strip()
         if item["role"] == "assistant" and _looks_like_context_echo(content, app_context):
             continue
-        history_lines.append(f"{item['role']}: {content[:450]}")
+        history_lines.append(f"{item['role']}: {content[:200]}")
     history_block = "\n".join(history_lines) or "История этого диалога пуста."
     return (
         "ЗАДАЧА: ответь на последний вопрос пользователя.\n\n"
         "<application_context>\n"
-        f"{_bounded_context(app_context, max_chars=1_800)}\n"
+        f"{_bounded_context(app_context, max_chars=700)}\n"
         "</application_context>\n\n"
         "<catalog_context>\n"
-        f"{_bounded_context(catalog_context, max_chars=600)}\n"
+        f"{_bounded_context(catalog_context, max_chars=250)}\n"
         "</catalog_context>\n\n"
         "<conversation_history>\n"
-        f"{_bounded_context(history_block, max_chars=700)}\n"
+        f"{_bounded_context(history_block, max_chars=250)}\n"
         "</conversation_history>\n\n"
-        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1_200)}\n"
+        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=600)}\n"
         "Начни сразу с полезного ответа на этот вопрос. Не пересказывай контекст."
     )
 
@@ -442,12 +442,12 @@ async def analyze_progress(
             AIQueryDomain.STRENGTH,
         },
     )
-    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=1_800)}"
+    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=700)}"
     prompt = (
         "Ответь именно на исходный вопрос по проверяемым данным. "
         "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
         "конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: "
-        f"{_bounded_context(question, max_chars=1_200)}\n\n{evidence.text}"
+        f"{_bounded_context(question, max_chars=600)}\n\n{evidence.text}"
     )
     llm_reply, llm_source = await _call_configured_ai(
         settings,

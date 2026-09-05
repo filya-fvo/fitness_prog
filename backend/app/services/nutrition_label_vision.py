@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import re
 from urllib.parse import urlsplit
 
 import httpx
 from loguru import logger
-from pydantic import ValidationError
-
 from app.core.config import Settings
 from app.schemas.nutrition import NutritionLabelRecognitionResponse
-from app.services.local_llm import call_local_chat
 
 MAX_LABEL_IMAGE_BYTES = 8 * 1024 * 1024
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -168,80 +164,12 @@ def parse_ocr_text(text: str, *, ocr_confidence: float = 0.0) -> NutritionLabelR
     )
 
 
-def _label_schema() -> dict:
-    nullable_number = {"type": ["number", "null"]}
-    nullable_string = {"type": ["string", "null"]}
-    properties = {
-        "recognized": {"type": "boolean"},
-        "name_ru": nullable_string,
-        "basis_label": nullable_string,
-        "serving_grams": nullable_number,
-        "calories_kcal": nullable_number,
-        "proteins_g": nullable_number,
-        "fats_g": nullable_number,
-        "carbs_g": nullable_number,
-        "fiber_g": nullable_number,
-        "sugars_g": nullable_number,
-        "salt_g": nullable_number,
-        "confidence": {"type": "number"},
-        "warnings": {"type": "array", "items": {"type": "string"}},
-    }
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": list(properties),
-        "additionalProperties": False,
-    }
-
-
-def parse_label_json(raw: str | None) -> NutritionLabelRecognitionResponse | None:
-    if not raw:
-        return None
-    cleaned = re.sub(r"<think\b[^>]*>.*?</think\s*>", "", raw, flags=re.I | re.S).strip()
-    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", cleaned, flags=re.I | re.S)
-    if fenced:
-        cleaned = fenced.group(1).strip()
-    try:
-        return NutritionLabelRecognitionResponse.model_validate(json.loads(cleaned))
-    except (json.JSONDecodeError, ValidationError):
-        return None
-
-
-def _merge_results(
-    deterministic: NutritionLabelRecognitionResponse,
-    model: NutritionLabelRecognitionResponse | None,
-) -> NutritionLabelRecognitionResponse:
-    if model is None:
-        return deterministic
-    update: dict = {}
-    for field in (
-        "name_ru",
-        "basis_label",
-        "serving_grams",
-        "calories_kcal",
-        "proteins_g",
-        "fats_g",
-        "carbs_g",
-        "fiber_g",
-        "sugars_g",
-        "salt_g",
-    ):
-        trusted = getattr(deterministic, field)
-        update[field] = trusted if trusted is not None else getattr(model, field)
-    update["recognized"] = deterministic.recognized or model.recognized
-    update["confidence"] = min(deterministic.confidence, model.confidence)
-    if deterministic.confidence == 0:
-        update["confidence"] = min(model.confidence, 0.55)
-    update["warnings"] = list(dict.fromkeys([*deterministic.warnings, *model.warnings]))[:10]
-    return deterministic.model_copy(update=update)
-
-
 async def recognize_nutrition_label(
     data: bytes,
     mime_type: str,
     settings: Settings,
 ) -> NutritionLabelRecognitionResponse:
-    """Run local OCR, deterministic parsing, then bounded local normalization."""
+    """Run local OCR and conservatively extract editable label fields."""
     if not is_local_ocr_config(settings):
         logger.error("local_ocr_rejected_non_local_configuration")
         raise NutritionLabelUnavailable("local_ocr_non_local_url")
@@ -260,25 +188,6 @@ async def recognize_nutrition_label(
         logger.warning("local_ocr_failed err_type={}", type(exc).__name__)
         raise NutritionLabelUnavailable("local_ocr_unavailable") from exc
 
-    deterministic = parse_ocr_text(text, ocr_confidence=confidence)
-    # A usable OCR result must not queue behind the single-slot language model.
-    # The fields are editable in the client, so return them immediately.
-    if deterministic.recognized:
-        return deterministic
-
-    prompt = (
-        "Ниже сырой текст OCR с пищевой этикетки. Исправь только очевидные ошибки OCR. "
-        "Не угадывай отсутствующие числа, не путай кДж и ккал. Все нутриенты верни на "
-        "100 г/мл; если основа неясна, оставь числа null. Только JSON.\n\n" + text[:2_000]
-    )
-    raw = await call_local_chat(
-        settings,
-        "Ты локально нормализуешь OCR пищевой этикетки в строгую схему.",
-        prompt,
-        temperature=0.0,
-        max_tokens=160,
-        json_schema=_label_schema(),
-        timeout_seconds=12,
-        queue_timeout_seconds=0.25,
-    )
-    return _merge_results(deterministic, parse_label_json(raw))
+    # Never queue label photos behind the single-slot language model: a model
+    # may guess absent values, while the editable OCR draft is deterministic.
+    return parse_ocr_text(text, ocr_confidence=confidence)

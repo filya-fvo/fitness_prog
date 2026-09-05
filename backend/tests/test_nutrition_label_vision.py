@@ -111,16 +111,12 @@ def test_parser_reads_values_split_onto_the_next_ocr_line():
 
 
 @pytest.mark.asyncio
-async def test_recognition_sends_image_only_to_local_ocr_and_works_without_model(
+async def test_recognition_sends_image_only_to_local_ocr(
     monkeypatch: pytest.MonkeyPatch,
 ):
     FakeOcrClient.requests.clear()
     monkeypatch.setattr(nutrition_label_vision.httpx, "AsyncClient", FakeOcrClient)
 
-    async def no_model(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("usable OCR data must not wait for the language model")
-
-    monkeypatch.setattr(nutrition_label_vision, "call_local_chat", no_model)
     settings = Settings(
         ocr_base_url="http://ocr:8090",
         llm_provider="local",
