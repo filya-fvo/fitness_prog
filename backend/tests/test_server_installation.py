@@ -112,6 +112,7 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     worker_section = compose.split("  worker:\n", 1)[1].split("\n  web:\n", 1)[0]
     assert "- ipv6_egress" in api_section
     assert "- ipv6_egress" in worker_section
+    assert "- ai_internal" in worker_section
     assert "  ipv6_egress:\n    enable_ipv6: true" in compose
     assert "fd42:9b7a:6d31:2::/64" in compose
     assert "healthcheck:" in worker_section
