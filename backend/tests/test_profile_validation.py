@@ -75,3 +75,11 @@ async def test_program_change_resets_server_schedule_cursor(monkeypatch) -> None
     assert user.goals["active_program_started_at"] == "2026-08-27"
     assert user.goals["active_program_next_day"] == 1
     assert user.goals["active_program_week_phase"] == "light"
+
+
+def test_cycle_training_preference_must_be_boolean() -> None:
+    assert UserProfileUpdate(goals={"cycle_training_enabled": True}).goals == {
+        "cycle_training_enabled": True
+    }
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(goals={"cycle_training_enabled": "true"})

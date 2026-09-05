@@ -30,6 +30,7 @@ import { Header } from "@/components/layout/Header";
 import { DecimalInput } from "@/components/DecimalInput";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
+import { CycleTrainingSettings } from "@/features/profile/components/CycleTrainingSettings";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
 import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
 import { WorkoutReminderSettings } from "@/features/profile/components/WorkoutReminderSettings";
@@ -1086,6 +1087,19 @@ setAuthEmail(p.auth_email ?? null);
               ))}
             </div>
           </div>
+
+          {sex === "female" || profileGoalsKeep.cycle_training_enabled === true ? (
+            <CycleTrainingSettings
+              enabled={profileGoalsKeep.cycle_training_enabled === true}
+              onChange={(enabled) => {
+                setProfileGoalsKeep((current) => ({
+                  ...current,
+                  cycle_training_enabled: enabled,
+                }));
+                markDirty("body");
+              }}
+            />
+          ) : null}
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
             <p className="text-sm font-medium">Базовые данные</p>

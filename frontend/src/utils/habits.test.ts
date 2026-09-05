@@ -36,6 +36,8 @@ describe("habit history clearing", () => {
       date: "2026-08-10",
       waterMl: 1800,
       sleepHours: 7.5,
+      cycleReadiness: "reduce",
+      cycleReadinessPending: true,
       checkedIn: true,
     });
 
@@ -43,6 +45,8 @@ describe("habit history clearing", () => {
 
     expect(getHabitDay("2026-08-10")).toMatchObject({
       waterMl: 0,
+      cycleReadiness: "reduce",
+      cycleReadinessPending: true,
       sleepHours: 7.5,
     });
   });

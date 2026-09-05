@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
-from sqlalchemy import Date, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Date, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,5 +25,7 @@ class DailyMetric(Base, TimestampSoftDeleteMixin):
     sleep_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     active_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Optional user-reported impact of cycle-related symptoms on today's training.
+    cycle_readiness: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Per-field provenance keeps the schema ready for future HealthKit/Health Connect imports.
     sources: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)

@@ -59,6 +59,10 @@ export type WorkoutPlan = {
   week_in_cycle?: number | null;
   week_label?: string | null;
   week_rir?: string | null;
+  /** Planned progression phase before an optional day-level adjustment. */
+  base_week_phase?: "light" | "medium" | "heavy" | string | null;
+  load_adjustment?: string | null;
+  load_adjustment_label?: string | null;
   location?: string | null;
   equipment?: string[];
   limitations?: string[];

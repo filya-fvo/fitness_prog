@@ -9,6 +9,7 @@ import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
+  fetchPlannedWorkoutPlan,
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
   type WorkoutScheduleOverview,
@@ -42,6 +43,7 @@ import {
 } from "@/utils/programProgress";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import { toUserMessage } from "@/utils/errors";
+import { phaseFromPlan } from "@/utils/cycleTraining";
 import {
   canStartProgramFromSchedule,
   plannedWorkoutOccurrence,
@@ -88,6 +90,7 @@ export function TrainHubPage() {
   const [error, setError] = useState<string | null>(null);
   const [recentTitles, setRecentTitles] = useState<string[]>([]);
   const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -116,6 +119,30 @@ export function TrainHubPage() {
   })();
   const todayProgramCompleted = schedule?.current?.status === "completed";
   const preparedDate = plannedOccurrence?.target_date ?? localDateKey();
+  const effectiveWeekPhase = phaseFromPlan(preparedPlan, weekPhase);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!program || !getStoredToken() || !isOnline()) {
+      setPreparedPlan(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    void fetchPlannedWorkoutPlan({
+      programId: program.id,
+      scheduledDate: preparedDate,
+      dayIndex: preparedDayIndex,
+      weekPhase,
+    }).then((plan) => {
+      if (!cancelled) setPreparedPlan(plan);
+    }).catch(() => {
+      if (!cancelled) setPreparedPlan(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [preparedDate, preparedDayIndex, program, weekPhase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,13 +264,10 @@ export function TrainHubPage() {
       });
       const clientId = crypto.randomUUID();
       const plan = (workout.plan || {}) as WorkoutPlan;
-      const phaseMeta = phaseMetaFromName(weekPhase);
+      const effectivePhase = phaseFromPlan(plan, weekPhase);
+      const phaseMeta = phaseMetaFromName(effectivePhase);
       const planWithWarmup = {
         ...plan,
-        week_phase: weekPhase,
-        week_label: phaseMeta.label,
-        week_rir: phaseMeta.rir,
-        week_in_cycle: phaseMeta.weekInCycle,
         warmup_pending: true,
         warmup_location: String(goals.location || "gym"),
       } as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
@@ -282,7 +306,8 @@ export function TrainHubPage() {
         program_id: program.id,
         day_index: startDayIndex,
         source: "train_hub",
-        week_phase: phaseMeta.phase,
+        week_phase: effectivePhase,
+        load_adjusted: Boolean(plan.load_adjustment),
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
@@ -343,9 +368,14 @@ export function TrainHubPage() {
             </p>
             <p className="mt-1 text-base font-semibold">{programDayLabel(program.name)}</p>
             <p className="mt-1 text-sm text-tg-hint">
-              {dayTitle} · {phaseMetaFromName(weekPhase).label}
+              {dayTitle} · {phaseMetaFromName(effectiveWeekPhase).label}
               {levelLabel ? ` · ${levelLabel}` : ""}
             </p>
+            {preparedPlan?.load_adjustment_label ? (
+              <p className="mt-2 rounded-xl bg-tg-bg px-3 py-2 text-xs text-tg-hint">
+                {preparedPlan.load_adjustment_label}. Базовая фаза программы не сдвигается.
+              </p>
+            ) : null}
             {canStartProgramNow ? (
               <button
                 type="button"

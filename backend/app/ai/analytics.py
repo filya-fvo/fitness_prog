@@ -48,7 +48,7 @@ _DOMAIN_PATTERNS: tuple[tuple[AIQueryDomain, re.Pattern[str]], ...] = (
     (AIQueryDomain.STRENGTH, re.compile(r"жим|присед|тяг|подтяг|сил[аыу]|рабоч.*вес|1пм|повторн.*макс", re.I)),
     (AIQueryDomain.WEIGHT, re.compile(r"вес|похуд|сброс|набрал[аи]?\s+кг|килограмм", re.I)),
     (AIQueryDomain.NUTRITION, re.compile(r"питан|калори|белк|жир|углевод|бжу|рацион|\b(?:ел|ела|ели)\b|что\s+(?:мне\s+)?(?:есть|поесть)", re.I)),
-    (AIQueryDomain.RECOVERY, re.compile(r"восстанов|сон|спал|спала|шаг|активн|вод[аыу]|устал", re.I)),
+    (AIQueryDomain.RECOVERY, re.compile(r"восстанов|сон|спал|спала|шаг|активн|вод[аыу]|устал|менстру|месячн|женск.*цикл|фаз.*цикл", re.I)),
     (AIQueryDomain.WORKOUT_PROGRESS, re.compile(r"трениров|прогресс|объ[её]м|подход|rpe|разбор", re.I)),
 )
 

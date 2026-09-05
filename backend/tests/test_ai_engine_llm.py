@@ -134,6 +134,16 @@ def test_basic_safety_facts_use_deterministic_reply(message: str, expected: str)
     assert expected in ai_engine._rule_based_reply(message, "")
 
 
+def test_cycle_training_question_uses_symptom_led_rule() -> None:
+    message = "Как менять тренировки по фазам менструального цикла?"
+
+    assert ai_engine._requires_rule_only(message) is True
+    reply = ai_engine._rule_based_reply(message, "")
+
+    assert "фиксированными 28 днями" in reply
+    assert "фактическое самочувствие" in reply
+
+
 def test_english_only_model_reply_is_rejected() -> None:
     assert ai_engine._russian_only("Here is your detailed workout recommendation") is None
     assert ai_engine._russian_only("Увеличьте вес на 2.5 kg, если техника стабильна") is not None

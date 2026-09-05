@@ -210,5 +210,6 @@ async def preview_program(
         scheduled_date=date.today(),
         week_phase=None,
         include_saved_override=False,
+        apply_readiness_adjustment=False,
     )
     return WorkoutPlan.model_validate(plan)

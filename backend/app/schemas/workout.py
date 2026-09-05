@@ -30,6 +30,9 @@ class WorkoutPlan(BaseModel):
     week_in_cycle: int | None = None
     week_label: str | None = None
     week_rir: str | None = None
+    base_week_phase: str | None = None
+    load_adjustment: str | None = None
+    load_adjustment_label: str | None = None
     location: str | None = None
     equipment: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)

@@ -40,10 +40,12 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 const limits = {
   // Durable measurement sync adds about 2.7 KB gzip to the already lazy storage
   // route. Keep a narrow measured margin without relaxing chunk isolation.
+  // Cycle-readiness check-in and the two workout entry points add about 1.2 KB
+  // gzip across existing product chunks; no new eager vendor chunk is introduced.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 483_000,
-  productJsGzip: 432_000,
+  totalJsGzip: 485_000,
+  productJsGzip: 434_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes. Product-route and total limits stay unchanged.
   adminJsGzip: 51_500,

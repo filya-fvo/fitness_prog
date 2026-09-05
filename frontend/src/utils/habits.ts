@@ -2,6 +2,7 @@
  * Device cache for daily habits. Server-backed water is marked pending until synced.
  */
 import { localDateKey } from "@/utils/progress";
+import type { CycleReadiness } from "@/utils/cycleTraining";
 
 const KEY = "fitness_habits_v1";
 const MIGRATED_OWNER_KEY = "fitness_habits_v1_migrated_owner";
@@ -12,6 +13,8 @@ export type HabitDay = {
   sleepHours: number | null;
   steps?: number | null;
   activeMinutes?: number | null;
+  cycleReadiness?: CycleReadiness | null;
+  cycleReadinessPending?: boolean;
   waterPending?: boolean;
   checkedIn: boolean;
 };
@@ -68,6 +71,8 @@ export function getHabitDay(
         ...stored,
         steps: stored.steps ?? null,
         activeMinutes: stored.activeMinutes ?? null,
+        cycleReadiness: stored.cycleReadiness ?? null,
+        cycleReadinessPending: stored.cycleReadinessPending === true,
         waterPending: stored.waterPending === true,
       }
     : {
@@ -76,6 +81,8 @@ export function getHabitDay(
       sleepHours: null,
       steps: null,
       activeMinutes: null,
+      cycleReadiness: null,
+      cycleReadinessPending: false,
       waterPending: false,
       checkedIn: false,
     };

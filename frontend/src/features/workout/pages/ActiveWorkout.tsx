@@ -84,6 +84,9 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan & {
     week_in_cycle: plan.week_in_cycle ?? null,
     week_label: plan.week_label ?? null,
     week_rir: plan.week_rir ?? null,
+    base_week_phase: plan.base_week_phase ?? null,
+    load_adjustment: plan.load_adjustment ?? null,
+    load_adjustment_label: plan.load_adjustment_label ?? null,
     location: plan.location ?? null,
     equipment: Array.isArray(plan.equipment) ? plan.equipment : [],
     limitations: Array.isArray(plan.limitations) ? plan.limitations : [],
@@ -1453,6 +1456,15 @@ export function ActiveWorkout() {
         Сессия сохраняется автоматически: можно выйти и продолжить позже с главной. RIR — сколько
         повторов осталось бы выполнить до отказа.
       </p>
+      {plan.load_adjustment_label ? (
+        <div className="mb-3 rounded-xl border border-tg-button/20 bg-tg-secondary p-3">
+          <p className="text-sm font-medium">{plan.load_adjustment_label}</p>
+          <p className="mt-1 text-xs leading-5 text-tg-hint">
+            План облегчен по вашей сегодняшней отметке. Ориентируйтесь на самочувствие;
+            исходный цикл программы продолжится без сдвига.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary px-4 py-3">
         <WorkoutElapsedClock

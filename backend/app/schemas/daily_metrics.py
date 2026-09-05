@@ -12,6 +12,10 @@ class DailyMetricUpdate(BaseModel):
     sleep_minutes: int | None = Field(default=None, ge=0, le=1440)
     steps: int | None = Field(default=None, ge=0, le=200_000)
     active_minutes: int | None = Field(default=None, ge=0, le=1440)
+    cycle_readiness: str | None = Field(
+        default=None,
+        pattern=r"^(normal|caution|reduce|rest)$",
+    )
     # Transitional input for already cached PWA/Telegram bundles. It is ignored
     # and can be removed after the retained release window has elapsed.
     weight_kg: float | None = Field(default=None, ge=20, le=500, deprecated=True)
@@ -29,6 +33,7 @@ class DailyMetricResponse(BaseModel):
     sleep_minutes: int | None = None
     steps: int | None = None
     active_minutes: int | None = None
+    cycle_readiness: str | None = None
     # Older cached clients require the key to exist. New clients ignore it.
     weight_kg: None = Field(default=None, deprecated=True)
     sources: dict[str, str] = Field(default_factory=dict)

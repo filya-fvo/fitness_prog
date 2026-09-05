@@ -51,6 +51,7 @@ import {
 } from "@/utils/programProgress";
 import { toast } from "@/store/toastStore";
 import { cacheHabitDay, getHabitDay } from "@/utils/habits";
+import { phaseFromPlan } from "@/utils/cycleTraining";
 import { buildHomeTips } from "@/utils/homeTips";
 import { recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
@@ -131,7 +132,11 @@ export function HomePage() {
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
+  const [checkinRevision, setCheckinRevision] = useState(0);
   const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
+  const handleCheckinSaved = useCallback(() => {
+    setCheckinRevision((value) => value + 1);
+  }, []);
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -160,6 +165,7 @@ export function HomePage() {
   const canStartProgramNow = canStartProgramFromSchedule(workoutSchedule);
   const todayDay = plannedOccurrence?.day_index ?? programCursor?.nextDayIndex ?? 1;
   const todayPhase: WeekPhase = programCursor?.weekPhase ?? "medium";
+  const effectiveTodayPhase = phaseFromPlan(preparedPlan, todayPhase);
   const dayOptions = useMemo(
     () => (todayProgram ? listProgramDays(todayProgram) : []),
     [todayProgram],
@@ -199,7 +205,7 @@ export function HomePage() {
       if (!controller.signal.aborted) setPreparedPlan(null);
     });
     return () => controller.abort();
-  }, [plannedOccurrence, todayDay, todayPhase, todayProgram]);
+  }, [checkinRevision, plannedOccurrence, todayDay, todayPhase, todayProgram]);
 
   useEffect(() => {
     setTodayPlanOpen(false);
@@ -539,13 +545,10 @@ export function HomePage() {
       });
       const clientId = crypto.randomUUID();
       const plan = (workout.plan || {}) as WorkoutPlan;
-      const phaseMeta = phaseMetaFromName(opts.weekPhase);
+      const effectivePhase = phaseFromPlan(plan, opts.weekPhase);
+      const phaseMeta = phaseMetaFromName(effectivePhase);
       const planWithWarmup = {
         ...plan,
-        week_phase: opts.weekPhase,
-        week_label: phaseMeta.label,
-        week_rir: phaseMeta.rir,
-        week_in_cycle: phaseMeta.weekInCycle,
         warmup_pending: true,
         warmup_location: String(profileGoals.location || "gym"),
       } as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
@@ -584,7 +587,8 @@ export function HomePage() {
         day_index: opts.dayIndex,
         source: "home",
         exercises: drafts.length,
-        week_phase: phaseMeta.phase,
+        week_phase: effectivePhase,
+        load_adjusted: Boolean(plan.load_adjustment),
       });
       navigate(`/workouts/active/${clientId}`);
     } catch (err) {
@@ -744,13 +748,18 @@ export function HomePage() {
             <p className="break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
               {todayDayTitle}
               {" · "}
-              {phaseMetaFromName(todayPhase).label}
+              {phaseMetaFromName(effectiveTodayPhase).label}
               {todayProgram.workout_type ? ` · ${enumLabel(todayProgram.workout_type)}` : ""}
               {(() => {
                 const lvl = String(todayProgram.level || todayProgram.target_level || "");
                 return lvl ? ` · ${enumLabel(lvl)}` : "";
               })()}
             </p>
+            {preparedPlan?.load_adjustment_label ? (
+              <p className="rounded-xl bg-tg-bg px-3 py-2 text-xs leading-5 text-tg-hint">
+                {preparedPlan.load_adjustment_label}. Базовая фаза программы не сдвигается.
+              </p>
+            ) : null}
             <WorkoutSchedulePanel
               overview={workoutSchedule}
               disabled={!online || starting}
@@ -794,7 +803,7 @@ export function HomePage() {
                         </button>
                         {exercise.sets || exercise.reps ? (
                           <span className="shrink-0 text-tg-hint">
-                            {exercise.sets ?? "—"} × {phaseMetaFromName(todayPhase).defaultReps}
+                            {exercise.sets ?? "—"} × {phaseMetaFromName(effectiveTodayPhase).defaultReps}
                           </span>
                         ) : null}
                       </li>
@@ -838,7 +847,7 @@ export function HomePage() {
                 >
                   {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
                   <span className="mt-0.5 block text-[10px] font-normal opacity-80">
-                    {phaseMetaFromName(todayPhase).label} неделя
+                    {phaseMetaFromName(effectiveTodayPhase).label} неделя
                   </span>
                 </button>
                 <button
@@ -922,7 +931,10 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <HabitsCheckin />
+        <HabitsCheckin
+          cycleTrainingEnabled={profileGoals.cycle_training_enabled === true}
+          onSaved={handleCheckinSaved}
+        />
 
         {detailExercise ? (
           <ExerciseDetailModal

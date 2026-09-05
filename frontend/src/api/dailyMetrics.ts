@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
+import type { CycleReadiness } from "@/utils/cycleTraining";
 
 const dailyMetricSchema = z.object({
   id: z.string().uuid().nullable().optional(),
@@ -8,6 +9,7 @@ const dailyMetricSchema = z.object({
   sleep_minutes: z.number().int().nullable().optional(),
   steps: z.number().int().nullable().optional(),
   active_minutes: z.number().int().nullable().optional(),
+  cycle_readiness: z.enum(["normal", "caution", "reduce", "rest"]).nullable().optional(),
   sources: z.record(z.string()).default({}),
 });
 
@@ -29,9 +31,10 @@ export async function fetchDailyMetrics(date?: string): Promise<DailyMetric> {
 
 export async function saveDailyMetrics(
   input: {
-    sleepMinutes: number | null;
-    steps: number | null;
-    activeMinutes: number | null;
+    sleepMinutes?: number | null;
+    steps?: number | null;
+    activeMinutes?: number | null;
+    cycleReadiness?: CycleReadiness | null;
   },
   date?: string,
 ): Promise<DailyMetric> {
@@ -41,6 +44,7 @@ export async function saveDailyMetrics(
       sleep_minutes: input.sleepMinutes,
       steps: input.steps,
       active_minutes: input.activeMinutes,
+      cycle_readiness: input.cycleReadiness,
     },
     { params: date ? { date } : undefined },
   );

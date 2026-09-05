@@ -27,6 +27,7 @@ from app.services.workout_metrics import aggregate_workout_load, normalized_set_
         ("Как было питание за неделю?", AIQueryDomain.NUTRITION),
         ("Что есть после тренировки?", AIQueryDomain.NUTRITION),
         ("Разбор недели: объём и восстановление", AIQueryDomain.RECOVERY),
+        ("Как тренироваться во время менструального цикла?", AIQueryDomain.RECOVERY),
         ("Что делать, если болит плечо?", AIQueryDomain.SAFETY),
         ("Как настроиться на тренировку?", AIQueryDomain.WORKOUT_PROGRESS),
         ("Привет, как дела?", AIQueryDomain.GENERAL),

@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import planned_workout, program_publication
+from app.services import cycle_training, daily_metrics, planned_workout, program_publication
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -62,6 +62,9 @@ def _normalize_plan(plan: WorkoutPlan | dict[str, Any] | None) -> dict[str, Any]
         "week_in_cycle": plan.get("week_in_cycle"),
         "week_label": plan.get("week_label"),
         "week_rir": plan.get("week_rir"),
+        "base_week_phase": plan.get("base_week_phase"),
+        "load_adjustment": plan.get("load_adjustment"),
+        "load_adjustment_label": plan.get("load_adjustment_label"),
         "exercises": list(plan.get("exercises") or []),
     }
 
@@ -306,6 +309,7 @@ async def build_program_plan_for_user(
     week_phase: str | None,
     include_saved_override: bool = True,
     consume_saved_override: bool = False,
+    apply_readiness_adjustment: bool = True,
 ) -> dict[str, Any]:
     started_raw = (user.goals or {}).get("active_program_started_at")
     started_at: date | None = None
@@ -319,14 +323,29 @@ async def build_program_plan_for_user(
         started_at = scheduled_date
     elif started_at is None:
         started_at = scheduled_date
+    base_meta = (
+        phase_meta_from_name(week_phase)
+        if week_phase
+        else resolve_week_phase_meta(started_at, scheduled_date)
+    )
+    adjustment: dict[str, str] | None = None
+    if apply_readiness_adjustment and cycle_training.cycle_training_enabled(user.goals):
+        metric = await daily_metrics.get_for_day(session, user, scheduled_date)
+        adjustment = cycle_training.adapt_week_phase(
+            str(base_meta["week_phase"]),
+            metric.cycle_readiness if metric is not None else None,
+        )
+    effective_phase = adjustment["week_phase"] if adjustment else week_phase
     plan = await build_plan_from_program_day(
         session,
         program,
         day_index,
         program_started_at=started_at,
         today=scheduled_date,
-        week_phase=week_phase,
+        week_phase=effective_phase,
     )
+    if adjustment:
+        plan.update(adjustment)
     if not include_saved_override:
         return plan
     return await planned_workout.apply_saved_override(

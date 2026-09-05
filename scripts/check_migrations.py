@@ -47,6 +47,7 @@ REQUIRED_FILES = [
     "20260902000037_fix_custom_competition_metric.sql",
     "20260903000038_curate_dumbbell_weight_rules.sql",
     "20260905000039_exercise_media_assets.sql",
+    "20260905000040_cycle_training_readiness.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -128,6 +129,8 @@ REQUIRED_SNIPPETS = [
     "'Разгибания гантели из-за головы'",
     "exercise_media_size_matches",
     "field <> 'thumbnail_url' OR size_bytes <= 5242880",
+    "ck_daily_metrics_cycle_readiness",
+    "cycle_readiness IN ('normal', 'caution', 'reduce', 'rest')",
 ]
 
 

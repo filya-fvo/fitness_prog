@@ -42,6 +42,8 @@ def test_daily_metric_schema_rejects_impossible_values() -> None:
         DailyMetricUpdate()
     with pytest.raises(ValidationError):
         DailyMetricUpdate(weight_kg=82)
+    with pytest.raises(ValidationError):
+        DailyMetricUpdate(cycle_readiness="unknown")
     legacy = DailyMetricUpdate(weight_kg=82, steps=5000)
     assert legacy.steps == 5000
     assert DailyMetricResponse(date=date(2026, 8, 27)).model_dump()["weight_kg"] is None
@@ -55,19 +57,25 @@ async def test_save_daily_metrics_sets_and_clears_manual_source() -> None:
         session,  # type: ignore[arg-type]
         user,
         date(2026, 8, 15),
-        DailyMetricUpdate(sleep_minutes=450, steps=9000),
+        DailyMetricUpdate(sleep_minutes=450, steps=9000, cycle_readiness="reduce"),
     )
     assert row.sleep_minutes == 450
     assert row.steps == 9000
-    assert row.sources == {"sleep_minutes": "manual", "steps": "manual"}
+    assert row.cycle_readiness == "reduce"
+    assert row.sources == {
+        "sleep_minutes": "manual",
+        "steps": "manual",
+        "cycle_readiness": "manual",
+    }
 
     row = await save_for_day(
         session,  # type: ignore[arg-type]
         user,
         date(2026, 8, 15),
-        DailyMetricUpdate(steps=None),
+        DailyMetricUpdate(steps=None, cycle_readiness=None),
     )
     assert row.sleep_minutes == 450
     assert row.steps is None
+    assert row.cycle_readiness is None
     assert row.sources == {"sleep_minutes": "manual"}
     assert not hasattr(row, "weight_kg")

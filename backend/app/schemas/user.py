@@ -26,6 +26,7 @@ _GOAL_ENUMS: dict[str, set[str]] = {
     "location": {"gym", "home", "outdoor"},
     "activity_level": {"sedentary", "light", "moderate", "active", "very_active"},
 }
+_GOAL_BOOLEAN_KEYS = {"cycle_training_enabled"}
 
 
 class UserProfileResponse(BaseModel):
@@ -90,6 +91,9 @@ class UserProfileUpdate(BaseModel):
             raw = value.get(key)
             if raw is not None and str(raw) not in allowed:
                 raise ValueError(f"unsupported {key}")
+        for key in _GOAL_BOOLEAN_KEYS:
+            if key in value and not isinstance(value[key], bool):
+                raise ValueError(f"{key} must be boolean")
         for key, (minimum, maximum) in _GOAL_NUMERIC_RANGES.items():
             raw = value.get(key)
             if raw is None:

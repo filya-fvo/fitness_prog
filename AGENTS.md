@@ -17,7 +17,8 @@ Fitness Mini App — русскоязычный дневник трениров�
 Основные возможности: готовые программы и свои тренировки, подсказка прошлого
 рабочего веса, таймер и опциональный автопереход, питание со сценарием
 «штрихкод → фото этикетки → ручной ввод», ручной дневной чек-ин сна/шагов/
-активности/воды, датированные вес и обхваты, графики, добавки, уведомления,
+активности/воды и опциональной готовности во время менструального цикла,
+датированные вес и обхваты, графики, добавки, уведомления,
 локальный ИИ-тренер, безопасные приглашения по ссылке/коду, дружба и частные
 соревнования на регулярность с другом и в глобальном сезоне, пользовательская
 поддержка и админ-раздел.
@@ -233,7 +234,7 @@ services → SQLAlchemy models → PostgreSQL
 | Область | Frontend | Backend / данные | Обязательные тесты |
 |---|---|---|---|
 | Авторизация Telegram/browser | `Shell.tsx`, `TelegramBrowserLogin.tsx`, `EmailLoginForm.tsx`, `api/auth.ts`, `lib/telegramLogin.ts` | `routers/auth.py`, `auth_service.py`, `telegram_browser_auth.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth/OIDC/JWKS, frontend serving, Telegram bot, browser E2E |
-| Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts` | `daily_metrics` router/schema/service/model, migration 17 | daily metrics + habits tests |
+| Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts`, `utils/cycleTraining.ts` | `daily_metrics` router/schema/service/model, `cycle_training.py`, migrations 17 и 40 | daily metrics + habits + cycle training tests |
 | Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
 | Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx`, `features/admin-exercises` | `exercises.py`, `exercise_service.py`, `admin_exercise_media.py`, `exercise_media_assets`, seed, rebuild/audit/thumbnail scripts | media upload/audit, media audit, catalog quality, progression unit + recovery E2E |

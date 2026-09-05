@@ -30,6 +30,7 @@ def _response(row: DailyMetric | None, day: date) -> DailyMetricResponse:
         sleep_minutes=row.sleep_minutes,
         steps=row.steps,
         active_minutes=row.active_minutes,
+        cycle_readiness=row.cycle_readiness,
         sources=dict(row.sources or {}),
     )
 
