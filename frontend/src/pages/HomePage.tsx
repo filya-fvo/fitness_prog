@@ -730,12 +730,6 @@ export function HomePage() {
                 Подготовить следующую тренировку
               </Link>
             ) : null}
-            <Link
-              to="/progress"
-              className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
-            >
-              Открыть прогресс
-            </Link>
           </div>
         ) : todayProgram ? (
           <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
@@ -882,13 +876,6 @@ export function HomePage() {
               className="block w-full rounded-xl bg-tg-button px-4 py-3.5 text-center text-sm font-semibold text-tg-button-text"
             >
               Выбрать программу
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/workouts")}
-              className="block w-full rounded-xl bg-tg-bg px-4 py-2.5 text-center text-sm font-medium"
-            >
-              Своя тренировка из каталога
             </button>
           </div>
         )}
