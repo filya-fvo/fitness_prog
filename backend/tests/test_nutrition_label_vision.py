@@ -95,6 +95,21 @@ def test_parser_converts_explicit_serving_values_to_per_100():
     assert parsed.serving_grams == 40
 
 
+def test_parser_reads_values_split_onto_the_next_ocr_line():
+    parsed = parse_ocr_text(
+        "Пищевая ценность в 100 гр\n"
+        "Энергетическая ценность\n929 кДж / 222 ккал\n"
+        "Белок\n7,5 г\nЖиры\n12 г\nУглеводы\n21 г"
+    )
+
+    assert parsed.recognized is True
+    assert parsed.calories_kcal == 222
+    assert parsed.proteins_g == 7.5
+    assert parsed.fats_g == 12
+    assert parsed.carbs_g == 21
+    assert parsed.basis_label == "На 100 г/мл"
+
+
 @pytest.mark.asyncio
 async def test_recognition_sends_image_only_to_local_ocr_and_works_without_model(
     monkeypatch: pytest.MonkeyPatch,
@@ -103,7 +118,7 @@ async def test_recognition_sends_image_only_to_local_ocr_and_works_without_model
     monkeypatch.setattr(nutrition_label_vision.httpx, "AsyncClient", FakeOcrClient)
 
     async def no_model(*_args: object, **_kwargs: object) -> None:
-        return None
+        raise AssertionError("usable OCR data must not wait for the language model")
 
     monkeypatch.setattr(nutrition_label_vision, "call_local_chat", no_model)
     settings = Settings(

@@ -18,7 +18,7 @@ MAX_LABEL_IMAGE_BYTES = 8 * 1024 * 1024
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _NUMBER_RE = r"(\d{1,4}(?:[.,]\d{1,3})?)"
 _NUTRIENT_ALIASES = {
-    "proteins_g": ("белк", "protein"),
+    "proteins_g": ("белк", "белок", "protein"),
     "fats_g": ("жир", "fat"),
     "carbs_g": ("углевод", "carbohydrate", "carbs"),
     "fiber_g": ("клетчат", "пищев волок", "fiber", "fibre"),
@@ -76,7 +76,8 @@ def _decimal(raw: str) -> float:
 
 
 def _line_value(lines: list[str], aliases: tuple[str, ...]) -> float | None:
-    for line in lines:
+    all_aliases = tuple(alias for values in _NUTRIENT_ALIASES.values() for alias in values)
+    for index, line in enumerate(lines):
         lowered = line.casefold()
         positions = [lowered.find(alias) for alias in aliases if alias in lowered]
         if not positions:
@@ -84,18 +85,32 @@ def _line_value(lines: list[str], aliases: tuple[str, ...]) -> float | None:
         match = re.search(_NUMBER_RE, line[min(positions) :])
         if match:
             return _decimal(match.group(1))
+        # Tesseract often puts a row label and its value on adjacent lines.
+        # Stop before the next nutrient label so one value is never assigned twice.
+        for following in lines[index + 1 : index + 3]:
+            following_lowered = following.casefold()
+            if any(alias in following_lowered for alias in all_aliases):
+                break
+            match = re.search(_NUMBER_RE, following)
+            if match:
+                return _decimal(match.group(1))
     return None
 
 
 def _energy_kcal(lines: list[str]) -> float | None:
-    for line in lines:
+    for index, line in enumerate(lines):
         lowered = line.casefold()
         if not any(word in lowered for word in ("энерг", "energy", "ккал", "kcal")):
             continue
-        kcal = re.search(_NUMBER_RE + r"\s*(?:ккал|kcal)", lowered)
+        window = " ".join(lines[index : index + 2]).casefold()
+        kcal = re.search(_NUMBER_RE + r"\s*(?:ккал|kcal)", window)
+        if not kcal:
+            kcal = re.search(r"(?:ккал|kcal)\s*[:=-]?\s*" + _NUMBER_RE, window)
         if kcal:
             return _decimal(kcal.group(1))
-        kj = re.search(_NUMBER_RE + r"\s*(?:кдж|кд?ж|kj)", lowered)
+        kj = re.search(_NUMBER_RE + r"\s*(?:кдж|кд?ж|kj)", window)
+        if not kj:
+            kj = re.search(r"(?:кдж|кд?ж|kj)\s*[:=-]?\s*" + _NUMBER_RE, window)
         if kj:
             return round(_decimal(kj.group(1)) / 4.184, 1)
     return None
@@ -109,7 +124,7 @@ def parse_ocr_text(text: str, *, ocr_confidence: float = 0.0) -> NutritionLabelR
     values = {field: _line_value(lines, aliases) for field, aliases in _NUTRIENT_ALIASES.items()}
     calories = _energy_kcal(lines)
 
-    basis_100 = re.search(r"(?:на|per)\s*100\s*(?:г|g|мл|ml)\b", joined)
+    basis_100 = re.search(r"(?:на|в|per)\s*100\s*(?:г(?:р)?|g|мл|ml)\b", joined)
     serving_match = re.search(
         r"(?:порц\w*|serving)[^\d]{0,20}" + _NUMBER_RE + r"\s*(?:г|g|мл|ml)\b",
         joined,
@@ -246,17 +261,24 @@ async def recognize_nutrition_label(
         raise NutritionLabelUnavailable("local_ocr_unavailable") from exc
 
     deterministic = parse_ocr_text(text, ocr_confidence=confidence)
+    # A usable OCR result must not queue behind the single-slot language model.
+    # The fields are editable in the client, so return them immediately.
+    if deterministic.recognized:
+        return deterministic
+
     prompt = (
         "Ниже сырой текст OCR с пищевой этикетки. Исправь только очевидные ошибки OCR. "
         "Не угадывай отсутствующие числа, не путай кДж и ккал. Все нутриенты верни на "
-        "100 г/мл; если основа неясна, оставь числа null. Только JSON.\n\n" + text[:4_000]
+        "100 г/мл; если основа неясна, оставь числа null. Только JSON.\n\n" + text[:2_000]
     )
     raw = await call_local_chat(
         settings,
         "Ты локально нормализуешь OCR пищевой этикетки в строгую схему.",
         prompt,
         temperature=0.0,
-        max_tokens=240,
+        max_tokens=160,
         json_schema=_label_schema(),
+        timeout_seconds=12,
+        queue_timeout_seconds=0.25,
     )
     return _merge_results(deterministic, parse_label_json(raw))

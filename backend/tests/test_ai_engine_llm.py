@@ -22,9 +22,10 @@ class FakeResponse:
 
 class FakeAsyncClient:
     requests: list[dict] = []
+    init_kwargs: list[dict] = []
 
-    def __init__(self, **_kwargs: object) -> None:
-        pass
+    def __init__(self, **kwargs: object) -> None:
+        self.init_kwargs.append(kwargs)
 
     async def __aenter__(self) -> "FakeAsyncClient":
         return self
@@ -40,6 +41,7 @@ class FakeAsyncClient:
 @pytest.fixture(autouse=True)
 def reset_requests(monkeypatch: pytest.MonkeyPatch) -> None:
     FakeAsyncClient.requests.clear()
+    FakeAsyncClient.init_kwargs.clear()
     monkeypatch.setattr(local_llm.httpx, "AsyncClient", FakeAsyncClient)
 
 
@@ -97,11 +99,36 @@ async def test_external_ai_host_is_rejected_without_http_request() -> None:
     assert FakeAsyncClient.requests == []
 
 
+async def test_busy_local_model_falls_back_without_waiting_for_full_model_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    busy_lock = local_llm.asyncio.Lock()
+    await busy_lock.acquire()
+    monkeypatch.setattr(local_llm, "_request_lock", busy_lock)
+
+    try:
+        result = await local_llm.call_local_chat(
+            local_settings(),
+            "system",
+            "question",
+            timeout_seconds=1,
+            queue_timeout_seconds=0.01,
+        )
+    finally:
+        busy_lock.release()
+
+    assert result is None
+    assert FakeAsyncClient.requests == []
+
+
 async def test_configured_ai_reports_local_source() -> None:
     reply, source = await ai_engine._call_configured_ai(local_settings(), "system", "question")
 
     assert reply == "Короткий локальный ответ"
     assert source == "local"
+    request = FakeAsyncClient.requests[0]
+    assert request["json"]["max_tokens"] == 160
+    assert float(FakeAsyncClient.init_kwargs[0]["timeout"]) <= 35
 
 
 def test_urgent_health_question_never_reaches_model() -> None:
@@ -192,6 +219,18 @@ def test_chat_prompt_keeps_latest_question_last_and_drops_echo_history() -> None
     assert prompt.count(context) == 1
     assert prompt.rfind(question) > prompt.rfind("</conversation_history>")
     assert prompt.endswith("Не пересказывай контекст.")
+
+
+def test_chat_prompt_bounds_large_runtime_context() -> None:
+    prompt = ai_engine._build_chat_prompt(
+        message="вопрос " * 1_000,
+        app_context="контекст " * 1_000,
+        catalog_context="каталог " * 1_000,
+        history=[{"role": "user", "content": "история " * 1_000}],
+    )
+
+    assert len(prompt) < 5_000
+    assert "…" in prompt
 
 
 @pytest.mark.parametrize(

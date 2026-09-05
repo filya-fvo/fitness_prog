@@ -12,6 +12,8 @@ from app.core.config import Settings
 
 _LOCAL_AI_HOSTS = {"llm", "localhost", "127.0.0.1", "::1"}
 _request_lock = asyncio.Lock()
+_DEFAULT_TOTAL_TIMEOUT_SECONDS = 35.0
+_DEFAULT_QUEUE_TIMEOUT_SECONDS = 1.0
 
 
 def is_local_ai_config(settings: Settings) -> bool:
@@ -30,8 +32,10 @@ async def call_local_chat(
     temperature: float = 0.2,
     max_tokens: int | None = None,
     json_schema: dict | None = None,
+    timeout_seconds: float | None = None,
+    queue_timeout_seconds: float = _DEFAULT_QUEUE_TIMEOUT_SECONDS,
 ) -> str | None:
-    """Call one local inference at a time and return plain model content."""
+    """Call one local inference with one total latency budget."""
     if not is_local_ai_config(settings):
         logger.error("local_ai_rejected_non_local_configuration")
         return None
@@ -55,15 +59,28 @@ async def call_local_chat(
         headers["Authorization"] = f"Bearer {settings.llm_api_key.strip()}"
 
     base = settings.llm_base_url.rstrip("/")
+    configured_timeout = max(0.1, float(settings.llm_timeout_seconds))
+    total_timeout = min(
+        configured_timeout,
+        max(0.1, float(timeout_seconds or _DEFAULT_TOTAL_TIMEOUT_SECONDS)),
+    )
+    queue_timeout = min(total_timeout, max(0.05, float(queue_timeout_seconds)))
+    loop = asyncio.get_running_loop()
+    started_at = loop.time()
     acquired = False
+    stage = "queue"
     try:
         await asyncio.wait_for(
             _request_lock.acquire(),
-            timeout=settings.llm_timeout_seconds,
+            timeout=queue_timeout,
         )
         acquired = True
+        remaining = total_timeout - (loop.time() - started_at)
+        if remaining <= 0:
+            raise TimeoutError
+        stage = "request"
         try:
-            async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
+            async with httpx.AsyncClient(timeout=remaining) as client:
                 response = await client.post(
                     f"{base}/chat/completions",
                     headers=headers,
@@ -74,11 +91,19 @@ async def call_local_chat(
             _request_lock.release()
             acquired = False
         content = response.json()["choices"][0]["message"]["content"]
+        logger.info(
+            "local_ai_request_completed elapsed_ms={} prompt_chars={} output_chars={}",
+            round((loop.time() - started_at) * 1000),
+            len(instructions) + len(user_prompt),
+            len(str(content or "")),
+        )
         return str(content).strip() if content is not None and str(content).strip() else None
     except (TimeoutError, httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
         status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
         logger.warning(
-            "local_ai_request_failed status={} err_type={}",
+            "local_ai_request_failed stage={} elapsed_ms={} status={} err_type={}",
+            stage,
+            round((loop.time() - started_at) * 1000),
             status,
             type(exc).__name__,
         )

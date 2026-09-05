@@ -57,7 +57,6 @@ import { recommendPrograms } from "@/utils/programRecommend";
 import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
 import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
-import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
 import {
   canStartProgramFromSchedule,
@@ -96,7 +95,6 @@ function draftsFromWorkout(workout: {
 export function HomePage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
-  const isAdmin = isAdminUsername(user?.username);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const catalog = useWorkoutStore((s) => s.catalog);
@@ -1052,34 +1050,11 @@ export function HomePage() {
           </div>
         ) : null}
         <Link
-          to="/programs"
-          className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
-        >
-          Все программы
-        </Link>
-        <Link
-          to="/workouts"
-          className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
-        >
-          Своя тренировка из каталога
-        </Link>
-        <Link
-          to="/progress"
-          className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
-        >
-          Открыть прогресс
-        </Link>
-        <Link
           to="/measurements"
           className="block w-full rounded-xl bg-tg-secondary px-4 py-3 text-center text-sm font-medium"
         >
           Замеры тела и динамика
         </Link>
-        {isAdmin ? (
-          <Link to="/admin" className="block text-center text-xs text-tg-link">
-            Админка exercises/programs
-          </Link>
-        ) : null}
       </div>
 
     </section>

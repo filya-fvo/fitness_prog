@@ -202,6 +202,9 @@ async def _call_configured_ai(
         settings,
         instructions,
         user_prompt,
+        max_tokens=160,
+        timeout_seconds=35,
+        queue_timeout_seconds=1,
     )
     checked = _russian_only(sanitize_ai_output(reply))
     if checked and echo_source and _looks_like_context_echo(checked, echo_source):
@@ -264,20 +267,20 @@ def _build_chat_prompt(
         content = item["content"].strip()
         if item["role"] == "assistant" and _looks_like_context_echo(content, app_context):
             continue
-        history_lines.append(f"{item['role']}: {content[:1_200]}")
+        history_lines.append(f"{item['role']}: {content[:450]}")
     history_block = "\n".join(history_lines) or "История этого диалога пуста."
     return (
         "ЗАДАЧА: ответь на последний вопрос пользователя.\n\n"
         "<application_context>\n"
-        f"{_bounded_context(app_context, max_chars=5_500)}\n"
+        f"{_bounded_context(app_context, max_chars=1_800)}\n"
         "</application_context>\n\n"
         "<catalog_context>\n"
-        f"{_bounded_context(catalog_context, max_chars=1_200)}\n"
+        f"{_bounded_context(catalog_context, max_chars=600)}\n"
         "</catalog_context>\n\n"
         "<conversation_history>\n"
-        f"{_bounded_context(history_block, max_chars=1_600)}\n"
+        f"{_bounded_context(history_block, max_chars=700)}\n"
         "</conversation_history>\n\n"
-        f"ПОСЛЕДНИЙ ВОПРОС: {message}\n"
+        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1_200)}\n"
         "Начни сразу с полезного ответа на этот вопрос. Не пересказывай контекст."
     )
 
@@ -291,9 +294,9 @@ async def chat(
     settings: Settings,
 ) -> tuple[uuid.UUID, str, str]:
     sid = session_id or uuid.uuid4()
-    rag_items = await retrieve_exercise_context(session, message, limit=3)
-    rag_block = format_rag_block(rag_items)
     domain = classify_ai_query(message)
+    rag_items = await retrieve_exercise_context(session, message, limit=2)
+    rag_block = format_rag_block(rag_items)
     days = extract_period_days(message)
     analytical_domains = {
         AIQueryDomain.WORKOUT_PROGRESS,
@@ -335,7 +338,7 @@ async def chat(
         session,
         user_id=user.id,
         session_id=sid,
-        limit=4,
+        limit=2,
     )
     system = SYSTEM_TRAINER
     if rag_items:
@@ -439,11 +442,12 @@ async def analyze_progress(
             AIQueryDomain.STRENGTH,
         },
     )
-    system = f"{SYSTEM_TRAINER}\n\n{app_context}"
+    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=1_800)}"
     prompt = (
         "Ответь именно на исходный вопрос по проверяемым данным. "
         "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
-        f"конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: {question}\n\n{evidence.text}"
+        "конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: "
+        f"{_bounded_context(question, max_chars=1_200)}\n\n{evidence.text}"
     )
     llm_reply, llm_source = await _call_configured_ai(
         settings,
