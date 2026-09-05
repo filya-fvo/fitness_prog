@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
   checkAdminSystemStatus,
+  fetchAdminSystemStatus,
   type AdminSystemCheck,
   type AdminSystemFact,
   type AdminSystemStatus,
@@ -15,6 +16,8 @@ import { toUserMessage } from "@/utils/errors";
 
 import { adminSystemLoadReducer, initialAdminSystemState } from "../adminSystemState";
 import { SystemStatusHistory } from "../components/SystemStatusHistory";
+
+const AUTO_REFRESH_MS = 30_000;
 
 const STATUS_PRESENTATION: Record<
   AdminSystemStatus,
@@ -90,6 +93,10 @@ export function AdminSystemPage() {
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
   const [state, dispatch] = useReducer(adminSystemLoadReducer, initialAdminSystemState);
   const initialLoadStarted = useRef(false);
+  const refreshInFlight = useRef(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     dispatch({ type: "load" });
@@ -104,12 +111,36 @@ export function AdminSystemPage() {
     }
   }, []);
 
+  const refreshLive = useCallback(async () => {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    setRefreshing(true);
+    try {
+      const data = await fetchAdminSystemStatus();
+      dispatch({ type: "success", data });
+      setRefreshError(null);
+    } catch (error) {
+      setRefreshError(toUserMessage(error, "Автообновление временно недоступно."));
+    } finally {
+      refreshInFlight.current = false;
+      setRefreshing(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAuthLoading && allowed && !initialLoadStarted.current) {
       initialLoadStarted.current = true;
       void load();
     }
   }, [allowed, isAuthLoading, load]);
+
+  useEffect(() => {
+    if (isAuthLoading || !allowed || !autoRefresh || state.phase !== "ready") return;
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshLive();
+    }, AUTO_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [allowed, autoRefresh, isAuthLoading, refreshLive, state.phase]);
 
   if (isAuthLoading) {
     return (
@@ -157,6 +188,7 @@ export function AdminSystemPage() {
 
       {state.phase === "ready" ? (
         <>
+          {refreshError ? <p role="alert" className="mb-3 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">{refreshError}</p> : null}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-tg-secondary p-4">
             <div>
               <p className="text-sm font-semibold text-tg-text">
@@ -166,13 +198,24 @@ export function AdminSystemPage() {
                 Проверено {formatDate(state.data.checked_at)}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="min-h-11 rounded-xl bg-tg-button px-4 py-2 text-sm font-semibold text-tg-button-text"
-            >
-              Проверить снова
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                aria-pressed={autoRefresh}
+                onClick={() => setAutoRefresh((value) => !value)}
+                className="min-h-11 rounded-xl bg-tg-bg px-3 py-2 text-xs font-medium text-tg-link"
+              >
+                Автообновление: {autoRefresh ? "включено" : "выключено"}
+              </button>
+              <button
+                type="button"
+                disabled={refreshing}
+                onClick={() => void load()}
+                className="min-h-11 rounded-xl bg-tg-button px-4 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+              >
+                {refreshing ? "Обновляем…" : "Проверить снова"}
+              </button>
+            </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {state.data.items.map((item) => <SystemStatusCard key={item.key} item={item} />)}

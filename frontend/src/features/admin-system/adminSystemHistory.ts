@@ -20,6 +20,10 @@ const CHECK_TITLES: Record<AdminSystemHistorySnapshot["items"][number]["key"], s
   backup: "Резервная копия",
   deployment: "Версия",
   https: "HTTPS",
+  llm: "Локальный ИИ",
+  ocr: "Распознавание этикеток",
+  telegram: "Telegram",
+  email: "Email",
 };
 
 export function summarizeSystemSnapshot(snapshot: AdminSystemHistorySnapshot): string {

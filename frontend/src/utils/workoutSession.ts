@@ -56,10 +56,11 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
               setNumber,
               reps: "",
               weight: "",
+              weightMode: exercise.weight_mode ?? null,
               isCompleted: false,
               restTimeSec: restSec,
               durationSec: null,
-              note: null,
+              note: exercise.note ?? null,
               machineParams: null,
             },
       );

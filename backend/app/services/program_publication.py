@@ -186,6 +186,12 @@ async def validate_for_publication(session: AsyncSession, program: Program) -> l
             rest = _integer(raw_item.get("rest_sec"), minimum=0, maximum=600)
             if rest is None:
                 errors.append(f"{prefix}: отдых должен быть от 0 до 600 секунд.")
+            weight_mode = raw_item.get("weight_mode")
+            if weight_mode not in {None, "", "total", "per_hand"}:
+                errors.append(f"{prefix}: неизвестный режим веса.")
+            note = raw_item.get("note")
+            if note is not None and len(str(note)) > 500:
+                errors.append(f"{prefix}: комментарий слишком длинный.")
 
             raw_id = raw_item.get("exercise_id")
             raw_name = str(raw_item.get("exercise_name") or "").strip()

@@ -28,7 +28,10 @@ const js = measured.filter((item) => item.name.endsWith(".js"));
 const totalJsGzip = js.reduce((sum, item) => sum + item.gzip, 0);
 const largestJsGzip = Math.max(0, ...js.map((item) => item.gzip));
 const adminJs = js.filter((item) => (
-  /^Admin[A-Z].*\.js$/.test(item.name) || /^SavedAdminFilters-.*\.js$/.test(item.name)
+  /^Admin[A-Z].*\.js$/.test(item.name) ||
+  /^SavedAdminFilters-.*\.js$/.test(item.name) ||
+  /^adminExercises-.*\.js$/.test(item.name) ||
+  /^adminLocalCleanup-.*\.js$/.test(item.name)
 ));
 const adminJsGzip = adminJs.reduce((sum, item) => sum + item.gzip, 0);
 const productJsGzip = totalJsGzip - adminJsGzip;
@@ -37,10 +40,12 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 const limits = {
   // Durable measurement sync adds about 2.7 KB gzip to the already lazy storage
   // route. Keep a narrow measured margin without relaxing chunk isolation.
-  totalJsGzip: 473_000,
+  // The visual program editor is an isolated admin route (~8.7 KB gzip).
+  // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
+  totalJsGzip: 483_000,
   productJsGzip: 432_000,
-  // Saved filter sets and bounded group export remain isolated in admin routes.
-  adminJsGzip: 41_500,
+  // Saved filters, group export and the program editor remain isolated in admin routes.
+  adminJsGzip: 51_000,
   largestJsGzip: 140_000,
 };
 const failures = [];

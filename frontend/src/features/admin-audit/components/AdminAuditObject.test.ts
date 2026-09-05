@@ -8,7 +8,7 @@ describe("adminAuditObjectHref", () => {
   it.each([
     ["user", `/admin/users/${id}`],
     ["exercise", `/admin/exercises?focus=${id}`],
-    ["program", `/admin?tab=content&focus=${id}`],
+    ["program", `/admin/programs?focus=${id}`],
     ["broadcast", `/admin/broadcasts?focus=${id}`],
   ])("links %s audit objects to their exact admin screen", (type, expected) => {
     expect(adminAuditObjectHref(type, id)).toBe(expected);

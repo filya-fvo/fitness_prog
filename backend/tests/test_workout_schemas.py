@@ -14,6 +14,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
+from app.services import workout_service
 
 
 def test_workout_create_defaults() -> None:
@@ -43,6 +44,8 @@ def test_workout_plan_keeps_replacement_context() -> None:
                 "original_exercise_id": original_id,
                 "order": 1,
                 "suggested_weight": Decimal("12.5"),
+                "weight_mode": "per_hand",
+                "note": "Не терять темп",
             }
         ],
     )
@@ -51,6 +54,36 @@ def test_workout_plan_keeps_replacement_context() -> None:
     assert plan.limitations == ["no_knee"]
     assert plan.exercises[0].original_exercise_id == original_id
     assert plan.exercises[0].suggested_weight == Decimal("12.5")
+    assert plan.exercises[0].weight_mode == "per_hand"
+    assert plan.exercises[0].note == "Не терять темп"
+
+
+def test_program_plan_defaults_are_copied_to_created_set_slots() -> None:
+    class Session:
+        def __init__(self) -> None:
+            self.added = []
+
+        def add(self, value) -> None:
+            self.added.append(value)
+
+    session = Session()
+    workout_service._create_set_slots(  # type: ignore[arg-type]
+        session,
+        uuid4(),
+        {
+            "exercises": [{
+                "exercise_id": str(uuid4()),
+                "target_sets": 2,
+                "rest_sec": 75,
+                "weight_mode": "per_hand",
+                "note": "Контролировать технику",
+            }],
+        },
+    )
+
+    assert len(session.added) == 2
+    assert all(item.weight_mode == "per_hand" for item in session.added)
+    assert all(item.note == "Контролировать технику" for item in session.added)
 
 
 def test_workout_set_create_validation() -> None:

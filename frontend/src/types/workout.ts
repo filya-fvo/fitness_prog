@@ -46,6 +46,8 @@ export type WorkoutPlanExercise = {
   suggested_weight?: number | null;
   /** Set when user replaces an exercise during a session; used to restore default. */
   original_exercise_id?: string | null;
+  weight_mode?: "total" | "per_hand" | null;
+  note?: string | null;
 };
 
 export type WorkoutPlan = {

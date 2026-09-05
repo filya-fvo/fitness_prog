@@ -1,5 +1,5 @@
 /**
- * Administrator hub and legacy program controls.
+ * Administrator hub and user controls.
  * Access: only configured bot owner (default @Filatov_Slava).
  */
 import { useEffect, useMemo, useState } from "react";
@@ -13,7 +13,7 @@ import {
   type AdminResetScope,
   type AdminUser,
 } from "@/api/admin";
-import { apiClient, getStoredToken } from "@/api/client";
+import { getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
 import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
 import {
@@ -25,35 +25,8 @@ import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
-import { enumLabel, programDayLabel, subscriptionLabel } from "@/utils/localization";
+import { enumLabel, subscriptionLabel } from "@/utils/localization";
 import { confirmAction } from "@/lib/telegram";
-
-type ProgramRow = {
-  id: string;
-  name: string;
-  description: string | null;
-  target_level: string | null;
-  duration_weeks: number | null;
-  workout_type: string;
-  level: string | null;
-  publication_status: "draft" | "published" | "archived";
-  version: number;
-  is_current: boolean;
-  video_hint?: string;
-};
-
-const WORKOUT_TYPES = [
-  "full_body",
-  "full_body_alt",
-  "upper_lower",
-  "push_pull_legs",
-  "home_express",
-  "strength",
-  "hypertrophy",
-  "mobility",
-  "conditioning",
-  "custom",
-];
 
 const RESET_OPTIONS: Array<{
   scope: AdminResetScope;
@@ -84,11 +57,9 @@ const RESET_OPTIONS: Array<{
 
 export function AdminPage() {
   const [searchParams] = useSearchParams();
-  const focusedProgramId = searchParams.get("focus");
   const user = useUserStore((s) => s.user);
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);
   const allowed = useMemo(() => isAdminUsername(user?.username), [user?.username]);
-  const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"users" | "content">(
@@ -104,48 +75,13 @@ export function AdminPage() {
   const [resetScope, setResetScope] = useState<AdminResetScope>("workouts");
   const resetDialogRef = useModalAccessibility(Boolean(resetTarget), () => setResetTarget(null));
 
-  const [progName, setProgName] = useState("");
-  const [progType, setProgType] = useState("full_body");
-  const [progLevel, setProgLevel] = useState("beginner");
-
-  async function reload() {
-    if (!getStoredToken()) {
-      setError("Нужен JWT (войдите через Telegram auth).");
-      return;
-    }
-    setError(null);
-    const { data } = await apiClient.get("/programs", { params: { admin_view: true } });
-    setPrograms(
-      (data.items as Array<Record<string, unknown>>).map((item) => ({
-        id: String(item.id),
-        name: String(item.name),
-        description: (item.description as string | null) ?? null,
-        target_level: (item.target_level as string | null) ?? null,
-        duration_weeks: (item.duration_weeks as number | null) ?? null,
-        workout_type: String(item.workout_type || "custom"),
-        level: (item.level as string | null) ?? null,
-        publication_status: String(item.publication_status || "draft") as ProgramRow["publication_status"],
-        version: Number(item.version || 1),
-        is_current: Boolean(item.is_current),
-      })),
-    );
-  }
-
   useEffect(() => {
     if (isAuthLoading || !allowed) return;
-    void reload().catch((err: unknown) => {
-      setError(toUserMessage(err, "Не удалось загрузить админку"));
-    });
     void loadUsers(EMPTY_USER_FILTERS).catch(() => {
       /* loadUsers sets error */
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, isAuthLoading]);
-
-  useEffect(() => {
-    if (!focusedProgramId || !programs.some((item) => item.id === focusedProgramId)) return;
-    document.getElementById(`admin-program-${focusedProgramId}`)?.scrollIntoView({ block: "center" });
-  }, [focusedProgramId, programs]);
 
   async function loadUsers(filters = userFilters) {
     if (!getStoredToken()) {
@@ -261,74 +197,6 @@ export function AdminPage() {
       await loadUsers();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось удалить пользователя"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createProgram() {
-    if (!progName.trim()) return;
-    setBusy(true);
-    try {
-      await apiClient.post("/programs", {
-        name: progName.trim(),
-        description: "Создано из простой админки",
-        target_level: progLevel,
-        level: progLevel,
-        workout_type: progType,
-        duration_weeks: 4,
-        is_template: true,
-        structure: {
-          workout_type: progType,
-          level: progLevel,
-          days_per_week: 3,
-          schedule: [],
-        },
-      });
-      setProgName("");
-      setOkNote("Черновик создан. Он не виден пользователям до заполнения и публикации.");
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось создать программу"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function patchProgram(id: string, patch: Record<string, unknown>) {
-    setBusy(true);
-    try {
-      await apiClient.put(`/programs/${id}`, patch);
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось обновить программу"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function publishProgram(id: string) {
-    setBusy(true);
-    setOkNote(null);
-    setError(null);
-    try {
-      await apiClient.post(`/programs/${id}/publish`);
-      setOkNote("Программа опубликована.");
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось опубликовать программу"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deleteProgram(id: string) {
-    setBusy(true);
-    try {
-      await apiClient.delete(`/programs/${id}`);
-      await reload();
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось удалить программу"));
     } finally {
       setBusy(false);
     }
@@ -536,120 +404,10 @@ export function AdminPage() {
           <span aria-hidden="true" className="text-tg-link">→</span>
         </Link>
 
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <h2 className="font-medium">Программы</h2>
-          <div className="mt-3 grid gap-2">
-            <input
-              value={progName}
-              onChange={(e) => setProgName(e.target.value)}
-              placeholder="Название программы"
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            />
-            <select
-              value={progType}
-              onChange={(e) => setProgType(e.target.value)}
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            >
-              {WORKOUT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {enumLabel(t)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={progLevel}
-              onChange={(e) => setProgLevel(e.target.value)}
-              className="rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-            >
-              <option value="beginner">новичок</option>
-              <option value="intermediate">средний</option>
-              <option value="advanced">продвинутый</option>
-            </select>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void createProgram()}
-              className="rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text"
-            >
-              Создать черновик
-            </button>
-          </div>
-          <ul className="mt-4 space-y-3 text-sm">
-            {programs.map((item) => (
-              <li
-                id={`admin-program-${item.id}`}
-                key={item.id}
-                className={`rounded-xl bg-tg-bg p-3 ${item.id === focusedProgramId ? "ring-2 ring-tg-button" : ""}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{programDayLabel(item.name)}</p>
-                    <p className="text-[11px] text-tg-hint">
-                      {enumLabel(item.workout_type)} · {enumLabel(item.level || item.target_level, "Уровень не указан")}
-                    </p>
-                    <p className="mt-1 text-[11px] text-tg-hint">
-                      {item.publication_status === "draft"
-                        ? "Черновик"
-                        : item.publication_status === "published"
-                          ? item.is_current ? "Опубликована" : "Предыдущая версия"
-                          : "Архив"} · версия {item.version}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-tg-link"
-                    onClick={() => void deleteProgram(item.id)}
-                  >
-                    Удалить
-                  </button>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <select
-                    disabled={item.publication_status !== "draft"}
-                    value={item.workout_type}
-                    onChange={(e) =>
-                      void patchProgram(item.id, {
-                        workout_type: e.target.value,
-                      })
-                    }
-                    className="rounded-lg border border-black/10 bg-tg-secondary px-2 py-1 text-xs"
-                  >
-                    {WORKOUT_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {enumLabel(t)}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    disabled={item.publication_status !== "draft"}
-                    value={item.level || item.target_level || "beginner"}
-                    onChange={(e) =>
-                      void patchProgram(item.id, {
-                        level: e.target.value,
-                        target_level: e.target.value,
-                      })
-                    }
-                    className="rounded-lg border border-black/10 bg-tg-secondary px-2 py-1 text-xs"
-                  >
-                    <option value="beginner">новичок</option>
-                    <option value="intermediate">средний</option>
-                    <option value="advanced">продвинутый</option>
-                  </select>
-                </div>
-                {item.publication_status === "draft" ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void publishProgram(item.id)}
-                    className="mt-2 min-h-11 w-full rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text disabled:opacity-50"
-                  >
-                    Проверить и опубликовать
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Link to="/admin/programs" className="flex min-h-20 items-center justify-between rounded-2xl bg-tg-secondary p-4">
+          <span><span className="block font-medium">Редактор программ</span><span className="mt-1 block text-xs text-tg-hint">Дни, упражнения, предпросмотр, версии, публикация и откат</span></span>
+          <span aria-hidden="true" className="text-tg-link">→</span>
+        </Link>
       </div>
 
       {resetTarget ? (

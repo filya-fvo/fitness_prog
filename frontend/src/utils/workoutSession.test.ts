@@ -30,6 +30,8 @@ function workoutFixture(overrides: Partial<Workout> = {}): Workout {
           target_sets: 3,
           target_reps: "10",
           rest_sec: 90,
+          weight_mode: "per_hand",
+          note: "Не терять темп",
         },
       ],
     },
@@ -45,6 +47,8 @@ describe("draftsFromWorkoutSnapshot", () => {
     expect(drafts).toHaveLength(3);
     expect(drafts.map((row) => row.setNumber)).toEqual([1, 2, 3]);
     expect(drafts.every((row) => row.restTimeSec === 90)).toBe(true);
+    expect(drafts.every((row) => row.weightMode === "per_hand")).toBe(true);
+    expect(drafts.every((row) => row.note === "Не терять темп")).toBe(true);
     expect(drafts.every((row) => !row.isCompleted)).toBe(true);
   });
 

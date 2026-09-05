@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
+import httpx
 from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,15 +19,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.schemas.admin_system import (
     AdminSystemCheck,
+    AdminSystemCheckKey,
     AdminSystemFact,
     AdminSystemStatus,
     AdminSystemStatusResponse,
 )
+from app.services import local_llm, telegram_bot
 
 WORKER_STATUS_KEY = "fitness:admin:worker:heartbeat"
 NOTIFICATION_STATUS_KEY = "fitness:admin:notifications:last"
 ARQ_QUEUE_KEY = "arq:queue"
 _COMMIT_RE = re.compile(r"^[0-9a-fA-F]{7,64}$")
+_LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
 _STATUS_PRIORITY: dict[AdminSystemStatus, int] = {
     "normal": 0,
     "no_data": 1,
@@ -377,11 +383,148 @@ def https_check(settings: Settings, checked_at: datetime) -> AdminSystemCheck:
     )
 
 
+async def _internal_http_check(
+    *,
+    key: AdminSystemCheckKey,
+    title: str,
+    url: str,
+    configured: bool,
+    checked_at: datetime,
+) -> AdminSystemCheck:
+    if not configured:
+        return AdminSystemCheck(
+            key=key,
+            title=title,
+            status="error",
+            summary="Внутренний сервис настроен небезопасно.",
+            next_step="Проверьте внутренний адрес сервиса в конфигурации.",
+            observed_at=checked_at,
+        )
+    started = perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=2.5) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("admin_internal_probe_failed key={} err_type={}", key, type(exc).__name__)
+        return AdminSystemCheck(
+            key=key,
+            title=title,
+            status="attention",
+            summary="Внутренний сервис не ответил на проверку.",
+            next_step=f"Проверьте контейнер {key} и его последние логи.",
+            observed_at=checked_at,
+        )
+    latency_ms = round((perf_counter() - started) * 1000)
+    return AdminSystemCheck(
+        key=key,
+        title=title,
+        status="normal",
+        summary="Внутренний сервис отвечает.",
+        next_step="Действий не требуется.",
+        observed_at=checked_at,
+        facts=[_fact("Время ответа", f"{latency_ms} мс")],
+    )
+
+
+async def probe_llm(settings: Settings, checked_at: datetime) -> AdminSystemCheck:
+    parsed = urlsplit(settings.llm_base_url.strip())
+    health_url = urlunsplit((parsed.scheme, parsed.netloc, "/health", "", ""))
+    return await _internal_http_check(
+        key="llm",
+        title="Локальный ИИ",
+        url=health_url,
+        configured=local_llm.is_local_ai_config(settings),
+        checked_at=checked_at,
+    )
+
+
+async def probe_ocr(settings: Settings, checked_at: datetime) -> AdminSystemCheck:
+    parsed = urlsplit(settings.ocr_base_url.strip())
+    configured = parsed.scheme == "http" and (parsed.hostname or "").casefold() in _LOCAL_OCR_HOSTS
+    health_url = f"{settings.ocr_base_url.rstrip('/')}/health"
+    return await _internal_http_check(
+        key="ocr",
+        title="Распознавание этикеток",
+        url=health_url,
+        configured=configured,
+        checked_at=checked_at,
+    )
+
+
+async def probe_telegram(settings: Settings, checked_at: datetime) -> AdminSystemCheck:
+    if not settings.bot_token or settings.bot_token.startswith("replace_with"):
+        return AdminSystemCheck(
+            key="telegram",
+            title="Telegram webhook",
+            status="no_data",
+            summary="Telegram-бот не настроен.",
+            next_step="Настройте BOT_TOKEN и webhook.",
+        )
+    try:
+        response = await asyncio.wait_for(telegram_bot.get_webhook_info(settings), timeout=3.0)
+        result = response.get("result") if isinstance(response, dict) else None
+        if not isinstance(result, dict):
+            raise ValueError("unexpected response")
+        url_ready = str(result.get("url") or "").startswith("https://")
+        pending = max(0, int(result.get("pending_update_count") or 0))
+        last_error = bool(result.get("last_error_message"))
+    except (TimeoutError, telegram_bot.TelegramBotError, TypeError, ValueError) as exc:
+        logger.warning("admin_telegram_probe_failed err_type={}", type(exc).__name__)
+        return AdminSystemCheck(
+            key="telegram",
+            title="Telegram webhook",
+            status="attention",
+            summary="Telegram не ответил на безопасную проверку webhook.",
+            next_step="Проверьте webhook и доступ к Telegram Bot API.",
+            observed_at=checked_at,
+        )
+    status: AdminSystemStatus = "normal"
+    if not url_ready or last_error or pending > 50:
+        status = "error" if not url_ready or pending > 200 else "attention"
+    return AdminSystemCheck(
+        key="telegram",
+        title="Telegram webhook",
+        status=status,
+        summary=("Webhook зарегистрирован и отвечает." if status == "normal" else "Webhook требует внимания."),
+        next_step=("Действий не требуется." if status == "normal" else "Проверьте очередь и последние ошибки Telegram webhook."),
+        observed_at=checked_at,
+        facts=[
+            _fact("Ожидает updates", pending, "number"),
+            _fact("Выделенный smoke", "настроен" if settings.admin_smoke_telegram_id else "не настроен"),
+        ],
+    )
+
+
+def email_check(settings: Settings, checked_at: datetime) -> AdminSystemCheck:
+    configured = bool(
+        settings.smtp_password.strip()
+        and settings.smtp_host.strip()
+        and settings.smtp_from_email.strip()
+    )
+    return AdminSystemCheck(
+        key="email",
+        title="Email",
+        status="normal" if configured else "no_data",
+        summary=("SMTP настроен для отправки." if configured else "SMTP не настроен для реальной отправки."),
+        next_step=("Действий не требуется." if configured else "Настройте SMTP перед включением email-входа."),
+        observed_at=checked_at,
+        facts=[_fact("Режим соединения", "SSL" if settings.smtp_use_ssl else "STARTTLS")],
+    )
+
+
 async def collect_system_status(
     session: AsyncSession,
     settings: Settings,
 ) -> AdminSystemStatusResponse:
     checked_at = _utc_now()
+    database = await probe_database(session, checked_at)
+    redis_items, llm, ocr, telegram = await asyncio.gather(
+        probe_redis(settings, checked_at),
+        probe_llm(settings, checked_at),
+        probe_ocr(settings, checked_at),
+        probe_telegram(settings, checked_at),
+    )
     items = [
         AdminSystemCheck(
             key="api",
@@ -391,11 +534,15 @@ async def collect_system_status(
             next_step="Действий не требуется.",
             observed_at=checked_at,
         ),
-        await probe_database(session, checked_at),
-        *(await probe_redis(settings, checked_at)),
+        database,
+        *redis_items,
         backup_check(settings, checked_at),
         deployment_check(settings),
         https_check(settings, checked_at),
+        llm,
+        ocr,
+        telegram,
+        email_check(settings, checked_at),
     ]
     overall_status = max(
         (item.status for item in items),

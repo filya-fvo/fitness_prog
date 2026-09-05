@@ -18,6 +18,8 @@ class WorkoutPlanExercise(BaseModel):
     name_ru: str | None = None
     suggested_weight: Decimal | None = Field(default=None, ge=0)
     original_exercise_id: uuid.UUID | None = None
+    weight_mode: str | None = Field(default=None, pattern=r"^(total|per_hand)$")
+    note: str | None = Field(default=None, max_length=500)
 
 
 class WorkoutPlan(BaseModel):

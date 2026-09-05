@@ -261,6 +261,8 @@ async def build_plan_from_program_day(
                 "target_reps": str(target_reps),
                 "rest_sec": max(0, rest_sec),
                 "name_ru": exercise.name_ru,
+                "weight_mode": item.get("weight_mode") or None,
+                "note": str(item.get("note") or "").strip() or None,
             }
         )
         order += 1
@@ -409,6 +411,8 @@ def _create_set_slots(session: AsyncSession, workout_id: uuid.UUID, plan: dict[s
                     set_number=set_number,
                     is_completed=False,
                     rest_time_sec=int(item.get("rest_sec") or 60),
+                    weight_mode=item.get("weight_mode") or None,
+                    note=item.get("note") or None,
                 )
             )
 

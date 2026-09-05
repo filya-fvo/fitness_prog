@@ -20,6 +20,10 @@ AdminSystemCheckKey = Literal[
     "backup",
     "deployment",
     "https",
+    "llm",
+    "ocr",
+    "telegram",
+    "email",
 ]
 AdminSystemSnapshotSource = Literal["manual", "scheduled"]
 

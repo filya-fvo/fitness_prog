@@ -201,6 +201,66 @@ def test_failed_backup_status_is_reported_without_host_details(tmp_path) -> None
 
 
 @pytest.mark.asyncio
+async def test_internal_ai_probes_reject_external_configuration_without_request() -> None:
+    checked_at = datetime.now(UTC)
+    settings = Settings(
+        jwt_secret="test",
+        llm_base_url="https://external-ai.example/v1",
+        ocr_base_url="https://external-ocr.example",
+    )
+
+    llm = await admin_system.probe_llm(settings, checked_at)
+    ocr = await admin_system.probe_ocr(settings, checked_at)
+
+    assert llm.status == "error"
+    assert ocr.status == "error"
+    assert "external" not in (llm.model_dump_json() + ocr.model_dump_json())
+
+
+@pytest.mark.asyncio
+async def test_telegram_probe_reports_only_safe_webhook_facts(monkeypatch) -> None:
+    async def fake_info(_settings):
+        return {
+            "ok": True,
+            "result": {
+                "url": "https://api.example.test/telegram/webhook",
+                "pending_update_count": 201,
+                "last_error_message": "secret upstream detail",
+            },
+        }
+
+    monkeypatch.setattr(admin_system.telegram_bot, "get_webhook_info", fake_info)
+    check = await admin_system.probe_telegram(
+        Settings(
+            bot_token="123456:super-secret-token",
+            admin_smoke_telegram_id=987654321,
+            jwt_secret="test",
+        ),
+        datetime.now(UTC),
+    )
+
+    rendered = check.model_dump_json()
+    assert check.status == "error"
+    assert any(fact.label == "Ожидает updates" and fact.value == "201" for fact in check.facts)
+    assert "super-secret" not in rendered
+    assert "987654321" not in rendered
+    assert "upstream detail" not in rendered
+
+
+def test_email_check_reports_configuration_without_credentials() -> None:
+    checked_at = datetime.now(UTC)
+    missing = admin_system.email_check(Settings(smtp_password="", jwt_secret="test"), checked_at)
+    ready = admin_system.email_check(
+        Settings(smtp_password="super-secret", smtp_host="smtp.example", jwt_secret="test"),
+        checked_at,
+    )
+
+    assert missing.status == "no_data"
+    assert ready.status == "normal"
+    assert "super-secret" not in ready.model_dump_json()
+
+
+@pytest.mark.asyncio
 async def test_overall_status_uses_worst_independent_check(monkeypatch) -> None:
     async def fake_database(_session, checked_at):
         return AdminSystemCheck(

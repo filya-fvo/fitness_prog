@@ -3,7 +3,7 @@ import { z } from "zod";
 import { apiClient } from "@/api/client";
 import type { Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 
-const workoutPlanSchema = z.object({
+export const workoutPlanSchema = z.object({
   title: z.string().nullable().optional(),
   workout_type: z.string().nullable().optional(),
   day_index: z.number().nullable().optional(),
@@ -23,6 +23,8 @@ const workoutPlanSchema = z.object({
     name_ru: z.string().nullable().optional(),
     suggested_weight: z.union([z.number(), z.string()]).nullable().optional(),
     original_exercise_id: z.string().uuid().nullable().optional(),
+    weight_mode: z.enum(["total", "per_hand"]).nullable().optional(),
+    note: z.string().nullable().optional(),
   })),
 });
 

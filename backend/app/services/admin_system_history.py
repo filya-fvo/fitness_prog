@@ -34,6 +34,10 @@ _CHECK_ORDER: tuple[AdminSystemCheckKey, ...] = (
     "backup",
     "deployment",
     "https",
+    "llm",
+    "ocr",
+    "telegram",
+    "email",
 )
 _VALID_STATUSES: set[str] = {"normal", "attention", "error", "no_data"}
 

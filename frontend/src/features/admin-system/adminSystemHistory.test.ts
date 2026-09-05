@@ -28,8 +28,9 @@ describe("summarizeSystemSnapshot", () => {
         items: [
           { key: "database", status: "error" },
           { key: "worker", status: "no_data" },
+          { key: "telegram", status: "attention" },
         ],
       }),
-    ).toBe("PostgreSQL — Ошибка; Worker — Нет данных");
+    ).toBe("PostgreSQL — Ошибка; Worker — Нет данных; Telegram — Требует внимания");
   });
 });
