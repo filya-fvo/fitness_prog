@@ -247,6 +247,42 @@ async def test_telegram_probe_reports_only_safe_webhook_facts(monkeypatch) -> No
     assert "upstream detail" not in rendered
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error_age_minutes", "expected_status"),
+    [(5, "attention"), (45, "normal")],
+)
+async def test_telegram_probe_expires_historical_delivery_error(
+    monkeypatch,
+    error_age_minutes: int,
+    expected_status: str,
+) -> None:
+    checked_at = datetime.now(UTC)
+
+    async def fake_info(_settings):
+        return {
+            "ok": True,
+            "result": {
+                "url": "https://api.example.test/telegram/webhook",
+                "pending_update_count": 0,
+                "last_error_date": int(
+                    (checked_at - timedelta(minutes=error_age_minutes)).timestamp()
+                ),
+                "last_error_message": "must not be exposed",
+            },
+        }
+
+    monkeypatch.setattr(admin_system.telegram_bot, "get_webhook_info", fake_info)
+    check = await admin_system.probe_telegram(
+        Settings(bot_token="123456:test-token", jwt_secret="test"),
+        checked_at,
+    )
+
+    assert check.status == expected_status
+    assert any(fact.label == "Последняя ошибка" for fact in check.facts)
+    assert "must not be exposed" not in check.model_dump_json()
+
+
 def test_email_check_reports_configuration_without_credentials() -> None:
     checked_at = datetime.now(UTC)
     missing = admin_system.email_check(Settings(smtp_password="", jwt_secret="test"), checked_at)

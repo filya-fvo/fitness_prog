@@ -31,6 +31,7 @@ NOTIFICATION_STATUS_KEY = "fitness:admin:notifications:last"
 ARQ_QUEUE_KEY = "arq:queue"
 _COMMIT_RE = re.compile(r"^[0-9a-fA-F]{7,64}$")
 _LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
+_TELEGRAM_RECENT_ERROR_MINUTES = 30
 _STATUS_PRIORITY: dict[AdminSystemStatus, int] = {
     "normal": 0,
     "no_data": 1,
@@ -468,7 +469,21 @@ async def probe_telegram(settings: Settings, checked_at: datetime) -> AdminSyste
             raise ValueError("unexpected response")
         url_ready = str(result.get("url") or "").startswith("https://")
         pending = max(0, int(result.get("pending_update_count") or 0))
-        last_error = bool(result.get("last_error_message"))
+        last_error_age: int | None = None
+        last_error_recent = False
+        if result.get("last_error_message"):
+            try:
+                last_error_at = datetime.fromtimestamp(
+                    int(result.get("last_error_date")),
+                    UTC,
+                )
+                last_error_age = max(
+                    0,
+                    int((checked_at - last_error_at).total_seconds() // 60),
+                )
+                last_error_recent = last_error_age <= _TELEGRAM_RECENT_ERROR_MINUTES
+            except (OSError, OverflowError, TypeError, ValueError):
+                last_error_recent = True
     except (TimeoutError, telegram_bot.TelegramBotError, TypeError, ValueError) as exc:
         logger.warning("admin_telegram_probe_failed err_type={}", type(exc).__name__)
         return AdminSystemCheck(
@@ -480,19 +495,29 @@ async def probe_telegram(settings: Settings, checked_at: datetime) -> AdminSyste
             observed_at=checked_at,
         )
     status: AdminSystemStatus = "normal"
-    if not url_ready or last_error or pending > 50:
+    if not url_ready or last_error_recent or pending > 50:
         status = "error" if not url_ready or pending > 200 else "attention"
+    summary = "Webhook зарегистрирован и отвечает."
+    if not url_ready:
+        summary = "Webhook не зарегистрирован на безопасном HTTPS-адресе."
+    elif pending > 50:
+        summary = "В очереди Telegram накопились необработанные updates."
+    elif last_error_recent:
+        summary = "Webhook отвечает, но Telegram недавно фиксировал ошибку доставки."
+    facts = [
+        _fact("Ожидает updates", pending, "number"),
+        _fact("Выделенный smoke", "настроен" if settings.admin_smoke_telegram_id else "не настроен"),
+    ]
+    if last_error_age is not None:
+        facts.append(_fact("Последняя ошибка", f"{last_error_age} мин назад"))
     return AdminSystemCheck(
         key="telegram",
         title="Telegram webhook",
         status=status,
-        summary=("Webhook зарегистрирован и отвечает." if status == "normal" else "Webhook требует внимания."),
+        summary=summary,
         next_step=("Действий не требуется." if status == "normal" else "Проверьте очередь и последние ошибки Telegram webhook."),
         observed_at=checked_at,
-        facts=[
-            _fact("Ожидает updates", pending, "number"),
-            _fact("Выделенный smoke", "настроен" if settings.admin_smoke_telegram_id else "не настроен"),
-        ],
+        facts=facts,
     )
 
 
