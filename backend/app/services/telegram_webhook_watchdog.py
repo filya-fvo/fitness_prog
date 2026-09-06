@@ -60,6 +60,8 @@ async def repair_telegram_webhook(
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Inspect and, only when necessary, re-register the configured webhook."""
+    if settings.telegram_update_mode == "polling":
+        return {"ok": True, "repaired": False, "skipped": "polling_mode"}
     expected_url = expected_webhook_url(settings)
     if not expected_url or not settings.telegram_webhook_secret.strip():
         return {"ok": True, "repaired": False, "skipped": "not_configured"}

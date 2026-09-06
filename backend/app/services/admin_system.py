@@ -28,6 +28,7 @@ from app.services import local_llm, telegram_bot
 
 WORKER_STATUS_KEY = "fitness:admin:worker:heartbeat"
 NOTIFICATION_STATUS_KEY = "fitness:admin:notifications:last"
+TELEGRAM_POLLER_STATUS_KEY = "fitness:admin:telegram-poller:heartbeat"
 ARQ_QUEUE_KEY = "arq:queue"
 _COMMIT_RE = re.compile(r"^[0-9a-fA-F]{7,64}$")
 _LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
@@ -457,11 +458,34 @@ async def probe_telegram(settings: Settings, checked_at: datetime) -> AdminSyste
     if not settings.bot_token or settings.bot_token.startswith("replace_with"):
         return AdminSystemCheck(
             key="telegram",
-            title="Telegram webhook",
+            title="Telegram-бот",
             status="no_data",
             summary="Telegram-бот не настроен.",
-            next_step="Настройте BOT_TOKEN и webhook.",
+            next_step="Настройте BOT_TOKEN и способ получения updates.",
         )
+
+    poller_payload: dict[str, Any] | None = None
+    if settings.telegram_update_mode == "polling":
+        from redis.asyncio import Redis
+
+        redis = Redis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            socket_connect_timeout=1.5,
+            socket_timeout=1.5,
+        )
+        try:
+            poller_payload = _runtime_json(await redis.get(TELEGRAM_POLLER_STATUS_KEY))
+        except Exception as exc:
+            logger.warning("admin_telegram_poller_probe_failed err_type={}", type(exc).__name__)
+        finally:
+            try:
+                await redis.aclose()
+            except Exception as exc:
+                logger.warning(
+                    "admin_telegram_poller_close_failed err_type={}",
+                    type(exc).__name__,
+                )
     try:
         response = await asyncio.wait_for(telegram_bot.get_webhook_info(settings), timeout=3.0)
         result = response.get("result") if isinstance(response, dict) else None
@@ -488,11 +512,53 @@ async def probe_telegram(settings: Settings, checked_at: datetime) -> AdminSyste
         logger.warning("admin_telegram_probe_failed err_type={}", type(exc).__name__)
         return AdminSystemCheck(
             key="telegram",
-            title="Telegram webhook",
+            title="Telegram-бот",
             status="attention",
-            summary="Telegram не ответил на безопасную проверку webhook.",
-            next_step="Проверьте webhook и доступ к Telegram Bot API.",
+            summary="Telegram не ответил на безопасную проверку.",
+            next_step="Проверьте доступ к Telegram Bot API.",
             observed_at=checked_at,
+        )
+    if settings.telegram_update_mode == "polling":
+        poller_at = _parse_datetime((poller_payload or {}).get("recorded_at"))
+        poller_age = (
+            max(0, int((checked_at - poller_at).total_seconds()))
+            if poller_at is not None
+            else None
+        )
+        poller_state = str((poller_payload or {}).get("state") or "")[:32]
+        status: AdminSystemStatus = "normal"
+        summary = "Long polling получает события Telegram без публичного webhook."
+        next_step = "Действий не требуется."
+        if url_ready:
+            status = "attention"
+            summary = "Webhook снова включён и конфликтует с long polling."
+            next_step = "Проверьте контейнер telegram-poller."
+        elif poller_age is None or poller_age > 120:
+            status = "error"
+            summary = "Long polling давно не сообщал о работе."
+            next_step = "Проверьте контейнер telegram-poller и его журнал."
+        elif poller_state in {"telegram_unavailable", "dispatch_failed"}:
+            status = "attention"
+            summary = "Long polling работает с временными ошибками доставки."
+            next_step = "Повторите проверку через минуту."
+        elif pending > 10:
+            status = "attention" if pending <= 50 else "error"
+            summary = "В Telegram накопились ожидающие события."
+            next_step = "Проверьте контейнер telegram-poller и его журнал."
+        facts = [
+            _fact("Режим", "long polling"),
+            _fact("Ожидает updates", pending, "number"),
+        ]
+        if poller_at is not None:
+            facts.append(_fact("Последний heartbeat", poller_at.isoformat(), "datetime"))
+        return AdminSystemCheck(
+            key="telegram",
+            title="Telegram-бот",
+            status=status,
+            summary=summary,
+            next_step=next_step,
+            observed_at=poller_at or checked_at,
+            facts=facts,
         )
     status: AdminSystemStatus = "normal"
     if not url_ready or last_error_recent or pending > 50:

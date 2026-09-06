@@ -157,19 +157,21 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\setup_telegram_bot.ps1 `
   -MiniAppUrl "https://app.filfitclub.ru" `
-  -WebhookBase "https://api.filfitclub.ru" `
+  -SkipWebhook `
   -SkipMenu `
   -SkipPersistMiniAppUrl
 ```
 
 Флаги сохраняют ручную настройку `web_app` в BotFather и локальный rollback-env;
-меняется только webhook. Проверить:
+production Compose сам отключает webhook без удаления ожидающих updates и запускает
+`telegram-poller`. Это обходит нестабильный входящий маршрут Telegram → Timeweb.
+Проверить:
 
 1. `/start` открывает `https://app.filfitclub.ru`;
 2. авторизация Telegram проходит;
 3. главная, история и подготовка тренировки показывают перенесённые данные;
 4. тестовое уведомление приходит один раз;
-5. API, web, db, redis и worker не перезапускаются.
+5. `api`, `worker` и `telegram-poller` имеют статус `Up`.
 
 Если в BotFather вручную настроен постоянный `web_app`/Menu Button, сама настройка остаётся ручной.
 В BotFather нужно изменить только её URL на `https://app.filfitclub.ru`, не удаляя саму кнопку.
@@ -180,7 +182,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\setup_telegram_bot.ps1 `
   -MiniAppUrl "https://app.filfitclub.ru" `
-  -WebhookBase "https://api.filfitclub.ru" `
+  -SkipWebhook `
   -UpdateWebAppMenu `
   -SkipPersistMiniAppUrl
 ```
@@ -232,13 +234,13 @@ sh scripts/install-vps-backup-timer.sh
 cd /opt/fitness/source
 BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 git pull --ff-only
-docker compose --env-file backend/.env.production build --pull api worker web
+docker compose --env-file backend/.env.production build --pull api worker telegram-poller web
 docker compose --env-file backend/.env.production up -d
 sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
 ```
 
-API и worker подключены к отдельной dual-stack сети `ipv6_egress`: Telegram Bot
+API, worker и telegram-poller подключены к отдельной dual-stack сети `ipv6_egress`: Telegram Bot
 API в текущей сети Timeweb недоступен по IPv4, но доступен по IPv6. На VPS должен
 быть установлен версионированный sysctl-файл и применены его параметры:
 
@@ -271,7 +273,7 @@ docker info --format '{{json .RegistryConfig.Mirrors}}'
 ```bash
 cd /opt/fitness/source
 docker compose --env-file backend/.env.production ps
-docker compose --env-file backend/.env.production logs --tail=100 api worker caddy
+docker compose --env-file backend/.env.production logs --tail=100 api worker telegram-poller caddy
 docker compose --env-file backend/.env.production exec -T db pg_isready -U fitness -d fitness
 docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 ```

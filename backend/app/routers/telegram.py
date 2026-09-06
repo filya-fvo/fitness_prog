@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import json
 from datetime import date as date_cls
@@ -134,13 +135,20 @@ async def _ensure_bot_commands(settings: Settings) -> None:
         logger.warning("set_bot_commands_failed err={}", exc)
 
 
-async def _send_help_response(settings: Settings, command: dict[str, Any]) -> None:
+async def _send_help_response(
+    settings: Settings,
+    command: dict[str, Any],
+    *,
+    raise_on_error: bool = False,
+) -> None:
     chat_id = int(command["chat_id"])
     try:
         await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
         _mark_guide_sent(command.get("user_id"), chat_id)
     except TelegramBotError as exc:
         logger.error("telegram_help_reply_failed chat={} err={}", chat_id, exc)
+        if raise_on_error:
+            raise
 
 
 async def _send_start_response(
@@ -148,6 +156,7 @@ async def _send_start_response(
     command: dict[str, Any],
     *,
     first_time: bool,
+    raise_on_error: bool = False,
 ) -> None:
     chat_id = int(command["chat_id"])
     user_id = command.get("user_id")
@@ -162,6 +171,8 @@ async def _send_start_response(
             _mark_guide_sent(user_id if isinstance(user_id, int) else None, chat_id)
     except TelegramBotError as exc:
         logger.error("telegram_start_reply_failed chat={} err={}", chat_id, exc)
+        if raise_on_error:
+            raise
 
 
 def _telegram_actor_is_admin(settings: Settings, command: dict[str, Any]) -> bool:
@@ -204,20 +215,36 @@ async def telegram_webhook(
 
     callback = extract_callback_query(update)
     if callback and callback["data"].startswith("si:"):
-        background_tasks.add_task(
-            _process_callback,
-            settings,
-            callback,
-            _handle_supplement_callback,
-        )
+        if settings.telegram_update_mode == "polling":
+            await _process_callback(
+                settings,
+                callback,
+                _handle_supplement_callback,
+                raise_on_handler_error=True,
+            )
+        else:
+            background_tasks.add_task(
+                _process_callback,
+                settings,
+                callback,
+                _handle_supplement_callback,
+            )
         return {"ok": True}
     if callback and callback["data"].startswith("wa:"):
-        background_tasks.add_task(
-            _process_callback,
-            settings,
-            callback,
-            _handle_water_callback,
-        )
+        if settings.telegram_update_mode == "polling":
+            await _process_callback(
+                settings,
+                callback,
+                _handle_water_callback,
+                raise_on_handler_error=True,
+            )
+        else:
+            background_tasks.add_task(
+                _process_callback,
+                settings,
+                callback,
+                _handle_water_callback,
+            )
         return {"ok": True}
 
     # Legacy Mini App sendData closes the app and delivers web_app_data here.
@@ -282,7 +309,10 @@ async def telegram_webhook(
             help_cmd.get("user_id"),
             help_cmd.get("username"),
         )
-        background_tasks.add_task(_send_help_response, settings, help_cmd)
+        if settings.telegram_update_mode == "polling":
+            await _send_help_response(settings, help_cmd, raise_on_error=True)
+        else:
+            background_tasks.add_task(_send_help_response, settings, help_cmd)
         return {"ok": True}
 
     start = extract_start_command(update)
@@ -300,7 +330,15 @@ async def telegram_webhook(
         first_time,
     )
 
-    background_tasks.add_task(_send_start_response, settings, start, first_time=first_time)
+    if settings.telegram_update_mode == "polling":
+        await _send_start_response(
+            settings,
+            start,
+            first_time=first_time,
+            raise_on_error=True,
+        )
+    else:
+        background_tasks.add_task(_send_start_response, settings, start, first_time=first_time)
 
     return {"ok": True}
 
@@ -309,20 +347,36 @@ async def _process_callback(
     settings: Settings,
     callback: dict[str, Any],
     handler: Callable[[Settings, dict[str, Any]], Awaitable[None]],
+    *,
+    raise_on_handler_error: bool = False,
 ) -> None:
-    """Acknowledge quickly and never let a stale callback poison the webhook queue."""
-    try:
-        await answer_callback_query(
-            settings,
-            callback_query_id=callback["id"],
-            text="Сохраняю…",
-        )
-    except TelegramBotError as exc:
-        logger.warning("telegram_callback_ack_failed kind={} err={}", callback["data"][:2], exc)
+    """Persist an action without waiting for Telegram's visual acknowledgement."""
+
+    async def acknowledge() -> None:
+        try:
+            await answer_callback_query(
+                settings,
+                callback_query_id=callback["id"],
+                text="Сохраняю…",
+            )
+        except TelegramBotError as exc:
+            logger.warning(
+                "telegram_callback_ack_failed kind={} err={}",
+                callback["data"][:2],
+                exc,
+            )
+
+    # Telegram API egress can briefly stall. It must never sit in front of the
+    # database update, otherwise both water and supplements appear unresponsive.
+    acknowledgement = asyncio.create_task(acknowledge())
     try:
         await handler(settings, callback)
-    except Exception as exc:  # noqa: BLE001 - retries must not replay a user action
+    except Exception as exc:  # noqa: BLE001 - boundary logs unexpected handler failures
         logger.exception("telegram_callback_failed kind={} err={}", callback["data"][:2], exc)
+        if raise_on_handler_error:
+            raise
+    finally:
+        await acknowledgement
 
 
 async def _handle_supplement_callback(settings: Settings, callback: dict[str, Any]) -> None:

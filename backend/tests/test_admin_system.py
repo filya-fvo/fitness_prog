@@ -283,6 +283,43 @@ async def test_telegram_probe_expires_historical_delivery_error(
     assert "must not be exposed" not in check.model_dump_json()
 
 
+@pytest.mark.asyncio
+async def test_telegram_probe_accepts_fresh_long_polling_heartbeat(monkeypatch) -> None:
+    checked_at = datetime.now(UTC)
+
+    async def fake_info(_settings):
+        return {"ok": True, "result": {"url": "", "pending_update_count": 0}}
+
+    class FakeRedis:
+        async def get(self, _key):
+            return json.dumps(
+                {
+                    "recorded_at": (checked_at - timedelta(seconds=10)).isoformat(),
+                    "state": "waiting",
+                }
+            )
+
+        async def aclose(self):
+            return None
+
+    monkeypatch.setattr(admin_system.telegram_bot, "get_webhook_info", fake_info)
+    monkeypatch.setattr("redis.asyncio.Redis.from_url", lambda *_args, **_kwargs: FakeRedis())
+
+    check = await admin_system.probe_telegram(
+        Settings(
+            bot_token="123456:test-token",
+            redis_url="redis://test",
+            telegram_update_mode="polling",
+            jwt_secret="test",
+        ),
+        checked_at,
+    )
+
+    assert check.status == "normal"
+    assert "Long polling" in check.summary
+    assert any(fact.label == "Последний heartbeat" for fact in check.facts)
+
+
 def test_email_check_reports_configuration_without_credentials() -> None:
     checked_at = datetime.now(UTC)
     missing = admin_system.email_check(Settings(smtp_password="", jwt_secret="test"), checked_at)

@@ -116,3 +116,14 @@ def test_timeweb_image_combines_spa_api_and_worker_without_secrets() -> None:
 def test_ci_builds_the_timeweb_image_from_the_repository_root() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "docker build -t fitness-timeweb:ci ." in workflow
+
+
+def test_compose_uses_outbound_telegram_poller() -> None:
+    compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "telegram-poller:" in compose
+    assert 'command: ["python", "-m", "app.telegram_poller"]' in compose
+    assert compose.count("TELEGRAM_UPDATE_MODE: polling") == 3
+    poller_block = compose.split("  telegram-poller:", 1)[1].split("\n  web:", 1)[0]
+    assert "- ipv6_egress" in poller_block
+    assert "- default" in poller_block

@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -27,11 +28,13 @@ class Settings(BaseSettings):
     telegram_login_client_id: str = ""
     # Public HTTPS Mini App front (local Tailscale or permanent production host).
     mini_app_url: str = ""
-    # Public API host from the Compose environment. The notification worker uses
-    # it only to restore the same Telegram webhook after a delivery timeout.
+    # Public API host used by webhook-mode diagnostics and recovery.
     api_domain: str = ""
-    # Telegram webhook header X-Telegram-Bot-Api-Secret-Token; required in production.
+    # Shared secret for public webhook mode and poller's private API dispatch.
     telegram_webhook_secret: str = ""
+    # Webhook remains the local/development default. Compose production uses
+    # outbound long polling because inbound Telegram -> VPS delivery is unstable.
+    telegram_update_mode: Literal["webhook", "polling"] = "webhook"
     # Comma-separated Telegram usernames (without @) allowed to use admin tools.
     # Example: Filatov_Slava
     admin_telegram_usernames: str = ""

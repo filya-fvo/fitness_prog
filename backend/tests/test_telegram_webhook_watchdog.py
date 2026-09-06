@@ -110,3 +110,17 @@ async def test_watchdog_leaves_healthy_webhook_unchanged(monkeypatch) -> None:
 
     result = await watchdog.repair_telegram_webhook(production_settings())
     assert result == {"ok": True, "repaired": False, "pending_updates": 0}
+
+
+@pytest.mark.asyncio
+async def test_watchdog_never_enables_webhook_in_polling_mode(monkeypatch) -> None:
+    async def unexpected_call(*_args, **_kwargs):
+        raise AssertionError("polling mode must not call webhook methods")
+
+    monkeypatch.setattr(watchdog, "get_webhook_info", unexpected_call)
+    monkeypatch.setattr(watchdog, "set_webhook", unexpected_call)
+    settings = production_settings().model_copy(update={"telegram_update_mode": "polling"})
+
+    result = await watchdog.repair_telegram_webhook(settings)
+
+    assert result == {"ok": True, "repaired": False, "skipped": "polling_mode"}

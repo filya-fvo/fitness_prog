@@ -81,6 +81,47 @@ async def test_set_webhook_subscribes_to_inline_button_callbacks(
 
 
 @pytest.mark.asyncio
+async def test_long_polling_preserves_updates_and_uses_ordered_offset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    async def fake_bot_api(
+        _settings: Settings,
+        method: str,
+        payload: dict[str, object] | None = None,
+        **_kwargs: object,
+    ) -> dict[str, object]:
+        calls.append((method, payload or {}))
+        return {"ok": True, "result": [{"update_id": 91}] if method == "getUpdates" else True}
+
+    monkeypatch.setattr(telegram_bot, "bot_api", fake_bot_api)
+    settings = Settings(bot_token="test-token")
+
+    await telegram_bot.delete_webhook(settings)
+    updates = await telegram_bot.get_updates(
+        settings,
+        offset=91,
+        limit=1,
+        timeout_seconds=25,
+    )
+
+    assert updates == [{"update_id": 91}]
+    assert calls == [
+        ("deleteWebhook", {"drop_pending_updates": False}),
+        (
+            "getUpdates",
+            {
+                "limit": 1,
+                "timeout": 25,
+                "allowed_updates": ["message", "callback_query"],
+                "offset": 91,
+            },
+        ),
+    ]
+
+
+@pytest.mark.asyncio
 async def test_standard_menu_replaces_persistent_open_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -361,7 +402,7 @@ def test_production_images_include_telegram_guides() -> None:
     copy_instruction = "COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/"
     assert copy_instruction in backend_dockerfile
     assert copy_instruction in combined_dockerfile
-    assert compose.count("dockerfile: backend/Dockerfile") == 3
+    assert compose.count("dockerfile: backend/Dockerfile") == 4
     assert render.count("dockerContext: .") == 2
 
 
@@ -550,3 +591,36 @@ async def test_bot_api_does_not_retry_unknown_ipv6_delivery(
         await telegram_bot.bot_api(Settings(bot_token="test-token"), "sendMessage")
 
     assert attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_polling_mode_reprobes_ipv6_after_transient_connect_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    address_families: list[str] = []
+
+    class FakeClient:
+        def __init__(self, *, timeout, transport=None) -> None:
+            del timeout
+            self.prefer_ipv6 = transport is not None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, url: str, *, json: dict[str, object]) -> httpx.Response:
+            del json
+            address_families.append("ipv6" if self.prefer_ipv6 else "ipv4")
+            return httpx.Response(200, json={"ok": True}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(telegram_bot, "_telegram_ipv6_available", False)
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+
+    await telegram_bot.bot_api(
+        Settings(bot_token="test-token", telegram_update_mode="polling"),
+        "getUpdates",
+    )
+
+    assert address_families == ["ipv6"]

@@ -51,7 +51,14 @@ async def bot_api(
         raise TelegramBotError("BOT_TOKEN is not configured")
 
     url = f"https://api.telegram.org/bot{settings.bot_token}/{method}"
-    attempts = (True, False) if _telegram_ipv6_available is not False else (False,)
+    # Timeweb production has no usable Telegram route over IPv4. Even after one
+    # transient IPv6 connect failure, the next polling attempt must probe IPv6
+    # again instead of becoming permanently pinned to the unreachable family.
+    attempts = (
+        (True, False)
+        if settings.telegram_update_mode == "polling" or _telegram_ipv6_available is not False
+        else (False,)
+    )
     resp: httpx.Response | None = None
     data: Any = None
     for prefer_ipv6 in attempts:
@@ -638,11 +645,40 @@ async def set_webhook(
 
 
 async def delete_webhook(settings: Settings, *, drop_pending: bool = False) -> dict[str, Any]:
+    """Disable webhook delivery while preserving queued updates by default."""
     return await bot_api(
         settings,
         "deleteWebhook",
         {"drop_pending_updates": drop_pending},
+        timeout=5.0,
     )
+
+
+async def get_updates(
+    settings: Settings,
+    *,
+    offset: int | None = None,
+    limit: int = 1,
+    timeout_seconds: int = 25,
+) -> list[dict[str, Any]]:
+    """Receive one small, ordered batch using Telegram long polling."""
+    payload: dict[str, Any] = {
+        "limit": max(1, min(100, int(limit))),
+        "timeout": max(1, min(50, int(timeout_seconds))),
+        "allowed_updates": TELEGRAM_ALLOWED_UPDATES,
+    }
+    if offset is not None:
+        payload["offset"] = int(offset)
+    response = await bot_api(
+        settings,
+        "getUpdates",
+        payload,
+        timeout=float(payload["timeout"]) + 10.0,
+    )
+    result = response.get("result")
+    if not isinstance(result, list) or any(not isinstance(item, dict) for item in result):
+        raise TelegramBotError("Telegram returned invalid updates")
+    return result
 
 
 async def get_webhook_info(settings: Settings) -> dict[str, Any]:

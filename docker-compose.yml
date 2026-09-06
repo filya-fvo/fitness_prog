@@ -88,6 +88,7 @@ services:
       LLM_BASE_URL: http://llm:8080/v1
       LLM_MODEL: qwen2.5-3b-instruct
       OCR_BASE_URL: http://ocr:8090
+      TELEGRAM_UPDATE_MODE: polling
     volumes:
       - backend_logs:/app/logs
       - backend_data:/app/data
@@ -180,6 +181,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
       LOG_DIR: /app/logs
+      TELEGRAM_UPDATE_MODE: polling
     volumes:
       - backend_logs:/app/logs
       - backend_data:/app/data
@@ -191,6 +193,30 @@ services:
     networks:
       - default
       - ai_internal
+      - ipv6_egress
+
+  telegram-poller:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    command: ["python", "-m", "app.telegram_poller"]
+    env_file:
+      - ./backend/.env.production
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production
+      LOG_DIR: /app/logs
+      TELEGRAM_UPDATE_MODE: polling
+    volumes:
+      - backend_logs:/app/logs
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - default
       - ipv6_egress
 
   web:

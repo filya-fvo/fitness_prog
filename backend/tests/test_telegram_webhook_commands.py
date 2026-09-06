@@ -148,7 +148,7 @@ async def test_callback_webhook_returns_before_processing(
     assert result == {"ok": True}
     assert calls == []
     await background_tasks()
-    assert calls == ["answered", "handled"]
+    assert sorted(calls) == ["answered", "handled"]
 
 
 @pytest.mark.asyncio
@@ -172,3 +172,84 @@ async def test_expired_callback_ack_does_not_replay_or_block_action(
     )
 
     assert calls == ["handled"]
+
+
+@pytest.mark.asyncio
+async def test_callback_action_does_not_wait_for_slow_ack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ack_release = pytest.importorskip("asyncio").Event()
+    calls: list[str] = []
+
+    async def slow_answer(*_args, **_kwargs):
+        calls.append("ack_started")
+        await ack_release.wait()
+        calls.append("ack_finished")
+        return {"ok": True}
+
+    async def fake_handler(*_args, **_kwargs):
+        calls.append("handled")
+        ack_release.set()
+
+    monkeypatch.setattr(telegram, "answer_callback_query", slow_answer)
+
+    await telegram._process_callback(
+        Settings(bot_token="test-token"),
+        {"id": "current", "data": "wa:250"},
+        fake_handler,
+    )
+
+    assert calls.index("handled") < calls.index("ack_finished")
+
+
+@pytest.mark.asyncio
+async def test_polling_callback_is_processed_before_internal_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def fake_handler(*_args, **_kwargs):
+        calls.append("handled")
+
+    async def fake_answer(*_args, **_kwargs):
+        calls.append("answered")
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram, "_handle_water_callback", fake_handler)
+    monkeypatch.setattr(telegram, "answer_callback_query", fake_answer)
+
+    result = await telegram.telegram_webhook(
+        JsonRequest(callback_update("wa:250:2026-09-06")),  # type: ignore[arg-type]
+        background_tasks=BackgroundTasks(),
+        settings=Settings(
+            environment="production",
+            bot_token="test-token",
+            telegram_webhook_secret="unit-test-secret",
+            telegram_update_mode="polling",
+        ),
+        x_telegram_bot_api_secret_token="unit-test-secret",
+    )
+
+    assert result == {"ok": True}
+    assert sorted(calls) == ["answered", "handled"]
+
+
+@pytest.mark.asyncio
+async def test_polling_help_failure_is_retriable(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fail_guide(*_args, **_kwargs):
+        raise telegram.TelegramBotError("temporary transport error")
+
+    monkeypatch.setattr(telegram, "send_user_guide", fail_guide)
+
+    with pytest.raises(telegram.TelegramBotError, match="temporary"):
+        await telegram.telegram_webhook(
+            JsonRequest(command_update("/help")),  # type: ignore[arg-type]
+            background_tasks=BackgroundTasks(),
+            settings=Settings(
+                environment="production",
+                bot_token="test-token",
+                telegram_webhook_secret="unit-test-secret",
+                telegram_update_mode="polling",
+            ),
+            x_telegram_bot_api_secret_token="unit-test-secret",
+        )

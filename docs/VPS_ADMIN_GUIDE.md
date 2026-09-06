@@ -295,7 +295,7 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 git status --short
 git pull --ff-only origin timeweb-production-20260825
 docker compose --env-file backend/.env.production config --quiet
-docker compose --env-file backend/.env.production build api worker web
+docker compose --env-file backend/.env.production build api worker telegram-poller web
 docker compose --env-file backend/.env.production run --rm migrate
 docker compose --env-file backend/.env.production up -d
 sh scripts/write-admin-system-status.sh
@@ -379,10 +379,13 @@ Caddy автоматически получает и продлевает сер
 docker compose --env-file backend/.env.production logs --tail=100 caddy
 ```
 
-Telegram webhook должен вести на:
+В production события Telegram принимает исходящий long polling. Поэтому
+`getWebhookInfo` должен показывать пустой `url`, а контейнер `telegram-poller` —
+регулярный heartbeat. Обработчик остаётся закрытым секретом, но poller обращается
+к нему только по внутреннему Docker-адресу:
 
 ```text
-https://api.filfitclub.ru/telegram/webhook
+http://api:8000/telegram/webhook
 ```
 
 Ручная `web_app`/Menu Button должна открывать:
@@ -410,26 +413,23 @@ docker compose --env-file backend/.env.production logs --tail=100 api web caddy
 
 1. Проверьте `https://api.filfitclub.ru/health`.
 2. Посмотрите последние логи `api`.
-3. Проверьте, что webhook указывает на Timeweb и pending updates не растут.
-4. Не запускайте одновременно локальный и VPS worker.
+3. Проверьте `docker compose ... ps telegram-poller` и его последние логи.
+4. Проверьте, что `getWebhookInfo` показывает пустой webhook URL и очередь не растёт.
+5. Не запускайте одновременно локальный и VPS poller/worker.
 
-Если логи показывают повторяющийся старый callback и `query is too old`, после
-установки исправления очистите только очередь Telegram updates и заново
-зарегистрируйте webhook:
+Не очищайте очередь при обычном сбое: poller заберёт её после восстановления.
+Очистка допустима только если владелец явно решил удалить заведомо устаревшие
+updates; штатный запуск всегда использует `drop_pending_updates=false`.
 
 ```bash
-docker compose --env-file backend/.env.production run --rm api \
-  python scripts/sync_telegram_entrypoints.py \
-  --preserve-menu-button \
-  --webhook-base https://api.filfitclub.ru \
-  --drop-pending-updates
+docker compose --env-file backend/.env.production restart telegram-poller
 ```
 
 ### Не приходят уведомления
 
 ```bash
-docker compose --env-file backend/.env.production ps worker redis
-docker compose --env-file backend/.env.production logs --tail=100 worker
+docker compose --env-file backend/.env.production ps worker telegram-poller redis
+docker compose --env-file backend/.env.production logs --tail=100 worker telegram-poller
 docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 ```
 

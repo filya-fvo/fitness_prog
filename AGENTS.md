@@ -1,6 +1,6 @@
 # AGENTS.md — карта и правила Fitness Mini App
 
-Обновлено: 2026-09-05. Этот файл — первая точка входа для любого агента,
+Обновлено: 2026-09-06. Этот файл — первая точка входа для любого агента,
 который меняет проект. Он описывает фактическую архитектуру по текущему коду,
 а не первоначальный план разработки.
 
@@ -73,6 +73,9 @@ fallback. `llm_base_url` указывает только на внутренни
   frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API, Nginx, Qwen и
   Tesseract остаются во внутренних Docker-сетях. DNS делегируется Timeweb,
   Cloudflare не используется.
+  Telegram updates получает отдельный `telegram-poller` через исходящий IPv6
+  long polling и передаёт их API по внутренней Docker-сети. Публичный webhook в
+  Compose-production отключён из-за подтверждённых входящих timeout Timeweb.
   Фактический порядок переключения — `docs/TIMEWEB_DOMAIN_CUTOVER.md`, полный
   универсальный runbook — `docs/VPS_DEPLOYMENT_GUIDE.md`.
 - Production-манифесты: `docker-compose.yml`, Dockerfile каждого приложения,
@@ -161,6 +164,8 @@ services → SQLAlchemy models → PostgreSQL
   `admin_broadcast_delivery.py` — черновики рассылок, allowlist аудиторий и
   пакетная Telegram-доставка с идемпотентностью и ограничением скорости.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
+- `backend/app/telegram_poller.py` — production long polling Telegram с
+  сохранением очереди, внутренней доставкой API и Redis heartbeat.
 - `backend/app/ai/prompts.py`, `backend/app/ai/analytics.py`,
   `services/ai_engine.py`, `services/workout_metrics.py` и `services/local_llm.py` —
   системные инструкции, доменная аналитика, единая математика нагрузки,
