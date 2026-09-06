@@ -65,6 +65,10 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
             "/knowledge",
             headers={"Accept": "text/html"},
         )
+        faq = await client.get(
+            "/faq",
+            headers={"Accept": "text/html"},
+        )
         support_thread = await client.get(
             "/support/123",
             headers={"Accept": "text/html"},
@@ -82,6 +86,8 @@ async def test_spa_deep_link_and_root_files(tmp_path) -> None:
     assert "fitness-spa" in measurements.text
     assert knowledge.status_code == 200
     assert "fitness-spa" in knowledge.text
+    assert faq.status_code == 200
+    assert "fitness-spa" in faq.text
     assert support_thread.status_code == 200
     assert "fitness-spa" in support_thread.text
     assert service_worker.text == "self.skipWaiting()"

@@ -1045,6 +1045,13 @@ export function DailyLog() {
                     : !isOnline()
                       ? "Каталог доступен онлайн"
                       : "Нет продуктов по фильтру"}
+                  <Link
+                    to="/faq?article=nutrition-add"
+                    state={{ returnTo: "/nutrition" }}
+                    className="mt-1 block min-h-11 py-3 text-tg-link"
+                  >
+                    Как добавить продукт другим способом?
+                  </Link>
                 </li>
               ) : (
                 catalog.map((p) => (

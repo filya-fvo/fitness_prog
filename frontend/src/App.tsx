@@ -137,6 +137,14 @@ export function App() {
             )}
           />
           <Route
+            path="faq"
+            element={(
+              <div className="app-shell min-h-screen bg-transparent px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">
+                <HelpPage />
+              </div>
+            )}
+          />
+          <Route
             path="knowledge"
             element={(
               <div className="app-shell min-h-screen bg-transparent px-4 pb-8 pt-[calc(1rem+env(safe-area-inset-top))] text-tg-text">

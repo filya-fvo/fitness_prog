@@ -16,6 +16,7 @@ SPA_ROUTES = {
     "/",
     "/admin",
     "/ai",
+    "/faq",
     "/help",
     "/knowledge",
     "/more",

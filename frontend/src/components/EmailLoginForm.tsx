@@ -123,8 +123,8 @@ export function EmailLoginForm({ onSuccess }: Props) {
       <p className="mt-1 text-xs text-tg-hint">
         Если аккаунта ещё нет, он будет создан после подтверждения кода. Код придёт с адреса fil_fit_bot@mail.ru.
       </p>
-      <Link to="/help" className="mt-2 inline-block text-xs text-tg-link">
-        Как пользоваться приложением →
+      <Link to="/faq" className="mt-2 inline-block text-xs text-tg-link">
+        Помощь и FAQ →
       </Link>
 
       {step === "email" ? (

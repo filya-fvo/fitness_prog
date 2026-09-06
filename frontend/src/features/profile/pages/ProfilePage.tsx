@@ -1957,7 +1957,16 @@ setAuthEmail(p.auth_email ?? null);
           </div>
 
           {stack.length === 0 ? (
-            <p className="text-sm text-tg-hint">Стек пуст — добавьте из каталога ниже.</p>
+            <div className="text-sm text-tg-hint">
+              <p>Стек пуст — добавьте из каталога ниже.</p>
+              <Link
+                to="/faq?article=supplements"
+                state={{ returnTo: "/profile?section=supplements" }}
+                className="mt-1 block min-h-11 py-3 text-xs text-tg-link"
+              >
+                Как работают добавки и отметки?
+              </Link>
+            </div>
           ) : (
             <ul className="space-y-2">
               {stack.map((item) => {

@@ -6,6 +6,7 @@ test.describe("@visual mobile visual baselines", () => {
   for (const [name, route] of [
     ["home", "/"],
     ["more", "/more"],
+    ["faq", "/faq"],
     ["help", "/help"],
     ["knowledge", "/knowledge"],
     ["nutrition", "/nutrition"],

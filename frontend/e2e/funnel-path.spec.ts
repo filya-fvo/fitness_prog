@@ -8,11 +8,9 @@ import { expect, test } from "@playwright/test";
 test.describe("P3 funnel path", () => {
   test("browser help opens directly without Telegram authorization", async ({ page }) => {
     await page.goto("/help");
-    await expect(page.getByRole("heading", { name: "Как пользоваться" })).toBeVisible();
-    await expect(page.getByText("Тренировки", { exact: true })).toBeVisible();
-    await expect(page.getByText("Питание", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Справочник" }).click();
-    await expect(page.getByRole("heading", { name: "Справочник" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Помощь и FAQ" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Как сделать" })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: "О тренировках и питании" }).click();
     await expect(page.getByText("Как настроить питание под цель")).toBeVisible();
   });
   test("bottom nav covers train / nutrition / progress / more", async ({ page }) => {

@@ -45,10 +45,12 @@ const limits = {
   // No new eager vendor chunk is introduced.
   // Personal plan adherence adds about 0.9 KB gzip across the Home and Progress
   // routes, while its shared card remains an isolated application chunk.
+  // Unified searchable FAQ replaces two public help screens and adds about
+  // 1.5 KB gzip net. Its 8.4 KB chunk remains lazy and is shared by all legacy URLs.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 488_000,
-  productJsGzip: 437_000,
+  totalJsGzip: 489_500,
+  productJsGzip: 438_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes. Product-route and total limits stay unchanged.
   adminJsGzip: 51_500,

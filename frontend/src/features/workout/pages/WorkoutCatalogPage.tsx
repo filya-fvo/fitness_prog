@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
@@ -504,6 +504,13 @@ export function WorkoutCatalogPage() {
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
           Каталог пуст или нет авторизации. Чтобы пользоваться без сети, сначала один раз откройте
           каталог при подключённом интернете.
+          <Link
+            to="/faq?article=offline"
+            state={{ returnTo: "/workouts" }}
+            className="mt-2 block min-h-11 py-3 text-tg-link"
+          >
+            Что доступно без интернета?
+          </Link>
         </div>
       ) : null}
 

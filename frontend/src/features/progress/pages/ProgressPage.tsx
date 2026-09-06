@@ -221,6 +221,13 @@ export function ProgressPage() {
           >
             К сегодняшней тренировке
           </Link>
+          <Link
+            to="/faq?article=progress"
+            state={{ returnTo: "/progress" }}
+            className="mt-2 block min-h-11 px-3 py-3 text-center text-xs text-tg-link"
+          >
+            Как читать прогресс?
+          </Link>
         </div>
       ) : null}
 

@@ -13,6 +13,7 @@ export function fallbackPathFor(pathname: string): string {
     pathname === "/measurements" ||
     pathname === "/ai" ||
     pathname === "/admin" ||
+    pathname === "/faq" ||
     pathname === "/help" ||
     pathname === "/knowledge"
   ) {

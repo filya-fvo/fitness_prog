@@ -860,6 +860,13 @@ export function ProgramsPage() {
         <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
           Нет программ по выбранным фильтрам. Сбросьте пол / тип / уровень или соберите
           тренировку в каталоге.
+          <Link
+            to="/faq?article=first-start"
+            state={{ returnTo: "/programs" }}
+            className="mt-2 block min-h-11 py-3 text-tg-link"
+          >
+            Как выбрать первую программу?
+          </Link>
         </div>
       ) : null}
 
