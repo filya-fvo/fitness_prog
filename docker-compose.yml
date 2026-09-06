@@ -201,6 +201,9 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     command: ["python", "-m", "app.telegram_poller"]
+    # The poller has no HTTP server; liveness is reported through Redis heartbeat.
+    healthcheck:
+      disable: true
     env_file:
       - ./backend/.env.production
     environment:

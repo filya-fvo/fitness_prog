@@ -127,3 +127,4 @@ def test_compose_uses_outbound_telegram_poller() -> None:
     poller_block = compose.split("  telegram-poller:", 1)[1].split("\n  web:", 1)[0]
     assert "- ipv6_egress" in poller_block
     assert "- default" in poller_block
+    assert "healthcheck:\n      disable: true" in poller_block
