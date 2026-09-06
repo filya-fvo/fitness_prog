@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -45,6 +46,7 @@ class WorkoutCreate(BaseModel):
     program_id: uuid.UUID | None = None
     day_index: int | None = Field(default=None, ge=1)
     week_phase: str | None = Field(default=None, pattern=r"^(light|medium|heavy)$")
+    cycle_readiness: Literal["normal", "caution", "reduce", "rest"] | None = None
     title: str | None = None
     workout_type: str | None = None
     exercise_ids: list[uuid.UUID] = Field(

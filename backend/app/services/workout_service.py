@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import cycle_training, daily_metrics, planned_workout, program_publication
+from app.services import cycle_training, planned_workout, program_publication
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -310,6 +310,7 @@ async def build_program_plan_for_user(
     include_saved_override: bool = True,
     consume_saved_override: bool = False,
     apply_readiness_adjustment: bool = True,
+    cycle_readiness: object = None,
 ) -> dict[str, Any]:
     started_raw = (user.goals or {}).get("active_program_started_at")
     started_at: date | None = None
@@ -333,12 +334,12 @@ async def build_program_plan_for_user(
         user.goals,
         user.anthropometry,
     ):
-        metric = await daily_metrics.get_for_day(session, user, scheduled_date)
         adjustment = cycle_training.adapt_week_phase(
             str(base_meta["week_phase"]),
-            metric.cycle_readiness if metric is not None else None,
+            cycle_readiness,
         )
-    effective_phase = adjustment["week_phase"] if adjustment else week_phase
+    base_phase = str(base_meta["week_phase"])
+    effective_phase = adjustment["week_phase"] if adjustment else base_phase
     plan = await build_plan_from_program_day(
         session,
         program,
@@ -347,6 +348,7 @@ async def build_program_plan_for_user(
         today=scheduled_date,
         week_phase=effective_phase,
     )
+    plan["base_week_phase"] = base_phase
     if adjustment:
         plan.update(adjustment)
     if not include_saved_override:
@@ -484,6 +486,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             scheduled_date=data.scheduled_date,
             week_phase=data.week_phase,
             consume_saved_override=True,
+            cycle_readiness=data.cycle_readiness,
         )
     elif data.exercise_ids:
         plan = await _plan_from_exercise_ids(
@@ -544,6 +547,7 @@ async def start_program_workout(
     day_index: int = 1,
     scheduled_date: date | None = None,
     week_phase: str | None = None,
+    cycle_readiness: object = None,
 ) -> Workout:
     program = await session.scalar(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
@@ -583,6 +587,7 @@ async def start_program_workout(
         program_id=program_id,
         day_index=day_index,
         week_phase=week_phase,
+        cycle_readiness=cycle_readiness,
     )
     return await create_workout(session, user, payload)
 
@@ -641,17 +646,27 @@ async def _advance_program_cursor_for_completed_workout(
         return False
 
     plan = workout.plan if isinstance(workout.plan, dict) else {}
-    phase = str(plan.get("week_phase") or "").strip().lower()
-    if phase not in {"light", "medium", "heavy"}:
+    effective_phase = str(plan.get("week_phase") or "").strip().lower()
+    base_phase = str(plan.get("base_week_phase") or effective_phase).strip().lower()
+    if base_phase not in {"light", "medium", "heavy"}:
         current_phase = str(goals.get("active_program_week_phase") or "").strip().lower()
-        phase = current_phase if current_phase in {"light", "medium", "heavy"} else "medium"
+        base_phase = current_phase if current_phase in {"light", "medium", "heavy"} else "medium"
+    if cycle_training.phase_was_reduced(plan):
+        goals["active_program_repeat_phase"] = base_phase
 
     next_day = (day_index % len(schedule)) + 1
     if next_day == 1 and day_index == len(schedule):
-        phase = next_phase_after_split_cycle(phase)
+        repeat_phase = str(goals.get("active_program_repeat_phase") or "").strip().lower()
+        phase = (
+            base_phase
+            if repeat_phase == base_phase
+            else next_phase_after_split_cycle(base_phase)
+        )
+        goals.pop("active_program_repeat_phase", None)
         goals["active_program_phase_source"] = "manual"
         goals["active_program_workouts_in_phase"] = 0
     else:
+        phase = base_phase
         goals["active_program_workouts_in_phase"] = day_index
     goals["active_program_next_day"] = next_day
     goals["active_program_week_phase"] = phase
@@ -863,7 +878,7 @@ async def _rollback_program_cursor_for_deleted_workout(
         return
 
     plan = workout.plan or {}
-    phase = str(plan.get("week_phase") or "").strip().lower()
+    phase = str(plan.get("base_week_phase") or plan.get("week_phase") or "").strip().lower()
     if phase not in {"light", "medium", "heavy"}:
         current_phase = str(goals.get("active_program_week_phase") or "").strip().lower()
         phase = current_phase if current_phase in {"light", "medium", "heavy"} else "medium"

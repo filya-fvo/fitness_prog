@@ -16,6 +16,8 @@ import {
 } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorkoutEditor";
+import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
+import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import {
   cacheExercises,
   readCachedExercises,
@@ -43,7 +45,7 @@ import {
 } from "@/utils/programProgress";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import { toUserMessage } from "@/utils/errors";
-import { phaseFromPlan } from "@/utils/cycleTraining";
+import { cycleTrainingEnabledForProfile, phaseFromPlan } from "@/utils/cycleTraining";
 import {
   canStartProgramFromSchedule,
   plannedWorkoutOccurrence,
@@ -91,6 +93,7 @@ export function TrainHubPage() {
   const [recentTitles, setRecentTitles] = useState<string[]>([]);
   const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
+  const readiness = usePreWorkoutReadiness(cycleTrainingEnabledForProfile(goals));
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -168,11 +171,13 @@ export function TrainHubPage() {
             fetchWorkoutSchedule().catch(() => null),
           ]);
           const g = (profile?.goals as Record<string, unknown>) || {};
+          const anthropometry = (profile?.anthropometry as Record<string, unknown>) || {};
+          const goalsWithSex = { ...g, sex: anthropometry.sex || g.sex || "" };
           const activeId = String(g.active_program_id || "");
           const active =
             (activeId && programs.items.find((p) => p.id === activeId)) || null;
           if (!cancelled) {
-            setGoals(g);
+            setGoals(goalsWithSex);
             setProgram(active);
             setSchedule(scheduleOverview);
             const titles = (history || [])
@@ -218,6 +223,8 @@ export function TrainHubPage() {
       navigate(`/workouts/active/${resumeId}`);
       return;
     }
+    const cycleReadiness = await readiness.requestReadiness();
+    if (cycleReadiness === null) return;
     setStarting(true);
     setError(null);
     const startDayIndex = startableOccurrence?.day_index ?? dayIndex;
@@ -261,6 +268,7 @@ export function TrainHubPage() {
         scheduledDate:
           startableOccurrence?.target_date,
         weekPhase,
+        cycleReadiness,
       });
       const clientId = crypto.randomUUID();
       const plan = (workout.plan || {}) as WorkoutPlan;
@@ -452,6 +460,11 @@ export function TrainHubPage() {
           ← На главную · «Сегодня»
         </Link>
       </div>
+      <PreWorkoutReadinessDialog
+        open={readiness.open}
+        onChoose={readiness.chooseReadiness}
+        onClose={readiness.cancelReadiness}
+      />
     </section>
   );
 }

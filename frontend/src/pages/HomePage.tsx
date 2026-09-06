@@ -19,7 +19,9 @@ import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
 import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { WorkoutSchedulePanel } from "@/features/workout/components/WorkoutSchedulePanel";
+import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import {
   cacheExercises,
@@ -54,7 +56,7 @@ import {
 } from "@/utils/programProgress";
 import { toast } from "@/store/toastStore";
 import { cacheHabitDay, getHabitDay } from "@/utils/habits";
-import { phaseFromPlan } from "@/utils/cycleTraining";
+import { cycleTrainingEnabledForProfile, phaseFromPlan } from "@/utils/cycleTraining";
 import { buildHomeTips } from "@/utils/homeTips";
 import { recommendPrograms } from "@/utils/programRecommend";
 import { localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
@@ -133,11 +135,10 @@ export function HomePage() {
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
-  const [checkinRevision, setCheckinRevision] = useState(0);
   const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
-  const handleCheckinSaved = useCallback(() => {
-    setCheckinRevision((value) => value + 1);
-  }, []);
+  const readiness = usePreWorkoutReadiness(
+    cycleTrainingEnabledForProfile(profileGoals),
+  );
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -206,7 +207,7 @@ export function HomePage() {
       if (!controller.signal.aborted) setPreparedPlan(null);
     });
     return () => controller.abort();
-  }, [checkinRevision, plannedOccurrence, todayDay, todayPhase, todayProgram]);
+  }, [plannedOccurrence, todayDay, todayPhase, todayProgram]);
 
   useEffect(() => {
     setTodayPlanOpen(false);
@@ -502,6 +503,8 @@ export function HomePage() {
       if (!todayProgram) navigate("/programs");
       return;
     }
+    const cycleReadiness = await readiness.requestReadiness();
+    if (cycleReadiness === null) return;
     setStarting(true);
     setError(null);
     setPickerOpen(false);
@@ -544,6 +547,7 @@ export function HomePage() {
         dayIndex: opts.dayIndex,
         weekPhase: opts.weekPhase,
         scheduledDate: opts.scheduledDate,
+        cycleReadiness,
       });
       const clientId = crypto.randomUUID();
       const plan = (workout.plan || {}) as WorkoutPlan;
@@ -909,12 +913,12 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <HabitsCheckin
-          cycleTrainingEnabled={
-            profileGoals.cycle_training_enabled === true &&
-            String(profileGoals.sex || "").toLowerCase() !== "male"
-          }
-          onSaved={handleCheckinSaved}
+        <HabitsCheckin />
+
+        <PreWorkoutReadinessDialog
+          open={readiness.open}
+          onChoose={readiness.chooseReadiness}
+          onClose={readiness.cancelReadiness}
         />
 
         {detailExercise ? (

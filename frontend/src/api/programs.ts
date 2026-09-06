@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { apiClient } from "@/api/client";
 import type { Program, Workout } from "@/types/workout";
+import type { CycleReadiness } from "@/utils/cycleTraining";
 
 const programSchema = z.object({
   id: z.string().uuid(),
@@ -127,11 +128,14 @@ export async function startProgramWorkout(input: {
   dayIndex?: number;
   scheduledDate?: string;
   weekPhase?: "light" | "medium" | "heavy" | null;
+  cycleReadiness?: CycleReadiness;
 }): Promise<Workout> {
-  const { data } = await apiClient.post(`/programs/${input.programId}/start`, {
+  const payload: Record<string, unknown> = {
     day_index: input.dayIndex ?? 1,
     scheduled_date: input.scheduledDate ?? null,
     week_phase: input.weekPhase ?? null,
-  });
+  };
+  if (input.cycleReadiness !== undefined) payload.cycle_readiness = input.cycleReadiness;
+  const { data } = await apiClient.post(`/programs/${input.programId}/start`, payload);
   return mapWorkout(workoutSchema.parse(data));
 }

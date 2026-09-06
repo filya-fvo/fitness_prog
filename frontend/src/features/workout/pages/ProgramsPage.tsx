@@ -18,6 +18,8 @@ import {
 } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
+import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
@@ -31,6 +33,7 @@ import { isOnline } from "@/utils/network";
 import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { toUserMessage } from "@/utils/errors";
+import { cycleTrainingEnabledForProfile } from "@/utils/cycleTraining";
 import {
   LEVEL_LABELS,
   pickTodayDayIndex,
@@ -258,6 +261,9 @@ export function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const readiness = usePreWorkoutReadiness(
+    cycleTrainingEnabledForProfile(profileGoals, profileSex),
+  );
   const [visibleCount, setVisibleCount] = useState(Math.max(PROGRAM_PAGE_SIZE, initialUi.visibleCount || 0));
   const scrollRestoredRef = useRef(false);
   const filtersMountedRef = useRef(false);
@@ -422,6 +428,9 @@ export function ProgramsPage() {
       if (!ok) return;
     }
 
+    const cycleReadiness = await readiness.requestReadiness();
+    if (cycleReadiness === null) return;
+
     setStartingKey(key);
     setError(null);
     try {
@@ -435,6 +444,7 @@ export function ProgramsPage() {
       const workout = await startProgramWorkout({
         programId: program.id,
         dayIndex,
+        cycleReadiness,
       });
       const clientId = crypto.randomUUID();
       let history = buildExerciseHistory(await readCachedWorkouts());
@@ -877,6 +887,12 @@ export function ProgramsPage() {
           onClose={() => setDetailExercise(null)}
         />
       ) : null}
+
+      <PreWorkoutReadinessDialog
+        open={readiness.open}
+        onChoose={readiness.chooseReadiness}
+        onClose={readiness.cancelReadiness}
+      />
     </section>
   );
 }

@@ -1460,8 +1460,8 @@ export function ActiveWorkout() {
         <div className="mb-3 rounded-xl border border-tg-button/20 bg-tg-secondary p-3">
           <p className="text-sm font-medium">{plan.load_adjustment_label}</p>
           <p className="mt-1 text-xs leading-5 text-tg-hint">
-            План облегчен по вашей сегодняшней отметке. Ориентируйтесь на самочувствие;
-            исходный цикл программы продолжится без сдвига.
+            План облегчён по вашей сегодняшней отметке. Ориентируйтесь на самочувствие.
+            Базовая фаза сохранена, а облегчённая тяжёлая фаза не считается пройденной.
           </p>
         </div>
       ) : null}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -58,6 +58,7 @@ class ProgramStartRequest(BaseModel):
     scheduled_date: date | None = None
     # Optional manual override for 3-week cycle (light|medium|heavy)
     week_phase: str | None = Field(default=None, pattern=r'^(light|medium|heavy)$')
+    cycle_readiness: Literal["normal", "caution", "reduce", "rest"] | None = None
 
 
 class ProgramListResponse(BaseModel):

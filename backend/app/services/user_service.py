@@ -52,6 +52,7 @@ async def update_profile(
                         "active_program_workouts_in_phase": 0,
                     }
                 )
+                merged.pop("active_program_repeat_phase", None)
             else:
                 for key in (
                     "active_program_started_at",
@@ -59,6 +60,7 @@ async def update_profile(
                     "active_program_week_phase",
                     "active_program_phase_source",
                     "active_program_workouts_in_phase",
+                    "active_program_repeat_phase",
                 ):
                     merged.pop(key, None)
         # Completing onboarding when core fields present

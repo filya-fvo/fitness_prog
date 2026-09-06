@@ -1,9 +1,9 @@
 """Optional, symptom-led menstrual-cycle training adjustments.
 
 Calendar phase is deliberately not inferred: cycle length and individual response
-vary too much for a fixed four-week prescription.  A user can instead record how
-cycle-related symptoms affect today's readiness, and the planned load is capped
-without changing the underlying program cursor.
+vary too much for a fixed four-week prescription. A user can instead select how
+cycle-related symptoms affect readiness immediately before a workout; the planned
+load is capped without changing the underlying program cursor.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ from typing import Any
 
 CYCLE_READINESS_VALUES = {"normal", "caution", "reduce", "rest"}
 PHASE_ORDER = {"light": 0, "medium": 1, "heavy": 2}
+FEMALE_SEX_VALUES = {"f", "female", "woman", "ж", "жен", "женский", "женщина"}
+UNSPECIFIED_SEX_VALUES = {"", "unspecified", "not_specified", "не указан", "не указано"}
 
 
 def normalize_cycle_readiness(value: object) -> str | None:
@@ -28,10 +30,23 @@ def cycle_training_enabled(
 
     if (goals or {}).get("cycle_training_enabled") is not True:
         return False
-    raw_sex = (anthropometry or {}).get("sex") or (goals or {}).get("sex")
+    raw_sex = (anthropometry or {}).get("sex")
+    if raw_sex is None:
+        raw_sex = (goals or {}).get("sex")
     sex = str(raw_sex or "").strip().lower().replace("ё", "е")
-    is_male = sex in {"m", "male", "man", "м", "муж", "мужской"} or sex.startswith("муж")
-    return not is_male
+    return sex in FEMALE_SEX_VALUES or sex in UNSPECIFIED_SEX_VALUES
+
+
+def phase_was_reduced(plan: dict[str, Any]) -> bool:
+    """Return whether this workout was easier than its stored base phase."""
+
+    base = str(plan.get("base_week_phase") or plan.get("week_phase") or "").strip().lower()
+    effective = str(plan.get("week_phase") or "").strip().lower()
+    return (
+        base in PHASE_ORDER
+        and effective in PHASE_ORDER
+        and PHASE_ORDER[effective] < PHASE_ORDER[base]
+    )
 
 
 def adapt_week_phase(base_phase: str, readiness: object) -> dict[str, str] | None:

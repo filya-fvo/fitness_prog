@@ -3,14 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
-import { fetchDailyMetrics, saveDailyMetrics, type DailyMetric } from "@/api/dailyMetrics";
+import { fetchDailyMetrics, saveDailyMetrics } from "@/api/dailyMetrics";
 import { fetchWaterLog, saveWaterLog } from "@/api/notifications";
 import { DecimalInput } from "@/components/DecimalInput";
-import { CycleReadinessInput } from "@/components/CycleReadinessInput";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
-import { isCycleReadiness, type CycleReadiness } from "@/utils/cycleTraining";
 import {
   addWater,
   cacheHabitDay,
@@ -24,8 +22,6 @@ import { localDateKey } from "@/utils/progress";
 
 type Props = {
   date?: string;
-  onSaved?: (metrics: DailyMetric) => void;
-  cycleTrainingEnabled?: boolean;
 };
 
 function valueOrEmpty(value: number | null | undefined): string {
@@ -38,7 +34,7 @@ function parseNullable(raw: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: Props) {
+export function HabitsCheckin({ date }: Props) {
   const location = useLocation();
   const ownerUserId = useUserStore((state) => state.user?.id);
   const checkinRef = useRef<HTMLElement>(null);
@@ -51,7 +47,6 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
   const [sleep, setSleep] = useState("");
   const [steps, setSteps] = useState("");
   const [activeMinutes, setActiveMinutes] = useState("");
-  const [cycleReadiness, setCycleReadiness] = useState<CycleReadiness | null>(null);
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
   const [syncingWater, setSyncingWater] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -94,29 +89,6 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
     );
   }, [ownerUserId]);
 
-  const syncPendingCycleReadiness = useCallback((targetDate: string) => {
-    if (!cycleTrainingEnabled || !getStoredToken() || !isOnline()) return;
-    const pending = getHabitDay(targetDate, ownerUserId);
-    if (!pending.cycleReadinessPending || pending.cycleReadiness == null) return;
-    void saveDailyMetrics(
-      { cycleReadiness: pending.cycleReadiness },
-      targetDate,
-    ).then((saved) => {
-      const latest = getHabitDay(targetDate, ownerUserId);
-      if (
-        latest.cycleReadinessPending &&
-        latest.cycleReadiness === pending.cycleReadiness
-      ) {
-        const synced = cacheHabitDay(
-          { ...latest, cycleReadinessPending: false },
-          ownerUserId,
-        );
-        setDay(synced);
-      }
-      onSaved?.(saved);
-    }).catch(() => null);
-  }, [cycleTrainingEnabled, onSaved, ownerUserId]);
-
   useEffect(() => {
     const metric = new URLSearchParams(location.search).get("checkin");
     if (metric !== "water") return;
@@ -133,7 +105,6 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
     setSleep(valueOrEmpty(local.sleepHours));
     setSteps(valueOrEmpty(local.steps));
     setActiveMinutes(valueOrEmpty(local.activeMinutes));
-    setCycleReadiness(local.cycleReadiness ?? null);
 
     if (!getStoredToken() || !isOnline()) return;
     setLoading(true);
@@ -150,45 +121,26 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
             metrics.sleep_minutes != null ? metrics.sleep_minutes / 60 : local.sleepHours,
           steps: metrics.steps ?? local.steps ?? null,
           activeMinutes: metrics.active_minutes ?? local.activeMinutes ?? null,
-          cycleReadiness: local.cycleReadinessPending
-            ? local.cycleReadiness ?? null
-            : isCycleReadiness(metrics.cycle_readiness)
-              ? metrics.cycle_readiness
-              : local.cycleReadiness ?? null,
-          cycleReadinessPending: local.cycleReadinessPending === true,
         };
         setDay(cacheHabitDay(merged, ownerUserId));
         setSleep(valueOrEmpty(merged.sleepHours));
         setSteps(valueOrEmpty(merged.steps));
         setActiveMinutes(valueOrEmpty(merged.activeMinutes));
-        setCycleReadiness(merged.cycleReadiness ?? null);
         const hasOfflineMetrics =
           (metrics.sleep_minutes == null && local.sleepHours != null) ||
           (metrics.steps == null && local.steps != null) ||
           (metrics.active_minutes == null && local.activeMinutes != null);
-        const hasOfflineCycleReadiness =
-          cycleTrainingEnabled && local.cycleReadinessPending === true;
-        if (hasOfflineMetrics || hasOfflineCycleReadiness) {
+        if (hasOfflineMetrics) {
           void saveDailyMetrics(
             {
               sleepMinutes:
                 merged.sleepHours != null ? Math.round(merged.sleepHours * 60) : null,
               steps: merged.steps ?? null,
               activeMinutes: merged.activeMinutes ?? null,
-              cycleReadiness: cycleTrainingEnabled ? merged.cycleReadiness ?? null : undefined,
             },
             selectedDate,
           )
-            .then((saved) => {
-              const latest = getHabitDay(selectedDate, ownerUserId);
-              if (
-                latest.cycleReadinessPending &&
-                latest.cycleReadiness === merged.cycleReadiness
-              ) {
-                cacheHabitDay({ ...latest, cycleReadinessPending: false }, ownerUserId);
-              }
-              onSaved?.(saved);
-            })
+            .then(() => null)
             .catch(() => null);
         }
         if (merged.waterPending) syncPendingWater(selectedDate);
@@ -200,16 +152,15 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
     return () => {
       cancelled = true;
     };
-  }, [cycleTrainingEnabled, onSaved, ownerUserId, selectedDate, syncPendingWater]);
+  }, [ownerUserId, selectedDate, syncPendingWater]);
 
   useEffect(() => {
     const retry = () => {
       syncPendingWater(selectedDate);
-      syncPendingCycleReadiness(selectedDate);
     };
     window.addEventListener("online", retry);
     return () => window.removeEventListener("online", retry);
-  }, [selectedDate, syncPendingCycleReadiness, syncPendingWater]);
+  }, [selectedDate, syncPendingWater]);
 
   async function saveCheckin() {
     const sleepHours = parseNullable(sleep);
@@ -234,26 +185,20 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
         activeValue != null && activeValue >= 0 && activeValue <= 1440
           ? Math.round(activeValue)
           : null,
-      cycleReadiness: cycleTrainingEnabled ? cycleReadiness : null,
-      cycleReadinessPending: cycleTrainingEnabled,
     }, ownerUserId);
     setDay(next);
     setSaving(true);
     try {
       if (getStoredToken() && isOnline()) {
-        const saved = await saveDailyMetrics(
+        await saveDailyMetrics(
           {
             sleepMinutes:
               next.sleepHours != null ? Math.round(next.sleepHours * 60) : null,
             steps: next.steps ?? null,
             activeMinutes: next.activeMinutes ?? null,
-            cycleReadiness: cycleTrainingEnabled ? next.cycleReadiness ?? null : undefined,
           },
           selectedDate,
         );
-        const synced = cacheHabitDay({ ...next, cycleReadinessPending: false }, ownerUserId);
-        setDay(synced);
-        onSaved?.(saved);
         toast("Показатели сохранены");
       } else {
         toast("Сохранено на устройстве — синхронизируем позже", "info");
@@ -264,7 +209,6 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
         has_sleep: next.sleepHours != null,
         steps: next.steps ?? 0,
         active_minutes: next.activeMinutes ?? 0,
-        has_cycle_checkin: cycleTrainingEnabled && next.cycleReadiness != null,
       });
     } catch {
       toast("Сохранено на устройстве, сервер временно недоступен", "info");
@@ -361,10 +305,6 @@ export function HabitsCheckin({ date, onSaved, cycleTrainingEnabled = false }: P
           />
         </label>
       </div>
-
-      {cycleTrainingEnabled ? (
-        <CycleReadinessInput value={cycleReadiness} onChange={setCycleReadiness} />
-      ) : null}
 
       <div ref={waterRef} className="mt-3 rounded-xl bg-tg-bg p-3">
         <div className="flex items-center justify-between gap-2">
