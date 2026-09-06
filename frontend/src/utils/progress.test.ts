@@ -4,7 +4,6 @@ import type { Workout } from "@/types/workout";
 import {
   buildNutritionBalance,
   computeDailyVolume,
-  computeStreak,
   computeWorkoutVolume,
   groupNutritionByWeek,
   summarizeNutritionPeriods,
@@ -85,32 +84,6 @@ describe("progress utils", () => {
     });
 
     expect(computeWorkoutVolume(w)).toBe(700);
-  });
-
-  it("computes streak ending today", () => {
-    // Local noon avoids DST edge cases
-    const today = new Date(2026, 6, 22, 12, 0, 0);
-    const items = [
-      workout({
-        id: "a",
-        status: "completed",
-        scheduled_date: "2026-07-22",
-        completed_at: "2026-07-22T10:00:00",
-      }),
-      workout({
-        id: "b",
-        status: "completed",
-        scheduled_date: "2026-07-21",
-        completed_at: "2026-07-21T10:00:00",
-      }),
-      workout({
-        id: "c",
-        status: "completed",
-        scheduled_date: "2026-07-19",
-        completed_at: "2026-07-19T10:00:00",
-      }),
-    ];
-    expect(computeStreak(items, today)).toBe(2);
   });
 
   it("builds 14-day volume series", () => {

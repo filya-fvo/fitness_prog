@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
@@ -19,8 +20,19 @@ from app.services.notification_prefs import _resolve_tz, merge_notification_sett
 
 OVERRIDES_KEY = "workout_schedule_overrides"
 CANCELLATIONS_KEY = "workout_schedule_cancellations"
+SCHEDULE_HISTORY_KEY = "workout_schedule_history"
 MAX_RESCHEDULE_LOOKBACK_DAYS = 6
 MAX_NOTIFICATION_LEAD_MINUTES = 24 * 60
+SCHEDULE_HISTORY_RETENTION_DAYS = 35
+MAX_SCHEDULE_HISTORY_VERSIONS = 64
+
+
+@dataclass(frozen=True, slots=True)
+class WorkoutScheduleSlot:
+    original_date: date
+    target_date: date
+    is_rescheduled: bool
+    is_cancelled: bool
 
 
 def _workout_settings(goals: dict[str, Any]) -> dict[str, Any]:
@@ -41,6 +53,67 @@ def workout_days(goals: dict[str, Any]) -> set[int]:
         if 0 <= weekday <= 6:
             days.add(weekday)
     return days
+
+
+def _schedule_history(goals: dict[str, Any]) -> list[tuple[date, set[int]]]:
+    raw = goals.get(SCHEDULE_HISTORY_KEY)
+    if not isinstance(raw, list):
+        return []
+    versions: dict[date, set[int]] = {}
+    for item in raw:
+        if not isinstance(item, dict) or not isinstance(item.get("days"), list):
+            continue
+        try:
+            effective_from = date.fromisoformat(str(item.get("effective_from")))
+        except ValueError:
+            continue
+        days: set[int] = set()
+        for value in item["days"]:
+            try:
+                weekday = int(value)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= weekday <= 6:
+                days.add(weekday)
+        versions[effective_from] = days
+    return sorted(versions.items())
+
+
+def workout_days_on(goals: dict[str, Any], day: date) -> set[int]:
+    """Return schedule weekdays that were effective on a historical date."""
+
+    selected = workout_days(goals)
+    for effective_from, days in _schedule_history(goals):
+        if effective_from > day:
+            break
+        selected = days
+    return selected
+
+
+def record_workout_schedule_change(
+    goals: dict[str, Any],
+    *,
+    previous_days: set[int],
+    new_days: set[int],
+    effective_from: date,
+    tracking_start: date,
+) -> dict[str, Any]:
+    """Persist invisible schedule versions used by personal analytics."""
+
+    if previous_days == new_days:
+        return goals
+    versions = dict(_schedule_history(goals))
+    if not versions:
+        versions[tracking_start] = set(previous_days)
+    versions[effective_from] = set(new_days)
+    rows = sorted(versions.items())[-MAX_SCHEDULE_HISTORY_VERSIONS:]
+    return {
+        **goals,
+        SCHEDULE_HISTORY_KEY: [
+            {"effective_from": version_date.isoformat(), "days": sorted(days)}
+            for version_date, days in rows
+        ],
+    }
 
 
 def workout_start_time(goals: dict[str, Any]) -> time:
@@ -279,6 +352,40 @@ def _occurrence_payload(
     }
 
 
+def workout_schedule_slots(
+    goals: dict[str, Any],
+    start: date,
+    end: date,
+) -> list[WorkoutScheduleSlot]:
+    """Return base schedule slots with one-off moves and cancellations applied."""
+
+    if end < start:
+        return []
+    schedule_start = program_schedule_start(goals)
+    current = max(start, schedule_start) if schedule_start is not None else start
+    slots: list[WorkoutScheduleSlot] = []
+    while current <= end:
+        if current.weekday() in workout_days_on(goals, current):
+            cancellation = _cancellation_for_day(goals, current)
+            override = _override_for_original(goals, current)
+            if cancellation is not None:
+                target = date.fromisoformat(str(cancellation["scheduled_date"]))
+            elif override is not None:
+                target = date.fromisoformat(str(override["target_date"]))
+            else:
+                target = current
+            slots.append(
+                WorkoutScheduleSlot(
+                    original_date=current,
+                    target_date=target,
+                    is_rescheduled=target != current,
+                    is_cancelled=cancellation is not None,
+                )
+            )
+        current += timedelta(days=1)
+    return slots
+
+
 def schedule_overview(goals: dict[str, Any], requested_day: date) -> dict[str, Any]:
     current_context = effective_workout_context(goals, requested_day)
     current: dict[str, Any] | None = None
@@ -446,7 +553,7 @@ async def cancel_workout_occurrence(
             "updated_at": datetime.now(UTC).isoformat(),
         }
     )
-    cutoff = local_now.date() - timedelta(days=30)
+    cutoff = local_now.date() - timedelta(days=SCHEDULE_HISTORY_RETENTION_DAYS)
     goals[CANCELLATIONS_KEY] = [
         row
         for row in cancellations
@@ -545,7 +652,7 @@ async def reschedule_workout_occurrence(
                 "updated_at": datetime.now(UTC).isoformat(),
             }
         )
-    cutoff = local_now.date() - timedelta(days=14)
+    cutoff = local_now.date() - timedelta(days=SCHEDULE_HISTORY_RETENTION_DAYS)
     goals[OVERRIDES_KEY] = [
         row for row in overrides if date.fromisoformat(str(row["target_date"])) >= cutoff
     ]

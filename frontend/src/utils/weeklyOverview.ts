@@ -131,7 +131,7 @@ export function buildWeeklyWorkoutOverview(
   const activeDays = days.filter((d) => d.completed > 0).length;
   const prevVolume = prevWeek.reduce((a, w) => a + computeWorkoutVolume(w), 0);
 
-  let tip = "Закройте ещё одну тренировку на этой неделе — серия и прогресс оживут.";
+  let tip = "Закройте ещё одну тренировку на этой неделе — выполнение плана и прогресс обновятся.";
   if (thisWeek.length === 0) {
     tip = "На этой неделе ещё нет завершённых тренировок. Начните с Главной → Сегодня.";
   } else if (thisWeek.length >= 3 && totalVolume >= prevVolume) {

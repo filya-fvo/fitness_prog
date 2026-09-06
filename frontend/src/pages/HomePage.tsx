@@ -8,13 +8,16 @@ import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
+  fetchPersonalRegularity,
   fetchPlannedWorkoutPlan,
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
+  type PersonalRegularity,
   type WorkoutScheduleOverview,
 } from "@/api/workouts";
 import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
+import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { WorkoutSchedulePanel } from "@/features/workout/components/WorkoutSchedulePanel";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
@@ -54,7 +57,7 @@ import { cacheHabitDay, getHabitDay } from "@/utils/habits";
 import { phaseFromPlan } from "@/utils/cycleTraining";
 import { buildHomeTips } from "@/utils/homeTips";
 import { recommendPrograms } from "@/utils/programRecommend";
-import { computeStreak, localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
+import { localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progress";
 import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { toUserMessage } from "@/utils/errors";
@@ -104,7 +107,7 @@ export function HomePage() {
   const setIdMapping = useWorkoutStore((s) => s.setIdMapping);
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
-  const [streak, setStreak] = useState(0);
+  const [regularity, setRegularity] = useState<PersonalRegularity | null>(null);
   const [daysSinceLastWorkout, setDaysSinceLastWorkout] = useState<number | null>(null);
   const [reentryDismissed, setReentryDismissed] = useState(false);
   const reentryTrackedRef = useRef(false);
@@ -269,11 +272,12 @@ export function HomePage() {
             // keep cache
           }
           try {
-            const [programs, profile, exerciseResponse, schedule] = await Promise.all([
+            const [programs, profile, exerciseResponse, schedule, planRegularity] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
               fetchMyProfile().catch(() => null),
               fetchExercises({ pageSize: 200 }).catch(() => null),
               fetchWorkoutSchedule().catch(() => null),
+              fetchPersonalRegularity().catch(() => null),
             ]);
             if (exerciseResponse?.items.length) {
               setCatalog(exerciseResponse.items);
@@ -288,6 +292,7 @@ export function HomePage() {
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
             if (!cancelled) setProfileGoals(goalsWithSex);
             if (!cancelled && schedule) setWorkoutSchedule(schedule);
+            if (!cancelled) setRegularity(planRegularity);
             const rec = recommendPrograms(
               programs.items,
               {
@@ -316,7 +321,6 @@ export function HomePage() {
         }
         if (!cancelled) {
           setPending(queue);
-          setStreak(computeStreak(workouts));
           const completed = workouts.filter((w) => w.status === "completed");
           setCompletedCount(completed.length);
           const today = progressLocalDate(new Date());
@@ -388,7 +392,7 @@ export function HomePage() {
       buildHomeTips({
         daysSinceLastWorkout,
         completedWorkouts: completedCount,
-        streak,
+        regularity,
         hasProgram: Boolean(todayProgram),
         canResume,
         waterMl,
@@ -401,7 +405,7 @@ export function HomePage() {
       canResume,
       completedCount,
       daysSinceLastWorkout,
-      streak,
+      regularity,
       todayCalories,
       todayProgram,
       waterMl,
@@ -880,26 +884,15 @@ export function HomePage() {
           </div>
         )}
 
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs text-tg-hint">Серия</p>
-              <p className="mt-1 text-xl font-semibold">{streak} дн.</p>
-            </div>
-            {!online ? (
-              <p className="text-right text-[11px] text-amber-600">
-                Нет сети
-                {pending > 0 ? ` · сохраним ${pending} при сети` : " · изменения на устройстве"}
-              </p>
-            ) : pending > 0 ? (
-              <p className="text-right text-[11px] text-tg-hint">
-                Ждёт сети: {pending}
-              </p>
-            ) : (
-              <p className="text-right text-[11px] text-tg-hint">Сохранено</p>
-            )}
-          </div>
-        </div>
+        <PlanRegularityCard summary={regularity} />
+
+        {!online || pending > 0 ? (
+          <p className={`text-right text-[11px] ${!online ? "text-amber-600" : "text-tg-hint"}`}>
+            {!online
+              ? `Нет сети${pending > 0 ? ` · сохраним ${pending} при сети` : " · расчёт обновится при сети"}`
+              : `Ждёт сети: ${pending}`}
+          </p>
+        ) : null}
 
         {homeTips.length ? (
           <div className="space-y-2">

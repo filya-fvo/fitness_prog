@@ -56,3 +56,15 @@ class WorkoutScheduleOverview(BaseModel):
     requested_date: date
     current: WorkoutScheduleOccurrence | None = None
     next: WorkoutScheduleOccurrence | None = None
+
+
+class PersonalRegularityResponse(BaseModel):
+    period_start: date
+    period_end: date
+    has_schedule: bool
+    completed: int = Field(ge=0)
+    planned: int = Field(ge=0)
+    rescheduled_completed: int = Field(ge=0)
+    cancelled: int = Field(ge=0)
+    missed: int = Field(ge=0)
+    completion_pct: float | None = Field(default=None, ge=0, le=100)

@@ -179,8 +179,23 @@ async def put_settings_route(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> NotificationSettingsResponse:
+    previous_goals = dict(user.goals or {})
     merged = merge_notification_settings(body.settings)
-    goals = {**(user.goals or {}), "notification_settings": merged}
+    goals = {**previous_goals, "notification_settings": merged}
+    effective_from = scheduler_service.local_schedule_day(goals)
+    created_at = getattr(user, "created_at", None)
+    tracking_start = scheduler_service.program_schedule_start(goals) or (
+        scheduler_service.local_schedule_day(goals, created_at)
+        if created_at is not None
+        else effective_from
+    )
+    goals = scheduler_service.record_workout_schedule_change(
+        goals,
+        previous_days=scheduler_service.workout_days(previous_goals),
+        new_days=scheduler_service.workout_days(goals),
+        effective_from=effective_from,
+        tracking_start=tracking_start,
+    )
     user.goals = goals
     flag_modified(user, "goals")
     await session.commit()

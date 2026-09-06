@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.schemas.scheduler import (
+    PersonalRegularityResponse,
     ShiftScheduleRequest,
     ShiftScheduleResponse,
     SkipWorkoutRequest,
@@ -30,7 +31,7 @@ from app.schemas.workout import (
     WorkoutSetResponse,
     WorkoutUpdateRequest,
 )
-from app.services import planned_workout
+from app.services import personal_regularity, planned_workout
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_service
@@ -98,6 +99,20 @@ async def workout_schedule_overview(
         day or scheduler_service.local_schedule_day(user.goals or {}),
     )
     return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.get("/regularity", response_model=PersonalRegularityResponse)
+async def workout_regularity(
+    days: int = Query(default=28, ge=7, le=366),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> PersonalRegularityResponse:
+    summary = await personal_regularity.personal_regularity_for_user(
+        session,
+        user,
+        days=days,
+    )
+    return PersonalRegularityResponse.model_validate(summary, from_attributes=True)
 
 
 @router.post("/schedule/reschedule", response_model=WorkoutScheduleOverview)

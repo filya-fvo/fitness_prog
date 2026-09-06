@@ -12,7 +12,7 @@ export type HomeTip = {
 export function buildHomeTips(input: {
   daysSinceLastWorkout: number | null;
   completedWorkouts: number;
-  streak: number;
+  regularity: { completion_pct: number | null; completed: number; planned: number } | null;
   hasProgram: boolean;
   canResume: boolean;
   waterMl: number;
@@ -54,10 +54,14 @@ export function buildHomeTips(input: {
     });
   }
 
-  if (input.streak >= 3) {
+  if (
+    input.regularity?.completion_pct != null &&
+    input.regularity.completed >= 3 &&
+    input.regularity.completion_pct >= 80
+  ) {
     tips.push({
-      id: "streak",
-      text: `Серия ${input.streak} дн. — держите ритм, даже короткая сессия считается.`,
+      id: "regularity",
+      text: `План за 4 недели выполнен на ${input.regularity.completion_pct}% — хороший ритм.`,
     });
   }
 

@@ -7,7 +7,7 @@ describe("buildHomeTips", () => {
     const tips = buildHomeTips({
       daysSinceLastWorkout: null,
       completedWorkouts: 0,
-      streak: 0,
+      regularity: null,
       hasProgram: false,
       canResume: false,
       waterMl: 0,
@@ -22,7 +22,7 @@ describe("buildHomeTips", () => {
     const tips = buildHomeTips({
       daysSinceLastWorkout: 4,
       completedWorkouts: 5,
-      streak: 5,
+      regularity: { completion_pct: 83.3, completed: 5, planned: 6 },
       hasProgram: true,
       canResume: false,
       waterMl: 200,

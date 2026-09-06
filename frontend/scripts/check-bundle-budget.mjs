@@ -42,10 +42,12 @@ const limits = {
   // route. Keep a narrow measured margin without relaxing chunk isolation.
   // Cycle-readiness check-in and the two workout entry points add about 1.2 KB
   // gzip across existing product chunks; no new eager vendor chunk is introduced.
+  // Personal plan adherence adds about 0.9 KB gzip across the Home and Progress
+  // routes, while its shared card remains an isolated application chunk.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 485_000,
-  productJsGzip: 434_000,
+  totalJsGzip: 486_000,
+  productJsGzip: 435_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes. Product-route and total limits stay unchanged.
   adminJsGzip: 51_500,

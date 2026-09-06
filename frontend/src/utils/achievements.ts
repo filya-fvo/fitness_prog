@@ -2,7 +2,6 @@
  * Simple client-side badges from workout history + habits.
  */
 import type { Workout } from "@/types/workout";
-import { computeStreak } from "@/utils/progress";
 import { habitStreak } from "@/utils/habits";
 
 export type Badge = {
@@ -12,9 +11,12 @@ export type Badge = {
   earned: boolean;
 };
 
-export function computeBadges(workouts: Workout[], ownerUserId?: string | null): Badge[] {
+export function computeBadges(
+  workouts: Workout[],
+  ownerUserId?: string | null,
+  regularity?: { completion_pct: number | null; completed: number; planned: number } | null,
+): Badge[] {
   const completed = workouts.filter((w) => w.status === "completed");
-  const streak = computeStreak(workouts);
   const hStreak = habitStreak(new Date(), ownerUserId);
   const totalSets = completed.reduce(
     (acc, w) => acc + (w.sets || []).filter((s) => s.is_completed).length,
@@ -35,16 +37,16 @@ export function computeBadges(workouts: Workout[], ownerUserId?: string | null):
       earned: completed.length >= 5,
     },
     {
-      id: "streak_3",
-      title: "Серия 3",
-      description: "Серия тренировок 3 дня",
-      earned: streak >= 3,
+      id: "plan_3",
+      title: "Точный ритм",
+      description: "Выполнить 3 плановые тренировки без пропусков",
+      earned: Boolean(regularity && regularity.planned >= 3 && regularity.completion_pct === 100),
     },
     {
-      id: "streak_7",
-      title: "Неделя огня",
-      description: "Серия тренировок 7 дней",
-      earned: streak >= 7,
+      id: "plan_7",
+      title: "План держится",
+      description: "Выполнить не менее 90% из 7 плановых тренировок",
+      earned: Boolean(regularity && regularity.planned >= 7 && (regularity.completion_pct ?? 0) >= 90),
     },
     {
       id: "sets_50",

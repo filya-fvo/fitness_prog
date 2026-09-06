@@ -84,8 +84,21 @@ const scheduleOverviewSchema = z.object({
   next: scheduleOccurrenceSchema.nullable().optional(),
 });
 
+const personalRegularitySchema = z.object({
+  period_start: z.string(),
+  period_end: z.string(),
+  has_schedule: z.boolean(),
+  completed: z.number().int().nonnegative(),
+  planned: z.number().int().nonnegative(),
+  rescheduled_completed: z.number().int().nonnegative(),
+  cancelled: z.number().int().nonnegative(),
+  missed: z.number().int().nonnegative(),
+  completion_pct: z.number().min(0).max(100).nullable(),
+});
+
 export type WorkoutScheduleOccurrence = z.infer<typeof scheduleOccurrenceSchema>;
 export type WorkoutScheduleOverview = z.infer<typeof scheduleOverviewSchema>;
+export type PersonalRegularity = z.infer<typeof personalRegularitySchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   return {
@@ -277,6 +290,11 @@ export async function rescheduleWorkout(input: {
     target_time: input.targetTime,
   });
   return scheduleOverviewSchema.parse(data);
+}
+
+export async function fetchPersonalRegularity(days = 28): Promise<PersonalRegularity> {
+  const { data } = await apiClient.get("/workouts/regularity", { params: { days } });
+  return personalRegularitySchema.parse(data);
 }
 
 export async function cancelScheduledWorkout(scheduledDate: string): Promise<WorkoutScheduleOverview> {

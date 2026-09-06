@@ -6,7 +6,12 @@ import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchDailyMetricsRange, type DailyMetric } from "@/api/dailyMetrics";
 import { fetchNutritionRange } from "@/api/nutrition";
-import { fetchWorkoutHistory } from "@/api/workouts";
+import {
+  fetchPersonalRegularity,
+  fetchWorkoutHistory,
+  type PersonalRegularity,
+} from "@/api/workouts";
+import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
@@ -32,7 +37,6 @@ import {
   buildCalendarDays,
   buildNutritionBalance,
   computeDailyVolume,
-  computeStreak,
   groupNutritionByWeek,
   summarizeNutritionPeriods,
   type NutritionBalanceSummary,
@@ -51,6 +55,7 @@ export function ProgressPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [monthIndex, setMonthIndex] = useState(now.getMonth());
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [regularity, setRegularity] = useState<PersonalRegularity | null>(null);
   const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -85,7 +90,7 @@ export function ProgressPage() {
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range, ex, metrics] = await Promise.all([
+          const [items, range, ex, metrics, planRegularity] = await Promise.all([
             fetchWorkoutHistory(),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
@@ -102,6 +107,7 @@ export function ProgressPage() {
               }
               return null;
             }),
+            fetchPersonalRegularity().catch(() => null),
           ]);
           await cacheWorkouts(items);
           if (ex?.items?.length) {
@@ -113,6 +119,7 @@ export function ProgressPage() {
             setSource("network");
             if (range) setNutrition(buildNutritionBalance(range));
             if (metrics) setDailyMetrics(metrics.days);
+            setRegularity(planRegularity);
           }
         } else if (cached.length) {
           if (!cancelled) {
@@ -145,10 +152,12 @@ export function ProgressPage() {
     };
   }, []);
 
-  const streak = useMemo(() => computeStreak(workouts), [workouts]);
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
   const liftTrends = useMemo(() => buildLiftTrends(workouts, catalog, 6), [workouts, catalog]);
-  const badges = useMemo(() => computeBadges(workouts, ownerUserId), [ownerUserId, workouts]);
+  const badges = useMemo(
+    () => computeBadges(workouts, ownerUserId, regularity),
+    [ownerUserId, regularity, workouts],
+  );
   const calendarDays = useMemo(
     () => buildCalendarDays(workouts, year, monthIndex),
     [workouts, year, monthIndex],
@@ -204,7 +213,7 @@ export function ProgressPage() {
         <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
           <p className="text-sm font-semibold">Здесь появится ваш прогресс</p>
           <p className="mt-1 text-sm text-tg-hint">
-            Закройте первую тренировку — откроются серия, графики и достижения.
+            Закройте первую тренировку — откроются выполнение плана, графики и достижения.
           </p>
           <Link
             to="/"
@@ -213,20 +222,18 @@ export function ProgressPage() {
             К сегодняшней тренировке
           </Link>
         </div>
-      ) : (
+      ) : null}
+
+      {!loading ? (
         <div className="mb-3 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs text-tg-hint">Серия тренировок</p>
-            <p className="mt-1 text-2xl font-semibold">{streak} дн.</p>
-            <p className="mt-1 text-[11px] text-tg-hint">Подряд с завершёнными тренировками</p>
-          </div>
+          <PlanRegularityCard summary={regularity} valueSize="large" />
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="text-xs text-tg-hint">Завершено</p>
             <p className="mt-1 text-2xl font-semibold">{completedCount}</p>
             <p className="mt-1 text-[11px] text-tg-hint">Всего завершённых тренировок</p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {pending > 0 || source === "cache" ? (
         <p className="mb-3 text-xs text-tg-hint">

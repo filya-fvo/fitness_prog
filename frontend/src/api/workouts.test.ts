@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
-import { cancelScheduledWorkout } from "./workouts";
+import { cancelScheduledWorkout, fetchPersonalRegularity } from "./workouts";
 
 describe("workout schedule API", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -46,5 +46,26 @@ describe("workout schedule API", () => {
     });
     expect(result.current?.status).toBe("cancelled");
     expect(result.next).toMatchObject({ target_date: "2026-08-31", day_index: 3 });
+  });
+
+  it("parses personal plan regularity", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({
+      data: {
+        period_start: "2026-08-10",
+        period_end: "2026-09-06",
+        has_schedule: true,
+        completed: 10,
+        planned: 12,
+        rescheduled_completed: 1,
+        cancelled: 1,
+        missed: 1,
+        completion_pct: 83.3,
+      },
+    });
+
+    const result = await fetchPersonalRegularity();
+
+    expect(apiClient.get).toHaveBeenCalledWith("/workouts/regularity", { params: { days: 28 } });
+    expect(result).toMatchObject({ completed: 10, planned: 12, completion_pct: 83.3 });
   });
 });

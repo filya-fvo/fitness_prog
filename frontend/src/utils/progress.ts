@@ -1,5 +1,5 @@
 /**
- * Progress calculations — streak, volume, calendar marks (Sprint 3).
+ * Progress calculations — volume, calendar marks and nutrition summaries.
  */
 import type { Workout } from "@/types/workout";
 
@@ -55,37 +55,6 @@ export function computeWorkoutVolume(workout: Workout): number {
     const weight = (set.weight ?? 0) * (set.weight_mode === "per_hand" ? 2 : 1);
     return acc + reps * weight;
   }, 0);
-}
-
-/** Consecutive completed-workout days ending today or yesterday. */
-export function computeStreak(workouts: Workout[], today = new Date()): number {
-  const completedDays = new Set(
-    workouts
-      .filter((w) => w.status === "completed")
-      .map((w) => workoutDateKey(w))
-      .filter((d): d is string => Boolean(d)),
-  );
-
-  if (completedDays.size === 0) {
-    return 0;
-  }
-
-  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  // Allow streak to continue if last workout was yesterday
-  if (!completedDays.has(localDateKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-    if (!completedDays.has(localDateKey(cursor))) {
-      return 0;
-    }
-  }
-
-  let streak = 0;
-  while (completedDays.has(localDateKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
 }
 
 export function computeDailyVolume(workouts: Workout[], days = 14, today = new Date()): DayVolume[] {

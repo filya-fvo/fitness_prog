@@ -50,6 +50,7 @@ test.describe("P3 funnel path", () => {
     });
     const nextButton = page.getByRole("button", { name: "Далее" });
     await expect(nextButton).toBeVisible();
+    await page.getByRole("button", { name: "Поддержание" }).click();
     await nextButton.click();
     await expect(page.getByText("Уровень", { exact: true })).toBeVisible();
 
