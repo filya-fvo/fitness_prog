@@ -84,3 +84,36 @@ def test_compute_targets_incomplete_without_age() -> None:
     )
     assert result["complete"] is False
     assert result["reason"] == "need_age_or_birth_date"
+
+
+def test_unspecified_sex_requires_manual_target_instead_of_male_formula() -> None:
+    result = compute_energy_targets(
+        {"sex": "unspecified", "weight_kg": 70, "height_cm": 170, "age": 30},
+        {"primary_goal": "maintain"},
+    )
+    assert result["complete"] is False
+    assert result["reason"] == "need_sex_or_manual_target"
+    assert result["bmr"] is None
+
+
+def test_unknown_sex_never_falls_back_to_male_formula() -> None:
+    result = compute_energy_targets(
+        {"sex": "unknown", "weight_kg": 70, "height_cm": 170, "age": 30},
+        {"primary_goal": "maintain"},
+    )
+    assert result["complete"] is False
+    assert result["reason"] == "need_sex_or_manual_target"
+    assert result["bmr"] is None
+
+
+def test_unspecified_sex_uses_manual_calorie_target() -> None:
+    result = compute_energy_targets(
+        {"sex": "unspecified", "weight_kg": 70},
+        {"primary_goal": "maintain", "manual_calorie_target": 2100},
+    )
+    assert result["complete"] is True
+    assert result["formula"] == "manual"
+    assert result["calories_target"] == 2100
+    assert result["bmr"] is None
+    assert result["tdee"] is None
+    assert result["macros"]["proteins_g"] > 0

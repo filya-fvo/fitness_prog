@@ -21,6 +21,9 @@ GOAL_DEFAULT_PCT: dict[str, float] = {
     "maintain": 0.0,
 }
 
+MANUAL_CALORIE_TARGET_MIN = 800.0
+MANUAL_CALORIE_TARGET_MAX = 10_000.0
+
 
 def age_from_birth_date(birth_date: str | date | None, today: date | None = None) -> int | None:
     if birth_date is None:
@@ -69,6 +72,29 @@ def is_female_sex(sex: str | None) -> bool:
     if s.startswith("ж"):
         return True
     return False
+
+
+def is_male_sex(sex: object) -> bool:
+    value = str(sex or "").strip().lower().replace("ё", "е")
+    return value in {"m", "male", "man", "м", "муж", "мужской"} or value.startswith("муж")
+
+
+def is_unspecified_sex(sex: object) -> bool:
+    value = str(sex or "").strip().lower()
+    return value in {"", "unspecified", "not_specified"} or not (
+        is_female_sex(value) or is_male_sex(value)
+    )
+
+
+def manual_calorie_target(goals: dict[str, Any]) -> float | None:
+    raw = goals.get("manual_calorie_target")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if MANUAL_CALORIE_TARGET_MIN <= value <= MANUAL_CALORIE_TARGET_MAX:
+        return value
+    return None
 
 
 def mifflin_st_jeor_bmr(*, sex: str, weight_kg: float, height_cm: float, age: int) -> float:
@@ -143,6 +169,48 @@ def compute_energy_targets(
     anthro = anthropometry or {}
     g = goals or {}
 
+    sex_raw = anthro.get("sex") or g.get("sex")
+    if is_unspecified_sex(sex_raw):
+        target = manual_calorie_target(g)
+        if target is None:
+            return {
+                "complete": False,
+                "reason": "need_sex_or_manual_target",
+                "formula": None,
+                "sex": None,
+                "calories_target": None,
+                "bmr": None,
+                "tdee": None,
+            }
+        primary = str(g.get("primary_goal") or "maintain")
+        try:
+            weight = float(anthro.get("weight_kg"))
+        except (TypeError, ValueError):
+            weight = None
+        macros = (
+            macro_split_grams(calories=target, weight_kg=weight, primary_goal=primary)
+            if weight is not None and weight > 0
+            else None
+        )
+        return {
+            "complete": True,
+            "reason": None,
+            "formula": "manual",
+            "sex": None,
+            "age": resolve_age(anthro, today=today),
+            "birth_date": anthro.get("birth_date"),
+            "weight_kg": round(weight, 2) if weight is not None else None,
+            "height_cm": anthro.get("height_cm"),
+            "activity_level": resolve_activity_level(g, anthro),
+            "activity_factor": None,
+            "bmr": None,
+            "tdee": None,
+            "calorie_adjustment_pct": None,
+            "calories_target": round(target, 0),
+            "macros": macros,
+            "primary_goal": primary,
+        }
+
     try:
         weight = float(anthro.get("weight_kg"))
         height = float(anthro.get("height_cm"))
@@ -167,7 +235,7 @@ def compute_energy_targets(
             "height_cm": height,
         }
 
-    sex = str(anthro.get("sex") or g.get("sex") or "male")
+    sex = str(sex_raw)
     female = is_female_sex(sex)
     activity = resolve_activity_level(g, anthro)
     factor = ACTIVITY_FACTORS[activity]

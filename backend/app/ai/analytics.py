@@ -133,11 +133,15 @@ async def _nutrition_evidence(
         lines.append(f"среднее за заполненный день — {label}: {_fmt(average)}")
     targets = compute_energy_targets(user.anthropometry or {}, user.goals or {}, today=end)
     if targets.get("complete"):
-        lines.append(
-            f"расчётная цель: {targets['calories_target']:g} ккал; "
-            f"Б/Ж/У {targets['macros']['proteins_g']:g}/"
-            f"{targets['macros']['fats_g']:g}/{targets['macros']['carbs_g']:g} г"
-        )
+        macros = targets.get("macros")
+        source = "ручная цель" if targets.get("formula") == "manual" else "расчётная цель"
+        line = f"{source}: {targets['calories_target']:g} ккал"
+        if isinstance(macros, dict):
+            line += (
+                f"; Б/Ж/У {macros['proteins_g']:g}/"
+                f"{macros['fats_g']:g}/{macros['carbs_g']:g} г"
+            )
+        lines.append(line)
     else:
         lines.append("расчётная цель калорий недоступна: профиль заполнен не полностью")
     return lines, True

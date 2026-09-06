@@ -83,3 +83,11 @@ def test_cycle_training_preference_must_be_boolean() -> None:
     }
     with pytest.raises(ValidationError):
         UserProfileUpdate(goals={"cycle_training_enabled": "true"})
+
+
+def test_manual_calorie_target_has_bounded_range() -> None:
+    assert UserProfileUpdate(goals={"manual_calorie_target": 2100}).goals == {
+        "manual_calorie_target": 2100
+    }
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(goals={"manual_calorie_target": 799})

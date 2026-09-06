@@ -50,7 +50,8 @@ describe("energyTargets", () => {
       expect(r.bmr).toBe(1780);
       expect(r.tdee).toBe(2759);
       expect(r.caloriesTarget).toBe(2345);
-      expect(r.macros.proteins).toBeGreaterThan(100);
+      expect(r.macros).not.toBeNull();
+      if (r.macros) expect(r.macros.proteins).toBeGreaterThan(100);
     }
   });
 
@@ -73,5 +74,39 @@ describe("energyTargets", () => {
       expect(r.bmr).toBe(Math.round(10 * 45 + 6.25 * 155 - 5 * 50 - 161));
       expect(r.caloriesTarget).toBe(1200);
     }
+  });
+
+  it("does not silently apply the male formula when sex is unspecified", () => {
+    const missing = previewEnergyTargets({
+      sex: "unspecified",
+      weightKg: 70,
+      heightCm: 170,
+      age: 30,
+    });
+    expect(missing).toEqual({ complete: false, reason: "need_sex_or_manual_target" });
+
+    const manual = previewEnergyTargets({
+      sex: "unspecified",
+      weightKg: 70,
+      manualCalorieTarget: 2100,
+      primaryGoal: "maintain",
+    });
+    expect(manual.complete).toBe(true);
+    if (manual.complete) {
+      expect(manual.formula).toBe("manual");
+      expect(manual.caloriesTarget).toBe(2100);
+      expect(manual.bmr).toBeNull();
+      expect(manual.tdee).toBeNull();
+    }
+  });
+
+  it("does not silently apply the male formula for an unknown legacy value", () => {
+    const result = previewEnergyTargets({
+      sex: "unknown",
+      weightKg: 70,
+      heightCm: 170,
+      age: 30,
+    });
+    expect(result).toEqual({ complete: false, reason: "need_sex_or_manual_target" });
   });
 });

@@ -17,6 +17,8 @@ import { getTelegramWebApp, hapticNotification, isTelegramEnvironment } from "@/
 import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
+  MANUAL_CALORIE_TARGET_MAX,
+  MANUAL_CALORIE_TARGET_MIN,
   ageFromBirthDate,
   birthYearFromDate,
   previewEnergyTargets,
@@ -65,6 +67,7 @@ const DAYS_PER_WEEK = [2, 3, 4, 5, 6] as const;
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
   { id: "female", label: "Женский" },
+  { id: "unspecified", label: "Не указывать" },
 ] as const;
 
 function defaultAdjPct(goal: string): string {
@@ -79,19 +82,20 @@ export function OnboardingPage() {
   const user = useUserStore((s) => s.user);
 
   const [step, setStep] = useState(0);
-  const [primaryGoal, setPrimaryGoal] = useState<string>("maintain");
-  const [level, setLevel] = useState<string>("beginner");
-  const [location, setLocation] = useState<string>("gym");
-  const [equipment, setEquipment] = useState<string[]>(["bodyweight"]);
-  const [daysPerWeek, setDaysPerWeek] = useState<number>(3);
-  const [sex, setSex] = useState("male");
+  const [primaryGoal, setPrimaryGoal] = useState<string>("");
+  const [level, setLevel] = useState<string>("");
+  const [location, setLocation] = useState<string>("");
+  const [equipment, setEquipment] = useState<string[]>([]);
+  const [daysPerWeek, setDaysPerWeek] = useState<number>(0);
+  const [sex, setSex] = useState("");
+  const [manualCalorieTarget, setManualCalorieTarget] = useState("");
   const [weight, setWeight] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [activity, setActivity] = useState("moderate");
-  const [adjPct, setAdjPct] = useState("0");
+  const [activity, setActivity] = useState("");
+  const [adjPct, setAdjPct] = useState("");
   const [jointLimits, setJointLimits] = useState<string[]>([]);
   const [limitationsNote, setLimitationsNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -104,6 +108,7 @@ export function OnboardingPage() {
     () =>
       previewEnergyTargets({
         sex,
+        manualCalorieTarget: Number(manualCalorieTarget) || null,
         weightKg: Number(weight) || null,
         heightCm: Number(height) || null,
         age: Number(age) || null,
@@ -113,7 +118,7 @@ export function OnboardingPage() {
         primaryGoal,
         calorieAdjustmentPct: Number(adjPct),
       }),
-    [activity, adjPct, age, birthDate, daysPerWeek, height, primaryGoal, sex, weight],
+    [activity, adjPct, age, birthDate, daysPerWeek, height, manualCalorieTarget, primaryGoal, sex, weight],
   );
 
   const canNext = useMemo(() => {
@@ -127,6 +132,7 @@ export function OnboardingPage() {
       const h = Number(height);
       const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
       const target = targetWeight ? Number(targetWeight) : null;
+      const manualTarget = Number(manualCalorieTarget);
       return (
         w >= 20 &&
         w <= 500 &&
@@ -135,11 +141,17 @@ export function OnboardingPage() {
         resolvedAge >= 10 &&
         resolvedAge <= 100 &&
         (target == null || (target >= 20 && target <= 500)) &&
-        Boolean(sex)
+        Boolean(sex) &&
+        Boolean(activity) &&
+        (sex !== "unspecified" || (
+          manualTarget >= MANUAL_CALORIE_TARGET_MIN &&
+          manualTarget <= MANUAL_CALORIE_TARGET_MAX
+        ))
       );
     }
     return true;
   }, [
+    activity,
     age,
     birthDate,
     daysPerWeek,
@@ -147,6 +159,7 @@ export function OnboardingPage() {
     height,
     level,
     location,
+    manualCalorieTarget,
     primaryGoal,
     sex,
     step,
@@ -180,6 +193,7 @@ export function OnboardingPage() {
         days_per_week: daysPerWeek,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
+        manual_calorie_target: sex === "unspecified" ? Number(manualCalorieTarget) : null,
         target_weight_kg: Number(targetWeight) || null,
         limitations: jointLimits,
         limitations_note: limitationsNote.trim() || null,
@@ -200,7 +214,7 @@ export function OnboardingPage() {
       let goalsToSave: Record<string, unknown> = { ...goals };
 
       // First-run: auto-assign best matching program so Home shows Day 1 CTA.
-      if (isOnline()) {
+      if (isOnline() && sex !== "unspecified") {
         try {
           const { items } = await fetchPrograms({ templatesOnly: true });
           const rec = recommendPrograms(
@@ -269,7 +283,6 @@ export function OnboardingPage() {
         level,
         location,
         days_per_week: daysPerWeek,
-        calorie_adjustment_pct: Number(adjPct),
         offline: !isOnline(),
         active_program_assigned: Boolean(goalsToSave.active_program_id),
       });
@@ -310,9 +323,11 @@ export function OnboardingPage() {
       <section>
         <Header title="Онбординг" subtitle="Почти готово" />
         <div className="rounded-2xl bg-tg-secondary p-6 text-center">
-          <p className="text-sm font-medium">Подбираем программы под ваш профиль…</p>
+          <p className="text-sm font-medium">Сохраняем анкету…</p>
           <p className="mt-2 text-xs text-tg-hint">
-            Учтём пол, место ({enumLabel(location)}), уровень, инвентарь и {daysPerWeek} дн./нед.
+            {sex === "unspecified"
+              ? "Цель калорий сохранена. Программу вы выберете сами."
+              : `Учтём пол, место (${enumLabel(location)}), уровень, инвентарь и ${daysPerWeek} дн./нед.`}
           </p>
         </div>
       </section>
@@ -374,16 +389,7 @@ export function OnboardingPage() {
               type="button"
               onClick={() => {
                 setLocation(loc.id);
-                if (loc.id === "home" || loc.id === "outdoor") {
-                  setEquipment((prev) => (prev.length ? prev : ["bodyweight"]));
-                }
-                if (loc.id === "gym") {
-                  setEquipment((prev) =>
-                    prev.includes("machines") || prev.includes("dumbbells")
-                      ? prev
-                      : ["machines", "dumbbells", "bodyweight"],
-                  );
-                }
+                setEquipment([]);
               }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
@@ -443,7 +449,10 @@ export function OnboardingPage() {
       {step === 5 ? (
         <div className="space-y-3 rounded-2xl bg-tg-secondary p-4">
           <p className="text-sm font-medium">Антропометрия и калории</p>
-          <div className="flex gap-2">
+          <p className="text-xs leading-5 text-tg-hint">
+            Пол используется для отдельной линейки программ и примерного расчёта калорий.
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {SEX_OPTIONS.map((o) => (
               <button
                 key={o.id}
@@ -458,6 +467,25 @@ export function OnboardingPage() {
               </button>
             ))}
           </div>
+          {sex === "unspecified" ? (
+            <label className="block text-xs text-tg-hint">
+              Цель калорий на день
+              <input
+                type="number"
+                inputMode="numeric"
+                min={MANUAL_CALORIE_TARGET_MIN}
+                max={MANUAL_CALORIE_TARGET_MAX}
+                step={50}
+                value={manualCalorieTarget}
+                onChange={(event) => setManualCalorieTarget(event.target.value)}
+                placeholder="Например, 2100"
+                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
+              />
+              <span className="mt-1 block text-[11px] leading-snug">
+                Формула по полу не применяется. Цель можно изменить в профиле.
+              </span>
+            </label>
+          ) : null}
           <label className="block text-xs text-tg-hint">
             Вес, кг
             <DecimalInput
@@ -545,6 +573,7 @@ export function OnboardingPage() {
               onChange={(e) => setActivity(e.target.value)}
               className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
             >
+              <option value="" disabled>Выберите уровень активности</option>
               {ACTIVITY_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
@@ -574,11 +603,15 @@ export function OnboardingPage() {
           </div>
           {energyPreview.complete ? (
             <p className="text-xs text-tg-hint">
-              Цель ≈ {energyPreview.caloriesTarget} ккал (обмен {energyPreview.bmr}, расход {energyPreview.tdee})
+              {energyPreview.formula === "manual"
+                ? `Ваша цель: ${energyPreview.caloriesTarget} ккал в день`
+                : `Цель ≈ ${energyPreview.caloriesTarget} ккал (обмен ${energyPreview.bmr}, расход ${energyPreview.tdee})`}
             </p>
           ) : (
             <p className="text-xs text-tg-hint">
-              Укажите вес, рост и возраст/дату рождения — посчитаем калории.
+              {sex === "unspecified"
+                ? "Заполните параметры тела и укажите ручную цель калорий."
+                : "Укажите пол, вес, рост и возраст/дату рождения — посчитаем калории."}
             </p>
           )}
         </div>
@@ -629,7 +662,7 @@ export function OnboardingPage() {
         </div>
       ) : null}
 
-      {step > 0 && step < 6 ? (
+      {step > 0 ? (
         <button
           type="button"
           className="mt-4 w-full text-center text-xs text-tg-link"

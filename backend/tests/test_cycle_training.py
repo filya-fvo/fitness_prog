@@ -35,6 +35,12 @@ def test_cycle_adjustment_rejects_unknown_values() -> None:
     assert cycle_training.normalize_cycle_readiness("unknown") is None
     assert cycle_training.adapt_week_phase("heavy", "unknown") is None
     assert cycle_training.cycle_training_enabled({"cycle_training_enabled": True})
+    assert cycle_training.cycle_training_enabled(
+        {"cycle_training_enabled": True}, {"sex": "female"}
+    )
+    assert not cycle_training.cycle_training_enabled(
+        {"cycle_training_enabled": True}, {"sex": "male"}
+    )
     assert not cycle_training.cycle_training_enabled({"cycle_training_enabled": "true"})
 
 

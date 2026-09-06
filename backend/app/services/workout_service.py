@@ -329,7 +329,10 @@ async def build_program_plan_for_user(
         else resolve_week_phase_meta(started_at, scheduled_date)
     )
     adjustment: dict[str, str] | None = None
-    if apply_readiness_adjustment and cycle_training.cycle_training_enabled(user.goals):
+    if apply_readiness_adjustment and cycle_training.cycle_training_enabled(
+        user.goals,
+        user.anthropometry,
+    ):
         metric = await daily_metrics.get_for_day(session, user, scheduled_date)
         adjustment = cycle_training.adapt_week_phase(
             str(base_meta["week_phase"]),

@@ -20,8 +20,18 @@ def normalize_cycle_readiness(value: object) -> str | None:
     return normalized if normalized in CYCLE_READINESS_VALUES else None
 
 
-def cycle_training_enabled(goals: dict[str, Any] | None) -> bool:
-    return (goals or {}).get("cycle_training_enabled") is True
+def cycle_training_enabled(
+    goals: dict[str, Any] | None,
+    anthropometry: dict[str, Any] | None = None,
+) -> bool:
+    """Allow the private option only for female or unspecified profiles."""
+
+    if (goals or {}).get("cycle_training_enabled") is not True:
+        return False
+    raw_sex = (anthropometry or {}).get("sex") or (goals or {}).get("sex")
+    sex = str(raw_sex or "").strip().lower().replace("ё", "е")
+    is_male = sex in {"m", "male", "man", "м", "муж", "мужской"} or sex.startswith("муж")
+    return not is_male
 
 
 def adapt_week_phase(base_phase: str, readiness: object) -> dict[str, str] | None:

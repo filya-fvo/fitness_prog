@@ -5,6 +5,7 @@
 
 export type EnergyInput = {
   sex?: string | null;
+  manualCalorieTarget?: number | null;
   weightKg?: number | null;
   heightCm?: number | null;
   age?: number | null;
@@ -14,6 +15,9 @@ export type EnergyInput = {
   primaryGoal?: string | null;
   calorieAdjustmentPct?: number | null;
 };
+
+export const MANUAL_CALORIE_TARGET_MIN = 800;
+export const MANUAL_CALORIE_TARGET_MAX = 10_000;
 
 const ACTIVITY: Record<string, number> = {
   sedentary: 1.2,
@@ -112,6 +116,30 @@ export function isFemaleSex(sex?: string | null): boolean {
   return false;
 }
 
+function isMaleSex(sex?: string | null): boolean {
+  const value = String(sex || "").trim().toLowerCase();
+  return ["m", "male", "man", "м", "муж", "мужской"].includes(value) || value.startsWith("муж");
+}
+
+export function isUnspecifiedSex(sex?: string | null): boolean {
+  const value = String(sex || "").trim().toLowerCase();
+  return ["", "unspecified", "not_specified"].includes(value)
+    || (!isFemaleSex(value) && !isMaleSex(value));
+}
+
+function previewMacros(calories: number, weight: number, primaryGoal?: string | null) {
+  if (!(weight > 0)) return null;
+  const proteinPerKg = primaryGoal === "lose_fat" ? 2 : primaryGoal === "gain_muscle" ? 1.8 : 1.6;
+  const proteins = Math.max(80, proteinPerKg * weight);
+  const fatRatio = primaryGoal === "gain_muscle" ? 0.25 : 0.3;
+  const fats = Math.max(40, (calories * fatRatio) / 9);
+  return {
+    proteins: Math.round(proteins),
+    fats: Math.round(fats),
+    carbs: Math.round(Math.max(0, (calories - proteins * 4 - fats * 9) / 4)),
+  };
+}
+
 /**
  * Live BMR/TDEE/target preview (mirrors backend).
  *
@@ -125,6 +153,26 @@ export function previewEnergyTargets(input: EnergyInput) {
   const weight = Number(input.weightKg);
   const height = Number(input.heightCm);
   const age = resolveAge(input);
+  const manualTarget = Number(input.manualCalorieTarget);
+  if (isUnspecifiedSex(input.sex)) {
+    if (
+      !Number.isFinite(manualTarget)
+      || manualTarget < MANUAL_CALORIE_TARGET_MIN
+      || manualTarget > MANUAL_CALORIE_TARGET_MAX
+    ) {
+      return { complete: false as const, reason: "need_sex_or_manual_target" as const };
+    }
+    return {
+      complete: true as const,
+      formula: "manual" as const,
+      bmr: null,
+      tdee: null,
+      caloriesTarget: Math.round(manualTarget),
+      adjustmentPct: null,
+      activity: resolveActivity(input),
+      macros: previewMacros(manualTarget, weight, input.primaryGoal),
+    };
+  }
   if (!(weight > 0) || !(height > 0) || age == null) {
     return { complete: false as const, reason: "incomplete" as const };
   }
@@ -137,23 +185,15 @@ export function previewEnergyTargets(input: EnergyInput) {
   const adj = resolveAdjustmentPct(input);
   let target = tdee * (1 + adj / 100);
   target = Math.max(female ? 1200 : 1500, target);
-  const proteinPerKg = input.primaryGoal === "lose_fat" ? 2 : input.primaryGoal === "gain_muscle" ? 1.8 : 1.6;
-  const proteins = Math.max(80, proteinPerKg * weight);
-  const fatRatio = input.primaryGoal === "gain_muscle" ? 0.25 : 0.3;
-  const fats = Math.max(40, (target * fatRatio) / 9);
-  const carbs = Math.max(0, (target - proteins * 4 - fats * 9) / 4);
   return {
     complete: true as const,
+    formula: null,
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
     caloriesTarget: Math.round(target),
     adjustmentPct: adj,
     activity,
-    macros: {
-      proteins: Math.round(proteins),
-      fats: Math.round(fats),
-      carbs: Math.round(carbs),
-    },
+    macros: previewMacros(target, weight, input.primaryGoal),
   };
 }
 

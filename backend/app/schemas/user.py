@@ -19,6 +19,7 @@ _GOAL_NUMERIC_RANGES: dict[str, tuple[float, float]] = {
     "days_per_week": (1, 7),
     "calorie_adjustment_pct": (-40, 40),
     "target_weight_kg": (20, 500),
+    "manual_calorie_target": (800, 10_000),
 }
 _GOAL_ENUMS: dict[str, set[str]] = {
     "primary_goal": {"lose_fat", "gain_muscle", "maintain"},

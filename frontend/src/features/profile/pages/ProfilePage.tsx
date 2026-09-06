@@ -40,6 +40,8 @@ import type { Exercise } from "@/types/workout";
 import { useUserStore } from "@/store/userStore";
 import {
   ACTIVITY_OPTIONS,
+  MANUAL_CALORIE_TARGET_MAX,
+  MANUAL_CALORIE_TARGET_MIN,
   ageFromBirthDate,
   birthYearFromDate,
   previewEnergyTargets,
@@ -68,6 +70,7 @@ import {
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
   { id: "female", label: "Женский" },
+  { id: "unspecified", label: "Не указан" },
 ] as const;
 
 const GOAL_OPTIONS = [
@@ -327,7 +330,8 @@ export function ProfilePage() {
   const [ok, setOk] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
 
-  const [sex, setSex] = useState("male");
+  const [sex, setSex] = useState("unspecified");
+  const [manualCalorieTarget, setManualCalorieTarget] = useState("");
   const [weight, setWeight] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
   const [height, setHeight] = useState("");
@@ -410,8 +414,10 @@ setAuthEmail(p.auth_email ?? null);
         const g = asRecord(p.goals);
         setProfileGoalsKeep(g);
         setAutoAdvanceExercises(resolveAutoAdvanceSetting(g.auto_advance_exercises, true));
-        const sexFromProfile = String(a.sex || g.sex || "male").toLowerCase();
-        setSex(sexFromProfile === "female" ? "female" : "male");
+        const rawSex = String(a.sex || g.sex || "").toLowerCase();
+        const sexFromProfile = rawSex === "female" || rawSex === "male" ? rawSex : "unspecified";
+        setSex(sexFromProfile);
+        setManualCalorieTarget(numOrEmpty(g.manual_calorie_target));
         if (sexFromProfile === "male" || sexFromProfile === "female") {
           setProgramSexFilter(sexFromProfile);
         }
@@ -445,7 +451,7 @@ setAuthEmail(p.auth_email ?? null);
         }
 
         // Auto-assign recommended program if user has none yet
-        if (!existingActive && programItems.length) {
+        if (!existingActive && programItems.length && sexFromProfile !== "unspecified") {
           const rec = recommendPrograms(
             programItems,
             {
@@ -554,6 +560,7 @@ setAuthEmail(p.auth_email ?? null);
     () =>
       previewEnergyTargets({
         sex,
+        manualCalorieTarget: Number(manualCalorieTarget) || null,
         weightKg: Number(weight) || null,
         heightCm: Number(height) || null,
         age: Number(age) || null,
@@ -563,7 +570,7 @@ setAuthEmail(p.auth_email ?? null);
         primaryGoal,
         calorieAdjustmentPct: Number(adjPct),
       }),
-    [activity, adjPct, age, birthDate, daysPerWeek, height, primaryGoal, sex, weight],
+    [activity, adjPct, age, birthDate, daysPerWeek, height, manualCalorieTarget, primaryGoal, sex, weight],
   );
 
   const intakeGroups = useMemo(() => {
@@ -597,7 +604,7 @@ setAuthEmail(p.auth_email ?? null);
           equipment: Array.isArray(profileGoalsKeep.equipment)
             ? (profileGoalsKeep.equipment as string[])
             : [],
-          sex,
+          sex: sex === "unspecified" ? null : sex,
           location: String(profileGoalsKeep.location || ""),
           limitations: Array.isArray(profileGoalsKeep.limitations)
             ? (profileGoalsKeep.limitations as string[])
@@ -683,6 +690,7 @@ setAuthEmail(p.auth_email ?? null);
       const heightNum = Number(height);
       const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
       const targetWeightNum = targetWeight ? Number(targetWeight) : null;
+      const manualTargetNum = Number(manualCalorieTarget);
       if (
         heightNum < 80 ||
         heightNum > 250 ||
@@ -691,6 +699,12 @@ setAuthEmail(p.auth_email ?? null);
         (targetWeightNum != null && (targetWeightNum < 20 || targetWeightNum > 500))
       ) {
         throw new Error("Проверьте рост и возраст: значения вне допустимого диапазона");
+      }
+      if (
+        sex === "unspecified" &&
+        (manualTargetNum < MANUAL_CALORIE_TARGET_MIN || manualTargetNum > MANUAL_CALORIE_TARGET_MAX)
+      ) {
+        throw new Error("Укажите ручную цель калорий от 800 до 10 000 ккал");
       }
       const ageFromBirth = ageFromBirthDate(birthDate);
       const ageNum = ageFromBirth ?? (Number(age) || null);
@@ -707,12 +721,15 @@ setAuthEmail(p.auth_email ?? null);
         primary_goal: primaryGoal,
         activity_level: activity,
         calorie_adjustment_pct: Number(adjPct),
+        manual_calorie_target: sex === "unspecified" ? manualTargetNum : null,
         target_weight_kg: targetWeightNum,
         days_per_week: Number(daysPerWeek) || 3,
         ...(activeProgramId
           ? programSelectionGoalsPatch(profileGoalsKeep, activeProgramId)
           : { active_program_id: null }),
         sex,
+        cycle_training_enabled:
+          sex === "male" ? false : profileGoalsKeep.cycle_training_enabled === true,
         auto_advance_exercises: autoAdvanceExercises,
       };
       if (isOnline() && getStoredToken()) {
@@ -729,6 +746,7 @@ setAuthEmail(p.auth_email ?? null);
       } catch {
         // The queued/server profile remains authoritative when storage is unavailable.
       }
+      setProfileGoalsKeep(goals);
       setOk("Профиль сохранён.");
       setDirtyTabs((current) => {
         const next = new Set(current);
@@ -967,7 +985,7 @@ setAuthEmail(p.auth_email ?? null);
       level: String(profileGoalsKeep.level || ""),
       daysPerWeek: Number(daysPerWeek) || undefined,
       equipment: Array.isArray(profileGoalsKeep.equipment) ? profileGoalsKeep.equipment as string[] : [],
-      sex,
+      sex: sex === "unspecified" ? null : sex,
       location: String(profileGoalsKeep.location || ""),
       limitations: profileGoalsKeep.limitations as string[] | string | null,
     });
@@ -1068,7 +1086,10 @@ setAuthEmail(p.auth_email ?? null);
 
           <div className="rounded-2xl bg-tg-secondary p-4">
             <p className="mb-2 text-sm font-medium">Пол</p>
-            <div className="flex gap-2">
+            <p className="mb-2 text-xs leading-5 text-tg-hint">
+              Используется для отдельной линейки программ и примерного расчёта калорий.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {SEX_OPTIONS.map((o) => (
                 <button
                   key={o.id}
@@ -1086,9 +1107,31 @@ setAuthEmail(p.auth_email ?? null);
                 </button>
               ))}
             </div>
+            {sex === "unspecified" ? (
+              <label className="mt-3 block text-xs text-tg-hint">
+                Цель калорий на день
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={MANUAL_CALORIE_TARGET_MIN}
+                  max={MANUAL_CALORIE_TARGET_MAX}
+                  step={50}
+                  value={manualCalorieTarget}
+                  onChange={(event) => {
+                    setManualCalorieTarget(event.target.value);
+                    markDirty("body");
+                  }}
+                  placeholder="Например, 2100"
+                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
+                />
+                <span className="mt-1 block text-[11px] leading-snug">
+                  Формула по полу не применяется.
+                </span>
+              </label>
+            ) : null}
           </div>
 
-          {sex === "female" || profileGoalsKeep.cycle_training_enabled === true ? (
+          {sex === "female" || sex === "unspecified" ? (
             <CycleTrainingSettings
               enabled={profileGoalsKeep.cycle_training_enabled === true}
               onChange={(enabled) => {
@@ -1318,29 +1361,37 @@ setAuthEmail(p.auth_email ?? null);
             <p className="font-medium">Расчёт калорий</p>
             {preview.complete ? (
               <ul className="mt-2 space-y-2 text-tg-hint">
-                <li>
-                  <span className="font-medium text-tg-text">Энергия в покое: {preview.bmr} ккал</span>
-                  <span className="mt-0.5 block text-xs">
-                    Сколько энергии нужно телу в покое — просто чтобы жить (дыхание, сердце, температура).
-                  </span>
-                </li>
-                <li>
-                  <span className="font-medium text-tg-text">Общий суточный расход: {preview.tdee} ккал</span>
-                  <span className="mt-0.5 block text-xs">
-                    Базовый обмен + ваша активность (тренировки, ходьба, работа). Это «поддержка веса».
-                  </span>
-                </li>
+                {preview.formula !== "manual" ? <>
+                  <li>
+                    <span className="font-medium text-tg-text">Энергия в покое: {preview.bmr} ккал</span>
+                    <span className="mt-0.5 block text-xs">
+                      Сколько энергии нужно телу в покое — просто чтобы жить (дыхание, сердце, температура).
+                    </span>
+                  </li>
+                  <li>
+                    <span className="font-medium text-tg-text">Общий суточный расход: {preview.tdee} ккал</span>
+                    <span className="mt-0.5 block text-xs">
+                      Базовый обмен + ваша активность (тренировки, ходьба, работа). Это «поддержка веса».
+                    </span>
+                  </li>
+                </> : null}
                 <li>
                   <span className="font-medium text-tg-text">
                     Цель на день: {preview.caloriesTarget} ккал
                   </span>
                   <span className="mt-0.5 block text-xs">
-                    Сколько есть, чтобы идти к цели (похудение / набор / поддержание) с учётом % к расходу.
+                    {preview.formula === "manual"
+                      ? "Ручное значение: формула по полу не применялась."
+                      : "Сколько есть, чтобы идти к цели с учётом процента к расходу."}
                   </span>
                 </li>
               </ul>
             ) : (
-              <p className="mt-2 text-tg-hint">Укажите вес, рост и возраст/дату рождения.</p>
+              <p className="mt-2 text-tg-hint">
+                {sex === "unspecified"
+                  ? "Укажите ручную цель калорий."
+                  : "Укажите вес, рост и возраст/дату рождения."}
+              </p>
             )}
           </div>
 
@@ -1360,8 +1411,9 @@ setAuthEmail(p.auth_email ?? null);
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
             <p className="font-medium">Активная программа</p>
             <p className="mt-1 text-xs text-tg-hint">
-              Фильтры помогают быстрее найти подходящую. Если программа не выбрана, система
-              назначает рекомендуемую автоматически по вашему профилю.
+              {sex === "unspecified"
+                ? "Выберите мужскую или женскую программу вручную."
+                : "Фильтры помогают быстрее найти подходящую. Если программа не выбрана, система назначает рекомендуемую автоматически по вашему профилю."}
             </p>
             {activeProgram ? (
               <p className="mt-2 text-tg-link">
@@ -1535,7 +1587,7 @@ setAuthEmail(p.auth_email ?? null);
                 level: String(profileGoalsKeep.level || ""),
                 daysPerWeek: Number(daysPerWeek) || undefined,
                 equipment: Array.isArray(profileGoalsKeep.equipment) ? profileGoalsKeep.equipment as string[] : [],
-                sex,
+                sex: sex === "unspecified" ? null : sex,
                 location: String(profileGoalsKeep.location || ""),
                 limitations: profileGoalsKeep.limitations as string[] | string | null,
               });

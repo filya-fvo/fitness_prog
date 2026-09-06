@@ -917,7 +917,10 @@ export function HomePage() {
         ) : null}
 
         <HabitsCheckin
-          cycleTrainingEnabled={profileGoals.cycle_training_enabled === true}
+          cycleTrainingEnabled={
+            profileGoals.cycle_training_enabled === true &&
+            String(profileGoals.sex || "").toLowerCase() !== "male"
+          }
           onSaved={handleCheckinSaved}
         />
 
