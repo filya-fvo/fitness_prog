@@ -23,6 +23,7 @@ import {
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
 import { DecimalInput } from "@/components/DecimalInput";
+import { parseDecimalInput } from "@/components/decimalInputValue";
 import { NutritionLabelCameraModal } from "@/features/nutrition/components/NutritionLabelCameraModal";
 import { prepareNutritionLabelImage } from "@/features/nutrition/utils/labelImage";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
@@ -153,6 +154,7 @@ export function DailyLog() {
   const [cP, setCP] = useState("");
   const [cF, setCF] = useState("");
   const [cC, setCC] = useState("");
+  const [customError, setCustomError] = useState<string | null>(null);
   const [recent, setRecent] = useState<QuickProduct[]>(() => loadRecentProducts());
   const [favorites, setFavorites] = useState<QuickProduct[]>(() => loadFavoriteProducts());
   const [copyingYesterday, setCopyingYesterday] = useState(false);
@@ -510,20 +512,22 @@ export function DailyLog() {
     if (saving) return;
     const name = cName.trim();
     const values = [cCal, cP, cF, cC];
-    const [calories, proteins, fats, carbs] = values.map(Number);
+    const parsed = values.map(parseDecimalInput);
     if (!name) {
-      setError("Укажите название продукта");
+      setCustomError("Укажите название продукта");
       return;
     }
-    if (
-      values.some((value) => value.trim() === "") ||
-      ![calories, proteins, fats, carbs].every((n) => Number.isFinite(n) && n >= 0)
-    ) {
-      setError("БЖУ и ккал должны быть числами ≥ 0 (на 100 г)");
+    if (values.some((value) => value.trim() === "") || parsed.some((value) => value == null)) {
+      setCustomError("Заполните ккал, белки, жиры и углеводы числами от 0");
+      return;
+    }
+    const [calories, proteins, fats, carbs] = parsed as [number, number, number, number];
+    if (calories > 1200 || [proteins, fats, carbs].some((value) => value > 100)) {
+      setCustomError("Проверьте значения на 100 г: ккал — до 1200, БЖУ — до 100 г");
       return;
     }
     setSaving(true);
-    setError(null);
+    setCustomError(null);
     try {
       const product = await createNutritionProduct({
         nameRu: name,
@@ -544,13 +548,15 @@ export function DailyLog() {
       setPendingBarcode("");
       setBarcodeFallback(null);
       pickProduct(product);
-      setBrowseOpen(true);
-      // refresh catalog
-      const res = await searchProducts("", { limit: 40, category: category || undefined });
-      setCatalog(res.items);
-      setCatalogTotal(res.total);
+      setBrowseOpen(false);
+      if (!category || category === "custom" || (category === "barcode" && product.barcode)) {
+        setCatalog((current) => [product, ...current.filter((item) => item.id !== product.id)]);
+        setCatalogTotal((current) => current + (catalog.some((item) => item.id === product.id) ? 0 : 1));
+      }
+      setOkNote(`${product.name_ru}: продукт создан и выбран. Проверьте граммы и нажмите «Добавить в дневник».`);
+      toast("Продукт создан и выбран");
     } catch (err) {
-      setError(toUserMessage(err, "Не удалось создать продукт"));
+      setCustomError(toUserMessage(err, "Не удалось создать продукт"));
     } finally {
       setSaving(false);
     }
@@ -625,6 +631,7 @@ export function DailyLog() {
         const message = "Не удалось распознать этикетку. Внесите данные с упаковки вручную.";
         setLabelFeedback({ message, error: true });
         setLabelReview(null);
+        setCustomError(null);
         setCustomOpen(true);
         toast(message, "error", 5000);
         return;
@@ -636,6 +643,7 @@ export function DailyLog() {
       setCC(result.carbs_g == null ? "" : String(result.carbs_g));
       setLabelReview(result);
       setLabelFeedback(null);
+      setCustomError(null);
       setCustomOpen(true);
       trackEvent("nutrition_label_recognized", {
         confidence: result.confidence,
@@ -654,6 +662,7 @@ export function DailyLog() {
       const fallbackMessage = `${message} Внесите данные с упаковки вручную.`;
       setLabelReview(null);
       setLabelFeedback({ message: fallbackMessage, error: true });
+      setCustomError(null);
       setCustomOpen(true);
       toast(fallbackMessage, "error", 5000);
     } finally {
@@ -871,6 +880,7 @@ export function DailyLog() {
                 type="button"
                 onClick={() => {
                   setLabelReview(null);
+                  setCustomError(null);
                   setCustomOpen(true);
                 }}
                 className="rounded-xl bg-tg-secondary px-3 py-2 text-xs font-medium"
@@ -1230,6 +1240,7 @@ export function DailyLog() {
           type="button"
           onClick={() => {
             setLabelReview(null);
+            setCustomError(null);
             setCustomOpen(true);
           }}
           className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium"
@@ -1318,7 +1329,7 @@ export function DailyLog() {
             aria-modal="true"
             aria-labelledby="nutrition-edit-title"
             tabIndex={-1}
-            className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl"
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-3 overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
               <h3 id="nutrition-edit-title" className="font-semibold">Изменить запись</h3>
@@ -1387,7 +1398,7 @@ export function DailyLog() {
             aria-modal="true"
             aria-labelledby="custom-product-title"
             tabIndex={-1}
-            className="w-full max-w-md space-y-3 rounded-2xl bg-tg-bg p-4 shadow-xl"
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-3 overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
               <h3 id="custom-product-title" className="font-semibold">
@@ -1396,7 +1407,7 @@ export function DailyLog() {
               <button
                 type="button"
                 aria-label="Закрыть"
-                className="text-tg-hint"
+                className="flex min-h-11 min-w-11 items-center justify-center text-tg-hint"
                 onClick={() => {
                   setCustomOpen(false);
                   setLabelReview(null);
@@ -1434,14 +1445,19 @@ export function DailyLog() {
             </div>}
             <label className="block text-xs text-tg-hint">
               Название
-              <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm" />
+              <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-3 py-2 text-base" />
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Белки<DecimalInput value={cP} onValueChange={setCP} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Жиры<DecimalInput value={cF} onValueChange={setCF} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
-              <label className="text-xs text-tg-hint">Углеводы<DecimalInput value={cC} onValueChange={setCC} className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm" /></label>
+              <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
+              <label className="text-xs text-tg-hint">Белки<DecimalInput value={cP} onValueChange={setCP} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
+              <label className="text-xs text-tg-hint">Жиры<DecimalInput value={cF} onValueChange={setCF} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
+              <label className="text-xs text-tg-hint">Углеводы<DecimalInput value={cC} onValueChange={setCC} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
             </div>
+            {customError ? (
+              <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+                {customError}
+              </p>
+            ) : null}
             <button type="button" disabled={saving} onClick={() => void submitCustomProduct()} className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60">
               {saving ? "Сохраняем…" : "Создать и выбрать"}
             </button>
@@ -1472,6 +1488,7 @@ export function DailyLog() {
               setScannerOpen(false);
               setPendingBarcode("");
               setLabelReview(null);
+              setCustomError(null);
               setCustomOpen(true);
             }}
           />

@@ -238,6 +238,9 @@ docker compose --env-file backend/.env.production build --pull api worker telegr
 docker compose --env-file backend/.env.production up -d
 sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
+# После успешных health-check удаляем только неиспользуемый build-кэш старше 72 часов.
+# Образы запущенных сервисов и volumes эта команда не затрагивает.
+docker builder prune --all --force --filter until=72h
 ```
 
 API, worker и telegram-poller подключены к отдельной dual-stack сети `ipv6_egress`: Telegram Bot

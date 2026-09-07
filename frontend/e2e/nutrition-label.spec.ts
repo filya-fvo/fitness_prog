@@ -5,6 +5,7 @@ const USER_ID = "22222222-2222-4222-8222-222222222222";
 test("label photo is uploaded as multipart and opens an editable review", async ({ page }) => {
   let requestContentType = "";
   let requestBody = "";
+  let createdProductBody: Record<string, unknown> | null = null;
 
   await page.setViewportSize({ width: 375, height: 667 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
@@ -63,6 +64,24 @@ test("label photo is uploaded as multipart and opens an editable review", async 
       }),
     });
   });
+  await page.route("**/nutrition/products", async (route) => {
+    createdProductBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "55555555-5555-4555-8555-555555555555",
+        name_ru: "Тестовый йогурт",
+        barcode: null,
+        calories: 81,
+        proteins: 5.2,
+        fats: 2.5,
+        carbs: 9.1,
+        category: "custom",
+        source: "manual",
+      }),
+    });
+  });
 
   await page.goto("/nutrition");
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
@@ -97,9 +116,21 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   expect(requestContentType).toContain("multipart/form-data; boundary=");
   expect(requestBody).toContain('name="image"');
   expect(requestBody).toContain('filename="label.png"');
+
+  await review.getByRole("button", { name: "Создать и выбрать" }).click();
+  await expect(review).toHaveCount(0);
+  await expect(page.getByText(/Тестовый йогурт: продукт создан и выбран.*Проверьте граммы/i)).toBeVisible();
+  expect(createdProductBody).toMatchObject({
+    name_ru: "Тестовый йогурт",
+    calories: 81,
+    proteins: 5.2,
+    fats: 2.5,
+    carbs: 9.1,
+  });
 });
 
 test("unknown barcode offers label, rescan and manual product entry", async ({ page }) => {
+  let createdProductBody: Record<string, unknown> | null = null;
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
@@ -135,6 +166,24 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
       error: null,
     }),
   }));
+  await page.route("**/nutrition/products", async (route) => {
+    createdProductBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "66666666-6666-4666-8666-666666666666",
+        name_ru: "Ручной продукт",
+        barcode: "4601234567890",
+        calories: 123.4,
+        proteins: 5.6,
+        fats: 7.8,
+        carbs: 9.1,
+        category: "custom",
+        source: "manual",
+      }),
+    });
+  });
 
   await page.goto("/nutrition");
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
@@ -149,7 +198,26 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
   await expect(page.getByText(/пока не найден в каталоге/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Сканировать ещё раз" })).toBeVisible();
   await page.getByRole("button", { name: "Ввести вручную" }).click();
-  await expect(page.getByRole("dialog", { name: "Новый продукт" })).toBeVisible();
+  const manualDialog = page.getByRole("dialog", { name: "Новый продукт" });
+  await expect(manualDialog).toBeVisible();
+  await manualDialog.getByRole("button", { name: "Создать и выбрать" }).click();
+  await expect(manualDialog.getByRole("alert")).toHaveText("Укажите название продукта");
+  await manualDialog.getByLabel("Название").fill("Ручной продукт");
+  await manualDialog.getByLabel("Ккал").fill("123,4");
+  await manualDialog.getByLabel("Белки").fill("5,6");
+  await manualDialog.getByLabel("Жиры").fill("7,8");
+  await manualDialog.getByLabel("Углеводы").fill("9,1");
+  await manualDialog.getByRole("button", { name: "Создать и выбрать" }).click();
+  await expect(manualDialog).toHaveCount(0);
+  await expect(page.getByText(/Ручной продукт: продукт создан и выбран.*Проверьте граммы/i)).toBeVisible();
+  expect(createdProductBody).toMatchObject({
+    name_ru: "Ручной продукт",
+    barcode: "4601234567890",
+    calories: 123.4,
+    proteins: 5.6,
+    fats: 7.8,
+    carbs: 9.1,
+  });
 });
 
 test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
