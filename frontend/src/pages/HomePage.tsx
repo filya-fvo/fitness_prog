@@ -32,6 +32,8 @@ import {
   saveLocalSession,
   syncWorkoutPlan,
 } from "@/db/syncQueue";
+import { ActivationChecklistCard } from "@/features/onboarding/components/ActivationChecklistCard";
+import { useActivationChecklist } from "@/features/onboarding/hooks/useActivationChecklist";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { trackEvent } from "@/lib/analytics";
 import { hapticNotification } from "@/lib/telegram";
@@ -127,6 +129,7 @@ export function HomePage() {
   const [pickDay, setPickDay] = useState(1);
   const [pickPhase, setPickPhase] = useState<WeekPhase>("medium");
   const [completedCount, setCompletedCount] = useState(0);
+  const [hasCompletedSet, setHasCompletedSet] = useState(false);
   const [todayCalories, setTodayCalories] = useState<number | null>(null);
   const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
   const [waterMl, setWaterMl] = useState(() => getHabitDay(undefined, user?.id).waterMl);
@@ -188,6 +191,21 @@ export function HomePage() {
     })) ?? programExercises,
     [preparedPlan, programExercises],
   );
+  const todayHabit = getHabitDay(undefined, user?.id);
+  const hasCheckin = Boolean(
+    todayHabit.waterMl > 0
+      || todayHabit.sleepHours != null
+      || todayHabit.steps != null
+      || todayHabit.activeMinutes != null,
+  );
+  const activationChecklist = useActivationChecklist({
+    profileGoals,
+    setProfileGoals,
+    userId: user?.id,
+    online,
+    hasCompletedSet,
+    hasCheckin,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -324,6 +342,9 @@ export function HomePage() {
           setPending(queue);
           const completed = workouts.filter((w) => w.status === "completed");
           setCompletedCount(completed.length);
+          setHasCompletedSet(
+            workouts.some((workout) => workout.sets.some((set) => Boolean(set.is_completed))),
+          );
           const today = progressLocalDate(new Date());
           setCompletedProgramIdsToday(
             Array.from(
@@ -766,12 +787,18 @@ export function HomePage() {
               onChange={setWorkoutSchedule}
             />
             {todayExercises.length ? (
-              <div className="rounded-xl bg-tg-bg/70 p-3">
+              <div id="today-workout-plan" className="scroll-mt-4 rounded-xl bg-tg-bg/70 p-3">
                 <button
                   type="button"
                   aria-expanded={todayPlanOpen}
                   className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left"
-                  onClick={() => setTodayPlanOpen((open) => !open)}
+                  onClick={() => {
+                    if (!todayPlanOpen) {
+                      trackEvent("first_plan_viewed", { source: "home_plan" });
+                      activationChecklist.applySignals(["plan_viewed"]);
+                    }
+                    setTodayPlanOpen((open) => !open);
+                  }}
                 >
                   <span className="text-xs font-semibold">
                     {canStartProgramNow ? "План на сегодня" : "План следующей тренировки"}
@@ -887,6 +914,31 @@ export function HomePage() {
             </button>
           </div>
         )}
+
+        <ActivationChecklistCard
+          state={activationChecklist.state}
+          hasProgram={Boolean(todayProgram)}
+          onSignals={activationChecklist.applySignals}
+          onViewPlan={() => {
+            trackEvent("first_plan_viewed", { source: "activation_checklist" });
+            activationChecklist.applySignals(["plan_viewed"]);
+            setTodayPlanOpen(true);
+            window.requestAnimationFrame(() => {
+              document.getElementById("today-workout-plan")?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            });
+          }}
+          onOpenCheckin={() => {
+            document.getElementById("daily-checkin")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }}
+          onSnooze={activationChecklist.snooze}
+          onDismiss={activationChecklist.dismiss}
+        />
 
         <PlanRegularityCard summary={regularity} />
 

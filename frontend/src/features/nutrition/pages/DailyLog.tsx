@@ -112,6 +112,10 @@ function categoryLabel(cat: string | null | undefined): string {
 }
 
 export function DailyLog() {
+  useEffect(() => {
+    trackEvent("nutrition_opened", { source: "navigation" });
+  }, []);
+
   const [day, setDay] = useState(todayISO);
   const [data, setData] = useState<DailyNutrition | null>(null);
   const [loading, setLoading] = useState(true);

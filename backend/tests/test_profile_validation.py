@@ -91,3 +91,40 @@ def test_manual_calorie_target_has_bounded_range() -> None:
     }
     with pytest.raises(ValidationError):
         UserProfileUpdate(goals={"manual_calorie_target": 799})
+
+
+def test_activation_checklist_state_is_bounded() -> None:
+    state = {
+        "version": 1,
+        "started_at": "2026-09-07T10:00:00+00:00",
+        "signals": ["plan_viewed", "measurement_skipped"],
+        "snoozed_until": "2026-09-08",
+        "completed_at": None,
+        "dismissed_at": None,
+    }
+    assert UserProfileUpdate(goals={"activation_checklist": state}).goals == {
+        "activation_checklist": state
+    }
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"version": 2, "started_at": "2026-09-07T10:00:00Z", "signals": []},
+        {"version": 1, "started_at": "not-a-date", "signals": []},
+        {
+            "version": 1,
+            "started_at": "2026-09-07T10:00:00Z",
+            "signals": ["private_health_note"],
+        },
+        {
+            "version": 1,
+            "started_at": "2026-09-07T10:00:00Z",
+            "signals": [],
+            "unexpected": True,
+        },
+    ],
+)
+def test_invalid_activation_checklist_state_is_rejected(state: dict) -> None:
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(goals={"activation_checklist": state})

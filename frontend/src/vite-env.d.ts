@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_BOT_USERNAME?: string;
+  readonly VITE_NEW_USER_CHECKLIST_ENABLED?: string;
 }
 
 interface ImportMeta {

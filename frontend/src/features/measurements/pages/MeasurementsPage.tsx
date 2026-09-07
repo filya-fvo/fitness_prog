@@ -9,6 +9,7 @@ import {
 } from "@/api/bodyMeasurements";
 import { DecimalInput } from "@/components/DecimalInput";
 import { Header } from "@/components/layout/Header";
+import { trackEvent } from "@/lib/analytics";
 import {
   cacheServerBodyMeasurements,
   getPendingBodyMeasurementDates,
@@ -234,6 +235,7 @@ export function MeasurementsPage() {
       if (isOnline()) await flushSyncQueue(ownerUserId, { retryFailed: true });
       await showCached(ownerUserId);
       const pending = await getPendingBodyMeasurementDates(ownerUserId);
+      trackEvent("measurement_saved", { offline: pending.has(date) });
       toast(pending.has(date)
         ? "Сохранено на устройстве. Отправим при подключении."
         : "Замеры сохранены");

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -28,6 +29,67 @@ _GOAL_ENUMS: dict[str, set[str]] = {
     "activity_level": {"sedentary", "light", "moderate", "active", "very_active"},
 }
 _GOAL_BOOLEAN_KEYS = {"cycle_training_enabled"}
+_ACTIVATION_CHECKLIST_SIGNALS = {
+    "plan_viewed",
+    "schedule_saved",
+    "set_logged",
+    "checkin_saved",
+    "measurement_saved",
+    "measurement_skipped",
+    "nutrition_opened",
+    "faq_opened",
+}
+_ACTIVATION_CHECKLIST_KEYS = {
+    "version",
+    "started_at",
+    "signals",
+    "snoozed_until",
+    "completed_at",
+    "dismissed_at",
+}
+
+
+def _validate_activation_checklist(value: object) -> None:
+    if not isinstance(value, dict) or set(value) - _ACTIVATION_CHECKLIST_KEYS:
+        raise ValueError("activation_checklist must be a supported object")
+    if value.get("version") != 1:
+        raise ValueError("unsupported activation_checklist version")
+    started_at = value.get("started_at")
+    if not isinstance(started_at, str) or len(started_at) > 64:
+        raise ValueError("activation_checklist started_at must be ISO datetime")
+    try:
+        datetime.fromisoformat(started_at)
+    except ValueError as exc:
+        raise ValueError("activation_checklist started_at must be ISO datetime") from exc
+    signals = value.get("signals")
+    if (
+        not isinstance(signals, list)
+        or len(signals) > len(_ACTIVATION_CHECKLIST_SIGNALS)
+        or any(
+            not isinstance(signal, str) or signal not in _ACTIVATION_CHECKLIST_SIGNALS
+            for signal in signals
+        )
+        or len(set(signals)) != len(signals)
+    ):
+        raise ValueError("activation_checklist signals are invalid")
+    for key in ("completed_at", "dismissed_at"):
+        raw = value.get(key)
+        if raw is None:
+            continue
+        if not isinstance(raw, str) or len(raw) > 64:
+            raise ValueError(f"activation_checklist {key} must be ISO datetime")
+        try:
+            datetime.fromisoformat(raw)
+        except ValueError as exc:
+            raise ValueError(f"activation_checklist {key} must be ISO datetime") from exc
+    snoozed = value.get("snoozed_until")
+    if snoozed is not None:
+        if not isinstance(snoozed, str) or len(snoozed) != 10:
+            raise ValueError("activation_checklist snoozed_until must be ISO date")
+        try:
+            date.fromisoformat(snoozed)
+        except ValueError as exc:
+            raise ValueError("activation_checklist snoozed_until must be ISO date") from exc
 
 
 class UserProfileResponse(BaseModel):
@@ -107,4 +169,6 @@ class UserProfileUpdate(BaseModel):
                 raise ValueError(f"{key} must be numeric") from exc
             if not minimum <= number <= maximum:
                 raise ValueError(f"{key} must be between {minimum:g} and {maximum:g}")
+        if "activation_checklist" in value:
+            _validate_activation_checklist(value["activation_checklist"])
         return value

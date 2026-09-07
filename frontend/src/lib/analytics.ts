@@ -24,7 +24,17 @@ export type AnalyticsEventName =
   | "nutrition_label_recognized"
   | "ai_message_sent"
   | "reentry_shown"
-  | "habit_checked";
+  | "habit_checked"
+  | "first_plan_viewed"
+  | "schedule_saved"
+  | "measurement_saved"
+  | "nutrition_opened"
+  | "faq_opened"
+  | "activation_checklist_shown"
+  | "activation_checklist_item_completed"
+  | "activation_checklist_completed"
+  | "activation_checklist_snoozed"
+  | "activation_checklist_dismissed";
 
 export type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -45,6 +55,9 @@ function pushLocal(event: string, payload: AnalyticsPayload): void {
 /** Record analytics event locally (does not close Telegram Mini App). */
 export function trackEvent(event: AnalyticsEventName, payload: AnalyticsPayload = {}): void {
   pushLocal(event, payload);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("fitness:analytics-event", { detail: { event } }));
+  }
 
   if (import.meta.env.DEV) {
     console.debug("[analytics]", event, payload);

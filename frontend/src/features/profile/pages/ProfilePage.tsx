@@ -58,6 +58,7 @@ import { toUserMessage } from "@/utils/errors";
 import { programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { confirmAction } from "@/lib/telegram";
+import { trackEvent } from "@/lib/analytics";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
 import { programSelectionGoalsPatch } from "@/utils/programProgress";
 import {
@@ -947,6 +948,7 @@ setAuthEmail(p.auth_email ?? null);
           workout_remind_before_minutes: woLeadMinutes,
         },
       });
+      trackEvent("schedule_saved", { days_count: woDays.length });
       setOk("Уведомления сохранены. Бот пришлёт сообщения в чат по расписанию.");
       setDirtyTabs((current) => {
         const next = new Set(current);

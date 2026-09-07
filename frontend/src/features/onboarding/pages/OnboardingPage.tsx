@@ -13,6 +13,10 @@ import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { toUserMessage } from "@/utils/errors";
 import { trackEvent } from "@/lib/analytics";
+import {
+  activationChecklistEnabled,
+  createActivationChecklistState,
+} from "@/features/onboarding/activationChecklist";
 import { getTelegramWebApp, hapticNotification, isTelegramEnvironment } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import {
@@ -198,6 +202,9 @@ export function OnboardingPage() {
         limitations: jointLimits,
         limitations_note: limitationsNote.trim() || null,
         onboarding_completed: true,
+        ...(activationChecklistEnabled()
+          ? { activation_checklist: createActivationChecklistState() }
+          : {}),
       };
       const ageFromBirth = ageFromBirthDate(birthDate);
       const anthropometry = {

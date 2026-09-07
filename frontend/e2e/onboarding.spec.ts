@@ -100,4 +100,10 @@ test("onboarding requires explicit choices, supports unspecified sex and allows 
   expect(payload.goals?.active_program_id).toBeUndefined();
   expect(payload.goals?.primary_goal).toBe("maintain");
   expect(payload.goals?.level).toBe("beginner");
+  expect(payload.goals?.activation_checklist).toMatchObject({
+    version: 1,
+    signals: [],
+    completed_at: null,
+    dismissed_at: null,
+  });
 });

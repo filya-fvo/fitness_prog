@@ -184,6 +184,8 @@ services → SQLAlchemy models → PostgreSQL
   системный выход Android и добавляет узкий edge-swipe выхода для Telegram iOS.
 - `frontend/src/api/` — единственное место HTTP-контрактов клиента.
 - `frontend/src/features/` — feature pages/components/hooks.
+- `frontend/src/features/onboarding/` — исправляемая анкета и временный
+  версионированный чек-лист знакомства нового пользователя с offline-сохранением.
 - `frontend/src/features/invites/` — создание, отправка, ручной код, preview и
   явное принятие приглашения; незавершённый `startapp` переживает onboarding.
 - `frontend/src/features/social/` — друзья, настраиваемые частные соревнования на
@@ -239,6 +241,7 @@ services → SQLAlchemy models → PostgreSQL
 | Область | Frontend | Backend / данные | Обязательные тесты |
 |---|---|---|---|
 | Авторизация Telegram/browser | `Shell.tsx`, `TelegramBrowserLogin.tsx`, `EmailLoginForm.tsx`, `api/auth.ts`, `lib/telegramLogin.ts` | `routers/auth.py`, `auth_service.py`, `telegram_browser_auth.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth/OIDC/JWKS, frontend serving, Telegram bot, browser E2E |
+| Онбординг и знакомство | `features/onboarding`, `HomePage.tsx`, `lib/analytics.ts` | `users` profile goals, `schemas/user.py` | profile validation + onboarding/checklist unit и browser E2E |
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts`, `utils/cycleTraining.ts` | `daily_metrics` router/schema/service/model, `cycle_training.py`, migrations 17 и 40 | daily metrics + habits + cycle training tests |
 | Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |

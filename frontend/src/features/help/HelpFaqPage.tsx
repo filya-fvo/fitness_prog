@@ -10,6 +10,7 @@ import {
   type FaqTopic,
 } from "@/features/help/faqContent";
 import { faqArticleById, searchFaqArticles } from "@/features/help/faqSearch";
+import { trackEvent } from "@/lib/analytics";
 
 const TABS: Array<{ id: FaqTab; label: string }> = [
   { id: "howto", label: "Как сделать" },
@@ -88,6 +89,10 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
   const [tab, setTab] = useState<FaqTab>(initialTab);
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState<FaqTopic | null>(null);
+
+  useEffect(() => {
+    trackEvent("faq_opened", { source: "navigation" });
+  }, []);
 
   useEffect(() => {
     if (requestedArticle) setTab(requestedArticle.tab);

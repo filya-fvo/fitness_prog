@@ -229,6 +229,7 @@ services:
         VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL in backend/.env.production}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
         VITE_BOT_USERNAME: ${VITE_BOT_USERNAME:-}
+        VITE_NEW_USER_CHECKLIST_ENABLED: ${VITE_NEW_USER_CHECKLIST_ENABLED:-true}
     restart: unless-stopped
     volumes:
       # Previous hashed chunks survive container replacement for open Telegram/PWA clients.

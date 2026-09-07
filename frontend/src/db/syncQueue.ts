@@ -87,6 +87,17 @@ function profileDraftKey(ownerUserId: string): string {
   return `fitness_profile_draft_v2:${ownerUserId}`;
 }
 
+export function readQueuedProfileUpdateDraft(ownerUserId: string): ProfileUpdatePayload | null {
+  try {
+    const raw = localStorage.getItem(profileDraftKey(ownerUserId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" ? parsed as ProfileUpdatePayload : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getPendingCount(ownerUserId?: string): Promise<number> {
   const owner = ownerUserId || currentOwnerUserId();
   if (!owner) return 0;
