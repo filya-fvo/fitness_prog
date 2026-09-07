@@ -5,6 +5,63 @@ const PROGRAM_ID = "33333333-3333-4333-8333-333333333333";
 const PROGRAM_NAME = "М · Зал · Продвинутый · Чередование акцентов";
 const DAY_NAME = "2 · Акцент ноги + плечи · Средняя · Набор мышц · Продвинутый";
 
+test("recurring schedule is edited in Training, independently from reminders", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  let savedPayload: Record<string, unknown> | null = null;
+  let scheduleSettings = { version: 1, days: [0, 2, 4], start_time: "18:30:00" };
+
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: USER_ID,
+      telegram_id: null,
+      username: "schedule-editor",
+      auth_email: null,
+      anthropometry: { sex: "male" },
+      goals: { onboarding_completed: true },
+      subscription_status: "free",
+      stars_balance: 0,
+      onboarding_completed: true,
+    }),
+  }));
+  await page.route(/\/programs(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+  await page.route("**/workouts/history", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+  await page.route("**/workouts/schedule/overview**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ requested_date: "2026-09-07", current: null, next: null }),
+  }));
+  await page.route("**/workouts/schedule/settings", async (route) => {
+    if (route.request().method() === "PUT") {
+      savedPayload = route.request().postDataJSON() as Record<string, unknown>;
+      scheduleSettings = {
+        version: 1,
+        days: savedPayload.days as number[],
+        start_time: String(savedPayload.start_time),
+      };
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(scheduleSettings) });
+  });
+
+  await page.goto("/train#schedule");
+  const card = page.getByRole("region", { name: "Постоянные тренировочные дни" });
+  await expect(card).toBeVisible();
+  await expect(card).toBeFocused();
+  await card.getByRole("button", { name: "Пт" }).click();
+  await card.getByRole("button", { name: "Сб" }).click();
+  await card.getByLabel("Время начала").fill("07:15");
+  await card.getByRole("button", { name: "Сохранить расписание" }).click();
+
+  expect(savedPayload).toEqual({ days: [0, 2, 5], start_time: "07:15" });
+  await expect(card.getByText("Постоянное расписание сохранено.")).toBeVisible();
+});
+
 test("one workout can be moved without changing the recurring schedule", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));

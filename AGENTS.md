@@ -142,7 +142,8 @@ services → SQLAlchemy models → PostgreSQL
   регулярности, веса, талии и относительной силы.
 - `backend/app/services/global_competitions.py` — добровольные 28-дневные сезоны
   регулярности, псевдонимы, группы по частоте расписания и privacy threshold.
-- `backend/app/services/scheduler.py` — постоянные тренировочные дни, дата старта
+- `backend/app/services/scheduler.py` — канонический `goals.workout_schedule`,
+  совместимые legacy-зеркала, постоянные тренировочные дни, дата старта
   активной программы как нижняя граница календаря, разовые
   переносы и окно до следующей тренировки; `workout_notifications.py` — расчёт
   workout-reminder; `workout_shift.py` — изолированный legacy API массового
@@ -243,7 +244,7 @@ services → SQLAlchemy models → PostgreSQL
 | Авторизация Telegram/browser | `Shell.tsx`, `TelegramBrowserLogin.tsx`, `EmailLoginForm.tsx`, `api/auth.ts`, `lib/telegramLogin.ts` | `routers/auth.py`, `auth_service.py`, `telegram_browser_auth.py`, `email_auth_service.py`, `email_service.py`, users/email migrations | auth/OIDC/JWKS, frontend serving, Telegram bot, browser E2E |
 | Онбординг и знакомство | `features/onboarding`, `HomePage.tsx`, `lib/analytics.ts` | `users` profile goals, `schemas/user.py` | profile validation + onboarding/checklist unit и browser E2E |
 | Главная и дневной чек-ин | `HomePage.tsx`, `HabitsCheckin.tsx`, `api/dailyMetrics.ts`, `utils/habits.ts`, `utils/cycleTraining.ts` | `daily_metrics` router/schema/service/model, `cycle_training.py`, migrations 17 и 40 | daily metrics + habits + cycle training tests |
-| Тренировки, автопереход и подготовка замен | `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `workout_service.py`, `planned_workout.py`, workout models, migration 22 | load progression, planned replacement, session, completion, recovery E2E |
+| Тренировки, расписание, автопереход и подготовка замен | `TrainHubPage.tsx`, `WorkoutScheduleSettingsCard.tsx`, `ActiveWorkout.tsx`, `PlannedWorkoutEditor.tsx`, `utils/workoutSession.ts`, `workoutCompletion.ts` | `workouts.py`, `scheduler.py`, `workout_service.py`, `planned_workout.py`, workout models, migrations 22 и 42 | scheduler/regularity, load progression, planned replacement, session, completion, recovery E2E |
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
 | Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx`, `features/admin-exercises` | `exercises.py`, `exercise_service.py`, `admin_exercise_media.py`, `exercise_media_assets`, seed, rebuild/audit/thumbnail scripts | media upload/audit, media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |

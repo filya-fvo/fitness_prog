@@ -29,6 +29,9 @@ type Options = {
 };
 
 function configuredWorkoutDays(goals: Record<string, unknown>): number[] {
+  const schedule = goals.workout_schedule && typeof goals.workout_schedule === "object"
+    ? goals.workout_schedule as Record<string, unknown>
+    : {};
   const notifications = goals.notification_settings;
   const settings = notifications && typeof notifications === "object"
     ? notifications as Record<string, unknown>
@@ -36,9 +39,11 @@ function configuredWorkoutDays(goals: Record<string, unknown>): number[] {
   const workouts = settings.workouts && typeof settings.workouts === "object"
     ? settings.workouts as Record<string, unknown>
     : {};
-  const candidate = Array.isArray(workouts.days)
-    ? workouts.days
-    : Array.isArray(goals.workout_days) ? goals.workout_days : [];
+  const candidate = Array.isArray(schedule.days)
+    ? schedule.days
+    : Array.isArray(workouts.days)
+      ? workouts.days
+      : Array.isArray(goals.workout_days) ? goals.workout_days : [];
   return candidate
     .map(Number)
     .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);

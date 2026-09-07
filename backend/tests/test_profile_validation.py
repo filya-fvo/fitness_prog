@@ -121,6 +121,36 @@ def test_activation_checklist_rollout_preserves_existing_state() -> None:
     assert "'dismissed_at', NULL" in migration
 
 
+def test_workout_schedule_migration_preserves_legacy_sources() -> None:
+    migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260907000042_separate_workout_schedule.sql"
+    ).read_text(encoding="utf-8")
+    assert "'{workout_schedule}'" in migration
+    assert "'{notification_settings,workouts,days}'" in migration
+    assert "'workout_start_time'" in migration
+    assert "NOT (COALESCE(goals, '{}'::jsonb) ? 'workout_schedule')" in migration
+
+
+def test_workout_schedule_profile_shape_is_bounded() -> None:
+    schedule = {"version": 1, "days": [0, 2, 4], "start_time": "18:30"}
+    assert UserProfileUpdate(goals={"workout_schedule": schedule}).goals == {
+        "workout_schedule": schedule,
+    }
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(
+            goals={
+                "workout_schedule": {
+                    "version": 1,
+                    "days": [],
+                    "start_time": "not-a-time",
+                },
+            },
+        )
+
+
 @pytest.mark.parametrize(
     "state",
     [

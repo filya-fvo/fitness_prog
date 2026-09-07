@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -47,6 +47,28 @@ _ACTIVATION_CHECKLIST_KEYS = {
     "completed_at",
     "dismissed_at",
 }
+
+
+def _validate_workout_schedule(value: object) -> None:
+    if not isinstance(value, dict) or set(value) != {"version", "days", "start_time"}:
+        raise ValueError("workout_schedule must be a supported object")
+    if value.get("version") != 1:
+        raise ValueError("unsupported workout_schedule version")
+    days = value.get("days")
+    if (
+        not isinstance(days, list)
+        or not 1 <= len(days) <= 7
+        or any(not isinstance(day, int) or isinstance(day, bool) or not 0 <= day <= 6 for day in days)
+        or len(set(days)) != len(days)
+    ):
+        raise ValueError("workout_schedule days are invalid")
+    start_time = value.get("start_time")
+    if not isinstance(start_time, str):
+        raise ValueError("workout_schedule start_time is invalid")
+    try:
+        time.fromisoformat(start_time)
+    except ValueError as exc:
+        raise ValueError("workout_schedule start_time is invalid") from exc
 
 
 def _validate_activation_checklist(value: object) -> None:
@@ -171,4 +193,6 @@ class UserProfileUpdate(BaseModel):
                 raise ValueError(f"{key} must be between {minimum:g} and {maximum:g}")
         if "activation_checklist" in value:
             _validate_activation_checklist(value["activation_checklist"])
+        if "workout_schedule" in value:
+            _validate_workout_schedule(value["workout_schedule"])
         return value

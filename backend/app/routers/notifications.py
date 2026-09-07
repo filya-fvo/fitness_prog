@@ -42,6 +42,7 @@ from app.services.notification_prefs import (
     format_calorie_reminder_text,
     local_now,
     merge_notification_settings,
+    parse_hhmm,
     set_water_ml_for_day,
     water_ml_for_day,
 )
@@ -124,7 +125,12 @@ class WaterLogResponse(BaseModel):
 
 def _merged_notification_settings(goals: dict[str, Any]) -> dict[str, Any]:
     raw = goals.get("notification_settings")
-    return merge_notification_settings(raw if isinstance(raw, dict) else None)
+    merged = merge_notification_settings(raw if isinstance(raw, dict) else None)
+    schedule = scheduler_service.workout_schedule_settings(goals)
+    workouts = dict(merged.get("workouts") or {})
+    workouts.update({"days": schedule["days"], "time": schedule["start_time"]})
+    merged["workouts"] = workouts
+    return merged
 
 
 def _water_day(goals: dict[str, Any], requested: date_cls | None) -> date_cls:
@@ -168,8 +174,7 @@ class PushConfigResponse(BaseModel):
 
 @router.get("/settings", response_model=NotificationSettingsResponse)
 async def get_settings_route(user: User = Depends(get_current_user)) -> NotificationSettingsResponse:
-    raw = (user.goals or {}).get("notification_settings")
-    merged = merge_notification_settings(raw if isinstance(raw, dict) else None)
+    merged = _merged_notification_settings(user.goals or {})
     return NotificationSettingsResponse(settings=merged, defaults=default_notification_settings())
 
 
@@ -182,6 +187,20 @@ async def put_settings_route(
     previous_goals = dict(user.goals or {})
     merged = merge_notification_settings(body.settings)
     goals = {**previous_goals, "notification_settings": merged}
+    raw_workouts = body.settings.get("workouts")
+    raw_workouts = raw_workouts if isinstance(raw_workouts, dict) else {}
+    previous_schedule = scheduler_service.workout_schedule_settings(previous_goals)
+    previous_days = set(previous_schedule["days"])
+    raw_days = raw_workouts.get("days")
+    parsed_days = scheduler_service.workout_days(
+        {"notification_settings": {"workouts": {"days": raw_days}}},
+    ) if isinstance(raw_days, list) else set()
+    requested_days = parsed_days or previous_days
+    requested_time = (
+        parse_hhmm(str(raw_workouts.get("time") or ""))
+        if "time" in raw_workouts
+        else parse_hhmm(str(previous_schedule["start_time"]))
+    ) or parse_hhmm(str(previous_schedule["start_time"]))
     effective_from = scheduler_service.local_schedule_day(goals)
     created_at = getattr(user, "created_at", None)
     tracking_start = scheduler_service.program_schedule_start(goals) or (
@@ -189,18 +208,30 @@ async def put_settings_route(
         if created_at is not None
         else effective_from
     )
-    goals = scheduler_service.record_workout_schedule_change(
+    goals = scheduler_service.apply_workout_schedule_settings(
         goals,
-        previous_days=scheduler_service.workout_days(previous_goals),
-        new_days=scheduler_service.workout_days(goals),
+        days=requested_days,
+        start_time=requested_time,
         effective_from=effective_from,
         tracking_start=tracking_start,
     )
+    goals = scheduler_service.record_workout_schedule_change(
+        goals,
+        previous_days=previous_days,
+        new_days=requested_days,
+        effective_from=effective_from,
+        tracking_start=tracking_start,
+    )
+    workout_cfg = goals["notification_settings"].get("workouts") or {}
+    goals["workout_remind_before_minutes"] = workout_cfg.get("remind_before_minutes", 0)
     user.goals = goals
     flag_modified(user, "goals")
     await session.commit()
     await session.refresh(user)
-    return NotificationSettingsResponse(settings=merged, defaults=default_notification_settings())
+    return NotificationSettingsResponse(
+        settings=goals["notification_settings"],
+        defaults=default_notification_settings(),
+    )
 
 
 @router.get("/push/config", response_model=PushConfigResponse)

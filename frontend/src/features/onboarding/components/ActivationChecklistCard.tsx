@@ -48,7 +48,7 @@ function ItemAction({
     return <button type="button" onClick={onViewPlan} className={linkClass}>Показать план</button>;
   }
   if (id === "schedule") {
-    return <Link to="/profile?section=alerts" className={linkClass}>Настроить дни</Link>;
+    return <Link to="/train#schedule" className={linkClass}>Настроить дни</Link>;
   }
   if (id === "first_set") return <Link to="/train" className={linkClass}>К тренировкам</Link>;
   if (id === "checkin") {

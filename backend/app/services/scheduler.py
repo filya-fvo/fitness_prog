@@ -21,6 +21,8 @@ from app.services.notification_prefs import _resolve_tz, merge_notification_sett
 OVERRIDES_KEY = "workout_schedule_overrides"
 CANCELLATIONS_KEY = "workout_schedule_cancellations"
 SCHEDULE_HISTORY_KEY = "workout_schedule_history"
+SCHEDULE_SETTINGS_KEY = "workout_schedule"
+SCHEDULE_SETTINGS_VERSION = 1
 MAX_RESCHEDULE_LOOKBACK_DAYS = 6
 MAX_NOTIFICATION_LEAD_MINUTES = 24 * 60
 SCHEDULE_HISTORY_RETENTION_DAYS = 35
@@ -42,8 +44,7 @@ def _workout_settings(goals: dict[str, Any]) -> dict[str, Any]:
     return dict(value) if isinstance(value, dict) else {}
 
 
-def workout_days(goals: dict[str, Any]) -> set[int]:
-    raw = _workout_settings(goals).get("days") or []
+def _normalized_weekdays(raw: Any) -> set[int]:
     days: set[int] = set()
     for value in raw if isinstance(raw, list) else []:
         try:
@@ -53,6 +54,42 @@ def workout_days(goals: dict[str, Any]) -> set[int]:
         if 0 <= weekday <= 6:
             days.add(weekday)
     return days
+
+
+def workout_schedule_settings(goals: dict[str, Any]) -> dict[str, Any]:
+    """Return the domain schedule, falling back to every supported legacy shape."""
+
+    canonical = goals.get(SCHEDULE_SETTINGS_KEY)
+    canonical = canonical if isinstance(canonical, dict) else {}
+    raw_notifications = goals.get("notification_settings")
+    raw_notifications = raw_notifications if isinstance(raw_notifications, dict) else {}
+    raw_workouts = raw_notifications.get("workouts")
+    legacy_workouts = raw_workouts if isinstance(raw_workouts, dict) else {}
+
+    raw_days = canonical.get("days")
+    if not isinstance(raw_days, list):
+        raw_days = legacy_workouts.get("days")
+    if not isinstance(raw_days, list):
+        raw_days = goals.get("workout_days")
+    if not isinstance(raw_days, list):
+        raw_days = [0, 2, 4]
+
+    raw_time = canonical.get("start_time")
+    if not raw_time:
+        raw_time = legacy_workouts.get("time")
+    if not raw_time:
+        raw_time = goals.get("workout_start_time")
+    start = parse_hhmm(str(raw_time or "18:30")) or time(18, 30)
+
+    return {
+        "version": SCHEDULE_SETTINGS_VERSION,
+        "days": sorted(_normalized_weekdays(raw_days)),
+        "start_time": start.strftime("%H:%M"),
+    }
+
+
+def workout_days(goals: dict[str, Any]) -> set[int]:
+    return set(workout_schedule_settings(goals)["days"])
 
 
 def _schedule_history(goals: dict[str, Any]) -> list[tuple[date, set[int]]]:
@@ -116,8 +153,50 @@ def record_workout_schedule_change(
     }
 
 
+def apply_workout_schedule_settings(
+    goals: dict[str, Any],
+    *,
+    days: set[int],
+    start_time: time,
+    effective_from: date,
+    tracking_start: date,
+) -> dict[str, Any]:
+    """Write the canonical schedule and synchronized legacy mirrors."""
+
+    previous_days = workout_days(goals)
+    normalized_days = sorted(day for day in days if 0 <= day <= 6)
+    start_hhmm = start_time.strftime("%H:%M")
+    raw_notifications = goals.get("notification_settings")
+    notifications = merge_notification_settings(
+        raw_notifications if isinstance(raw_notifications, dict) else None,
+    )
+    workouts = dict(notifications.get("workouts") or {})
+    workouts.update({"days": normalized_days, "time": start_hhmm})
+    notifications["workouts"] = workouts
+
+    changed = {
+        **goals,
+        SCHEDULE_SETTINGS_KEY: {
+            "version": SCHEDULE_SETTINGS_VERSION,
+            "days": normalized_days,
+            "start_time": start_hhmm,
+        },
+        # Compatibility for deployed clients and old profile readers.
+        "notification_settings": notifications,
+        "workout_days": normalized_days,
+        "workout_start_time": start_hhmm,
+    }
+    return record_workout_schedule_change(
+        changed,
+        previous_days=previous_days,
+        new_days=set(normalized_days),
+        effective_from=effective_from,
+        tracking_start=tracking_start,
+    )
+
+
 def workout_start_time(goals: dict[str, Any]) -> time:
-    configured = _workout_settings(goals).get("time") or "18:30"
+    configured = workout_schedule_settings(goals)["start_time"]
     return parse_hhmm(str(configured)) or time(18, 30)
 
 
@@ -148,6 +227,37 @@ def program_schedule_start(goals: dict[str, Any]) -> date | None:
         return date.fromisoformat(raw)
     except ValueError:
         return None
+
+
+async def update_workout_schedule_settings(
+    session: AsyncSession,
+    user: User,
+    *,
+    days: set[int],
+    start_time: time,
+) -> dict[str, Any]:
+    """Persist the domain schedule and its invisible analytics history."""
+
+    goals = dict(user.goals or {})
+    effective_from = local_schedule_day(goals)
+    created_at = getattr(user, "created_at", None)
+    tracking_start = program_schedule_start(goals) or (
+        local_schedule_day(goals, created_at)
+        if created_at is not None
+        else effective_from
+    )
+    goals = apply_workout_schedule_settings(
+        goals,
+        days=days,
+        start_time=start_time,
+        effective_from=effective_from,
+        tracking_start=tracking_start,
+    )
+    user.goals = goals
+    flag_modified(user, "goals")
+    await session.commit()
+    await session.refresh(user)
+    return workout_schedule_settings(goals)
 
 
 def _schedule_overrides(goals: dict[str, Any]) -> list[dict[str, Any]]:

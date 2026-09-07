@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, time
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ShiftScheduleRequest(BaseModel):
@@ -35,6 +35,26 @@ class WorkoutCancellationRequest(BaseModel):
     """Cancel one effective occurrence without advancing the program cursor."""
 
     scheduled_date: date
+
+
+class WorkoutScheduleSettingsUpdate(BaseModel):
+    days: list[int] = Field(min_length=1, max_length=7)
+    start_time: time
+
+    @field_validator("days")
+    @classmethod
+    def validate_days(cls, value: list[int]) -> list[int]:
+        if any(day < 0 or day > 6 for day in value):
+            raise ValueError("weekday must be between 0 and 6")
+        if len(set(value)) != len(value):
+            raise ValueError("weekdays must be unique")
+        return sorted(value)
+
+
+class WorkoutScheduleSettingsResponse(BaseModel):
+    version: Literal[1] = 1
+    days: list[int]
+    start_time: time
 
 
 class WorkoutScheduleOccurrence(BaseModel):

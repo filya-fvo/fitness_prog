@@ -1,12 +1,12 @@
+import { Link } from "react-router-dom";
+
 type Props = {
   enabled: boolean;
   startTime: string;
   remindBeforeMinutes: number;
   days: number[];
   onEnabledChange: (value: boolean) => void;
-  onStartTimeChange: (value: string) => void;
   onLeadChange: (value: number) => void;
-  onToggleDay: (weekday: number) => void;
 };
 
 const WEEKDAYS = [
@@ -36,10 +36,13 @@ export function WorkoutReminderSettings({
   remindBeforeMinutes,
   days,
   onEnabledChange,
-  onStartTimeChange,
   onLeadChange,
-  onToggleDay,
 }: Props) {
+  const scheduleLabel = WEEKDAYS
+    .filter((day) => days.includes(day.id))
+    .map((day) => day.label)
+    .join(", ");
+
   return (
     <div className="space-y-3 rounded-2xl bg-tg-secondary p-4">
       <label className="flex items-center justify-between text-sm">
@@ -51,18 +54,9 @@ export function WorkoutReminderSettings({
         />
       </label>
       <p className="text-xs text-tg-hint">
-        Укажите время начала. Бот напомнит заранее и покажет название следующего дня программы.
+        Бот напомнит о тренировке относительно времени из постоянного расписания.
       </p>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block text-xs text-tg-hint">
-          Начало тренировки
-          <input
-            type="time"
-            value={startTime}
-            onChange={(event) => onStartTimeChange(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
-          />
-        </label>
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="block text-xs text-tg-hint">
           Когда напомнить
           <select
@@ -75,29 +69,16 @@ export function WorkoutReminderSettings({
             ))}
           </select>
         </label>
-      </div>
-      <div>
-        <p className="text-xs text-tg-hint">Постоянные дни</p>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {WEEKDAYS.map((day) => (
-            <button
-              key={day.id}
-              type="button"
-              aria-pressed={days.includes(day.id)}
-              onClick={() => onToggleDay(day.id)}
-              className={[
-                "min-h-[44px] min-w-[44px] rounded-full px-3 text-xs",
-                days.includes(day.id) ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
-              ].join(" ")}
-            >
-              {day.label}
-            </button>
-          ))}
+        <div className="rounded-xl bg-tg-bg px-3 py-2">
+          <p className="text-xs text-tg-hint">Постоянное расписание</p>
+          <p className="mt-0.5 text-sm font-medium">
+            {scheduleLabel || "Дни не выбраны"} · {startTime.slice(0, 5)}
+          </p>
         </div>
       </div>
-      <p className="text-[10px] text-tg-hint">
-        Разовый перенос меняет только одну тренировку. Постоянные дни следующей недели сохраняются.
-      </p>
+      <Link to="/train#schedule" className="inline-flex min-h-[44px] items-center text-xs font-medium text-tg-link">
+        Изменить расписание в тренировках →
+      </Link>
     </div>
   );
 }

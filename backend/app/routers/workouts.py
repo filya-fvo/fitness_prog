@@ -19,6 +19,8 @@ from app.schemas.scheduler import (
     WorkoutCancellationRequest,
     WorkoutRescheduleRequest,
     WorkoutScheduleOverview,
+    WorkoutScheduleSettingsResponse,
+    WorkoutScheduleSettingsUpdate,
 )
 from app.schemas.workout import (
     PlannedWorkoutPlanRequest,
@@ -99,6 +101,30 @@ async def workout_schedule_overview(
         day or scheduler_service.local_schedule_day(user.goals or {}),
     )
     return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.get("/schedule/settings", response_model=WorkoutScheduleSettingsResponse)
+async def workout_schedule_settings(
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleSettingsResponse:
+    return WorkoutScheduleSettingsResponse.model_validate(
+        scheduler_service.workout_schedule_settings(user.goals or {}),
+    )
+
+
+@router.put("/schedule/settings", response_model=WorkoutScheduleSettingsResponse)
+async def save_workout_schedule_settings(
+    body: WorkoutScheduleSettingsUpdate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleSettingsResponse:
+    settings = await scheduler_service.update_workout_schedule_settings(
+        session,
+        user,
+        days=set(body.days),
+        start_time=body.start_time,
+    )
+    return WorkoutScheduleSettingsResponse.model_validate(settings)
 
 
 @router.get("/regularity", response_model=PersonalRegularityResponse)

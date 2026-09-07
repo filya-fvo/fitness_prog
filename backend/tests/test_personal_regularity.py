@@ -6,9 +6,17 @@ from uuid import uuid4
 
 import pytest
 
-from app.routers.notifications import NotificationSettingsUpdate, put_settings_route
+from app.routers.notifications import (
+    NotificationSettingsUpdate,
+    get_settings_route,
+    put_settings_route,
+)
+from app.routers.workouts import save_workout_schedule_settings, workout_schedule_settings
 from app.models.user import User
-from app.schemas.scheduler import PersonalRegularityResponse
+from app.schemas.scheduler import (
+    PersonalRegularityResponse,
+    WorkoutScheduleSettingsUpdate,
+)
 from app.services.personal_regularity import calculate_personal_regularity
 from app.services.scheduler import record_workout_schedule_change
 
@@ -223,5 +231,108 @@ async def test_notification_settings_save_records_schedule_version(monkeypatch) 
         {"effective_from": "2026-08-10", "days": [0, 2, 4]},
         {"effective_from": "2026-09-06", "days": [1, 3, 5]},
     ]
+    assert user.goals["workout_schedule"] == {
+        "version": 1,
+        "days": [1, 3, 5],
+        "start_time": "18:30",
+    }
     session.commit.assert_awaited_once()
     session.refresh.assert_awaited_once_with(user)
+
+
+@pytest.mark.asyncio
+async def test_notification_delivery_save_preserves_canonical_schedule(monkeypatch) -> None:
+    user = User(
+        id=uuid4(),
+        goals={
+            **_goals(days=[0, 2, 4]),
+            "workout_schedule": {
+                "version": 1,
+                "days": [1, 3, 5],
+                "start_time": "07:15",
+            },
+        },
+    )
+    session = AsyncMock()
+    monkeypatch.setattr(
+        "app.routers.notifications.scheduler_service.local_schedule_day",
+        lambda _goals, _now=None: date(2026, 9, 7),
+    )
+
+    response = await put_settings_route(
+        NotificationSettingsUpdate(
+            settings={
+                "timezone": "Europe/Moscow",
+                "workouts": {"enabled": False, "remind_before_minutes": 30},
+            },
+        ),
+        session=session,
+        user=user,
+    )
+
+    assert user.goals["workout_schedule"]["days"] == [1, 3, 5]
+    assert user.goals["workout_schedule"]["start_time"] == "07:15"
+    assert response.settings["workouts"] == {
+        "enabled": False,
+        "time": "07:15",
+        "days": [1, 3, 5],
+        "remind_before_minutes": 30,
+    }
+    assert "workout_schedule_history" not in user.goals
+
+    await put_settings_route(
+        NotificationSettingsUpdate(settings={"workouts": {"enabled": False, "days": []}}),
+        session=session,
+        user=user,
+    )
+    assert user.goals["workout_schedule"]["days"] == [1, 3, 5]
+
+
+@pytest.mark.asyncio
+async def test_notification_settings_view_uses_canonical_schedule() -> None:
+    user = User(
+        id=uuid4(),
+        goals={
+            **_goals(days=[0, 2, 4]),
+            "workout_schedule": {
+                "version": 1,
+                "days": [1, 3, 5],
+                "start_time": "07:15",
+            },
+        },
+    )
+
+    response = await get_settings_route(user=user)
+
+    assert response.settings["workouts"]["days"] == [1, 3, 5]
+    assert response.settings["workouts"]["time"] == "07:15"
+
+
+@pytest.mark.asyncio
+async def test_dedicated_schedule_api_updates_domain_and_legacy_mirrors(monkeypatch) -> None:
+    user = User(
+        id=uuid4(),
+        goals={
+            **_goals(days=[0, 2, 4]),
+            "active_program_started_at": "2026-08-10",
+        },
+    )
+    session = AsyncMock()
+    monkeypatch.setattr(
+        "app.services.scheduler.local_schedule_day",
+        lambda _goals, _now=None: date(2026, 9, 7),
+    )
+
+    response = await save_workout_schedule_settings(
+        WorkoutScheduleSettingsUpdate(days=[1, 3, 5], start_time="07:15"),
+        session=session,
+        user=user,
+    )
+
+    assert response.days == [1, 3, 5]
+    assert response.start_time.strftime("%H:%M") == "07:15"
+    assert user.goals["workout_days"] == [1, 3, 5]
+    assert user.goals["notification_settings"]["workouts"]["days"] == [1, 3, 5]
+    assert user.goals["notification_settings"]["workouts"]["time"] == "07:15"
+    loaded = await workout_schedule_settings(user=user)
+    assert loaded.days == [1, 3, 5]

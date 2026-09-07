@@ -49,6 +49,7 @@ REQUIRED_FILES = [
     "20260905000039_exercise_media_assets.sql",
     "20260905000040_cycle_training_readiness.sql",
     "20260907000041_enable_activation_checklist_for_all.sql",
+    "20260907000042_separate_workout_schedule.sql",
 ]
 
 REQUIRED_TABLES = [

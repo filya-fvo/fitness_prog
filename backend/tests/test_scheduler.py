@@ -18,6 +18,9 @@ from app.services.scheduler import (
     next_base_workout_date,
     reschedule_workout_occurrence,
     schedule_overview,
+    workout_days,
+    workout_schedule_settings,
+    workout_start_time,
 )
 from app.services.workout_notifications import due_workout_notification, mark_occurrence_started
 from app.services.workout_shift import shift_future_workouts
@@ -77,6 +80,30 @@ def _schedule_goals(*, override: dict | None = None, lead: int = 60) -> dict:
     if override:
         goals["workout_schedule_overrides"] = [override]
     return goals
+
+
+def test_canonical_schedule_precedes_legacy_notification_fields() -> None:
+    goals = _schedule_goals()
+    goals["workout_schedule"] = {
+        "version": 1,
+        "days": [1, 3, 5],
+        "start_time": "07:15",
+    }
+
+    assert workout_days(goals) == {1, 3, 5}
+    assert workout_start_time(goals) == time(7, 15)
+    assert workout_schedule_settings(goals) == {
+        "version": 1,
+        "days": [1, 3, 5],
+        "start_time": "07:15",
+    }
+
+
+def test_top_level_legacy_schedule_is_used_when_notification_shape_is_missing() -> None:
+    goals = {"workout_days": [1, 6], "workout_start_time": "08:45"}
+
+    assert workout_days(goals) == {1, 6}
+    assert workout_start_time(goals) == time(8, 45)
 
 
 def test_one_off_friday_move_keeps_monday_schedule() -> None:

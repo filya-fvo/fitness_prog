@@ -58,7 +58,6 @@ import { toUserMessage } from "@/utils/errors";
 import { programDayLabel, subscriptionLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { confirmAction } from "@/lib/telegram";
-import { trackEvent } from "@/lib/analytics";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
 import { programSelectionGoalsPatch } from "@/utils/programProgress";
 import {
@@ -523,7 +522,7 @@ setAuthEmail(p.auth_email ?? null);
           }
           const wo = asRecord(s.workouts);
           setWoEnabled(wo.enabled !== false);
-          setWoTime(String(wo.time || "18:30"));
+          setWoTime(String(wo.time || "18:30").slice(0, 5));
           setWoLeadMinutes(Math.max(0, Math.min(1440, Number(wo.remind_before_minutes) || 0)));
           const days = Array.isArray(wo.days) ? wo.days.map((d) => Number(d)) : [0, 2, 4];
           setWoDays(days.filter((d) => d >= 0 && d <= 6));
@@ -877,12 +876,11 @@ setAuthEmail(p.auth_email ?? null);
           enabled,
         },
       };
-      await saveNotificationSettings(settings);
-      await updateMyProfile({
-        goals: {
-          notification_settings: settings,
-        },
-      });
+      const saved = await saveNotificationSettings(settings);
+      setProfileGoalsKeep((currentGoals) => ({
+        ...currentGoals,
+        notification_settings: saved.settings,
+      }));
       setOk(
         enabled
           ? "Напоминания о добавках включены"
@@ -916,8 +914,6 @@ setAuthEmail(p.auth_email ?? null);
         },
         workouts: {
           enabled: woEnabled,
-          time: woTime,
-          days: woDays,
           remind_before_minutes: woLeadMinutes,
         },
         supplements: {
@@ -938,17 +934,11 @@ setAuthEmail(p.auth_email ?? null);
           email_enabled: Boolean(authEmail && serviceEmailEnabled),
         },
       };
-      await saveNotificationSettings(settings);
-      // also mirror workout days into goals for other features
-      await updateMyProfile({
-        goals: {
-          notification_settings: settings,
-          workout_days: woDays,
-          workout_start_time: woTime,
-          workout_remind_before_minutes: woLeadMinutes,
-        },
-      });
-      trackEvent("schedule_saved", { days_count: woDays.length });
+      const saved = await saveNotificationSettings(settings);
+      setProfileGoalsKeep((currentGoals) => ({
+        ...currentGoals,
+        notification_settings: saved.settings,
+      }));
       setOk("Уведомления сохранены. Бот пришлёт сообщения в чат по расписанию.");
       setDirtyTabs((current) => {
         const next = new Set(current);
@@ -960,10 +950,6 @@ setAuthEmail(p.auth_email ?? null);
     } finally {
       setSaving(false);
     }
-  }
-
-  function toggleDay(d: number) {
-    setWoDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
   }
 
   const tabs: { id: TabId; label: string }[] = [
@@ -2390,9 +2376,7 @@ setAuthEmail(p.auth_email ?? null);
             remindBeforeMinutes={woLeadMinutes}
             days={woDays}
             onEnabledChange={setWoEnabled}
-            onStartTimeChange={setWoTime}
             onLeadChange={setWoLeadMinutes}
-            onToggleDay={toggleDay}
           />
 
           <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">

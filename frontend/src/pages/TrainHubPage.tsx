@@ -2,7 +2,7 @@
  * Training hub — programs + custom workout (bottom nav «Тренировки»).
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
@@ -12,11 +12,15 @@ import {
   fetchPlannedWorkoutPlan,
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
+  fetchWorkoutScheduleSettings,
+  saveWorkoutScheduleSettings,
   type WorkoutScheduleOverview,
+  type WorkoutScheduleSettings,
 } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorkoutEditor";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
+import { WorkoutScheduleSettingsCard } from "@/features/workout/components/WorkoutScheduleSettingsCard";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import {
   cacheExercises,
@@ -77,6 +81,7 @@ function draftsFromWorkout(workout: {
 
 export function TrainHubPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -92,6 +97,7 @@ export function TrainHubPage() {
   const [error, setError] = useState<string | null>(null);
   const [recentTitles, setRecentTitles] = useState<string[]>([]);
   const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [scheduleSettings, setScheduleSettings] = useState<WorkoutScheduleSettings | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
   const readiness = usePreWorkoutReadiness(cycleTrainingEnabledForProfile(goals));
 
@@ -164,11 +170,12 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, profile, history, scheduleOverview] = await Promise.all([
+          const [programs, profile, history, scheduleOverview, recurringSchedule] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
             fetchMyProfile().catch(() => null),
             fetchWorkoutHistory().catch(() => []),
             fetchWorkoutSchedule().catch(() => null),
+            fetchWorkoutScheduleSettings().catch(() => null),
           ]);
           const g = (profile?.goals as Record<string, unknown>) || {};
           const anthropometry = (profile?.anthropometry as Record<string, unknown>) || {};
@@ -180,6 +187,7 @@ export function TrainHubPage() {
             setGoals(goalsWithSex);
             setProgram(active);
             setSchedule(scheduleOverview);
+            setScheduleSettings(recurringSchedule);
             const titles = (history || [])
               .filter((w: { status?: string }) => w.status === "completed")
               .slice(0, 3)
@@ -208,6 +216,22 @@ export function TrainHubPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (location.hash !== "#schedule" || !scheduleSettings) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById("schedule")?.focus({ preventScroll: true });
+      document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [location.hash, scheduleSettings]);
+
+  async function saveRecurringSchedule(input: { days: number[]; startTime: string }) {
+    const saved = await saveWorkoutScheduleSettings(input);
+    setScheduleSettings(saved);
+    setSchedule(await fetchWorkoutSchedule().catch(() => schedule));
+    trackEvent("schedule_saved", { days_count: saved.days.length, source: "train_hub" });
+  }
 
   async function startToday() {
     if (!program || starting) return;
@@ -427,6 +451,14 @@ export function TrainHubPage() {
               Выбрать программу
             </Link>
           </div>
+        ) : null}
+
+        {scheduleSettings ? (
+          <WorkoutScheduleSettingsCard
+            settings={scheduleSettings}
+            disabled={!isOnline()}
+            onSave={saveRecurringSchedule}
+          />
         ) : null}
 
         <Link to="/programs" className="block rounded-2xl bg-tg-secondary p-4 active:opacity-90">
