@@ -120,6 +120,8 @@ async def reset_pending_days(
     session: AsyncSession,
     user: User,
     days: set[date],
+    *,
+    commit: bool = True,
 ) -> None:
     """Rebuild only pending rows affected by a workout occurrence move."""
     settings = merge_notification_settings(
@@ -138,7 +140,8 @@ async def reset_pending_days(
                 SupplementIntake.scheduled_at < end,
             )
         )
-    await session.commit()
+    if commit:
+        await session.commit()
 
 
 async def day_items(

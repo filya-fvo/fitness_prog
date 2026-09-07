@@ -51,10 +51,12 @@ const limits = {
   // onboarding while keeping the large feature routes lazy.
   // The standalone workout-schedule editor adds 0.5 KB gzip after removing the
   // duplicate profile editor; it remains inside the already-lazy Training route.
+  // Permanent schedule replacement with preview and conflict confirmation adds
+  // 0.7 KB gzip to the shared workout flow without adding another vendor chunk.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 494_500,
-  productJsGzip: 443_500,
+  totalJsGzip: 495_500,
+  productJsGzip: 444_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes. Their separate limit stays unchanged.
   adminJsGzip: 51_500,

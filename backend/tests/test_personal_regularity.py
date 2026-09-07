@@ -233,8 +233,10 @@ async def test_notification_settings_save_records_schedule_version(monkeypatch) 
     ]
     assert user.goals["workout_schedule"] == {
         "version": 1,
+        "revision": 2,
         "days": [1, 3, 5],
         "start_time": "18:30",
+        "effective_from": "2026-09-06",
     }
     session.commit.assert_awaited_once()
     session.refresh.assert_awaited_once_with(user)

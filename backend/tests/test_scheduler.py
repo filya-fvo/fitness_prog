@@ -12,6 +12,10 @@ from fastapi import HTTPException
 
 from app.models.user import User
 from app.services import supplement_intakes
+from app.services.schedule_replacement import (
+    preview_workout_schedule_replacement,
+    replace_recurring_workout_day,
+)
 from app.services.scheduler import (
     cancel_workout_occurrence,
     get_schedule_overview,
@@ -21,6 +25,7 @@ from app.services.scheduler import (
     workout_days,
     workout_schedule_settings,
     workout_start_time,
+    workout_start_time_on,
 )
 from app.services.workout_notifications import due_workout_notification, mark_occurrence_started
 from app.services.workout_shift import shift_future_workouts
@@ -94,8 +99,10 @@ def test_canonical_schedule_precedes_legacy_notification_fields() -> None:
     assert workout_start_time(goals) == time(7, 15)
     assert workout_schedule_settings(goals) == {
         "version": 1,
+        "revision": 1,
         "days": [1, 3, 5],
         "start_time": "07:15",
+        "effective_from": None,
     }
 
 
@@ -395,4 +402,188 @@ async def test_reschedule_rejects_next_regular_day() -> None:
             target_date=date(2026, 8, 24),
             target_time=time(6, 15),
             now=datetime(2026, 8, 21, 12, 0, tzinfo=timezone(timedelta(hours=3))),
+        )
+
+
+def test_permanent_replacement_preview_moves_friday_to_saturday_this_week() -> None:
+    goals = _schedule_goals()
+
+    preview = preview_workout_schedule_replacement(
+        goals,
+        original_date=date(2026, 8, 21),
+        target_date=date(2026, 8, 22),
+        target_time=time(8, 0),
+        effective_scope="current_week",
+        local_day=date(2026, 8, 21),
+    )
+
+    assert preview["previous_days"] == [0, 2, 4]
+    assert preview["new_days"] == [0, 2, 5]
+    assert preview["effective_from"] == date(2026, 8, 17)
+    assert preview["moves_current_occurrence"] is True
+    assert preview["upcoming_dates"][:2] == [date(2026, 8, 22), date(2026, 8, 24)]
+
+
+def test_permanent_replacement_preview_can_start_next_week() -> None:
+    preview = preview_workout_schedule_replacement(
+        _schedule_goals(),
+        original_date=date(2026, 8, 21),
+        target_date=date(2026, 8, 22),
+        target_time=time(8, 0),
+        effective_scope="next_week",
+        local_day=date(2026, 8, 21),
+    )
+
+    assert preview["effective_from"] == date(2026, 8, 24)
+    assert preview["moves_current_occurrence"] is False
+    assert preview["upcoming_dates"][:3] == [
+        date(2026, 8, 21),
+        date(2026, 8, 24),
+        date(2026, 8, 26),
+    ]
+
+
+def test_future_schedule_version_keeps_current_week_days_and_time() -> None:
+    goals = _schedule_goals()
+    goals["workout_schedule"] = {
+        "version": 1,
+        "revision": 2,
+        "days": [0, 2, 5],
+        "start_time": "08:00",
+        "effective_from": "2026-08-24",
+    }
+    goals["workout_schedule_history"] = [
+        {"effective_from": "2026-08-03", "days": [0, 2, 4]},
+        {"effective_from": "2026-08-24", "days": [0, 2, 5]},
+    ]
+    goals["workout_schedule_time_history"] = [
+        {"effective_from": "2026-08-03", "start_time": "06:15"},
+        {"effective_from": "2026-08-24", "start_time": "08:00"},
+    ]
+
+    assert schedule_overview(goals, date(2026, 8, 21))["current"] is not None
+    assert schedule_overview(goals, date(2026, 8, 22))["current"] is None
+    assert workout_start_time_on(goals, date(2026, 8, 21)) == time(6, 15)
+    assert workout_start_time_on(goals, date(2026, 8, 24)) == time(8, 0)
+
+
+def test_permanent_replacement_requires_confirmation_before_reducing_frequency() -> None:
+    preview = preview_workout_schedule_replacement(
+        _schedule_goals(),
+        original_date=date(2026, 8, 21),
+        target_date=date(2026, 8, 19),
+        target_time=time(8, 0),
+        effective_scope="next_week",
+        local_day=date(2026, 8, 18),
+    )
+
+    assert preview["conflict"] == "target_already_scheduled"
+    assert preview["requires_conflict_resolution"] is True
+    assert preview["new_days"] == [0, 2]
+
+
+@pytest.mark.asyncio
+async def test_permanent_replacement_is_atomic_and_idempotent(monkeypatch) -> None:
+    goals = {**_schedule_goals(), "active_program_started_at": "2026-08-03"}
+    locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[locked_user, None])
+    session.execute = AsyncMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    overview = {"requested_date": date(2026, 8, 21), "current": None, "next": None}
+    overview_mock = AsyncMock(return_value=overview)
+    monkeypatch.setattr("app.services.scheduler.get_schedule_overview", overview_mock)
+    request_key = uuid.uuid4()
+
+    settings, result, applied = await replace_recurring_workout_day(
+        session,
+        locked_user,
+        original_date=date(2026, 8, 21),
+        target_date=date(2026, 8, 22),
+        target_time=time(8, 0),
+        effective_scope="current_week",
+        conflict_resolution=None,
+        expected_revision=1,
+        idempotency_key=request_key,
+        now=datetime(2026, 8, 21, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+    )
+
+    assert applied is True
+    assert result == overview
+    assert settings["revision"] == 2
+    assert settings["days"] == [0, 2, 5]
+    assert locked_user.goals["workout_schedule_history"] == [
+        {"effective_from": "2026-08-03", "days": [0, 2, 4]},
+        {"effective_from": "2026-08-17", "days": [0, 2, 5]},
+    ]
+    assert locked_user.goals["active_program_next_day"] == 3
+    assert locked_user.goals["workout_schedule_change_requests"][0]["key"] == str(request_key)
+    session.commit.assert_awaited_once()
+
+    second_session = AsyncMock()
+    second_session.scalar = AsyncMock(return_value=locked_user)
+    second_session.commit = AsyncMock()
+    _, _, second_applied = await replace_recurring_workout_day(
+        second_session,
+        locked_user,
+        original_date=date(2026, 8, 21),
+        target_date=date(2026, 8, 22),
+        target_time=time(8, 0),
+        effective_scope="current_week",
+        conflict_resolution=None,
+        expected_revision=1,
+        idempotency_key=request_key,
+        now=datetime(2026, 8, 21, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+    )
+    assert second_applied is False
+    second_session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_permanent_replacement_rejects_stale_revision() -> None:
+    goals = _schedule_goals()
+    goals["workout_schedule"] = {
+        "version": 1,
+        "revision": 3,
+        "days": [0, 2, 4],
+        "start_time": "06:15",
+    }
+    locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(return_value=locked_user)
+
+    with pytest.raises(HTTPException, match="уже изменилось"):
+        await replace_recurring_workout_day(
+            session,
+            locked_user,
+            original_date=date(2026, 8, 21),
+            target_date=date(2026, 8, 22),
+            target_time=time(8, 0),
+            effective_scope="current_week",
+            conflict_resolution=None,
+            expected_revision=2,
+            idempotency_key=uuid.uuid4(),
+            now=datetime(2026, 8, 21, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+        )
+
+
+@pytest.mark.asyncio
+async def test_permanent_replacement_rejects_completed_occurrence() -> None:
+    locked_user = User(id=uuid.uuid4(), goals=_schedule_goals(), anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[locked_user, "completed-id"])
+
+    with pytest.raises(HTTPException, match="Выполненную"):
+        await replace_recurring_workout_day(
+            session,
+            locked_user,
+            original_date=date(2026, 8, 21),
+            target_date=date(2026, 8, 22),
+            target_time=time(8, 0),
+            effective_scope="current_week",
+            conflict_resolution=None,
+            expected_revision=1,
+            idempotency_key=uuid.uuid4(),
+            now=datetime(2026, 8, 21, 5, 0, tzinfo=timezone(timedelta(hours=3))),
         )

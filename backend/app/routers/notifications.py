@@ -190,6 +190,18 @@ async def put_settings_route(
     raw_workouts = body.settings.get("workouts")
     raw_workouts = raw_workouts if isinstance(raw_workouts, dict) else {}
     previous_schedule = scheduler_service.workout_schedule_settings(previous_goals)
+    if not isinstance(previous_goals.get("workout_schedule"), dict):
+        goals["workout_schedule"] = {
+            "version": previous_schedule["version"],
+            "revision": previous_schedule["revision"],
+            "days": previous_schedule["days"],
+            "start_time": previous_schedule["start_time"],
+            "effective_from": (
+                previous_schedule["effective_from"].isoformat()
+                if previous_schedule["effective_from"] is not None
+                else None
+            ),
+        }
     previous_days = set(previous_schedule["days"])
     raw_days = raw_workouts.get("days")
     parsed_days = scheduler_service.workout_days(
@@ -212,13 +224,6 @@ async def put_settings_route(
         goals,
         days=requested_days,
         start_time=requested_time,
-        effective_from=effective_from,
-        tracking_start=tracking_start,
-    )
-    goals = scheduler_service.record_workout_schedule_change(
-        goals,
-        previous_days=previous_days,
-        new_days=requested_days,
         effective_from=effective_from,
         tracking_start=tracking_start,
     )

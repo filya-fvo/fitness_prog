@@ -27,7 +27,20 @@ test("recurring schedule is edited in Training, independently from reminders", a
   }));
   await page.route(/\/programs(?:\?|$)/, (route) => route.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ items: [], total: 0 }),
+    body: JSON.stringify({
+      items: [{
+        id: PROGRAM_ID,
+        name: PROGRAM_NAME,
+        description: "Тест",
+        target_level: "intermediate",
+        duration_weeks: 8,
+        structure: { schedule: [{ day_index: 3, name: DAY_NAME, exercises: [] }] },
+        workout_type: "strength",
+        level: "intermediate",
+        is_template: true,
+      }],
+      total: 1,
+    }),
   }));
   await page.route("**/workouts/history", (route) => route.fulfill({
     contentType: "application/json",
@@ -173,6 +186,124 @@ test("one workout can be moved without changing the recurring schedule", async (
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
+});
+
+test("workout day can be replaced permanently after an explicit preview", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      id: USER_ID,
+      telegram_id: null,
+      username: "permanent-schedule-user",
+      anthropometry: { sex: "male" },
+      goals: { onboarding_completed: true, active_program_id: PROGRAM_ID, active_program_next_day: 3 },
+      subscription_status: "free",
+      stars_balance: 0,
+      onboarding_completed: true,
+    }),
+  }));
+  await page.route(/\/programs(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        id: PROGRAM_ID,
+        name: PROGRAM_NAME,
+        description: "Тест",
+        target_level: "intermediate",
+        duration_weeks: 8,
+        structure: { schedule: [{ day_index: 3, name: DAY_NAME, exercises: [] }] },
+        workout_type: "strength",
+        level: "intermediate",
+        is_template: true,
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0, page: 1, page_size: 200 }),
+  }));
+  await page.route("**/workouts/history", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], total: 0 }),
+  }));
+  const friday = {
+    original_date: "2026-08-21",
+    target_date: "2026-08-21",
+    start_time: "18:30:00",
+    title: "Тренировка C",
+    program_id: PROGRAM_ID,
+    day_index: 3,
+    status: "scheduled",
+    is_override: false,
+    can_reschedule: true,
+    reschedule_until: "2026-08-23",
+    can_cancel: true,
+    cancel_to: "2026-08-24",
+  };
+  const initial = { requested_date: "2026-08-21", current: friday, next: friday };
+  await page.route("**/workouts/schedule/overview**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(initial),
+  }));
+  let applyPayload: Record<string, unknown> | null = null;
+  await page.route("**/workouts/schedule/replacement/preview", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      schedule_revision: 4,
+      source_weekday: 4,
+      target_weekday: 5,
+      effective_from: "2026-08-17",
+      previous_days: [0, 2, 4],
+      new_days: [0, 2, 5],
+      start_time: "09:00:00",
+      upcoming_dates: ["2026-08-22", "2026-08-24", "2026-08-26"],
+      moves_current_occurrence: true,
+      conflict: null,
+      requires_conflict_resolution: false,
+      warning: null,
+    }),
+  }));
+  await page.route("**/workouts/schedule/replacement", async (route) => {
+    applyPayload = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        applied: true,
+        settings: { version: 1, revision: 5, days: [0, 2, 5], start_time: "09:00:00", effective_from: "2026-08-17" },
+        overview: {
+          requested_date: "2026-08-21",
+          current: null,
+          next: { ...friday, original_date: "2026-08-22", target_date: "2026-08-22", start_time: "09:00:00" },
+        },
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Перенести" }).click();
+  const dialog = page.getByRole("dialog", { name: "Перенести тренировку" });
+  await dialog.getByLabel("Заменить день постоянно").check();
+  await dialog.getByLabel("Новый день").fill("2026-08-22");
+  await dialog.getByLabel("Время начала").fill("09:00");
+  await dialog.getByRole("button", { name: "Показать новое расписание" }).click();
+
+  await expect(dialog.getByText("Было: Пн · Ср · Пт")).toBeVisible();
+  await expect(dialog.getByText("Станет: Пн · Ср · Сб · 09:00")).toBeVisible();
+  await dialog.getByRole("button", { name: "Подтвердить новое расписание" }).click();
+
+  expect(applyPayload).toMatchObject({
+    original_date: "2026-08-21",
+    target_date: "2026-08-22",
+    target_time: "09:00",
+    effective_scope: "current_week",
+    conflict_resolution: null,
+    expected_revision: 4,
+  });
+  expect(String(applyPayload?.idempotency_key)).toMatch(/^[0-9a-f-]{36}$/i);
+  await expect(page.getByText(/Следующая: .*22.*августа.*09:00/i)).toBeVisible();
 });
 
 test("cancelled workout becomes the same program day on the next schedule date", async ({ page }) => {

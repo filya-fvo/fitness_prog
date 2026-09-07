@@ -21,6 +21,7 @@ from app.services.notification_prefs import _resolve_tz, merge_notification_sett
 OVERRIDES_KEY = "workout_schedule_overrides"
 CANCELLATIONS_KEY = "workout_schedule_cancellations"
 SCHEDULE_HISTORY_KEY = "workout_schedule_history"
+SCHEDULE_TIME_HISTORY_KEY = "workout_schedule_time_history"
 SCHEDULE_SETTINGS_KEY = "workout_schedule"
 SCHEDULE_SETTINGS_VERSION = 1
 MAX_RESCHEDULE_LOOKBACK_DAYS = 6
@@ -80,11 +81,21 @@ def workout_schedule_settings(goals: dict[str, Any]) -> dict[str, Any]:
     if not raw_time:
         raw_time = goals.get("workout_start_time")
     start = parse_hhmm(str(raw_time or "18:30")) or time(18, 30)
+    try:
+        revision = max(1, int(canonical.get("revision") or 1))
+    except (TypeError, ValueError):
+        revision = 1
+    try:
+        effective_from = date.fromisoformat(str(canonical.get("effective_from")))
+    except (TypeError, ValueError):
+        effective_from = None
 
     return {
         "version": SCHEDULE_SETTINGS_VERSION,
+        "revision": revision,
         "days": sorted(_normalized_weekdays(raw_days)),
         "start_time": start.strftime("%H:%M"),
+        "effective_from": effective_from,
     }
 
 
@@ -153,6 +164,59 @@ def record_workout_schedule_change(
     }
 
 
+def _schedule_time_history(goals: dict[str, Any]) -> list[tuple[date, time]]:
+    raw = goals.get(SCHEDULE_TIME_HISTORY_KEY)
+    if not isinstance(raw, list):
+        return []
+    versions: dict[date, time] = {}
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            effective_from = date.fromisoformat(str(item.get("effective_from")))
+        except ValueError:
+            continue
+        parsed = parse_hhmm(str(item.get("start_time") or ""))
+        if parsed is not None:
+            versions[effective_from] = parsed
+    return sorted(versions.items())
+
+
+def workout_start_time_on(goals: dict[str, Any], day: date) -> time:
+    """Return the start time effective on a local calendar day."""
+
+    selected = workout_start_time(goals)
+    for effective_from, start in _schedule_time_history(goals):
+        if effective_from > day:
+            break
+        selected = start
+    return selected
+
+
+def record_workout_schedule_time_change(
+    goals: dict[str, Any],
+    *,
+    previous_start_time: time,
+    new_start_time: time,
+    effective_from: date,
+    tracking_start: date,
+) -> dict[str, Any]:
+    if previous_start_time == new_start_time:
+        return goals
+    versions = dict(_schedule_time_history(goals))
+    if not versions:
+        versions[tracking_start] = previous_start_time
+    versions[effective_from] = new_start_time
+    rows = sorted(versions.items())[-MAX_SCHEDULE_HISTORY_VERSIONS:]
+    return {
+        **goals,
+        SCHEDULE_TIME_HISTORY_KEY: [
+            {"effective_from": version_date.isoformat(), "start_time": start.strftime("%H:%M")}
+            for version_date, start in rows
+        ],
+    }
+
+
 def apply_workout_schedule_settings(
     goals: dict[str, Any],
     *,
@@ -164,8 +228,19 @@ def apply_workout_schedule_settings(
     """Write the canonical schedule and synchronized legacy mirrors."""
 
     previous_days = workout_days(goals)
+    previous_settings = workout_schedule_settings(goals)
     normalized_days = sorted(day for day in days if 0 <= day <= 6)
     start_hhmm = start_time.strftime("%H:%M")
+    schedule_changed = (
+        normalized_days != previous_settings["days"]
+        or start_hhmm != previous_settings["start_time"]
+    )
+    revision = int(previous_settings["revision"]) + (1 if schedule_changed else 0)
+    stored_effective_from = (
+        effective_from
+        if schedule_changed
+        else previous_settings.get("effective_from")
+    )
     raw_notifications = goals.get("notification_settings")
     notifications = merge_notification_settings(
         raw_notifications if isinstance(raw_notifications, dict) else None,
@@ -178,18 +253,31 @@ def apply_workout_schedule_settings(
         **goals,
         SCHEDULE_SETTINGS_KEY: {
             "version": SCHEDULE_SETTINGS_VERSION,
+            "revision": revision,
             "days": normalized_days,
             "start_time": start_hhmm,
+            "effective_from": (
+                stored_effective_from.isoformat()
+                if isinstance(stored_effective_from, date)
+                else None
+            ),
         },
         # Compatibility for deployed clients and old profile readers.
         "notification_settings": notifications,
         "workout_days": normalized_days,
         "workout_start_time": start_hhmm,
     }
-    return record_workout_schedule_change(
+    changed = record_workout_schedule_change(
         changed,
         previous_days=previous_days,
         new_days=set(normalized_days),
+        effective_from=effective_from,
+        tracking_start=tracking_start,
+    )
+    return record_workout_schedule_time_change(
+        changed,
+        previous_start_time=parse_hhmm(str(previous_settings["start_time"])) or time(18, 30),
+        new_start_time=start_time.replace(second=0, microsecond=0),
         effective_from=effective_from,
         tracking_start=tracking_start,
     )
@@ -318,10 +406,9 @@ def _cancellation_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | 
 
 
 def next_base_workout_date(goals: dict[str, Any], after: date) -> date | None:
-    days = workout_days(goals)
     for offset in range(1, 8):
         candidate = after + timedelta(days=offset)
-        if candidate.weekday() in days:
+        if candidate.weekday() in workout_days_on(goals, candidate):
             return candidate
     return None
 
@@ -334,7 +421,7 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "is_workout_day": False,
             "original_date": day,
             "target_date": day,
-            "start_time": workout_start_time(goals),
+            "start_time": workout_start_time_on(goals, day),
             "override": None,
             "moved_away": False,
         }
@@ -344,7 +431,7 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "is_workout_day": False,
             "original_date": day,
             "target_date": day,
-            "start_time": workout_start_time(goals),
+            "start_time": workout_start_time_on(goals, day),
             "override": cancellation,
             "moved_away": False,
             "cancelled": True,
@@ -357,7 +444,7 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "is_workout_day": True,
             "original_date": date.fromisoformat(str(target["original_date"])),
             "target_date": day,
-            "start_time": parse_hhmm(str(target["target_time"])) or workout_start_time(goals),
+            "start_time": parse_hhmm(str(target["target_time"])) or workout_start_time_on(goals, day),
             "override": target,
             "moved_away": False,
         }
@@ -367,15 +454,15 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "is_workout_day": False,
             "original_date": day,
             "target_date": date.fromisoformat(str(source["target_date"])),
-            "start_time": parse_hhmm(str(source["target_time"])) or workout_start_time(goals),
+            "start_time": parse_hhmm(str(source["target_time"])) or workout_start_time_on(goals, day),
             "override": source,
             "moved_away": True,
         }
     return {
-        "is_workout_day": day.weekday() in workout_days(goals),
+        "is_workout_day": day.weekday() in workout_days_on(goals, day),
         "original_date": day,
         "target_date": day,
-        "start_time": workout_start_time(goals),
+        "start_time": workout_start_time_on(goals, day),
         "override": source,
         "moved_away": False,
     }
@@ -569,7 +656,7 @@ async def get_schedule_overview(
             original = requested_day - timedelta(days=offset)
             if schedule_start is not None and original < schedule_start:
                 break
-            if original.weekday() not in workout_days(goals):
+            if original.weekday() not in workout_days_on(goals, original):
                 continue
             next_base = next_base_workout_date(goals, original)
             if next_base is None or requested_day >= next_base:
@@ -718,7 +805,7 @@ async def reschedule_workout_occurrence(
     if locked_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     goals = dict(locked_user.goals or {})
-    if original_date.weekday() not in workout_days(goals):
+    if original_date.weekday() not in workout_days_on(goals, original_date):
         raise HTTPException(status_code=400, detail="Исходная дата не входит в расписание тренировок")
     local_now = (now or datetime.now(UTC)).astimezone(_schedule_timezone(goals))
     if original_date < local_now.date() - timedelta(days=MAX_RESCHEDULE_LOOKBACK_DAYS):
@@ -731,7 +818,7 @@ async def reschedule_workout_occurrence(
         raise HTTPException(status_code=400, detail=f"Перенести можно не позднее {limit}")
 
     normalized_time = target_time.replace(second=0, microsecond=0)
-    base_time = workout_start_time(goals)
+    base_time = workout_start_time_on(goals, original_date)
     if target_date == original_date and normalized_time < base_time:
         raise HTTPException(
             status_code=400,

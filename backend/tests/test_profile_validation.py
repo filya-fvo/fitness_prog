@@ -150,6 +150,19 @@ def test_workout_schedule_profile_shape_is_bounded() -> None:
             },
         )
 
+    versioned = {
+        "version": 1,
+        "revision": 3,
+        "days": [0, 2, 5],
+        "start_time": "08:00",
+        "effective_from": "2026-09-07",
+    }
+    assert UserProfileUpdate(goals={"workout_schedule": versioned}).goals == {
+        "workout_schedule": versioned,
+    }
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(goals={"workout_schedule": {**versioned, "revision": 0}})
+
 
 @pytest.mark.parametrize(
     "state",

@@ -50,7 +50,9 @@ _ACTIVATION_CHECKLIST_KEYS = {
 
 
 def _validate_workout_schedule(value: object) -> None:
-    if not isinstance(value, dict) or set(value) != {"version", "days", "start_time"}:
+    required = {"version", "days", "start_time"}
+    allowed = required | {"revision", "effective_from"}
+    if not isinstance(value, dict) or not required.issubset(value) or set(value) - allowed:
         raise ValueError("workout_schedule must be a supported object")
     if value.get("version") != 1:
         raise ValueError("unsupported workout_schedule version")
@@ -69,6 +71,17 @@ def _validate_workout_schedule(value: object) -> None:
         time.fromisoformat(start_time)
     except ValueError as exc:
         raise ValueError("workout_schedule start_time is invalid") from exc
+    revision = value.get("revision", 1)
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise ValueError("workout_schedule revision is invalid")
+    effective_from = value.get("effective_from")
+    if effective_from is not None:
+        if not isinstance(effective_from, str):
+            raise ValueError("workout_schedule effective_from is invalid")
+        try:
+            date.fromisoformat(effective_from)
+        except ValueError as exc:
+            raise ValueError("workout_schedule effective_from is invalid") from exc
 
 
 def _validate_activation_checklist(value: object) -> None:

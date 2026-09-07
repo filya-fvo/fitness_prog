@@ -14,7 +14,8 @@ from app.services.scheduler import (
     effective_workout_context,
     workout_days,
     workout_lead_minutes,
-    workout_start_time,
+    workout_days_on,
+    workout_start_time_on,
 )
 
 
@@ -38,16 +39,15 @@ def due_workout_notification(
     last_mark = str((state or {}).get("last_workout_mark") or "")
 
     candidates: list[tuple[datetime, date, dict[str, Any]]] = []
-    days = workout_days(goals)
     for offset in range(-7, 9):
         original = local_now.date() + timedelta(days=offset)
-        if original.weekday() not in days:
+        if original.weekday() not in workout_days_on(goals, original):
             continue
         if _cancellation_for_day(goals, original) is not None:
             continue
         override = _override_for_original(goals, original)
         target_date = date.fromisoformat(str(override["target_date"])) if override else original
-        start = parse_hhmm(str((override or {}).get("target_time") or "")) or workout_start_time(goals)
+        start = parse_hhmm(str((override or {}).get("target_time") or "")) or workout_start_time_on(goals, original)
         starts_at = datetime.combine(target_date, start, tzinfo=tz)
         if starts_at < local_now:
             continue

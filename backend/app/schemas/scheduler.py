@@ -53,8 +53,38 @@ class WorkoutScheduleSettingsUpdate(BaseModel):
 
 class WorkoutScheduleSettingsResponse(BaseModel):
     version: Literal[1] = 1
+    revision: int = Field(default=1, ge=1)
     days: list[int]
     start_time: time
+    effective_from: date | None = None
+
+
+class WorkoutScheduleReplacementPreviewRequest(BaseModel):
+    original_date: date
+    target_date: date
+    target_time: time
+    effective_scope: Literal["current_week", "next_week"] = "current_week"
+    conflict_resolution: Literal["reduce"] | None = None
+
+
+class WorkoutScheduleReplacementPreview(BaseModel):
+    schedule_revision: int = Field(ge=1)
+    source_weekday: int = Field(ge=0, le=6)
+    target_weekday: int = Field(ge=0, le=6)
+    effective_from: date
+    previous_days: list[int]
+    new_days: list[int]
+    start_time: time
+    upcoming_dates: list[date] = Field(max_length=3)
+    moves_current_occurrence: bool
+    conflict: Literal["target_already_scheduled"] | None = None
+    requires_conflict_resolution: bool = False
+    warning: str | None = None
+
+
+class WorkoutScheduleReplacementRequest(WorkoutScheduleReplacementPreviewRequest):
+    expected_revision: int = Field(ge=1)
+    idempotency_key: uuid.UUID
 
 
 class WorkoutScheduleOccurrence(BaseModel):
@@ -76,6 +106,12 @@ class WorkoutScheduleOverview(BaseModel):
     requested_date: date
     current: WorkoutScheduleOccurrence | None = None
     next: WorkoutScheduleOccurrence | None = None
+
+
+class WorkoutScheduleReplacementResponse(BaseModel):
+    settings: WorkoutScheduleSettingsResponse
+    overview: WorkoutScheduleOverview
+    applied: bool
 
 
 class PersonalRegularityResponse(BaseModel):

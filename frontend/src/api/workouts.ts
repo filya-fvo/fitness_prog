@@ -86,8 +86,25 @@ const scheduleOverviewSchema = z.object({
 
 const workoutScheduleSettingsSchema = z.object({
   version: z.literal(1),
+  revision: z.number().int().positive().default(1),
   days: z.array(z.number().int().min(0).max(6)).max(7),
   start_time: z.string(),
+  effective_from: z.string().nullable().optional(),
+});
+
+const workoutScheduleReplacementPreviewSchema = z.object({
+  schedule_revision: z.number().int().positive(),
+  source_weekday: z.number().int().min(0).max(6),
+  target_weekday: z.number().int().min(0).max(6),
+  effective_from: z.string(),
+  previous_days: z.array(z.number().int().min(0).max(6)),
+  new_days: z.array(z.number().int().min(0).max(6)),
+  start_time: z.string(),
+  upcoming_dates: z.array(z.string()).max(3),
+  moves_current_occurrence: z.boolean(),
+  conflict: z.literal("target_already_scheduled").nullable(),
+  requires_conflict_resolution: z.boolean(),
+  warning: z.string().nullable(),
 });
 
 const personalRegularitySchema = z.object({
@@ -105,6 +122,7 @@ const personalRegularitySchema = z.object({
 export type WorkoutScheduleOccurrence = z.infer<typeof scheduleOccurrenceSchema>;
 export type WorkoutScheduleOverview = z.infer<typeof scheduleOverviewSchema>;
 export type WorkoutScheduleSettings = z.infer<typeof workoutScheduleSettingsSchema>;
+export type WorkoutScheduleReplacementPreview = z.infer<typeof workoutScheduleReplacementPreviewSchema>;
 export type PersonalRegularity = z.infer<typeof personalRegularitySchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
@@ -313,6 +331,50 @@ export async function saveWorkoutScheduleSettings(input: {
     start_time: input.startTime,
   });
   return workoutScheduleSettingsSchema.parse(data);
+}
+
+export type WorkoutScheduleReplacementInput = {
+  originalDate: string;
+  targetDate: string;
+  targetTime: string;
+  effectiveScope: "current_week" | "next_week";
+  conflictResolution?: "reduce" | null;
+};
+
+export async function previewWorkoutScheduleReplacement(
+  input: WorkoutScheduleReplacementInput,
+): Promise<WorkoutScheduleReplacementPreview> {
+  const { data } = await apiClient.post("/workouts/schedule/replacement/preview", {
+    original_date: input.originalDate,
+    target_date: input.targetDate,
+    target_time: input.targetTime,
+    effective_scope: input.effectiveScope,
+    conflict_resolution: input.conflictResolution ?? null,
+  });
+  return workoutScheduleReplacementPreviewSchema.parse(data);
+}
+
+export async function replaceWorkoutScheduleDay(
+  input: WorkoutScheduleReplacementInput & {
+    expectedRevision: number;
+    idempotencyKey: string;
+  },
+): Promise<{ settings: WorkoutScheduleSettings; overview: WorkoutScheduleOverview; applied: boolean }> {
+  const { data } = await apiClient.post("/workouts/schedule/replacement", {
+    original_date: input.originalDate,
+    target_date: input.targetDate,
+    target_time: input.targetTime,
+    effective_scope: input.effectiveScope,
+    conflict_resolution: input.conflictResolution ?? null,
+    expected_revision: input.expectedRevision,
+    idempotency_key: input.idempotencyKey,
+  });
+  const parsed = z.object({
+    settings: workoutScheduleSettingsSchema,
+    overview: scheduleOverviewSchema,
+    applied: z.boolean(),
+  }).parse(data);
+  return parsed;
 }
 
 export async function fetchPersonalRegularity(days = 28): Promise<PersonalRegularity> {

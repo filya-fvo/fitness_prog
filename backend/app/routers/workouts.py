@@ -19,6 +19,10 @@ from app.schemas.scheduler import (
     WorkoutCancellationRequest,
     WorkoutRescheduleRequest,
     WorkoutScheduleOverview,
+    WorkoutScheduleReplacementPreview,
+    WorkoutScheduleReplacementPreviewRequest,
+    WorkoutScheduleReplacementRequest,
+    WorkoutScheduleReplacementResponse,
     WorkoutScheduleSettingsResponse,
     WorkoutScheduleSettingsUpdate,
 )
@@ -33,7 +37,7 @@ from app.schemas.workout import (
     WorkoutSetResponse,
     WorkoutUpdateRequest,
 )
-from app.services import personal_regularity, planned_workout
+from app.services import personal_regularity, planned_workout, schedule_replacement
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_service
@@ -125,6 +129,53 @@ async def save_workout_schedule_settings(
         start_time=body.start_time,
     )
     return WorkoutScheduleSettingsResponse.model_validate(settings)
+
+
+@router.post(
+    "/schedule/replacement/preview",
+    response_model=WorkoutScheduleReplacementPreview,
+)
+async def preview_workout_schedule_replacement(
+    body: WorkoutScheduleReplacementPreviewRequest,
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleReplacementPreview:
+    preview = schedule_replacement.preview_workout_schedule_replacement(
+        user.goals or {},
+        original_date=body.original_date,
+        target_date=body.target_date,
+        target_time=body.target_time,
+        effective_scope=body.effective_scope,
+        conflict_resolution=body.conflict_resolution,
+        local_day=scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return WorkoutScheduleReplacementPreview.model_validate(preview)
+
+
+@router.post(
+    "/schedule/replacement",
+    response_model=WorkoutScheduleReplacementResponse,
+)
+async def replace_workout_schedule_day(
+    body: WorkoutScheduleReplacementRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleReplacementResponse:
+    settings, overview, applied = await schedule_replacement.replace_recurring_workout_day(
+        session,
+        user,
+        original_date=body.original_date,
+        target_date=body.target_date,
+        target_time=body.target_time,
+        effective_scope=body.effective_scope,
+        conflict_resolution=body.conflict_resolution,
+        expected_revision=body.expected_revision,
+        idempotency_key=body.idempotency_key,
+    )
+    return WorkoutScheduleReplacementResponse(
+        settings=WorkoutScheduleSettingsResponse.model_validate(settings),
+        overview=WorkoutScheduleOverview.model_validate(overview),
+        applied=applied,
+    )
 
 
 @router.get("/regularity", response_model=PersonalRegularityResponse)
