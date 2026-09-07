@@ -99,11 +99,11 @@ test("new user can progress and postpone the activation checklist", async ({ pag
   await expect(card).toBeHidden();
 });
 
-test("existing profile without rollout state is not interrupted", async ({ page }) => {
+test("existing profile without rollout state receives the checklist", async ({ page }) => {
   await mockHome(page, false);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Главная" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Освойте приложение" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Освойте приложение" })).toBeVisible();
 });
 
 test("new user can hide the checklist permanently", async ({ page }) => {

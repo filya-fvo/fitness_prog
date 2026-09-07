@@ -48,6 +48,7 @@ REQUIRED_FILES = [
     "20260903000038_curate_dumbbell_weight_rules.sql",
     "20260905000039_exercise_media_assets.sql",
     "20260905000040_cycle_training_readiness.sql",
+    "20260907000041_enable_activation_checklist_for_all.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -131,6 +132,8 @@ REQUIRED_SNIPPETS = [
     "field <> 'thumbnail_url' OR size_bytes <= 5242880",
     "ck_daily_metrics_cycle_readiness",
     "cycle_readiness IN ('normal', 'caution', 'reduce', 'rest')",
+    "NOT (COALESCE(goals, '{}'::jsonb) ? 'activation_checklist')",
+    "'dismissed_at', NULL",
 ]
 
 

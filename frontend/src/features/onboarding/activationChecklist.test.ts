@@ -13,7 +13,7 @@ import {
 } from "@/features/onboarding/activationChecklist";
 
 describe("activation checklist", () => {
-  it("only starts for profiles carrying the rollout state", () => {
+  it("parses rollout state and supports the global feature switch", () => {
     expect(readActivationChecklistState(undefined)).toBeNull();
     const state = createActivationChecklistState(new Date("2026-09-07T10:00:00Z"));
     expect(readActivationChecklistState(state)).toEqual(state);

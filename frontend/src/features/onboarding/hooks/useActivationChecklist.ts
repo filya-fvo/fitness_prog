@@ -10,6 +10,7 @@ import {
   activationSignalsFromAnalytics,
   addActivationSignals,
   completedActivationItems,
+  createActivationChecklistState,
   readActivationChecklistState,
   type ActivationChecklistState,
   type ActivationSignal,
@@ -22,6 +23,7 @@ type Options = {
   setProfileGoals: Dispatch<SetStateAction<Record<string, unknown>>>;
   userId?: string;
   online: boolean;
+  profileReady: boolean;
   hasCompletedSet: boolean;
   hasCheckin: boolean;
 };
@@ -52,6 +54,7 @@ export function useActivationChecklist(options: Options) {
     setProfileGoals,
     userId,
     online,
+    profileReady,
     hasCompletedSet,
     hasCheckin,
   } = options;
@@ -67,7 +70,8 @@ export function useActivationChecklist(options: Options) {
     () => readActivationChecklistState(profileGoals.activation_checklist),
     [profileGoals.activation_checklist],
   );
-  const state = activationChecklistEnabled() ? queuedState ?? profileState : null;
+  const enabled = activationChecklistEnabled();
+  const state = enabled ? queuedState ?? profileState : null;
   const hasConfiguredSchedule = configuredWorkoutDays(profileGoals).length > 0;
 
   const persist = useCallback((
@@ -98,6 +102,12 @@ export function useActivationChecklist(options: Options) {
       )
       : null);
   }, [userId]);
+
+  useEffect(() => {
+    if (!enabled || !profileReady || !userId || queuedState || profileState) return;
+    const initial = createActivationChecklistState();
+    persist(initial, initial);
+  }, [enabled, persist, profileReady, profileState, queuedState, userId]);
 
   const applySignals = useCallback((signals: ActivationSignal[]) => {
     if (!state) return;

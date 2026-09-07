@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -105,6 +106,19 @@ def test_activation_checklist_state_is_bounded() -> None:
     assert UserProfileUpdate(goals={"activation_checklist": state}).goals == {
         "activation_checklist": state
     }
+
+
+def test_activation_checklist_rollout_preserves_existing_state() -> None:
+    migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260907000041_enable_activation_checklist_for_all.sql"
+    ).read_text(encoding="utf-8")
+    assert "UPDATE users" in migration
+    assert "is_deleted IS FALSE" in migration
+    assert "NOT (COALESCE(goals, '{}'::jsonb) ? 'activation_checklist')" in migration
+    assert "'dismissed_at', NULL" in migration
 
 
 @pytest.mark.parametrize(

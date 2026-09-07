@@ -185,7 +185,7 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/api/` — единственное место HTTP-контрактов клиента.
 - `frontend/src/features/` — feature pages/components/hooks.
 - `frontend/src/features/onboarding/` — исправляемая анкета и временный
-  версионированный чек-лист знакомства нового пользователя с offline-сохранением.
+  версионированный чек-лист знакомства для всех пользователей с offline-сохранением.
 - `frontend/src/features/invites/` — создание, отправка, ручной код, preview и
   явное принятие приглашения; незавершённый `startapp` переживает onboarding.
 - `frontend/src/features/social/` — друзья, настраиваемые частные соревнования на

@@ -122,6 +122,7 @@ export function HomePage() {
   const [restoringDefaults, setRestoringDefaults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
+  const [profileReady, setProfileReady] = useState(false);
   /** True when today's in-progress session has user exercise swaps. */
   const [sessionHasReplacements, setSessionHasReplacements] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -203,6 +204,7 @@ export function HomePage() {
     setProfileGoals,
     userId: user?.id,
     online,
+    profileReady,
     hasCompletedSet,
     hasCheckin,
   });
@@ -253,6 +255,7 @@ export function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    setProfileReady(false);
     async function load() {
       try {
         const queue = await getPendingCount();
@@ -309,7 +312,10 @@ export function HomePage() {
               : null;
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
-            if (!cancelled) setProfileGoals(goalsWithSex);
+            if (!cancelled && profile) {
+              setProfileGoals(goalsWithSex);
+              setProfileReady(true);
+            }
             if (!cancelled && schedule) setWorkoutSchedule(schedule);
             if (!cancelled) setRegularity(planRegularity);
             const rec = recommendPrograms(
