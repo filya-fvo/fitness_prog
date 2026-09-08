@@ -12,6 +12,7 @@ import { EmailLoginForm } from "@/components/EmailLoginForm";
 import { TelegramBrowserLogin } from "@/components/TelegramBrowserLogin";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import { ToastHost } from "@/components/ui/ToastHost";
+import { BetaPlusNotice } from "@/features/subscription/components/BetaPlusNotice";
 import { useTelegramExitGesture } from "@/hooks/useTelegramExitGesture";
 import { trackEvent } from "@/lib/analytics";
 import { authUserFromProfile, isUnauthorizedBrowserSession } from "@/lib/browserSession";
@@ -232,6 +233,27 @@ export function Shell() {
     return () => window.removeEventListener("online", verifyAfterReconnect);
   }, [setUser, user]);
 
+  useEffect(() => {
+    if (!user || !hasSession()) return;
+    let refreshing = false;
+    const refreshSubscription = async () => {
+      if (refreshing || !isOnline()) return;
+      refreshing = true;
+      try {
+        const profile = await fetchMyProfile(8_000);
+        const verifiedUser = authUserFromProfile(profile);
+        setUser(verifiedUser);
+        cacheUserProfile(verifiedUser);
+      } catch {
+        // The original request still shows the feature gate. Keep the session alive.
+      } finally {
+        refreshing = false;
+      }
+    };
+    window.addEventListener("fitness:plus-required", refreshSubscription);
+    return () => window.removeEventListener("fitness:plus-required", refreshSubscription);
+  }, [setUser, user]);
+
   const isFocusedFlow =
     location.pathname.startsWith("/onboarding") ||
     location.pathname.startsWith("/workouts/active/");
@@ -270,6 +292,8 @@ export function Shell() {
             <OfflineBanner />
           </Suspense>
         ) : null}
+
+        {!isAuthLoading && user && !isFocusedFlow ? <BetaPlusNotice user={user} /> : null}
 
         {!isAuthLoading && (user || import.meta.env.DEV) ? <Outlet /> : null}
       </div>

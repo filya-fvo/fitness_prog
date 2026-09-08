@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { plusRequiredDetail } from "@/api/subscriptionError";
+
 // Empty/same-origin works with Vite dev proxy, local Tailscale and the combined
 // Timeweb image. Set VITE_API_URL only when the API is intentionally split out.
 const API_URL = import.meta.env.VITE_API_URL ?? "";
@@ -50,3 +52,14 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    const detail = plusRequiredDetail(error);
+    if (detail && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("fitness:plus-required", { detail }));
+    }
+    return Promise.reject(error);
+  },
+);

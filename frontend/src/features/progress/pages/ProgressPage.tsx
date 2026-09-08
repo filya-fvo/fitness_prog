@@ -14,6 +14,8 @@ import {
 import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import {
   cacheExercises,
   cacheWorkouts,
@@ -46,11 +48,14 @@ import { buildLiftTrends } from "@/utils/strengthProgress";
 import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { toUserMessage } from "@/utils/errors";
 import { useUserStore } from "@/store/userStore";
+import { trackEvent } from "@/lib/analytics";
 
 type NutritionRangeMode = "day" | "week";
 
 export function ProgressPage() {
-  const ownerUserId = useUserStore((state) => state.user?.id);
+  const currentUser = useUserStore((state) => state.user);
+  const ownerUserId = currentUser?.id;
+  const plusAccess = hasPlus(currentUser);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [monthIndex, setMonthIndex] = useState(now.getMonth());
@@ -73,6 +78,14 @@ export function ProgressPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!plusAccess) {
+      setLoading(false);
+      setWorkouts([]);
+      setRegularity(null);
+      setNutrition(null);
+      setDailyMetrics([]);
+      return;
+    }
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -150,7 +163,11 @@ export function ProgressPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [plusAccess]);
+
+  useEffect(() => {
+    if (plusAccess) trackEvent("plus_feature_opened", { feature: "progress_dashboard" });
+  }, [plusAccess]);
 
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
   const liftTrends = useMemo(() => buildLiftTrends(workouts, catalog, 6), [workouts, catalog]);
@@ -200,6 +217,15 @@ export function ProgressPage() {
     const d = new Date(year, monthIndex + delta, 1);
     setYear(d.getFullYear());
     setMonthIndex(d.getMonth());
+  }
+
+  if (!plusAccess) {
+    return (
+      <section className="mx-auto max-w-4xl">
+        <Header title="Прогресс" subtitle="Тренировки, питание и календарь" />
+        <PlusAccessSummary feature="progress_dashboard" />
+      </section>
+    );
   }
 
   return (

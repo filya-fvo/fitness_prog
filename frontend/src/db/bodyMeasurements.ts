@@ -25,6 +25,14 @@ export async function readCachedBodyMeasurements(
     .map((row) => row.measurement);
 }
 
+export async function readCachedBodyMeasurementForDate(
+  ownerUserId: string,
+  date: string,
+): Promise<BodyMeasurement | null> {
+  const row = await db.bodyMeasurements.get(bodyMeasurementKey(ownerUserId, date));
+  return row?.ownerUserId === ownerUserId ? row.measurement : null;
+}
+
 export async function putCachedBodyMeasurement(
   ownerUserId: string,
   measurement: BodyMeasurement,

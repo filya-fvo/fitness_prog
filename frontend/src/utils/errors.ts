@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { plusRequiredDetail } from "@/api/subscriptionError";
+
 const STATUS_MESSAGES: Record<number, string> = {
   400: "Проверьте введённые данные и попробуйте снова.",
   401: "Сессия истекла. Войдите в приложение снова.",
@@ -21,6 +23,8 @@ export function toUserMessage(error: unknown, fallback = "Что-то пошло
     return "Нет сети. Проверьте подключение или продолжите офлайн.";
   }
   if (axios.isAxiosError(error)) {
+    const plusDetail = plusRequiredDetail(error);
+    if (plusDetail) return plusDetail.message;
     const status = error.response?.status;
     const detail = error.response?.data?.detail;
     if (

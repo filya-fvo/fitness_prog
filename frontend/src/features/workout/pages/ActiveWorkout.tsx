@@ -21,6 +21,8 @@ import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHin
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
+import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
+import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscriptionAccess";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
 import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
@@ -119,6 +121,7 @@ export function ActiveWorkout() {
   const navigate = useNavigate();
   const isAuthLoading = useUserStore((s) => s.isAuthLoading);
   const authenticatedUserId = useUserStore((s) => s.user?.id);
+  const plusAccess = useUserStore((s) => hasPlus(s.user));
   const canAttemptServerRestore = Boolean(authenticatedUserId) && !isAuthLoading;
 
   const catalog = useWorkoutStore((s) => s.catalog);
@@ -147,6 +150,7 @@ export function ActiveWorkout() {
   const [rpe, setRpe] = useState(7);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [plusRequired, setPlusRequired] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryFacts, setSummaryFacts] = useState<WorkoutCompletionFacts | null>(null);
   const [completionAiLoading, setCompletionAiLoading] = useState(false);
@@ -277,6 +281,10 @@ export function ActiveWorkout() {
 
       if (isOnline() && getStoredToken()) {
         try {
+          if (!cancelled) {
+            setPlusRequired(false);
+            if (plusAccess) setBooting(true);
+          }
           const remoteWorkout = await fetchWorkout(routeId);
           const remoteDrafts = draftsFromWorkoutSnapshot(remoteWorkout);
           useWorkoutStore.getState().hydrateSession({
@@ -307,9 +315,14 @@ export function ActiveWorkout() {
             trackEvent("workout_session_restored", { source: "server" });
           }
           return;
-        } catch {
+        } catch (err) {
           if (!cancelled) {
-            setError("Не удалось открыть тренировку. Возможно, ссылка устарела или сессия недоступна.");
+            if (isPlusRequiredError(err)) {
+              setPlusRequired(true);
+              setError(null);
+            } else {
+              setError("Не удалось открыть тренировку. Возможно, ссылка устарела или сессия недоступна.");
+            }
           }
         }
       } else if (!cancelled) {
@@ -324,7 +337,7 @@ export function ActiveWorkout() {
     return () => {
       cancelled = true;
     };
-  }, [authenticatedUserId, canAttemptServerRestore, navigate, workoutId]);
+  }, [authenticatedUserId, canAttemptServerRestore, navigate, plusAccess, workoutId]);
 
   // Refresh exercise catalog (GIF URLs etc.) so IndexedDB cache is not stale.
   useEffect(() => {
@@ -1416,7 +1429,7 @@ export function ActiveWorkout() {
     return (
       <section>
         <Header title="Тренировка" />
-        <div className="rounded-2xl bg-tg-secondary p-4">
+        {plusRequired ? <PlusAccessSummary feature="workout_details" title="История тренировки доступна в PLUS" /> : <div className="rounded-2xl bg-tg-secondary p-4">
           <p className="text-sm font-medium">Сессия не найдена</p>
           <p className="mt-1 text-sm text-tg-hint">
             {error || "Откройте каталог или вернитесь на главную."}
@@ -1437,7 +1450,7 @@ export function ActiveWorkout() {
               В каталог
             </button>
           </div>
-        </div>
+        </div>}
       </section>
     );
   }

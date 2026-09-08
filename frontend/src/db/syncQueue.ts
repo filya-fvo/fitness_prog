@@ -313,6 +313,23 @@ export async function readCachedWorkouts(ownerUserId?: string): Promise<Workout[
   return workoutsForUser(await db.workouts.where("user_id").equals(owner).toArray(), owner);
 }
 
+/** FREE-safe cache view: unfinished sessions plus outcomes from the current local day. */
+export async function readOperationalCachedWorkouts(
+  localDay: string,
+  ownerUserId?: string,
+): Promise<Workout[]> {
+  const owner = ownerUserId || currentOwnerUserId();
+  if (!owner) return [];
+  const items = await db.workouts
+    .where("user_id")
+    .equals(owner)
+    .filter((workout) =>
+      !["completed", "skipped"].includes(workout.status) || workout.scheduled_date === localDay,
+    )
+    .toArray();
+  return workoutsForUser(items, owner);
+}
+
 export async function cacheWorkout(item: Workout): Promise<void> {
   await db.workouts.put(item);
 }

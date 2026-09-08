@@ -13,6 +13,8 @@ import { trackEvent } from "@/lib/analytics";
 import {
   cacheServerBodyMeasurements,
   getPendingBodyMeasurementDates,
+  putCachedBodyMeasurement,
+  readCachedBodyMeasurementForDate,
   readCachedBodyMeasurements,
   removeCachedBodyMeasurement,
 } from "@/db/bodyMeasurements";
@@ -23,6 +25,8 @@ import {
 } from "@/db/syncQueue";
 import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
+import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
 import { isRetryableApiError, toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
@@ -119,7 +123,9 @@ function MeasurementChart({
 }
 
 export function MeasurementsPage() {
-  const ownerUserId = useUserStore((state) => state.user?.id ?? null);
+  const currentUser = useUserStore((state) => state.user);
+  const ownerUserId = currentUser?.id ?? null;
+  const plusAccess = hasPlus(currentUser);
   const [date, setDate] = useState(todayISO);
   const [values, setValues] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
@@ -134,18 +140,21 @@ export function MeasurementsPage() {
   const [pendingDates, setPendingDates] = useState<Set<string>>(() => new Set());
 
   const showCached = useCallback(async (owner: string) => {
-    const rows = await readCachedBodyMeasurements(owner);
-    const current = rows.find((item) => item.date === date);
+    const visibleRows = plusAccess
+      ? await readCachedBodyMeasurements(owner)
+      : [await readCachedBodyMeasurementForDate(owner, todayISO())]
+        .filter((item): item is BodyMeasurement => item !== null);
+    const current = visibleRows.find((item) => item.date === date);
     const next: Record<string, string> = {};
     for (const field of BODY_MEASURE_FIELDS) {
       next[field.key] = valueText(current?.[field.key as BodyMeasurementField]);
     }
     setValues(next);
     setNote(current?.note ?? "");
-    setHistory(rows);
+    setHistory(visibleRows);
     setPendingDates(await getPendingBodyMeasurementDates(owner));
-    return rows;
-  }, [date]);
+    return visibleRows;
+  }, [date, plusAccess]);
 
   const load = useCallback(async () => {
     if (!getStoredToken() || !ownerUserId) {
@@ -163,10 +172,16 @@ export function MeasurementsPage() {
       return;
     }
     try {
-      const [current, range] = await Promise.all([
-        fetchBodyMeasurement(date),
-        fetchBodyMeasurementRange({ days: 366, end: todayISO() }),
-      ]);
+      const current = await fetchBodyMeasurement(date);
+      if (!plusAccess) {
+        if (measurementHasContent(current)) await putCachedBodyMeasurement(ownerUserId, current);
+        else if (!(await getPendingBodyMeasurementDates(ownerUserId)).has(date)) {
+          await removeCachedBodyMeasurement(ownerUserId, date);
+        }
+        await showCached(ownerUserId);
+        return;
+      }
+      const range = await fetchBodyMeasurementRange({ days: 366, end: todayISO() });
       const pending = await getPendingBodyMeasurementDates(ownerUserId);
       const serverItems = range.items.filter((item) => item.date !== date);
       if (measurementHasContent(current)) serverItems.push(current);
@@ -185,7 +200,11 @@ export function MeasurementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [date, ownerUserId, showCached]);
+  }, [date, ownerUserId, plusAccess, showCached]);
+
+  useEffect(() => {
+    if (!plusAccess && date !== todayISO()) setDate(todayISO());
+  }, [date, plusAccess]);
 
   useEffect(() => {
     setConfirmDelete(false);
@@ -271,12 +290,12 @@ export function MeasurementsPage() {
       <Header title="Замеры тела" subtitle="История обхватов и динамика" />
 
       <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-tg-secondary p-2">
-        <button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg">‹</button>
+        {plusAccess ? <button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg">‹</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
         <div className="text-center">
           <p className="text-sm font-semibold">{date === todayISO() ? "Сегодня" : displayDate(date)}</p>
           {currentHistory ? <p className="text-[10px] text-tg-hint">{pendingDates.has(date) ? "ждёт синхронизации" : "замер сохранён"}</p> : <p className="text-[10px] text-tg-hint">новый замер</p>}
         </div>
-        <button type="button" disabled={date >= todayISO()} onClick={() => setDate((value) => shiftDate(value, 1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg disabled:opacity-40">›</button>
+        {plusAccess ? <button type="button" disabled={date >= todayISO()} onClick={() => setDate((value) => shiftDate(value, 1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg disabled:opacity-40">›</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
       </div>
 
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -300,7 +319,7 @@ export function MeasurementsPage() {
                     placeholder="—"
                     className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
                   />
-                  {previousPoint ? <span className="mt-0.5 block text-[10px]">{shortMeasurementDate(previousPoint.date)} → {shortMeasurementDate(date)} · {measurementDaysBetween(previousPoint.date, date)} дн.: {deltaText(Number(values[field.key]) || null, previousPoint.value, field.unit)}</span> : null}
+                  {plusAccess && previousPoint ? <span className="mt-0.5 block text-[10px]">{shortMeasurementDate(previousPoint.date)} → {shortMeasurementDate(date)} · {measurementDaysBetween(previousPoint.date, date)} дн.: {deltaText(Number(values[field.key]) || null, previousPoint.value, field.unit)}</span> : null}
                 </label>
               );
             })}
@@ -324,7 +343,7 @@ export function MeasurementsPage() {
           ) : null}
         </section>
 
-        <section className="rounded-2xl bg-tg-secondary p-4">
+        {plusAccess ? <section className="rounded-2xl bg-tg-secondary p-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold">Динамика</h2>
@@ -349,7 +368,7 @@ export function MeasurementsPage() {
               ))}
             </div>
           ) : <p className="mt-3 text-xs text-tg-hint">История появится после первого сохранения.</p>}
-        </section>
+        </section> : <PlusAccessSummary feature="measurement_history" title="История замеров доступна в PLUS" compact />}
       </div>
     </section>
   );

@@ -55,7 +55,9 @@ import {
 } from "@/utils/programRecommend";
 import { OTP_DRAFT_LINK_KEY, readOtpDraft } from "@/utils/otpDraft";
 import { toUserMessage } from "@/utils/errors";
-import { programDayLabel, subscriptionLabel } from "@/utils/localization";
+import { programDayLabel } from "@/utils/localization";
+import { PlusBadge } from "@/features/subscription/components/PlusBadge";
+import { hasPlus, plusValidUntilText } from "@/features/subscription/subscriptionAccess";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { confirmAction } from "@/lib/telegram";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
@@ -2584,10 +2586,18 @@ setAuthEmail(p.auth_email ?? null);
             </p>
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-tg-bg px-2.5 py-1">
-                Тариф: {subscriptionLabel(storeUser?.subscription_status)}
+                Тариф: {hasPlus(storeUser) ? "PLUS" : "FREE"}
               </span>
+              {hasPlus(storeUser) ? <PlusBadge /> : null}
               {storeUser?.telegram_id ? <span className="rounded-full bg-tg-bg px-2.5 py-1">Telegram подключён</span> : null}
             </div>
+            {hasPlus(storeUser) ? (
+              <p className="mt-2 text-xs text-tg-hint">
+                {plusValidUntilText(storeUser)
+                  ? `PLUS действует до ${plusValidUntilText(storeUser)}`
+                  : "Предоставлен бесплатно на время развития приложения"}
+              </p>
+            ) : null}
           </div>
           <LinkEmailCard
             currentEmail={authEmail}

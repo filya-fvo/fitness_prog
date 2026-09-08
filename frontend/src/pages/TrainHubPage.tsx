@@ -32,6 +32,8 @@ import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
+import { useUserStore } from "@/store/userStore";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import {
   draftsWithSuggestions,
@@ -81,6 +83,7 @@ function draftsFromWorkout(workout: {
 export function TrainHubPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const plusAccess = useUserStore((state) => hasPlus(state.user));
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -186,14 +189,18 @@ export function TrainHubPage() {
             setProgram(active);
             setSchedule(scheduleOverview);
             setScheduleSettings(recurringSchedule);
-            const titles = (await readCachedWorkouts())
-              .filter((w: { status?: string }) => w.status === "completed")
-              .slice(0, 3)
-              .map((w: { title?: string | null }) => w.title || "Тренировка");
-            setRecentTitles(titles);
+            if (plusAccess) {
+              const titles = (await readCachedWorkouts())
+                .filter((w: { status?: string }) => w.status === "completed")
+                .slice(0, 3)
+                .map((w: { title?: string | null }) => w.title || "Тренировка");
+              setRecentTitles(titles);
+            } else {
+              setRecentTitles([]);
+            }
           }
         } else {
-          const cached = await readCachedWorkouts();
+          const cached = plusAccess ? await readCachedWorkouts() : [];
           if (!cancelled) {
             setRecentTitles(
               cached
@@ -213,7 +220,7 @@ export function TrainHubPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [plusAccess]);
 
   useEffect(() => {
     if (location.hash !== "#schedule" || !scheduleSettings) return;

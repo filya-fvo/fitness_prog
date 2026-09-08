@@ -7,6 +7,9 @@ import { useSearchParams } from "react-router-dom";
 import { fetchAIHistory, sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { Header } from "@/components/layout/Header";
+import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
+import { useUserStore } from "@/store/userStore";
 import { toUserMessage } from "@/utils/errors";
 import { trackEvent } from "@/lib/analytics";
 import { previewAiMessage } from "@/utils/aiMessage";
@@ -33,14 +36,15 @@ function localDayKey(value = new Date()): string {
 }
 
 const QUICK = [
-  "Почему болят колени?",
-  "Замени жим лёжа",
-  "Проанализируй мой прогресс за месяц",
-  "Что есть после тренировки?",
-  "Разбор недели: объём и восстановление",
+  { text: "Почему болят колени?", premium: false },
+  { text: "Замени жим лёжа", premium: false },
+  { text: "Проанализируй мой прогресс за месяц", premium: true },
+  { text: "Что есть после тренировки?", premium: false },
+  { text: "Разбор недели: объём и восстановление", premium: true },
 ] as const;
 
 export function Chat() {
+  const plusAccess = useUserStore((state) => hasPlus(state.user));
   const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([WELCOME_MESSAGE]);
   const [text, setText] = useState("");
@@ -49,6 +53,7 @@ export function Chat() {
   const [historyReady, setHistoryReady] = useState(false);
   const sendingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPlusGate, setShowPlusGate] = useState(false);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const prefiredRef = useRef(false);
@@ -142,17 +147,25 @@ export function Chat() {
         subtitle={!historyReady ? "Загрузка истории…" : "Локально · без дневного лимита"}
       />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {showPlusGate ? <div className="mb-3"><PlusAccessSummary feature="ai_progress_analysis" title="Разбор истории доступен в PLUS" compact /></div> : null}
 
       <div className="mb-3 flex flex-wrap gap-2">
-        {QUICK.map((q) => (
+        {QUICK.map((item) => (
           <button
-            key={q}
+            key={item.text}
             type="button"
             disabled={sending || !historyReady}
-            onClick={() => void send(q)}
+            onClick={() => {
+              if (item.premium && !plusAccess) {
+                setShowPlusGate(true);
+                return;
+              }
+              setShowPlusGate(false);
+              void send(item.text);
+            }}
             className="rounded-full bg-tg-secondary px-3 py-1.5 text-xs"
           >
-            {q}
+            {item.text}{item.premium ? " · PLUS" : ""}
           </button>
         ))}
       </div>

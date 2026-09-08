@@ -27,6 +27,7 @@ import {
   getPendingCount,
   readCachedExercises,
   readCachedWorkouts,
+  readOperationalCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
   syncWorkoutPlan,
@@ -64,6 +65,7 @@ import { localDateKey as progressLocalDate, workoutDateKey } from "@/utils/progr
 import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { toUserMessage } from "@/utils/errors";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import {
   canStartProgramFromSchedule,
   plannedWorkoutOccurrence,
@@ -101,6 +103,7 @@ function draftsFromWorkout(workout: {
 export function HomePage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
+  const plusAccess = hasPlus(user);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const catalog = useWorkoutStore((s) => s.catalog);
@@ -258,7 +261,10 @@ export function HomePage() {
     async function load() {
       try {
         const queue = await getPendingCount();
-        let workouts = await readCachedWorkouts();
+        const today = progressLocalDate(new Date());
+        const workouts = plusAccess
+          ? await readCachedWorkouts()
+          : await readOperationalCachedWorkouts(today);
         const cachedExerciseCatalog = await readCachedExercises();
         if (cachedExerciseCatalog.length) setCatalog(cachedExerciseCatalog);
 
@@ -293,7 +299,7 @@ export function HomePage() {
               fetchMyProfile().catch(() => null),
               fetchExercises({ pageSize: 200 }).catch(() => null),
               fetchWorkoutSchedule().catch(() => null),
-              fetchPersonalRegularity().catch(() => null),
+              plusAccess ? fetchPersonalRegularity().catch(() => null) : Promise.resolve(null),
             ]);
             if (exerciseResponse?.items.length) {
               setCatalog(exerciseResponse.items);
@@ -407,7 +413,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [setCatalog, user?.id]);
+  }, [plusAccess, setCatalog, user?.id]);
 
   const homeTips = useMemo(
     () =>
@@ -935,7 +941,7 @@ export function HomePage() {
           onDismiss={activationChecklist.dismiss}
         />
 
-        <PlanRegularityCard summary={regularity} />
+        {plusAccess ? <PlanRegularityCard summary={regularity} /> : null}
 
         {!online || pending > 0 ? (
           <p className={`text-right text-[11px] ${!online ? "text-amber-600" : "text-tg-hint"}`}>
@@ -989,10 +995,10 @@ export function HomePage() {
                 Замена
               </Link>
               <Link
-                to="/ai?q=Проанализируй%20мой%20прогресс%20за%20месяц"
+                to={plusAccess ? "/ai?q=Проанализируй%20мой%20прогресс%20за%20месяц" : "/faq?article=plus"}
                 className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
               >
-                Разбор недели
+                Разбор недели · PLUS
               </Link>
               <Link
                 to="/ai?q=Что%20есть%20после%20тренировки"

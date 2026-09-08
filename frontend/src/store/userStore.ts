@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
 import type { AuthUser } from "@/api/auth";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
+import { trackEvent } from "@/lib/analytics";
 import { clearCachedUserProfile } from "@/utils/profileCache";
 
 type UserState = {
@@ -20,10 +22,18 @@ export const useUserStore = create<UserState>((set) => ({
   isAuthLoading: true,
   authError: null,
   setUser: (user) =>
-    set({
-      user,
-      isAuthenticated: Boolean(user),
-      authError: null,
+    set((current) => {
+      if (current.user && user && hasPlus(current.user) !== hasPlus(user)) {
+        trackEvent("subscription_tier_changed", {
+          tier: hasPlus(user) ? "plus" : "free",
+          source: "profile_refresh",
+        });
+      }
+      return {
+        user,
+        isAuthenticated: Boolean(user),
+        authError: null,
+      };
     }),
   setAuthLoading: (isAuthLoading) => set({ isAuthLoading }),
   setAuthError: (authError) => set({ authError, isAuthLoading: false }),

@@ -34,7 +34,12 @@ export type AnalyticsEventName =
   | "activation_checklist_item_completed"
   | "activation_checklist_completed"
   | "activation_checklist_snoozed"
-  | "activation_checklist_dismissed";
+  | "activation_checklist_dismissed"
+  | "plus_gate_viewed"
+  | "plus_feature_opened"
+  | "subscription_tier_changed"
+  | "beta_plus_notice_seen"
+  | "beta_plus_notice_dismissed";
 
 export type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 

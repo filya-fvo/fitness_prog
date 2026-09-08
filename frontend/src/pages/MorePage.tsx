@@ -8,6 +8,7 @@ import { ThemeSelector } from "@/features/theme/ThemeSelector";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { subscriptionLabel } from "@/utils/localization";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 
 type MoreIconName = "profile" | "measurements" | "ai" | "social" | "invite" | "support" | "help" | "admin";
 
@@ -54,7 +55,7 @@ export function MorePage() {
             <p className="mt-1 text-xs text-tg-hint">Данные аккаунта и подписки находятся в профиле</p>
           </div>
           <span className="ml-3 shrink-0 rounded-full bg-tg-button/15 px-2.5 py-1 text-xs font-medium text-tg-link">
-            {subscriptionLabel(user.subscription_status)}
+            {hasPlus(user) ? "PLUS" : subscriptionLabel(user.subscription_status)}
           </span>
         </div>
       ) : null}

@@ -9,7 +9,8 @@ const profile = {
   auth_email: null,
   anthropometry: {},
   goals: { onboarding_completed: true },
-  subscription_status: "free",
+  subscription: { tier: "plus", active: true, sources: ["qa"], valid_until: null },
+  subscription_status: "plus",
   stars_balance: 0,
   onboarding_completed: true,
 };

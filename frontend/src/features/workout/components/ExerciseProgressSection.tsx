@@ -4,7 +4,10 @@ import { getStoredToken } from "@/api/client";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { readCachedWorkouts } from "@/db/syncQueue";
 import { ExerciseProgressChart } from "@/features/workout/components/ExerciseProgressChart";
+import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
+import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+import { useUserStore } from "@/store/userStore";
 import type { Workout } from "@/types/workout";
 import { buildExerciseDiary, buildExerciseProgress } from "@/utils/exerciseProgress";
 import { isOnline } from "@/utils/network";
@@ -20,6 +23,7 @@ function ChartIcon() {
 }
 
 export function ExerciseProgressSection({ exerciseId, exerciseName }: { exerciseId: string; exerciseName: string }) {
+  const plusAccess = useUserStore((state) => hasPlus(state.user));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +31,12 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
   const chartDialogRef = useModalAccessibility(chartOpen, () => setChartOpen(false));
 
   useEffect(() => {
+    if (!plusAccess) {
+      setWorkouts([]);
+      setLoading(false);
+      setChartOpen(false);
+      return;
+    }
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -46,11 +56,15 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
     }
     void load();
     return () => { cancelled = true; };
-  }, [exerciseId]);
+  }, [exerciseId, plusAccess]);
 
   const diary = useMemo(() => buildExerciseDiary(workouts, exerciseId, 1), [exerciseId, workouts]);
   const points = useMemo(() => buildExerciseProgress(workouts, exerciseId), [exerciseId, workouts]);
   const latest = diary[0] ?? null;
+
+  if (!plusAccess) {
+    return <div className="mt-3"><PlusAccessSummary feature="exercise_history" title="Дневник упражнения доступен в PLUS" compact /></div>;
+  }
 
   return (
     <section className="mt-3 rounded-xl border border-white/5 bg-tg-secondary p-3">
