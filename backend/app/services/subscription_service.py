@@ -115,6 +115,23 @@ def _active_conditions(
     )
 
 
+def active_plus_exists(user_id_column: object, *, at: datetime | None = None):
+    """Return a correlated SQL predicate for effective PLUS filtering."""
+
+    moment = _as_utc(at, field="at") if at is not None else utc_now()
+    return (
+        select(UserEntitlement.id)
+        .where(
+            UserEntitlement.user_id == user_id_column,
+            UserEntitlement.code == "plus",
+            UserEntitlement.starts_at <= moment,
+            UserEntitlement.revoked_at.is_(None),
+            (UserEntitlement.ends_at.is_(None) | (UserEntitlement.ends_at > moment)),
+        )
+        .exists()
+    )
+
+
 async def get_active_entitlements(
     session: AsyncSession,
     user_id: uuid.UUID,
@@ -140,6 +157,30 @@ async def get_subscription_state(
     moment = _as_utc(at, field="at") if at is not None else utc_now()
     entitlements = await get_active_entitlements(session, user_id, at=moment)
     return resolve_subscription_state(entitlements, at=moment)
+
+
+async def get_active_plus_user_ids(
+    session: AsyncSession,
+    user_ids: Iterable[uuid.UUID],
+    *,
+    at: datetime | None = None,
+) -> set[uuid.UUID]:
+    """Resolve effective PLUS for a bounded user collection without N+1 queries."""
+
+    ids = set(user_ids)
+    if not ids:
+        return set()
+    moment = _as_utc(at, field="at") if at is not None else utc_now()
+    rows = await session.scalars(
+        select(UserEntitlement.user_id).where(
+            UserEntitlement.user_id.in_(ids),
+            UserEntitlement.code == "plus",
+            UserEntitlement.starts_at <= moment,
+            UserEntitlement.revoked_at.is_(None),
+            (UserEntitlement.ends_at.is_(None) | (UserEntitlement.ends_at > moment)),
+        )
+    )
+    return set(rows.all())
 
 
 async def has_entitlement(

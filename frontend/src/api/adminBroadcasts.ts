@@ -15,7 +15,7 @@ const audienceSchema = z.object({
   kind: audienceKindSchema,
   days: z.number().int().positive().nullable().optional(),
   program_id: z.string().uuid().nullable().optional(),
-  subscription_status: z.enum(["free", "pro_stars"]).nullable().optional(),
+  subscription_status: z.enum(["free", "plus", "pro_stars"]).nullable().optional(),
 });
 
 const countsSchema = z.object({

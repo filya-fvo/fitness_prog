@@ -8,6 +8,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.subscription import EntitlementSource, SubscriptionState
+
+AdminEntitlementReason = Literal["free_mode_qa", "release_check", "support_reproduction"]
+
 
 class AdminUserQuestionnaire(BaseModel):
     sex: str | None = None
@@ -33,6 +37,14 @@ class AdminUserProgramSummary(BaseModel):
     week_phase: str | None = None
 
 
+class AdminUserEntitlement(BaseModel):
+    id: uuid.UUID
+    source: EntitlementSource
+    starts_at: datetime
+    ends_at: datetime | None = None
+    revocable: bool = False
+
+
 class AdminUserSummary(BaseModel):
     id: uuid.UUID
     display_name: str
@@ -48,8 +60,24 @@ class AdminUserSummary(BaseModel):
     onboarding_completed: bool = False
     questionnaire: AdminUserQuestionnaire
     active_program: AdminUserProgramSummary | None = None
+    subscription: SubscriptionState = Field(
+        default_factory=lambda: SubscriptionState(tier="free", active=False)
+    )
+    active_entitlements: list[AdminUserEntitlement] = Field(default_factory=list)
     subscription_status: str = "free"
     stars_balance: int = 0
+
+
+class AdminEntitlementGrantRequest(BaseModel):
+    duration_days: int = Field(ge=1, le=365)
+    reason: AdminEntitlementReason
+    confirmed: bool = False
+    idempotency_key: uuid.UUID
+
+
+class AdminEntitlementRevokeRequest(BaseModel):
+    reason: AdminEntitlementReason
+    confirmed: bool = False
 
 
 class AdminUserWorkoutSummary(BaseModel):

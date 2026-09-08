@@ -20,6 +20,7 @@ from app.models.user import User
 from app.models.workout import Workout
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services import admin_audit, admin_users
+from app.services.subscription_service import get_active_plus_user_ids
 
 
 def export_row(row: object, *, exclude: set[str] | None = None) -> dict[str, Any]:
@@ -133,6 +134,7 @@ async def prepare_users_summary_export(
         ).all()
     )
     by_id = {user.id: user for user in users}
+    plus_user_ids = await get_active_plus_user_ids(session, by_id)
     counts: dict[uuid.UUID, tuple[int, int]] = {}
     if by_id:
         rows = await session.execute(
@@ -161,6 +163,7 @@ async def prepare_users_summary_export(
                     user,
                     workouts_count=total,
                     completed_workouts=completed,
+                    subscription_tier="plus" if user.id in plus_user_ids else "free",
                 )
             )
         )

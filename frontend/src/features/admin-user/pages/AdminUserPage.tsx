@@ -17,6 +17,7 @@ import { enumLabel, subscriptionLabel } from "@/utils/localization";
 import { toUserMessage } from "@/utils/errors";
 
 import { AdminUserActions } from "../components/AdminUserActions";
+import { AdminUserSubscription } from "../components/AdminUserSubscription";
 
 const dateTime = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const dateOnly = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
@@ -140,7 +141,7 @@ export function AdminUserPage() {
           <Info label="Объединение" value={enumLabel(summary.merge_state)} />
           <Info label="Регистрация" value={formatDate(summary.registered_at)} />
           <Info label="Последняя активность" value={formatDate(summary.last_activity_at)} />
-          <Info label="Подписка" value={subscriptionLabel(summary.subscription_status)} />
+          <Info label="Тариф" value={subscriptionLabel(summary.subscription.tier)} />
           <Info label="Stars" value={summary.stars_balance} />
         </dl>
       </section>
@@ -159,6 +160,8 @@ export function AdminUserPage() {
           <Info label="Программа" value={summary.active_program ? `${summary.active_program.name}${summary.active_program.next_day ? ` · день ${summary.active_program.next_day}` : ""}` : null} />
         </dl>
       </section>
+
+      <AdminUserSubscription summary={summary} onChanged={loadSummary} />
 
       <LoadBlock title="Тренировки и записи" loaded={activity != null} loading={activityLoading} error={activityError} onLoad={() => void loadActivity()}>
         {activity ? <div className="space-y-3 text-sm">

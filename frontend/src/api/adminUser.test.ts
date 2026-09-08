@@ -4,6 +4,8 @@ import { apiClient } from "./client";
 import {
   fetchAdminUserActivity,
   fetchAdminUserSummary,
+  grantAdminTestPlus,
+  revokeAdminTestEntitlement,
   sendAdminUserMessage,
   toggleAdminUserNotifications,
 } from "./adminUser";
@@ -34,6 +36,16 @@ describe("admin user API", () => {
         equipment: ["barbell"], limitations: [], limitations_note: null,
       },
       active_program: null,
+      subscription: {
+        tier: "plus", active: true, sources: ["beta_grant"], valid_until: null,
+      },
+      active_entitlements: [{
+        id: "00000000-0000-4000-8000-000000000002",
+        source: "beta_grant",
+        starts_at: "2026-08-27T12:00:00Z",
+        ends_at: null,
+        revocable: true,
+      }],
       subscription_status: "free",
       stars_balance: 0,
     } });
@@ -42,6 +54,33 @@ describe("admin user API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith(`/admin/users/${id}/summary`);
     expect(result.questionnaire.weight_kg).toBe(80);
+    expect(result.subscription.tier).toBe("plus");
+  });
+
+  it("sends confirmed and bounded entitlement changes", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000003");
+    vi.spyOn(apiClient, "post").mockResolvedValue({ data: {
+      ok: true, user_id: id, action: "subscription_granted", notified: false, meta: {},
+    } });
+
+    await grantAdminTestPlus(id, 14, "free_mode_qa");
+    await revokeAdminTestEntitlement(
+      id,
+      "00000000-0000-4000-8000-000000000002",
+      "release_check",
+    );
+
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, `/admin/users/${id}/entitlements`, {
+      duration_days: 14,
+      reason: "free_mode_qa",
+      confirmed: true,
+      idempotency_key: "00000000-0000-4000-8000-000000000003",
+    });
+    expect(apiClient.post).toHaveBeenNthCalledWith(
+      2,
+      `/admin/users/${id}/entitlements/00000000-0000-4000-8000-000000000002/revoke`,
+      { reason: "release_check", confirmed: true },
+    );
   });
 
   it("accepts the legacy admin weight counter during a rolling update", async () => {

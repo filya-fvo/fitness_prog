@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
-import { createWorkout, fetchWorkoutHistory } from "@/api/workouts";
+import { createWorkout } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
@@ -11,10 +11,10 @@ import {
   cacheExercises,
   enqueueSync,
   readCachedExercises,
-  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
+import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseCard } from "@/features/workout/components/ExerciseCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
@@ -33,7 +33,6 @@ import {
   type SetTemplate,
 } from "@/utils/setTemplates";
 import {
-  buildExerciseHistory,
   draftsWithSuggestions,
   resolveWeekPhase,
   type ExerciseHistoryBest,
@@ -248,14 +247,7 @@ export function WorkoutCatalogPage() {
     setError(null);
     try {
       const exerciseIds = selectedExercises.map((item) => item.id);
-      let history = buildExerciseHistory(await readCachedWorkouts());
-      if (isOnline() && getStoredToken()) {
-        try {
-          history = buildExerciseHistory(await fetchWorkoutHistory());
-        } catch {
-          // Keep cached history when the fresh request is temporarily unavailable.
-        }
-      }
+      const history = await loadExerciseHints(exerciseIds);
       const drafts = buildDrafts(selectedExercises, activeTemplate, history);
       const clientId = crypto.randomUUID();
 

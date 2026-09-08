@@ -10,7 +10,6 @@ import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPlannedWorkoutPlan,
-  fetchWorkoutHistory,
   fetchWorkoutSchedule,
   fetchWorkoutScheduleSettings,
   saveWorkoutScheduleSettings,
@@ -29,12 +28,12 @@ import {
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
+import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import {
-  buildExerciseHistory,
   draftsWithSuggestions,
   ensureProgramStartDate,
   localDateKey,
@@ -170,10 +169,9 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, profile, history, scheduleOverview, recurringSchedule] = await Promise.all([
+          const [programs, profile, scheduleOverview, recurringSchedule] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
             fetchMyProfile().catch(() => null),
-            fetchWorkoutHistory().catch(() => []),
             fetchWorkoutSchedule().catch(() => null),
             fetchWorkoutScheduleSettings().catch(() => null),
           ]);
@@ -188,7 +186,7 @@ export function TrainHubPage() {
             setProgram(active);
             setSchedule(scheduleOverview);
             setScheduleSettings(recurringSchedule);
-            const titles = (history || [])
+            const titles = (await readCachedWorkouts())
               .filter((w: { status?: string }) => w.status === "completed")
               .slice(0, 3)
               .map((w: { title?: string | null }) => w.title || "Тренировка");
@@ -305,14 +303,9 @@ export function TrainHubPage() {
       } as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
       const workoutWithPlan = { ...workout, plan: planWithWarmup };
 
-      let historyMap = buildExerciseHistory(await readCachedWorkouts());
-      if (isOnline() && getStoredToken()) {
-        try {
-          historyMap = buildExerciseHistory(await fetchWorkoutHistory());
-        } catch {
-          /* keep */
-        }
-      }
+      const historyMap = await loadExerciseHints(
+        Array.isArray(plan.exercises) ? plan.exercises.map((item) => item.exercise_id) : [],
+      );
       const drafts =
         Array.isArray(plan.exercises) && plan.exercises.length
           ? draftsWithSuggestions({

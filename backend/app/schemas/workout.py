@@ -138,3 +138,22 @@ class WorkoutResponse(BaseModel):
 class WorkoutHistoryResponse(BaseModel):
     items: list[WorkoutResponse]
     total: int
+
+
+class WorkoutLoadHintsRequest(BaseModel):
+    exercise_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
+
+
+class WorkoutLoadHint(BaseModel):
+    exercise_id: uuid.UUID
+    weight: Decimal | None = None
+    reps: int | None = None
+    duration_sec: int | None = None
+    weight_mode: Literal["total", "per_hand"] | None = None
+    machine_params: dict[str, str | int | float] | None = None
+    rpe: int | None = None
+    completed_date: date
+
+
+class WorkoutLoadHintsResponse(BaseModel):
+    items: list[WorkoutLoadHint]

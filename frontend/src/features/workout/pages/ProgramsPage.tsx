@@ -5,17 +5,16 @@ import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
-import { fetchWorkoutHistory } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   readCachedExercises,
-  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
+import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
@@ -25,7 +24,6 @@ import { confirmAction } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
 import {
-  buildExerciseHistory,
   draftsWithSuggestions,
   resolveWeekPhase,
 } from "@/utils/loadProgression";
@@ -447,14 +445,9 @@ export function ProgramsPage() {
         cycleReadiness,
       });
       const clientId = crypto.randomUUID();
-      let history = buildExerciseHistory(await readCachedWorkouts());
-      if (isOnline() && getStoredToken()) {
-        try {
-          history = buildExerciseHistory(await fetchWorkoutHistory());
-        } catch {
-          /* keep cache */
-        }
-      }
+      const exerciseIds = (((workout as Workout).plan as WorkoutPlan | null)?.exercises || [])
+        .map((item) => item.exercise_id);
+      const history = await loadExerciseHints(exerciseIds);
       const drafts = draftsFromWorkout(workout as Workout, history);
       await rememberWorkoutId(clientId, workout.id);
       await saveLocalSession({

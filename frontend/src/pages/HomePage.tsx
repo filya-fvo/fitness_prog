@@ -10,7 +10,6 @@ import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPersonalRegularity,
   fetchPlannedWorkoutPlan,
-  fetchWorkoutHistory,
   fetchWorkoutSchedule,
   type PersonalRegularity,
   type WorkoutScheduleOverview,
@@ -32,6 +31,7 @@ import {
   saveLocalSession,
   syncWorkoutPlan,
 } from "@/db/syncQueue";
+import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ActivationChecklistCard } from "@/features/onboarding/components/ActivationChecklistCard";
 import { useActivationChecklist } from "@/features/onboarding/hooks/useActivationChecklist";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
@@ -43,7 +43,6 @@ import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import type { Exercise } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 import {
-  buildExerciseHistory,
   draftsWithSuggestions,
   ensureProgramStartDate,
   localDateKey,
@@ -288,11 +287,6 @@ export function HomePage() {
         if (!cancelled) setSessionHasReplacements(replacements);
 
         if (getStoredToken() && isOnline()) {
-          try {
-            workouts = await fetchWorkoutHistory();
-          } catch {
-            // keep cache
-          }
           try {
             const [programs, profile, exerciseResponse, schedule, planRegularity] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
@@ -587,14 +581,9 @@ export function HomePage() {
       } as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
       const workoutWithPlan = { ...workout, plan: planWithWarmup };
 
-      let historyMap = buildExerciseHistory(await readCachedWorkouts());
-      if (isOnline() && getStoredToken()) {
-        try {
-          historyMap = buildExerciseHistory(await fetchWorkoutHistory());
-        } catch {
-          // keep cache
-        }
-      }
+      const historyMap = await loadExerciseHints(
+        Array.isArray(plan.exercises) ? plan.exercises.map((item) => item.exercise_id) : [],
+      );
       const drafts =
         Array.isArray(plan.exercises) && plan.exercises.length
           ? draftsWithSuggestions({

@@ -255,8 +255,8 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
       {audience.kind === "subscription" ? (
         <label className="block text-xs text-tg-hint">
           Подписка
-          <select value={audience.subscription_status ?? ""} onChange={(event) => { setAudience({ ...audience, subscription_status: event.target.value as "free" | "pro_stars" }); markDirty(); }} className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base">
-            <option value="">Выберите статус</option><option value="free">Бесплатная</option><option value="pro_stars">Pro Stars</option>
+          <select value={audience.subscription_status ?? ""} onChange={(event) => { setAudience({ ...audience, subscription_status: event.target.value as "free" | "plus" }); markDirty(); }} className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base">
+            <option value="">Выберите тариф</option><option value="free">FREE</option><option value="plus">PLUS</option>
           </select>
         </label>
       ) : null}

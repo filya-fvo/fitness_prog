@@ -5,7 +5,7 @@
 import Dexie, { type Table } from "dexie";
 
 import type { BodyMeasurement } from "@/api/bodyMeasurements";
-import type { Exercise, LocalSetDraft, Workout } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Workout, WorkoutLoadHint } from "@/types/workout";
 
 export type SyncOpType =
   | "create_workout"
@@ -60,6 +60,12 @@ export type LocalBodyMeasurement = {
   updatedAt: number;
 };
 
+export type LocalWorkoutLoadHint = WorkoutLoadHint & {
+  key: string;
+  ownerUserId: string;
+  updatedAt: number;
+};
+
 class FitnessDB extends Dexie {
   exercises!: Table<Exercise, string>;
   workouts!: Table<Workout, string>;
@@ -67,6 +73,7 @@ class FitnessDB extends Dexie {
   syncQueue!: Table<SyncQueueItem, string>;
   workoutIdMap!: Table<WorkoutIdMap, string>;
   bodyMeasurements!: Table<LocalBodyMeasurement, string>;
+  workoutLoadHints!: Table<LocalWorkoutLoadHint, string>;
   meta!: Table<MetaRow, string>;
 
   constructor() {
@@ -94,6 +101,16 @@ class FitnessDB extends Dexie {
       syncQueue: "id, ownerUserId, [ownerUserId+createdAt], type, clientWorkoutId, createdAt",
       workoutIdMap: "clientId, ownerUserId, serverId",
       bodyMeasurements: "key, ownerUserId, [ownerUserId+date], date, updatedAt",
+      meta: "key",
+    });
+    this.version(4).stores({
+      exercises: "id, muscle_group, name_ru",
+      workouts: "id, user_id, scheduled_date, status, completed_at",
+      sessions: "clientId, ownerUserId, [ownerUserId+updatedAt], serverId, updatedAt",
+      syncQueue: "id, ownerUserId, [ownerUserId+createdAt], type, clientWorkoutId, createdAt",
+      workoutIdMap: "clientId, ownerUserId, serverId",
+      bodyMeasurements: "key, ownerUserId, [ownerUserId+date], date, updatedAt",
+      workoutLoadHints: "key, ownerUserId, [ownerUserId+exerciseId], exerciseId, updatedAt",
       meta: "key",
     });
   }

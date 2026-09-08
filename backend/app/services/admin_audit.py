@@ -24,7 +24,19 @@ NotificationStatus = Literal["pending", "sent", "failed", "not_requested", "unav
 
 _ACTION_PATTERN = re.compile(r"^[a-z][a-z0-9_.]{2,79}$")
 _OBJECT_PATTERN = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
-_USER_FIELDS = {"scope", "stats", "is_deleted", "channel", "requested"}
+_USER_FIELDS = {
+    "scope",
+    "stats",
+    "is_deleted",
+    "channel",
+    "requested",
+    "tier",
+    "source",
+    "entitlement_id",
+    "starts_at",
+    "ends_at",
+    "reason",
+}
 _EXERCISE_FIELDS = {
     "name",
     "muscle_group",
@@ -168,6 +180,31 @@ def user_change_snapshot(
     if requested is not None:
         snapshot["requested"] = requested
     return snapshot
+
+
+def subscription_change_snapshot(
+    *,
+    tier: str,
+    source: str | None = None,
+    entitlement_id: uuid.UUID | None = None,
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    reason: str | None = None,
+) -> dict[str, object]:
+    """Allowlisted subscription audit data without payment or user content."""
+
+    return {
+        key: value
+        for key, value in {
+            "tier": _short_text(tier, limit=12),
+            "source": _short_text(source, limit=32),
+            "entitlement_id": str(entitlement_id) if entitlement_id else None,
+            "starts_at": starts_at.isoformat() if starts_at else None,
+            "ends_at": ends_at.isoformat() if ends_at else None,
+            "reason": _short_text(reason, limit=40),
+        }.items()
+        if value is not None
+    }
 
 
 def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, object]:

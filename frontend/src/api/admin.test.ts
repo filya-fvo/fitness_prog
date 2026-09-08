@@ -37,4 +37,26 @@ describe("admin users API", () => {
       { responseType: "blob" },
     );
   });
+
+  it("validates an effective PLUS tier independently of the legacy field", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: { items: [{
+      id: "00000000-0000-4000-8000-000000000001",
+      telegram_id: null,
+      username: null,
+      display_name: "QA",
+      auth_email: null,
+      subscription_tier: "plus",
+      subscription_status: "free",
+      onboarding_completed: true,
+      workouts_count: 0,
+      completed_workouts: 0,
+      has_water_log: false,
+      primary_goal: null,
+      level: null,
+    }], total: 1 } });
+
+    const result = await fetchAdminUsers({ subscriptionStatus: "plus" });
+
+    expect(result.items[0]?.subscription_tier).toBe("plus");
+  });
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
-import type { Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
+import type { Workout, WorkoutLoadHint, WorkoutPlan, WorkoutSet } from "@/types/workout";
 
 export const workoutPlanSchema = z.object({
   title: z.string().nullable().optional(),
@@ -82,6 +82,17 @@ const scheduleOverviewSchema = z.object({
   requested_date: z.string(),
   current: scheduleOccurrenceSchema.nullable().optional(),
   next: scheduleOccurrenceSchema.nullable().optional(),
+});
+
+const workoutLoadHintSchema = z.object({
+  exercise_id: z.string().uuid(),
+  weight: z.union([z.number(), z.string()]).nullable(),
+  reps: z.number().int().nonnegative().nullable(),
+  duration_sec: z.number().int().nonnegative().nullable(),
+  weight_mode: z.enum(["total", "per_hand"]).nullable(),
+  machine_params: z.record(z.union([z.string(), z.number()])).nullable(),
+  rpe: z.number().int().min(1).max(10).nullable(),
+  completed_date: z.string(),
 });
 
 const workoutScheduleSettingsSchema = z.object({
@@ -315,6 +326,25 @@ export async function rescheduleWorkout(input: {
     target_time: input.targetTime,
   });
   return scheduleOverviewSchema.parse(data);
+}
+
+export async function fetchWorkoutLoadHints(exerciseIds: string[]): Promise<WorkoutLoadHint[]> {
+  const uniqueIds = [...new Set(exerciseIds)].slice(0, 100);
+  if (!uniqueIds.length) return [];
+  const { data } = await apiClient.post("/workouts/load-hints", {
+    exercise_ids: uniqueIds,
+  });
+  const parsed = z.object({ items: z.array(workoutLoadHintSchema) }).parse(data);
+  return parsed.items.map((item) => ({
+    exerciseId: item.exercise_id,
+    lastWeight: item.weight == null ? 0 : Number(item.weight),
+    lastReps: item.reps ?? 0,
+    lastDate: item.completed_date,
+    lastDurationSec: item.duration_sec,
+    lastWeightMode: item.weight_mode,
+    lastMachineParams: item.machine_params,
+    lastRpe: item.rpe,
+  }));
 }
 
 export async function fetchWorkoutScheduleSettings(): Promise<WorkoutScheduleSettings> {

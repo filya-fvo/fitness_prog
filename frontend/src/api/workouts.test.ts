@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
-import { cancelScheduledWorkout, fetchPersonalRegularity } from "./workouts";
+import { cancelScheduledWorkout, fetchPersonalRegularity, fetchWorkoutLoadHints } from "./workouts";
 
 describe("workout schedule API", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -67,5 +67,35 @@ describe("workout schedule API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/workouts/regularity", { params: { days: 28 } });
     expect(result).toMatchObject({ completed: 10, planned: 12, completion_pct: 83.3 });
+  });
+
+  it("requests only bounded exercise load hints and maps decimal weights", async () => {
+    const exerciseId = "11111111-1111-4111-8111-111111111111";
+    vi.spyOn(apiClient, "post").mockResolvedValue({ data: { items: [{
+      exercise_id: exerciseId,
+      weight: "72.50",
+      reps: 8,
+      duration_sec: null,
+      weight_mode: "total",
+      machine_params: null,
+      rpe: 8,
+      completed_date: "2026-09-07",
+    }] } });
+
+    const result = await fetchWorkoutLoadHints([exerciseId, exerciseId]);
+
+    expect(apiClient.post).toHaveBeenCalledWith("/workouts/load-hints", {
+      exercise_ids: [exerciseId],
+    });
+    expect(result).toEqual([{
+      exerciseId,
+      lastWeight: 72.5,
+      lastReps: 8,
+      lastDate: "2026-09-07",
+      lastDurationSec: null,
+      lastWeightMode: "total",
+      lastMachineParams: null,
+      lastRpe: 8,
+    }]);
   });
 });

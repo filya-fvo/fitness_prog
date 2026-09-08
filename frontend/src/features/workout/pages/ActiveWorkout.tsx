@@ -5,19 +5,19 @@ import { sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
-import { addWorkoutSet, completeWorkout, deleteWorkout, fetchWorkout, fetchWorkoutHistory } from "@/api/workouts";
+import { addWorkoutSet, completeWorkout, deleteWorkout, fetchWorkout } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
 import {
   cacheExercises,
   deleteLocalSession,
   enqueueSync,
   flushSyncQueue,
-  readCachedWorkouts,
   removeCachedWorkout,
   resolveServerWorkoutId,
   saveLocalSession,
   syncWorkoutPlan,
 } from "@/db/syncQueue";
+import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHints";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
@@ -40,7 +40,6 @@ import { useUserStore } from "@/store/userStore";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 import {
-  buildExerciseHistory,
   draftReadyToComplete,
   resolveWeekPhase,
   suggestLoad,
@@ -479,16 +478,8 @@ export function ActiveWorkout() {
     async function suggest() {
       if (!currentExerciseId || booting) return;
       try {
-        let workouts = await readCachedWorkouts();
-        if (isOnline()) {
-          try {
-            workouts = await fetchWorkoutHistory();
-          } catch {
-            // keep cache
-          }
-        }
+        const histMap = await loadExerciseHints([currentExerciseId]);
         if (cancelled) return;
-        const histMap = buildExerciseHistory(workouts);
         const sug = suggestLoad({
           history: histMap.get(currentExerciseId),
           phase: weekPhase,
@@ -912,6 +903,11 @@ export function ActiveWorkout() {
 
       setActiveWorkout(result);
       await persistSession(result, drafts);
+      await cacheCompletedDraftHints(
+        drafts,
+        result.completed_at || new Date().toISOString(),
+        result.rpe,
+      );
 
       await deleteLocalSession(clientId);
       resetSession();

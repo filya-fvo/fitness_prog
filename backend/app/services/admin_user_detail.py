@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import func, select, union_all
@@ -23,6 +23,7 @@ from app.schemas.admin_user import (
     AdminNotificationCategory,
     AdminUserActivity,
     AdminUserCommunications,
+    AdminUserEntitlement,
     AdminUserNextWorkout,
     AdminUserProgramSummary,
     AdminUserQuestionnaire,
@@ -35,6 +36,12 @@ from app.schemas.admin_user import (
 from app.services import admin_users
 from app.services.notification_prefs import local_now, merge_notification_settings
 from app.services.scheduler import get_schedule_overview
+from app.services.subscription_service import (
+    get_active_entitlements,
+    legacy_subscription_status,
+    resolve_subscription_state,
+)
+from app.services.admin_subscription import REVOCABLE_ADMIN_SOURCES
 
 _CATEGORY_TITLES = {
     "measurements": "Замеры",
@@ -146,6 +153,9 @@ async def _last_activity_at(session: AsyncSession, user: User):
 
 async def get_summary(session: AsyncSession, user_id: uuid.UUID) -> AdminUserSummary:
     user = await admin_users.get_user_or_404(session, user_id)
+    moment = datetime.now(UTC)
+    active_entitlements = await get_active_entitlements(session, user.id, at=moment)
+    subscription = resolve_subscription_state(active_entitlements, at=moment)
     goals = _mapping(user.goals)
     active_program: AdminUserProgramSummary | None = None
     try:
@@ -184,7 +194,18 @@ async def get_summary(session: AsyncSession, user_id: uuid.UUID) -> AdminUserSum
         onboarding_completed=bool(goals.get("onboarding_completed")),
         questionnaire=questionnaire_snapshot(user),
         active_program=active_program,
-        subscription_status=user.subscription_status or "free",
+        subscription=subscription,
+        active_entitlements=[
+            AdminUserEntitlement(
+                id=item.id,
+                source=item.source,
+                starts_at=item.starts_at,
+                ends_at=item.ends_at,
+                revocable=item.source in REVOCABLE_ADMIN_SOURCES,
+            )
+            for item in active_entitlements
+        ],
+        subscription_status=legacy_subscription_status(subscription),
         stars_balance=user.stars_balance or 0,
     )
 

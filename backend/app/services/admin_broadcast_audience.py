@@ -13,6 +13,7 @@ from app.models.nutrition import NutritionLog
 from app.models.user import User
 from app.models.workout import Workout
 from app.schemas.admin_broadcast import AdminBroadcastAudience
+from app.services.subscription_service import active_plus_exists
 
 
 def audience_statement(audience: AdminBroadcastAudience, *, now: datetime | None = None):
@@ -72,7 +73,12 @@ def audience_statement(audience: AdminBroadcastAudience, *, now: datetime | None
     elif audience.kind == "program":
         filters.append(User.goals["active_program_id"].astext == str(audience.program_id))
     elif audience.kind == "subscription":
-        filters.append(User.subscription_status == audience.subscription_status)
+        plus_filter = active_plus_exists(User.id, at=current)
+        filters.append(
+            plus_filter
+            if audience.subscription_status in {"plus", "pro_stars"}
+            else ~plus_filter
+        )
 
     return select(User.id, User.telegram_id).where(*filters).order_by(User.id.asc())
 

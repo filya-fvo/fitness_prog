@@ -31,6 +31,9 @@ from app.schemas.workout import (
     WorkoutCompleteRequest,
     WorkoutCreate,
     WorkoutHistoryResponse,
+    WorkoutLoadHint,
+    WorkoutLoadHintsRequest,
+    WorkoutLoadHintsResponse,
     WorkoutPlan,
     WorkoutResponse,
     WorkoutSetCreate,
@@ -40,6 +43,7 @@ from app.schemas.workout import (
 from app.services import personal_regularity, planned_workout, schedule_replacement
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
+from app.services import workout_load_hints
 from app.services import workout_service
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
@@ -90,6 +94,22 @@ async def shift_schedule(
     return ShiftScheduleResponse(
         shifted=len(items),
         workout_ids=[item.id for item in items],
+    )
+
+
+@router.post("/load-hints", response_model=WorkoutLoadHintsResponse)
+async def workout_load_hint_list(
+    body: WorkoutLoadHintsRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutLoadHintsResponse:
+    rows = await workout_load_hints.load_hints_for_exercises(
+        session,
+        user_id=user.id,
+        exercise_ids=body.exercise_ids,
+    )
+    return WorkoutLoadHintsResponse(
+        items=[WorkoutLoadHint.model_validate(row) for row in rows],
     )
 
 

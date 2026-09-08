@@ -93,7 +93,7 @@ export function AdminPage() {
     try {
       const res = await fetchAdminUsers({
         q: filters.q.trim() || undefined,
-        subscriptionStatus: filters.subscriptionStatus as "free" | "pro_stars" || undefined,
+        subscriptionStatus: filters.subscriptionStatus as "free" | "plus" || undefined,
         onboardingCompleted: filters.onboardingCompleted === "" ? undefined : filters.onboardingCompleted === "true",
         level: filters.level as "beginner" | "intermediate" | "advanced" || undefined,
         primaryGoal: filters.primaryGoal as "lose_fat" | "gain_muscle" | "maintain" || undefined,
@@ -360,7 +360,7 @@ export function AdminPage() {
                     </p>
                     <p className="mt-0.5 text-[11px] text-tg-hint">
                       {u.onboarding_completed ? "анкета ✓" : "анкета не пройдена"}
-                      {` · ${subscriptionLabel(u.subscription_status)}`}
+                      {` · ${subscriptionLabel(u.subscription_tier)}`}
                       {` · тр. ${u.completed_workouts}/${u.workouts_count}`}
                       {u.level ? ` · ${enumLabel(u.level)}` : ""}
                       {u.primary_goal ? ` · ${enumLabel(u.primary_goal)}` : ""}

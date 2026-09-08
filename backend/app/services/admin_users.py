@@ -22,6 +22,7 @@ from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
 from app.schemas.admin import AdminResetScope, AdminUserRow
 from app.services import admin_audit
+from app.services.subscription_service import active_plus_exists, get_active_plus_user_ids
 from app.services.telegram_bot import TelegramBotError, send_app_notification
 
 
@@ -51,10 +52,14 @@ def to_admin_row(
     *,
     workouts_count: int = 0,
     completed_workouts: int = 0,
+    subscription_tier: str | None = None,
 ) -> AdminUserRow:
     first, last = _anthro_name(user)
     goals = user.goals if isinstance(user.goals, dict) else {}
     water = goals.get("water_log") if isinstance(goals.get("water_log"), dict) else {}
+    effective_tier = subscription_tier or (
+        "plus" if user.subscription_status == "pro_stars" else "free"
+    )
     return AdminUserRow(
         id=user.id,
         telegram_id=user.telegram_id,
@@ -63,7 +68,8 @@ def to_admin_row(
         last_name=last,
         display_name=display_name(user),
         auth_email=getattr(user, "auth_email", None),
-        subscription_status=user.subscription_status or "free",
+        subscription_tier=effective_tier,
+        subscription_status="pro_stars" if effective_tier == "plus" else "free",
         onboarding_completed=bool(goals.get("onboarding_completed")),
         created_at=getattr(user, "created_at", None),
         updated_at=getattr(user, "updated_at", None),
@@ -90,8 +96,10 @@ async def list_users(
     offset = max(0, offset)
 
     filters = [User.is_deleted.is_(False)]
+    moment = datetime.now(timezone.utc)
     if subscription_status:
-        filters.append(User.subscription_status == subscription_status)
+        plus_filter = active_plus_exists(User.id, at=moment)
+        filters.append(plus_filter if subscription_status in {"plus", "pro_stars"} else ~plus_filter)
     if onboarding_completed is not None:
         filters.append(
             func.coalesce(User.goals["onboarding_completed"].as_boolean(), False)
@@ -116,6 +124,7 @@ async def list_users(
     users = list(result.scalars().all())
 
     ids = [u.id for u in users]
+    plus_user_ids = await get_active_plus_user_ids(session, ids, at=moment)
     counts: dict[uuid.UUID, tuple[int, int]] = {i: (0, 0) for i in ids}
     if ids:
         rows = await session.execute(
@@ -133,7 +142,12 @@ async def list_users(
     rows_out: list[AdminUserRow] = []
     for u in users:
         tw, cw = counts.get(u.id, (0, 0))
-        row = to_admin_row(u, workouts_count=tw, completed_workouts=cw)
+        row = to_admin_row(
+            u,
+            workouts_count=tw,
+            completed_workouts=cw,
+            subscription_tier="plus" if u.id in plus_user_ids else "free",
+        )
         if needle:
             blob = " ".join(
                 [

@@ -17,6 +17,8 @@ from app.deps import require_admin
 from app.models.user import User
 from app.schemas.admin import AdminActionResponse
 from app.schemas.admin_user import (
+    AdminEntitlementGrantRequest,
+    AdminEntitlementRevokeRequest,
     AdminNotificationToggleRequest,
     AdminResendGuideRequest,
     AdminServiceMessageRequest,
@@ -24,7 +26,13 @@ from app.schemas.admin_user import (
     AdminUserCommunications,
     AdminUserSummary,
 )
-from app.services import admin_audit, admin_user_actions, admin_user_detail, admin_user_export
+from app.services import (
+    admin_audit,
+    admin_subscription,
+    admin_user_actions,
+    admin_user_detail,
+    admin_user_export,
+)
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
@@ -111,6 +119,47 @@ async def admin_user_notifications(
         session,
         user_id,
         enabled=body.enabled,
+        context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
+
+
+@router.post("/{user_id}/entitlements", response_model=AdminActionResponse)
+async def admin_user_grant_entitlement(
+    user_id: uuid.UUID,
+    body: AdminEntitlementGrantRequest,
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> AdminActionResponse:
+    return await admin_subscription.grant_test_plus(
+        session,
+        user_id,
+        duration_days=body.duration_days,
+        reason=body.reason,
+        confirmed=body.confirmed,
+        idempotency_key=body.idempotency_key,
+        context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
+
+
+@router.post(
+    "/{user_id}/entitlements/{entitlement_id}/revoke",
+    response_model=AdminActionResponse,
+)
+async def admin_user_revoke_entitlement(
+    user_id: uuid.UUID,
+    entitlement_id: uuid.UUID,
+    body: AdminEntitlementRevokeRequest,
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> AdminActionResponse:
+    return await admin_subscription.revoke_test_entitlement(
+        session,
+        user_id,
+        entitlement_id,
+        reason=body.reason,
+        confirmed=body.confirmed,
         context=admin_audit.AuditContext(admin.id, correlation_id),
     )
 

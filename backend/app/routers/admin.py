@@ -29,7 +29,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/users", response_model=AdminUserListResponse)
 async def admin_list_users(
     q: str | None = Query(default=None, description="Search name/username/email/tg id"),
-    subscription_status: str | None = Query(default=None, pattern="^(free|pro_stars)$"),
+    subscription_status: str | None = Query(default=None, pattern="^(free|plus|pro_stars)$"),
     onboarding_completed: bool | None = Query(default=None),
     level: str | None = Query(default=None, pattern="^(beginner|intermediate|advanced)$"),
     primary_goal: str | None = Query(default=None, pattern="^(lose_fat|gain_muscle|maintain)$"),

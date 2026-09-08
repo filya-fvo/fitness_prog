@@ -10,6 +10,7 @@ import httpx
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
+from sqlalchemy.dialects import postgresql
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
@@ -21,7 +22,12 @@ from app.schemas.admin_broadcast import (
     AdminBroadcastDraftRequest,
     AdminBroadcastLaunchRequest,
 )
-from app.services import admin_audit, admin_broadcast_delivery, admin_broadcasts
+from app.services import (
+    admin_audit,
+    admin_broadcast_audience,
+    admin_broadcast_delivery,
+    admin_broadcasts,
+)
 from app.services.admin_audit import AuditContext
 from app.services.telegram_bot import TelegramBotError
 from app.tasks.notifications import WorkerSettings, send_broadcast_batch_task
@@ -106,6 +112,22 @@ def test_broadcast_audit_never_accepts_message_content() -> None:
     )
     assert event.after_data == {"audience": "active", "expected": 10}
     assert secret_message not in str(event.after_data)
+
+
+def test_subscription_audiences_use_effective_entitlements() -> None:
+    plus = admin_broadcast_audience.audience_statement(
+        AdminBroadcastAudience(kind="subscription", subscription_status="plus")
+    )
+    free = admin_broadcast_audience.audience_statement(
+        AdminBroadcastAudience(kind="subscription", subscription_status="free")
+    )
+    plus_sql = str(plus.compile(dialect=postgresql.dialect()))
+    free_sql = str(free.compile(dialect=postgresql.dialect()))
+
+    assert "user_entitlements" in plus_sql
+    assert "EXISTS" in plus_sql
+    assert "user_entitlements" in free_sql
+    assert "NOT (EXISTS" in free_sql
 
 
 @pytest.mark.asyncio

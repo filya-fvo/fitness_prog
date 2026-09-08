@@ -44,6 +44,16 @@ test("admin user card loads detail blocks automatically and confirms notificatio
         limitations_note: null,
       },
       active_program: { id: adminId, name: "Сила", next_day: 2, week_phase: "heavy" },
+      subscription: {
+        tier: "plus", active: true, sources: ["beta_grant"], valid_until: null,
+      },
+      active_entitlements: [{
+        id: "22222222-2222-4222-8222-222222222222",
+        source: "beta_grant",
+        starts_at: "2026-08-01T10:00:00Z",
+        ends_at: null,
+        revocable: true,
+      }],
       subscription_status: "free",
       stars_balance: 0,
     }),
@@ -77,6 +87,7 @@ test("admin user card loads detail blocks automatically and confirms notificatio
   }));
 
   let notificationBody: Record<string, unknown> | null = null;
+  let revokeBody: Record<string, unknown> | null = null;
   await page.route(`**/admin/users/${userId}/notifications`, async (route) => {
     notificationBody = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({
@@ -87,10 +98,22 @@ test("admin user card loads detail blocks automatically and confirms notificatio
       }),
     });
   });
+  await page.route(`**/admin/users/${userId}/entitlements/*/revoke`, async (route) => {
+    revokeBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true, user_id: userId, action: "subscription_revoked",
+        notified: false, detail: "Право отозвано.", meta: { effective_tier: "free" },
+      }),
+    });
+  });
 
   await page.goto(`/admin/users/${userId}`);
   await expect(page.getByRole("heading", { name: "Иван Тестовый" })).toBeVisible();
   await expect(page.getByText("Telegram + Email")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Тариф и QA-доступ" })).toBeVisible();
+  await expect(page.getByText("Временный PLUS периода разработки")).toBeVisible();
 
   await expect(page.getByText(/Грудь \+ спина/)).toBeVisible();
   await expect(page.getByText("Web Push: 1/1", { exact: false })).toBeVisible();
@@ -103,6 +126,13 @@ test("admin user card loads detail blocks automatically and confirms notificatio
   await expect.poll(() => notificationBody).toEqual({
     enabled: false,
     confirmed_user_request: true,
+  });
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Отозвать" }).click();
+  await expect.poll(() => revokeBody).toEqual({
+    reason: "free_mode_qa",
+    confirmed: true,
   });
 
   for (const width of [320, 1440]) {
@@ -135,6 +165,7 @@ test("admin filters users and exports only selected rows", async ({ page }) => {
           username: "athlete",
           display_name: "Иван Тестовый",
           auth_email: null,
+          subscription_tier: "free",
           subscription_status: "free",
           onboarding_completed: false,
           workouts_count: 2,

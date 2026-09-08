@@ -243,6 +243,8 @@ def test_admin_user_routes_and_export_allowlist() -> None:
     assert set(paths["/admin/users/{user_id}/message"]) == {"post"}
     assert set(paths["/admin/users/{user_id}/resend-guide"]) == {"post"}
     assert set(paths["/admin/users/{user_id}/notifications"]) == {"patch"}
+    assert set(paths["/admin/users/{user_id}/entitlements"]) == {"post"}
+    assert set(paths["/admin/users/{user_id}/entitlements/{entitlement_id}/revoke"]) == {"post"}
     assert set(paths["/admin/users/{user_id}/export"]) == {"post"}
 
     source = (

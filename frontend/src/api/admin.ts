@@ -11,6 +11,7 @@ const adminUserSchema = z.object({
   last_name: z.string().nullable().optional(),
   display_name: z.string(),
   auth_email: z.string().nullable().optional(),
+  subscription_tier: z.enum(["free", "plus"]).optional().default("free"),
   subscription_status: z.string().optional().default("free"),
   onboarding_completed: z.boolean().optional().default(false),
   created_at: z.string().nullable().optional(),
@@ -61,7 +62,7 @@ function adminApiError(err: unknown, fallback: string): Error {
 
 export async function fetchAdminUsers(opts?: {
   q?: string;
-  subscriptionStatus?: "free" | "pro_stars";
+  subscriptionStatus?: "free" | "plus";
   onboardingCompleted?: boolean;
   level?: "beginner" | "intermediate" | "advanced";
   primaryGoal?: "lose_fat" | "gain_muscle" | "maintain";

@@ -86,6 +86,17 @@ export type Workout = {
   sets: WorkoutSet[];
 };
 
+export type WorkoutLoadHint = {
+  exerciseId: string;
+  lastWeight: number;
+  lastReps: number;
+  lastDate: string;
+  lastDurationSec: number | null;
+  lastWeightMode: "total" | "per_hand" | null;
+  lastMachineParams: Record<string, string | number> | null;
+  lastRpe: number | null;
+};
+
 export type LocalSetDraft = {
   exerciseId: string;
   setNumber: number;

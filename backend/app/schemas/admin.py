@@ -25,6 +25,7 @@ class AdminUserRow(BaseModel):
     last_name: str | None = None
     display_name: str
     auth_email: str | None = None
+    subscription_tier: Literal["free", "plus"] = "free"
     subscription_status: str = "free"
     onboarding_completed: bool = False
     created_at: datetime | None = None

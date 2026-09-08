@@ -34,6 +34,8 @@ const LABELS: Record<string, string> = {
   pending: "Ожидает",
   taken: "Принято",
   free: "Бесплатный",
+  plus: "PLUS",
+  pro_stars: "PLUS",
   premium: "Премиум",
   pro: "Профессиональный",
   trial: "Пробный",

@@ -24,7 +24,7 @@ class AdminBroadcastAudience(BaseModel):
     kind: AudienceKind = "all_telegram"
     days: int | None = Field(default=None, ge=1, le=365)
     program_id: uuid.UUID | None = None
-    subscription_status: Literal["free", "pro_stars"] | None = None
+    subscription_status: Literal["free", "plus", "pro_stars"] | None = None
 
     @model_validator(mode="after")
     def validate_parameters(self) -> AdminBroadcastAudience:

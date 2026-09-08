@@ -2,6 +2,7 @@ import axios from "axios";
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
+import { entitlementSourceSchema, subscriptionStateSchema } from "@/api/subscription";
 
 const questionnaireSchema = z.object({
   sex: z.string().nullable(),
@@ -40,6 +41,14 @@ export const adminUserSummarySchema = z.object({
     next_day: z.number().nullable(),
     week_phase: z.string().nullable(),
   }).nullable(),
+  subscription: subscriptionStateSchema,
+  active_entitlements: z.array(z.object({
+    id: z.string().uuid(),
+    source: entitlementSourceSchema,
+    starts_at: z.string().datetime({ offset: true }),
+    ends_at: z.string().datetime({ offset: true }).nullable(),
+    revocable: z.boolean(),
+  })),
   subscription_status: z.string(),
   stars_balance: z.number(),
 });
@@ -168,6 +177,10 @@ async function postAction(path: string, body?: object, method: "post" | "patch" 
 }
 
 export type AdminMessageChannel = "telegram" | "web_push" | "email";
+export type AdminEntitlementReason =
+  | "free_mode_qa"
+  | "release_check"
+  | "support_reproduction";
 
 export const sendAdminUserMessage = (
   id: string,
@@ -186,6 +199,26 @@ export const toggleAdminUserNotifications = (id: string, enabled: boolean) =>
     enabled,
     confirmed_user_request: true,
   }, "patch");
+
+export const grantAdminTestPlus = (
+  id: string,
+  durationDays: number,
+  reason: AdminEntitlementReason,
+) => postAction(`/admin/users/${id}/entitlements`, {
+  duration_days: durationDays,
+  reason,
+  confirmed: true,
+  idempotency_key: crypto.randomUUID(),
+});
+
+export const revokeAdminTestEntitlement = (
+  id: string,
+  entitlementId: string,
+  reason: AdminEntitlementReason,
+) => postAction(`/admin/users/${id}/entitlements/${entitlementId}/revoke`, {
+  reason,
+  confirmed: true,
+});
 
 export async function downloadAdminUserExport(id: string): Promise<Blob> {
   try {

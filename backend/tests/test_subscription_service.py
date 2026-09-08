@@ -8,11 +8,13 @@ from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 from app.core.config import Settings
 from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.services.subscription_service import (
+    active_plus_exists,
     grant_default_new_user_entitlement,
     grant_entitlement,
     has_entitlement,
@@ -57,6 +59,16 @@ def test_no_active_entitlement_is_free() -> None:
         "valid_until": None,
     }
     assert legacy_subscription_status(state) == "free"
+
+
+def test_effective_tier_filter_is_based_on_active_entitlements() -> None:
+    predicate = active_plus_exists(User.id, at=NOW)
+    sql = str(predicate.select().compile(dialect=postgresql.dialect()))
+
+    assert "user_entitlements" in sql
+    assert "user_entitlements.user_id = users.id" in sql
+    assert "user_entitlements.revoked_at IS NULL" in sql
+    assert "user_entitlements.ends_at IS NULL" in sql
 
 
 @pytest.mark.parametrize("source", ["beta_grant", "legacy_stars"])
