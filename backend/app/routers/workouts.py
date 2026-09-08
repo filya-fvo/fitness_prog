@@ -9,7 +9,13 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import (
+    get_current_user,
+    raise_plus_required,
+    require_plus,
+    user_has_plus,
+    user_local_day,
+)
 from app.models.user import User
 from app.schemas.scheduler import (
     PersonalRegularityResponse,
@@ -48,6 +54,9 @@ from app.services import workout_service
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
+_WORKOUT_HISTORY_MESSAGE = "История тренировок доступна в PLUS"
+_WORKOUT_DETAILS_MESSAGE = "Прошлые тренировки доступны в PLUS"
+
 
 @router.post("", response_model=WorkoutResponse, status_code=status.HTTP_201_CREATED)
 async def create_workout(
@@ -64,7 +73,7 @@ async def workout_history(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_plus("workout_history", _WORKOUT_HISTORY_MESSAGE)),
 ) -> WorkoutHistoryResponse:
     items, total = await workout_service.list_workout_history(
         session,
@@ -202,7 +211,9 @@ async def replace_workout_schedule_day(
 async def workout_regularity(
     days: int = Query(default=28, ge=7, le=366),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(
+        require_plus("workout_regularity", "Регулярность тренировок доступна в PLUS")
+    ),
 ) -> PersonalRegularityResponse:
     summary = await personal_regularity.personal_regularity_for_user(
         session,
@@ -296,7 +307,18 @@ async def get_workout(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> WorkoutResponse:
-    workout = await workout_service.get_workout(session, user, workout_id)
+    if await user_has_plus(session, user):
+        workout = await workout_service.get_workout(session, user, workout_id)
+    else:
+        local_day = user_local_day(user)
+        workout = await workout_service.get_operational_workout(
+            session,
+            user,
+            workout_id,
+            local_day=local_day,
+        )
+        if workout is None:
+            raise_plus_required("workout_details", _WORKOUT_DETAILS_MESSAGE)
     return WorkoutResponse.model_validate(workout)
 
 

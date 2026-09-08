@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_plus, user_local_day
 from app.models.daily_metric import DailyMetric
 from app.models.user import User
 from app.schemas.daily_metrics import (
@@ -41,7 +41,7 @@ async def get_daily_metrics(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DailyMetricResponse:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
     return _response(await daily_metrics.get_for_day(session, user, day), day)
 
 
@@ -52,7 +52,7 @@ async def put_daily_metrics(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DailyMetricResponse:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
     row = await daily_metrics.save_for_day(session, user, day, body)
     return _response(row, day)
 
@@ -62,9 +62,11 @@ async def get_metric_range(
     days: int = Query(default=14, ge=1, le=366),
     end: date | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(
+        require_plus("daily_metrics_history", "История показателей доступна в PLUS")
+    ),
 ) -> DailyMetricRangeResponse:
-    end_day = end or date.today()
+    end_day = end or user_local_day(user)
     start_day = end_day - timedelta(days=days - 1)
     rows = await daily_metrics.list_range(session, user, start_day, end_day)
     by_date = {row.date: row for row in rows}

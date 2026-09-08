@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -893,6 +893,37 @@ async def _rollback_program_cursor_for_deleted_workout(
 
 async def get_workout(session: AsyncSession, user: User, workout_id: uuid.UUID) -> Workout:
     return await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+
+
+async def get_operational_workout(
+    session: AsyncSession,
+    user: User,
+    workout_id: uuid.UUID,
+    *,
+    local_day: date,
+) -> Workout | None:
+    """Return only a workout that FREE needs to continue today's workflow.
+
+    A missing UUID, another user's workout and protected history deliberately
+    produce the same result so the access boundary does not reveal existence.
+    Planned workouts remain recoverable even when an offline client reconnects
+    after the scheduled day.
+    """
+
+    result = await session.execute(
+        select(Workout)
+        .options(selectinload(Workout.sets))
+        .where(
+            Workout.id == workout_id,
+            Workout.user_id == user.id,
+            Workout.is_deleted.is_(False),
+            or_(
+                Workout.status == "planned",
+                Workout.scheduled_date >= local_day,
+            ),
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def update_workout_plan(

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_plus, user_local_day
 from app.models.user import User
 from app.schemas.nutrition import (
     BarcodeLookupResponse,
@@ -223,7 +223,7 @@ async def daily(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DailyNutritionResponse:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
     logs, totals = await nutrition_service.daily_summary(session, user, day)
     products = await nutrition_service.get_products_map(
         session, [log.product_id for log in logs]
@@ -267,10 +267,12 @@ async def nutrition_range(
     days: int = Query(default=7, ge=1, le=31, description="Number of days ending at end date"),
     end: date | None = Query(default=None, description="Inclusive end date (default: today)"),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(
+        require_plus("nutrition_history", "История питания доступна в PLUS")
+    ),
 ) -> NutritionRangeResponse:
     """Daily calorie totals for a period (for Progress day/week charts)."""
-    end_day = end or date.today()
+    end_day = end or user_local_day(user)
     start_day = end_day - timedelta(days=days - 1)
     raw_days = await nutrition_service.range_daily_totals(
         session, user, start=start_day, end=end_day

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import uuid
 
 from app.core.config import Settings
+from app.routers import ai as ai_router
 from app.routers.ai import ai_chat
 from app.schemas.ai import AIChatRequest
 from app.services import ai_engine, local_llm
@@ -58,7 +59,11 @@ async def test_chat_route_has_no_daily_quota(monkeypatch: pytest.MonkeyPatch) ->
     async def fake_chat(*_args: object, **_kwargs: object) -> tuple[uuid.UUID, str, str]:
         return uuid.uuid4(), "Ответ", "local"
 
+    async def fake_has_plus(*_args: object, **_kwargs: object) -> bool:
+        return True
+
     monkeypatch.setattr(ai_engine, "chat", fake_chat)
+    monkeypatch.setattr(ai_router, "user_has_plus", fake_has_plus)
     response = await ai_chat(
         AIChatRequest(message="Как тренироваться?"),
         session=object(),  # type: ignore[arg-type]

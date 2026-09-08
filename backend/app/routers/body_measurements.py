@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import (
+    ensure_plus_for_past_date,
+    get_current_user,
+    require_plus,
+    user_local_day,
+)
 from app.models.body_measurement import BodyMeasurement
 from app.models.user import User
 from app.schemas.body_measurements import (
@@ -21,6 +26,8 @@ from app.schemas.body_measurements import (
 from app.services import body_measurements
 
 router = APIRouter(prefix="/measurements", tags=["body-measurements"])
+
+_MEASUREMENT_HISTORY_MESSAGE = "История замеров доступна в PLUS"
 
 
 def _response(row: BodyMeasurement | None, day: date) -> BodyMeasurementResponse:
@@ -45,7 +52,14 @@ async def get_daily_measurement(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> BodyMeasurementResponse:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
+    await ensure_plus_for_past_date(
+        session,
+        user,
+        day,
+        feature="measurement_history",
+        message=_MEASUREMENT_HISTORY_MESSAGE,
+    )
     return _response(await body_measurements.get_for_day(session, user, day), day)
 
 
@@ -56,7 +70,14 @@ async def put_daily_measurement(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> BodyMeasurementResponse:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
+    await ensure_plus_for_past_date(
+        session,
+        user,
+        day,
+        feature="measurement_history",
+        message=_MEASUREMENT_HISTORY_MESSAGE,
+    )
     row = await body_measurements.save_for_day(session, user, day, body)
     return _response(row, day)
 
@@ -67,7 +88,14 @@ async def delete_daily_measurement(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Response:
-    day = date_value or date.today()
+    day = date_value or user_local_day(user)
+    await ensure_plus_for_past_date(
+        session,
+        user,
+        day,
+        feature="measurement_history",
+        message=_MEASUREMENT_HISTORY_MESSAGE,
+    )
     deleted = await body_measurements.delete_for_day(session, user, day)
     if not deleted:
         raise HTTPException(status_code=404, detail="Замер не найден")
@@ -79,9 +107,9 @@ async def get_measurement_range(
     days: int = Query(default=180, ge=1, le=3660),
     end: date | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_plus("measurement_history", _MEASUREMENT_HISTORY_MESSAGE)),
 ) -> BodyMeasurementRangeResponse:
-    end_day = end or date.today()
+    end_day = end or user_local_day(user)
     start_day = end_day - timedelta(days=days - 1)
     rows = await body_measurements.list_range(session, user, start_day, end_day)
     return BodyMeasurementRangeResponse(
@@ -96,7 +124,9 @@ async def get_measurement_analytics(
     months: int = Query(default=3),
     end: date | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(
+        require_plus("measurement_analytics", "Аналитика замеров доступна в PLUS")
+    ),
 ) -> BodyMeasurementAnalyticsResponse:
     if months not in {1, 3, 6, 12}:
         raise HTTPException(status_code=422, detail="Доступны периоды 1, 3, 6 или 12 месяцев")
@@ -104,5 +134,5 @@ async def get_measurement_analytics(
         session,
         user,
         months=months,
-        end=end or date.today(),
+        end=end or user_local_day(user),
     )

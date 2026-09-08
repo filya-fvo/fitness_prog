@@ -292,6 +292,7 @@ async def chat(
     message: str,
     session_id: uuid.UUID | None,
     settings: Settings,
+    include_historical_context: bool = True,
 ) -> tuple[uuid.UUID, str, str]:
     sid = session_id or uuid.uuid4()
     domain = classify_ai_query(message)
@@ -306,17 +307,35 @@ async def chat(
         AIQueryDomain.NUTRITION,
         AIQueryDomain.RECOVERY,
     }
+    rule_only = _requires_rule_only(message)
+    if domain in analytical_domains and not rule_only and not include_historical_context:
+        reply = (
+            "Подробный разбор накопленной истории доступен в PLUS. "
+            "В общем чате я могу помочь с техникой, планом текущей тренировки "
+            "или общим вопросом без анализа прошлых периодов."
+        )
+        await store_exchange(
+            session,
+            user_id=user.id,
+            session_id=sid,
+            user_content=message,
+            assistant_content=reply,
+        )
+        return sid, reply, "rule"
     app_context = await build_application_context(
         session,
         user,
-        include_recent_workouts=domain in {
-            AIQueryDomain.WORKOUT_PROGRESS,
-            AIQueryDomain.STRENGTH,
-            AIQueryDomain.GENERAL,
-        },
+        include_recent_workouts=(
+            include_historical_context
+            and domain
+            in {
+                AIQueryDomain.WORKOUT_PROGRESS,
+                AIQueryDomain.STRENGTH,
+                AIQueryDomain.GENERAL,
+            }
+        ),
     )
-    rule_only = _requires_rule_only(message)
-    if domain in analytical_domains and not rule_only:
+    if domain in analytical_domains and not rule_only and include_historical_context:
         evidence = await build_analysis_evidence(
             session,
             user,

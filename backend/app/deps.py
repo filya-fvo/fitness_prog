@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Awaitable, Callable
+from datetime import UTC, date, datetime
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -15,8 +17,96 @@ from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User
+from app.services import scheduler as scheduler_service
+from app.services import subscription_service
 
 bearer_scheme = HTTPBearer(auto_error=True)
+
+
+def plus_required_detail(feature: str, message: str) -> dict[str, str]:
+    """Build the stable public error contract used by every PLUS boundary."""
+
+    return {
+        "code": "plus_required",
+        "feature": feature,
+        "message": message,
+    }
+
+
+def raise_plus_required(feature: str, message: str) -> None:
+    logger.info("plus_required_api_denied feature={}", feature)
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=plus_required_detail(feature, message),
+    )
+
+
+async def user_has_plus(session: AsyncSession, user: User) -> bool:
+    """Resolve access from the current database state, never from the JWT."""
+
+    return await subscription_service.has_entitlement(session, user.id, "plus")
+
+
+async def ensure_plus(
+    session: AsyncSession,
+    user: User,
+    *,
+    feature: str,
+    message: str,
+) -> None:
+    if not await user_has_plus(session, user):
+        raise_plus_required(feature, message)
+
+
+def require_plus(
+    feature: str,
+    message: str,
+) -> Callable[..., Awaitable[User]]:
+    """Create a FastAPI dependency for one named premium feature."""
+
+    async def dependency(
+        session: AsyncSession = Depends(get_db),
+        user: User = Depends(get_current_user),
+    ) -> User:
+        await ensure_plus(
+            session,
+            user,
+            feature=feature,
+            message=message,
+        )
+        return user
+
+    return dependency
+
+
+async def ensure_plus_for_past_date(
+    session: AsyncSession,
+    user: User,
+    requested_day: date,
+    *,
+    feature: str,
+    message: str,
+    now: datetime | None = None,
+) -> None:
+    """Keep today's form free while protecting earlier local calendar days."""
+
+    local_day = user_local_day(user, now=now)
+    if requested_day < local_day:
+        await ensure_plus(
+            session,
+            user,
+            feature=feature,
+            message=message,
+        )
+
+
+def user_local_day(user: User, *, now: datetime | None = None) -> date:
+    """Return the calendar date used by user-facing dated resources."""
+
+    return scheduler_service.local_schedule_day(
+        user.goals or {},
+        now=now or datetime.now(UTC),
+    )
 
 
 async def get_current_user(

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_plus, user_has_plus
 from app.models.ai_conversation import AIConversation
 from app.models.user import User
 from app.schemas.ai import (
@@ -86,6 +86,7 @@ async def ai_chat(
         message=body.message,
         session_id=body.session_id,
         settings=settings,
+        include_historical_context=await user_has_plus(session, user),
     )
     return AIChatResponse(
         session_id=sid,
@@ -99,7 +100,9 @@ async def ai_chat(
 async def ai_analyze(
     body: AIAnalyzeRequest,
     session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(
+        require_plus("ai_progress_analysis", "Анализ прогресса доступен в PLUS")
+    ),
     settings: Settings = Depends(get_settings),
 ) -> AIAnalyzeResponse:
     report, source = await ai_engine.analyze_progress(
