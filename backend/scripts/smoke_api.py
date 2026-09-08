@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy import func, select, text
 
 from app.core.config import get_settings
@@ -33,6 +33,21 @@ from app.core.database import AsyncSessionLocal
 from app.main import app
 from app.models.exercise import Exercise
 from app.models.nutrition import NutritionProduct
+
+
+def plus_access_response_ok(response: Response, *, tier: str, feature: str) -> bool:
+    """Accept success for PLUS and the stable denial contract for FREE."""
+
+    if tier == "plus":
+        return response.status_code == 200
+    if response.status_code != 403:
+        return False
+    detail = response.json().get("detail")
+    return (
+        isinstance(detail, dict)
+        and detail.get("code") == "plus_required"
+        and detail.get("feature") == feature
+    )
 
 
 def make_init(token: str, uid: int = 900001) -> str:
@@ -90,13 +105,37 @@ async def api_flow(*, include_external: bool) -> int:
         if r.status_code != 200:
             return 1
         token = r.json()["access_token"]
-        print("user", r.json()["user"])
+        user_payload = r.json()["user"]
+        tier = str((user_payload.get("subscription") or {}).get("tier") or "free")
+        print("user_tier", tier)
         headers = {"Authorization": f"Bearer {token}"}
 
         r = await client.get("/users/me", headers=headers)
         print("me", r.status_code, r.text[:220])
         if r.status_code != 200:
             errors += 1
+
+        protected_reads = (
+            ("/measurements/range", "measurement_history"),
+            ("/measurements/analytics", "measurement_analytics"),
+            ("/nutrition/range", "nutrition_history"),
+            ("/metrics/range", "daily_metrics_history"),
+            ("/workouts/regularity", "workout_regularity"),
+        )
+        for path, feature in protected_reads:
+            r = await client.get(path, headers=headers)
+            print("plus_boundary", feature, r.status_code)
+            if not plus_access_response_ok(r, tier=tier, feature=feature):
+                errors += 1
+        if tier == "free":
+            r = await client.post("/ai/analyze", headers=headers, json={"days": 14})
+            print("plus_boundary", "ai_progress_analysis", r.status_code)
+            if not plus_access_response_ok(
+                r,
+                tier=tier,
+                feature="ai_progress_analysis",
+            ):
+                errors += 1
 
         r = await client.put(
             "/users/me",
@@ -131,6 +170,16 @@ async def api_flow(*, include_external: bool) -> int:
             print("NO_EXERCISES — seed sprint2 needed")
             errors += 1
         else:
+            r = await client.post(
+                "/workouts/load-hints",
+                headers=headers,
+                json={"exercise_ids": ex_ids},
+            )
+            hint_result = len(r.json().get("items", [])) if r.status_code == 200 else r.text[:160]
+            print("load_hints", r.status_code, hint_result)
+            if r.status_code != 200:
+                errors += 1
+
             r = await client.post(
                 "/workouts",
                 headers=headers,
@@ -175,7 +224,7 @@ async def api_flow(*, include_external: bool) -> int:
                     "total",
                     r.json().get("total") if r.status_code == 200 else r.text[:160],
                 )
-                if r.status_code != 200:
+                if not plus_access_response_ok(r, tier=tier, feature="workout_history"):
                     errors += 1
 
                 if include_external:
@@ -238,6 +287,7 @@ async def api_flow(*, include_external: bool) -> int:
                 print("ai_analyze", r.status_code, body.get("source"), report[:90])
             else:
                 print("ai_analyze", r.status_code, r.text[:180])
+            if not plus_access_response_ok(r, tier=tier, feature="ai_progress_analysis"):
                 errors += 1
 
     print("ERRORS", errors)

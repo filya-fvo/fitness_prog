@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.deps import ensure_plus_for_past_date, get_current_user, user_local_day
 from app.main import app
 from app.services import ai_engine, body_measurements, daily_metrics, workout_service
+from scripts.smoke_api import plus_access_response_ok
 
 
 class AccessSession:
@@ -28,6 +29,33 @@ class AccessSession:
     async def scalars(self, statement):
         self.statements.append(statement)
         return SimpleNamespace(all=lambda: [])
+
+
+def test_smoke_understands_plus_success_and_structured_free_denial() -> None:
+    assert plus_access_response_ok(
+        httpx.Response(200, json={"items": []}),
+        tier="plus",
+        feature="workout_history",
+    )
+    assert plus_access_response_ok(
+        httpx.Response(
+            403,
+            json={
+                "detail": {
+                    "code": "plus_required",
+                    "feature": "workout_history",
+                    "message": "История тренировок доступна в PLUS",
+                }
+            },
+        ),
+        tier="free",
+        feature="workout_history",
+    )
+    assert not plus_access_response_ok(
+        httpx.Response(403, json={"detail": "forbidden"}),
+        tier="free",
+        feature="workout_history",
+    )
 
 
 async def _request_as(

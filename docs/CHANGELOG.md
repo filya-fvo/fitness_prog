@@ -19,7 +19,7 @@
   нельзя обойти отдельный PLUS-анализ.
 - Бесплатные ежедневные сценарии, load hints, фото этикетки, вода и добавки не
   получили PLUS-ограничений.
-- Проверено: backend — **494 теста** и Ruff; frontend — **451 unit-тест**,
+- Проверено: backend — **495 тестов** и Ruff; frontend — **451 unit-тест**,
   ESLint, TypeScript/PWA build, bundle budget и полный Playwright — **80 passed**.
 
 ---
