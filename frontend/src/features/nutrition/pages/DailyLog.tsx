@@ -22,6 +22,7 @@ import {
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
+import { MealNutritionSummary } from "@/features/nutrition/components/MealNutritionSummary";
 import { DecimalInput } from "@/components/DecimalInput";
 import { parseDecimalInput } from "@/components/decimalInputValue";
 import { NutritionLabelCameraModal } from "@/features/nutrition/components/NutritionLabelCameraModal";
@@ -1271,50 +1272,53 @@ export function DailyLog() {
               {items.length === 0 ? (
                 <p className="mt-1 text-xs text-tg-hint">Пусто</p>
               ) : (
-                <ul className="mt-2 space-y-2">
-                  {items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-start justify-between gap-2 rounded-xl bg-tg-bg/60 px-2 py-2 text-sm max-[359px]:flex-col"
-                    >
-                      <div className="min-w-0">
-                        <p className="break-words font-medium">
-                          {item.product?.name_ru ?? "Продукт"} · {item.quantity_grams}г
-                        </p>
-                        <p className="text-xs text-tg-hint">
-                          {Number(item.calculated_kbj.calories ?? 0).toFixed(0)} ккал
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 gap-1 max-[359px]:w-full max-[359px]:justify-end">
-                        <button
-                          type="button"
-                          disabled={editBusy}
-                          onClick={() => {
-                            setEditingLog(item);
-                            setEditGrams(String(item.quantity_grams));
-                            setEditMeal(
-                              (item.meal_type as MealId) in
-                                { breakfast: 1, lunch: 1, dinner: 1, snack: 1 }
-                                ? (item.meal_type as MealId)
-                                : m.id,
-                            );
-                          }}
-                          className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] font-medium text-tg-link disabled:opacity-50"
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          type="button"
-                          disabled={editBusy}
-                          onClick={() => void removeLog(item)}
-                          className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] text-tg-hint disabled:opacity-50"
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <MealNutritionSummary items={items} mealLabel={m.label} />
+                  <ul className="mt-2 space-y-2">
+                    {items.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-start justify-between gap-2 rounded-xl bg-tg-bg/60 px-2 py-2 text-sm max-[359px]:flex-col"
+                      >
+                        <div className="min-w-0">
+                          <p className="break-words font-medium">
+                            {item.product?.name_ru ?? "Продукт"} · {item.quantity_grams}г
+                          </p>
+                          <p className="text-xs text-tg-hint">
+                            {Number(item.calculated_kbj.calories ?? 0).toFixed(0)} ккал
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 gap-1 max-[359px]:w-full max-[359px]:justify-end">
+                          <button
+                            type="button"
+                            disabled={editBusy}
+                            onClick={() => {
+                              setEditingLog(item);
+                              setEditGrams(String(item.quantity_grams));
+                              setEditMeal(
+                                (item.meal_type as MealId) in
+                                  { breakfast: 1, lunch: 1, dinner: 1, snack: 1 }
+                                  ? (item.meal_type as MealId)
+                                  : m.id,
+                              );
+                            }}
+                            className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] font-medium text-tg-link disabled:opacity-50"
+                          >
+                            Изменить
+                          </button>
+                          <button
+                            type="button"
+                            disabled={editBusy}
+                            onClick={() => void removeLog(item)}
+                            className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] text-tg-hint disabled:opacity-50"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           );

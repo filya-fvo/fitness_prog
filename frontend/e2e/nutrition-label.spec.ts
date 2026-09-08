@@ -223,7 +223,7 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
 test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
   const productId = "33333333-3333-4333-8333-333333333333";
   const logId = "44444444-4444-4444-8444-444444444444";
-  await page.setViewportSize({ width: 360, height: 800 });
+  await page.setViewportSize({ width: 320, height: 800 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
@@ -252,7 +252,12 @@ test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
           meal_type: "breakfast",
           product_id: productId,
           quantity_grams: 43,
-          calculated_kbj: {},
+          calculated_kbj: {
+            calories: 150.5,
+            proteins: 34.4,
+            fats: 0.86,
+            carbs: 1.72,
+          },
           product: {
             id: productId,
             name_ru: "Первый русский протеин",
@@ -274,6 +279,14 @@ test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
   }));
 
   await page.goto("/nutrition");
+  const breakfastSummary = page.getByLabel("Итого за приём пищи «Завтрак»");
+  await expect(breakfastSummary.getByText("151", { exact: true })).toBeVisible();
+  await expect(breakfastSummary.getByText("34,4 г", { exact: true })).toBeVisible();
+  await expect(breakfastSummary.getByText("0,9 г", { exact: true })).toBeVisible();
+  await expect(breakfastSummary.getByText("1,7 г", { exact: true })).toBeVisible();
+  expect(await breakfastSummary.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+  await page.setViewportSize({ width: 360, height: 800 });
   await page.getByRole("button", { name: "Изменить" }).click();
   const dialog = page.getByRole("dialog", { name: "Изменить запись" });
   await expect(dialog).toBeVisible();
