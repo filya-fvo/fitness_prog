@@ -55,6 +55,7 @@ def _user_response(profile) -> AuthUserResponse:
         telegram_id=profile.telegram_id,
         username=profile.username,
         auth_email=getattr(profile, "auth_email", None),
+        subscription=profile.subscription,
         subscription_status=profile.subscription_status,
         onboarding_completed=profile.onboarding_completed,
         merged_from_user_ids=merged_ids,
@@ -83,7 +84,7 @@ async def auth_telegram(
             detail="Не удалось подтвердить данные авторизации Telegram",
         ) from exc
 
-    profile = to_profile(user)
+    profile = await to_profile(session, user)
     logger.info("auth_ok telegram_id={} user_id={}", profile.telegram_id, profile.id)
     return TelegramAuthResponse(
         access_token=token,
@@ -140,7 +141,7 @@ async def auth_telegram_browser(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Вход через Telegram временно недоступен",
         ) from exc
-    profile = to_profile(user)
+    profile = await to_profile(session, user)
     logger.info("telegram_browser_auth_ok telegram_id={} user_id={}", profile.telegram_id, profile.id)
     return TelegramAuthResponse(
         access_token=token,
@@ -188,7 +189,7 @@ async def auth_email_verify(
         code_raw=body.code,
         settings=settings,
     )
-    profile = to_profile(user)
+    profile = await to_profile(session, user)
     return EmailAuthResponse(
         access_token=token,
         expires_in_days=settings.jwt_expire_days,
@@ -249,7 +250,7 @@ async def auth_email_link_verify(
         )
     if result.user is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Не удалось объединить аккаунты")
-    profile = to_profile(result.user)
+    profile = await to_profile(session, result.user)
     return EmailLinkResponse(
         ok=True,
         message=(

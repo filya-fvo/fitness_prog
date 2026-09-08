@@ -8,6 +8,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.models.user import User
 from app.schemas.user import UserProfileResponse, UserProfileUpdate
 from app.services.scheduler import local_schedule_day
+from app.services.subscription_service import get_subscription_state, legacy_subscription_status
 
 
 def _onboarding_completed(user: User) -> bool:
@@ -15,7 +16,8 @@ def _onboarding_completed(user: User) -> bool:
     return bool(goals.get("onboarding_completed"))
 
 
-def to_profile(user: User) -> UserProfileResponse:
+async def to_profile(session: AsyncSession, user: User) -> UserProfileResponse:
+    subscription = await get_subscription_state(session, user.id)
     return UserProfileResponse(
         id=user.id,
         telegram_id=user.telegram_id,
@@ -23,7 +25,8 @@ def to_profile(user: User) -> UserProfileResponse:
         auth_email=getattr(user, "auth_email", None),
         anthropometry=user.anthropometry or {},
         goals=user.goals or {},
-        subscription_status=user.subscription_status,
+        subscription=subscription,
+        subscription_status=legacy_subscription_status(subscription),
         stars_balance=user.stars_balance,
         onboarding_completed=_onboarding_completed(user),
     )

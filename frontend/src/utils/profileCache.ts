@@ -21,6 +21,7 @@ export function readCachedUserProfile(): AuthUser | null {
       telegram_id: value.telegram_id ?? null,
       username: value.username ?? null,
       auth_email: value.auth_email ?? null,
+      subscription: value.subscription,
       subscription_status: value.subscription_status,
       onboarding_completed: Boolean(value.onboarding_completed),
     };

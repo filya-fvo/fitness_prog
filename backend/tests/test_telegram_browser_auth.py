@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import time
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -16,6 +17,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.main import app
 from app.models.user import User
+from app.models.user_entitlement import UserEntitlement
 from app.services.telegram_browser_auth import (
     TELEGRAM_ISSUER,
     TelegramBrowserAuthError,
@@ -123,8 +125,25 @@ async def test_browser_login_config_and_exchange_api(monkeypatch: pytest.MonkeyP
     )
     user.id = uuid.UUID("00000000-0000-4000-8000-000000000123")
 
+    legacy_entitlement = UserEntitlement(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        code="plus",
+        source="legacy_stars",
+        starts_at=datetime.now(UTC) - timedelta(days=1),
+        metadata_json={},
+    )
+
+    class EntitlementScalars:
+        def all(self):
+            return [legacy_entitlement]
+
+    class FakeDbSession:
+        async def scalars(self, *_args, **_kwargs):
+            return EntitlementScalars()
+
     async def fake_db():
-        yield object()
+        yield FakeDbSession()
 
     async def fake_authenticate(session, id_token, nonce, auth_settings):
         assert session is not None
@@ -153,6 +172,13 @@ async def test_browser_login_config_and_exchange_api(monkeypatch: pytest.MonkeyP
             assert response.status_code == 200
             assert response.json()["access_token"] == "application-jwt"
             assert response.json()["user"]["telegram_id"] == 987654321
+            assert response.json()["user"]["subscription"] == {
+                "tier": "plus",
+                "active": True,
+                "sources": ["legacy_stars"],
+                "valid_until": None,
+            }
+            assert response.json()["user"]["subscription_status"] == "pro_stars"
     finally:
         app.dependency_overrides.clear()
 

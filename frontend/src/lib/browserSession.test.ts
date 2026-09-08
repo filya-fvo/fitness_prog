@@ -11,6 +11,12 @@ describe("browser session", () => {
       auth_email: "athlete@example.com",
       anthropometry: {},
       goals: {},
+      subscription: {
+        tier: "plus",
+        active: true,
+        sources: ["beta_grant"],
+        valid_until: null,
+      },
       subscription_status: "free",
       stars_balance: 0,
       onboarding_completed: true,
@@ -19,6 +25,12 @@ describe("browser session", () => {
       telegram_id: 42,
       username: "athlete",
       auth_email: "athlete@example.com",
+      subscription: {
+        tier: "plus",
+        active: true,
+        sources: ["beta_grant"],
+        valid_until: null,
+      },
       subscription_status: "free",
       onboarding_completed: true,
     });

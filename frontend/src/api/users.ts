@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
+import { subscriptionStateSchema } from "@/api/subscription";
 
 const profileSchema = z.object({
   id: z.string().uuid(),
@@ -9,6 +10,7 @@ const profileSchema = z.object({
   auth_email: z.string().nullable().optional(),
   anthropometry: z.record(z.unknown()).default({}),
   goals: z.record(z.unknown()).default({}),
+  subscription: subscriptionStateSchema.optional(),
   subscription_status: z.string(),
   stars_balance: z.number().default(0),
   onboarding_completed: z.boolean().default(false),

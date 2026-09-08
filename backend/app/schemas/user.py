@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.subscription import SubscriptionState
+
 
 _ANTHROPOMETRY_RANGES: dict[str, tuple[float, float]] = {
     "weight_kg": (20, 500),
@@ -134,6 +136,7 @@ class UserProfileResponse(BaseModel):
     auth_email: str | None = None
     anthropometry: dict[str, Any] = Field(default_factory=dict)
     goals: dict[str, Any] = Field(default_factory=dict)
+    subscription: SubscriptionState
     subscription_status: str
     stars_balance: int = 0
     onboarding_completed: bool = False

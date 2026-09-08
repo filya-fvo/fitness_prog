@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.subscription import SubscriptionState
+
 
 class TelegramAuthRequest(BaseModel):
     """Body for POST /auth/telegram."""
@@ -36,6 +38,7 @@ class AuthUserResponse(BaseModel):
     telegram_id: int | None = None
     username: str | None = None
     auth_email: str | None = None
+    subscription: SubscriptionState
     subscription_status: str
     onboarding_completed: bool = False
     merged_from_user_ids: list[uuid.UUID] = Field(default_factory=list)

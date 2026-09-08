@@ -50,6 +50,7 @@ REQUIRED_FILES = [
     "20260905000040_cycle_training_readiness.sql",
     "20260907000041_enable_activation_checklist_for_all.sql",
     "20260907000042_separate_workout_schedule.sql",
+    "20260908000043_user_entitlements.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -81,6 +82,7 @@ REQUIRED_TABLES = [
     "global_competition_seasons",
     "global_competition_participants",
     "exercise_media_assets",
+    "user_entitlements",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -135,6 +137,9 @@ REQUIRED_SNIPPETS = [
     "cycle_readiness IN ('normal', 'caution', 'reduce', 'rest')",
     "NOT (COALESCE(goals, '{}'::jsonb) ? 'activation_checklist')",
     "'dismissed_at', NULL",
+    "ck_user_entitlements_time_window",
+    "uq_user_entitlements_external_reference",
+    "existing.source = 'legacy_stars'",
 ]
 
 

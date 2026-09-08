@@ -4,6 +4,7 @@
 import { z } from "zod";
 
 import { apiClient, clearStoredToken, getStoredToken, setStoredToken } from "./client";
+import { subscriptionStateSchema } from "./subscription";
 import { getInitData } from "@/lib/telegram";
 
 const authUserSchema = z.object({
@@ -11,6 +12,7 @@ const authUserSchema = z.object({
   telegram_id: z.number().nullable().optional(),
   username: z.string().nullable().optional(),
   auth_email: z.string().nullable().optional(),
+  subscription: subscriptionStateSchema.optional(),
   subscription_status: z.string(),
   onboarding_completed: z.boolean().optional().default(false),
   merged_from_user_ids: z.array(z.string().uuid()).optional(),

@@ -15,7 +15,13 @@ const authResponse = {
     id: "00000000-0000-4000-8000-000000000001",
     telegram_id: 123,
     username: "tester",
-    subscription_status: "free",
+    subscription: {
+      tier: "plus",
+      active: true,
+      sources: ["beta_grant"],
+      valid_until: null,
+    },
+    subscription_status: "pro_stars",
     onboarding_completed: true,
   },
 };

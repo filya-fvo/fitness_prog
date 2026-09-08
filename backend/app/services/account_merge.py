@@ -19,6 +19,7 @@ from app.models.nutrition import NutritionLog
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.user import User
 from app.models.workout import Workout
+from app.services.subscription_service import transfer_entitlements
 
 MergePreference = Literal["email", "telegram"]
 
@@ -396,6 +397,11 @@ async def merge_accounts(
         await session.execute(
             update(model).where(model.user_id == source.id).values(user_id=target.id)
         )
+    await transfer_entitlements(
+        session,
+        source_user_id=source.id,
+        target_user_id=target.id,
+    )
 
     target.anthropometry = _choose(
         preference, source.anthropometry or {}, target.anthropometry or {}

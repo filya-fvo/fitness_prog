@@ -15,8 +15,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
-async def get_me(user: User = Depends(get_current_user)) -> UserProfileResponse:
-    return user_service.to_profile(user)
+async def get_me(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserProfileResponse:
+    return await user_service.to_profile(session, user)
 
 
 @router.put("/me", response_model=UserProfileResponse)
@@ -26,4 +29,4 @@ async def update_me(
     user: User = Depends(get_current_user),
 ) -> UserProfileResponse:
     updated = await user_service.update_profile(session, user, body)
-    return user_service.to_profile(updated)
+    return await user_service.to_profile(session, updated)

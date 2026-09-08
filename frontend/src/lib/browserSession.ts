@@ -7,6 +7,7 @@ export function authUserFromProfile(profile: UserProfile): AuthUser {
     telegram_id: profile.telegram_id ?? null,
     username: profile.username ?? null,
     auth_email: profile.auth_email ?? null,
+    subscription: profile.subscription,
     subscription_status: profile.subscription_status,
     onboarding_completed: profile.onboarding_completed,
   };
