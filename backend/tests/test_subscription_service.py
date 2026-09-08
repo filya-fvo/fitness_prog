@@ -9,8 +9,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from app.core.config import Settings
+from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.services.subscription_service import (
+    grant_default_new_user_entitlement,
     grant_entitlement,
     has_entitlement,
     legacy_subscription_status,
@@ -171,6 +174,23 @@ async def test_grant_creates_bounded_safe_record_without_committing() -> None:
 
 
 @pytest.mark.asyncio
+async def test_default_new_user_grant_can_be_disabled_by_configuration() -> None:
+    session = AsyncMock()
+    user = User(id=USER_ID, anthropometry={}, goals={})
+
+    result, created = await grant_default_new_user_entitlement(
+        session,
+        user=user,
+        settings=Settings(default_new_user_plus_source=""),
+    )
+
+    assert result is None
+    assert created is False
+    session.scalar.assert_not_awaited()
+    session.flush.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_grant_rejects_sensitive_metadata_and_invalid_window() -> None:
     session = AsyncMock()
     with pytest.raises(ValueError, match="Sensitive"):
@@ -253,3 +273,20 @@ def test_migration_creates_domain_and_preserves_legacy_plus_only() -> None:
     assert "users.is_deleted IS FALSE" in migration
     assert "users.merged_into_user_id IS NULL" in migration
     assert "existing.source = 'legacy_stars'" in migration
+
+
+def test_beta_rollout_migration_is_scoped_and_idempotent() -> None:
+    migration = (
+        Path(__file__).resolve().parents[2]
+        / "supabase"
+        / "migrations"
+        / "20260908000044_grant_beta_plus.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "users.is_deleted IS FALSE" in migration
+    assert "users.merged_into_user_id IS NULL" in migration
+    assert "active_access.revoked_at IS NULL" in migration
+    assert "active_access.ends_at IS NULL OR active_access.ends_at > NOW()" in migration
+    assert "'legacy_stars'" in migration
+    assert "'beta_grant'" in migration
+    assert "UPDATE USERS" not in migration.upper()

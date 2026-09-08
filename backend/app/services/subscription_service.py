@@ -11,6 +11,8 @@ from typing import cast
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import Settings
+from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.schemas.subscription import (
     EntitlementCode,
@@ -248,6 +250,28 @@ async def grant_entitlement(
     session.add(entitlement)
     await session.flush()
     return entitlement, True
+
+
+async def grant_default_new_user_entitlement(
+    session: AsyncSession,
+    *,
+    user: User,
+    settings: Settings,
+) -> tuple[UserEntitlement | None, bool]:
+    """Grant the configured initial access once; callers own the transaction."""
+
+    source = settings.default_new_user_plus_source
+    if not source:
+        return None, False
+    if user.id is None:
+        raise ValueError("User must be flushed before granting initial access")
+    return await grant_entitlement(
+        session,
+        user_id=user.id,
+        code="plus",
+        source=source,
+        metadata={"grant_kind": "new_user_default"},
+    )
 
 
 async def revoke_entitlement(

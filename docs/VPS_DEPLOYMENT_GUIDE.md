@@ -359,12 +359,17 @@ DATABASE_URL=postgresql+asyncpg://fitness:ОДНО_И_ТО_ЖЕ_HEX_ЗНАЧЕН
 
 CORS_ORIGINS=https://web.telegram.org,https://app.example.ru
 EMAIL_OTP_DEV_RETURN_CODE=false
+DEFAULT_NEW_USER_PLUS_SOURCE=beta_grant
 LLM_PROVIDER=local
 LLM_BASE_URL=http://llm:8080/v1
 LLM_MODEL=qwen2.5-3b-instruct
 OCR_BASE_URL=http://ocr:8090
 LOCAL_AI_MODELS_DIR=/opt/fitness/models
 ```
+
+`DEFAULT_NEW_USER_PLUS_SOURCE=beta_grant` временно выдаёт PLUS каждому новому
+Telegram- и email-аккаунту. Перед запуском продаж оставьте значение пустым; уже
+выданные права при этом не отзываются и управляются отдельно.
 
 Из текущего `backend/.env` аккуратно перенесите **значения**, не сам файл:
 

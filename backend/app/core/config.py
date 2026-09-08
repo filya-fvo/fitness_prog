@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "replace_with_long_random_secret"
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30
+    # Empty disables automatic access grants for newly created accounts.
+    default_new_user_plus_source: Literal["", "beta_grant"] = "beta_grant"
     cors_origins: str = "https://web.telegram.org"
     # Standards-based Web Push (VAPID). Private key stays backend-only.
     web_push_vapid_public_key: str = ""

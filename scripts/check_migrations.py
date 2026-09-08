@@ -51,6 +51,7 @@ REQUIRED_FILES = [
     "20260907000041_enable_activation_checklist_for_all.sql",
     "20260907000042_separate_workout_schedule.sql",
     "20260908000043_user_entitlements.sql",
+    "20260908000044_grant_beta_plus.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -140,6 +141,8 @@ REQUIRED_SNIPPETS = [
     "ck_user_entitlements_time_window",
     "uq_user_entitlements_external_reference",
     "existing.source = 'legacy_stars'",
+    "jsonb_build_object('grant_kind', 'existing_user_rollout')",
+    "active_access.revoked_at IS NULL",
 ]
 
 

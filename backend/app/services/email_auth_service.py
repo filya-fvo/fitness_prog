@@ -20,6 +20,7 @@ from app.models.email_otp import EmailOtpCode
 from app.models.user import User
 from app.services.account_merge import MergePreference, merge_accounts, merge_preview
 from app.services.email_service import send_login_otp_email
+from app.services.subscription_service import grant_default_new_user_entitlement
 
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
@@ -295,11 +296,16 @@ async def verify_login_code(
             User.is_deleted.is_(False),
         )
     )
-    if user is None:
+    created = user is None
+    if created:
         user = User(auth_email=email, anthropometry={}, goals={})
         session.add(user)
     else:
         user.auth_email = email
+
+    if created:
+        await session.flush()
+        await grant_default_new_user_entitlement(session, user=user, settings=settings)
 
     await session.commit()
     await session.refresh(user)

@@ -13,6 +13,7 @@ from app.core.security import (
     validate_init_data,
 )
 from app.models.user import User
+from app.services.subscription_service import grant_default_new_user_entitlement
 from app.services.telegram_browser_auth import validate_telegram_id_token
 
 
@@ -62,7 +63,8 @@ async def authenticate_telegram_user(
     )
     user = result.scalar_one_or_none()
 
-    if user is None:
+    created = user is None
+    if created:
         user = User(
             telegram_id=tg_user.id,
             username=tg_user.username,
@@ -97,6 +99,10 @@ async def authenticate_telegram_user(
 
             user.anthropometry = anthro
             flag_modified(user, "anthropometry")
+
+    if created:
+        await session.flush()
+        await grant_default_new_user_entitlement(session, user=user, settings=settings)
 
     await session.commit()
     await session.refresh(user)

@@ -59,6 +59,11 @@ class FakeSession:
     def add(self, row) -> None:
         self.added.append(row)
 
+    async def flush(self) -> None:
+        for row in self.added:
+            if getattr(row, "id", None) is None:
+                row.id = uuid.uuid4()
+
     async def delete(self, row) -> None:
         self.deleted.append(row)
 
@@ -108,7 +113,38 @@ async def test_verify_creates_browser_only_account_after_valid_otp(monkeypatch) 
     )
     assert user.auth_email == "unknown@example.test"
     assert user.telegram_id is None
-    assert session.added == [user]
+    assert session.added[0] is user
+    assert len(session.added) == 2
+    entitlement = session.added[1]
+    assert entitlement.user_id == user.id
+    assert entitlement.code == "plus"
+    assert entitlement.source == "beta_grant"
+    assert token
+
+
+@pytest.mark.asyncio
+async def test_verify_does_not_grant_again_to_existing_email_user(monkeypatch) -> None:
+    user = email_auth_service.User(
+        id=uuid.uuid4(),
+        auth_email="known@example.test",
+        anthropometry={},
+        goals={},
+    )
+    session = FakeSession([user])
+
+    async def valid_otp(*_args, **_kwargs):
+        return object()
+
+    monkeypatch.setattr(email_auth_service, "_load_valid_otp", valid_otp)
+    result, token = await verify_login_code(
+        session,  # type: ignore[arg-type]
+        email_raw="known@example.test",
+        code_raw="123456",
+        settings=Settings(jwt_secret="test-secret"),
+    )
+
+    assert result is user
+    assert session.added == []
     assert token
 
 
