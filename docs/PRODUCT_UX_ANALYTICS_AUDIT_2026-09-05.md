@@ -1333,14 +1333,18 @@ browser push на установленном iPhone PWA и реальная до
 - `USER_GUIDE.md` и пользовательский FAQ проверены на отсутствие внутренних
   API, JWT, SQL, Redis, Docker и иных эксплуатационных инструкций.
 
-Последняя проверенная production-публикация — ревизия `fa5f56a`:
+Последняя проверенная production-публикация — ревизия `abf2a4f`:
 
-- backup БД перед этапом 8:
-  `/opt/fitness/backups/fitness-20260909T024351Z.dump`;
+- backup БД перед этапом 9:
+  `/opt/fitness/backups/fitness-20260909T093146Z.dump`;
 - мигратор завершился с кодом `0`, контейнеры API/web/DB/Redis/LLM/OCR healthy,
   worker и Telegram poller работают;
 - `https://api.filfitclub.ru/health`, `https://app.filfitclub.ru` и публичный FAQ
   отвечают `200`;
+- миграция `20260909000045_user_exercise_pins.sql` записана в журнале, таблица
+  закреплённых упражнений доступна; новый анонимный запрос explorer отклоняется
+  с `401`, опубликованный lazy chunk `ExerciseExplorerPage-CG1_meBr.js` отвечает
+  `200`;
 - сверка прав: **17 активных аккаунтов, 16 PLUS и один управляемый FREE
   QA-аккаунт**, 16 активных beta-прав;
 - read-only smoke реальных PLUS/FREE-персон подтвердил: история тренировок,
