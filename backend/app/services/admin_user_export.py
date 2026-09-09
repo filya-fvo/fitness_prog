@@ -17,6 +17,7 @@ from app.models.daily_metric import DailyMetric
 from app.models.nutrition import NutritionLog
 from app.models.supplement_intake import SupplementIntake
 from app.models.user import User
+from app.models.user_exercise_pin import UserExercisePin
 from app.models.workout import Workout
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services import admin_audit, admin_users
@@ -93,6 +94,19 @@ async def prepare_user_export(
         "workout_plan_overrides": [
             export_row(item)
             for item in await _active_rows(session, WorkoutPlanOverride, user.id)
+        ],
+        "exercise_pins": [
+            export_row(item)
+            for item in (
+                await session.scalars(
+                    select(UserExercisePin)
+                    .where(UserExercisePin.user_id == user.id)
+                    .order_by(
+                        UserExercisePin.created_at.asc(),
+                        UserExercisePin.exercise_id.asc(),
+                    )
+                )
+            ).all()
         ],
     }
     admin_audit.add_event(

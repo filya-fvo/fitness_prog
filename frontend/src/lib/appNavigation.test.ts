@@ -13,6 +13,7 @@ describe("application back navigation", () => {
     expect(fallbackPathFor("/programs")).toBe("/train");
     expect(fallbackPathFor("/workouts")).toBe("/train");
     expect(fallbackPathFor("/workouts/active/session-id")).toBe("/train");
+    expect(fallbackPathFor("/progress/exercises")).toBe("/progress");
     expect(fallbackPathFor("/measurements")).toBe("/more");
     expect(fallbackPathFor("/knowledge")).toBe("/more");
     expect(fallbackPathFor("/faq")).toBe("/more");

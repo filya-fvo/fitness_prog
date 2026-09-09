@@ -302,6 +302,14 @@ export function ProgressPage() {
         ) : null}
         <StrengthTrends trends={liftTrends.slice(0, 1)} />
 
+        <Link
+          to="/progress/exercises"
+          className="flex min-h-11 items-center justify-between rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+        >
+          <span>Прогресс по упражнениям</span>
+          <span aria-hidden="true">→</span>
+        </Link>
+
         <button
           type="button"
           onClick={() => setDetailsOpen((value) => !value)}

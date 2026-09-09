@@ -52,6 +52,7 @@ REQUIRED_FILES = [
     "20260907000042_separate_workout_schedule.sql",
     "20260908000043_user_entitlements.sql",
     "20260908000044_grant_beta_plus.sql",
+    "20260909000045_user_exercise_pins.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -84,6 +85,7 @@ REQUIRED_TABLES = [
     "global_competition_participants",
     "exercise_media_assets",
     "user_entitlements",
+    "user_exercise_pins",
 ]
 
 REQUIRED_SNIPPETS = [
@@ -143,6 +145,8 @@ REQUIRED_SNIPPETS = [
     "existing.source = 'legacy_stars'",
     "jsonb_build_object('grant_kind', 'existing_user_rollout')",
     "active_access.revoked_at IS NULL",
+    "PRIMARY KEY (user_id, exercise_id)",
+    "idx_user_exercise_pins_exercise",
 ]
 
 

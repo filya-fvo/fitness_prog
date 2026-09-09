@@ -67,6 +67,20 @@ test("FREE progress shows a product gate without requesting history", async ({ p
   expect(premiumRequests).toEqual([]);
 });
 
+test("FREE exercise explorer shows PLUS gate without requesting catalog history", async ({ page }) => {
+  await authenticate(page, "free");
+  let explorerRequests = 0;
+  await page.route(/\/exercises\/explorer(?:\?.*)?$/, (route) => {
+    explorerRequests += 1;
+    return route.fulfill({ status: 500, body: "unexpected" });
+  });
+
+  await page.goto("/progress/exercises");
+  await expect(page.getByText("Подробный прогресс доступен в PLUS")).toBeVisible();
+  await page.waitForTimeout(250);
+  expect(explorerRequests).toBe(0);
+});
+
 test("FREE measurements keep today's form and never request the range", async ({ page }) => {
   await authenticate(page, "free");
   let rangeRequests = 0;

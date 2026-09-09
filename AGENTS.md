@@ -160,6 +160,9 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/services/admin_exercise_media.py` и публичный router
   `exercise_media.py` — контролируемая загрузка изображений/GIF в PostgreSQL,
   проверка формата и неизменяемая раздача по непрогнозируемому UUID.
+- `backend/app/services/exercise_explorer.py` и `user_exercise_pins` —
+  ограниченный PLUS-explorer недавних/закреплённых упражнений и межустройственные
+  пользовательские закрепления до восьми позиций.
 - `backend/app/services/admin_user_detail.py`, `admin_user_actions.py`, `admin_user_export.py` — подробная
   карточка пользователя, безопасные действия и allowlist выгрузки без OTP/Web Push секретов.
 - `backend/app/services/admin_broadcasts.py`, `admin_broadcast_audience.py`,
@@ -210,6 +213,8 @@ services → SQLAlchemy models → PostgreSQL
   пользовательский кэш и объединение операций замера по дате.
 - `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` — замены
   упражнений на будущую дату без запуска таймера тренировки.
+- `frontend/src/features/progress/pages/ExerciseExplorerPage.tsx` — поиск по
+  прогрессу упражнения, группы мышц, недавние и закреплённые.
 - `frontend/src/store/` — Zustand runtime state.
 - `frontend/src/utils/` — чистые правила; рядом размещать `*.test.ts`.
 - `frontend/src/lib/telegram.ts` — Telegram Mini App SDK, BackButton, deep links;
@@ -249,7 +254,7 @@ services → SQLAlchemy models → PostgreSQL
 | Программы | `ProgramsPage.tsx`, profile program block, `programRecommend.ts` | `programs.py`, `program_service.py`, `seed_content/programs.json` | program tests + catalog/browser path |
 | Каталог упражнений и медиа | `WorkoutCatalogPage.tsx`, `ExerciseCard.tsx`, `ExerciseThumbnail.tsx`, `ExerciseMediaPlayer.tsx`, `ExerciseProgressSection.tsx`, `features/admin-exercises` | `exercises.py`, `exercise_service.py`, `admin_exercise_media.py`, `exercise_media_assets`, seed, rebuild/audit/thumbnail scripts | media upload/audit, media audit, catalog quality, progression unit + recovery E2E |
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |
-| Прогресс/графики | `ProgressPage.tsx`, `WeeklyOverview.tsx`, progress utils | workout/nutrition/daily metric range endpoints | weekly/progress tests + visual/mobile checks |
+| Прогресс/графики | `ProgressPage.tsx`, `ExerciseExplorerPage.tsx`, `WeeklyOverview.tsx`, progress utils | exercise explorer/progress, workout/nutrition/daily metric range endpoints | explorer/progression, weekly/progress tests + visual/mobile checks |
 | Замеры тела | `features/measurements`, `api/bodyMeasurements.ts`, `db/bodyMeasurements.ts`, `db/syncQueue.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests + offline reconnect E2E |
 | Добавки/уведомления | profile/home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot | concurrency, prefs, Telegram tests |
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |

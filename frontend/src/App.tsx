@@ -25,6 +25,11 @@ const ProgressPage = lazy(() =>
     default: module.ProgressPage,
   })),
 );
+const ExerciseExplorerPage = lazy(() =>
+  import("@/features/progress/pages/ExerciseExplorerPage").then((module) => ({
+    default: module.ExerciseExplorerPage,
+  })),
+);
 const ActiveWorkout = lazy(() =>
   import("@/features/workout/pages/ActiveWorkout").then((module) => ({
     default: module.ActiveWorkout,
@@ -163,6 +168,7 @@ export function App() {
             <Route path="measurements" element={<MeasurementsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="progress" element={<ProgressPage />} />
+            <Route path="progress/exercises" element={<ExerciseExplorerPage />} />
             <Route path="ai" element={<Chat />} />
             <Route path="more" element={<MorePage />} />
             <Route path="support" element={<SupportPage />} />

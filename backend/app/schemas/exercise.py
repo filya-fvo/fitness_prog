@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -111,3 +111,25 @@ class ExerciseListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class ExerciseExplorerItem(ExerciseResponse):
+    is_pinned: bool = False
+    last_completed_date: date | None = None
+    completed_workouts: int = Field(default=0, ge=0)
+
+
+class ExerciseExplorerResponse(BaseModel):
+    items: list[ExerciseExplorerItem]
+    total: int = Field(..., ge=0)
+    page: int = Field(..., ge=1)
+    page_size: int = Field(..., ge=1, le=50)
+    muscle_groups: list[str] = Field(default_factory=list)
+    pin_limit: int = Field(default=8, ge=1)
+
+
+class ExercisePinResponse(BaseModel):
+    exercise_id: uuid.UUID
+    is_pinned: bool
+    pinned_count: int = Field(..., ge=0)
+    pin_limit: int = Field(default=8, ge=1)

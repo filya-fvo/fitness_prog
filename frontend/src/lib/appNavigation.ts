@@ -6,6 +6,7 @@ export function shouldShowPageBack(pathname: string): boolean {
 
 export function fallbackPathFor(pathname: string): string {
   if (pathname.startsWith("/admin/")) return "/admin";
+  if (pathname.startsWith("/progress/")) return "/progress";
   if (pathname.startsWith("/workouts/active/")) return "/train";
   if (pathname === "/workouts" || pathname === "/programs") return "/train";
   if (

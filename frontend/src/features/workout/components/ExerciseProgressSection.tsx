@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExerciseProgress } from "@/api/workouts";
 import { ExerciseProgressChart } from "@/features/workout/components/ExerciseProgressChart";
+import { ExercisePinButton } from "@/features/progress/components/ExercisePinButton";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
@@ -20,7 +22,15 @@ function ChartIcon() {
   return <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 16V9m5 7V5m5 11v-4m4 4V2" strokeLinecap="round" /></svg>;
 }
 
-export function ExerciseProgressSection({ exerciseId, exerciseName }: { exerciseId: string; exerciseName: string }) {
+export function ExerciseProgressSection({
+  exerciseId,
+  exerciseName,
+  showExplorerLink = true,
+}: {
+  exerciseId: string;
+  exerciseName: string;
+  showExplorerLink?: boolean;
+}) {
   const plusAccess = useUserStore((state) => hasPlus(state.user));
   const [progress, setProgress] = useState<ExerciseProgress | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,9 +78,12 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
     <section className="mt-3 rounded-xl border border-white/5 bg-tg-secondary p-3">
       <div className="flex items-center justify-between gap-3">
         <div><p className="text-sm font-semibold">Дневник</p><p className="mt-0.5 text-[11px] text-tg-hint">Последнее выполнение</p></div>
-        <button type="button" onClick={() => setChartOpen(true)} disabled={!points.length} className="flex min-h-[44px] items-center gap-1.5 rounded-full bg-tg-bg px-3 text-xs font-semibold text-tg-link disabled:opacity-45">
-          Динамика веса <ChartIcon />
-        </button>
+        <div className="flex flex-wrap justify-end gap-1">
+          <ExercisePinButton exerciseId={exerciseId} compact />
+          <button type="button" onClick={() => setChartOpen(true)} disabled={!points.length} className="flex min-h-[44px] items-center gap-1.5 rounded-full bg-tg-bg px-3 text-xs font-semibold text-tg-link disabled:opacity-45">
+            Динамика веса <ChartIcon />
+          </button>
+        </div>
       </div>
       {loading && !progress ? <div className="mt-3 h-20 animate-pulse rounded-xl bg-tg-bg" /> : null}
       {!loading && !latest ? <p className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">История появится после завершённого подхода с весом.</p> : null}
@@ -84,6 +97,9 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
         </div>
       </div> : null}
       {error ? <p className="mt-2 text-[11px] text-amber-300">{error}</p> : null}
+      {showExplorerLink ? <Link to={`/progress/exercises?exercise=${exerciseId}`} className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-tg-link">
+        Открыть в разделе «Упражнения» →
+      </Link> : null}
 
       {chartOpen ? <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="exercise-progress-title" onClick={() => setChartOpen(false)}>
         <div ref={chartDialogRef} tabIndex={-1} className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-tg-secondary p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>

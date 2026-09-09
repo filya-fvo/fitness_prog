@@ -3,23 +3,27 @@
 from __future__ import annotations
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.request_id import get_request_id
-from app.deps import get_current_user, require_admin
+from app.deps import get_current_user, require_admin, require_plus
 from app.models.user import User
 from app.schemas.exercise import (
     ExerciseCreate,
+    ExerciseExplorerResponse,
     ExerciseListResponse,
+    ExercisePinResponse,
     ExerciseResponse,
     ExerciseUpdate,
 )
-from app.services import admin_audit, exercise_service
+from app.services import admin_audit, exercise_explorer, exercise_service
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
+_EXPLORER_MESSAGE = "История и подбор упражнений доступны в PLUS"
 
 
 @router.get("", response_model=ExerciseListResponse)
@@ -50,6 +54,28 @@ async def list_exercises(
     )
 
 
+@router.get("/explorer", response_model=ExerciseExplorerResponse)
+async def exercise_progress_explorer(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    scope: Literal["all", "recent", "pinned"] = Query(default="recent"),
+    muscle_group: str | None = Query(default=None, max_length=100),
+    q: str | None = Query(default=None, max_length=100),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXPLORER_MESSAGE)),
+) -> ExerciseExplorerResponse:
+    result = await exercise_explorer.list_explorer(
+        session,
+        user_id=user.id,
+        page=page,
+        page_size=page_size,
+        scope=scope,
+        muscle_group=muscle_group,
+        q=q,
+    )
+    return ExerciseExplorerResponse.model_validate(result)
+
+
 @router.get("/{exercise_id}", response_model=ExerciseResponse)
 async def get_exercise(
     exercise_id: uuid.UUID,
@@ -60,6 +86,67 @@ async def get_exercise(
     if exercise is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Упражнение не найдено")
     return ExerciseResponse.model_validate(exercise)
+
+
+async def _pin_response(
+    session: AsyncSession,
+    user: User,
+    exercise_id: uuid.UUID,
+    pinned: bool | None,
+) -> ExercisePinResponse:
+    try:
+        result = (
+            await exercise_explorer.pin_state(
+                session,
+                user_id=user.id,
+                exercise_id=exercise_id,
+            )
+            if pinned is None
+            else await exercise_explorer.set_pinned(
+                session,
+                user_id=user.id,
+                exercise_id=exercise_id,
+                pinned=pinned,
+            )
+        )
+    except exercise_explorer.ExerciseUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Упражнение не найдено",
+        ) from exc
+    except exercise_explorer.ExercisePinLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Можно закрепить не больше {exercise_explorer.PIN_LIMIT} упражнений",
+        ) from exc
+    return ExercisePinResponse.model_validate(result)
+
+
+@router.get("/{exercise_id}/pin", response_model=ExercisePinResponse)
+async def get_exercise_pin(
+    exercise_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXPLORER_MESSAGE)),
+) -> ExercisePinResponse:
+    return await _pin_response(session, user, exercise_id, None)
+
+
+@router.put("/{exercise_id}/pin", response_model=ExercisePinResponse)
+async def pin_exercise(
+    exercise_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXPLORER_MESSAGE)),
+) -> ExercisePinResponse:
+    return await _pin_response(session, user, exercise_id, True)
+
+
+@router.delete("/{exercise_id}/pin", response_model=ExercisePinResponse)
+async def unpin_exercise(
+    exercise_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXPLORER_MESSAGE)),
+) -> ExercisePinResponse:
+    return await _pin_response(session, user, exercise_id, False)
 
 
 @router.post("", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)

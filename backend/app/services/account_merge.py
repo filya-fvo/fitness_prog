@@ -18,7 +18,9 @@ from app.models.email_otp import EmailOtpCode
 from app.models.nutrition import NutritionLog
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.user import User
+from app.models.user_exercise_pin import UserExercisePin
 from app.models.workout import Workout
+from app.services import exercise_explorer
 from app.services.subscription_service import transfer_entitlements
 
 MergePreference = Literal["email", "telegram"]
@@ -93,6 +95,7 @@ async def _counts(session: AsyncSession, user_id: uuid.UUID) -> dict[str, int]:
             SupplementIntake.user_id == user_id,
             SupplementIntake.is_deleted.is_(False),
         ),
+        "pinned_exercises": await count(UserExercisePin, UserExercisePin.user_id == user_id),
     }
 
 
@@ -392,6 +395,12 @@ async def merge_accounts(
         email_user_id=source.id,
         telegram_user_id=target.id,
         preference=preference,
+    )
+    await exercise_explorer.merge_user_pins(
+        session,
+        source_user_id=source.id,
+        target_user_id=target.id,
+        prefer_source=preference == "email",
     )
     for model in (NutritionLog, AIConversation, WebPushSubscription, EmailOtpCode):
         await session.execute(

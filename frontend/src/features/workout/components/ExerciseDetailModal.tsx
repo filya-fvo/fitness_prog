@@ -9,6 +9,7 @@ type Props = {
   selected?: boolean;
   onClose: () => void;
   onToggleSelect?: (exercise: Exercise) => void;
+  showExplorerLink?: boolean;
 };
 
 export function ExerciseDetailModal({
@@ -16,6 +17,7 @@ export function ExerciseDetailModal({
   selected = false,
   onClose,
   onToggleSelect,
+  showExplorerLink = true,
 }: Props) {
   const dialogRef = useModalAccessibility(true, onClose);
   const visibleTags = visibleExerciseTags(exercise.tags);
@@ -50,7 +52,11 @@ export function ExerciseDetailModal({
         </div>
 
         <ExerciseMediaPlayer exercise={exercise} />
-        <ExerciseProgressSection exerciseId={exercise.id} exerciseName={exercise.name_ru} />
+        <ExerciseProgressSection
+          exerciseId={exercise.id}
+          exerciseName={exercise.name_ru}
+          showExplorerLink={showExplorerLink}
+        />
 
         {exercise.description ? (
           <div className="mt-3 rounded-xl bg-tg-secondary p-3 text-sm">
