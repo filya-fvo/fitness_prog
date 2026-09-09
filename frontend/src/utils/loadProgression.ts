@@ -115,13 +115,24 @@ export type ExerciseHistoryBest = {
   lastWeightMode?: "total" | "per_hand" | null;
   lastMachineParams?: Record<string, string | number> | null;
   lastRpe?: number | null;
+  phaseLoads?: Partial<Record<WeekPhase | "unknown", PhaseLoadHistory>>;
+};
+
+export type PhaseLoadHistory = {
+  weight: number;
+  reps: number;
+  date: string;
+  durationSec: number | null;
+  weightMode: "total" | "per_hand" | null;
+  machineParams: Record<string, string | number> | null;
+  rpe: number | null;
 };
 
 /** Per exercise: last completed session's top set (max weight, then max reps). */
 export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseHistoryBest> {
   const map = new Map<string, ExerciseHistoryBest>();
   const completed = workouts
-    .filter((w) => w.status === "completed" || w.sets.some((s) => s.is_completed))
+    .filter((w) => w.status === "completed")
     .slice()
     .sort((a, b) => {
       const da = a.completed_at || a.scheduled_date || "";
@@ -160,18 +171,40 @@ export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseH
       }
     }
     const date = (w.completed_at || w.scheduled_date || "").slice(0, 10) || null;
+    const rawPhase = String((w.plan as WorkoutPlan | undefined)?.week_phase || "unknown");
+    const phase: WeekPhase | "unknown" = ["light", "medium", "heavy"].includes(rawPhase)
+      ? rawPhase as WeekPhase
+      : "unknown";
     for (const [exerciseId, best] of byEx) {
-      if (map.has(exerciseId)) continue; // already have newer session
-      map.set(exerciseId, {
-        exerciseId,
-        lastWeight: best.weight,
-        lastReps: best.reps,
-        lastDate: date,
-        lastDurationSec: best.durationSec || null,
-        lastWeightMode: best.weightMode,
-        lastMachineParams: best.machineParams,
-        lastRpe: w.rpe ?? null,
-      });
+      let item = map.get(exerciseId);
+      if (!item) {
+        item = {
+          exerciseId,
+          lastWeight: best.weight,
+          lastReps: best.reps,
+          lastDate: date,
+          lastDurationSec: best.durationSec || null,
+          lastWeightMode: best.weightMode,
+          lastMachineParams: best.machineParams,
+          lastRpe: w.rpe ?? null,
+          phaseLoads: {},
+        };
+        map.set(exerciseId, item);
+      }
+      if (!item.phaseLoads?.[phase] && date) {
+        item.phaseLoads = {
+          ...item.phaseLoads,
+          [phase]: {
+            weight: best.weight,
+            reps: best.reps,
+            date,
+            durationSec: best.durationSec || null,
+            weightMode: best.weightMode,
+            machineParams: best.machineParams,
+            rpe: w.rpe ?? null,
+          },
+        };
+      }
     }
   }
   return map;
@@ -213,19 +246,37 @@ export function suggestLoad(input: {
     };
   }
 
-  // Prefill from last session as-is (week phase does not rewrite the shown numbers).
-  // Phase still drives plan target_reps / RIR copy elsewhere.
-  const weight = hist.lastWeight > 0 ? formatWeight(hist.lastWeight) : "";
+  const phasePriority: WeekPhase[] = ["heavy", "medium", "light"];
+  const sourcePhase = phasePriority.find((candidate) => (hist.phaseLoads?.[candidate]?.weight || 0) > 0);
+  const source = sourcePhase ? hist.phaseLoads?.[sourcePhase] : null;
+  const sourceWeight = source?.weight || hist.lastWeight;
+  const phaseRatios: Record<WeekPhase, Record<WeekPhase, number>> = {
+    light: { heavy: 0.85, medium: 0.9, light: 1 },
+    medium: { heavy: 0.95, medium: 1, light: 1.05 },
+    heavy: { heavy: 1, medium: 1.05, light: 1.1 },
+  };
+  const ratio = sourcePhase ? phaseRatios[phase.phase][sourcePhase] : 1;
+  const suggestedWeight = sourceWeight > 0
+    ? Math.max(0.5, Math.round(sourceWeight * ratio * 2) / 2)
+    : 0;
+  const weight = suggestedWeight > 0 ? formatWeight(suggestedWeight) : "";
   const reps = hist.lastReps > 0 ? String(hist.lastReps) : repsMid;
   const date = hist.lastDate
     ? ` (${hist.lastDate.split("-").reverse().join(".")})`
     : "";
-  const phaseHint =
-    phase.phase === "heavy"
-      ? "тяжёлая неделя — можно +1–2.5 кг к прошлому"
-      : phase.phase === "light"
-        ? "лёгкая неделя — можно чуть легче прошлого"
-        : "средняя неделя";
+  const sourceLabels: Record<WeekPhase, string> = {
+    light: "лёгкой",
+    medium: "средней",
+    heavy: "тяжёлой",
+  };
+  const reference = sourcePhase && source
+    ? ratio === 1
+      ? `${weight} кг — как на ${sourceLabels[sourcePhase]} неделе`
+      : `${weight} кг — ${Math.round(ratio * 100)}% от ${formatWeight(source.weight)} кг на ${sourceLabels[sourcePhase]} неделе`
+    : `${weight} кг по последней выполненной тренировке`;
+  const progressionNote = sourcePhase === "light" && phase.phase === "light"
+    ? " Если все подходы были уверенными, можно добавить 1–2,5 кг."
+    : "";
 
   return {
     weight,
@@ -236,7 +287,7 @@ export function suggestLoad(input: {
     note: hist.lastDurationSec && !weight && hist.lastReps <= 0
       ? `Прошлый раз${date}: ${Math.floor(hist.lastDurationSec / 60)}:${String(hist.lastDurationSec % 60).padStart(2, "0")}.`
       : weight
-        ? `Прошлый раз${date}: ${weight} кг × ${reps}${hist.lastRpe ? `, RPE ${hist.lastRpe}` : ""}. Сейчас ${phase.label.toLowerCase()} (${phaseHint}).`
+        ? `Прошлый раз${date}: ${formatWeight(hist.lastWeight)} кг × ${reps}${hist.lastRpe ? `, RPE ${hist.lastRpe}` : ""}. Ориентир на ${phase.label.toLowerCase()}: ${reference}.${progressionNote}`
         : `Прошлый раз${date}: ${reps} повт. Цель недели: ${phase.defaultReps}.`,
   };
 }

@@ -29,6 +29,26 @@ class WorkoutRescheduleRequest(BaseModel):
     original_date: date
     target_date: date
     target_time: time
+    conflict_resolution: Literal["move_existing", "cancel_existing"] | None = None
+
+
+class WorkoutReschedulePreviewRequest(BaseModel):
+    """Validate a one-off move and describe a possible occupied target."""
+
+    original_date: date
+    target_date: date
+
+
+class WorkoutReschedulePreview(BaseModel):
+    original_date: date
+    target_date: date
+    week_start: date
+    week_end: date
+    can_reschedule: bool
+    conflict: Literal["target_already_scheduled"] | None = None
+    conflicting_original_date: date | None = None
+    suggested_displaced_date: date | None = None
+    warning: str | None = None
 
 
 class WorkoutCancellationRequest(BaseModel):

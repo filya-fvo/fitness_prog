@@ -99,6 +99,15 @@ const workoutLoadHintSchema = z.object({
   machine_params: z.record(z.union([z.string(), z.number()])).nullable(),
   rpe: z.number().int().min(1).max(10).nullable(),
   completed_date: z.string(),
+  phase_loads: z.record(z.enum(["light", "medium", "heavy", "unknown"]), z.object({
+    weight: z.union([z.number(), z.string()]).nullable(),
+    reps: z.number().int().nonnegative().nullable(),
+    duration_sec: z.number().int().nonnegative().nullable(),
+    weight_mode: z.enum(["total", "per_hand"]).nullable(),
+    machine_params: z.record(z.string(), z.union([z.string(), z.number()])).nullable(),
+    rpe: z.number().int().min(1).max(10).nullable(),
+    completed_date: z.string(),
+  })).default({}),
 });
 
 const exerciseWeekPhaseSchema = z.enum(["light", "medium", "heavy", "unknown"]);
@@ -163,6 +172,18 @@ const workoutScheduleReplacementPreviewSchema = z.object({
   warning: z.string().nullable(),
 });
 
+const workoutReschedulePreviewSchema = z.object({
+  original_date: z.string(),
+  target_date: z.string(),
+  week_start: z.string(),
+  week_end: z.string(),
+  can_reschedule: z.boolean(),
+  conflict: z.literal("target_already_scheduled").nullable(),
+  conflicting_original_date: z.string().nullable(),
+  suggested_displaced_date: z.string().nullable(),
+  warning: z.string().nullable(),
+});
+
 const personalRegularitySchema = z.object({
   period_start: z.string(),
   period_end: z.string(),
@@ -179,6 +200,7 @@ export type WorkoutScheduleOccurrence = z.infer<typeof scheduleOccurrenceSchema>
 export type WorkoutScheduleOverview = z.infer<typeof scheduleOverviewSchema>;
 export type WorkoutScheduleSettings = z.infer<typeof workoutScheduleSettingsSchema>;
 export type WorkoutScheduleReplacementPreview = z.infer<typeof workoutScheduleReplacementPreviewSchema>;
+export type WorkoutReschedulePreview = z.infer<typeof workoutReschedulePreviewSchema>;
 export type PersonalRegularity = z.infer<typeof personalRegularitySchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
@@ -364,13 +386,26 @@ export async function rescheduleWorkout(input: {
   originalDate: string;
   targetDate: string;
   targetTime: string;
+  conflictResolution?: "move_existing" | "cancel_existing" | null;
 }): Promise<WorkoutScheduleOverview> {
   const { data } = await apiClient.post("/workouts/schedule/reschedule", {
     original_date: input.originalDate,
     target_date: input.targetDate,
     target_time: input.targetTime,
+    conflict_resolution: input.conflictResolution ?? null,
   });
   return scheduleOverviewSchema.parse(data);
+}
+
+export async function previewWorkoutReschedule(input: {
+  originalDate: string;
+  targetDate: string;
+}): Promise<WorkoutReschedulePreview> {
+  const { data } = await apiClient.post("/workouts/schedule/reschedule/preview", {
+    original_date: input.originalDate,
+    target_date: input.targetDate,
+  });
+  return workoutReschedulePreviewSchema.parse(data);
 }
 
 export async function fetchExerciseProgress(
@@ -431,6 +466,15 @@ export async function fetchWorkoutLoadHints(exerciseIds: string[]): Promise<Work
     lastWeightMode: item.weight_mode,
     lastMachineParams: item.machine_params,
     lastRpe: item.rpe,
+    phaseLoads: Object.fromEntries(Object.entries(item.phase_loads).map(([phase, load]) => [phase, {
+      weight: load.weight == null ? 0 : Number(load.weight),
+      reps: load.reps ?? 0,
+      date: load.completed_date,
+      durationSec: load.duration_sec,
+      weightMode: load.weight_mode,
+      machineParams: load.machine_params,
+      rpe: load.rpe,
+    }])),
   }));
 }
 

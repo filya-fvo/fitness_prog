@@ -152,12 +152,33 @@ test("one workout can be moved without changing the recurring schedule", async (
   await page.route("**/workouts/schedule/overview**", async (route) => {
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(initial) });
   });
+  await page.route("**/workouts/schedule/reschedule/preview", async (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      original_date: "2026-08-21",
+      target_date: "2026-08-22",
+    });
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        original_date: "2026-08-21",
+        target_date: "2026-08-22",
+        week_start: "2026-08-17",
+        week_end: "2026-08-23",
+        can_reschedule: true,
+        conflict: "target_already_scheduled",
+        conflicting_original_date: "2026-08-22",
+        suggested_displaced_date: "2026-08-23",
+        warning: "На выбранную дату уже запланирована тренировка. Её можно перенести на 23.08 или отменить.",
+      }),
+    });
+  });
   await page.route("**/workouts/schedule/reschedule", async (route) => {
     const payload = route.request().postDataJSON() as Record<string, string>;
     expect(payload).toEqual({
       original_date: "2026-08-21",
       target_date: "2026-08-22",
       target_time: "08:00",
+      conflict_resolution: "move_existing",
     });
     await route.fulfill({
       contentType: "application/json",
@@ -180,6 +201,8 @@ test("one workout can be moved without changing the recurring schedule", async (
   await page.getByLabel("Новый день").fill("2026-08-22");
   await page.getByLabel("Время начала").fill("08:00");
   await page.getByRole("button", { name: "Перенести только эту тренировку" }).click();
+  await expect(page.getByText(/уже есть тренировка/i)).toBeVisible();
+  await page.getByRole("button", { name: /Перенести её на.*23.*авг/i }).click();
 
   await expect(page.getByText(/Перенесена на .*22.*августа.*08:00/i)).toBeVisible();
   await expect(page.getByText("Обычное расписание следующих недель не изменится.")).toBeVisible();

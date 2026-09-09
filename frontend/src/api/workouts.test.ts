@@ -85,6 +85,17 @@ describe("workout schedule API", () => {
       machine_params: null,
       rpe: 8,
       completed_date: "2026-09-07",
+      phase_loads: {
+        heavy: {
+          weight: "80",
+          reps: 6,
+          duration_sec: null,
+          weight_mode: "total",
+          machine_params: null,
+          rpe: 9,
+          completed_date: "2026-08-31",
+        },
+      },
     }] } });
 
     const result = await fetchWorkoutLoadHints([exerciseId, exerciseId]);
@@ -101,6 +112,17 @@ describe("workout schedule API", () => {
       lastWeightMode: "total",
       lastMachineParams: null,
       lastRpe: 8,
+      phaseLoads: {
+        heavy: {
+          weight: 80,
+          reps: 6,
+          date: "2026-08-31",
+          durationSec: null,
+          weightMode: "total",
+          machineParams: null,
+          rpe: 9,
+        },
+      },
     }]);
   });
 

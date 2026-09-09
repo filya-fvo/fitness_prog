@@ -920,6 +920,7 @@ export function ActiveWorkout() {
         drafts,
         result.completed_at || new Date().toISOString(),
         result.rpe,
+        weekPhase.phase,
       );
 
       await deleteLocalSession(clientId);

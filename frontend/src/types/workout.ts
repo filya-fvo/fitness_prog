@@ -95,6 +95,15 @@ export type WorkoutLoadHint = {
   lastWeightMode: "total" | "per_hand" | null;
   lastMachineParams: Record<string, string | number> | null;
   lastRpe: number | null;
+  phaseLoads?: Partial<Record<"light" | "medium" | "heavy" | "unknown", {
+    weight: number;
+    reps: number;
+    date: string;
+    durationSec: number | null;
+    weightMode: "total" | "per_hand" | null;
+    machineParams: Record<string, string | number> | null;
+    rpe: number | null;
+  }>>;
 };
 
 export type ExerciseWeekPhase = "light" | "medium" | "heavy" | "unknown";

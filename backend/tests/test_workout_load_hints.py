@@ -58,6 +58,7 @@ async def test_load_hints_use_one_aggregate_user_scoped_query() -> None:
         "machine_params": None,
         "rpe": 8,
         "completed_date": date(2026, 9, 7),
+        "phase": "heavy",
         "rank": 1,
     }])
 
@@ -72,6 +73,7 @@ async def test_load_hints_use_one_aggregate_user_scoped_query() -> None:
     assert "row_number() OVER (PARTITION BY workout_sets.exercise_id" in sql
     assert "workouts.user_id" in sql
     assert "workout_sets.is_completed IS true" in sql
+    assert "workouts.status" in sql
     assert result == [{
         "exercise_id": exercise_id,
         "weight": Decimal("72.50"),
@@ -81,6 +83,17 @@ async def test_load_hints_use_one_aggregate_user_scoped_query() -> None:
         "machine_params": None,
         "rpe": 8,
         "completed_date": date(2026, 9, 7),
+        "phase_loads": {
+            "heavy": {
+                "weight": Decimal("72.50"),
+                "reps": 8,
+                "duration_sec": None,
+                "weight_mode": "total",
+                "machine_params": None,
+                "rpe": 8,
+                "completed_date": date(2026, 9, 7),
+            }
+        },
     }]
 
 
@@ -130,4 +143,5 @@ async def test_load_hints_route_passes_only_authenticated_user(monkeypatch) -> N
         "machine_params": None,
         "rpe": 7,
         "completed_date": "2026-09-07",
+        "phase_loads": {},
     }

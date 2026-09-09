@@ -72,6 +72,7 @@ export async function cacheCompletedDraftHints(
   drafts: LocalSetDraft[],
   completedAt: string,
   rpe: number | null,
+  phase: "light" | "medium" | "heavy" | null = null,
 ): Promise<void> {
   const best = new Map<string, WorkoutLoadHint>();
   for (const draft of drafts) {
@@ -99,5 +100,23 @@ export async function cacheCompletedDraftHints(
       lastRpe: rpe,
     });
   }
-  await cacheLoadHints([...best.values()]);
+  const hints = [...best.values()];
+  if (phase && hints.length) {
+    const cached = await readCachedLoadHints(hints.map((hint) => hint.exerciseId));
+    for (const hint of hints) {
+      hint.phaseLoads = {
+        ...cached.get(hint.exerciseId)?.phaseLoads,
+        [phase]: {
+          weight: hint.lastWeight,
+          reps: hint.lastReps,
+          date: hint.lastDate,
+          durationSec: hint.lastDurationSec,
+          weightMode: hint.lastWeightMode,
+          machineParams: hint.lastMachineParams,
+          rpe: hint.lastRpe,
+        },
+      };
+    }
+  }
+  await cacheLoadHints(hints);
 }

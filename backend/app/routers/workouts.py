@@ -24,6 +24,8 @@ from app.schemas.scheduler import (
     ShiftScheduleResponse,
     SkipWorkoutRequest,
     WorkoutCancellationRequest,
+    WorkoutReschedulePreview,
+    WorkoutReschedulePreviewRequest,
     WorkoutRescheduleRequest,
     WorkoutScheduleOverview,
     WorkoutScheduleReplacementPreview,
@@ -48,7 +50,13 @@ from app.schemas.workout import (
     WorkoutSetResponse,
     WorkoutUpdateRequest,
 )
-from app.services import exercise_progress, personal_regularity, planned_workout, schedule_replacement
+from app.services import (
+    exercise_progress,
+    personal_regularity,
+    planned_workout,
+    schedule_replacement,
+    workout_reschedule,
+)
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_load_hints
@@ -259,14 +267,29 @@ async def reschedule_workout_occurrence(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> WorkoutScheduleOverview:
-    overview = await scheduler_service.reschedule_workout_occurrence(
+    overview = await workout_reschedule.reschedule_workout_occurrence(
         session,
         user,
         original_date=body.original_date,
         target_date=body.target_date,
         target_time=body.target_time,
+        conflict_resolution=body.conflict_resolution,
     )
     return WorkoutScheduleOverview.model_validate(overview)
+
+
+@router.post("/schedule/reschedule/preview", response_model=WorkoutReschedulePreview)
+async def preview_reschedule_workout_occurrence(
+    body: WorkoutReschedulePreviewRequest,
+    user: User = Depends(get_current_user),
+) -> WorkoutReschedulePreview:
+    preview = workout_reschedule.preview_workout_reschedule(
+        user.goals or {},
+        original_date=body.original_date,
+        target_date=body.target_date,
+        local_day=scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return WorkoutReschedulePreview.model_validate(preview)
 
 
 @router.post("/schedule/cancel", response_model=WorkoutScheduleOverview)

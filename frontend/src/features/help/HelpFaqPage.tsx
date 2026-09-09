@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Header } from "@/components/layout/Header";
@@ -12,12 +12,8 @@ import {
 import { faqArticleById, searchFaqArticles } from "@/features/help/faqSearch";
 import { trackEvent } from "@/lib/analytics";
 
-const TABS: Array<{ id: FaqTab; label: string }> = [
-  { id: "howto", label: "Как сделать" },
-  { id: "knowledge", label: "О тренировках и питании" },
-];
-
-const QUICK_TOPICS: Array<{ id: FaqTopic; label: string }> = [
+const QUICK_TOPICS: Array<{ id: FaqTopic | null; label: string }> = [
+  { id: null, label: "Всё" },
   { id: "start", label: "Первый запуск" },
   { id: "workouts", label: "Тренировки" },
   { id: "nutrition", label: "Питание" },
@@ -83,10 +79,6 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedArticle = faqArticleById(FAQ_ARTICLES, searchParams.get("article"));
-  const requestedTab = searchParams.get("tab");
-  const initialTab = requestedArticle?.tab
-    ?? (requestedTab === "knowledge" || requestedTab === "howto" ? requestedTab : defaultTab);
-  const [tab, setTab] = useState<FaqTab>(initialTab);
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState<FaqTopic | null>(null);
 
@@ -94,40 +86,24 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
     trackEvent("faq_opened", { source: "navigation" });
   }, []);
 
-  useEffect(() => {
-    if (requestedArticle) setTab(requestedArticle.tab);
-  }, [requestedArticle]);
-
-  const filtering = Boolean(query.trim() || topic);
   const visibleArticles = useMemo(() => {
-    if (filtering) return searchFaqArticles(FAQ_ARTICLES, query, topic);
-    return FAQ_ARTICLES.filter((article) => article.tab === tab);
-  }, [filtering, query, tab, topic]);
+    return searchFaqArticles(FAQ_ARTICLES, query, topic);
+  }, [query, topic]);
+  const groups = useMemo(() => {
+    const orderedTabs: FaqTab[] = defaultTab === "knowledge"
+      ? ["knowledge", "howto"]
+      : ["howto", "knowledge"];
+    return orderedTabs.map((groupTab) => ({
+      tab: groupTab,
+      title: groupTab === "howto" ? "Как сделать" : "Знания",
+      articles: visibleArticles.filter((article) => article.tab === groupTab),
+    })).filter((group) => group.articles.length > 0);
+  }, [defaultTab, visibleArticles]);
 
-  function selectTab(next: FaqTab) {
-    setTab(next);
-    setTopic(null);
-    setQuery("");
-    const params = new URLSearchParams();
-    if (location.pathname === "/faq") params.set("tab", next);
-    setSearchParams(params, { replace: true });
-  }
-
-  function selectTopic(next: FaqTopic) {
-    setTopic((current) => current === next ? null : next);
+  function selectTopic(next: FaqTopic | null) {
+    setTopic(next);
     setQuery("");
     setSearchParams({}, { replace: true });
-  }
-
-  function handleTabKey(event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    const direction = event.key === "ArrowRight" ? 1 : -1;
-    const nextIndex = (currentIndex + direction + TABS.length) % TABS.length;
-    const next = TABS[nextIndex];
-    if (!next) return;
-    selectTab(next.id);
-    document.getElementById(`faq-tab-${next.id}`)?.focus();
   }
 
   return (
@@ -145,7 +121,6 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
-              setTopic(null);
               setSearchParams({}, { replace: true });
             }}
             placeholder="Например: вода, таблетки, перенести пятницу"
@@ -162,7 +137,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Быстрые темы">
         {QUICK_TOPICS.map((item) => (
           <button
-            key={item.id}
+            key={item.id ?? "all"}
             type="button"
             aria-pressed={topic === item.id}
             onClick={() => selectTopic(item.id)}
@@ -176,31 +151,9 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
         ))}
       </div>
 
-      {!filtering ? (
-        <div className="mt-3 grid grid-cols-2 rounded-xl bg-tg-secondary p-1" role="tablist" aria-label="Разделы помощи">
-          {TABS.map((item, index) => (
-            <button
-              key={item.id}
-              id={`faq-tab-${item.id}`}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              aria-controls="faq-results"
-              tabIndex={tab === item.id ? 0 : -1}
-              onClick={() => selectTab(item.id)}
-              onKeyDown={(event) => handleTabKey(event, index)}
-              className={[
-                "min-h-11 rounded-lg px-2 py-2 text-xs",
-                tab === item.id ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint",
-              ].join(" ")}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-3 flex min-h-11 items-center justify-between gap-3 text-xs text-tg-hint" aria-live="polite">
-          <span>Найдено ответов: {visibleArticles.length}</span>
+      <div className="mt-3 flex min-h-11 items-center justify-between gap-3 text-xs text-tg-hint" aria-live="polite">
+          <span>{query.trim() ? "Найдено" : "Материалов"}: {visibleArticles.length}</span>
+          {(query.trim() || topic) ? (
           <button
             type="button"
             className="min-h-11 px-2 text-tg-link"
@@ -208,17 +161,27 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
           >
             Показать все
           </button>
-        </div>
-      )}
+          ) : null}
+      </div>
 
-      <div id="faq-results" role="tabpanel" aria-labelledby={!filtering ? `faq-tab-${tab}` : undefined} className="mt-3 space-y-3">
-        {visibleArticles.map((article) => (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            highlighted={requestedArticle?.id === article.id}
-            showType={filtering}
-          />
+      <div id="faq-results" className="space-y-5">
+        {groups.map((group) => (
+          <section key={group.tab} aria-labelledby={`faq-group-${group.tab}`}>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h2 id={`faq-group-${group.tab}`} className="text-sm font-semibold text-tg-text">{group.title}</h2>
+              <span className="text-xs text-tg-hint">{group.articles.length}</span>
+            </div>
+            <div className="space-y-3">
+              {group.articles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  highlighted={requestedArticle?.id === article.id}
+                  showType={false}
+                />
+              ))}
+            </div>
+          </section>
         ))}
         {!visibleArticles.length ? (
           <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
@@ -228,7 +191,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
         ) : null}
       </div>
 
-      {!filtering && tab === "knowledge" ? (
+      {groups.some((group) => group.tab === "knowledge") ? (
         <details className="mt-3 rounded-2xl bg-tg-secondary p-4">
           <summary className="cursor-pointer text-sm font-semibold">Источники и исследования</summary>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">

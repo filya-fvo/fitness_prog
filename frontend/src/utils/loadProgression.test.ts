@@ -94,18 +94,49 @@ describe("loadProgression", () => {
     expect(hist.get("bench")?.lastWeight).toBe(92.5);
   });
 
+  it("does not treat a completed set in the active workout as previous history", () => {
+    const hist = buildExerciseHistory([
+      w({ id: "previous", completed_at: "2026-07-10T10:00:00", sets: [{ id: "1", workout_id: "previous", exercise_id: "bench", set_number: 1, reps: 10, weight: 80, is_completed: true, rest_time_sec: 60 }] }),
+      w({ id: "active", status: "planned", completed_at: null, scheduled_date: "2026-07-17", sets: [{ id: "2", workout_id: "active", exercise_id: "bench", set_number: 1, reps: 8, weight: 90, is_completed: true, rest_time_sec: 60 }] }),
+    ]);
+
+    expect(hist.get("bench")?.lastWeight).toBe(80);
+  });
+
   it("prefills last session weight/reps and notes week phase", () => {
     const history = { exerciseId: "bench", lastWeight: 100, lastReps: 10, lastDate: "2026-07-10" };
     const light = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20)); // week 1 light
     const heavy = resolveWeekPhase("2026-07-06", new Date(2026, 6, 20)); // ~2 weeks → heavy
     const sLight = suggestLoad({ history, phase: light });
     const sHeavy = suggestLoad({ history, phase: heavy });
-    // Phase does not rewrite numbers — only hint text.
+    // Legacy history without phase remains a safe as-is fallback.
     expect(Number(sLight.weight)).toBe(100);
     expect(Number(sHeavy.weight)).toBe(100);
     expect(sLight.reps).toBe("10");
     expect(sLight.note || "").toMatch(/лёгкая/i);
     expect(sHeavy.note || "").toMatch(/тяжёл/i);
+  });
+
+  it("calculates a numeric light-week reference from heavy, then medium, history", () => {
+    const light = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20));
+    const base = {
+      exerciseId: "bench",
+      lastWeight: 95,
+      lastReps: 10,
+      lastDate: "2026-07-17",
+      phaseLoads: {
+        heavy: { weight: 100, reps: 8, date: "2026-07-10", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 8 },
+        medium: { weight: 90, reps: 10, date: "2026-07-03", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 7 },
+      },
+    };
+
+    const fromHeavy = suggestLoad({ history: base, phase: light });
+    expect(fromHeavy.weight).toBe("85");
+    expect(fromHeavy.note).toMatch(/85% от 100 кг/i);
+
+    const fromMedium = suggestLoad({ history: { ...base, phaseLoads: { medium: base.phaseLoads.medium } }, phase: light });
+    expect(fromMedium.weight).toBe("81");
+    expect(fromMedium.note).toMatch(/90% от 90 кг/i);
   });
 
   it("prefills draft slots from plan target_sets and history", () => {

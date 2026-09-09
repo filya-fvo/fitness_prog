@@ -425,17 +425,6 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "override": None,
             "moved_away": False,
         }
-    cancellation = _cancellation_for_day(goals, day)
-    if cancellation is not None:
-        return {
-            "is_workout_day": False,
-            "original_date": day,
-            "target_date": day,
-            "start_time": workout_start_time_on(goals, day),
-            "override": cancellation,
-            "moved_away": False,
-            "cancelled": True,
-        }
     overrides = _schedule_overrides(goals)
     day_key = day.isoformat()
     target = next((row for row in overrides if row["target_date"] == day_key), None)
@@ -447,6 +436,17 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
             "start_time": parse_hhmm(str(target["target_time"])) or workout_start_time_on(goals, day),
             "override": target,
             "moved_away": False,
+        }
+    cancellation = _cancellation_for_day(goals, day)
+    if cancellation is not None:
+        return {
+            "is_workout_day": False,
+            "original_date": day,
+            "target_date": day,
+            "start_time": workout_start_time_on(goals, day),
+            "override": cancellation,
+            "moved_away": False,
+            "cancelled": True,
         }
     source = next((row for row in overrides if row["original_date"] == day_key), None)
     if source is not None and source.get("target_date") != day_key:
@@ -522,7 +522,7 @@ def _occurrence_payload(
 ) -> dict[str, Any]:
     override = context.get("override") if isinstance(context.get("override"), dict) else None
     original = context["original_date"]
-    next_base = next_base_workout_date(goals, original)
+    week_end = original + timedelta(days=6 - original.weekday())
     program_id = (override or {}).get("program_id") or goals.get("active_program_id")
     try:
         parsed_program_id = uuid.UUID(str(program_id)) if program_id else None
@@ -532,7 +532,7 @@ def _occurrence_payload(
         day_index = int((override or {}).get("day_index") or goals.get("active_program_next_day") or 0) or None
     except (TypeError, ValueError):
         day_index = None
-    can_change = status_value in {"scheduled", "missed"} and next_base is not None
+    can_change = status_value in {"scheduled", "missed"}
     return {
         "original_date": original,
         "target_date": context["target_date"],
@@ -543,9 +543,9 @@ def _occurrence_payload(
         "status": status_value,
         "is_override": override is not None,
         "can_reschedule": can_change,
-        "reschedule_until": next_base - timedelta(days=1) if can_change and next_base else None,
+        "reschedule_until": week_end if can_change else None,
         "can_cancel": can_change,
-        "cancel_to": next_base if can_change else None,
+        "cancel_to": next_base_workout_date(goals, original) if can_change else None,
     }
 
 
@@ -787,84 +787,5 @@ async def cancel_workout_occurrence(
         session,
         locked_user,
         {scheduled_date, next_date},
-    )
-    return await get_schedule_overview(session, locked_user, local_now.date())
-
-
-async def reschedule_workout_occurrence(
-    session: AsyncSession,
-    user: User,
-    *,
-    original_date: date,
-    target_date: date,
-    target_time: time,
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    """Move one occurrence inside its gap before the next base workout."""
-    locked_user = await session.scalar(select(User).where(User.id == user.id).with_for_update())
-    if locked_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
-    goals = dict(locked_user.goals or {})
-    if original_date.weekday() not in workout_days_on(goals, original_date):
-        raise HTTPException(status_code=400, detail="Исходная дата не входит в расписание тренировок")
-    local_now = (now or datetime.now(UTC)).astimezone(_schedule_timezone(goals))
-    if original_date < local_now.date() - timedelta(days=MAX_RESCHEDULE_LOOKBACK_DAYS):
-        raise HTTPException(status_code=400, detail="Эту тренировку уже нельзя перенести")
-    if target_date < local_now.date() or target_date < original_date:
-        raise HTTPException(status_code=400, detail="Выберите текущую или будущую дату")
-    next_base = next_base_workout_date(goals, original_date)
-    if next_base is None or target_date >= next_base:
-        limit = (next_base - timedelta(days=1)).strftime("%d.%m") if next_base else "следующей тренировки"
-        raise HTTPException(status_code=400, detail=f"Перенести можно не позднее {limit}")
-
-    normalized_time = target_time.replace(second=0, microsecond=0)
-    base_time = workout_start_time_on(goals, original_date)
-    if target_date == original_date and normalized_time < base_time:
-        raise HTTPException(
-            status_code=400,
-            detail="В этот день тренировку можно перенести только на более позднее время",
-        )
-    target_at = datetime.combine(target_date, normalized_time, tzinfo=_schedule_timezone(goals))
-    if target_at <= local_now:
-        raise HTTPException(status_code=400, detail="Выберите время, которое ещё не прошло")
-
-    overrides = _schedule_overrides(goals)
-    for row in overrides:
-        if row["original_date"] != original_date.isoformat() and row["target_date"] == target_date.isoformat():
-            raise HTTPException(status_code=409, detail="На эту дату уже перенесена другая тренировка")
-
-    # Returning to the regular date and time removes the exception.
-    is_default_slot = target_date == original_date and normalized_time == base_time
-    overrides = [row for row in overrides if row["original_date"] != original_date.isoformat()]
-    if not is_default_slot:
-        program_id, day_index, title = await active_program_snapshot(session, locked_user)
-        overrides.append(
-            {
-                "original_date": original_date.isoformat(),
-                "target_date": target_date.isoformat(),
-                "target_time": normalized_time.strftime("%H:%M"),
-                "program_id": str(program_id) if program_id else None,
-                "day_index": day_index,
-                "title": title,
-                "updated_at": datetime.now(UTC).isoformat(),
-            }
-        )
-    cutoff = local_now.date() - timedelta(days=SCHEDULE_HISTORY_RETENTION_DAYS)
-    goals[OVERRIDES_KEY] = [
-        row for row in overrides if date.fromisoformat(str(row["target_date"])) >= cutoff
-    ]
-    locked_user.goals = goals
-    flag_modified(locked_user, "goals")
-    await session.commit()
-    await session.refresh(locked_user)
-    user.goals = locked_user.goals
-
-    # Pending workout/rest-day supplement rows follow the effective occurrence.
-    from app.services import supplement_intakes
-
-    await supplement_intakes.reset_pending_days(
-        session,
-        locked_user,
-        {original_date, target_date},
     )
     return await get_schedule_overview(session, locked_user, local_now.date())

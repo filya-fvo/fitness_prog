@@ -13,16 +13,18 @@ test.describe("unified public help and FAQ", () => {
 
     await search.fill("перенести пятницу");
     await expect(page.locator("#faq-reschedule")).toBeVisible();
-    await expect(page.locator("#faq-reschedule")).toContainText("Перенести");
+    await expect(page.locator("#faq-reschedule")).toContainText(/перенести/i);
   });
 
-  test("legacy URLs select their old content type", async ({ page }) => {
+  test("legacy URLs keep both grouped content types and their familiar order", async ({ page }) => {
     await page.goto("/help");
-    await expect(page.getByRole("tab", { name: "Как сделать" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Как сделать" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Знания" })).toBeVisible();
     await expect(page.getByText("С чего начать после регистрации")).toBeVisible();
 
     await page.goto("/knowledge");
-    await expect(page.getByRole("tab", { name: "О тренировках и питании" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Знания" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Как сделать" })).toBeVisible();
     await expect(page.getByText("Как подобрать рабочий вес")).toBeVisible();
   });
 
@@ -34,14 +36,13 @@ test.describe("unified public help and FAQ", () => {
     await expect(article).toContainText("Если этикетка не распозналась");
   });
 
-  test("tabs support arrow-key navigation", async ({ page }) => {
+  test("each topic keeps how-to and knowledge grouped together", async ({ page }) => {
     await page.goto("/faq");
-    const howTo = page.getByRole("tab", { name: "Как сделать" });
-    const knowledge = page.getByRole("tab", { name: "О тренировках и питании" });
-    await howTo.focus();
-    await howTo.press("ArrowRight");
-    await expect(knowledge).toBeFocused();
-    await expect(knowledge).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("button", { name: "Питание", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Как сделать" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Знания" })).toBeVisible();
+    await expect(page.getByText("Как добавить продукт или блюдо")).toBeVisible();
+    await expect(page.getByText("Сколько белка нужно при тренировках")).toBeVisible();
   });
 
   test("the single entry in More returns to the previous app context", async ({ page }) => {

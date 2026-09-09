@@ -9,8 +9,9 @@ test.describe("P3 funnel path", () => {
   test("browser help opens directly without Telegram authorization", async ({ page }) => {
     await page.goto("/help");
     await expect(page.getByRole("heading", { name: "Помощь и FAQ" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Как сделать" })).toHaveAttribute("aria-selected", "true");
-    await page.getByRole("tab", { name: "О тренировках и питании" }).click();
+    await expect(page.getByRole("heading", { name: "Как сделать" })).toBeVisible();
+    await page.getByRole("button", { name: "Питание", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Знания" })).toBeVisible();
     await expect(page.getByText("Как настроить питание под цель")).toBeVisible();
   });
   test("bottom nav covers train / nutrition / progress / more", async ({ page }) => {

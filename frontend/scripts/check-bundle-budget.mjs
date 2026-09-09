@@ -57,13 +57,15 @@ const limits = {
   // route, with no eager dependency or vendor growth.
   // FREE load hints add a separately cached 0.8 KB gzip helper used only by
   // workout routes; the full history implementation remains out of those flows.
+  // Phase-aware numeric load hints, explicit one-off schedule conflict choices,
+  // and five sourced nutrition guides add 2.7 KB gzip across lazy product routes.
   // Shared FREE/PLUS gates, live downgrade handling and the one-time beta notice
   // add 2.7 KB gzip across lazy product routes without growing the largest chunk.
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 502_000,
-  productJsGzip: 449_000,
+  totalJsGzip: 505_000,
+  productJsGzip: 452_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   adminJsGzip: 53_000,

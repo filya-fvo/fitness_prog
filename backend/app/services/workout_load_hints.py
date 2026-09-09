@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, cast, func, or_, select
+from sqlalchemy import Date, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workout import Workout, WorkoutSet
@@ -25,6 +25,11 @@ async def load_hints_for_exercises(
         return []
 
     completed_date = func.coalesce(cast(Workout.completed_at, Date), Workout.scheduled_date)
+    raw_phase = Workout.plan["week_phase"].as_string()
+    phase = case(
+        (raw_phase.in_(["light", "medium", "heavy"]), raw_phase),
+        else_="unknown",
+    )
     ranked = (
         select(
             WorkoutSet.exercise_id.label("exercise_id"),
@@ -35,9 +40,10 @@ async def load_hints_for_exercises(
             WorkoutSet.machine_params.label("machine_params"),
             Workout.rpe.label("rpe"),
             completed_date.label("completed_date"),
+            phase.label("phase"),
             func.row_number()
             .over(
-                partition_by=WorkoutSet.exercise_id,
+                partition_by=(WorkoutSet.exercise_id, phase),
                 order_by=(
                     completed_date.desc(),
                     Workout.completed_at.desc().nulls_last(),
@@ -54,6 +60,7 @@ async def load_hints_for_exercises(
         .where(
             Workout.user_id == user_id,
             Workout.is_deleted.is_(False),
+            Workout.status == "completed",
             WorkoutSet.is_deleted.is_(False),
             WorkoutSet.is_completed.is_(True),
             WorkoutSet.exercise_id.in_(unique_ids),
@@ -68,12 +75,18 @@ async def load_hints_for_exercises(
     )
     rows = (
         await session.execute(
-            select(ranked).where(ranked.c.rank == 1).order_by(ranked.c.exercise_id)
+            select(ranked)
+            .where(ranked.c.rank == 1)
+            .order_by(ranked.c.exercise_id, ranked.c.completed_date.desc())
         )
     ).mappings()
-    return [
-        {
-            "exercise_id": row["exercise_id"],
+    grouped: dict[uuid.UUID, dict[str, object]] = {}
+    for row in rows:
+        exercise_id = row["exercise_id"]
+        phase_name = str(row.get("phase") or "unknown")
+        if phase_name not in {"light", "medium", "heavy"}:
+            phase_name = "unknown"
+        load = {
             "weight": _decimal_or_none(row["weight"]),
             "reps": row["reps"],
             "duration_sec": row["duration_sec"],
@@ -82,8 +95,14 @@ async def load_hints_for_exercises(
             "rpe": row["rpe"],
             "completed_date": _date_value(row["completed_date"]),
         }
-        for row in rows
-    ]
+        item = grouped.get(exercise_id)
+        if item is None:
+            item = {"exercise_id": exercise_id, **load, "phase_loads": {}}
+            grouped[exercise_id] = item
+        phase_loads = item["phase_loads"]
+        assert isinstance(phase_loads, dict)
+        phase_loads[phase_name] = load
+    return list(grouped.values())
 
 
 def _decimal_or_none(value: object) -> Decimal | None:

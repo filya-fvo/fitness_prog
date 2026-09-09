@@ -1,14 +1,18 @@
 import { useMemo, useState } from "react";
 
 import {
+  cancelScheduledWorkout,
+  previewWorkoutReschedule,
   previewWorkoutScheduleReplacement,
   replaceWorkoutScheduleDay,
   rescheduleWorkout,
+  type WorkoutReschedulePreview,
   type WorkoutScheduleOccurrence,
   type WorkoutScheduleOverview,
   type WorkoutScheduleReplacementPreview,
 } from "@/api/workouts";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+import { confirmAction } from "@/lib/telegram";
 import { toUserMessage } from "@/utils/errors";
 
 type Props = {
@@ -36,6 +40,13 @@ function weekEnd(value: string): string {
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
 }
 
+function weekStart(value: string): string {
+  const date = new Date(`${value.slice(0, 10)}T12:00:00`);
+  const mondayOffset = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - mondayOffset);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+
 function daysLabel(days: number[]): string {
   return days.map((day) => WEEKDAYS[day]).join(" · ");
 }
@@ -47,20 +58,24 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
   const [effectiveScope, setEffectiveScope] = useState<EffectiveScope>("current_week");
   const [conflictResolution, setConflictResolution] = useState<"reduce" | null>(null);
   const [preview, setPreview] = useState<WorkoutScheduleReplacementPreview | null>(null);
+  const [oncePreview, setOncePreview] = useState<WorkoutReschedulePreview | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useModalAccessibility(true, onClose);
   const permanentMax = useMemo(() => weekEnd(occurrence.original_date), [occurrence.original_date]);
+  const permanentMin = useMemo(() => weekStart(occurrence.original_date), [occurrence.original_date]);
+  const outsideOccurrenceWeek = mode === "once" && Boolean(targetDate) && (targetDate < permanentMin || targetDate > permanentMax);
 
   function resetPreview() {
     setPreview(null);
+    setOncePreview(null);
     setIdempotencyKey(null);
     setConflictResolution(null);
     setError(null);
   }
 
-  async function submitOnce() {
+  async function applyOnce(resolution: "move_existing" | "cancel_existing" | null = null) {
     if (!targetDate || !targetTime || saving) return;
     setSaving(true);
     setError(null);
@@ -69,10 +84,52 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         originalDate: occurrence.original_date,
         targetDate,
         targetTime,
+        conflictResolution: resolution,
       }));
       onClose();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось перенести тренировку"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitOnce() {
+    if (!targetDate || !targetTime || saving || outsideOccurrenceWeek) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await previewWorkoutReschedule({
+        originalDate: occurrence.original_date,
+        targetDate,
+      });
+      setOncePreview(result);
+      if (!result.can_reschedule || result.conflict) {
+        setSaving(false);
+        return;
+      }
+    } catch (err) {
+      setError(toUserMessage(err, "Не удалось проверить перенос тренировки"));
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    await applyOnce();
+  }
+
+  async function cancelInstead() {
+    if (saving) return;
+    const accepted = await confirmAction(
+      `Отменить «${occurrence.title}»? Следующая тренировка останется по расписанию, а перед стартом можно выбрать нужный день и нагрузку.`,
+    );
+    if (!accepted) return;
+    setSaving(true);
+    setError(null);
+    try {
+      onChange(await cancelScheduledWorkout(occurrence.target_date));
+      onClose();
+    } catch (err) {
+      setError(toUserMessage(err, "Не удалось отменить тренировку"));
     } finally {
       setSaving(false);
     }
@@ -151,7 +208,7 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="min-w-0 text-xs text-tg-hint">
             Новый день
-            <input type="date" value={targetDate} min={mode === "once" && occurrence.original_date > overview.requested_date ? occurrence.original_date : overview.requested_date} max={mode === "once" ? occurrence.reschedule_until ?? undefined : permanentMax} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="mt-1 min-h-[44px] min-w-0 w-full rounded-xl border border-tg-hint/20 bg-tg-secondary px-3 py-2.5 text-base text-tg-text" />
+            <input type="date" value={targetDate} min={mode === "once" ? overview.requested_date : permanentMin} max={mode === "permanent" ? permanentMax : undefined} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="mt-1 min-h-[44px] min-w-0 w-full rounded-xl border border-tg-hint/20 bg-tg-secondary px-3 py-2.5 text-base text-tg-text" />
           </label>
           <label className="min-w-0 text-xs text-tg-hint">
             Время начала
@@ -172,8 +229,37 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
             </label>
           </fieldset>
         ) : (
-          <p className="mt-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">Постоянные дни останутся без изменений.</p>
+          <p className="mt-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">Постоянные дни останутся без изменений. Можно выбрать любой день этой недели.</p>
         )}
+
+        {outsideOccurrenceWeek ? (
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+            <p className="text-amber-800 dark:text-amber-200">На другую неделю разово переносить нельзя: так порядок программы не смешается. Отмените эту тренировку — перед следующим занятием можно выбрать нужную тренировку и нагрузку.</p>
+            <button type="button" disabled={saving} onClick={() => void cancelInstead()} className="mt-2 min-h-[44px] w-full rounded-xl border border-amber-500/40 px-3 py-2 font-semibold text-amber-800 disabled:opacity-50 dark:text-amber-200">
+              Отменить эту тренировку
+            </button>
+          </div>
+        ) : null}
+
+        {mode === "once" && oncePreview?.conflict ? (
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">На {formatDate(oncePreview.target_date)} уже есть тренировка</p>
+            <p className="mt-1 text-amber-800 dark:text-amber-200">{oncePreview.warning}</p>
+            <div className="mt-2 space-y-2">
+              {oncePreview.suggested_displaced_date ? (
+                <button type="button" disabled={saving} onClick={() => void applyOnce("move_existing")} className="min-h-[44px] w-full rounded-xl bg-tg-button px-3 py-2 font-semibold text-tg-button-text disabled:opacity-50">
+                  Перенести её на {formatDate(oncePreview.suggested_displaced_date)}
+                </button>
+              ) : null}
+              <button type="button" disabled={saving} onClick={() => void applyOnce("cancel_existing")} className="min-h-[44px] w-full rounded-xl border border-amber-500/40 px-3 py-2 font-semibold text-amber-800 disabled:opacity-50 dark:text-amber-200">
+                Отменить её и перенести эту
+              </button>
+              <button type="button" disabled={saving} onClick={() => setOncePreview(null)} className="min-h-[44px] w-full rounded-xl px-3 py-2 text-tg-link disabled:opacity-50">
+                Выбрать другую дату
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {preview ? (
           <div className="mt-3 rounded-xl border border-tg-button/20 bg-tg-secondary p-3 text-xs">
@@ -191,19 +277,19 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         ) : null}
 
         {error ? <p role="alert" className="mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p> : null}
-        {mode === "once" ? (
+        {mode === "once" && !oncePreview?.conflict && !outsideOccurrenceWeek ? (
           <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void submitOnce()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
-            {saving ? "Сохраняем…" : "Перенести только эту тренировку"}
+            {saving ? "Проверяем…" : "Перенести только эту тренировку"}
           </button>
-        ) : preview ? (
+        ) : mode === "permanent" && preview ? (
           <button type="button" disabled={saving || (preview.requires_conflict_resolution && conflictResolution !== "reduce")} onClick={() => void applyPermanent()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
             {saving ? "Сохраняем…" : "Подтвердить новое расписание"}
           </button>
-        ) : (
+        ) : mode === "permanent" ? (
           <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void loadPreview()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
             {saving ? "Проверяем…" : "Показать новое расписание"}
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
