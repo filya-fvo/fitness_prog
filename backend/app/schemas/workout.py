@@ -140,6 +140,55 @@ class WorkoutHistoryResponse(BaseModel):
     total: int
 
 
+ExerciseWeekPhase = Literal["light", "medium", "heavy", "unknown"]
+
+
+class ExerciseProgressPoint(BaseModel):
+    date: date
+    weight: Decimal = Field(..., ge=0)
+    total_weight: Decimal = Field(..., ge=0)
+    reps: int = Field(..., ge=1)
+    estimated_1rm: Decimal = Field(..., ge=0)
+    weight_mode: Literal["total", "per_hand"] | None = None
+    phase: ExerciseWeekPhase
+
+
+class ExerciseProgressDiarySet(BaseModel):
+    set_number: int = Field(..., ge=1)
+    weight: Decimal = Field(..., ge=0)
+    total_weight: Decimal = Field(..., ge=0)
+    reps: int = Field(..., ge=1)
+    weight_mode: Literal["total", "per_hand"] | None = None
+
+
+class ExerciseProgressDiarySession(BaseModel):
+    workout_id: uuid.UUID
+    date: date
+    phase: ExerciseWeekPhase
+    sets: list[ExerciseProgressDiarySet]
+
+
+class ExerciseProgressMetricSummary(BaseModel):
+    latest: Decimal | None = None
+    best: Decimal | None = None
+    change: Decimal | None = None
+
+
+class ExerciseProgressSummary(BaseModel):
+    total_weight: ExerciseProgressMetricSummary
+    estimated_1rm: ExerciseProgressMetricSummary
+
+
+class ExerciseProgressResponse(BaseModel):
+    exercise_id: uuid.UUID
+    period_start: date
+    period_end: date
+    points: list[ExerciseProgressPoint]
+    summary: ExerciseProgressSummary
+    diary: list[ExerciseProgressDiarySession]
+    next_diary_cursor: str | None = None
+
+
 class WorkoutLoadHintsRequest(BaseModel):
     exercise_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
 

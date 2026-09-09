@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { ExerciseProgressPoint, ExerciseWeekPhase } from "@/utils/exerciseProgress";
+import type { ExerciseProgressPoint, ExerciseWeekPhase } from "@/types/workout";
 import { filterExerciseProgress } from "@/utils/exerciseProgress";
 
 type Period = 7 | 30 | 365;
 type Phase = "all" | Exclude<ExerciseWeekPhase, "unknown">;
-type Metric = "weight" | "estimated1rm";
+type Metric = "totalWeight" | "estimated1rm";
 
 const PHASES: Array<{ id: Phase; label: string }> = [
   { id: "all", label: "Все" },
@@ -16,6 +16,18 @@ const PHASES: Array<{ id: Phase; label: string }> = [
 
 function shortDate(value: string): string {
   return value.slice(5).split("-").reverse().join(".");
+}
+
+function displayDate(value: string): string {
+  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" })
+    .format(new Date(`${value}T12:00:00`));
+}
+
+function displayWeight(point: ExerciseProgressPoint): string {
+  if (point.weightMode === "per_hand") {
+    return `${point.weight} кг/руку · ${point.totalWeight} кг всего`;
+  }
+  return `${point.totalWeight} кг`;
 }
 
 function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric: Metric }) {
@@ -56,7 +68,7 @@ function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric
           const showLabel = index % labelStep === 0 || index === coords.length - 1;
           return <g key={`${point.date}-${index}`}>
             <circle cx={pointX} cy={pointY} r="4.5" fill="var(--app-accent)" stroke="var(--app-bg)" strokeWidth="2">
-              <title>{shortDate(point.date)}: {point[metric]} кг · {point.weight} кг × {point.reps}</title>
+              <title>{shortDate(point.date)}: {point[metric]} кг · {displayWeight(point)} × {point.reps}</title>
             </circle>
             {showLabel ? <text x={pointX} y={Math.max(13, pointY - 9)} textAnchor="middle" className="fill-tg-text text-[10px] font-semibold">{point[metric]}</text> : null}
           </g>;
@@ -72,12 +84,16 @@ function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric
 export function ExerciseProgressChart({ allPoints }: { allPoints: ExerciseProgressPoint[] }) {
   const [period, setPeriod] = useState<Period>(30);
   const [phase, setPhase] = useState<Phase>("all");
-  const [metric, setMetric] = useState<Metric>("weight");
+  const [metric, setMetric] = useState<Metric>("totalWeight");
+  const [visibleRows, setVisibleRows] = useState(12);
   const points = useMemo(() => filterExerciseProgress(allPoints, period, phase), [allPoints, period, phase]);
   const first = points[0] ?? null;
   const latest = points.at(-1) ?? null;
   const best = points.length ? Math.max(...points.map((point) => point[metric])) : null;
   const delta = first && latest ? Math.round((latest[metric] - first[metric]) * 10) / 10 : null;
+  const tablePoints = points.slice(-visibleRows).reverse();
+
+  useEffect(() => setVisibleRows(12), [period, phase]);
 
   return (
     <div>
@@ -92,7 +108,7 @@ export function ExerciseProgressChart({ allPoints }: { allPoints: ExerciseProgre
       <div className="mt-2 flex items-center justify-between gap-2">
         <p className="text-[11px] text-tg-hint">Лучший завершённый подход за тренировку</p>
         <div className="flex rounded-full bg-tg-bg p-0.5 text-[11px]">
-          <button type="button" onClick={() => setMetric("weight")} className={`rounded-full px-2 py-1 ${metric === "weight" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>Вес</button>
+          <button type="button" onClick={() => setMetric("totalWeight")} className={`rounded-full px-2 py-1 ${metric === "totalWeight" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>Вес</button>
           <button type="button" onClick={() => setMetric("estimated1rm")} className={`rounded-full px-2 py-1 ${metric === "estimated1rm" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>1ПМ</button>
         </div>
       </div>
@@ -105,6 +121,40 @@ export function ExerciseProgressChart({ allPoints }: { allPoints: ExerciseProgre
         </div>
         <LineChart points={points} metric={metric} />
         {metric === "estimated1rm" ? <p className="mt-2 text-[11px] text-tg-hint">1ПМ — расчёт по формуле Эпли, а не рекомендация проверять максимальный вес.</p> : null}
+        <div className="mt-4 overflow-x-auto rounded-xl border border-white/5">
+          <table className="w-full min-w-[420px] border-collapse text-left text-xs">
+            <caption className="sr-only">Табличные данные динамики упражнения</caption>
+            <thead className="bg-tg-bg text-tg-hint">
+              <tr>
+                <th scope="col" className="px-3 py-2 font-medium">Дата</th>
+                <th scope="col" className="px-3 py-2 font-medium">Неделя</th>
+                <th scope="col" className="px-3 py-2 font-medium">Вес</th>
+                <th scope="col" className="px-3 py-2 font-medium">Повторы</th>
+                <th scope="col" className="px-3 py-2 font-medium">1ПМ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tablePoints.map((point) => (
+                <tr key={point.date} className="border-t border-white/5">
+                  <td className="whitespace-nowrap px-3 py-2.5">{displayDate(point.date)}</td>
+                  <td className="px-3 py-2.5">{PHASES.find((item) => item.id === point.phase)?.label ?? "Без фазы"}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{displayWeight(point)}</td>
+                  <td className="px-3 py-2.5 tabular-nums">{point.reps}</td>
+                  <td className="px-3 py-2.5 tabular-nums">{point.estimated1rm} кг</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {visibleRows < points.length ? (
+          <button
+            type="button"
+            onClick={() => setVisibleRows((current) => Math.min(points.length, current + 25))}
+            className="mt-2 min-h-11 w-full rounded-xl bg-tg-bg px-3 py-2 text-xs font-medium text-tg-link"
+          >
+            Показать ещё ({points.length - visibleRows})
+          </button>
+        ) : null}
       </> : null}
     </div>
   );

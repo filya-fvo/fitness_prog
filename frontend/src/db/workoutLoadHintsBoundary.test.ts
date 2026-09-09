@@ -20,7 +20,7 @@ describe("FREE workout history boundary", () => {
     }
   });
 
-  it("keeps full history only in explicit progress interfaces", () => {
+  it("keeps dashboard history isolated and uses aggregates for one exercise", () => {
     const progressPage = readFileSync(
       resolve(process.cwd(), "src/features/progress/pages/ProgressPage.tsx"),
       "utf8",
@@ -30,6 +30,8 @@ describe("FREE workout history boundary", () => {
       "utf8",
     );
     expect(progressPage).toContain("fetchWorkoutHistory");
-    expect(exerciseProgress).toContain("fetchWorkoutHistory");
+    expect(exerciseProgress).toContain("fetchExerciseProgress");
+    expect(exerciseProgress).not.toContain("fetchWorkoutHistory");
+    expect(exerciseProgress).not.toContain("readCachedWorkouts");
   });
 });

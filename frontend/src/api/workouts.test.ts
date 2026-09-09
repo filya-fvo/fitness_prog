@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
-import { cancelScheduledWorkout, fetchPersonalRegularity, fetchWorkoutLoadHints } from "./workouts";
+import {
+  cancelScheduledWorkout,
+  fetchExerciseProgress,
+  fetchPersonalRegularity,
+  fetchWorkoutLoadHints,
+} from "./workouts";
 
 describe("workout schedule API", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -97,5 +102,55 @@ describe("workout schedule API", () => {
       lastMachineParams: null,
       lastRpe: 8,
     }]);
+  });
+
+  it("parses bounded exercise aggregates without loading workout history", async () => {
+    const exerciseId = "11111111-1111-4111-8111-111111111111";
+    const workoutId = "22222222-2222-4222-8222-222222222222";
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: {
+      exercise_id: exerciseId,
+      period_start: "2025-09-09",
+      period_end: "2026-09-08",
+      points: [{
+        date: "2026-09-08",
+        weight: "22.00",
+        total_weight: "44.00",
+        reps: 8,
+        estimated_1rm: "55.70",
+        weight_mode: "per_hand",
+        phase: "heavy",
+      }],
+      summary: {
+        total_weight: { latest: "44.0", best: "44.0", change: "0.0" },
+        estimated_1rm: { latest: "55.7", best: "55.7", change: "0.0" },
+      },
+      diary: [{
+        workout_id: workoutId,
+        date: "2026-09-08",
+        phase: "heavy",
+        sets: [{
+          set_number: 1,
+          weight: "22.00",
+          total_weight: "44.00",
+          reps: 8,
+          weight_mode: "per_hand",
+        }],
+      }],
+      next_diary_cursor: null,
+    } });
+
+    const result = await fetchExerciseProgress(exerciseId);
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      `/workouts/exercises/${exerciseId}/progress`,
+      { params: { period_days: 365, phase: "all", diary_limit: 1 } },
+    );
+    expect(result.points[0]).toMatchObject({
+      weight: 22,
+      totalWeight: 44,
+      estimated1rm: 55.7,
+      weightMode: "per_hand",
+    });
+    expect(result.diary[0]?.sets[0]?.totalWeight).toBe(44);
   });
 });

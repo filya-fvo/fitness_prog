@@ -42,12 +42,25 @@ describe("exercise progress", () => {
       workout("2026-08-19", "heavy", [[70, 5], [65, 8]]),
     ], "exercise-1", 1);
     expect(diary).toEqual([{
+      workoutId: expect.any(String),
       date: "2026-08-19",
       phase: "heavy",
       sets: [
-        { setNumber: 1, weight: 70, reps: 5 },
-        { setNumber: 2, weight: 65, reps: 8 },
+        { setNumber: 1, weight: 70, totalWeight: 70, reps: 5, weightMode: null },
+        { setNumber: 2, weight: 65, totalWeight: 65, reps: 8, weightMode: null },
       ],
     }]);
+  });
+
+  it("normalizes per-hand weight before comparing progress", () => {
+    const item = workout("2026-08-19", "heavy", [[22, 8]]);
+    item.sets[0].weight_mode = "per_hand";
+
+    expect(buildExerciseProgress([item], "exercise-1")[0]).toMatchObject({
+      weight: 22,
+      totalWeight: 44,
+      weightMode: "per_hand",
+      estimated1rm: 55.7,
+    });
   });
 });

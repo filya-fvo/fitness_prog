@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
-import type { Workout, WorkoutLoadHint, WorkoutPlan, WorkoutSet } from "@/types/workout";
+import type {
+  ExerciseProgress,
+  Workout,
+  WorkoutLoadHint,
+  WorkoutPlan,
+  WorkoutSet,
+} from "@/types/workout";
 
 export const workoutPlanSchema = z.object({
   title: z.string().nullable().optional(),
@@ -93,6 +99,45 @@ const workoutLoadHintSchema = z.object({
   machine_params: z.record(z.union([z.string(), z.number()])).nullable(),
   rpe: z.number().int().min(1).max(10).nullable(),
   completed_date: z.string(),
+});
+
+const exerciseWeekPhaseSchema = z.enum(["light", "medium", "heavy", "unknown"]);
+const decimalSchema = z
+  .union([z.number(), z.string()])
+  .transform(Number)
+  .pipe(z.number().finite());
+const nonnegativeDecimalSchema = decimalSchema.pipe(z.number().nonnegative());
+const exerciseProgressSetSchema = z.object({
+  set_number: z.number().int().positive(),
+  weight: nonnegativeDecimalSchema,
+  total_weight: nonnegativeDecimalSchema,
+  reps: z.number().int().positive(),
+  weight_mode: z.enum(["total", "per_hand"]).nullable(),
+});
+const exerciseProgressSchema = z.object({
+  exercise_id: z.string().uuid(),
+  period_start: z.string(),
+  period_end: z.string(),
+  points: z.array(z.object({
+    date: z.string(),
+    weight: nonnegativeDecimalSchema,
+    total_weight: nonnegativeDecimalSchema,
+    reps: z.number().int().positive(),
+    estimated_1rm: nonnegativeDecimalSchema,
+    weight_mode: z.enum(["total", "per_hand"]).nullable(),
+    phase: exerciseWeekPhaseSchema,
+  })).max(366),
+  summary: z.object({
+    total_weight: z.object({ latest: nonnegativeDecimalSchema.nullable(), best: nonnegativeDecimalSchema.nullable(), change: decimalSchema.nullable() }),
+    estimated_1rm: z.object({ latest: nonnegativeDecimalSchema.nullable(), best: nonnegativeDecimalSchema.nullable(), change: decimalSchema.nullable() }),
+  }),
+  diary: z.array(z.object({
+    workout_id: z.string().uuid(),
+    date: z.string(),
+    phase: exerciseWeekPhaseSchema,
+    sets: z.array(exerciseProgressSetSchema),
+  })).max(25),
+  next_diary_cursor: z.string().nullable(),
 });
 
 const workoutScheduleSettingsSchema = z.object({
@@ -326,6 +371,48 @@ export async function rescheduleWorkout(input: {
     target_time: input.targetTime,
   });
   return scheduleOverviewSchema.parse(data);
+}
+
+export async function fetchExerciseProgress(
+  exerciseId: string,
+  options: { periodDays?: number; phase?: "all" | "light" | "medium" | "heavy"; diaryLimit?: number; diaryCursor?: string | null } = {},
+): Promise<ExerciseProgress> {
+  const { data } = await apiClient.get(`/workouts/exercises/${exerciseId}/progress`, {
+    params: {
+      period_days: options.periodDays ?? 365,
+      phase: options.phase ?? "all",
+      diary_limit: options.diaryLimit ?? 1,
+      ...(options.diaryCursor ? { diary_cursor: options.diaryCursor } : {}),
+    },
+  });
+  const parsed = exerciseProgressSchema.parse(data);
+  return {
+    exerciseId: parsed.exercise_id,
+    periodStart: parsed.period_start,
+    periodEnd: parsed.period_end,
+    points: parsed.points.map((point) => ({
+      date: point.date,
+      weight: point.weight,
+      totalWeight: point.total_weight,
+      reps: point.reps,
+      estimated1rm: point.estimated_1rm,
+      weightMode: point.weight_mode,
+      phase: point.phase,
+    })),
+    diary: parsed.diary.map((item) => ({
+      workoutId: item.workout_id,
+      date: item.date,
+      phase: item.phase,
+      sets: item.sets.map((set) => ({
+        setNumber: set.set_number,
+        weight: set.weight,
+        totalWeight: set.total_weight,
+        reps: set.reps,
+        weightMode: set.weight_mode,
+      })),
+    })),
+    nextDiaryCursor: parsed.next_diary_cursor,
+  };
 }
 
 export async function fetchWorkoutLoadHints(exerciseIds: string[]): Promise<WorkoutLoadHint[]> {

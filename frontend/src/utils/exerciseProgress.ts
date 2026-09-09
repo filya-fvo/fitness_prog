@@ -1,22 +1,11 @@
-import type { Workout } from "@/types/workout";
+import type {
+  ExerciseProgressDiarySession,
+  ExerciseProgressPoint,
+  ExerciseWeekPhase,
+  Workout,
+} from "@/types/workout";
 import { estimate1rm } from "@/utils/strengthProgress";
 import { workoutDateKey } from "@/utils/progress";
-
-export type ExerciseWeekPhase = "light" | "medium" | "heavy" | "unknown";
-
-export type ExerciseProgressPoint = {
-  date: string;
-  weight: number;
-  reps: number;
-  estimated1rm: number;
-  phase: ExerciseWeekPhase;
-};
-
-export type ExerciseDiarySession = {
-  date: string;
-  phase: ExerciseWeekPhase;
-  sets: Array<{ setNumber: number; weight: number; reps: number }>;
-};
 
 function workoutPhase(workout: Workout): ExerciseWeekPhase {
   const phase = String((workout.plan as { week_phase?: unknown } | null)?.week_phase ?? "");
@@ -38,16 +27,24 @@ export function buildExerciseProgress(
       .filter((set) => set.exercise_id === exerciseId && set.is_completed)
       .map((set) => ({
         weight: Number(set.weight) || 0,
+        weightMode: set.weight_mode ?? null,
         reps: Number(set.reps) || 0,
       }))
       .filter((set) => set.weight > 0 && set.reps > 0)
-      .map((set) => ({ ...set, estimated1rm: estimate1rm(set.weight, set.reps) }));
+      .map((set) => {
+        const totalWeight = set.weight * (set.weightMode === "per_hand" ? 2 : 1);
+        return {
+          ...set,
+          totalWeight,
+          estimated1rm: estimate1rm(totalWeight, set.reps),
+        };
+      });
     if (!candidates.length) continue;
 
     const best = candidates.reduce((current, item) =>
       item.estimated1rm > current.estimated1rm ? item : current,
     );
-    const point = { date, ...best, phase: workoutPhase(workout) };
+    const point: ExerciseProgressPoint = { date, ...best, phase: workoutPhase(workout) };
     const previous = byDay.get(date);
     if (!previous || point.estimated1rm > previous.estimated1rm) byDay.set(date, point);
   }
@@ -71,7 +68,7 @@ export function buildExerciseDiary(
   workouts: Workout[],
   exerciseId: string,
   limit = 3,
-): ExerciseDiarySession[] {
+): ExerciseProgressDiarySession[] {
   return workouts
     .filter((workout) => workout.status === "completed")
     .map((workout) => {
@@ -81,13 +78,17 @@ export function buildExerciseDiary(
         .map((set) => ({
           setNumber: set.set_number,
           weight: Number(set.weight) || 0,
+          totalWeight: (Number(set.weight) || 0) * (set.weight_mode === "per_hand" ? 2 : 1),
           reps: Number(set.reps) || 0,
+          weightMode: set.weight_mode ?? null,
         }))
         .filter((set) => set.weight > 0 && set.reps > 0)
         .sort((a, b) => a.setNumber - b.setNumber);
-      return date && sets.length ? { date, phase: workoutPhase(workout), sets } : null;
+      return date && sets.length
+        ? { workoutId: workout.id, date, phase: workoutPhase(workout), sets }
+        : null;
     })
-    .filter((session): session is ExerciseDiarySession => session != null)
+    .filter((session): session is ExerciseProgressDiarySession => session != null)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, Math.max(1, limit));
 }

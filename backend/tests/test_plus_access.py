@@ -83,6 +83,11 @@ async def _request_as(
     ("method", "path", "expected_feature"),
     [
         ("GET", "/workouts/history", "workout_history"),
+        (
+            "GET",
+            "/workouts/exercises/11111111-1111-4111-8111-111111111111/progress",
+            "exercise_history",
+        ),
         ("GET", "/measurements/range", "measurement_history"),
         ("GET", "/measurements/analytics", "measurement_analytics"),
         ("GET", "/nutrition/range", "nutrition_history"),

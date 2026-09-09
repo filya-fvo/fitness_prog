@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
-import { fetchWorkoutHistory } from "@/api/workouts";
-import { readCachedWorkouts } from "@/db/syncQueue";
+import { fetchExerciseProgress } from "@/api/workouts";
 import { ExerciseProgressChart } from "@/features/workout/components/ExerciseProgressChart";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
-import type { Workout } from "@/types/workout";
-import { buildExerciseDiary, buildExerciseProgress } from "@/utils/exerciseProgress";
+import type { ExerciseProgress } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 
 const PHASE_LABELS = { light: "Лёгкая", medium: "Средняя", heavy: "Тяжёлая", unknown: "Без фазы" } as const;
@@ -24,7 +22,7 @@ function ChartIcon() {
 
 export function ExerciseProgressSection({ exerciseId, exerciseName }: { exerciseId: string; exerciseName: string }) {
   const plusAccess = useUserStore((state) => hasPlus(state.user));
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [progress, setProgress] = useState<ExerciseProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chartOpen, setChartOpen] = useState(false);
@@ -32,7 +30,7 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
 
   useEffect(() => {
     if (!plusAccess) {
-      setWorkouts([]);
+      setProgress(null);
       setLoading(false);
       setChartOpen(false);
       return;
@@ -41,13 +39,14 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
     async function load() {
       setLoading(true);
       setError(null);
+      setProgress(null);
       try {
-        const cached = await readCachedWorkouts();
-        if (!cancelled) setWorkouts(cached);
-        if (getStoredToken() && isOnline()) {
-          const fresh = await fetchWorkoutHistory();
-          if (!cancelled) setWorkouts(fresh);
+        if (!getStoredToken() || !isOnline()) {
+          if (!cancelled) setError("Динамика упражнения доступна онлайн");
+          return;
         }
+        const result = await fetchExerciseProgress(exerciseId);
+        if (!cancelled) setProgress(result);
       } catch {
         if (!cancelled) setError("Не удалось обновить историю");
       } finally {
@@ -58,9 +57,8 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
     return () => { cancelled = true; };
   }, [exerciseId, plusAccess]);
 
-  const diary = useMemo(() => buildExerciseDiary(workouts, exerciseId, 1), [exerciseId, workouts]);
-  const points = useMemo(() => buildExerciseProgress(workouts, exerciseId), [exerciseId, workouts]);
-  const latest = diary[0] ?? null;
+  const points = progress?.points ?? [];
+  const latest = progress?.diary[0] ?? null;
 
   if (!plusAccess) {
     return <div className="mt-3"><PlusAccessSummary feature="exercise_history" title="Дневник упражнения доступен в PLUS" compact /></div>;
@@ -74,7 +72,7 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
           Динамика веса <ChartIcon />
         </button>
       </div>
-      {loading && !workouts.length ? <div className="mt-3 h-20 animate-pulse rounded-xl bg-tg-bg" /> : null}
+      {loading && !progress ? <div className="mt-3 h-20 animate-pulse rounded-xl bg-tg-bg" /> : null}
       {!loading && !latest ? <p className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">История появится после завершённого подхода с весом.</p> : null}
       {latest ? <div className="mt-3">
         <div className="mb-2 flex items-center justify-between gap-2 text-xs">
@@ -82,7 +80,7 @@ export function ExerciseProgressSection({ exerciseId, exerciseName }: { exercise
           <span className="rounded-full bg-tg-bg px-2 py-1 text-tg-hint">{PHASE_LABELS[latest.phase]}</span>
         </div>
         <div className="space-y-1.5">
-          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-tg-bg px-3 py-2.5 text-sm"><span className="w-4 text-tg-hint">{set.setNumber}</span><span className="font-semibold tabular-nums">{set.weight} кг × {set.reps} повт.</span></div>)}
+          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-tg-bg px-3 py-2.5 text-sm"><span className="w-4 text-tg-hint">{set.setNumber}</span><span className="font-semibold tabular-nums">{set.weight} кг{set.weightMode === "per_hand" ? "/руку" : ""} × {set.reps} повт.</span></div>)}
         </div>
       </div> : null}
       {error ? <p className="mt-2 text-[11px] text-amber-300">{error}</p> : null}

@@ -97,6 +97,40 @@ export type WorkoutLoadHint = {
   lastRpe: number | null;
 };
 
+export type ExerciseWeekPhase = "light" | "medium" | "heavy" | "unknown";
+
+export type ExerciseProgressPoint = {
+  date: string;
+  weight: number;
+  totalWeight: number;
+  reps: number;
+  estimated1rm: number;
+  weightMode: "total" | "per_hand" | null;
+  phase: ExerciseWeekPhase;
+};
+
+export type ExerciseProgressDiarySession = {
+  workoutId: string;
+  date: string;
+  phase: ExerciseWeekPhase;
+  sets: Array<{
+    setNumber: number;
+    weight: number;
+    totalWeight: number;
+    reps: number;
+    weightMode: "total" | "per_hand" | null;
+  }>;
+};
+
+export type ExerciseProgress = {
+  exerciseId: string;
+  periodStart: string;
+  periodEnd: string;
+  points: ExerciseProgressPoint[];
+  diary: ExerciseProgressDiarySession[];
+  nextDiaryCursor: string | null;
+};
+
 export type LocalSetDraft = {
   exerciseId: string;
   setNumber: number;

@@ -91,51 +91,37 @@ test("server-only active workout deep link is restored and cached", async ({ pag
       }),
     });
   });
-  await page.route("**/workouts/history", async (route) => {
+  await page.route(`**/workouts/exercises/${EXERCISE_ID}/progress**`, async (route) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        items: [
+        exercise_id: EXERCISE_ID,
+        period_start: "2025-08-19",
+        period_end: "2026-08-18",
+        points: [
           {
-            id: "44444444-4444-4444-8444-444444444441",
-            user_id: USER_ID,
-            program_id: null,
-            scheduled_date: "2026-08-12",
-            status: "completed",
-            ai_notes: null,
-            rpe: 7,
-            started_at: "2026-08-12T10:00:00Z",
-            completed_at: "2026-08-12T11:00:00Z",
-            title: "Прошлая тренировка",
-            workout_type: "custom",
-            plan: { exercises: [], week_phase: "medium" },
-            duration_sec: 3600,
-            sets: [
-              { id: "55555555-5555-4555-8555-555555555551", workout_id: "44444444-4444-4444-8444-444444444441", exercise_id: EXERCISE_ID, set_number: 1, reps: 8, weight: 80, is_completed: true, rest_time_sec: 90 },
-              { id: "55555555-5555-4555-8555-555555555552", workout_id: "44444444-4444-4444-8444-444444444441", exercise_id: EXERCISE_ID, set_number: 2, reps: 8, weight: 82.5, is_completed: true, rest_time_sec: 90 },
-            ],
+            date: "2026-08-12", weight: 82.5, total_weight: 82.5, reps: 8,
+            estimated_1rm: 104.5, weight_mode: "total", phase: "medium",
           },
           {
-            id: "44444444-4444-4444-8444-444444444442",
-            user_id: USER_ID,
-            program_id: null,
-            scheduled_date: "2026-08-18",
-            status: "completed",
-            ai_notes: null,
-            rpe: 8,
-            started_at: "2026-08-18T10:00:00Z",
-            completed_at: "2026-08-18T11:00:00Z",
-            title: "Тяжёлая тренировка",
-            workout_type: "custom",
-            plan: { exercises: [], week_phase: "heavy" },
-            duration_sec: 3600,
-            sets: [
-              { id: "55555555-5555-4555-8555-555555555553", workout_id: "44444444-4444-4444-8444-444444444442", exercise_id: EXERCISE_ID, set_number: 1, reps: 6, weight: 85, is_completed: true, rest_time_sec: 120 },
-              { id: "55555555-5555-4555-8555-555555555554", workout_id: "44444444-4444-4444-8444-444444444442", exercise_id: EXERCISE_ID, set_number: 2, reps: 6, weight: 87.5, is_completed: true, rest_time_sec: 120 },
-            ],
+            date: "2026-08-18", weight: 87.5, total_weight: 87.5, reps: 6,
+            estimated_1rm: 105, weight_mode: "total", phase: "heavy",
           },
         ],
-        total: 2,
+        summary: {
+          total_weight: { latest: 87.5, best: 87.5, change: 5 },
+          estimated_1rm: { latest: 105, best: 105, change: 0.5 },
+        },
+        diary: [{
+          workout_id: "44444444-4444-4444-8444-444444444442",
+          date: "2026-08-18",
+          phase: "heavy",
+          sets: [
+            { set_number: 1, reps: 6, weight: 85, total_weight: 85, weight_mode: "total" },
+            { set_number: 2, reps: 6, weight: 87.5, total_weight: 87.5, weight_mode: "total" },
+          ],
+        }],
+        next_diary_cursor: null,
       }),
     });
   });
@@ -157,9 +143,13 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await expect(progressDialog).toBeVisible();
   await expect(progressDialog.getByRole("button", { name: "Месяц" })).toBeVisible();
   await expect(progressDialog.getByRole("img", { name: "Динамика рабочих весов упражнения" })).toBeVisible();
+  await expect(progressDialog.getByRole("table", { name: "Табличные данные динамики упражнения" })).toBeVisible();
+  await expect(progressDialog.getByRole("columnheader", { name: "1ПМ" })).toBeVisible();
   await expect(progressDialog).toHaveScreenshot("exercise-progress-dialog-mobile.png", {
     animations: "disabled",
   });
+  await page.setViewportSize({ width: 320, height: 700 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.keyboard.press("Escape");
   await expect(progressDialog).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Восстановленная тренировка" })).toBeVisible();

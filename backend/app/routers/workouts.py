@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +34,7 @@ from app.schemas.scheduler import (
     WorkoutScheduleSettingsUpdate,
 )
 from app.schemas.workout import (
+    ExerciseProgressResponse,
     PlannedWorkoutPlanRequest,
     WorkoutCompleteRequest,
     WorkoutCreate,
@@ -46,7 +48,7 @@ from app.schemas.workout import (
     WorkoutSetResponse,
     WorkoutUpdateRequest,
 )
-from app.services import personal_regularity, planned_workout, schedule_replacement
+from app.services import exercise_progress, personal_regularity, planned_workout, schedule_replacement
 from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_load_hints
@@ -56,6 +58,7 @@ router = APIRouter(prefix="/workouts", tags=["workouts"])
 
 _WORKOUT_HISTORY_MESSAGE = "История тренировок доступна в PLUS"
 _WORKOUT_DETAILS_MESSAGE = "Прошлые тренировки доступны в PLUS"
+_EXERCISE_HISTORY_MESSAGE = "Динамика упражнения доступна в PLUS"
 
 
 @router.post("", response_model=WorkoutResponse, status_code=status.HTTP_201_CREATED)
@@ -120,6 +123,33 @@ async def workout_load_hint_list(
     return WorkoutLoadHintsResponse(
         items=[WorkoutLoadHint.model_validate(row) for row in rows],
     )
+
+
+@router.get(
+    "/exercises/{exercise_id}/progress",
+    response_model=ExerciseProgressResponse,
+)
+async def exercise_progress_summary(
+    exercise_id: uuid.UUID,
+    period_days: int = Query(default=365, ge=7, le=366),
+    phase: Literal["all", "light", "medium", "heavy"] = Query(default="all"),
+    diary_limit: int = Query(default=1, ge=1, le=25),
+    diary_cursor: str | None = Query(default=None, max_length=200),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXERCISE_HISTORY_MESSAGE)),
+) -> ExerciseProgressResponse:
+    period_end = user_local_day(user)
+    result = await exercise_progress.get_exercise_progress(
+        session,
+        user_id=user.id,
+        exercise_id=exercise_id,
+        date_from=period_end - timedelta(days=period_days - 1),
+        date_to=period_end,
+        phase=phase,
+        diary_limit=diary_limit,
+        diary_cursor=diary_cursor,
+    )
+    return ExerciseProgressResponse.model_validate(result)
 
 
 @router.get("/schedule/overview", response_model=WorkoutScheduleOverview)
