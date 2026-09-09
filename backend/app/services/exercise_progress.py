@@ -15,6 +15,7 @@ from sqlalchemy import Numeric, and_, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workout import Workout, WorkoutSet
+from app.services.workout_metrics import estimated_one_rep_max
 
 ExercisePhase = Literal["all", "light", "medium", "heavy"]
 _VALID_PHASES = {"light", "medium", "heavy"}
@@ -32,12 +33,6 @@ def _decimal(value: object) -> Decimal:
 
 def _rounded(value: Decimal) -> Decimal:
     return value.quantize(_ONE_DECIMAL, rounding=ROUND_HALF_UP)
-
-
-def _estimated_1rm(total_weight: Decimal, reps: int) -> Decimal:
-    if reps <= 1:
-        return _rounded(total_weight)
-    return _rounded(total_weight * (Decimal(1) + Decimal(reps) / Decimal(30)))
 
 
 def encode_diary_cursor(day: date, workout_id: uuid.UUID) -> str:
@@ -167,7 +162,7 @@ async def get_exercise_progress(
                 "weight": weight,
                 "total_weight": normalized,
                 "reps": reps,
-                "estimated_1rm": _estimated_1rm(normalized, reps),
+                "estimated_1rm": estimated_one_rep_max(normalized, reps),
                 "weight_mode": row["weight_mode"] if row["weight_mode"] in {"total", "per_hand"} else None,
                 "phase": _phase_value(row["phase"]),
             }

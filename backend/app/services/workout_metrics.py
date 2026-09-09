@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable, Protocol
 
 
@@ -23,6 +23,20 @@ class WorkoutLoadMetrics:
     reps_only_sets: int = 0
     timed_seconds: int = 0
     timed_sets: int = 0
+
+
+_ONE_DECIMAL = Decimal("0.1")
+
+
+def estimated_one_rep_max(total_weight: Decimal, reps: int) -> Decimal:
+    """Return a one-decimal Epley estimate for an already normalized weight."""
+
+    normalized_reps = max(1, min(20, int(reps or 1)))
+    if normalized_reps == 1:
+        value = total_weight
+    else:
+        value = total_weight * (Decimal(1) + Decimal(normalized_reps) / Decimal(30))
+    return value.quantize(_ONE_DECIMAL, rounding=ROUND_HALF_UP)
 
 
 def normalized_set_volume(workout_set: LoadSet) -> float:

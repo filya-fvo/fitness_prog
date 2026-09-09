@@ -34,7 +34,7 @@ test("FREE progress shows a product gate without requesting history", async ({ p
   await authenticate(page, "free");
   const premiumRequests: string[] = [];
   page.on("request", (request) => {
-    if (/workouts\/history|workouts\/regularity|nutrition\/range|daily-metrics\/range|measurements\/analytics/.test(request.url())) {
+    if (/workouts\/history|workouts\/regularity|nutrition\/range|daily-metrics\/range|measurements\/analytics|exercises\/strength-trends/.test(request.url())) {
       premiumRequests.push(request.url());
     }
   });

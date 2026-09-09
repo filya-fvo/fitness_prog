@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { analyzeProgress } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
+import { fetchStrengthTrendSets, type StrengthTrendSets } from "@/api/strengthTrends";
 import { fetchDailyMetricsRange, type DailyMetric } from "@/api/dailyMetrics";
 import { fetchNutritionRange } from "@/api/nutrition";
 import {
@@ -30,7 +31,7 @@ import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
 import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
 import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
-import { StrengthTrends } from "@/features/progress/pages/StrengthTrends";
+import { StrengthTrendSetsCard } from "@/features/progress/pages/StrengthTrendSets";
 import { WellnessSummary } from "@/features/progress/pages/WellnessSummary";
 import type { Exercise, Workout } from "@/types/workout";
 import { computeBadges } from "@/utils/achievements";
@@ -44,7 +45,6 @@ import {
   type NutritionBalanceSummary,
   workoutDateKey,
 } from "@/utils/progress";
-import { buildLiftTrends } from "@/utils/strengthProgress";
 import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { toUserMessage } from "@/utils/errors";
 import { useUserStore } from "@/store/userStore";
@@ -71,6 +71,8 @@ export function ProgressPage() {
   const [nutritionError, setNutritionError] = useState<string | null>(null);
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [dailyMetricsError, setDailyMetricsError] = useState<string | null>(null);
+  const [strengthTrendSets, setStrengthTrendSets] = useState<StrengthTrendSets | null>(null);
+  const [strengthTrendsError, setStrengthTrendsError] = useState<string | null>(null);
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
@@ -84,6 +86,7 @@ export function ProgressPage() {
       setRegularity(null);
       setNutrition(null);
       setDailyMetrics([]);
+      setStrengthTrendSets(null);
       return;
     }
     let cancelled = false;
@@ -92,6 +95,7 @@ export function ProgressPage() {
       setError(null);
       setNutritionError(null);
       setDailyMetricsError(null);
+      setStrengthTrendsError(null);
       try {
         const cached = await readCachedWorkouts();
         const cachedEx = await readCachedExercises();
@@ -103,7 +107,7 @@ export function ProgressPage() {
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range, ex, metrics, planRegularity] = await Promise.all([
+          const [items, range, ex, metrics, planRegularity, trendSets] = await Promise.all([
             fetchWorkoutHistory(),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
@@ -121,6 +125,12 @@ export function ProgressPage() {
               return null;
             }),
             fetchPersonalRegularity().catch(() => null),
+            fetchStrengthTrendSets().catch((err: unknown) => {
+              if (!cancelled) {
+                setStrengthTrendsError(toUserMessage(err, "Не удалось загрузить силовые тренды"));
+              }
+              return null;
+            }),
           ]);
           await cacheWorkouts(items);
           if (ex?.items?.length) {
@@ -133,12 +143,14 @@ export function ProgressPage() {
             if (range) setNutrition(buildNutritionBalance(range));
             if (metrics) setDailyMetrics(metrics.days);
             setRegularity(planRegularity);
+            setStrengthTrendSets(trendSets);
           }
         } else if (cached.length) {
           if (!cancelled) {
             setWorkouts(cached);
             setSource("cache");
             setNutritionError("Питание доступно только онлайн");
+            setStrengthTrendsError("Силовые тренды доступны только онлайн");
           }
         } else if (!cancelled) {
           setWorkouts([]);
@@ -170,7 +182,6 @@ export function ProgressPage() {
   }, [plusAccess]);
 
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
-  const liftTrends = useMemo(() => buildLiftTrends(workouts, catalog, 6), [workouts, catalog]);
   const badges = useMemo(
     () => computeBadges(workouts, ownerUserId, regularity),
     [ownerUserId, regularity, workouts],
@@ -300,15 +311,7 @@ export function ProgressPage() {
             </Link>
           </div>
         ) : null}
-        <StrengthTrends trends={liftTrends.slice(0, 1)} />
-
-        <Link
-          to="/progress/exercises"
-          className="flex min-h-11 items-center justify-between rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
-        >
-          <span>Прогресс по упражнениям</span>
-          <span aria-hidden="true">→</span>
-        </Link>
+        <StrengthTrendSetsCard data={strengthTrendSets} error={strengthTrendsError} />
 
         <button
           type="button"
@@ -321,7 +324,6 @@ export function ProgressPage() {
 
         {detailsOpen ? <>
         <BadgesPanel badges={badges} />
-        {liftTrends.length > 1 ? <StrengthTrends trends={liftTrends} /> : null}
         <div className="rounded-2xl bg-tg-secondary p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">Сводка по питанию</p>

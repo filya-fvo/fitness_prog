@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -133,3 +134,39 @@ class ExercisePinResponse(BaseModel):
     is_pinned: bool
     pinned_count: int = Field(..., ge=0)
     pin_limit: int = Field(default=8, ge=1)
+
+
+class StrengthTrendPoint(BaseModel):
+    date: date
+    weight: Decimal = Field(..., ge=0)
+    total_weight: Decimal = Field(..., ge=0)
+    reps: int = Field(..., ge=1)
+    estimated_1rm: Decimal = Field(..., ge=0)
+    weight_mode: Literal["total", "per_hand"] | None = None
+
+
+class StrengthTrendItem(BaseModel):
+    exercise_id: uuid.UUID
+    name: str
+    muscle_group: str | None = None
+    is_pinned: bool = False
+    points: list[StrengthTrendPoint] = Field(default_factory=list, max_length=56)
+    latest: StrengthTrendPoint | None = None
+    previous: StrengthTrendPoint | None = None
+    change_percent: Decimal | None = None
+    has_weight_mode_change: bool = False
+
+
+class NextWorkoutStrengthTrends(BaseModel):
+    date: date
+    title: str
+    items: list[StrengthTrendItem] = Field(default_factory=list, max_length=6)
+
+
+class StrengthTrendSetsResponse(BaseModel):
+    period_start: date
+    period_end: date
+    period_days: Literal[56] = 56
+    next_workout: NextWorkoutStrengthTrends | None = None
+    best_improvements: list[StrengthTrendItem] = Field(default_factory=list, max_length=3)
+    pinned: list[StrengthTrendItem] = Field(default_factory=list, max_length=8)

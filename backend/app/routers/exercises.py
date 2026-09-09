@@ -19,8 +19,9 @@ from app.schemas.exercise import (
     ExercisePinResponse,
     ExerciseResponse,
     ExerciseUpdate,
+    StrengthTrendSetsResponse,
 )
-from app.services import admin_audit, exercise_explorer, exercise_service
+from app.services import admin_audit, exercise_explorer, exercise_service, strength_trends
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
 _EXPLORER_MESSAGE = "История и подбор упражнений доступны в PLUS"
@@ -74,6 +75,15 @@ async def exercise_progress_explorer(
         q=q,
     )
     return ExerciseExplorerResponse.model_validate(result)
+
+
+@router.get("/strength-trends", response_model=StrengthTrendSetsResponse)
+async def strength_trend_sets(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(require_plus("exercise_history", _EXPLORER_MESSAGE)),
+) -> StrengthTrendSetsResponse:
+    result = await strength_trends.get_strength_trend_sets(session, user=user)
+    return StrengthTrendSetsResponse.model_validate(result)
 
 
 @router.get("/{exercise_id}", response_model=ExerciseResponse)
