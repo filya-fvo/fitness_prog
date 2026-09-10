@@ -14,6 +14,9 @@ test.describe("@visual mobile visual baselines", () => {
     test(`${name} at 360x800`, async ({ page }) => {
       await page.goto(route);
       await expect(page.locator("main, section").first()).toBeVisible();
+      if (name === "more") {
+        await expect(page.getByRole("link", { name: /Уведомления/ })).toBeVisible();
+      }
       await expect(page).toHaveScreenshot(`${name}-mobile-360.png`, {
         fullPage: true,
         caret: "hide",

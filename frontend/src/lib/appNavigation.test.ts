@@ -15,6 +15,7 @@ describe("application back navigation", () => {
     expect(fallbackPathFor("/workouts/active/session-id")).toBe("/train");
     expect(fallbackPathFor("/progress/exercises")).toBe("/progress");
     expect(fallbackPathFor("/measurements")).toBe("/more");
+    expect(fallbackPathFor("/notifications")).toBe("/more");
     expect(fallbackPathFor("/knowledge")).toBe("/more");
     expect(fallbackPathFor("/faq")).toBe("/more");
     expect(fallbackPathFor("/admin/system")).toBe("/admin");

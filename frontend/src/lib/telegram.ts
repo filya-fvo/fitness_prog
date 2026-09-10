@@ -193,10 +193,8 @@ export function pathFromStartParam(start: string): string | null {
   if (key === "profile") return "/profile";
   if (key === "measurements") return "/measurements";
   if (key === "water") return "/?checkin=water";
-  if (key === "supplements" || key === "alerts" || key === "notifications") {
-    const tab = key === "supplements" ? "supplements" : "alerts";
-    return `/profile?section=${tab}`;
-  }
+  if (key === "supplements") return "/profile?section=supplements";
+  if (key === "alerts" || key === "notifications") return "/notifications";
   if (key === "nutrition" || key === "food") return "/nutrition";
   if (key === "programs") return "/programs";
   if (key === "workouts") return "/workouts";

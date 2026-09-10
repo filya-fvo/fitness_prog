@@ -10,11 +10,12 @@ import { isAdminUsername } from "@/utils/adminAccess";
 import { subscriptionLabel } from "@/utils/localization";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 
-type MoreIconName = "profile" | "measurements" | "ai" | "social" | "invite" | "support" | "help" | "admin";
+type MoreIconName = "profile" | "notifications" | "measurements" | "ai" | "social" | "invite" | "support" | "help" | "admin";
 
 function MoreIcon({ name }: { name: MoreIconName }) {
   const common = "h-5 w-5";
   if (name === "profile") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.7-4 2.9-6 6.5-6s5.8 2 6.5 6" strokeLinecap="round" /></svg>;
+  if (name === "notifications") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 5 2 7H4.5c0-2 2-2 2-7Z" strokeLinejoin="round" /><path d="M9.5 20h5" strokeLinecap="round" /></svg>;
   if (name === "measurements") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M8 3v18M16 3v18M8 6h4m-4 4h2m-2 4h4m-4 4h2M16 5h-2m2 4h-4m4 4h-2m2 4h-4" strokeLinecap="round" /></svg>;
   if (name === "ai") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3 14 8l5 2-5 2-2 5-2-5-5-2 5-2 2-5Z" strokeLinejoin="round" /><path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" /></svg>;
   if (name === "social") return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M2.8 20c.5-4 2.2-6 5.2-6s4.7 2 5.2 6M14 15c2.8 0 4.5 1.7 5 5" strokeLinecap="round" /></svg>;
@@ -61,7 +62,8 @@ export function MorePage() {
       ) : null}
       <ThemeSelector />
       <div className="space-y-3">
-        <MoreLink to="/profile" icon="profile" title="Профиль" description="Тело, программа, добавки и уведомления" />
+        <MoreLink to="/profile" icon="profile" title="Профиль" description="Тело, программа, питание, добавки и аккаунт" />
+        <MoreLink to="/notifications" icon="notifications" title="Уведомления" description="Канал доставки, тихие часы и виды напоминаний" />
         <MoreLink to="/measurements" icon="measurements" title="Замеры тела" description="Обхваты, сравнение и графики динамики" />
         <MoreLink to="/ai" icon="ai" title="ИИ-тренер" description="Техника, замены и разбор прогресса" />
         <MoreLink to="/social" icon="social" title="Друзья и соревнования" description="Сравнить регулярность тренировок без раскрытия личных данных" />

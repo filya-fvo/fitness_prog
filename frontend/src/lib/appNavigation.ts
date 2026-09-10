@@ -11,6 +11,7 @@ export function fallbackPathFor(pathname: string): string {
   if (pathname === "/workouts" || pathname === "/programs") return "/train";
   if (
     pathname === "/profile" ||
+    pathname === "/notifications" ||
     pathname === "/measurements" ||
     pathname === "/ai" ||
     pathname === "/admin" ||

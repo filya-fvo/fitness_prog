@@ -24,6 +24,11 @@ describe("pathFromStartParam", () => {
     expect(pathFromStartParam("water")).toBe("/?checkin=water");
   });
 
+  it("opens the separate notification settings screen", () => {
+    expect(pathFromStartParam("notifications")).toBe("/notifications");
+    expect(pathFromStartParam("alerts")).toBe("/notifications");
+  });
+
   it("opens the addressed in-app support thread", () => {
     expect(pathFromStartParam("support_3f56b158-86e3-4a3f-8e38-0112f2a4cf1f"))
       .toBe("/support/3f56b158-86e3-4a3f-8e38-0112f2a4cf1f");

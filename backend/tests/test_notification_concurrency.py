@@ -227,3 +227,85 @@ async def test_successful_delivery_is_marked(monkeypatch) -> None:
     assert sent == 1
     assert session.commits == 1
     assert user.goals["notification_state"]["last_workout_mark"] == "workout:2026-08-17"
+    assert user.goals["notification_state"]["last_successful_delivery"]["channel"] == "telegram"
+
+
+@pytest.mark.asyncio
+async def test_browser_channel_does_not_duplicate_to_telegram(monkeypatch) -> None:
+    user = User(
+        id=uuid4(),
+        telegram_id=1,
+        goals={"notification_settings": {"delivery_channel": "browser"}},
+    )
+    session = FakeNotificationSession()
+    telegram_calls = 0
+    browser_calls = 0
+
+    async def sent_telegram(*_args, **_kwargs):
+        nonlocal telegram_calls
+        telegram_calls += 1
+
+    async def sent_browser(*_args, **_kwargs):
+        nonlocal browser_calls
+        browser_calls += 1
+        return 1
+
+    async def no_supplements(*_args, **_kwargs):
+        return []
+
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(
+        notifications.workout_notifications,
+        "due_workout_notification",
+        lambda _goals: reminder_item(),
+    )
+    async def workout_title(*_args, **_kwargs):
+        return None, None, "Тренировка"
+    monkeypatch.setattr(notifications.scheduler_service, "active_program_snapshot", workout_title)
+    monkeypatch.setattr(notifications, "send_app_notification", sent_telegram)
+    monkeypatch.setattr(notifications, "send_user_web_push", sent_browser)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", no_supplements)
+
+    sent = await notifications._dispatch_user(
+        session,  # type: ignore[arg-type]
+        user,
+        Settings(jwt_secret="test-secret", bot_token="configured"),
+    )
+
+    assert sent == 1
+    assert telegram_calls == 0
+    assert browser_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_explicit_notification_test_uses_selected_channel_and_records_success(
+    monkeypatch,
+) -> None:
+    user = User(
+        id=uuid4(),
+        telegram_id=1,
+        goals={"notification_settings": {"delivery_channel": "telegram"}},
+    )
+    session = FakeNotificationSession()
+    calls: list[str] = []
+
+    async def sent_telegram(*_args, **_kwargs):
+        calls.append("telegram")
+
+    async def no_web_push(*_args, **_kwargs):
+        calls.append("browser")
+        return 1
+
+    monkeypatch.setattr(notifications, "send_app_notification", sent_telegram)
+    monkeypatch.setattr(notifications, "send_user_web_push", no_web_push)
+
+    result = await notifications.send_test_notification(
+        session=session,  # type: ignore[arg-type]
+        user=user,
+        settings=Settings(jwt_secret="test-secret", bot_token="configured"),
+    )
+
+    assert result.channel == "telegram"
+    assert calls == ["telegram"]
+    assert session.commits == 1
+    assert user.goals["notification_state"]["last_successful_delivery"]["channel"] == "telegram"

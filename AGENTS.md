@@ -172,6 +172,9 @@ services → SQLAlchemy models → PostgreSQL
   `admin_broadcast_delivery.py` — черновики рассылок, allowlist аудиторий и
   пакетная Telegram-доставка с идемпотентностью и ограничением скорости.
 - `backend/app/tasks/notifications.py` — ARQ cron/catch-up уведомлений.
+- `backend/app/services/notification_prefs.py` и `routers/notifications.py` —
+  нормализованные категории, единый Telegram/browser-канал, timezone, тихие часы,
+  частичное сохранение и тестовая доставка без изменения расписания тренировок.
 - `backend/app/telegram_poller.py` — production long polling Telegram с
   сохранением очереди, внутренней доставкой API и Redis heartbeat.
 - `backend/app/ai/prompts.py`, `backend/app/ai/analytics.py`,
@@ -220,6 +223,8 @@ services → SQLAlchemy models → PostgreSQL
   прогрессу упражнения, группы мышц, недавние и закреплённые.
 - `frontend/src/features/progress/pages/StrengthTrendSets.tsx` — три объяснимых
   набора силовых трендов без старой автоматической шестёрки.
+- `frontend/src/features/notifications/` — отдельный экран уведомлений: общий
+  канал доставки и независимо сохраняемые карточки категорий.
 - `frontend/src/store/` — Zustand runtime state.
 - `frontend/src/utils/` — чистые правила; рядом размещать `*.test.ts`.
 - `frontend/src/lib/telegram.ts` — Telegram Mini App SDK, BackButton, deep links;
@@ -261,7 +266,7 @@ services → SQLAlchemy models → PostgreSQL
 | Питание/штрихкод/этикетка | `DailyLog.tsx`, scanner/camera modals, `api/nutrition.ts` | `nutrition.py`, `nutrition_service.py`, `nutrition_label_vision.py`, nutrition models/schemas | barcode, label vision, nutrition unit + E2E |
 | Прогресс/графики | `ProgressPage.tsx`, `ExerciseExplorerPage.tsx`, `StrengthTrendSets.tsx`, `WeeklyOverview.tsx`, progress utils | exercise explorer/progress/strength trends, workout/nutrition/daily metric range endpoints | explorer/progression/strength trends, weekly/progress tests + visual/mobile checks |
 | Замеры тела | `features/measurements`, `api/bodyMeasurements.ts`, `db/bodyMeasurements.ts`, `db/syncQueue.ts` | body measurement router/service/model/schema, migration 18 | body measurement tests + offline reconnect E2E |
-| Добавки/уведомления | profile/home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot | concurrency, prefs, Telegram tests |
+| Добавки/уведомления | `features/notifications`, profile supplements, home UI, notification API | supplements/notifications routers, prefs/services, ARQ task, Telegram bot, Web Push | concurrency, prefs, channel/quiet-hours, Telegram/browser E2E |
 | ИИ | `features/ai-chat`, `api/ai.ts` | `routers/ai.py`, `ai_engine.py`, prompts | AI engine/route tests; assert no `<think>` |
 | Поддержка | `features/support`, `api/support.ts`; админ: `features/admin-support` | `support.py`, `admin_support.py`, `support_service.py`, `support_attachments.py`, ARQ/Telegram notification, migrations 30–31 | support API/task/attachment tests + user/admin browser scenario |
 | Приглашения | `features/invites`, `api/invites.ts`, `utils/pendingInvite.ts`, `lib/telegram.ts` | `invites.py`, `invite_service.py`, invite models/schema, migration 33 | hash/rate-limit/idempotency tests, deep-link unit + browser E2E |

@@ -2,9 +2,51 @@ import { z } from "zod";
 
 import { apiClient } from "@/api/client";
 
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const settingsValueSchema = z.object({
+  timezone: z.string(),
+  delivery_channel: z.enum(["telegram", "browser"]),
+  catch_up: z.boolean(),
+  quiet_hours: z.object({
+    enabled: z.boolean(),
+    start_time: timeSchema,
+    end_time: timeSchema,
+  }),
+  measurements: z.object({
+    enabled: z.boolean(),
+    time: timeSchema,
+    interval_days: z.number().int(),
+    weekday: z.number().int().nullable(),
+  }),
+  workouts: z.object({
+    enabled: z.boolean(),
+    time: timeSchema,
+    days: z.array(z.number().int()),
+    remind_before_minutes: z.number().int(),
+  }),
+  supplements: z.object({ enabled: z.boolean() }),
+  water: z.object({
+    enabled: z.boolean(),
+    daily_ml: z.number().int(),
+    interval_minutes: z.number().int(),
+    start_time: timeSchema,
+    end_time: timeSchema,
+  }),
+  calories: z.object({
+    enabled: z.boolean(),
+    times: z.array(timeSchema),
+  }),
+  service_messages: z.object({ email_enabled: z.boolean() }),
+});
+const deliverySchema = z.object({
+  channel: z.enum(["telegram", "browser"]),
+  delivered_at: z.string(),
+});
 const settingsSchema = z.object({
-  settings: z.record(z.unknown()),
-  defaults: z.record(z.unknown()),
+  settings: settingsValueSchema,
+  defaults: settingsValueSchema,
+  last_delivery: deliverySchema.nullable().optional(),
+  timezone_configured: z.boolean().default(false),
 });
 
 const pushConfigSchema = z.object({
@@ -14,6 +56,7 @@ const pushConfigSchema = z.object({
 });
 
 export type NotificationSettingsPayload = z.infer<typeof settingsSchema>;
+export type NotificationSettings = z.infer<typeof settingsValueSchema>;
 export type PushConfig = z.infer<typeof pushConfigSchema>;
 
 export async function fetchNotificationSettings(): Promise<NotificationSettingsPayload> {
@@ -99,6 +142,21 @@ export async function notifyTimerEnded(input: {
     workout_id: input.workoutId ?? null,
   });
   return z.object({ ok: z.boolean(), detail: z.string().nullable().optional() }).parse(data);
+}
+
+export async function sendNotificationTest(): Promise<{
+  ok: boolean;
+  channel: "telegram" | "browser";
+  sent: number;
+  detail: string;
+}> {
+  const { data } = await apiClient.post("/notifications/test");
+  return z.object({
+    ok: z.boolean(),
+    channel: z.enum(["telegram", "browser"]),
+    sent: z.number().int(),
+    detail: z.string(),
+  }).parse(data);
 }
 
 export async function scheduleTimerNotification(input: {

@@ -50,6 +50,11 @@ const ProfilePage = lazy(() =>
     default: module.ProfilePage,
   })),
 );
+const NotificationSettingsPage = lazy(() =>
+  import("@/features/notifications/pages/NotificationSettingsPage").then((module) => ({
+    default: module.NotificationSettingsPage,
+  })),
+);
 const AdminPage = lazy(() =>
   import("@/pages/AdminPage").then((module) => ({ default: module.AdminPage })),
 );
@@ -167,6 +172,7 @@ export function App() {
             <Route path="nutrition" element={<DailyLog />} />
             <Route path="measurements" element={<MeasurementsPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="notifications" element={<NotificationSettingsPage />} />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="progress/exercises" element={<ExerciseExplorerPage />} />
             <Route path="ai" element={<Chat />} />

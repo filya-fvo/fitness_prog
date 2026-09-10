@@ -4,13 +4,9 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 DEFAULT_TZ = "Europe/Moscow"
-
-try:
-    from zoneinfo import ZoneInfo
-except Exception:  # pragma: no cover
-    ZoneInfo = None  # type: ignore
 
 SPECIAL_TIMES = {
     "pre_workout": -45,
@@ -82,7 +78,13 @@ def is_workout_day(settings: dict[str, Any], weekday: int) -> bool:
 def default_notification_settings() -> dict[str, Any]:
     return {
         "timezone": DEFAULT_TZ,
+        "delivery_channel": "telegram",
         "catch_up": True,
+        "quiet_hours": {
+            "enabled": False,
+            "start_time": "22:00",
+            "end_time": "08:00",
+        },
         "measurements": {
             "enabled": True,
             "time": "10:00",
@@ -127,10 +129,43 @@ def merge_notification_settings(raw: dict[str, Any] | None) -> dict[str, Any]:
         "water",
         "calories",
         "service_messages",
+        "quiet_hours",
     ):
         if isinstance(raw.get(key), dict):
             out[key] = {**base.get(key, {}), **raw[key]}
+    timezone_name = str(out.get("timezone") or DEFAULT_TZ).strip()
+    try:
+        ZoneInfo(timezone_name)
+    except (ValueError, ZoneInfoNotFoundError):
+        timezone_name = DEFAULT_TZ
+    out["timezone"] = timezone_name
+    channel = str(out.get("delivery_channel") or "telegram").strip().lower()
+    out["delivery_channel"] = channel if channel in {"telegram", "browser"} else "telegram"
+    out["catch_up"] = out.get("catch_up") is not False
+
+    quiet = out.get("quiet_hours") or {}
+    quiet_start = parse_hhmm(str(quiet.get("start_time") or "22:00"))
+    quiet_end = parse_hhmm(str(quiet.get("end_time") or "08:00"))
+    quiet["enabled"] = quiet.get("enabled") is True
+    quiet["start_time"] = (quiet_start or time(22, 0)).strftime("%H:%M")
+    quiet["end_time"] = (quiet_end or time(8, 0)).strftime("%H:%M")
+    out["quiet_hours"] = quiet
+
     workouts = out.get("workouts") or {}
+    workout_time = parse_hhmm(str(workouts.get("time") or "18:30"))
+    workouts["time"] = (workout_time or time(18, 30)).strftime("%H:%M")
+    raw_days = workouts.get("days")
+    days: list[int] = []
+    if isinstance(raw_days, list):
+        for value in raw_days:
+            try:
+                day = int(value)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= day <= 6 and day not in days:
+                days.append(day)
+    workouts["days"] = sorted(days) if days else list(base["workouts"]["days"])
+    workouts["enabled"] = workouts.get("enabled") is not False
     try:
         workouts["remind_before_minutes"] = max(
             0,
@@ -139,15 +174,78 @@ def merge_notification_settings(raw: dict[str, Any] | None) -> dict[str, Any]:
     except (TypeError, ValueError):
         workouts["remind_before_minutes"] = 0
     out["workouts"] = workouts
+    measurements = out.get("measurements") or {}
+    measurement_time = parse_hhmm(str(measurements.get("time") or "10:00"))
+    measurements["time"] = (measurement_time or time(10, 0)).strftime("%H:%M")
+    try:
+        measurements["interval_days"] = max(1, min(365, int(measurements.get("interval_days") or 14)))
+    except (TypeError, ValueError):
+        measurements["interval_days"] = 14
+    measurements["enabled"] = measurements.get("enabled") is not False
+    raw_weekday = measurements.get("weekday")
+    if raw_weekday is None or str(raw_weekday).strip() == "":
+        measurements["weekday"] = None
+    else:
+        try:
+            weekday = int(raw_weekday)
+            measurements["weekday"] = weekday if 0 <= weekday <= 6 else None
+        except (TypeError, ValueError):
+            measurements["weekday"] = None
+    out["measurements"] = measurements
+
+    water = out.get("water") or {}
+    water_start = parse_hhmm(str(water.get("start_time") or "09:00"))
+    water_end = parse_hhmm(str(water.get("end_time") or "21:00"))
+    water["start_time"] = (water_start or time(9, 0)).strftime("%H:%M")
+    water["end_time"] = (water_end or time(21, 0)).strftime("%H:%M")
+    try:
+        water["daily_ml"] = max(500, min(8000, int(water.get("daily_ml") or 2500)))
+    except (TypeError, ValueError):
+        water["daily_ml"] = 2500
+    try:
+        water["interval_minutes"] = max(30, min(360, int(water.get("interval_minutes") or 120)))
+    except (TypeError, ValueError):
+        water["interval_minutes"] = 120
+    water["enabled"] = water.get("enabled") is True
+    out["water"] = water
+
     cal = out.get("calories") or {}
     times = cal.get("times")
     if isinstance(times, str):
-        cal["times"] = [t.strip() for t in times.replace(";", ",").split(",") if t.strip()]
-        out["calories"] = cal
-    elif not isinstance(times, list):
-        cal["times"] = list(base["calories"]["times"])
-        out["calories"] = cal
+        times = [t.strip() for t in times.replace(";", ",").split(",") if t.strip()]
+    if not isinstance(times, list):
+        times = list(base["calories"]["times"])
+    normalized_times: list[str] = []
+    for value in times[:8]:
+        parsed = parse_hhmm(str(value))
+        normalized = parsed.strftime("%H:%M") if parsed else ""
+        if normalized and normalized not in normalized_times:
+            normalized_times.append(normalized)
+    cal["times"] = normalized_times or list(base["calories"]["times"])
+    cal["enabled"] = cal.get("enabled") is True
+    out["calories"] = cal
+    supplements = out.get("supplements") or {}
+    supplements["enabled"] = supplements.get("enabled") is not False
+    out["supplements"] = supplements
+    service_messages = out.get("service_messages") or {}
+    service_messages["email_enabled"] = service_messages.get("email_enabled") is True
+    out["service_messages"] = service_messages
     return out
+
+
+def patch_notification_settings(
+    current: dict[str, Any] | None,
+    patch: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Deep-merge one settings category without resetting unrelated categories."""
+
+    combined = dict(current or {})
+    for key, value in (patch or {}).items():
+        if isinstance(value, dict) and isinstance(combined.get(key), dict):
+            combined[key] = {**combined[key], **value}
+        else:
+            combined[key] = value
+    return merge_notification_settings(combined)
 
 
 def parse_hhmm(value: str) -> time | None:
@@ -164,16 +262,29 @@ def parse_hhmm(value: str) -> time | None:
 
 def _resolve_tz(tz_name: str | None = None):
     name = tz_name or DEFAULT_TZ
-    if ZoneInfo is not None:
-        try:
-            return ZoneInfo(name)
-        except Exception:
-            pass
+    try:
+        return ZoneInfo(name)
+    except (ValueError, ZoneInfoNotFoundError):
+        pass
     return timezone(timedelta(hours=3), name="MSK")
 
 
 def local_now(tz_name: str | None = None) -> datetime:
     return datetime.now(_resolve_tz(tz_name))
+
+
+def in_quiet_hours(settings: dict[str, Any], now: datetime) -> bool:
+    quiet = settings.get("quiet_hours") or {}
+    if quiet.get("enabled") is not True:
+        return False
+    start = parse_hhmm(str(quiet.get("start_time") or "22:00"))
+    end = parse_hhmm(str(quiet.get("end_time") or "08:00"))
+    if start is None or end is None or start == end:
+        return False
+    current = now.time().replace(second=0, microsecond=0)
+    if start < end:
+        return start <= current < end
+    return current >= start or current < end
 
 
 def _state(goals: dict[str, Any]) -> dict[str, Any]:
@@ -259,6 +370,8 @@ def due_notifications(
     )
     tz_name = str(settings.get("timezone") or DEFAULT_TZ)
     now = now or local_now(tz_name)
+    if in_quiet_hours(settings, now):
+        return []
     state = _state(goals)
     use_catch_up = settings.get("catch_up", True) if catch_up is None else bool(catch_up)
     due: list[dict[str, Any]] = []

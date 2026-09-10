@@ -63,11 +63,14 @@ const limits = {
   // control; catalog, active workout and the main shell do not gain a vendor.
   // Shared FREE/PLUS gates, live downgrade handling and the one-time beta notice
   // add 2.7 KB gzip across lazy product routes without growing the largest chunk.
+  // Structured notification settings move ~4 KB gzip out of the large Profile
+  // route into a 6.3 KB lazy route and add typed channel/quiet-hours controls;
+  // the measured net product growth is 3.4 KB with no new vendor dependency.
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 509_000,
-  productJsGzip: 456_000,
+  totalJsGzip: 513_000,
+  productJsGzip: 460_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   adminJsGzip: 53_000,

@@ -6,8 +6,6 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import {
-  dispatchMyDueNotifications,
-  fetchPushConfig,
   fetchNotificationSettings,
   saveNotificationSettings,
 } from "@/api/notifications";
@@ -32,8 +30,6 @@ import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { CycleTrainingSettings } from "@/features/profile/components/CycleTrainingSettings";
 import { LinkEmailCard } from "@/features/profile/components/LinkEmailCard";
-import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
-import { WorkoutReminderSettings } from "@/features/profile/components/WorkoutReminderSettings";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { fetchExercises } from "@/api/exercises";
 import type { Exercise } from "@/types/workout";
@@ -62,12 +58,6 @@ import { compareProgramToProfile, programMismatchSummary } from "@/utils/program
 import { confirmAction } from "@/lib/telegram";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
 import { programSelectionGoalsPatch } from "@/utils/programProgress";
-import {
-  currentWebPushEnabled,
-  disableWebPush,
-  enableWebPush,
-  webPushSupported,
-} from "@/utils/webPush";
 
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
@@ -87,19 +77,9 @@ const JOINT_LIMIT_OPTIONS = [
   { id: "shoulder_sensitive", label: "Щадящая нагрузка на плечевые суставы" },
 ] as const;
 
-const WEEKDAYS = [
-  { id: 0, label: "Пн" },
-  { id: 1, label: "Вт" },
-  { id: 2, label: "Ср" },
-  { id: 3, label: "Чт" },
-  { id: 4, label: "Пт" },
-  { id: 5, label: "Сб" },
-  { id: 6, label: "Вс" },
-] as const;
+type TabId = "body" | "program" | "supplements" | "account";
 
-type TabId = "body" | "program" | "supplements" | "alerts" | "account";
-
-const PROFILE_TABS: readonly TabId[] = ["body", "program", "supplements", "alerts", "account"];
+const PROFILE_TABS: readonly TabId[] = ["body", "program", "supplements", "account"];
 
 function profileTabFromQuery(value: string | null): TabId {
   return PROFILE_TABS.includes(value as TabId) ? value as TabId : "body";
@@ -364,28 +344,7 @@ export function ProfilePage() {
   const [customDose, setCustomDose] = useState("");
   const [detailKey, setDetailKey] = useState<string | null>(null);
   const [intakes, setIntakes] = useState<SupplementIntakeDay | null>(null);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushAvailable, setPushAvailable] = useState(false);
-  const [serviceEmailEnabled, setServiceEmailEnabled] = useState(false);
-
-  const [tz, setTz] = useState("Europe/Moscow");
-  const [measEnabled, setMeasEnabled] = useState(true);
-  const [measTime, setMeasTime] = useState("10:00");
-  const [measInterval, setMeasInterval] = useState("14");
-  const [measWeekday, setMeasWeekday] = useState<number | null>(0);
-  const [woEnabled, setWoEnabled] = useState(true);
-  const [woTime, setWoTime] = useState("18:30");
-  const [woLeadMinutes, setWoLeadMinutes] = useState(0);
-  const [woDays, setWoDays] = useState<number[]>([0, 2, 4]);
   const [supEnabled, setSupEnabled] = useState(true);
-  const [catchUp, setCatchUp] = useState(true);
-  const [waterEnabled, setWaterEnabled] = useState(false);
-  const [waterDailyMl, setWaterDailyMl] = useState("2500");
-  const [waterIntervalMin, setWaterIntervalMin] = useState("120");
-  const [waterStart, setWaterStart] = useState("09:00");
-  const [waterEnd, setWaterEnd] = useState("21:00");
-  const [calEnabled, setCalEnabled] = useState(false);
-  const [calTimes, setCalTimes] = useState("14:00, 20:00");
   /** Body tab: quick essentials vs full measures / advanced energy. */
   const [bodyAdvanced, setBodyAdvanced] = useState(false);
   const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(true);
@@ -400,14 +359,13 @@ export function ProfilePage() {
         return;
       }
       try {
-        const [p, prog, sup, nset, exCatalog, todayIntakes, pushConfig] = await Promise.all([
+        const [p, prog, sup, nset, exCatalog, todayIntakes] = await Promise.all([
           fetchMyProfile(),
           fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] as Program[] })),
           fetchSupplementStack().catch(() => ({ items: [], catalog: [] })),
           fetchNotificationSettings().catch(() => null),
           fetchExercises({ pageSize: 200 }).catch(() => ({ items: [] as Exercise[] })),
           fetchTodaySupplementIntakes().catch(() => null),
-          fetchPushConfig().catch(() => null),
         ]);
         if (cancelled) return;
 setAuthEmail(p.auth_email ?? null);
@@ -501,50 +459,9 @@ setAuthEmail(p.auth_email ?? null);
         setCatalog(sup.catalog || []);
         setPickerKey("");
         setIntakes(todayIntakes);
-        const browserPushAvailable = Boolean(pushConfig?.enabled && webPushSupported());
-        setPushAvailable(browserPushAvailable);
-        setPushEnabled(
-          browserPushAvailable
-            ? await currentWebPushEnabled().catch(() => false)
-            : false,
-        );
-
         if (nset?.settings) {
-          const s = asRecord(nset.settings);
-          setTz(String(s.timezone || "Europe/Moscow"));
-          const meas = asRecord(s.measurements);
-          setMeasEnabled(meas.enabled !== false);
-          setMeasTime(String(meas.time || "10:00"));
-          setMeasInterval(String(meas.interval_days ?? 14));
-          const mwd = meas.weekday;
-          if (mwd === null || mwd === undefined || mwd === "") setMeasWeekday(null);
-          else {
-            const n = Number(mwd);
-            setMeasWeekday(Number.isFinite(n) ? n : 0);
-          }
-          const wo = asRecord(s.workouts);
-          setWoEnabled(wo.enabled !== false);
-          setWoTime(String(wo.time || "18:30").slice(0, 5));
-          setWoLeadMinutes(Math.max(0, Math.min(1440, Number(wo.remind_before_minutes) || 0)));
-          const days = Array.isArray(wo.days) ? wo.days.map((d) => Number(d)) : [0, 2, 4];
-          setWoDays(days.filter((d) => d >= 0 && d <= 6));
-          const su = asRecord(s.supplements);
+          const su = asRecord(nset.settings.supplements);
           setSupEnabled(su.enabled !== false);
-          setCatchUp(s.catch_up !== false);
-          const water = asRecord(s.water);
-          setWaterEnabled(Boolean(water.enabled));
-          setWaterDailyMl(String(water.daily_ml ?? 2500));
-          setWaterIntervalMin(String(water.interval_minutes ?? 120));
-          setWaterStart(String(water.start_time || "09:00"));
-          setWaterEnd(String(water.end_time || "21:00"));
-          const cal = asRecord(s.calories);
-          setCalEnabled(Boolean(cal.enabled));
-          const times = Array.isArray(cal.times)
-            ? cal.times.map((x) => String(x)).join(", ")
-            : String(cal.times || "14:00, 20:00");
-          setCalTimes(times || "14:00, 20:00");
-          const serviceMessages = asRecord(s.service_messages);
-          setServiceEmailEnabled(Boolean(serviceMessages.email_enabled));
         }
       } catch (err) {
         if (!cancelled) setError(toUserMessage(err, "Не удалось загрузить профиль"));
@@ -896,69 +813,10 @@ setAuthEmail(p.auth_email ?? null);
     }
   }
 
-  async function saveAlerts() {
-    setSaving(true);
-    setError(null);
-    setOk(null);
-    try {
-      const calTimesList = calTimes
-        .split(/[,;]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const settings = {
-        timezone: tz,
-        catch_up: catchUp,
-        measurements: {
-          enabled: measEnabled,
-          time: measTime,
-          interval_days: Number(measInterval) || 14,
-          weekday: measWeekday,
-        },
-        workouts: {
-          enabled: woEnabled,
-          remind_before_minutes: woLeadMinutes,
-        },
-        supplements: {
-          enabled: supEnabled,
-        },
-        water: {
-          enabled: waterEnabled,
-          daily_ml: Number(waterDailyMl) || 2500,
-          interval_minutes: Number(waterIntervalMin) || 120,
-          start_time: waterStart || "09:00",
-          end_time: waterEnd || "21:00",
-        },
-        calories: {
-          enabled: calEnabled,
-          times: calTimesList.length ? calTimesList : ["14:00", "20:00"],
-        },
-        service_messages: {
-          email_enabled: Boolean(authEmail && serviceEmailEnabled),
-        },
-      };
-      const saved = await saveNotificationSettings(settings);
-      setProfileGoalsKeep((currentGoals) => ({
-        ...currentGoals,
-        notification_settings: saved.settings,
-      }));
-      setOk("Уведомления сохранены. Бот пришлёт сообщения в чат по расписанию.");
-      setDirtyTabs((current) => {
-        const next = new Set(current);
-        next.delete("alerts");
-        return next;
-      });
-    } catch (err) {
-      setError(toUserMessage(err, "Не удалось сохранить уведомления"));
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const tabs: { id: TabId; label: string }[] = [
     { id: "body", label: "Тело и цели" },
     { id: "program", label: "Программа" },
     { id: "supplements", label: "Питание и добавки" },
-    { id: "alerts", label: "Уведомления" },
     { id: "account", label: "Аккаунт" },
   ];
 
@@ -1934,16 +1792,9 @@ setAuthEmail(p.auth_email ?? null);
                 {supEnabled ? "Вкл" : "Выкл"}
               </button>
             </div>
-            <button
-              type="button"
-              className="mt-2 text-xs text-tg-link"
-              onClick={() => {
-                selectTab("alerts");
-                setOk(null);
-              }}
-            >
+            <Link to="/notifications" className="mt-2 inline-flex min-h-11 items-center text-xs text-tg-link">
               Все уведомления →
-            </button>
+            </Link>
           </div>
 
           {stack.length === 0 ? (
@@ -2288,292 +2139,6 @@ setAuthEmail(p.auth_email ?? null);
               Добавить свою
             </button>
           </div>
-        </div>
-      ) : null}
-
-      {tab === "alerts" ? (
-        <div className="space-y-3">
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
-            <p className="font-medium">Уведомления в Telegram-чат</p>
-            <p className="mt-1 text-xs text-tg-hint">
-              Напоминания приходят в чат с ботом. Один раз напишите боту /start, включите нужные
-              типы ниже и нажмите «Сохранить». Если сообщение не пришло вовремя — включите
-              «Догонять пропущенные».
-            </p>
-          </div>
-
-          <label className="block rounded-2xl bg-tg-secondary p-4 text-xs text-tg-hint">
-            Часовой пояс
-            <input
-              value={tz}
-              onChange={(e) => setTz(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm text-tg-text"
-            />
-          </label>
-
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Замеры тела</span>
-              <input
-                type="checkbox"
-                checked={measEnabled}
-                onChange={(e) => setMeasEnabled(e.target.checked)}
-              />
-            </label>
-            <label className="block text-xs text-tg-hint">
-              Время
-              <input
-                type="time"
-                value={measTime}
-                onChange={(e) => setMeasTime(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block text-xs text-tg-hint">
-              Раз в N дней
-              <input
-                type="number"
-                min={1}
-                value={measInterval}
-                onChange={(e) => setMeasInterval(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-            <div>
-              <p className="text-xs text-tg-hint">День недели</p>
-              <div className="mt-1 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMeasWeekday(null)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs",
-                    measWeekday === null ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
-                  ].join(" ")}
-                >
-                  Любой
-                </button>
-                {WEEKDAYS.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => setMeasWeekday(d.id)}
-                    className={[
-                      "rounded-full px-3 py-1 text-xs",
-                      measWeekday === d.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
-                    ].join(" ")}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-[10px] text-tg-hint">
-                Напоминание в выбранный день, не чаще чем раз в N дней.
-              </p>
-            </div>
-          </div>
-
-          <WorkoutReminderSettings
-            enabled={woEnabled}
-            startTime={woTime}
-            remindBeforeMinutes={woLeadMinutes}
-            days={woDays}
-            onEnabledChange={setWoEnabled}
-            onLeadChange={setWoLeadMinutes}
-          />
-
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Вода</span>
-              <input
-                type="checkbox"
-                checked={waterEnabled}
-                onChange={(e) => setWaterEnabled(e.target.checked)}
-              />
-            </label>
-            <p className="text-xs text-tg-hint">
-              Бот напомнит пить воду. Отмечайте воду на Главной — литраж синхронизируется с
-              сервером.
-            </p>
-            <label className="block text-xs text-tg-hint">
-              Цель, мл / день
-              <input
-                type="number"
-                min={500}
-                step={100}
-                value={waterDailyMl}
-                onChange={(e) => setWaterDailyMl(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block text-xs text-tg-hint">
-              Как часто, минут
-              <input
-                type="number"
-                min={30}
-                step={15}
-                value={waterIntervalMin}
-                onChange={(e) => setWaterIntervalMin(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block text-xs text-tg-hint">
-                С
-                <input
-                  type="time"
-                  value={waterStart}
-                  onChange={(e) => setWaterStart(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block text-xs text-tg-hint">
-                До
-                <input
-                  type="time"
-                  value={waterEnd}
-                  onChange={(e) => setWaterEnd(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Калории (недобор / перебор)</span>
-              <input
-                type="checkbox"
-                checked={calEnabled}
-                onChange={(e) => setCalEnabled(e.target.checked)}
-              />
-            </label>
-            <p className="text-xs text-tg-hint">
-              В указанное время бот пришлёт: сколько съедено, цель и недобор/перебор. Несколько
-              времён — через запятую.
-            </p>
-            <label className="block text-xs text-tg-hint">
-              Время напоминаний
-              <input
-                value={calTimes}
-                onChange={(e) => setCalTimes(e.target.value)}
-                placeholder="14:00, 20:00"
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Догонять пропущенные</span>
-              <input
-                type="checkbox"
-                checked={catchUp}
-                onChange={(e) => setCatchUp(e.target.checked)}
-              />
-            </label>
-            <p className="mt-2 text-xs text-tg-hint">
-              Если напоминание не успело уйти вовремя, бот пришлёт его позже в тот же день — без
-              пачки дублей (для воды и калорий пришлёт одно сводное).
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <label className="flex items-center justify-between text-sm">
-              <span>Приём добавок</span>
-              <input
-                type="checkbox"
-                checked={supEnabled}
-                onChange={(e) => setSupEnabled(e.target.checked)}
-              />
-            </label>
-            <p className="mt-2 text-xs text-tg-hint">
-              Расписание приёма — во вкладке «Добавки» (время и день тренировки/отдыха). Этот
-              переключатель включает/выключает все напоминания по стеку.
-            </p>
-            {stack.length === 0 ? (
-              <p className="mt-2 text-xs text-amber-700">
-                Стек пуст — сначала добавьте добавки, иначе боту нечего напоминать.
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-tg-hint">
-                В стеке: {stack.length}.{" "}
-                <button
-                  type="button"
-                  className="text-tg-link"
-                  onClick={() => {
-                    selectTab("supplements");
-                    setOk(null);
-                  }}
-                >
-                  Настроить расписание →
-                </button>
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">Уведомления в браузере</p>
-                <p className="mt-1 text-xs text-tg-hint">
-                  Работают без Telegram. На iPhone приложение нужно добавить на экран «Домой».
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={!pushAvailable || saving}
-                className={[
-                  "shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-50",
-                  pushEnabled ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-link",
-                ].join(" ")}
-                onClick={() => {
-                  setSaving(true);
-                  const operation = pushEnabled ? disableWebPush() : enableWebPush();
-                  void operation
-                    .then(() => {
-                      setPushEnabled(!pushEnabled);
-                      setOk(pushEnabled ? "Уведомления браузера выключены" : "Уведомления браузера включены");
-                    })
-                    .catch((e) => setError(toUserMessage(e, "Не удалось изменить уведомления браузера")))
-                    .finally(() => setSaving(false));
-                }}
-              >
-                {pushEnabled ? "Включены" : "Включить"}
-              </button>
-            </div>
-            {!pushAvailable ? (
-              <p className="mt-2 text-xs text-amber-700">
-                Фоновые уведомления недоступны в этом браузере или ещё не настроены администратором.
-              </p>
-            ) : null}
-          </div>
-
-          <ServiceMessageConsentCard
-            emailAvailable={Boolean(authEmail)}
-            emailEnabled={serviceEmailEnabled}
-            disabled={saving}
-            onEmailEnabledChange={setServiceEmailEnabled}
-          />
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void saveAlerts()}
-            className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
-          >
-            Сохранить уведомления
-          </button>
-          <button
-            type="button"
-            className="w-full rounded-xl bg-tg-secondary px-4 py-2 text-sm"
-            onClick={() => {
-              void dispatchMyDueNotifications()
-                .then((r) => setOk(`Проверка: отправлено ${r.sent}`))
-                .catch((e) => setError(toUserMessage(e, "Не удалось проверить напоминания")));
-            }}
-          >
-            Проверить напоминания сейчас
-          </button>
         </div>
       ) : null}
 

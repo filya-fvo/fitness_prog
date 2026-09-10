@@ -54,7 +54,7 @@ export function WorkoutReminderSettings({
         />
       </label>
       <p className="text-xs text-tg-hint">
-        Бот напомнит о тренировке относительно времени из постоянного расписания.
+        Напоминание придёт относительно времени из постоянного расписания.
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block text-xs text-tg-hint">

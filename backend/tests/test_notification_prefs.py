@@ -7,11 +7,80 @@ from app.services.notification_prefs import (
     apply_state_updates,
     due_notifications,
     format_calorie_reminder_text,
+    in_quiet_hours,
     merge_notification_settings,
+    patch_notification_settings,
     set_water_ml_for_day,
     water_ml_for_day,
     water_slots,
 )
+
+
+def test_settings_normalize_channel_timezone_quiet_hours_and_time_list() -> None:
+    settings = merge_notification_settings({
+        "timezone": "Invalid/Zone",
+        "delivery_channel": "carrier_pigeon",
+        "quiet_hours": {"enabled": True, "start_time": "bad", "end_time": "07:30"},
+        "calories": {"times": ["8:5", "08:05", "25:00", "19:30"]},
+    })
+
+    assert settings["timezone"] == "Europe/Moscow"
+    assert settings["delivery_channel"] == "telegram"
+    assert settings["quiet_hours"] == {
+        "enabled": True,
+        "start_time": "22:00",
+        "end_time": "07:30",
+    }
+    assert settings["calories"]["times"] == ["08:05", "19:30"]
+
+
+def test_partial_settings_patch_preserves_other_categories() -> None:
+    settings = patch_notification_settings(
+        {
+            "delivery_channel": "telegram",
+            "water": {"enabled": True, "daily_ml": 3100},
+            "calories": {"enabled": True, "times": ["13:00"]},
+        },
+        {"water": {"daily_ml": 2800}},
+    )
+
+    assert settings["water"]["enabled"] is True
+    assert settings["water"]["daily_ml"] == 2800
+    assert settings["calories"] == {"enabled": True, "times": ["13:00"]}
+
+
+def test_quiet_hours_support_same_day_and_overnight_ranges() -> None:
+    overnight = {"quiet_hours": {"enabled": True, "start_time": "22:00", "end_time": "08:00"}}
+    daytime = {"quiet_hours": {"enabled": True, "start_time": "13:00", "end_time": "14:00"}}
+
+    assert in_quiet_hours(overnight, datetime(2026, 9, 9, 23, 0)) is True
+    assert in_quiet_hours(overnight, datetime(2026, 9, 9, 7, 59)) is True
+    assert in_quiet_hours(overnight, datetime(2026, 9, 9, 12, 0)) is False
+    assert in_quiet_hours(daytime, datetime(2026, 9, 9, 13, 30)) is True
+
+
+def test_due_notifications_wait_until_quiet_hours_end() -> None:
+    goals = {
+        "notification_settings": {
+            "timezone": "Europe/Moscow",
+            "catch_up": True,
+            "quiet_hours": {"enabled": True, "start_time": "22:00", "end_time": "08:00"},
+            "measurements": {
+                "enabled": True,
+                "time": "07:00",
+                "interval_days": 1,
+                "weekday": None,
+            },
+            "workouts": {"enabled": False},
+            "supplements": {"enabled": False},
+            "water": {"enabled": False},
+            "calories": {"enabled": False},
+        }
+    }
+
+    assert due_notifications(goals, now=datetime(2026, 9, 9, 7, 30)) == []
+    after_quiet = due_notifications(goals, now=datetime(2026, 9, 9, 8, 1))
+    assert [item["kind"] for item in after_quiet] == ["measurements"]
 
 
 def test_service_email_consent_is_opt_in_and_preserved() -> None:

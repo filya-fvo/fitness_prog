@@ -40,9 +40,11 @@ from app.services.notification_prefs import (
     default_notification_settings,
     due_notifications,
     format_calorie_reminder_text,
+    in_quiet_hours,
     local_now,
     merge_notification_settings,
     parse_hhmm,
+    patch_notification_settings,
     set_water_ml_for_day,
     water_ml_for_day,
 )
@@ -102,10 +104,19 @@ async def _request_timer_abort(job: Any) -> None:
 class NotificationSettingsResponse(BaseModel):
     settings: dict[str, Any]
     defaults: dict[str, Any]
+    last_delivery: dict[str, str] | None = None
+    timezone_configured: bool = False
 
 
 class NotificationSettingsUpdate(BaseModel):
     settings: dict[str, Any] = Field(default_factory=dict)
+
+
+class NotificationTestResponse(BaseModel):
+    ok: bool
+    channel: Literal["telegram", "browser"]
+    sent: int
+    detail: str
 
 
 class WaterLogBody(BaseModel):
@@ -148,6 +159,43 @@ def _water_target(goals: dict[str, Any]) -> int | None:
         return 2500
 
 
+def _last_delivery(goals: dict[str, Any]) -> dict[str, str] | None:
+    state = goals.get("notification_state")
+    state = state if isinstance(state, dict) else {}
+    raw = state.get("last_successful_delivery")
+    if not isinstance(raw, dict):
+        return None
+    channel = str(raw.get("channel") or "")
+    delivered_at = str(raw.get("delivered_at") or "")
+    if channel not in {"telegram", "browser"} or not delivered_at:
+        return None
+    return {"channel": channel, "delivered_at": delivered_at}
+
+
+def _timezone_configured(goals: dict[str, Any]) -> bool:
+    raw = goals.get("notification_settings")
+    return isinstance(raw, dict) and bool(str(raw.get("timezone") or "").strip())
+
+
+def _record_delivery(goals: dict[str, Any], channel: str) -> dict[str, Any]:
+    updated = dict(goals or {})
+    state = updated.get("notification_state")
+    state = dict(state) if isinstance(state, dict) else {}
+    state["last_successful_delivery"] = {
+        "channel": channel,
+        "delivered_at": datetime.now(UTC).isoformat(),
+    }
+    updated["notification_state"] = state
+    return updated
+
+
+def _delivery_channel(settings: dict[str, Any], user: User) -> Literal["telegram", "browser"]:
+    channel = str(settings.get("delivery_channel") or "telegram")
+    if channel == "browser" or user.telegram_id is None:
+        return "browser"
+    return "telegram"
+
+
 class PushKeys(BaseModel):
     p256dh: str = Field(min_length=1, max_length=512)
     auth: str = Field(min_length=1, max_length=512)
@@ -175,7 +223,12 @@ class PushConfigResponse(BaseModel):
 @router.get("/settings", response_model=NotificationSettingsResponse)
 async def get_settings_route(user: User = Depends(get_current_user)) -> NotificationSettingsResponse:
     merged = _merged_notification_settings(user.goals or {})
-    return NotificationSettingsResponse(settings=merged, defaults=default_notification_settings())
+    return NotificationSettingsResponse(
+        settings=merged,
+        defaults=default_notification_settings(),
+        last_delivery=_last_delivery(user.goals or {}),
+        timezone_configured=_timezone_configured(user.goals or {}),
+    )
 
 
 @router.put("/settings", response_model=NotificationSettingsResponse)
@@ -185,7 +238,11 @@ async def put_settings_route(
     user: User = Depends(get_current_user),
 ) -> NotificationSettingsResponse:
     previous_goals = dict(user.goals or {})
-    merged = merge_notification_settings(body.settings)
+    previous_raw = previous_goals.get("notification_settings")
+    merged = patch_notification_settings(
+        previous_raw if isinstance(previous_raw, dict) else None,
+        body.settings,
+    )
     goals = {**previous_goals, "notification_settings": merged}
     raw_workouts = body.settings.get("workouts")
     raw_workouts = raw_workouts if isinstance(raw_workouts, dict) else {}
@@ -236,6 +293,8 @@ async def put_settings_route(
     return NotificationSettingsResponse(
         settings=goals["notification_settings"],
         defaults=default_notification_settings(),
+        last_delivery=_last_delivery(goals),
+        timezone_configured=_timezone_configured(goals),
     )
 
 
@@ -376,6 +435,63 @@ async def dispatch_due_for_me(
     return {"ok": True, "sent": sent}
 
 
+@router.post("/test", response_model=NotificationTestResponse)
+async def send_test_notification(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> NotificationTestResponse:
+    """Send one explicit test through the user's common reminder channel."""
+
+    notification_settings = _merged_notification_settings(user.goals or {})
+    channel = _delivery_channel(notification_settings, user)
+    if channel == "telegram":
+        if not settings.bot_token or settings.bot_token.startswith("replace_with"):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Уведомления Telegram сейчас недоступны",
+            )
+        try:
+            await send_app_notification(
+                settings,
+                telegram_id=int(user.telegram_id),
+                title="Проверка уведомлений",
+                text="Всё работает. Сюда будут приходить включённые напоминания.",
+                startapp="notifications",
+            )
+        except TelegramBotError as exc:
+            logger.warning("notification_test_telegram_failed user={} err={}", user.id, exc)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Не удалось доставить тест в Telegram",
+            ) from exc
+        sent = 1
+    else:
+        sent = await send_user_web_push(
+            session,
+            settings,
+            user_id=user.id,
+            title="Проверка уведомлений",
+            body="Всё работает. Сюда будут приходить включённые напоминания.",
+            url="/notifications",
+            tag="fitness-notification-test",
+        )
+        if sent < 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Сначала включите уведомления в этом браузере",
+            )
+    user.goals = _record_delivery(user.goals or {}, channel)
+    flag_modified(user, "goals")
+    await session.commit()
+    return NotificationTestResponse(
+        ok=True,
+        channel=channel,
+        sent=sent,
+        detail=f"Тест отправлен: {'Telegram' if channel == 'telegram' else 'браузер'}",
+    )
+
+
 @router.post("/dispatch-all")
 async def dispatch_all(
     session: AsyncSession = Depends(get_db),
@@ -454,6 +570,11 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
 async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) -> int:
     """Dispatch legacy reminders plus idempotent supplement intake groups."""
     goals = user.goals or {}
+    notification_settings = _merged_notification_settings(goals)
+    timezone_name = str(notification_settings.get("timezone") or "Europe/Moscow")
+    if in_quiet_hours(notification_settings, local_now(timezone_name)):
+        return 0
+    channel = _delivery_channel(notification_settings, user)
     due = [
         item
         for item in due_notifications(goals)
@@ -471,7 +592,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
     delivered_due: list[dict[str, Any]] = []
     for item in enriched:
         delivered = 0
-        if user.telegram_id is not None and settings.bot_token and not settings.bot_token.startswith(
+        if channel == "telegram" and settings.bot_token and not settings.bot_token.startswith(
             "replace_with"
         ):
             try:
@@ -501,15 +622,16 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                     item.get("kind"),
                     exc,
                 )
-        delivered += await send_user_web_push(
-            session,
-            settings,
-            user_id=user.id,
-            title=str(item.get("title") or "Напоминание"),
-            body=str(item.get("text") or "").replace("<b>", "").replace("</b>", ""),
-            url=f"/?startapp={item.get('startapp') or 'home'}",
-            tag=f"fitness-{item.get('kind') or 'reminder'}",
-        )
+        if channel == "browser":
+            delivered += await send_user_web_push(
+                session,
+                settings,
+                user_id=user.id,
+                title=str(item.get("title") or "Напоминание"),
+                body=str(item.get("text") or "").replace("<b>", "").replace("</b>", ""),
+                url=f"/?startapp={item.get('startapp') or 'home'}",
+                tag=f"fitness-{item.get('kind') or 'reminder'}",
+            )
         if delivered:
             sent += delivered
             delivered_due.append(item)
@@ -517,7 +639,10 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
     # A reminder becomes complete only after at least one channel accepted it.
     # Otherwise catch-up must retry it when DNS/Internet/Tailscale recovers.
     if delivered_due:
-        user.goals = apply_state_updates(user.goals or goals, delivered_due)
+        user.goals = _record_delivery(
+            apply_state_updates(user.goals or goals, delivered_due),
+            channel,
+        )
         flag_modified(user, "goals")
         await session.commit()
         await session.refresh(user)
@@ -529,7 +654,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
         ]
         text = "Добавки на сейчас:\n" + "\n".join(lines)
         delivered = 0
-        if user.telegram_id is not None and settings.bot_token and not settings.bot_token.startswith(
+        if channel == "telegram" and settings.bot_token and not settings.bot_token.startswith(
             "replace_with"
         ):
             try:
@@ -544,19 +669,23 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
                 delivered += 1
             except TelegramBotError as exc:
                 logger.warning("supplement_telegram_failed user={} err={}", user.id, exc)
-        delivered += await send_user_web_push(
-            session,
-            settings,
-            user_id=user.id,
-            title="Пора принять добавки",
-            body="; ".join(
-                row.name_ru + (f" — {row.dose}" if row.dose else "") for row in group
-            ),
-            url="/profile?section=supplements",
-            tag=f"supplements-{group[0].scheduled_at.isoformat()}",
-        )
+        if channel == "browser":
+            delivered += await send_user_web_push(
+                session,
+                settings,
+                user_id=user.id,
+                title="Пора принять добавки",
+                body="; ".join(
+                    row.name_ru + (f" — {row.dose}" if row.dose else "") for row in group
+                ),
+                url="/profile?section=supplements",
+                tag=f"supplements-{group[0].scheduled_at.isoformat()}",
+            )
         if delivered:
             await supplement_intakes.claim_notified(session, group)
+            user.goals = _record_delivery(user.goals or goals, channel)
+            flag_modified(user, "goals")
+            await session.commit()
             sent += delivered
         else:
             logger.info("supplement_notification_no_channel user={} count={}", user.id, len(group))
