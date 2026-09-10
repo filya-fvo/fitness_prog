@@ -1348,10 +1348,10 @@ browser push на установленном iPhone PWA и реальная до
 - `USER_GUIDE.md` и пользовательский FAQ проверены на отсутствие внутренних
   API, JWT, SQL, Redis, Docker и иных эксплуатационных инструкций.
 
-Последняя проверенная production-публикация — ревизия `096656c`:
+Последняя проверенная production-публикация — ревизия `43cf835`:
 
-- backup БД перед этапом 10:
-  `/opt/fitness/backups/fitness-20260909T155358Z.dump`;
+- backup БД перед этапом 11:
+  `/opt/fitness/backups/fitness-20260910T072428Z.dump`;
 - мигратор завершился с кодом `0`, контейнеры API/web/DB/Redis/LLM/OCR healthy,
   worker и Telegram poller работают;
 - `https://api.filfitclub.ru/health`, `https://app.filfitclub.ru` и публичный FAQ
@@ -1373,6 +1373,10 @@ browser push на установленном iPhone PWA и реальная до
 - новый маршрут `/exercises/strength-trends` опубликован и без авторизации отвечает `401`,
   lazy chunk `ProgressPage-CnGK6CQG.js` отвечает `200`; сервер и browser-сценарий
   отдельно проверяют PLUS-доступ, три набора, порядок ближайшей тренировки и снятие закрепления;
+- отдельный экран `/notifications` и lazy chunk
+  `NotificationSettingsPage-7iOaoPQz.js` отвечают `200`; анонимные GET настроек
+  и POST тестовой доставки отклоняются с `401`, а пользовательский browser-сценарий
+  проверяет единый канал, независимое сохранение категорий и доступность;
 - Telegram Bot API `getMe` и непрерывный `getUpdates` отвечают `200`, фоновые
   уведомления выполняются с `errors: 0`, внутренние LLM и OCR отвечают `200`;
 - свежий хвост production-логов после развёртывания не содержит аварийного
