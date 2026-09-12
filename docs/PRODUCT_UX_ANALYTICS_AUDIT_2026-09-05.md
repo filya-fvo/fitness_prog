@@ -1363,10 +1363,10 @@ browser push на установленном iPhone PWA и реальная до
 - `USER_GUIDE.md` и пользовательский FAQ проверены на отсутствие внутренних
   API, JWT, SQL, Redis, Docker и иных эксплуатационных инструкций.
 
-Последняя проверенная production-публикация — ревизия `43cf835`:
+Последняя проверенная production-публикация — ревизия `03ffb31`:
 
-- backup БД перед этапом 11:
-  `/opt/fitness/backups/fitness-20260910T072428Z.dump`;
+- backup БД перед исправлениями:
+  `/opt/fitness/backups/fitness-20260912T191128Z.dump`;
 - мигратор завершился с кодом `0`, контейнеры API/web/DB/Redis/LLM/OCR healthy,
   worker и Telegram poller работают;
 - `https://api.filfitclub.ru/health`, `https://app.filfitclub.ru` и публичный FAQ
@@ -1392,6 +1392,13 @@ browser push на установленном iPhone PWA и реальная до
   `NotificationSettingsPage-7iOaoPQz.js` отвечают `200`; анонимные GET настроек
   и POST тестовой доставки отклоняются с `401`, а пользовательский browser-сценарий
   проверяет единый канал, независимое сохранение категорий и доступность;
+- same-origin `https://app.filfitclub.ru/api/health` и отдельный
+  `https://api.filfitclub.ru/health` отвечают `200`; публичный UDP/443 отключён,
+  Caddy отвечает по HTTP/2 с `Alt-Svc: clear`;
+- VAPID-пара проверена кодом production как связанная и успешно сформировала
+  зашифрованный dry-run без отправки пользователю. Две подписки, отключённые
+  локальной ошибкой разбора PEM, восстановлены; одна ранее отключённая вручную
+  сохранена выключенной;
 - Telegram Bot API `getMe` и непрерывный `getUpdates` отвечают `200`, фоновые
   уведомления выполняются с `errors: 0`, внутренние LLM и OCR отвечают `200`;
 - свежий хвост production-логов после развёртывания не содержит аварийного
