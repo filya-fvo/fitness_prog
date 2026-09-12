@@ -27,6 +27,7 @@ RUN pip install --upgrade pip \
 
 # Non-root
 RUN useradd -m -u 10001 appuser \
+    && chmod -R a+rX /app/app /app/scripts /docs \
     && mkdir -p /app/logs /app/data \
     && chown -R appuser:appuser /app/logs /app/data
 USER appuser

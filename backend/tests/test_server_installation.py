@@ -169,6 +169,7 @@ def test_vps_images_and_production_env_cover_runtime_requirements() -> None:
 
     assert "COPY backend/scripts ./scripts" in backend_dockerfile
     assert "COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/" in backend_dockerfile
+    assert "chmod -R a+rX /app/app /app/scripts /docs" in backend_dockerfile
     assert "mkdir -p /app/logs /app/data" in backend_dockerfile
     assert "npm run build:publish" in frontend_dockerfile
     assert "COPY --from=build /app/dist /opt/fitness-release" in frontend_dockerfile
