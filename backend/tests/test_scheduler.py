@@ -19,6 +19,7 @@ from app.services.schedule_replacement import (
 from app.services.scheduler import (
     cancel_workout_occurrence,
     get_schedule_overview,
+    latest_completed_workout_date,
     next_base_workout_date,
     schedule_overview,
     workout_days,
@@ -286,6 +287,17 @@ async def test_overview_does_not_offer_a_performed_workout_as_missed() -> None:
     assert overview["current"] is None
     assert overview["next"]["target_date"] == date(2026, 8, 24)
     assert overview["next"]["day_index"] == 4
+
+
+@pytest.mark.asyncio
+async def test_latest_completed_workout_date_uses_user_timezone() -> None:
+    session = AsyncMock()
+    session.scalar = AsyncMock(return_value=datetime(2026, 9, 7, 22, 2, tzinfo=timezone.utc))
+    user = SimpleNamespace(id="user-1", goals=_schedule_goals())
+
+    completed_date = await latest_completed_workout_date(session, user)
+
+    assert completed_date == date(2026, 9, 8)
 
 
 @pytest.mark.asyncio

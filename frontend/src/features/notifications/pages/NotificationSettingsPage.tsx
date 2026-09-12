@@ -16,9 +16,9 @@ import { NotificationDeliveryCard } from "@/features/notifications/components/No
 import { detectedTimezone } from "@/features/notifications/notificationSettings";
 import { toUserMessage } from "@/utils/errors";
 import {
-  currentWebPushEnabled,
   disableWebPush,
   enableWebPush,
+  reconcileWebPush,
   webPushSupported,
 } from "@/utils/webPush";
 
@@ -29,6 +29,7 @@ export function NotificationSettingsPage() {
   const [telegramAvailable, setTelegramAvailable] = useState(false);
   const [browserAvailable, setBrowserAvailable] = useState(false);
   const [browserEnabled, setBrowserEnabled] = useState(false);
+  const [browserUnavailableReason, setBrowserUnavailableReason] = useState<string | null>(null);
   const [emailAvailable, setEmailAvailable] = useState(false);
   const [supplementCount, setSupplementCount] = useState(0);
   const [lastDelivery, setLastDelivery] = useState<{
@@ -51,7 +52,8 @@ export function NotificationSettingsPage() {
         ]);
         if (cancelled) return;
         const canUseTelegram = profile.telegram_id != null;
-        const canUseBrowser = Boolean(push?.enabled && webPushSupported());
+        const browserSupported = webPushSupported();
+        const canUseBrowser = Boolean(push?.enabled && browserSupported);
         const currentSettings = payload.timezone_configured
           ? payload.settings
           : { ...payload.settings, timezone: detectedTimezone() };
@@ -63,7 +65,18 @@ export function NotificationSettingsPage() {
         setTelegramAvailable(canUseTelegram);
         setEmailAvailable(Boolean(profile.auth_email));
         setBrowserAvailable(canUseBrowser);
-        setBrowserEnabled(canUseBrowser ? await currentWebPushEnabled().catch(() => false) : false);
+        setBrowserUnavailableReason(
+          !browserSupported
+            ? "Откройте приложение в обычном браузере: Telegram не поддерживает Web Push."
+            : !push?.enabled
+              ? "Браузерные уведомления временно недоступны."
+              : null,
+        );
+        setBrowserEnabled(
+          canUseBrowser && push
+            ? await reconcileWebPush(push).catch(() => false)
+            : false,
+        );
         setSupplementCount(supplements.items.length);
         setLastDelivery(payload.last_delivery ?? null);
       } catch (caught) {
@@ -144,7 +157,7 @@ export function NotificationSettingsPage() {
     setOk(null);
     try {
       if (browserEnabled) await disableWebPush();
-      else await enableWebPush();
+      else if (!await enableWebPush()) throw new Error("Не удалось зарегистрировать этот браузер");
       setBrowserEnabled(!browserEnabled);
       setOk(browserEnabled ? "Уведомления браузера отключены" : "Уведомления браузера включены");
     } catch (caught) {
@@ -183,6 +196,7 @@ export function NotificationSettingsPage() {
             telegramAvailable={telegramAvailable}
             browserAvailable={browserAvailable}
             browserEnabled={browserEnabled}
+            browserUnavailableReason={browserUnavailableReason}
             emailAvailable={emailAvailable}
             lastDelivery={lastDelivery}
             busy={busy}

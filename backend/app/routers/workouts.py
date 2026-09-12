@@ -171,6 +171,18 @@ async def workout_schedule_overview(
         user,
         day or scheduler_service.local_schedule_day(user.goals or {}),
     )
+    return await _schedule_overview_response(session, user, overview)
+
+
+async def _schedule_overview_response(
+    session: AsyncSession,
+    user: User,
+    overview: dict[str, object],
+) -> WorkoutScheduleOverview:
+    overview["last_completed_date"] = await scheduler_service.latest_completed_workout_date(
+        session,
+        user,
+    )
     return WorkoutScheduleOverview.model_validate(overview)
 
 
@@ -240,7 +252,7 @@ async def replace_workout_schedule_day(
     )
     return WorkoutScheduleReplacementResponse(
         settings=WorkoutScheduleSettingsResponse.model_validate(settings),
-        overview=WorkoutScheduleOverview.model_validate(overview),
+        overview=await _schedule_overview_response(session, user, overview),
         applied=applied,
     )
 
@@ -275,7 +287,7 @@ async def reschedule_workout_occurrence(
         target_time=body.target_time,
         conflict_resolution=body.conflict_resolution,
     )
-    return WorkoutScheduleOverview.model_validate(overview)
+    return await _schedule_overview_response(session, user, overview)
 
 
 @router.post("/schedule/reschedule/preview", response_model=WorkoutReschedulePreview)
@@ -303,7 +315,7 @@ async def cancel_workout_occurrence(
         user,
         scheduled_date=body.scheduled_date,
     )
-    return WorkoutScheduleOverview.model_validate(overview)
+    return await _schedule_overview_response(session, user, overview)
 
 
 @router.get("/planned-plan", response_model=WorkoutPlan)

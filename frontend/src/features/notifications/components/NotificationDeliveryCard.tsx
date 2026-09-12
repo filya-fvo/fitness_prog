@@ -25,6 +25,7 @@ type Props = {
   telegramAvailable: boolean;
   browserAvailable: boolean;
   browserEnabled: boolean;
+  browserUnavailableReason: string | null;
   emailAvailable: boolean;
   lastDelivery: { channel: "telegram" | "browser"; delivered_at: string } | null;
   busy: boolean;
@@ -67,25 +68,36 @@ export function NotificationDeliveryCard(props: Props) {
                 selected ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-text"
               }`}
             >
-              {channel === "telegram" ? "Telegram" : "Браузер"}
+              {channel === "telegram" ? "Только Telegram" : "Только браузер"}
             </button>
           );
         })}
       </div>
 
+      {!props.browserAvailable && props.browserUnavailableReason ? (
+        <p className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
+          {props.browserUnavailableReason}
+        </p>
+      ) : null}
+
       {settings.delivery_channel === "browser" ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-tg-bg p-3">
-          <p className="text-xs text-tg-hint">
-            {props.browserEnabled ? "Этот браузер готов получать уведомления" : "Разрешите уведомления на этом устройстве"}
+        <div className="space-y-2 rounded-xl bg-tg-bg p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-tg-hint">
+              {props.browserEnabled ? "Этот браузер готов получать уведомления" : "Разрешите уведомления на этом устройстве"}
+            </p>
+            <button
+              type="button"
+              disabled={!props.browserAvailable || props.busy}
+              onClick={props.onToggleBrowser}
+              className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-semibold text-tg-link disabled:opacity-40"
+            >
+              {props.browserEnabled ? "Отключить" : "Включить"}
+            </button>
+          </div>
+          <p className="text-xs font-medium text-tg-text">
+            Telegram-уведомления выключены: все напоминания придут только в браузер.
           </p>
-          <button
-            type="button"
-            disabled={!props.browserAvailable || props.busy}
-            onClick={props.onToggleBrowser}
-            className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-semibold text-tg-link disabled:opacity-40"
-          >
-            {props.browserEnabled ? "Отключить" : "Включить"}
-          </button>
         </div>
       ) : null}
 

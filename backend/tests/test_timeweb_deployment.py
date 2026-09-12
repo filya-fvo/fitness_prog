@@ -120,6 +120,10 @@ def test_ci_builds_the_timeweb_image_from_the_repository_root() -> None:
 
 def test_compose_uses_outbound_telegram_poller() -> None:
     compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    caddy = (ROOT / "deploy" / "Caddyfile").read_text(encoding="utf-8")
+    production_env = (ROOT / "backend" / ".env.production.example").read_text(
+        encoding="utf-8"
+    )
 
     assert "telegram-poller:" in compose
     assert 'command: ["python", "-m", "app.telegram_poller"]' in compose
@@ -128,3 +132,8 @@ def test_compose_uses_outbound_telegram_poller() -> None:
     assert "- ipv6_egress" in poller_block
     assert "- default" in poller_block
     assert "healthcheck:\n      disable: true" in poller_block
+    assert '"443:443/udp"' not in compose
+    assert "protocols h1 h2" in caddy
+    assert "handle_path /api/*" in caddy
+    assert 'header Alt-Svc "clear"' in caddy
+    assert "VITE_API_URL=/api" in production_env

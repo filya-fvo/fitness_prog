@@ -7,6 +7,7 @@ const EXERCISE_ID = "33333333-3333-4333-8333-333333333333";
 test("server-only active workout deep link is restored and cached", async ({ page }) => {
   let workoutRequests = 0;
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date("2026-08-20T12:00:00Z"));
 
   await page.addInitScript(() => {
     localStorage.setItem("fitness_jwt", "e2e-token");

@@ -55,7 +55,7 @@ from app.services.telegram_bot import (
     send_workout_reminder,
     supplement_intake_keyboard,
 )
-from app.services.web_push import send_user_web_push
+from app.services.web_push import send_user_web_push, web_push_configured
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -315,9 +315,13 @@ async def get_push_config(
             )
         )
     )
-    public_key = settings.web_push_vapid_public_key.strip()
+    public_key = settings.web_push_vapid_public_key.strip().rstrip("=")
     return PushConfigResponse(
-        enabled=bool(public_key and settings.web_push_vapid_private_key.strip()),
+        enabled=web_push_configured(
+            public_key,
+            settings.web_push_vapid_private_key,
+            settings.web_push_vapid_subject,
+        ),
         public_key=public_key,
         subscriptions=subscriptions,
     )
@@ -330,7 +334,11 @@ async def save_push_subscription(
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ) -> PushConfigResponse:
-    if not settings.web_push_vapid_public_key or not settings.web_push_vapid_private_key:
+    if not web_push_configured(
+        settings.web_push_vapid_public_key,
+        settings.web_push_vapid_private_key,
+        settings.web_push_vapid_subject,
+    ):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Фоновые уведомления браузера ещё не настроены администратором",

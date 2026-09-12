@@ -1,13 +1,23 @@
 {
     email {$ACME_EMAIL}
+    servers {
+        protocols h1 h2
+    }
 }
 
 {$APP_DOMAIN} {
     encode zstd gzip
-    reverse_proxy web:80
+    header Alt-Svc "clear"
+    handle_path /api/* {
+        reverse_proxy api:8000
+    }
+    handle {
+        reverse_proxy web:80
+    }
 }
 
 {$API_DOMAIN} {
     encode zstd gzip
+    header Alt-Svc "clear"
     reverse_proxy api:8000
 }

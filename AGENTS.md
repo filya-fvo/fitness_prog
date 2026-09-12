@@ -144,7 +144,8 @@ services → SQLAlchemy models → PostgreSQL
   регулярности, псевдонимы, группы по частоте расписания и privacy threshold.
 - `backend/app/services/scheduler.py` — канонический `goals.workout_schedule`,
   совместимые legacy-зеркала, постоянные тренировочные дни, дата старта
-  активной программы как нижняя граница календаря; `workout_reschedule.py` —
+  активной программы как нижняя граница календаря и серверная дата последнего
+  завершения для корректного баннера возвращения; `workout_reschedule.py` —
   разовые переносы внутри недели и явное разрешение конфликтов;
   `workout_notifications.py` — расчёт
   workout-reminder; `workout_shift.py` — изолированный legacy API массового

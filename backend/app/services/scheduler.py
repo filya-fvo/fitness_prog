@@ -8,7 +8,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -692,6 +692,27 @@ async def get_schedule_overview(
         occurrence["program_id"] = occurrence.get("program_id") or program_id
         occurrence["day_index"] = occurrence.get("day_index") or day_index
     return overview
+
+
+async def latest_completed_workout_date(
+    session: AsyncSession,
+    user: User,
+) -> date | None:
+    """Return the latest real completion date in the user's schedule timezone."""
+
+    latest_completed_at = await session.scalar(
+        select(func.max(Workout.completed_at)).where(
+            Workout.user_id == user.id,
+            Workout.status == "completed",
+            Workout.completed_at.is_not(None),
+            Workout.is_deleted.is_(False),
+        )
+    )
+    if not isinstance(latest_completed_at, datetime):
+        return None
+    if latest_completed_at.tzinfo is None:
+        latest_completed_at = latest_completed_at.replace(tzinfo=UTC)
+    return latest_completed_at.astimezone(_schedule_timezone(user.goals or {})).date()
 
 
 async def cancel_workout_occurrence(

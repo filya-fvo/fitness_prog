@@ -348,7 +348,7 @@ APP_DOMAIN=app.example.ru
 API_DOMAIN=api.example.ru
 ACME_EMAIL=your-real-email@example.ru
 MINI_APP_URL=https://app.example.ru
-VITE_API_URL=https://api.example.ru
+VITE_API_URL=/api
 VITE_BOT_USERNAME=fil_fit_bot
 TELEGRAM_LOGIN_CLIENT_ID=
 

@@ -5,6 +5,7 @@ import {
   cancelScheduledWorkout,
   fetchExerciseProgress,
   fetchPersonalRegularity,
+  fetchWorkoutSchedule,
   fetchWorkoutLoadHints,
 } from "./workouts";
 
@@ -51,6 +52,22 @@ describe("workout schedule API", () => {
     });
     expect(result.current?.status).toBe("cancelled");
     expect(result.next).toMatchObject({ target_date: "2026-08-31", day_index: 3 });
+  });
+
+  it("parses the server date of the latest completed workout", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({
+      data: {
+        requested_date: "2026-09-10",
+        current: null,
+        next: null,
+        last_completed_date: "2026-09-10",
+      },
+    });
+
+    const result = await fetchWorkoutSchedule();
+
+    expect(apiClient.get).toHaveBeenCalledWith("/workouts/schedule/overview", { params: undefined });
+    expect(result.last_completed_date).toBe("2026-09-10");
   });
 
   it("parses personal plan regularity", async () => {

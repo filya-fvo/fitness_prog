@@ -88,6 +88,7 @@ const scheduleOverviewSchema = z.object({
   requested_date: z.string(),
   current: scheduleOccurrenceSchema.nullable().optional(),
   next: scheduleOccurrenceSchema.nullable().optional(),
+  last_completed_date: z.string().nullable().optional(),
 });
 
 const workoutLoadHintSchema = z.object({

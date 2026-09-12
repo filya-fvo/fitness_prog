@@ -66,11 +66,13 @@ const limits = {
   // Structured notification settings move ~4 KB gzip out of the large Profile
   // route into a 6.3 KB lazy route and add typed channel/quiet-hours controls;
   // the measured net product growth is 3.4 KB with no new vendor dependency.
+  // Browser subscription reconciliation and explicit browser-only delivery add
+  // 0.2 KB gzip without changing the largest chunk or eager dependencies.
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
   totalJsGzip: 513_000,
-  productJsGzip: 460_000,
+  productJsGzip: 460_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   adminJsGzip: 53_000,

@@ -71,7 +71,8 @@ test("notification settings keep one channel and independent category drafts", a
 
   await page.goto("/notifications");
   await expect(page.getByRole("heading", { name: "Уведомления" })).toBeVisible();
-  await expect(page.getByRole("radio", { name: "Telegram" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("Браузерные уведомления временно недоступны.")).toBeVisible();
   await expect(page.getByText("Пн, Ср, Пт · 18:30").first()).toBeVisible();
   await expect(page.getByText("Успешных доставок пока нет")).toBeVisible();
 

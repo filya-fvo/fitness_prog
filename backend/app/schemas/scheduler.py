@@ -126,6 +126,7 @@ class WorkoutScheduleOverview(BaseModel):
     requested_date: date
     current: WorkoutScheduleOccurrence | None = None
     next: WorkoutScheduleOccurrence | None = None
+    last_completed_date: date | None = None
 
 
 class WorkoutScheduleReplacementResponse(BaseModel):

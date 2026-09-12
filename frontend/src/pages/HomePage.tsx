@@ -66,6 +66,7 @@ import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
+import { workoutPauseDays } from "@/utils/workoutRecency";
 import {
   canStartProgramFromSchedule,
   plannedWorkoutOccurrence,
@@ -114,7 +115,7 @@ export function HomePage() {
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [regularity, setRegularity] = useState<PersonalRegularity | null>(null);
-  const [daysSinceLastWorkout, setDaysSinceLastWorkout] = useState<number | null>(null);
+  const [cachedLastCompletedDate, setCachedLastCompletedDate] = useState<string | null>(null);
   const [reentryDismissed, setReentryDismissed] = useState(false);
   const reentryTrackedRef = useRef(false);
   const [pending, setPending] = useState(0);
@@ -145,6 +146,11 @@ export function HomePage() {
   const readiness = usePreWorkoutReadiness(
     cycleTrainingEnabledForProfile(profileGoals),
   );
+  const daysSinceLastWorkout = workoutPauseDays({
+    today: progressLocalDate(new Date()),
+    cachedLastCompletedDate,
+    serverLastCompletedDate: workoutSchedule?.last_completed_date,
+  });
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
   const canResume = Boolean(
@@ -366,14 +372,7 @@ export function HomePage() {
             const k = workoutDateKey(w);
             if (k && (!latest || k > latest)) latest = k;
           }
-          if (latest) {
-            const t0 = new Date(today + "T12:00:00");
-            const t1 = new Date(latest + "T12:00:00");
-            const diff = Math.max(0, Math.round((t0.getTime() - t1.getTime()) / 86400000));
-            setDaysSinceLastWorkout(diff);
-          } else {
-            setDaysSinceLastWorkout(null);
-          }
+          setCachedLastCompletedDate(latest);
           setWaterMl(getHabitDay(undefined, user?.id).waterMl);
         }
 
