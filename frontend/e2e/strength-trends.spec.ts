@@ -35,14 +35,18 @@ test("PLUS progress explains next, best and user-selected strength trends", asyn
       username: "strength-trends-qa",
       auth_email: null,
       anthropometry: {},
-      goals: { onboarding_completed: true },
+      goals: {
+        onboarding_completed: true,
+        primary_goal: "gain_muscle",
+        level: "intermediate",
+      },
       subscription: { tier: "plus", active: true, sources: ["qa"], valid_until: null },
       subscription_status: "plus",
       stars_balance: 0,
       onboarding_completed: true,
     }),
   }));
-  await page.route("**/workouts/history", (route) => route.fulfill({
+  await page.route("**/workouts/history**", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({ items: [], total: 0 }),
   }));

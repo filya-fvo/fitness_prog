@@ -70,11 +70,13 @@ const limits = {
   // 0.2 KB gzip without changing the largest chunk or eager dependencies.
   // Assigning the next program workout to an earlier free day adds 0.95 KB gzip
   // to the shared schedule flow without adding a vendor or eager shell chunk.
+  // Goal- and level-aware personal dashboards add 4.8 KB gzip to the lazy
+  // Progress route, including bounded 4/8/12-week load visualizations.
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 514_500,
-  productJsGzip: 462_000,
+  totalJsGzip: 520_000,
+  productJsGzip: 468_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   adminJsGzip: 53_000,

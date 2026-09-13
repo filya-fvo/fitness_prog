@@ -93,6 +93,7 @@ async def _request_as(
         ("GET", "/nutrition/range", "nutrition_history"),
         ("GET", "/metrics/range", "daily_metrics_history"),
         ("GET", "/workouts/regularity", "workout_regularity"),
+        ("GET", "/workouts/dashboard", "progress_dashboard"),
         ("POST", "/ai/analyze", "ai_progress_analysis"),
     ],
 )

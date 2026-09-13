@@ -718,6 +718,8 @@ async def list_workout_history(
     *,
     date_from: date | None = None,
     date_to: date | None = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> tuple[list[Workout], int]:
     filters = [Workout.user_id == user.id, Workout.is_deleted.is_(False)]
     if date_from is not None:
@@ -731,6 +733,8 @@ async def list_workout_history(
         .options(selectinload(Workout.sets))
         .where(*filters)
         .order_by(Workout.scheduled_date.desc(), Workout.created_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return list(result.scalars().all()), int(total or 0)
 

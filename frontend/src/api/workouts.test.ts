@@ -6,6 +6,7 @@ import {
   cancelScheduledWorkout,
   fetchExerciseProgress,
   fetchPersonalRegularity,
+  fetchWorkoutHistory,
   fetchWorkoutSchedule,
   fetchWorkoutLoadHints,
 } from "./workouts";
@@ -128,6 +129,25 @@ describe("workout schedule API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/workouts/regularity", { params: { days: 28 } });
     expect(result).toMatchObject({ completed: 10, planned: 12, completion_pct: 83.3 });
+  });
+
+  it("requests a bounded workout-history page", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: { items: [], total: 5000 } });
+
+    const result = await fetchWorkoutHistory({
+      dateFrom: "2026-07-01",
+      dateTo: "2026-09-30",
+      limit: 200,
+      offset: 0,
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith("/workouts/history", { params: {
+      date_from: "2026-07-01",
+      date_to: "2026-09-30",
+      limit: 200,
+      offset: 0,
+    } });
+    expect(result).toEqual([]);
   });
 
   it("requests only bounded exercise load hints and maps decimal weights", async () => {

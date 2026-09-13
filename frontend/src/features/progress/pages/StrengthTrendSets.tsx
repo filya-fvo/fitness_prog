@@ -57,10 +57,12 @@ function TrendSpark({ item }: { item: StrengthTrendItem }) {
 function TrendRow({
   item,
   showPin,
+  simple,
   onUnpin,
 }: {
   item: StrengthTrendItem;
   showPin: boolean;
+  simple: boolean;
   onUnpin: (exerciseId: string) => void;
 }) {
   const latest = item.latest;
@@ -81,7 +83,7 @@ function TrendRow({
           </Link>
           <p className="mt-0.5 text-[11px] text-tg-hint">
             {load}
-            {latest ? ` · 1ПМ ≈ ${formatNumber(latest.estimated1rm)} кг` : ""}
+            {latest && !simple ? ` · 1ПМ ≈ ${formatNumber(latest.estimated1rm)} кг` : ""}
           </p>
         </div>
         {showPin ? (
@@ -93,15 +95,17 @@ function TrendRow({
           />
         ) : item.changePercent !== null ? (
           <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-500">
-            +{formatNumber(item.changePercent)}%
+            {simple ? "Есть прогресс" : `+${formatNumber(item.changePercent)}%`}
           </span>
         ) : null}
       </div>
-      <div className="mt-1"><TrendSpark item={item} /></div>
-      <div className="mt-1 flex justify-between gap-2 text-[10px] text-tg-hint">
-        <span>{item.points.length} наблюд.</span>
-        <span>{item.changePercent !== null ? `изменение за 8 недель` : "нужно 3 результата"}</span>
-      </div>
+      {!simple ? <>
+        <div className="mt-1"><TrendSpark item={item} /></div>
+        <div className="mt-1 flex justify-between gap-2 text-[10px] text-tg-hint">
+          <span>{item.points.length} наблюд.</span>
+          <span>{item.changePercent !== null ? "изменение за 8 недель" : "нужно 3 результата"}</span>
+        </div>
+      </> : null}
       {item.hasWeightModeChange ? (
         <p className="mt-1 text-[10px] text-amber-500">Режим учёта веса менялся</p>
       ) : null}
@@ -124,9 +128,11 @@ function emptyMessage(key: TrendSetKey, data: StrengthTrendSets): string {
 export function StrengthTrendSetsCard({
   data,
   error,
+  simple = false,
 }: {
   data: StrengthTrendSets | null;
   error: string | null;
+  simple?: boolean;
 }) {
   const [active, setActive] = useState<TrendSetKey>("next");
   const [hiddenPinned, setHiddenPinned] = useState<Set<string>>(() => new Set());
@@ -144,7 +150,9 @@ export function StrengthTrendSetsCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 id="strength-trends-title" className="text-sm font-semibold">Силовые тренды</h2>
-          <p className="mt-1 text-[11px] text-tg-hint">Лучший подход дня · расчётный 1ПМ</p>
+          <p className="mt-1 text-[11px] text-tg-hint">
+            {simple ? "Последние рабочие результаты" : "Лучший подход дня · расчётный 1ПМ"}
+          </p>
         </div>
         <Link to="/progress/exercises" className="min-h-11 py-2 text-xs font-medium text-tg-link">
           Все упражнения
@@ -186,6 +194,7 @@ export function StrengthTrendSetsCard({
                 key={item.exerciseId}
                 item={item}
                 showPin={active === "pinned"}
+                simple={simple}
                 onUnpin={(exerciseId) => setHiddenPinned((current) => new Set(current).add(exerciseId))}
               />
             ))}

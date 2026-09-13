@@ -34,7 +34,7 @@ test("FREE progress shows a product gate without requesting history", async ({ p
   await authenticate(page, "free");
   const premiumRequests: string[] = [];
   page.on("request", (request) => {
-    if (/workouts\/history|workouts\/regularity|nutrition\/range|daily-metrics\/range|measurements\/analytics|exercises\/strength-trends/.test(request.url())) {
+    if (/workouts\/(?:history|regularity|dashboard)|nutrition\/range|daily-metrics\/range|measurements\/analytics|exercises\/strength-trends/.test(request.url())) {
       premiumRequests.push(request.url());
     }
   });
@@ -126,7 +126,7 @@ test("a live downgrade closes progress without logging the user out", async ({ p
     contentType: "application/json",
     body: JSON.stringify(profile(free ? "free" : "plus")),
   }));
-  await page.route("**/workouts/history", (route) => {
+  await page.route("**/workouts/history**", (route) => {
     free = true;
     return route.fulfill({
       status: 403,

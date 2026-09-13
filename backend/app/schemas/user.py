@@ -30,7 +30,7 @@ _GOAL_ENUMS: dict[str, set[str]] = {
     "location": {"gym", "home", "outdoor"},
     "activity_level": {"sedentary", "light", "moderate", "active", "very_active"},
 }
-_GOAL_BOOLEAN_KEYS = {"cycle_training_enabled"}
+_GOAL_BOOLEAN_KEYS = {"cycle_training_enabled", "advanced_analytics_enabled"}
 _ACTIVATION_CHECKLIST_SIGNALS = {
     "plan_viewed",
     "schedule_saved",

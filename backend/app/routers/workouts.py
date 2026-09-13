@@ -6,7 +6,7 @@ import uuid
 from datetime import date, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -41,6 +41,7 @@ from app.schemas.scheduler import (
 from app.schemas.workout import (
     ExerciseProgressResponse,
     PlannedWorkoutPlanRequest,
+    ProgressDashboardResponse,
     WorkoutCompleteRequest,
     WorkoutCreate,
     WorkoutHistoryResponse,
@@ -57,6 +58,7 @@ from app.services import (
     exercise_progress,
     personal_regularity,
     planned_workout,
+    progress_dashboard,
     schedule_replacement,
     workout_assignment,
     workout_reschedule,
@@ -87,6 +89,8 @@ async def create_workout(
 async def workout_history(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db),
     user: User = Depends(require_plus("workout_history", _WORKOUT_HISTORY_MESSAGE)),
 ) -> WorkoutHistoryResponse:
@@ -95,6 +99,8 @@ async def workout_history(
         user,
         date_from=date_from,
         date_to=date_to,
+        limit=limit,
+        offset=offset,
     )
     return WorkoutHistoryResponse(
         items=[WorkoutResponse.model_validate(item) for item in items],
@@ -119,6 +125,24 @@ async def shift_schedule(
         shifted=len(items),
         workout_ids=[item.id for item in items],
     )
+
+
+@router.get("/dashboard", response_model=ProgressDashboardResponse)
+async def progress_dashboard_summary(
+    period_days: int = Query(default=28, ge=28, le=84),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(
+        require_plus("progress_dashboard", "Персональная аналитика доступна в PLUS")
+    ),
+) -> ProgressDashboardResponse:
+    if period_days not in progress_dashboard.ALLOWED_PERIOD_DAYS:
+        raise HTTPException(status_code=422, detail="Доступны периоды 4, 8 или 12 недель")
+    result = await progress_dashboard.get_progress_dashboard(
+        session,
+        user=user,
+        period_days=period_days,
+    )
+    return ProgressDashboardResponse.model_validate(result)
 
 
 @router.post("/load-hints", response_model=WorkoutLoadHintsResponse)

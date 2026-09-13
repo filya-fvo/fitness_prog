@@ -15,6 +15,7 @@ export function computeBadges(
   workouts: Workout[],
   ownerUserId?: string | null,
   regularity?: { completion_pct: number | null; completed: number; planned: number } | null,
+  lifetime?: { completedWorkouts: number; completedSets: number } | null,
 ): Badge[] {
   const completed = workouts.filter((w) => w.status === "completed");
   const hStreak = habitStreak(new Date(), ownerUserId);
@@ -22,19 +23,21 @@ export function computeBadges(
     (acc, w) => acc + (w.sets || []).filter((s) => s.is_completed).length,
     0,
   );
+  const completedCount = lifetime?.completedWorkouts ?? completed.length;
+  const completedSets = lifetime?.completedSets ?? totalSets;
 
   return [
     {
       id: "first_workout",
       title: "Первый шаг",
       description: "Завершите 1 тренировку",
-      earned: completed.length >= 1,
+      earned: completedCount >= 1,
     },
     {
       id: "five_workouts",
       title: "В ритме",
       description: "5 завершённых тренировок",
-      earned: completed.length >= 5,
+      earned: completedCount >= 5,
     },
     {
       id: "plan_3",
@@ -52,7 +55,7 @@ export function computeBadges(
       id: "sets_50",
       title: "50 подходов",
       description: "Суммарно 50 записанных подходов",
-      earned: totalSets >= 50,
+      earned: completedSets >= 50,
     },
     {
       id: "habit_3",

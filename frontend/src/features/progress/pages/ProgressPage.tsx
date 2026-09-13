@@ -5,8 +5,14 @@ import { analyzeProgress } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchStrengthTrendSets, type StrengthTrendSets } from "@/api/strengthTrends";
+import {
+  fetchProgressDashboard,
+  type ProgressDashboard,
+  type ProgressDashboardPeriod,
+} from "@/api/progressDashboard";
 import { fetchDailyMetricsRange, type DailyMetric } from "@/api/dailyMetrics";
 import { fetchNutritionRange } from "@/api/nutrition";
+import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPersonalRegularity,
   fetchWorkoutHistory,
@@ -28,11 +34,13 @@ import { Calendar } from "@/features/progress/pages/Calendar";
 import { WorkoutDayDetails } from "@/features/progress/pages/WorkoutDayDetails";
 import { Charts } from "@/features/progress/pages/Charts";
 import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
-import { NutritionBalanceChart } from "@/features/progress/pages/NutritionBalanceChart";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
 import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
 import { StrengthTrendSetsCard } from "@/features/progress/pages/StrengthTrendSets";
 import { WellnessSummary } from "@/features/progress/pages/WellnessSummary";
+import { PersonalDashboardCard } from "@/features/progress/pages/PersonalDashboardCard";
+import { TrainingLoadAnalytics } from "@/features/progress/pages/TrainingLoadAnalytics";
+import { NutritionSummaryCard } from "@/features/progress/pages/NutritionSummaryCard";
 import type { Exercise, Workout } from "@/types/workout";
 import { computeBadges } from "@/utils/achievements";
 import { isOnline } from "@/utils/network";
@@ -41,6 +49,7 @@ import {
   buildNutritionBalance,
   computeDailyVolume,
   groupNutritionByWeek,
+  localDateKey,
   summarizeNutritionPeriods,
   type NutritionBalanceSummary,
   workoutDateKey,
@@ -49,6 +58,12 @@ import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { toUserMessage } from "@/utils/errors";
 import { useUserStore } from "@/store/userStore";
 import { trackEvent } from "@/lib/analytics";
+import {
+  analyticsDepth,
+  dashboardGuidance,
+  visibleDashboardSections,
+  type DashboardSectionId,
+} from "@/utils/personalDashboard";
 
 type NutritionRangeMode = "day" | "week";
 
@@ -73,6 +88,12 @@ export function ProgressPage() {
   const [dailyMetricsError, setDailyMetricsError] = useState<string | null>(null);
   const [strengthTrendSets, setStrengthTrendSets] = useState<StrengthTrendSets | null>(null);
   const [strengthTrendsError, setStrengthTrendsError] = useState<string | null>(null);
+  const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
+  const [dashboard, setDashboard] = useState<ProgressDashboard | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [analyticsSaving, setAnalyticsSaving] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
@@ -87,6 +108,8 @@ export function ProgressPage() {
       setNutrition(null);
       setDailyMetrics([]);
       setStrengthTrendSets(null);
+      setDashboard(null);
+      setProfileGoals({});
       return;
     }
     let cancelled = false;
@@ -96,6 +119,7 @@ export function ProgressPage() {
       setNutritionError(null);
       setDailyMetricsError(null);
       setStrengthTrendsError(null);
+      setDashboardError(null);
       try {
         const cached = await readCachedWorkouts();
         const cachedEx = await readCachedExercises();
@@ -107,8 +131,16 @@ export function ProgressPage() {
 
         if (getStoredToken() && isOnline()) {
           // Up to 31 days covers current month (API max)
-          const [items, range, ex, metrics, planRegularity, trendSets] = await Promise.all([
-            fetchWorkoutHistory(),
+          const recentStart = new Date();
+          recentStart.setDate(recentStart.getDate() - 83);
+          const loadDay = new Date();
+          const currentMonthEnd = new Date(loadDay.getFullYear(), loadDay.getMonth() + 1, 0);
+          const [items, range, ex, metrics, planRegularity, trendSets, profile, dashboardSummary] = await Promise.all([
+            fetchWorkoutHistory({
+              dateFrom: localDateKey(recentStart),
+              dateTo: localDateKey(currentMonthEnd),
+              limit: 200,
+            }),
             fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
               if (!cancelled) {
                 setNutritionError(
@@ -131,6 +163,13 @@ export function ProgressPage() {
               }
               return null;
             }),
+            fetchMyProfile().catch(() => null),
+            fetchProgressDashboard(28).catch((err: unknown) => {
+              if (!cancelled) {
+                setDashboardError(toUserMessage(err, "Не удалось загрузить сводку"));
+              }
+              return null;
+            }),
           ]);
           await cacheWorkouts(items);
           if (ex?.items?.length) {
@@ -144,6 +183,8 @@ export function ProgressPage() {
             if (metrics) setDailyMetrics(metrics.days);
             setRegularity(planRegularity);
             setStrengthTrendSets(trendSets);
+            if (profile) setProfileGoals(profile.goals);
+            setDashboard(dashboardSummary);
           }
         } else if (cached.length) {
           if (!cancelled) {
@@ -183,15 +224,23 @@ export function ProgressPage() {
 
   const series = useMemo(() => computeDailyVolume(workouts, 14), [workouts]);
   const badges = useMemo(
-    () => computeBadges(workouts, ownerUserId, regularity),
-    [ownerUserId, regularity, workouts],
+    () => computeBadges(workouts, ownerUserId, regularity, dashboard ? {
+      completedWorkouts: dashboard.lifetime_completed_workouts,
+      completedSets: dashboard.lifetime_completed_sets,
+    } : null),
+    [dashboard, ownerUserId, regularity, workouts],
   );
   const calendarDays = useMemo(
     () => buildCalendarDays(workouts, year, monthIndex),
     [workouts, year, monthIndex],
   );
-  const completedCount = workouts.filter((w) => w.status === "completed").length;
+  const completedCount = dashboard?.lifetime_completed_workouts
+    ?? workouts.filter((w) => w.status === "completed").length;
   const weekOverview = useMemo(() => buildWeeklyWorkoutOverview(workouts), [workouts]);
+  const level = String(profileGoals.level || "beginner");
+  const goal = String(profileGoals.primary_goal || "maintain");
+  const depth = analyticsDepth(level, profileGoals.advanced_analytics_enabled);
+  const visibleSections = visibleDashboardSections(goal, depth);
 
   async function askWeekAi() {
     if (weekAiBusy) return;
@@ -224,10 +273,113 @@ export function ProgressPage() {
     return summarizeNutritionPeriods(nutrition.days, nutrition.dailyTarget);
   }, [nutrition]);
 
+  const guidance = useMemo(() => dashboardGuidance({
+    goal,
+    dashboard,
+    regularity,
+    nutritionDays: nutrition?.days.filter((day) => day.hasLogs).length ?? 0,
+    wellnessDays: dailyMetrics.filter((day) =>
+      day.steps != null || day.sleep_minutes != null || day.active_minutes != null,
+    ).length,
+  }), [dailyMetrics, dashboard, goal, nutrition, regularity]);
+
+  async function setAdvancedAnalytics(expanded: boolean) {
+    if (analyticsSaving || profileGoals.advanced_analytics_enabled === expanded) return;
+    const previous = profileGoals.advanced_analytics_enabled;
+    setAnalyticsSaving(true);
+    setAnalyticsError(null);
+    setProfileGoals((current) => ({ ...current, advanced_analytics_enabled: expanded }));
+    try {
+      const profile = await updateMyProfile({ goals: { advanced_analytics_enabled: expanded } });
+      setProfileGoals(profile.goals);
+      trackEvent("progress_analytics_depth_changed", { expanded, level });
+    } catch (err) {
+      setProfileGoals((current) => ({ ...current, advanced_analytics_enabled: previous }));
+      setAnalyticsError(toUserMessage(err, "Не удалось сохранить режим аналитики"));
+    } finally {
+      setAnalyticsSaving(false);
+    }
+  }
+
+  async function changeDashboardPeriod(period: ProgressDashboardPeriod) {
+    if (dashboardLoading || dashboard?.period_days === period) return;
+    setDashboardLoading(true);
+    setDashboardError(null);
+    try {
+      setDashboard(await fetchProgressDashboard(period));
+    } catch (err) {
+      setDashboardError(toUserMessage(err, "Не удалось загрузить выбранный период"));
+    } finally {
+      setDashboardLoading(false);
+    }
+  }
+
   function shiftMonth(delta: number) {
     const d = new Date(year, monthIndex + delta, 1);
     setYear(d.getFullYear());
     setMonthIndex(d.getMonth());
+    if (getStoredToken() && isOnline()) {
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      void fetchWorkoutHistory({
+        dateFrom: localDateKey(d),
+        dateTo: localDateKey(end),
+        limit: 200,
+      }).then((items) => {
+        setWorkouts((current) => {
+          const merged = new Map(current.map((item) => [item.id, item]));
+          items.forEach((item) => merged.set(item.id, item));
+          return [...merged.values()];
+        });
+      }).catch(() => setError("Не удалось загрузить выбранный месяц"));
+    }
+  }
+
+  function renderDashboardSection(section: DashboardSectionId) {
+    if (section === "wellness") {
+      return <WellnessSummary days={dailyMetrics} error={dailyMetricsError} />;
+    }
+    if (section === "measurements") return <BodyMeasurementsSummary />;
+    if (section === "nutrition") {
+      return <NutritionSummaryCard
+        mode={nutritionMode}
+        onModeChange={setNutritionMode}
+        error={nutritionError}
+        series={nutritionSeries}
+        dailyTarget={nutrition?.dailyTarget ?? null}
+        periods={nutritionPeriods}
+      />;
+    }
+    if (section === "strength") {
+      return <StrengthTrendSetsCard
+        data={strengthTrendSets}
+        error={strengthTrendsError}
+        simple={depth === "basic"}
+      />;
+    }
+    return <div className="contents">
+      <WeeklyOverview
+        overview={weekOverview}
+        onAskAi={() => void askWeekAi()}
+        aiBusy={weekAiBusy}
+      />
+      {weekAiError ? (
+        <p className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{weekAiError}</p>
+      ) : null}
+      {weekAiText ? (
+        <div className="rounded-2xl bg-tg-secondary p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold">ИИ · разбор недели</p>
+            <button type="button" className="text-xs text-tg-hint" onClick={() => setWeekAiText(null)}>
+              Скрыть
+            </button>
+          </div>
+          <p className="whitespace-pre-wrap text-sm text-tg-hint">{weekAiText}</p>
+          <Link to="/ai" className="mt-2 inline-block text-xs text-tg-link">
+            Открыть чат с тренером →
+          </Link>
+        </div>
+      ) : null}
+    </div>;
   }
 
   if (!plusAccess) {
@@ -246,27 +398,15 @@ export function ProgressPage() {
       {loading ? <PageSkeleton cards={2} /> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
-      {!loading && completedCount === 0 ? (
-        <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
-          <p className="text-sm font-semibold">Здесь появится ваш прогресс</p>
-          <p className="mt-1 text-sm text-tg-hint">
-            Закройте первую тренировку — откроются выполнение плана, графики и достижения.
-          </p>
-          <Link
-            to="/"
-            className="mt-3 block w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
-          >
-            К сегодняшней тренировке
-          </Link>
-          <Link
-            to="/faq?article=progress"
-            state={{ returnTo: "/progress" }}
-            className="mt-2 block min-h-11 px-3 py-3 text-center text-xs text-tg-link"
-          >
-            Как читать прогресс?
-          </Link>
-        </div>
-      ) : null}
+      {!loading ? <PersonalDashboardCard
+        goal={goal}
+        level={level}
+        depth={depth}
+        guidance={guidance}
+        saving={analyticsSaving}
+        error={analyticsError || (depth === "basic" ? dashboardError : null)}
+        onExpandedChange={(expanded) => void setAdvancedAnalytics(expanded)}
+      /> : null}
 
       {!loading ? (
         <div className="mb-3 grid grid-cols-2 gap-3">
@@ -287,31 +427,17 @@ export function ProgressPage() {
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <WellnessSummary days={dailyMetrics} error={dailyMetricsError} />
-        <BodyMeasurementsSummary />
-        <WeeklyOverview
-          overview={weekOverview}
-          onAskAi={() => void askWeekAi()}
-          aiBusy={weekAiBusy}
-        />
-        {weekAiError ? (
-          <p className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{weekAiError}</p>
-        ) : null}
-        {weekAiText ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">ИИ · разбор недели</p>
-              <button type="button" className="text-xs text-tg-hint" onClick={() => setWeekAiText(null)}>
-                Скрыть
-              </button>
-            </div>
-            <p className="whitespace-pre-wrap text-sm text-tg-hint">{weekAiText}</p>
-            <Link to="/ai" className="mt-2 inline-block text-xs text-tg-link">
-              Открыть чат с тренером →
-            </Link>
-          </div>
-        ) : null}
-        <StrengthTrendSetsCard data={strengthTrendSets} error={strengthTrendsError} />
+        {visibleSections.map((section) => (
+          <div key={section} className="contents">{renderDashboardSection(section)}</div>
+        ))}
+
+        {depth !== "basic" ? <TrainingLoadAnalytics
+          data={dashboard}
+          loading={dashboardLoading}
+          error={dashboardError}
+          advanced={depth === "advanced"}
+          onPeriodChange={(period) => void changeDashboardPeriod(period)}
+        /> : null}
 
         <button
           type="button"
@@ -324,47 +450,6 @@ export function ProgressPage() {
 
         {detailsOpen ? <>
         <BadgesPanel badges={badges} />
-        <div className="rounded-2xl bg-tg-secondary p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold">Сводка по питанию</p>
-            <div className="flex rounded-full bg-tg-bg p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => setNutritionMode("day")}
-                className={[
-                  "rounded-full px-3 py-1",
-                  nutritionMode === "day" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
-                ].join(" ")}
-              >
-                День
-              </button>
-              <button
-                type="button"
-                onClick={() => setNutritionMode("week")}
-                className={[
-                  "rounded-full px-3 py-1",
-                  nutritionMode === "week" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
-                ].join(" ")}
-              >
-                Неделя
-              </button>
-            </div>
-          </div>
-          {nutritionError ? (
-            <p className="text-xs text-tg-hint">{nutritionError}</p>
-          ) : (
-            <NutritionBalanceChart
-              mode={nutritionMode}
-              series={nutritionSeries}
-              dailyTarget={nutrition?.dailyTarget ?? null}
-              periods={nutritionPeriods}
-            />
-          )}
-          <Link to="/nutrition" className="mt-2 block text-center text-xs text-tg-link">
-            Открыть дневник питания
-          </Link>
-        </div>
-
         <Charts series={series} />
         <Calendar
           year={year}

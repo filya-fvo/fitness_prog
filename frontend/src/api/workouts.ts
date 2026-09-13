@@ -379,8 +379,20 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
   await apiClient.delete(`/workouts/${workoutId}`);
 }
 
-export async function fetchWorkoutHistory(): Promise<Workout[]> {
-  const { data } = await apiClient.get("/workouts/history");
+export async function fetchWorkoutHistory(options: {
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<Workout[]> {
+  const { data } = await apiClient.get("/workouts/history", {
+    params: {
+      date_from: options.dateFrom,
+      date_to: options.dateTo,
+      limit: options.limit ?? 100,
+      offset: options.offset ?? 0,
+    },
+  });
   const parsed = z
     .object({
       items: z.array(workoutSchema),

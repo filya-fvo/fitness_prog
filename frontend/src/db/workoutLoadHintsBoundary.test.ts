@@ -30,6 +30,9 @@ describe("FREE workout history boundary", () => {
       "utf8",
     );
     expect(progressPage).toContain("fetchWorkoutHistory");
+    expect(progressPage).toContain("dateFrom:");
+    expect(progressPage).toContain("limit: 200");
+    expect(progressPage).toContain("fetchProgressDashboard");
     expect(exerciseProgress).toContain("fetchExerciseProgress");
     expect(exerciseProgress).not.toContain("fetchWorkoutHistory");
     expect(exerciseProgress).not.toContain("readCachedWorkouts");

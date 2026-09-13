@@ -140,6 +140,46 @@ class WorkoutHistoryResponse(BaseModel):
     total: int
 
 
+class ProgressDashboardTotals(BaseModel):
+    completed_workouts: int = Field(ge=0)
+    active_days: int = Field(ge=0)
+    completed_sets: int = Field(ge=0)
+    planned_sets: int = Field(ge=0)
+    volume_kg: Decimal = Field(ge=0)
+    average_rpe: Decimal | None = Field(default=None, ge=1, le=10)
+    rpe_workouts: int = Field(ge=0)
+
+
+class ProgressDashboardWeek(BaseModel):
+    week_start: date
+    week_end: date
+    completed_workouts: int = Field(ge=0)
+    completed_sets: int = Field(ge=0)
+    planned_sets: int = Field(ge=0)
+    volume_kg: Decimal = Field(ge=0)
+
+
+class ProgressDashboardMuscleGroup(BaseModel):
+    muscle_group: str
+    completed_sets: int = Field(ge=0)
+    exercises: int = Field(ge=0)
+    volume_kg: Decimal = Field(ge=0)
+
+
+class ProgressDashboardResponse(BaseModel):
+    period_start: date
+    period_end: date
+    period_days: Literal[28, 56, 84]
+    previous_period_start: date
+    previous_period_end: date
+    current: ProgressDashboardTotals
+    previous: ProgressDashboardTotals
+    weeks: list[ProgressDashboardWeek] = Field(default_factory=list, max_length=13)
+    muscle_groups: list[ProgressDashboardMuscleGroup] = Field(default_factory=list, max_length=20)
+    lifetime_completed_workouts: int = Field(ge=0)
+    lifetime_completed_sets: int = Field(ge=0)
+
+
 ExerciseWeekPhase = Literal["light", "medium", "heavy", "unknown"]
 
 

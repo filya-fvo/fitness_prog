@@ -21,7 +21,7 @@ test("progress shows adherence to the personal plan instead of calendar-day stre
       onboarding_completed: true,
     }),
   }));
-  await page.route("**/workouts/history", (route) => route.fulfill({
+  await page.route("**/workouts/history**", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       items: [{
