@@ -1396,14 +1396,19 @@ browser push на установленном iPhone PWA и реальная до
 - `USER_GUIDE.md` и пользовательский FAQ проверены на отсутствие внутренних
   API, JWT, SQL, Redis, Docker и иных эксплуатационных инструкций.
 
-Последняя проверенная production-публикация — ревизия `03ffb31`:
+Последняя проверенная production-публикация приложения — ревизия `6a8482b`:
 
-- backup БД перед исправлениями:
-  `/opt/fitness/backups/fitness-20260912T191128Z.dump`;
+- backup БД перед этапом 12:
+  `/opt/fitness/backups/fitness-20260913T185903Z.dump`;
 - мигратор завершился с кодом `0`, контейнеры API/web/DB/Redis/LLM/OCR healthy,
   worker и Telegram poller работают;
 - `https://api.filfitclub.ru/health`, `https://app.filfitclub.ru` и публичный FAQ
   отвечают `200`;
+- опубликована frontend-сборка `20260913185926-16`; `/progress` отвечает `200`,
+  same-origin `/api/workouts/dashboard` без токена — ожидаемым `401`;
+- read-only production-smoke выполнил новый агрегат на реальной обезличенной
+  записи: период 28 дней и четыре недельных интервала сформированы без ошибки и
+  без изменения пользовательских данных;
 - миграция `20260909000045_user_exercise_pins.sql` записана в журнале, таблица
   закреплённых упражнений доступна; новый анонимный запрос explorer отклоняется
   с `401`, опубликованный lazy chunk `ExerciseExplorerPage-CG1_meBr.js` отвечает
@@ -1419,7 +1424,7 @@ browser push на установленном iPhone PWA и реальная до
   валидный ограниченный `200` для PLUS; запрос выполнил новый агрегированный
   SQL-контракт без создания данных;
 - новый маршрут `/exercises/strength-trends` опубликован и без авторизации отвечает `401`,
-  lazy chunk `ProgressPage-CnGK6CQG.js` отвечает `200`; сервер и browser-сценарий
+  lazy chunk `ProgressPage-C1MQS66N.js` отвечает `200`; сервер и browser-сценарий
   отдельно проверяют PLUS-доступ, три набора, порядок ближайшей тренировки и снятие закрепления;
 - отдельный экран `/notifications` и lazy chunk
   `NotificationSettingsPage-7iOaoPQz.js` отвечают `200`; анонимные GET настроек
