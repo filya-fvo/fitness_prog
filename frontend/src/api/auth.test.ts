@@ -44,6 +44,11 @@ describe("loginWithTelegram", () => {
     const first = loginWithTelegram("same-init-data");
     const second = loginWithTelegram("same-init-data");
     expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith(
+      "/auth/telegram",
+      { init_data: "same-init-data" },
+      { timeout: 8_000 },
+    );
 
     resolveRequest?.({ data: authResponse });
     const [firstResult, secondResult] = await Promise.all([first, second]);

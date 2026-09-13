@@ -62,8 +62,8 @@ export function Shell() {
     async function bootstrapAuth() {
       if (bootstrapInFlight || cancelled) return;
       bootstrapInFlight = true;
-      setAuthLoading(true);
       setAuthError(null);
+      setAuthLoading(true);
       try {
         const start = getStartParam();
         if (start && !cancelled) {
@@ -165,7 +165,7 @@ export function Shell() {
     // "online" event alone cannot recover a failed Telegram authorization.
     window.addEventListener("online", retryBootstrap);
     document.addEventListener("visibilitychange", retryWhenVisible);
-    const retryTimer = window.setInterval(retryBootstrap, 10_000);
+    const retryTimer = window.setInterval(retryBootstrap, 30_000);
     return () => {
       cancelled = true;
       window.removeEventListener("online", retryBootstrap);
@@ -277,6 +277,15 @@ export function Shell() {
           <div className="mb-4 rounded-xl bg-tg-secondary p-3 text-sm">
             <p className="font-medium">Не удалось войти</p>
             <p className="mt-1 text-tg-hint">{authError}</p>
+            {isTelegramEnvironment() ? (
+              <button
+                type="button"
+                className="mt-3 min-h-11 rounded-xl bg-tg-button px-4 py-2 font-medium text-tg-button-text"
+                onClick={() => window.dispatchEvent(new Event("online"))}
+              >
+                Подключиться снова
+              </button>
+            ) : null}
           </div>
         ) : null}
 
@@ -298,7 +307,7 @@ export function Shell() {
         {!isAuthLoading && (user || import.meta.env.DEV) ? <Outlet /> : null}
       </div>
       <ToastHost />
-      {!isFocusedFlow ? <BottomNavigation /> : null}
+      {!isFocusedFlow && (user || import.meta.env.DEV) ? <BottomNavigation /> : null}
     </div>
   );
 }

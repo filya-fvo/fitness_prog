@@ -49,6 +49,7 @@ export type EmailOtpRequestResult = z.infer<typeof emailOtpRequestSchema>;
 export type TelegramBrowserConfig = z.infer<typeof telegramBrowserConfigSchema>;
 
 let telegramLoginInFlight: { payload: string; request: Promise<AuthResponse> } | null = null;
+const TELEGRAM_AUTH_TIMEOUT_MS = 8_000;
 
 export async function loginWithTelegram(initData?: string): Promise<AuthResponse> {
   const payload = initData ?? getInitData();
@@ -61,7 +62,7 @@ export async function loginWithTelegram(initData?: string): Promise<AuthResponse
   }
 
   const request = apiClient
-    .post("/auth/telegram", { init_data: payload })
+    .post("/auth/telegram", { init_data: payload }, { timeout: TELEGRAM_AUTH_TIMEOUT_MS })
     .then(({ data }) => {
       const parsed = authResponseSchema.parse(data);
       setStoredToken(parsed.access_token);
