@@ -73,6 +73,8 @@ fallback. `llm_base_url` указывает только на внутренни
   frontend/API-домены, PostgreSQL 18 с pgvector, Redis/ARQ, API, Nginx, Qwen и
   Tesseract остаются во внутренних Docker-сетях. DNS делегируется Timeweb,
   Cloudflare не используется.
+  PostgreSQL дополнительно привязан только к `127.0.0.1:15432` хоста для
+  DBeaver через SSH-туннель; публично этот порт не открывать.
   Telegram updates получает отдельный `telegram-poller` через исходящий IPv6
   long polling и передаёт их API по внутренней Docker-сети. Публичный webhook в
   Compose-production отключён из-за подтверждённых входящих timeout Timeweb.
@@ -145,7 +147,9 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/services/scheduler.py` — канонический `goals.workout_schedule`,
   совместимые legacy-зеркала, постоянные тренировочные дни, дата старта
   активной программы как нижняя граница календаря и серверная дата последнего
-  завершения для корректного баннера возвращения; `workout_reschedule.py` —
+  завершения для корректного баннера возвращения; `workout_assignment.py` —
+  разовое назначение текущего дня программы на свободную дату без удаления
+  ближайшего постоянного слота; `workout_reschedule.py` —
   разовые переносы внутри недели и явное разрешение конфликтов;
   `workout_notifications.py` — расчёт
   workout-reminder; `workout_shift.py` — изолированный legacy API массового

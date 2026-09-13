@@ -68,11 +68,13 @@ const limits = {
   // the measured net product growth is 3.4 KB with no new vendor dependency.
   // Browser subscription reconciliation and explicit browser-only delivery add
   // 0.2 KB gzip without changing the largest chunk or eager dependencies.
+  // Assigning the next program workout to an earlier free day adds 0.95 KB gzip
+  // to the shared schedule flow without adding a vendor or eager shell chunk.
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 513_000,
-  productJsGzip: 460_500,
+  totalJsGzip: 514_500,
+  productJsGzip: 462_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   adminJsGzip: 53_000,

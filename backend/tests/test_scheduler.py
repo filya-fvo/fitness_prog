@@ -31,6 +31,10 @@ from app.services.workout_reschedule import (
     preview_workout_reschedule,
     reschedule_workout_occurrence,
 )
+from app.services.workout_assignment import (
+    assign_workout_occurrence,
+    preview_workout_assignment,
+)
 from app.services.workout_notifications import due_workout_notification, mark_occurrence_started
 from app.services.workout_shift import shift_future_workouts
 
@@ -401,6 +405,142 @@ async def test_cancel_occurrence_keeps_cursor_and_moves_prepared_date(monkeypatc
         locked_user,
         {date(2026, 8, 28), date(2026, 8, 31)},
     )
+
+
+def test_assignment_can_restore_cancelled_friday_from_next_monday() -> None:
+    goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
+    goals["workout_schedule_cancellations"] = [
+        {
+            "scheduled_date": "2026-08-28",
+            "program_id": str(goals.get("active_program_id") or "") or None,
+            "day_index": 3,
+            "title": "Тренировка C",
+        }
+    ]
+
+    preview = preview_workout_assignment(
+        goals,
+        source_original_date=date(2026, 8, 31),
+        source_target_date=date(2026, 8, 31),
+        target_date=date(2026, 8, 28),
+        local_day=date(2026, 8, 28),
+    )
+
+    assert preview["can_assign"] is True
+    assert preview["conflict"] is None
+    assert preview["min_date"] == date(2026, 8, 28)
+    assert preview["max_date"] == date(2026, 8, 30)
+
+
+@pytest.mark.asyncio
+async def test_assignment_moves_next_program_day_earlier_without_changing_cursor(
+    monkeypatch,
+) -> None:
+    goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
+    goals["workout_schedule_cancellations"] = [
+        {
+            "scheduled_date": "2026-08-28",
+            "day_index": 3,
+            "title": "Тренировка C",
+        }
+    ]
+    locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[locked_user, None, None, None, None, None])
+    session.execute = AsyncMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    reset_days = AsyncMock()
+    monkeypatch.setattr(supplement_intakes, "reset_pending_days", reset_days)
+
+    overview = await assign_workout_occurrence(
+        session,
+        locked_user,
+        source_original_date=date(2026, 8, 31),
+        source_target_date=date(2026, 8, 31),
+        target_date=date(2026, 8, 28),
+        target_time=time(8, 0),
+        now=datetime(2026, 8, 28, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+    )
+
+    assignment = locked_user.goals["workout_schedule_assignments"][0]
+    assert assignment["scheduled_date"] == "2026-08-28"
+    assert assignment["source_target_date"] == "2026-08-31"
+    assert assignment["assignment"] is True
+    assert locked_user.goals["active_program_next_day"] == 3
+    assert overview["current"]["target_date"] == date(2026, 8, 28)
+    assert overview["current"]["original_date"] == date(2026, 8, 28)
+    assert overview["current"]["is_assignment"] is True
+    assert overview["current"]["day_index"] == 3
+    assert overview["next"]["target_date"] == date(2026, 8, 28)
+    assert session.execute.await_count == 2
+    reset_days.assert_awaited_once_with(
+        session,
+        locked_user,
+        {date(2026, 8, 28), date(2026, 8, 31)},
+    )
+
+
+@pytest.mark.asyncio
+async def test_cancelling_assignment_restores_the_existing_next_date(monkeypatch) -> None:
+    goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
+    goals["workout_schedule_cancellations"] = [{"scheduled_date": "2026-08-28"}]
+    goals["workout_schedule_assignments"] = [{
+        "scheduled_date": "2026-08-28",
+        "source_original_date": "2026-08-31",
+        "source_target_date": "2026-08-31",
+        "target_time": "08:00",
+        "program_id": goals["active_program_id"],
+        "day_index": 3,
+        "title": "Тренировка C",
+        "assignment": True,
+    }]
+    locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[locked_user, None, None])
+    session.execute = AsyncMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    reset_days = AsyncMock()
+    monkeypatch.setattr(supplement_intakes, "reset_pending_days", reset_days)
+
+    overview = await cancel_workout_occurrence(
+        session,
+        locked_user,
+        scheduled_date=date(2026, 8, 28),
+        now=datetime(2026, 8, 28, 5, 0, tzinfo=timezone(timedelta(hours=3))),
+    )
+
+    assert locked_user.goals["workout_schedule_assignments"] == []
+    assert locked_user.goals["workout_schedule_cancellations"] == [
+        {"scheduled_date": "2026-08-28"}
+    ]
+    assert overview["current"]["status"] == "cancelled"
+    assert overview["next"]["target_date"] == date(2026, 8, 31)
+    assert session.execute.await_count == 2
+    reset_days.assert_awaited_once_with(
+        session,
+        locked_user,
+        {date(2026, 8, 28), date(2026, 8, 31)},
+    )
+
+
+def test_assignment_rejects_another_scheduled_day() -> None:
+    goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
+    preview = preview_workout_assignment(
+        goals,
+        source_original_date=date(2026, 8, 31),
+        source_target_date=date(2026, 8, 31),
+        target_date=date(2026, 8, 28),
+        local_day=date(2026, 8, 27),
+    )
+
+    assert preview["can_assign"] is False
+    assert preview["conflict"] == "target_already_scheduled"
 
 
 @pytest.mark.asyncio

@@ -402,6 +402,7 @@ test("cancelled workout becomes the same program day on the next schedule date",
     body: JSON.stringify(overview),
   }));
   let cancelPayload: Record<string, unknown> | null = null;
+  let assignmentPayload: Record<string, unknown> | null = null;
   await page.route("**/workouts/schedule/cancel", async (route) => {
     cancelPayload = route.request().postDataJSON() as Record<string, unknown>;
     const monday = {
@@ -427,6 +428,39 @@ test("cancelled workout becomes the same program day on the next schedule date",
     };
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(overview) });
   });
+  await page.route("**/workouts/schedule/assignment/preview", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      source_original_date: "2026-08-31",
+      source_target_date: "2026-08-31",
+      target_date: "2026-08-28",
+      min_date: "2026-08-28",
+      max_date: "2026-08-30",
+      title: `${PROGRAM_NAME} · ${DAY_NAME}`,
+      can_assign: true,
+      conflict: null,
+      warning: null,
+    }),
+  }));
+  await page.route("**/workouts/schedule/assignment", async (route) => {
+    assignmentPayload = route.request().postDataJSON() as Record<string, unknown>;
+    overview = {
+      requested_date: "2026-08-28",
+      current: {
+        ...friday,
+        status: "scheduled",
+        is_override: true,
+        is_assignment: true,
+      },
+      next: {
+        ...friday,
+        original_date: "2026-08-31",
+        target_date: "2026-08-31",
+        status: "scheduled",
+      },
+    };
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(overview) });
+  });
 
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Отменить" })).toBeVisible();
@@ -437,6 +471,16 @@ test("cancelled workout becomes the same program day on the next schedule date",
   await expect(page.getByText(/Тренировка отменена · следующая .*31.*августа.*06:15/i)).toBeVisible();
   await expect(page.getByText("Порядок программы сохранён: эта тренировка станет следующей.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Отменить" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Назначить тренировку раньше" }).click();
+  await expect(page.getByRole("dialog", { name: "Назначить тренировку" })).toBeVisible();
+  await page.getByRole("button", { name: /Назначить на/ }).click();
+  expect(assignmentPayload).toEqual({
+    source_original_date: "2026-08-31",
+    source_target_date: "2026-08-31",
+    target_date: "2026-08-28",
+    target_time: "06:15",
+  });
+  await expect(page.getByText("Назначена на сегодня в 06:15")).toBeVisible();
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);

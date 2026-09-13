@@ -78,6 +78,7 @@ const scheduleOccurrenceSchema = z.object({
   day_index: z.number().nullable().optional(),
   status: z.enum(["scheduled", "moved", "missed", "completed", "cancelled"]),
   is_override: z.boolean(),
+  is_assignment: z.boolean().default(false),
   can_reschedule: z.boolean(),
   reschedule_until: z.string().nullable().optional(),
   can_cancel: z.boolean().default(false),
@@ -185,6 +186,18 @@ const workoutReschedulePreviewSchema = z.object({
   warning: z.string().nullable(),
 });
 
+const workoutAssignmentPreviewSchema = z.object({
+  source_original_date: z.string(),
+  source_target_date: z.string(),
+  target_date: z.string(),
+  min_date: z.string(),
+  max_date: z.string(),
+  title: z.string(),
+  can_assign: z.boolean(),
+  conflict: z.literal("target_already_scheduled").nullable(),
+  warning: z.string().nullable(),
+});
+
 const personalRegularitySchema = z.object({
   period_start: z.string(),
   period_end: z.string(),
@@ -202,6 +215,7 @@ export type WorkoutScheduleOverview = z.infer<typeof scheduleOverviewSchema>;
 export type WorkoutScheduleSettings = z.infer<typeof workoutScheduleSettingsSchema>;
 export type WorkoutScheduleReplacementPreview = z.infer<typeof workoutScheduleReplacementPreviewSchema>;
 export type WorkoutReschedulePreview = z.infer<typeof workoutReschedulePreviewSchema>;
+export type WorkoutAssignmentPreview = z.infer<typeof workoutAssignmentPreviewSchema>;
 export type PersonalRegularity = z.infer<typeof personalRegularitySchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
@@ -407,6 +421,34 @@ export async function previewWorkoutReschedule(input: {
     target_date: input.targetDate,
   });
   return workoutReschedulePreviewSchema.parse(data);
+}
+
+export async function previewWorkoutAssignment(input: {
+  sourceOriginalDate: string;
+  sourceTargetDate: string;
+  targetDate: string;
+}): Promise<WorkoutAssignmentPreview> {
+  const { data } = await apiClient.post("/workouts/schedule/assignment/preview", {
+    source_original_date: input.sourceOriginalDate,
+    source_target_date: input.sourceTargetDate,
+    target_date: input.targetDate,
+  });
+  return workoutAssignmentPreviewSchema.parse(data);
+}
+
+export async function assignWorkoutOccurrence(input: {
+  sourceOriginalDate: string;
+  sourceTargetDate: string;
+  targetDate: string;
+  targetTime: string;
+}): Promise<WorkoutScheduleOverview> {
+  const { data } = await apiClient.post("/workouts/schedule/assignment", {
+    source_original_date: input.sourceOriginalDate,
+    source_target_date: input.sourceTargetDate,
+    target_date: input.targetDate,
+    target_time: input.targetTime,
+  });
+  return scheduleOverviewSchema.parse(data);
 }
 
 export async function fetchExerciseProgress(

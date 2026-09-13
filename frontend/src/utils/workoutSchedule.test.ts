@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { WorkoutScheduleOverview } from "@/api/workouts";
 import {
+  assignmentTargetRange,
   canStartProgramFromSchedule,
   plannedWorkoutOccurrence,
   startableWorkoutOccurrence,
@@ -20,6 +21,7 @@ function occurrence(
     day_index: dayIndex,
     status,
     is_override: false,
+    is_assignment: false,
     can_reschedule: true,
     reschedule_until: null,
     can_cancel: status === "scheduled" || status === "missed",
@@ -80,5 +82,27 @@ describe("program schedule actions", () => {
     expect(startableWorkoutOccurrence(overview)).toBeNull();
     expect(plannedWorkoutOccurrence(overview)).toBe(next);
     expect(canStartProgramFromSchedule(overview)).toBe(false);
+    expect(assignmentTargetRange(overview)).toMatchObject({
+      min: "2026-08-28",
+      max: "2026-08-30",
+      source: next,
+    });
+  });
+
+  it("offers only days after a completed workout and before the next one", () => {
+    const overview: WorkoutScheduleOverview = {
+      requested_date: "2026-08-24",
+      current: occurrence("completed", 3),
+      next: {
+        ...occurrence("scheduled", 4),
+        original_date: "2026-08-26",
+        target_date: "2026-08-26",
+      },
+    };
+
+    expect(assignmentTargetRange(overview)).toMatchObject({
+      min: "2026-08-25",
+      max: "2026-08-25",
+    });
   });
 });

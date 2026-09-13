@@ -28,6 +28,10 @@ services:
       # PostgreSQL 18 stores PGDATA in /var/lib/postgresql/18/docker and declares
       # /var/lib/postgresql as its volume. The legacy /data target is unsafe here.
       - pgdata:/var/lib/postgresql
+    # DBeaver connects through the VPS SSH tunnel. This port is loopback-only
+    # and must never be changed to 0.0.0.0 or a bare host port.
+    ports:
+      - "127.0.0.1:15432:5432"
     expose:
       - "5432"
     healthcheck:

@@ -20,6 +20,7 @@ from app.services.notification_prefs import _resolve_tz, merge_notification_sett
 
 OVERRIDES_KEY = "workout_schedule_overrides"
 CANCELLATIONS_KEY = "workout_schedule_cancellations"
+ASSIGNMENTS_KEY = "workout_schedule_assignments"
 SCHEDULE_HISTORY_KEY = "workout_schedule_history"
 SCHEDULE_TIME_HISTORY_KEY = "workout_schedule_time_history"
 SCHEDULE_SETTINGS_KEY = "workout_schedule"
@@ -391,6 +392,40 @@ def _schedule_cancellations(goals: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _schedule_assignments(goals: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = goals.get(ASSIGNMENTS_KEY)
+    if not isinstance(raw, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            date.fromisoformat(str(item.get("scheduled_date")))
+            date.fromisoformat(str(item.get("source_original_date")))
+            date.fromisoformat(str(item.get("source_target_date")))
+            if parse_hhmm(str(item.get("target_time") or "")) is None:
+                continue
+        except ValueError:
+            continue
+        rows.append(dict(item))
+    return rows
+
+
+def _assignment_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | None:
+    key = day.isoformat()
+    active_program_id = str(goals.get("active_program_id") or "").strip()
+    return next(
+        (
+            row
+            for row in _schedule_assignments(goals)
+            if row["scheduled_date"] == key
+            and (not row.get("program_id") or str(row.get("program_id")) == active_program_id)
+        ),
+        None,
+    )
+
+
 def _cancellation_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | None:
     key = day.isoformat()
     active_program_id = str(goals.get("active_program_id") or "").strip()
@@ -427,6 +462,16 @@ def effective_workout_context(goals: dict[str, Any], day: date) -> dict[str, Any
         }
     overrides = _schedule_overrides(goals)
     day_key = day.isoformat()
+    assignment = _assignment_for_day(goals, day)
+    if assignment is not None:
+        return {
+            "is_workout_day": True,
+            "original_date": day,
+            "target_date": day,
+            "start_time": parse_hhmm(str(assignment["target_time"])) or workout_start_time_on(goals, day),
+            "override": assignment,
+            "moved_away": False,
+        }
     target = next((row for row in overrides if row["target_date"] == day_key), None)
     if target is not None:
         return {
@@ -533,6 +578,12 @@ def _occurrence_payload(
     except (TypeError, ValueError):
         day_index = None
     can_change = status_value in {"scheduled", "missed"}
+    is_assignment = bool((override or {}).get("assignment"))
+    assignment_source = (override or {}).get("source_target_date")
+    try:
+        assignment_cancel_to = date.fromisoformat(str(assignment_source)) if assignment_source else None
+    except ValueError:
+        assignment_cancel_to = None
     return {
         "original_date": original,
         "target_date": context["target_date"],
@@ -542,10 +593,15 @@ def _occurrence_payload(
         "day_index": day_index,
         "status": status_value,
         "is_override": override is not None,
-        "can_reschedule": can_change,
-        "reschedule_until": week_end if can_change else None,
+        "is_assignment": is_assignment,
+        "can_reschedule": can_change and not is_assignment,
+        "reschedule_until": week_end if can_change and not is_assignment else None,
         "can_cancel": can_change,
-        "cancel_to": next_base_workout_date(goals, original) if can_change else None,
+        "cancel_to": (
+            assignment_cancel_to
+            if can_change and is_assignment
+            else next_base_workout_date(goals, original) if can_change else None
+        ),
     }
 
 
@@ -561,11 +617,18 @@ def workout_schedule_slots(
     schedule_start = program_schedule_start(goals)
     current = max(start, schedule_start) if schedule_start is not None else start
     slots: list[WorkoutScheduleSlot] = []
+    assignment_dates = {
+        date.fromisoformat(str(row["scheduled_date"]))
+        for row in _schedule_assignments(goals)
+    }
     while current <= end:
         if current.weekday() in workout_days_on(goals, current):
             cancellation = _cancellation_for_day(goals, current)
             override = _override_for_original(goals, current)
-            if cancellation is not None:
+            if current in assignment_dates:
+                target = current
+                cancellation = None
+            elif cancellation is not None:
                 target = date.fromisoformat(str(cancellation["scheduled_date"]))
             elif override is not None:
                 target = date.fromisoformat(str(override["target_date"]))
@@ -580,6 +643,18 @@ def workout_schedule_slots(
                 )
             )
         current += timedelta(days=1)
+    base_originals = {slot.original_date for slot in slots}
+    for assigned_date in sorted(assignment_dates):
+        if start <= assigned_date <= end and assigned_date not in base_originals:
+            slots.append(
+                WorkoutScheduleSlot(
+                    original_date=assigned_date,
+                    target_date=assigned_date,
+                    is_rescheduled=False,
+                    is_cancelled=False,
+                )
+            )
+    slots.sort(key=lambda slot: (slot.target_date, slot.original_date))
     return slots
 
 
@@ -731,13 +806,22 @@ async def cancel_workout_occurrence(
     if scheduled_date < local_now.date() - timedelta(days=MAX_RESCHEDULE_LOOKBACK_DAYS):
         raise HTTPException(status_code=400, detail="Эту тренировку уже нельзя отменить")
 
+    assignment = _assignment_for_day(goals, scheduled_date)
     existing_cancellation = _cancellation_for_day(goals, scheduled_date)
-    if existing_cancellation is not None:
+    if assignment is None and existing_cancellation is not None:
         return await get_schedule_overview(session, locked_user, local_now.date())
     context = effective_workout_context(goals, scheduled_date)
     if not context["is_workout_day"]:
         raise HTTPException(status_code=400, detail="На выбранную дату тренировка не запланирована")
-    next_date = next_base_workout_date(goals, scheduled_date)
+    try:
+        assignment_source = (
+            date.fromisoformat(str(assignment["source_target_date"]))
+            if assignment is not None
+            else None
+        )
+    except ValueError:
+        assignment_source = None
+    next_date = assignment_source or next_base_workout_date(goals, scheduled_date)
     if next_date is None:
         raise HTTPException(status_code=400, detail="Не найден следующий тренировочный день")
 
@@ -751,6 +835,19 @@ async def cancel_workout_occurrence(
     )
     if completed is not None:
         raise HTTPException(status_code=409, detail="Выполненную тренировку отменить нельзя")
+
+    if assignment is not None:
+        from app.services import workout_assignment
+
+        overview = await workout_assignment.cancel_assigned_occurrence(
+            session,
+            locked_user,
+            scheduled_date=scheduled_date,
+            source_target_date=next_date,
+            local_day=local_now.date(),
+        )
+        user.goals = locked_user.goals
+        return overview
 
     context_override = context.get("override") if isinstance(context.get("override"), dict) else {}
     program_id, day_index, title = await active_program_snapshot(session, locked_user)

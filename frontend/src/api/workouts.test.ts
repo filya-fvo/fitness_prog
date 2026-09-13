@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
 import {
+  assignWorkoutOccurrence,
   cancelScheduledWorkout,
   fetchExerciseProgress,
   fetchPersonalRegularity,
@@ -68,6 +69,44 @@ describe("workout schedule API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/workouts/schedule/overview", { params: undefined });
     expect(result.last_completed_date).toBe("2026-09-10");
+  });
+
+  it("assigns the upcoming program workout to an earlier free date", async () => {
+    vi.spyOn(apiClient, "post").mockResolvedValue({
+      data: {
+        requested_date: "2026-08-28",
+        current: {
+          original_date: "2026-08-31",
+          target_date: "2026-08-28",
+          start_time: "18:30:00",
+          title: "Тренировка C",
+          program_id: "33333333-3333-4333-8333-333333333333",
+          day_index: 3,
+          status: "scheduled",
+          is_override: true,
+          is_assignment: true,
+          can_reschedule: true,
+          can_cancel: true,
+          cancel_to: "2026-09-02",
+        },
+        next: null,
+      },
+    });
+
+    const result = await assignWorkoutOccurrence({
+      sourceOriginalDate: "2026-08-31",
+      sourceTargetDate: "2026-08-31",
+      targetDate: "2026-08-28",
+      targetTime: "18:30",
+    });
+
+    expect(apiClient.post).toHaveBeenCalledWith("/workouts/schedule/assignment", {
+      source_original_date: "2026-08-31",
+      source_target_date: "2026-08-31",
+      target_date: "2026-08-28",
+      target_time: "18:30",
+    });
+    expect(result.current).toMatchObject({ target_date: "2026-08-28", day_index: 3 });
   });
 
   it("parses personal plan regularity", async () => {

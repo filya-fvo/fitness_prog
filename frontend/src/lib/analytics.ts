@@ -27,6 +27,7 @@ export type AnalyticsEventName =
   | "habit_checked"
   | "first_plan_viewed"
   | "schedule_saved"
+  | "workout_assigned_earlier"
   | "measurement_saved"
   | "nutrition_opened"
   | "faq_opened"

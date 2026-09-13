@@ -57,6 +57,30 @@ class WorkoutCancellationRequest(BaseModel):
     scheduled_date: date
 
 
+class WorkoutAssignmentPreviewRequest(BaseModel):
+    """Validate assigning an upcoming program workout to an earlier date."""
+
+    source_original_date: date
+    source_target_date: date
+    target_date: date
+
+
+class WorkoutAssignmentRequest(WorkoutAssignmentPreviewRequest):
+    target_time: time
+
+
+class WorkoutAssignmentPreview(BaseModel):
+    source_original_date: date
+    source_target_date: date
+    target_date: date
+    min_date: date
+    max_date: date
+    title: str
+    can_assign: bool
+    conflict: Literal["target_already_scheduled"] | None = None
+    warning: str | None = None
+
+
 class WorkoutScheduleSettingsUpdate(BaseModel):
     days: list[int] = Field(min_length=1, max_length=7)
     start_time: time
@@ -116,6 +140,7 @@ class WorkoutScheduleOccurrence(BaseModel):
     day_index: int | None = None
     status: str = Field(pattern=r"^(scheduled|moved|missed|completed|cancelled)$")
     is_override: bool = False
+    is_assignment: bool = False
     can_reschedule: bool = False
     reschedule_until: date | None = None
     can_cancel: bool = False

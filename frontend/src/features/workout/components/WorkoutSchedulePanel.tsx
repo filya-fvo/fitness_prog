@@ -6,8 +6,10 @@ import {
   type WorkoutScheduleOverview,
 } from "@/api/workouts";
 import { WorkoutRescheduleDialog } from "@/features/workout/components/WorkoutRescheduleDialog";
+import { WorkoutAssignmentDialog } from "@/features/workout/components/WorkoutAssignmentDialog";
 import { confirmAction } from "@/lib/telegram";
 import { toUserMessage } from "@/utils/errors";
+import { assignmentTargetRange } from "@/utils/workoutSchedule";
 
 type Props = {
   overview: WorkoutScheduleOverview | null;
@@ -29,6 +31,7 @@ function shortTime(value: string): string {
 
 export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: Props) {
   const [open, setOpen] = useState(false);
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const occurrence = useMemo<WorkoutScheduleOccurrence | null>(() => {
@@ -45,6 +48,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
   if (!overview || !occurrence) return null;
   const activeOverview = overview;
   const activeOccurrence = occurrence;
+  const assignmentRange = assignmentTargetRange(overview);
 
   const movedFromToday = overview.current?.status === "moved";
   const missedBeforeToday = overview.current?.status === "missed";
@@ -59,7 +63,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
     : missedBeforeToday
       ? `Пропущена ${formatDate(activeOccurrence.original_date)} — можно перенести`
     : scheduledToday
-      ? `${activeOccurrence.is_override ? "Перенесена на сегодня" : "По расписанию сегодня"} в ${shortTime(activeOccurrence.start_time)}`
+      ? `${activeOccurrence.is_assignment ? "Назначена на сегодня" : activeOccurrence.is_override ? "Перенесена на сегодня" : "По расписанию сегодня"} в ${shortTime(activeOccurrence.start_time)}`
       : `Следующая: ${formatDate(activeOccurrence.target_date)} в ${shortTime(activeOccurrence.start_time)}`;
 
   function showDialog() {
@@ -126,6 +130,16 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
             Порядок программы сохранён: эта тренировка станет следующей.
           </p>
         ) : null}
+        {assignmentRange ? (
+          <button
+            type="button"
+            disabled={disabled || saving}
+            onClick={() => setAssignmentOpen(true)}
+            className="mt-2 min-h-[44px] w-full rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-tg-link disabled:opacity-50"
+          >
+            Назначить тренировку раньше
+          </button>
+        ) : null}
         {error && !open ? (
           <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>
         ) : null}
@@ -137,6 +151,15 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
           occurrence={activeOccurrence}
           initialDate={missedBeforeToday ? activeOverview.requested_date : activeOccurrence.target_date}
           onClose={() => setOpen(false)}
+          onChange={onChange}
+        />
+      ) : null}
+      {assignmentOpen && assignmentRange ? (
+        <WorkoutAssignmentDialog
+          source={assignmentRange.source}
+          minDate={assignmentRange.min}
+          maxDate={assignmentRange.max}
+          onClose={() => setAssignmentOpen(false)}
           onChange={onChange}
         />
       ) : null}

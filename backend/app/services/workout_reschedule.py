@@ -31,6 +31,9 @@ def _occupied_original_date(
     """Return the occurrence occupying ``day`` after existing one-off changes."""
 
     day_key = day.isoformat()
+    assignment = scheduler._assignment_for_day(goals, day)
+    if assignment is not None:
+        return day
     target_override = next(
         (
             row

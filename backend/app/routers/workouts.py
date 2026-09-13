@@ -23,6 +23,9 @@ from app.schemas.scheduler import (
     ShiftScheduleRequest,
     ShiftScheduleResponse,
     SkipWorkoutRequest,
+    WorkoutAssignmentPreview,
+    WorkoutAssignmentPreviewRequest,
+    WorkoutAssignmentRequest,
     WorkoutCancellationRequest,
     WorkoutReschedulePreview,
     WorkoutReschedulePreviewRequest,
@@ -55,6 +58,7 @@ from app.services import (
     personal_regularity,
     planned_workout,
     schedule_replacement,
+    workout_assignment,
     workout_reschedule,
 )
 from app.services import scheduler as scheduler_service
@@ -314,6 +318,38 @@ async def cancel_workout_occurrence(
         session,
         user,
         scheduled_date=body.scheduled_date,
+    )
+    return await _schedule_overview_response(session, user, overview)
+
+
+@router.post("/schedule/assignment/preview", response_model=WorkoutAssignmentPreview)
+async def preview_workout_assignment(
+    body: WorkoutAssignmentPreviewRequest,
+    user: User = Depends(get_current_user),
+) -> WorkoutAssignmentPreview:
+    preview = workout_assignment.preview_workout_assignment(
+        user.goals or {},
+        source_original_date=body.source_original_date,
+        source_target_date=body.source_target_date,
+        target_date=body.target_date,
+        local_day=scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return WorkoutAssignmentPreview.model_validate(preview)
+
+
+@router.post("/schedule/assignment", response_model=WorkoutScheduleOverview)
+async def assign_workout_occurrence(
+    body: WorkoutAssignmentRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutScheduleOverview:
+    overview = await workout_assignment.assign_workout_occurrence(
+        session,
+        user,
+        source_original_date=body.source_original_date,
+        source_target_date=body.source_target_date,
+        target_date=body.target_date,
+        target_time=body.target_time,
     )
     return await _schedule_overview_response(session, user, overview)
 
