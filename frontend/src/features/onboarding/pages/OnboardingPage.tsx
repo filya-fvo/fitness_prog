@@ -219,6 +219,7 @@ export function OnboardingPage() {
       };
 
       let goalsToSave: Record<string, unknown> = { ...goals };
+      let requiresManualProgramSelection = false;
 
       // First-run: auto-assign best matching program so Home shows Day 1 CTA.
       if (isOnline() && sex !== "unspecified") {
@@ -255,6 +256,8 @@ export function OnboardingPage() {
                 today,
               ),
             };
+          } else if (jointLimits.length > 0) {
+            requiresManualProgramSelection = true;
           }
         } catch {
           // soft — user can pick program later
@@ -294,7 +297,11 @@ export function OnboardingPage() {
         active_program_assigned: Boolean(goalsToSave.active_program_id),
       });
       hapticNotification("success");
-      navigate(consumePendingInvitePath() ?? "/", { replace: true });
+      const pendingInvitePath = consumePendingInvitePath();
+      navigate(
+        pendingInvitePath ?? (requiresManualProgramSelection ? "/programs?notice=limitations" : "/"),
+        { replace: true },
+      );
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить анкету"));
       setGenerating(false);

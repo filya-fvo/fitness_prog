@@ -3,6 +3,7 @@ import type { Program } from "@/types/workout";
 import {
   explainProgramMatch,
   pickTodayDayIndex,
+  programSupportsAllLimitations,
   recommendPrograms,
   scorePrograms,
 } from "@/utils/programRecommend";
@@ -135,6 +136,50 @@ describe("programRecommend", () => {
       limitations: ["no_knee"],
     });
     expect(top[0]?.name).toBe("M Gym No Knee");
+  });
+
+  it("does not recommend a program that covers only part of selected limitations", () => {
+    const top = recommendPrograms(catalog, {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["machines", "dumbbells"],
+      sex: "male",
+      location: "gym",
+      limitations: ["no_knee", "no_spine"],
+    });
+
+    expect(top).toEqual([]);
+    expect(programSupportsAllLimitations(catalog[3]!, ["no_knee", "no_spine"])).toBe(false);
+  });
+
+  it("keeps a program that covers every selected limitation", () => {
+    const compatible = prog({
+      id: "multi-limit",
+      name: "M Gym Multi Limit",
+      workout_type: "full_body",
+      level: "beginner",
+      structure: {
+        sex: ["male"],
+        location: "gym",
+        equipment: ["machines", "dumbbells"],
+        limitations: ["no_knee", "no_spine"],
+        days_per_week: 3,
+        schedule: [{}, {}, {}],
+      },
+    });
+    const top = recommendPrograms([...catalog, compatible], {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["machines", "dumbbells"],
+      sex: "male",
+      location: "gym",
+      limitations: ["no_knee", "no_spine"],
+    });
+
+    expect(top[0]?.id).toBe("multi-limit");
+    expect(programSupportsAllLimitations(top[0]!, ["no_knee", "no_spine"])).toBe(true);
   });
 
   it("recognizes a shoulder limitation and prefers a matching plan", () => {

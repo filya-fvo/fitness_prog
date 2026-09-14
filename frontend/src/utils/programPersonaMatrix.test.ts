@@ -5,6 +5,7 @@ import type { Program } from "@/types/workout";
 import {
   levelOf,
   programDays,
+  programLimitations,
   programLocation,
   programSex,
   recommendPrograms,
@@ -92,6 +93,44 @@ describe("program recommendation persona matrix", () => {
               expect(compareProgramToProfile(recommendation!, profile)).toEqual([]);
             });
           }
+        }
+      }
+    }
+  }
+
+  for (const required of [
+    ["no_knee", "no_spine"],
+    ["no_knee", "shoulder_sensitive"],
+    ["no_spine", "shoulder_sensitive"],
+    ["no_knee", "no_spine", "shoulder_sensitive"],
+  ]) {
+    for (const sex of sexes) {
+      for (const location of locations) {
+        for (const level of levels) {
+          it(`never partially matches ${required.join("+")}/${sex}/${location}/${level}`, () => {
+            const profile = {
+              sex,
+              location,
+              level,
+              primaryGoal: "maintain",
+              daysPerWeek: 3,
+              equipment: ["machines", "dumbbells", "barbell", "bodyweight", "bands"],
+              limitations: required,
+            };
+            const [recommendation] = recommendPrograms(programs, profile, 1);
+            const exactCandidates = programs.filter((program) => {
+              const supported = new Set(programLimitations(program));
+              return required.every((item) => supported.has(item));
+            });
+
+            if (exactCandidates.length === 0) {
+              expect(recommendation).toBeUndefined();
+            } else {
+              expect(required.every((item) =>
+                programLimitations(recommendation!).includes(item),
+              )).toBe(true);
+            }
+          });
         }
       }
     }

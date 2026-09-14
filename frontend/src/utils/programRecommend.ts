@@ -70,6 +70,16 @@ function normalizeLimitations(input: RecommendInput["limitations"]): string[] {
   return asStringArray(input);
 }
 
+export function programSupportsAllLimitations(
+  program: Program,
+  limitations: RecommendInput["limitations"],
+): boolean {
+  const required = normalizeLimitations(limitations);
+  if (!required.length) return true;
+  const supported = new Set(programLimitations(program));
+  return required.every((item) => supported.has(item));
+}
+
 function matchesCoreProfile(program: Program, input: RecommendInput): boolean {
   const sex = (input.sex || "").toLowerCase();
   const allowedSex = programSex(program);
@@ -212,7 +222,10 @@ export function scorePrograms(
   limit = 6,
 ): ProgramScoreBreakdown[] {
   if (!programs.length) return [];
-  const scored = programs
+  const eligiblePrograms = programs.filter((program) =>
+    programSupportsAllLimitations(program, input.limitations),
+  );
+  const scored = eligiblePrograms
     .map((p) => scoreProgram(p, input))
     .filter((x) => x.score > -5000);
   const requestedDays = input.daysPerWeek ?? 3;
@@ -225,7 +238,9 @@ export function scorePrograms(
     return b.score - a.score || a.program.name.localeCompare(b.program.name, "ru");
   });
   const top = scored.slice(0, Math.max(1, limit));
-  return top.length ? top : programs.slice(0, Math.max(1, limit)).map((p) => scoreProgram(p, input));
+  return top.length
+    ? top
+    : eligiblePrograms.slice(0, Math.max(1, limit)).map((p) => scoreProgram(p, input));
 }
 
 export function explainProgramMatch(program: Program, input: RecommendInput): string[] {
@@ -234,7 +249,10 @@ export function explainProgramMatch(program: Program, input: RecommendInput): st
 
 export function recommendPrograms(programs: Program[], input: RecommendInput, limit = 6): Program[] {
   const top = scorePrograms(programs, input, limit).map((x) => x.program);
-  return top.length ? top : programs.slice(0, Math.max(1, limit));
+  if (top.length) return top;
+  return programs
+    .filter((program) => programSupportsAllLimitations(program, input.limitations))
+    .slice(0, Math.max(1, limit));
 }
 
 export function pickTodayDayIndex(program: Program, now = new Date()): number {

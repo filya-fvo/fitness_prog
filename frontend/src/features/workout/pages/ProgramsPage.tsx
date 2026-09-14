@@ -230,6 +230,7 @@ export function ProgramsPage() {
   const initialUi = useMemo(readProgramsUi, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const limitationNotice = searchParams.get("notice") === "limitations";
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
   const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
   const setDrafts = useWorkoutStore((s) => s.setDrafts);
@@ -707,6 +708,12 @@ export function ProgramsPage() {
     <section>
       <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {limitationNotice ? (
+        <div role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+          Не нашли программу, которая учитывает все выбранные ограничения. Анкета сохранена —
+          выберите программу вручную и проверьте нагрузку со специалистом.
+        </div>
+      ) : null}
 
       <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-tg-secondary p-1" role="group" aria-label="Режим списка программ">
         <button
@@ -730,6 +737,20 @@ export function ProgramsPage() {
           <p className="text-sm font-medium md:col-span-2">Лучшие совпадения с анкетой</p>
           {topRecommended.map((row) => renderCard(row.program, "для вас", row.reasons))}
           <button type="button" onClick={() => setViewMode("all")} className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link md:col-span-2">
+            Посмотреть все программы
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && showRecommendations && topRecommended.length === 0 && userJointLimits.length > 0 ? (
+        <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+          Нет программ, которые учитывают все ваши ограничения одновременно. Откройте полный
+          список для ручного выбора и согласуйте нагрузку со специалистом.
+          <button
+            type="button"
+            onClick={() => setViewMode("all")}
+            className="mt-3 min-h-11 w-full rounded-xl bg-tg-bg px-4 py-3 font-medium text-tg-link"
+          >
             Посмотреть все программы
           </button>
         </div>
