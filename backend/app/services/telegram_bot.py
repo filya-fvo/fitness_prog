@@ -455,8 +455,8 @@ def user_guide_path() -> Path:
 
 
 def admin_guide_path() -> Path:
-    """Path to the private local deployment guide sent only to bot admins."""
-    return Path(__file__).resolve().parents[3] / "docs" / "LOCAL_ADMIN_GUIDE.md"
+    """Path to the private application administration guide."""
+    return Path(__file__).resolve().parents[3] / "docs" / "ADMIN_GUIDE.md"
 
 
 def load_user_guide_bytes() -> tuple[str, bytes]:
@@ -575,7 +575,7 @@ async def send_admin_guide(
         content=content,
         caption=(
             "🔐 <b>Инструкция администратора Fitness Mini App</b>\n"
-            "Запуск, Tailscale Funnel, Telegram, проверки и диагностика."
+            "Админка, пользователи, рассылки, поддержка, каталоги и безопасная диагностика."
         ),
     )
 

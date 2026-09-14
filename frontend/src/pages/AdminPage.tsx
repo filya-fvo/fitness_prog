@@ -231,6 +231,13 @@ export function AdminPage() {
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {okNote ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-hint">{okNote}</div> : null}
 
+      <div className="mb-3 rounded-2xl border border-tg-button/25 bg-tg-secondary px-4 py-3 text-sm">
+        <p className="font-medium text-tg-text">Инструкция администратора</p>
+        <p className="mt-1 text-xs text-tg-hint">
+          Отправьте боту скрытую команду <code className="text-tg-link">/admin</code> — он пришлёт актуальное руководство файлом.
+        </p>
+      </div>
+
       <Link
         to="/admin/system"
         className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"

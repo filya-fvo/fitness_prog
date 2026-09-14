@@ -399,7 +399,9 @@ def test_production_images_include_telegram_guides() -> None:
     compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
     render = (root / "render.yaml").read_text(encoding="utf-8")
 
-    copy_instruction = "COPY docs/USER_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/"
+    copy_instruction = (
+        "COPY docs/USER_GUIDE.md docs/ADMIN_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/"
+    )
     assert copy_instruction in backend_dockerfile
     assert copy_instruction in combined_dockerfile
     assert compose.count("dockerfile: backend/Dockerfile") == 4
@@ -411,8 +413,10 @@ def test_admin_guide_file_exists_and_loads() -> None:
     filename, data = load_admin_guide_bytes()
     assert "Admin" in filename
     text = data.decode("utf-8")
-    assert "инструкция администратора" in text.lower()
-    assert "start_all_comand.bat" in text
+    assert "руководство администратора" in text.lower()
+    assert "Центр рассылок" in text
+    assert "Поддержка пользователей" in text
+    assert "Редактор программ" in text
 
 
 def test_extract_help_command() -> None:

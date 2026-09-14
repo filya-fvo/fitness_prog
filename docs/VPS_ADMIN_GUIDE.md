@@ -5,6 +5,9 @@
 первичной диагностики. Для первоначальной установки сервера используйте
 `docs/VPS_DEPLOYMENT_GUIDE.md`.
 
+Работа со встроенной админкой, пользователями, рассылками, поддержкой, упражнениями
+и программами описана в [`ADMIN_GUIDE.md`](./ADMIN_GUIDE.md).
+
 ## 1. Что сейчас работает на VPS
 
 Сервер Timeweb имеет публичный IP `201.24.48.145`. Приложение доступно по двум адресам:
@@ -451,7 +454,7 @@ docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 
 ```bash
 docker compose --env-file backend/.env.production exec -T api test -s /docs/USER_GUIDE.md
-docker compose --env-file backend/.env.production exec -T api test -s /docs/LOCAL_ADMIN_GUIDE.md
+docker compose --env-file backend/.env.production exec -T api test -s /docs/ADMIN_GUIDE.md
 ```
 
 Обе команды должны завершиться с кодом `0`. Ошибка `User guide not found` в

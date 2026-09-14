@@ -33,7 +33,8 @@ HealthKit и Health Connect не интегрированы. Эти показа
 1. исполняемый код, тесты и последовательно применённые SQL-миграции;
 2. этот `AGENTS.md`;
 3. `docs/USER_GUIDE.md` — фактическое пользовательское поведение;
-4. `docs/LOCAL_ADMIN_GUIDE.md` и `RUN.md` — текущая локальная эксплуатация;
+4. `docs/ADMIN_GUIDE.md` — работа с админкой; `docs/VPS_ADMIN_GUIDE.md`,
+   `docs/LOCAL_ADMIN_GUIDE.md` и `RUN.md` — текущая эксплуатация;
 5. специализированные активные документы из раздела 10.
 
 `_archive_candidates/` — только история и кандидаты на удаление. Не используйте
@@ -83,8 +84,8 @@ fallback. `llm_base_url` указывает только на внутренни
 - Production-манифесты: `docker-compose.yml`, Dockerfile каждого приложения,
   корневой альтернативный `Dockerfile` для App Platform и `render.yaml`.
   Backend-образ собирается из корня репозитория: так канонические
-  `docs/USER_GUIDE.md` и `docs/LOCAL_ADMIN_GUIDE.md` попадают в `/docs` для
-  Telegram `/help` и административной повторной отправки. Не возвращайте context
+  `docs/USER_GUIDE.md`, `docs/ADMIN_GUIDE.md` и `docs/LOCAL_ADMIN_GUIDE.md` попадают
+  в `/docs` для Telegram `/help`, скрытой `/admin` и эксплуатационных проверок. Не возвращайте context
   к `backend/` без эквивалентной упаковки этих файлов и обновления теста образа.
 - PostgreSQL не хранится файлом в репозитории. Данные лежат в кластере по
   `DATABASE_URL`; SQL-схема версионируется в `supabase/migrations/`.
@@ -440,6 +441,8 @@ backup и dry-run, если он предусмотрен.
 - `README.md` — обзор и быстрые ссылки.
 - `RUN.md` — короткий локальный запуск.
 - `docs/USER_GUIDE.md` — инструкция пользователя.
+- `docs/ADMIN_GUIDE.md` — единое руководство по встроенной админке, пользователям,
+  рассылкам, поддержке, каталогам и безопасной диагностике.
 - `docs/LOCAL_ADMIN_GUIDE.md` — Windows/Tailscale/supervisor/диагностика.
 - `docs/TIMEWEB_DOMAIN_CUTOVER.md` — фактический Timeweb VPS, DNS и безопасное
   переключение с локального Supervisor/Tailscale без потери данных.

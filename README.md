@@ -15,7 +15,8 @@ docs/       пользовательские, административные �
 ```
 
 Агенту перед изменениями: [AGENTS.md](AGENTS.md). Пользователю:
-[docs/USER_GUIDE.md](docs/USER_GUIDE.md). Владельцу Timeweb VPS:
+[docs/USER_GUIDE.md](docs/USER_GUIDE.md). Администратору приложения:
+[docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md). Владельцу Timeweb VPS:
 [docs/VPS_ADMIN_GUIDE.md](docs/VPS_ADMIN_GUIDE.md). Локальный Windows-резерв:
 [docs/LOCAL_ADMIN_GUIDE.md](docs/LOCAL_ADMIN_GUIDE.md). Фактическое переключение на Timeweb:
 [docs/TIMEWEB_DOMAIN_CUTOVER.md](docs/TIMEWEB_DOMAIN_CUTOVER.md). Полная первоначальная установка VPS:
