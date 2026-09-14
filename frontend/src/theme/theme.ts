@@ -4,6 +4,7 @@ export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
 type ThemeWebApp = {
+  initData?: string;
   colorScheme?: ResolvedTheme;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -22,7 +23,8 @@ let telegramThemeHandler: (() => void) | null = null;
 
 function currentWebApp(): ThemeWebApp | null {
   if (typeof window === "undefined") return null;
-  return window.Telegram?.WebApp ?? null;
+  const webApp = window.Telegram?.WebApp;
+  return webApp?.initData ? webApp : null;
 }
 
 export function isThemePreference(value: string | null): value is ThemePreference {

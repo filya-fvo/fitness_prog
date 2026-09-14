@@ -107,7 +107,9 @@ test("PLUS exercise explorer supports recent, groups, pins and deep links", asyn
   await expect(page.getByRole("heading", { name: "Упражнения" })).toBeVisible();
   await expect(page.getByText("Жим гантелей лёжа")).toBeVisible();
   await expect(page.getByRole("button", { name: "Грудь", exact: true })).toBeVisible();
-  await expect(page).toHaveScreenshot("exercise-explorer-mobile.png", { fullPage: true });
+  await expect(page).toHaveScreenshot(`exercise-explorer-mobile-${process.platform}.png`, {
+    fullPage: true,
+  });
 
   await page.getByRole("searchbox", { name: "Поиск упражнения" }).fill("гантел");
   await expect.poll(() => seenQueries).toContain("гантел");

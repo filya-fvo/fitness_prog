@@ -135,7 +135,7 @@ export function applyTelegramTheme(webApp: TelegramWebApp | null = getTelegramWe
 
 export function initTelegramApp(): TelegramWebApp | null {
   const webApp = getTelegramWebApp();
-  if (!webApp) {
+  if (!webApp || !isTelegramEnvironment()) {
     return null;
   }
   webApp.ready();
