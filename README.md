@@ -105,7 +105,9 @@ npm.cmd run audit:lighthouse
 ```
 
 `audit:lighthouse` запускается после production build и требует Chrome/Chromium.
-CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthouse проверки.
+CI выполняет backend, frontend, browser/a11y/visual, bundle и Lighthouse проверки
+для pull request и каждого push в `main`, `master` или production-ветку
+`timeweb-production-20260825`.
 
 ## Данные и интеграции
 
