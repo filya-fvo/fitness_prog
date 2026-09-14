@@ -31,7 +31,11 @@ import { localDateKey } from "@/utils/loadProgression";
 import { enumLabel } from "@/utils/localization";
 import { isOnline } from "@/utils/network";
 import { cursorGoalsPatch, readProgramCursor } from "@/utils/programProgress";
-import { recommendPrograms } from "@/utils/programRecommend";
+import {
+  programSupportsAllLimitations,
+  programUsesOnlyAvailableEquipment,
+  recommendPrograms,
+} from "@/utils/programRecommend";
 import { consumePendingInvitePath } from "@/utils/pendingInvite";
 
 const GOALS = [
@@ -219,7 +223,7 @@ export function OnboardingPage() {
       };
 
       let goalsToSave: Record<string, unknown> = { ...goals };
-      let requiresManualProgramSelection = false;
+      let manualSelectionNotice: "limitations" | "equipment" | "compatibility" | null = null;
 
       // First-run: auto-assign best matching program so Home shows Day 1 CTA.
       if (isOnline() && sex !== "unspecified") {
@@ -256,8 +260,20 @@ export function OnboardingPage() {
                 today,
               ),
             };
-          } else if (jointLimits.length > 0) {
-            requiresManualProgramSelection = true;
+          } else {
+            const hasLimitationMatch = items.some((program) =>
+              programSupportsAllLimitations(program, jointLimits),
+            );
+            const hasEquipmentMatch = items.some((program) =>
+              programUsesOnlyAvailableEquipment(program, equipment),
+            );
+            if (jointLimits.length > 0 && !hasLimitationMatch) {
+              manualSelectionNotice = "limitations";
+            } else if (!hasEquipmentMatch) {
+              manualSelectionNotice = "equipment";
+            } else {
+              manualSelectionNotice = "compatibility";
+            }
           }
         } catch {
           // soft — user can pick program later
@@ -299,7 +315,7 @@ export function OnboardingPage() {
       hapticNotification("success");
       const pendingInvitePath = consumePendingInvitePath();
       navigate(
-        pendingInvitePath ?? (requiresManualProgramSelection ? "/programs?notice=limitations" : "/"),
+        pendingInvitePath ?? (manualSelectionNotice ? `/programs?notice=${manualSelectionNotice}` : "/"),
         { replace: true },
       );
     } catch (err) {

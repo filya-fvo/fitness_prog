@@ -4,6 +4,7 @@ import {
   explainProgramMatch,
   pickTodayDayIndex,
   programSupportsAllLimitations,
+  programUsesOnlyAvailableEquipment,
   recommendPrograms,
   scorePrograms,
 } from "@/utils/programRecommend";
@@ -111,6 +112,25 @@ describe("programRecommend", () => {
       location: "home",
     });
     expect(top[0]?.name).toBe("M Home BW");
+  });
+
+  it("does not recommend equipment that the user did not select", () => {
+    const top = recommendPrograms([catalog[5]!], {
+      primaryGoal: "maintain",
+      level: "beginner",
+      daysPerWeek: 3,
+      equipment: ["bodyweight"],
+      sex: "male",
+      location: "home",
+    });
+
+    expect(top).toEqual([]);
+    expect(programUsesOnlyAvailableEquipment(catalog[5]!, ["bodyweight"])).toBe(false);
+  });
+
+  it("allows bodyweight without requiring it to be selected as equipment", () => {
+    expect(programUsesOnlyAvailableEquipment(catalog[0]!, [])).toBe(true);
+    expect(programUsesOnlyAvailableEquipment(catalog[5]!, ["dumbbells"])).toBe(true);
   });
 
   it("prefers female gym for female gym profile", () => {

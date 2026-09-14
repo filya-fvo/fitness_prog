@@ -54,13 +54,13 @@ export function compareProgramToProfile(
 
   const availableEquipment = new Set((profile.equipment || []).map((item) => item.toLowerCase()));
   const missingEquipment = programEquipment(program).filter(
-    (item) => item !== "bodyweight" && availableEquipment.size > 0 && !availableEquipment.has(item),
+    (item) => item !== "bodyweight" && !availableEquipment.has(item),
   );
   if (missingEquipment.length) {
     result.push({
       field: "equipment",
       critical: false,
-      message: `может потребоваться другое оборудование (${missingEquipment.length})`,
+      message: `нужно дополнительное оборудование: ${missingEquipment.map((item) => enumLabel(item)).join(", ")}`,
     });
   }
 

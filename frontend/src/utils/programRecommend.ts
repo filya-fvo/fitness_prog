@@ -80,6 +80,25 @@ export function programSupportsAllLimitations(
   return required.every((item) => supported.has(item));
 }
 
+export function programUsesOnlyAvailableEquipment(
+  program: Program,
+  equipment: RecommendInput["equipment"],
+): boolean {
+  const available = new Set((equipment || []).map((item) => item.toLowerCase()));
+  return programEquipment(program).every(
+    (item) => item === "bodyweight" || available.has(item),
+  );
+}
+
+function matchesMandatoryRequirements(program: Program, input: RecommendInput): boolean {
+  const selectedLimitations = normalizeLimitations(input.limitations);
+  const limitationMatch = selectedLimitations.length > 0
+    ? programSupportsAllLimitations(program, selectedLimitations)
+    : programLimitations(program).length === 0;
+  return limitationMatch
+    && programUsesOnlyAvailableEquipment(program, input.equipment);
+}
+
 function matchesCoreProfile(program: Program, input: RecommendInput): boolean {
   const sex = (input.sex || "").toLowerCase();
   const allowedSex = programSex(program);
@@ -104,10 +123,7 @@ function matchesCoreProfile(program: Program, input: RecommendInput): boolean {
   if (requiredLimitations.some((item) => !supportedLimitations.has(item))) return false;
   if (!requiredLimitations.length && supportedLimitations.size) return false;
 
-  const equipment = new Set((input.equipment || []).map((item) => item.toLowerCase()));
-  return !programEquipment(program).some(
-    (item) => item !== "bodyweight" && equipment.size > 0 && !equipment.has(item),
-  );
+  return programUsesOnlyAvailableEquipment(program, input.equipment);
 }
 
 export type ProgramScoreBreakdown = {
@@ -223,7 +239,7 @@ export function scorePrograms(
 ): ProgramScoreBreakdown[] {
   if (!programs.length) return [];
   const eligiblePrograms = programs.filter((program) =>
-    programSupportsAllLimitations(program, input.limitations),
+    matchesMandatoryRequirements(program, input),
   );
   const scored = eligiblePrograms
     .map((p) => scoreProgram(p, input))
@@ -251,7 +267,7 @@ export function recommendPrograms(programs: Program[], input: RecommendInput, li
   const top = scorePrograms(programs, input, limit).map((x) => x.program);
   if (top.length) return top;
   return programs
-    .filter((program) => programSupportsAllLimitations(program, input.limitations))
+    .filter((program) => matchesMandatoryRequirements(program, input))
     .slice(0, Math.max(1, limit));
 }
 

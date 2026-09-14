@@ -66,4 +66,13 @@ describe("program compatibility", () => {
       message: "4 дн./нед. вместо выбранных 3",
     });
   });
+
+  it("warns about required equipment when the profile has no declared inventory", () => {
+    const result = compareProgramToProfile(program, { equipment: [] });
+
+    expect(result).toContainEqual(expect.objectContaining({
+      field: "equipment",
+      critical: false,
+    }));
+  });
 });

@@ -5,6 +5,7 @@ import type { Program } from "@/types/workout";
 import {
   levelOf,
   programDays,
+  programEquipment,
   programLimitations,
   programLocation,
   programSex,
@@ -31,6 +32,7 @@ describe("program recommendation persona matrix", () => {
   const levels = ["beginner", "intermediate", "advanced"];
   const goals = ["lose_fat", "gain_muscle", "maintain"];
   const limitations = ["no_knee", "no_spine", "shoulder_sensitive"];
+  const equipmentOptions = ["bodyweight", "bands", "dumbbells", "barbell", "machines"];
 
   for (const sex of sexes) {
     for (const location of locations) {
@@ -135,4 +137,35 @@ describe("program recommendation persona matrix", () => {
       }
     }
   }
+
+  it("never recommends unselected equipment across all non-empty equipment combinations", () => {
+    const equipmentSets = Array.from({ length: (2 ** equipmentOptions.length) - 1 }, (_, index) =>
+      equipmentOptions.filter((_, bit) => ((index + 1) & (1 << bit)) !== 0),
+    );
+
+    for (const equipment of equipmentSets) {
+      for (const sex of sexes) {
+        for (const location of locations) {
+          for (const level of levels) {
+            const recommendations = recommendPrograms(programs, {
+              sex,
+              location,
+              level,
+              primaryGoal: "maintain",
+              daysPerWeek: 3,
+              equipment,
+              limitations: [],
+            });
+            const available = new Set(equipment);
+
+            for (const recommendation of recommendations) {
+              expect(programEquipment(recommendation).filter(
+                (item) => item !== "bodyweight" && !available.has(item),
+              )).toEqual([]);
+            }
+          }
+        }
+      }
+    }
+  });
 });

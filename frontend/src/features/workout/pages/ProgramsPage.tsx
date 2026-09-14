@@ -230,7 +230,14 @@ export function ProgramsPage() {
   const initialUi = useMemo(readProgramsUi, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const limitationNotice = searchParams.get("notice") === "limitations";
+  const selectionNotice = searchParams.get("notice");
+  const selectionNoticeText = selectionNotice === "limitations"
+    ? "Не нашли программу, которая учитывает все выбранные ограничения. Анкета сохранена — выберите программу вручную и проверьте нагрузку со специалистом."
+    : selectionNotice === "equipment"
+      ? "Не нашли программу, для которой достаточно выбранного инвентаря. Анкета сохранена — выберите программу вручную и проверьте список оборудования."
+      : selectionNotice === "compatibility"
+        ? "Не нашли программу, которая одновременно подходит под ограничения и доступный инвентарь. Анкета сохранена — выберите программу вручную."
+        : null;
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
   const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
   const setDrafts = useWorkoutStore((s) => s.setDrafts);
@@ -659,6 +666,8 @@ export function ProgramsPage() {
 
   const topRecommended: ProgramScoreBreakdown[] = recommendedScored.slice(0, 4);
   const showRecommendations = viewMode === "recommended";
+  const hasMandatoryRecommendationProfile =
+    userJointLimits.length > 0 || recommendInput.equipment.length > 0;
   const filteredWithoutTop = filtered;
   const visiblePrograms = filteredWithoutTop.slice(0, visibleCount);
   const hasActiveFilters = Boolean(
@@ -708,10 +717,9 @@ export function ProgramsPage() {
     <section>
       <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
-      {limitationNotice ? (
+      {selectionNoticeText ? (
         <div role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-          Не нашли программу, которая учитывает все выбранные ограничения. Анкета сохранена —
-          выберите программу вручную и проверьте нагрузку со специалистом.
+          {selectionNoticeText}
         </div>
       ) : null}
 
@@ -742,10 +750,11 @@ export function ProgramsPage() {
         </div>
       ) : null}
 
-      {!loading && showRecommendations && topRecommended.length === 0 && userJointLimits.length > 0 ? (
+      {!loading && showRecommendations && topRecommended.length === 0 && hasMandatoryRecommendationProfile ? (
         <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
-          Нет программ, которые учитывают все ваши ограничения одновременно. Откройте полный
-          список для ручного выбора и согласуйте нагрузку со специалистом.
+          {userJointLimits.length > 0
+            ? "Нет программ, которые одновременно учитывают ограничения и доступный инвентарь. Откройте полный список для ручного выбора и согласуйте нагрузку со специалистом."
+            : "Нет программ, для которых достаточно выбранного инвентаря. Откройте полный список для ручного выбора и проверьте необходимое оборудование."}
           <button
             type="button"
             onClick={() => setViewMode("all")}
