@@ -127,6 +127,14 @@ test("label photo is uploaded as multipart and opens an editable review", async 
     fats: 2.5,
     carbs: 9.1,
   });
+
+  const gramsInput = page.getByLabel("Граммы", { exact: true });
+  await expect(gramsInput).toHaveValue("");
+  await expect(gramsInput).toHaveAttribute("placeholder", "например, 120");
+  await page.getByRole("button", { name: "100 г", exact: true }).click();
+  await expect(gramsInput).toHaveValue("100");
+  await gramsInput.fill("137");
+  await expect(gramsInput).toHaveValue("137");
 });
 
 test("unknown barcode offers label, rescan and manual product entry", async ({ page }) => {

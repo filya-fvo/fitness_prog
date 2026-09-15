@@ -131,7 +131,7 @@ export function DailyLog() {
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState("");
   const [selected, setSelected] = useState<NutritionProduct | null>(null);
-  const [grams, setGrams] = useState("100");
+  const [grams, setGrams] = useState("");
   const [saving, setSaving] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -286,7 +286,7 @@ export function DailyLog() {
     setOvC(String(p.carbs));
     setOverrideOpen(false);
     setOkNote(null);
-    if (opts?.grams && opts.grams > 0) setGrams(String(opts.grams));
+    setGrams(opts?.grams && opts.grams > 0 ? String(opts.grams) : "");
     if (opts?.meal) setMealType(opts.meal);
   }
 
@@ -295,7 +295,7 @@ export function DailyLog() {
     setSelected(null);
     setQuery("");
     setSuggestions([]);
-    setGrams("100");
+    setGrams("");
     setOverrideOpen(false);
     setOkNote(null);
     setError(null);
@@ -371,7 +371,7 @@ export function DailyLog() {
       setQuery("");
       setSelected(null);
       setSuggestions([]);
-      setGrams("100");
+      setGrams("");
       setOverrideOpen(false);
       await reload();
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
@@ -1103,6 +1103,7 @@ export function DailyLog() {
             step={1}
             value={grams}
             onValueChange={setGrams}
+            placeholder="например, 120"
             className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
           />
         </label>
