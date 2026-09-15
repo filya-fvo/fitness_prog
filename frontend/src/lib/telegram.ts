@@ -149,6 +149,22 @@ export function initTelegramApp(): TelegramWebApp | null {
 }
 
 /**
+ * Start from signed launch data immediately and apply SDK-only integration
+ * later if a VPN or content filter delays telegram.org.
+ */
+export function initTelegramAppWhenSdkLoads(): () => void {
+  initTelegramApp();
+  if (typeof document === "undefined" || getTelegramWebApp()) return () => undefined;
+
+  const script = document.getElementById("telegram-web-app-sdk");
+  if (!(script instanceof HTMLScriptElement)) return () => undefined;
+
+  const applySdk = () => initTelegramApp();
+  script.addEventListener("load", applySdk, { once: true });
+  return () => script.removeEventListener("load", applySdk);
+}
+
+/**
  * Deep-link startapp param from:
  * - Telegram initDataUnsafe.start_param (t.me/...?...startapp=)
  * - URL ?startapp=... (web_app buttons with MINI_APP_URL)

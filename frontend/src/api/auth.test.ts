@@ -47,7 +47,7 @@ describe("loginWithTelegram", () => {
     expect(post).toHaveBeenCalledWith(
       "/auth/telegram",
       { init_data: "same-init-data" },
-      { timeout: 8_000 },
+      { timeout: 20_000 },
     );
 
     resolveRequest?.({ data: authResponse });

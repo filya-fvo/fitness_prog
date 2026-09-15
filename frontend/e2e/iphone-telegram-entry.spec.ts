@@ -13,9 +13,12 @@ test("fresh iPhone Telegram launch signs in from URL data when the SDK is unavai
       documentNavigations += 1;
     }
   });
-  await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
-    route.abort("blockedbyclient"),
-  );
+  await page.route("https://telegram.org/js/telegram-web-app.js", async (route) => {
+    // A filtering VPN may leave telegram.org pending instead of rejecting it.
+    // The application must boot from signed URL data without waiting for SDK I/O.
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    await route.abort("timedout");
+  });
   await page.route("**/auth/telegram", async (route) => {
     const payload = route.request().postDataJSON() as { init_data?: string };
     receivedInitData = payload.init_data ?? "";
@@ -42,7 +45,7 @@ test("fresh iPhone Telegram launch signs in from URL data when the SDK is unavai
     tgWebAppVersion: "8.0",
     tgWebAppPlatform: "ios",
   });
-  await page.goto(`/?startapp=home#${fragment.toString()}`);
+  await page.goto(`/?startapp=home#${fragment.toString()}`, { waitUntil: "domcontentloaded" });
 
   await expect.poll(() => receivedInitData).toBe(initData);
   await expect.poll(() => page.evaluate(() => window.Telegram)).toBeUndefined();

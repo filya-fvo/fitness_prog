@@ -18,7 +18,7 @@ import { trackEvent } from "@/lib/analytics";
 import { authUserFromProfile, isUnauthorizedBrowserSession } from "@/lib/browserSession";
 import {
   getStartParam,
-  initTelegramApp,
+  initTelegramAppWhenSdkLoads,
   isTelegramEnvironment,
   pathFromStartParam,
 } from "@/lib/telegram";
@@ -49,7 +49,7 @@ export function Shell() {
   const setAuthError = useUserStore((s) => s.setAuthError);
 
   useEffect(() => {
-    initTelegramApp();
+    const stopTelegramSdkListener = initTelegramAppWhenSdkLoads();
     trackEvent("web_app_opened", {
       start_param: getStartParam() || null,
       online: isOnline(),
@@ -164,11 +164,16 @@ export function Shell() {
     // A Funnel outage does not change navigator.onLine on the phone, so an
     // "online" event alone cannot recover a failed Telegram authorization.
     window.addEventListener("online", retryBootstrap);
+    window.addEventListener("focus", retryBootstrap);
+    window.addEventListener("pageshow", retryBootstrap);
     document.addEventListener("visibilitychange", retryWhenVisible);
-    const retryTimer = window.setInterval(retryBootstrap, 30_000);
+    const retryTimer = window.setInterval(retryBootstrap, 10_000);
     return () => {
       cancelled = true;
+      stopTelegramSdkListener();
       window.removeEventListener("online", retryBootstrap);
+      window.removeEventListener("focus", retryBootstrap);
+      window.removeEventListener("pageshow", retryBootstrap);
       document.removeEventListener("visibilitychange", retryWhenVisible);
       window.clearInterval(retryTimer);
     };
@@ -278,13 +283,18 @@ export function Shell() {
             <p className="font-medium">Не удалось войти</p>
             <p className="mt-1 text-tg-hint">{authError}</p>
             {isTelegramEnvironment() ? (
-              <button
-                type="button"
-                className="mt-3 min-h-11 rounded-xl bg-tg-button px-4 py-2 font-medium text-tg-button-text"
-                onClick={() => window.dispatchEvent(new Event("online"))}
-              >
-                Подключиться снова
-              </button>
+              <>
+                <p className="mt-2 text-xs text-tg-hint">
+                  После смены сети или VPN подождите несколько секунд и повторите вход.
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 min-h-11 rounded-xl bg-tg-button px-4 py-2 font-medium text-tg-button-text"
+                  onClick={() => window.dispatchEvent(new Event("online"))}
+                >
+                  Подключиться снова
+                </button>
+              </>
             ) : null}
           </div>
         ) : null}

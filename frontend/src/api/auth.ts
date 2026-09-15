@@ -49,7 +49,7 @@ export type EmailOtpRequestResult = z.infer<typeof emailOtpRequestSchema>;
 export type TelegramBrowserConfig = z.infer<typeof telegramBrowserConfigSchema>;
 
 let telegramLoginInFlight: { payload: string; request: Promise<AuthResponse> } | null = null;
-const TELEGRAM_AUTH_TIMEOUT_MS = 8_000;
+const TELEGRAM_AUTH_TIMEOUT_MS = 20_000;
 
 export async function loginWithTelegram(initData?: string): Promise<AuthResponse> {
   const payload = initData ?? getInitData();

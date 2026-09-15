@@ -76,3 +76,54 @@ test("Telegram authorization retries when Funnel returns without an online event
   await expect.poll(() => recoveredAuthRequests, { timeout: 2_000 }).toBe(1);
   await expect(page.getByText("Не удалось войти")).toHaveCount(0);
 });
+
+test("Telegram authorization retries when a VPN route recovers while the page stays visible", async ({ page }) => {
+  let routeAvailable = false;
+  let attempts = 0;
+  await page.addInitScript(() => {
+    window.Telegram = {
+      WebApp: {
+        initData: "query_id=vpn-recovery",
+        ready: () => undefined,
+        expand: () => undefined,
+      },
+    };
+  });
+  await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
+    route.abort("blockedbyclient"),
+  );
+  await page.route("**/auth/telegram", async (route) => {
+    attempts += 1;
+    if (!routeAvailable) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "VPN route unavailable" }),
+      });
+      routeAvailable = true;
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        access_token: "vpn-recovered-token",
+        token_type: "bearer",
+        expires_in_days: 30,
+        user: {
+          id: USER_ID,
+          telegram_id: 1,
+          username: "vpn-user",
+          auth_email: null,
+          subscription_status: "free",
+          onboarding_completed: true,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("Не удалось войти")).toBeVisible();
+  await expect(page.getByText(/После смены сети или VPN/)).toBeVisible();
+  await expect.poll(() => attempts, { timeout: 12_000 }).toBeGreaterThanOrEqual(2);
+  await expect(page.getByText("Не удалось войти")).toHaveCount(0);
+});
