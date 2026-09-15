@@ -116,6 +116,6 @@ test("onboarding does not assign missing equipment and keeps a warned manual cho
       await dialog.dismiss();
     });
   });
-  await page.getByRole("button", { name: "Начать сегодня (день 1)" }).click();
+  await page.getByRole("button", { name: /Начать сегодня \(день \d+\)/ }).click();
   await expect(dialogMessage).resolves.toContain("дополнительное оборудование: Гантели");
 });

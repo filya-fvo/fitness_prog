@@ -1401,7 +1401,7 @@ export function ActiveWorkout() {
             ) : (
               <button
                 type="button"
-                className="mt-3 w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-button disabled:cursor-wait disabled:opacity-60"
+                className="mt-3 w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-link disabled:cursor-wait disabled:opacity-60"
                 disabled={completionAiLoading}
                 onClick={() => void requestCompletionCoach()}
               >

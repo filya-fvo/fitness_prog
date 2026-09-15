@@ -82,7 +82,7 @@ export function ExerciseImportPreviewPanel({ onImported }: Props) {
             ))}
           </ul>
           {result.invalid === 0 ? (
-            <button type="button" disabled={busy} onClick={() => void apply()} className="mt-3 min-h-11 w-full rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={() => void apply()} className="mt-3 min-h-11 w-full rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50">
               {busy ? "Импортируем…" : `Импортировать ${result.valid}`}
             </button>
           ) : null}

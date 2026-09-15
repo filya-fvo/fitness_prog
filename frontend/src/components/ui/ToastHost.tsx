@@ -17,7 +17,7 @@ export function ToastHost() {
             ? "bg-red-600 text-white"
             : t.kind === "info"
               ? "bg-tg-secondary text-tg-text border border-black/10"
-              : "bg-emerald-600 text-white";
+              : "bg-emerald-700 text-white";
         return (
           <button
             key={t.id}

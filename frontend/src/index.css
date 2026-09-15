@@ -15,9 +15,9 @@
   --app-text: #eff7ff;
   --app-hint: #91a4bd;
   --app-accent: #43c7ff;
-  --app-accent-strong: #168fe1;
+  --app-accent-strong: #006699;
   --app-violet: #8b6cff;
-  --app-button: #218ee5;
+  --app-button: #006699;
   --app-button-text: #ffffff;
   --surface-primary: var(--app-bg);
   --surface-secondary: var(--app-surface);
@@ -44,15 +44,15 @@
   --app-surface-raised: #edf5fd;
   --app-text: #102238;
   --app-hint: #60758d;
-  --app-accent: #087ebd;
-  --app-accent-strong: #0878bd;
+  --app-accent: #006da3;
+  --app-accent-strong: #006699;
   --app-violet: #6954d9;
-  --app-button: #168bd2;
+  --app-button: #006699;
   --app-button-text: #ffffff;
   --border-subtle: rgba(31, 79, 119, 0.16);
-  --color-success: #087c5d;
-  --color-warning: #986100;
-  --color-danger: #c7384d;
+  --color-success: #047857;
+  --color-warning: #805000;
+  --color-danger: #b4233d;
 }
 
 body {
@@ -242,7 +242,7 @@ body {
 button.bg-tg-button,
 a.bg-tg-button {
   border: 1px solid rgba(91, 204, 255, 0.22);
-  background-image: linear-gradient(115deg, var(--app-accent-strong), #327bdc 56%, #765fe2);
+  background-image: linear-gradient(115deg, var(--app-accent-strong), #285fb9 56%, #644bcf);
   box-shadow: 0 10px 28px rgba(22, 116, 195, 0.2);
 }
 
@@ -273,6 +273,22 @@ select option {
 .bg-black\/5,
 .bg-black\/10 {
   background-color: rgba(205, 229, 255, 0.055) !important;
+}
+
+/* Tailwind status colors need theme-aware contrast on light and tinted surfaces. */
+.text-red-500,
+.text-red-500\/90,
+.text-red-600 {
+  color: var(--color-danger) !important;
+}
+
+.text-amber-500,
+.text-amber-700 {
+  color: var(--color-warning) !important;
+}
+
+.text-emerald-600 {
+  color: var(--color-success) !important;
 }
 
 /* Significant helper text must remain readable at browser and Telegram font scaling. */
