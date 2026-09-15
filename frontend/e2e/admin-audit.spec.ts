@@ -90,7 +90,8 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
     attempts += 1;
     requests.push(new URL(route.request().url()));
     if (attempts === 1) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      // Keep the loading state observable on slower and faster CI runners.
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
       await route.fulfill({
         status: 503,
         contentType: "application/json",
