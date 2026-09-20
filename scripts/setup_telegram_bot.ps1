@@ -104,11 +104,11 @@ if ($UpdateWebAppMenu) {
   Write-Host "[telegram] Existing web_app Menu Button now opens $MiniAppUrl" -ForegroundColor Green
 } elseif (-not $SkipMenu) {
   $menuBody = @{
-    menu_button = @{ type = "default" }
+    menu_button = @{ type = "commands" }
   } | ConvertTo-Json -Depth 6
   $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
   if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
-  Write-Host "[telegram] Standard menu restored; persistent Open button removed" -ForegroundColor Green
+  Write-Host "[telegram] Command menu restored; persistent Open button removed" -ForegroundColor Green
 
   if ((Test-Path -LiteralPath $BackendPython) -and (Test-Path -LiteralPath $SyncEntrypoints)) {
     Push-Location (Join-Path $Root "backend")
@@ -144,7 +144,7 @@ if (-not $SkipWebhook) {
 Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
 Write-Host "  1) The production HTTPS app and API must be reachable"
-Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Open"
+Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Открыть приложение"
 if ($UpdateWebAppMenu) {
   Write-Host "  3) Existing web_app/Menu Button URL was updated without removing the button"
 } elseif ($SkipMenu) {

@@ -62,9 +62,14 @@ async def test_user_commands_do_not_wait_for_global_bot_setup(
         calls.append("guide")
         return {"ok": True}
 
+    async def fake_help_overview(*_args, **_kwargs):
+        calls.append("overview")
+        return {"ok": True}
+
     monkeypatch.setattr(telegram, "_ensure_bot_commands", fail_commands)
     monkeypatch.setattr(telegram, "_ensure_default_menu_button", fail_menu)
     monkeypatch.setattr(telegram, "send_start_welcome", fake_welcome)
+    monkeypatch.setattr(telegram, "send_help_overview", fake_help_overview)
     monkeypatch.setattr(telegram, "send_user_guide", fake_guide)
     monkeypatch.setattr(telegram, "_is_first_start", lambda *_args: False)
     monkeypatch.setattr(telegram, "_mark_guide_sent", lambda *_args: None)
@@ -84,11 +89,11 @@ async def test_user_commands_do_not_wait_for_global_bot_setup(
     assert result == {"ok": True}
     assert calls == []
     await background_tasks()
-    assert calls == (["welcome"] if command == "/start" else ["guide"])
+    assert calls == (["welcome"] if command == "/start" else ["overview", "guide"])
 
 
 @pytest.mark.asyncio
-async def test_repeat_start_sends_one_concise_message(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_repeat_start_restores_open_and_command_buttons(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[dict] = []
 
     async def fake_send_message(*_args, **kwargs):
@@ -107,8 +112,11 @@ async def test_repeat_start_sends_one_concise_message(monkeypatch: pytest.Monkey
         send_full_guide=False,
     )
 
-    assert len(calls) == 1
+    assert len(calls) == 2
     assert calls[0]["reply_markup"]["inline_keyboard"]
+    assert calls[0]["reply_markup"]["inline_keyboard"][0][0]["text"] == "Открыть приложение"
+    assert calls[1]["reply_markup"]["is_persistent"] is True
+    assert calls[1]["reply_markup"]["keyboard"] == [[{"text": "/start"}, {"text": "/help"}]]
 
 
 @pytest.mark.asyncio
@@ -236,9 +244,13 @@ async def test_polling_callback_is_processed_before_internal_response(
 
 @pytest.mark.asyncio
 async def test_polling_help_failure_is_retriable(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_help_overview(*_args, **_kwargs):
+        return {"ok": True}
+
     async def fail_guide(*_args, **_kwargs):
         raise telegram.TelegramBotError("temporary transport error")
 
+    monkeypatch.setattr(telegram, "send_help_overview", fake_help_overview)
     monkeypatch.setattr(telegram, "send_user_guide", fail_guide)
 
     with pytest.raises(telegram.TelegramBotError, match="temporary"):

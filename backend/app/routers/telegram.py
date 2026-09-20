@@ -30,6 +30,7 @@ from app.services.telegram_bot import (
     get_webhook_info,
     resolve_mini_app_url,
     send_admin_guide,
+    send_help_overview,
     send_open_again,
     send_start_welcome,
     send_user_guide,
@@ -143,6 +144,7 @@ async def _send_help_response(
 ) -> None:
     chat_id = int(command["chat_id"])
     try:
+        await send_help_overview(settings, chat_id=chat_id)
         await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
         _mark_guide_sent(command.get("user_id"), chat_id)
     except TelegramBotError as exc:
@@ -199,7 +201,7 @@ async def telegram_webhook(
 
     - /start → short welcome (name from Telegram) + Open button
       On first /start also sends the full guide as a downloadable file
-    - /help → full user guide as a Markdown file (open/save in Telegram)
+    - /help → concise in-chat help + full user guide as a Markdown file
     - /admin → unlisted admin runbook, only for configured Telegram admins
     Always returns 200 so Telegram does not retry forever on user errors.
     """
@@ -537,7 +539,7 @@ async def setup_menu_button(
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
     """
-    Restore Telegram's standard menu instead of a persistent Web App button.
+    Restore Telegram's command menu instead of a persistent Web App button.
 
     Dev/ops helper — call once after the permanent MINI_APP_URL is known.
     Disabled in production unless explicitly allowed later.
@@ -552,7 +554,7 @@ async def setup_menu_button(
         data = await set_default_chat_menu_button(settings, chat_id=None)
         return {
             "ok": True,
-            "menu_type": "default",
+            "menu_type": "commands",
             "result": data.get("result"),
         }
     except TelegramBotError as exc:

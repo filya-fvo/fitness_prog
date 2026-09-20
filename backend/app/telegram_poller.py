@@ -18,7 +18,13 @@ from redis.asyncio import Redis
 
 from app.core.config import Settings, get_settings
 from app.core.logging import setup_logging
-from app.services.telegram_bot import TelegramBotError, delete_webhook, get_updates
+from app.services.telegram_bot import (
+    TelegramBotError,
+    delete_webhook,
+    get_updates,
+    set_bot_commands,
+    set_default_chat_menu_button,
+)
 
 POLLER_STATUS_KEY = "fitness:admin:telegram-poller:heartbeat"
 _INTERNAL_WEBHOOK_URL = "http://api:8000/telegram/webhook"
@@ -45,6 +51,13 @@ async def _record_status(
 async def _disable_webhook(settings: Settings) -> None:
     await delete_webhook(settings, drop_pending=False)
     logger.info("telegram_poller_webhook_disabled pending_updates_preserved=true")
+
+
+async def _synchronize_entrypoints(settings: Settings) -> None:
+    """Keep Telegram's native /start and /help menu stable across restarts."""
+    await set_bot_commands(settings)
+    await set_default_chat_menu_button(settings)
+    logger.info("telegram_poller_entrypoints_synced menu=commands")
 
 
 async def _dispatch_update(
@@ -90,6 +103,7 @@ async def run_poller(settings: Settings | None = None) -> None:
     offset: int | None = None
     backoff_seconds = 0.5
     webhook_disabled = False
+    entrypoints_synced = False
     async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=3.0)) as client:
         try:
             while True:
@@ -107,6 +121,18 @@ async def run_poller(settings: Settings | None = None) -> None:
                         await asyncio.sleep(backoff_seconds)
                         backoff_seconds = min(10.0, backoff_seconds * 2)
                         continue
+
+                if not entrypoints_synced:
+                    try:
+                        await _synchronize_entrypoints(current)
+                        entrypoints_synced = True
+                    except TelegramBotError as exc:
+                        logger.warning(
+                            "telegram_poller_entrypoint_sync_failed error_type={}",
+                            type(exc).__name__,
+                        )
+                        # Update delivery remains available; retry configuration
+                        # after a later successful Telegram polling cycle.
 
                 try:
                     updates = await get_updates(
@@ -131,6 +157,8 @@ async def run_poller(settings: Settings | None = None) -> None:
 
                 await _record_status(redis, state="waiting")
                 backoff_seconds = 0.5
+                if not entrypoints_synced:
+                    await asyncio.sleep(0.5)
                 if not updates:
                     continue
                 update = updates[0]

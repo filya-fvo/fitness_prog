@@ -158,11 +158,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\setup_telegram_bot.ps1 `
   -MiniAppUrl "https://app.filfitclub.ru" `
   -SkipWebhook `
-  -SkipMenu `
   -SkipPersistMiniAppUrl
 ```
 
-Флаги сохраняют ручную настройку `web_app` в BotFather и локальный rollback-env;
+Скрипт возвращает меню команд `/start` и `/help`, а флаг сохраняет локальный rollback-env;
 production Compose сам отключает webhook без удаления ожидающих updates и запускает
 `telegram-poller`. Это обходит нестабильный входящий маршрут Telegram → Timeweb.
 Проверить:
@@ -173,33 +172,22 @@ production Compose сам отключает webhook без удаления о�
 4. тестовое уведомление приходит один раз;
 5. `api`, `worker` и `telegram-poller` имеют статус `Up`.
 
-Если в BotFather вручную настроен постоянный `web_app`/Menu Button, сама настройка остаётся ручной.
-В BotFather нужно изменить только её URL на `https://app.filfitclub.ru`, не удаляя саму кнопку.
-`Повторный /start` обновляет inline-кнопку в новом сообщении, но не переписывает ручную BotFather-кнопку.
-Для безопасной смены только URL без удаления `web_app` можно выполнить:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File .\scripts\setup_telegram_bot.ps1 `
-  -MiniAppUrl "https://app.filfitclub.ru" `
-  -SkipWebhook `
-  -UpdateWebAppMenu `
-  -SkipPersistMiniAppUrl
-```
-
-После успешного переключения один раз отправить всем привязанным Telegram-пользователям
-новый адрес и просьбу повторить `/start`. Ручной `web_app`/Menu Button не меняется:
+Production-poller при запуске также регистрирует `/start`, `/help` и принудительно
+возвращает Menu Button типа `commands`. Приложение открывается актуальной inline-кнопкой
+**Открыть приложение** из ответа `/start`.
 
 Когда VPS стабильно работает и локальный откат больше не должен запускаться после
 перезагрузки Windows, выполните `disable-local-fitness-runtime.cmd`. В отличие от
 временной паузы, команда удаляет fitness-задачи автозапуска, выключает старый Funnel
 и переводит локальный PostgreSQL в ручной запуск, не удаляя его данные.
 
+После успешного переключения один раз отправьте всем привязанным Telegram-пользователям
+новый адрес и просьбу повторить `/start`:
+
 ```bash
 docker compose --env-file backend/.env.production run --rm api \
   python scripts/sync_telegram_entrypoints.py \
-  --announce-vps-cutover \
-  --preserve-menu-button
+  --announce-vps-cutover
 ```
 
 Повторно команду без необходимости не запускать: это массовая рассылка.

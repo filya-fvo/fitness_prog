@@ -528,7 +528,7 @@ docker compose --env-file backend/.env.production run --rm api \
 ## 12. Telegram и GitHub monitor
 
 Когда `https://api.example.ru/health` уже отвечает, зарегистрируйте новый
-webhook и обновите Menu Button всех связанных пользователей:
+webhook, команды `/start`, `/help` и меню команд всех связанных пользователей:
 
 ```bash
 docker compose --env-file backend/.env.production run --rm api \
@@ -569,7 +569,7 @@ free -h
 
 Затем вручную проверьте:
 
-1. `/start` в Telegram и кнопку открытия Mini App.
+1. `/start`, `/help` в меню Telegram и кнопку открытия Mini App.
 2. Telegram-авторизацию, старт и завершение тестовой тренировки.
 3. Browser email OTP. При неработающем SMTP production API не должен возвращать
    `dev_code`.

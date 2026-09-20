@@ -386,7 +386,7 @@ def start_welcome_text(
         "",
         "Это <b>Fitness Mini App</b> — программы, тренировки, питание, прогресс и AI-тренер.",
         "",
-        "Чтобы начать — нажмите <b>Open</b> под этим сообщением.",
+        "Чтобы начать — нажмите <b>Открыть приложение</b> под этим сообщением.",
         "",
         "• Первый вход: короткая анкета (цель, уровень, тело).",
         "• <b>Главная → Сегодня</b> — старт/продолжение тренировки.",
@@ -426,7 +426,7 @@ def vps_cutover_announcement_text(*, mini_app_url: str) -> str:
             "",
             "Теперь приложение работает круглосуточно и не зависит от включённого домашнего компьютера.",
             "",
-            "Пожалуйста, ещё раз отправьте боту <b>/start</b> и открывайте приложение кнопкой <b>Open</b> из нового сообщения. Старые кнопки могут вести на прежний адрес.",
+            "Пожалуйста, ещё раз отправьте боту <b>/start</b> и открывайте приложение кнопкой <b>Открыть приложение</b> из нового сообщения. Старые кнопки могут вести на прежний адрес.",
         ]
     )
 
@@ -443,7 +443,7 @@ def local_ai_restored_announcement_text() -> str:
             "",
             "Обработка теперь выполняется локально на сервере приложения — без внешних AI-сервисов. При высокой нагрузке ответ может занять несколько секунд.",
             "",
-            "Откройте приложение кнопкой <b>Open</b> и попробуйте обновлённые функции.",
+            "Откройте приложение кнопкой <b>Открыть приложение</b> и попробуйте обновлённые функции.",
         ]
     )
 
@@ -486,13 +486,13 @@ def load_admin_guide_bytes() -> tuple[str, bytes]:
 
 
 def open_app_markup(settings: Settings) -> dict[str, Any] | None:
-    """Inline Open button for Mini App (web_app preferred)."""
+    """Localized inline launch button for the Mini App."""
     mini_url = resolve_mini_app_url(settings)
     markup: dict[str, Any] | None = None
     if mini_url:
         markup = open_web_app_keyboard(
             mini_app_url=mini_url,
-            button_text="Open",
+            button_text="Открыть приложение",
             startapp="home",
         )
     return markup
@@ -521,10 +521,43 @@ async def set_bot_commands(settings: Settings) -> dict[str, Any]:
         "setMyCommands",
         {
             "commands": [
-                {"command": "start", "description": "Приветствие и открыть приложение"},
-                {"command": "help", "description": "Полная инструкция (файл)"},
+                {"command": "start", "description": "Открыть приложение"},
+                {"command": "help", "description": "Помощь и инструкция"},
             ]
         },
+    )
+
+
+def help_overview_text() -> str:
+    """Short in-chat help shown before the downloadable full guide."""
+    return "\n".join(
+        [
+            "❓ <b>Помощь по Fitness Trainer</b>",
+            "",
+            "• <b>/start</b> — открыть приложение.",
+            "• В приложении: <b>Ещё → Помощь и FAQ</b> — короткие инструкции по разделам.",
+            "• Если что-то не работает: <b>Ещё → Поддержка</b> — обращение со скриншотами.",
+            "",
+            "Если приложение не подключается после смены сети или VPN, закройте его, "
+            "снова нажмите <b>/start</b>, затем <b>Открыть приложение</b>. На экране ошибки "
+            "нажмите <b>Подключиться снова</b>.",
+            "",
+            "Полная инструкция приложена следующим сообщением.",
+        ]
+    )
+
+
+async def send_help_overview(
+    settings: Settings,
+    *,
+    chat_id: int,
+) -> dict[str, Any]:
+    """Send concise help and restore the persistent command keyboard."""
+    return await send_message(
+        settings,
+        chat_id=chat_id,
+        text=help_overview_text(),
+        reply_markup=bot_commands_reply_keyboard(settings),
     )
 
 
@@ -545,7 +578,7 @@ async def send_user_guide(
         "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0444\u0430\u0439\u043b \u0432 Telegram "
         "\u0438\u043b\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435 \u043d\u0430 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e."
     )
-    # Prefer inline Open on the document when requested; reply keyboard is set by /start.
+    # Prefer inline app opening on the document; /start and /help restore the reply keyboard.
     markup: dict[str, Any] | None
     if with_open_button:
         markup = open_app_markup(settings) or bot_commands_reply_keyboard(settings)
@@ -587,20 +620,25 @@ async def send_start_welcome(
     first_name: str | None = None,
     send_full_guide: bool = False,
 ) -> dict[str, Any]:
-    """Reply to /start without blocking on global Telegram configuration calls."""
+    """Reply to /start with app opening and the persistent command keyboard."""
     text = start_welcome_text(
         first_name=first_name,
         mini_app_url=resolve_mini_app_url(settings),
     )
-    # Inline Open is the most reliable Mini App entry on mobile + desktop. Slash
-    # commands stay available in Telegram's native menu, so one concise message is
-    # enough and repeated /start does not flood the chat.
+    # An inline web_app button and a reply keyboard cannot share one message.
+    # Send the launch action first, then restore the two persistent commands.
     inline_open = open_app_markup(settings)
     result = await send_message(
         settings,
         chat_id=chat_id,
         text=text,
         reply_markup=inline_open,
+    )
+    await send_message(
+        settings,
+        chat_id=chat_id,
+        text="Быстрые команды: /start и /help",
+        reply_markup=bot_commands_reply_keyboard(settings),
     )
     if send_full_guide:
         await send_user_guide(settings, chat_id=chat_id, with_open_button=True)
@@ -612,8 +650,8 @@ async def set_default_chat_menu_button(
     *,
     chat_id: int | None = None,
 ) -> dict[str, Any]:
-    """Remove a per-chat Web App override and restore Telegram's standard menu."""
-    payload: dict[str, Any] = {"menu_button": {"type": "default"}}
+    """Force Telegram's command menu instead of a BotFather Web App override."""
+    payload: dict[str, Any] = {"menu_button": {"type": "commands"}}
     if chat_id is not None:
         payload["chat_id"] = chat_id
     return await bot_api(settings, "setChatMenuButton", payload)
@@ -851,7 +889,7 @@ async def send_open_again(
     _ = reason
     markup = open_app_markup(settings)
     text = (
-        "Откройте приложение кнопкой <b>Open</b> под этим сообщением."
+        "Откройте приложение кнопкой <b>Открыть приложение</b> под этим сообщением."
     )
     result = await send_message(
         settings,

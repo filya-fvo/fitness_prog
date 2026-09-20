@@ -146,7 +146,7 @@ async def test_standard_menu_replaces_persistent_open_button(
     assert captured["method"] == "setChatMenuButton"
     assert captured["payload"] == {
         "chat_id": 42,
-        "menu_button": {"type": "default"},
+        "menu_button": {"type": "commands"},
     }
 
 
@@ -304,7 +304,7 @@ def test_start_welcome_uses_first_name_variable() -> None:
     assert "Anna" in b
     assert a.splitlines()[0] == "\u041f\u0440\u0438\u0432\u0435\u0442, Viacheslav!"
     assert b.splitlines()[0] == "\u041f\u0440\u0438\u0432\u0435\u0442, Anna!"
-    assert "Open" in a
+    assert "Открыть приложение" in a
     assert "/help" in a
 
 
@@ -317,7 +317,7 @@ def test_start_welcome_mentions_email_link_and_browser_url() -> None:
     assert "https://fitness-pc.example.ts.net" in text
     assert "обычном браузере" in text
     assert "docs/USER_GUIDE" not in text
-    assert "Open" in text
+    assert "Открыть приложение" in text
     assert "/help" in text
     # Browser email login is documented for users
     assert "почт" in text.lower() or "email" in text.lower()

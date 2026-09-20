@@ -82,6 +82,9 @@ async def test_poller_advances_offset_only_after_internal_dispatch(monkeypatch) 
     async def fake_delete(_settings):
         return None
 
+    async def fake_sync(_settings):
+        return None
+
     async def fake_updates(_settings, *, offset, **_kwargs):
         offsets.append(offset)
         if len(offsets) == 1:
@@ -93,6 +96,7 @@ async def test_poller_advances_offset_only_after_internal_dispatch(monkeypatch) 
         return True
 
     monkeypatch.setattr(telegram_poller, "_disable_webhook", fake_delete)
+    monkeypatch.setattr(telegram_poller, "_synchronize_entrypoints", fake_sync)
     monkeypatch.setattr(telegram_poller, "get_updates", fake_updates)
     monkeypatch.setattr(telegram_poller, "_dispatch_update", fake_dispatch)
     monkeypatch.setattr(
@@ -114,3 +118,23 @@ async def test_poller_advances_offset_only_after_internal_dispatch(monkeypatch) 
     assert offsets == [None, 81]
     assert dispatched == [80]
     assert redis.closed is True
+
+
+@pytest.mark.asyncio
+async def test_entrypoint_sync_restores_commands_and_menu(monkeypatch) -> None:
+    calls: list[str] = []
+
+    async def fake_commands(_settings):
+        calls.append("commands")
+        return {"ok": True}
+
+    async def fake_menu(_settings):
+        calls.append("menu")
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram_poller, "set_bot_commands", fake_commands)
+    monkeypatch.setattr(telegram_poller, "set_default_chat_menu_button", fake_menu)
+
+    await telegram_poller._synchronize_entrypoints(Settings(bot_token="test-token"))
+
+    assert calls == ["commands", "menu"]

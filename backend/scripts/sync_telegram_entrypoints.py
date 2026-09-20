@@ -16,6 +16,7 @@ from app.services.telegram_bot import (
     open_app_markup,
     send_message,
     send_start_welcome,
+    set_bot_commands,
     set_default_chat_menu_button,
     set_webhook,
     local_ai_restored_announcement_text,
@@ -74,6 +75,7 @@ async def main() -> None:
 
     settings = get_settings()
     public_url = safe_public_url(settings.mini_app_url)
+    await set_bot_commands(settings)
     if not args.preserve_menu_button:
         await set_default_chat_menu_button(settings)
 
@@ -167,7 +169,8 @@ async def main() -> None:
             await asyncio.sleep(0.1)
 
     print(f"URL={public_url}")
-    print("MENU_BUTTON=preserved" if args.preserve_menu_button else "DEFAULT_MENU=standard")
+    print("MENU_BUTTON=preserved" if args.preserve_menu_button else "DEFAULT_MENU=commands")
+    print("BOT_COMMANDS=start,help")
     print(f"CHAT_MENUS_UPDATED={updated}")
     print(f"CHAT_MENUS_FAILED={len(failed)}")
     if args.webhook_base:

@@ -402,7 +402,8 @@ docker compose --env-file backend/.env.production logs --tail=100 caddy
 http://api:8000/telegram/webhook
 ```
 
-Ручная `web_app`/Menu Button должна открывать:
+Команда `getChatMenuButton` должна возвращать тип `commands`. Приложение открывается
+кнопкой **Открыть приложение** в ответе `/start` по адресу:
 
 ```text
 https://app.filfitclub.ru/
@@ -511,7 +512,7 @@ docker compose --env-file backend/.env.production logs --tail=100 api
 ## 15. Короткий еженедельный контроль
 
 1. Открыть сайт и войти в приложение.
-2. Отправить боту `/start` и проверить кнопку `Open`.
+2. Отправить боту `/start`, проверить кнопки `/start`, `/help` и **Открыть приложение**.
 3. Проверить `docker compose ... ps`.
 4. Проверить `/health` и логи worker на `errors: 0`.
 5. Проверить последний ежедневный backup.
