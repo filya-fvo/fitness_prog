@@ -84,14 +84,18 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
 
   let attempts = 0;
   const requests: URL[] = [];
+  let allowInitialResponse!: () => void;
+  const initialResponseGate = new Promise<void>((resolve) => {
+    allowInitialResponse = resolve;
+  });
   await page.route(
     (url) => url.pathname === "/admin/audit" && url.searchParams.has("limit"),
     async (route) => {
     attempts += 1;
     requests.push(new URL(route.request().url()));
     if (attempts === 1) {
-      // Keep the loading state observable on slower and faster CI runners.
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      // Hold the first response until the test has observed the loading state.
+      await initialResponseGate;
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -120,6 +124,7 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
 
   await page.goto("/admin/audit");
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
+  allowInitialResponse();
   await expect(page.getByRole("alert")).toContainText("Сервис временно недоступен");
   await page.getByRole("button", { name: "Повторить" }).click();
   await expect(page.getByRole("heading", { name: "Изменение упражнения" })).toBeVisible();
