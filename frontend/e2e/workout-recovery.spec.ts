@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { expectMinimumTouchTarget } from "./touch-targets";
+
 const WORKOUT_ID = "11111111-1111-4111-8111-111111111111";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 const EXERCISE_ID = "33333333-3333-4333-8333-333333333333";
@@ -135,6 +137,13 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await expect(page.getByRole("navigation", { name: "Основная навигация" })).toHaveCount(0);
   await expect(page).toHaveURL(new RegExp(`/workouts/active/${WORKOUT_ID}$`));
   expect(workoutRequests).toBe(1);
+
+  await page.setViewportSize({ width: 320, height: 700 });
+  for (const name of ["Зал", "1", "ИИ", "Ещё"]) {
+    await expectMinimumTouchTarget(page.getByRole("button", { name, exact: true }));
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
 
   await page.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
   await expect(page.getByText("Дневник", { exact: true })).toBeVisible();

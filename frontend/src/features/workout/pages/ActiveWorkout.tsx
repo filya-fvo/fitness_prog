@@ -1487,7 +1487,7 @@ export function ActiveWorkout() {
           <button
             type="button"
             onClick={toggleSimpleMode}
-            className="rounded-full bg-tg-bg px-2.5 py-1.5 text-[11px] font-medium text-tg-hint"
+            className="tap-target rounded-full bg-tg-bg px-2.5 py-1.5 text-[11px] font-medium text-tg-hint"
             title={simpleMode ? "Показать все настройки" : "Режим зала"}
           >
             {simpleMode ? "Зал" : "Полный"}
@@ -1607,7 +1607,7 @@ export function ActiveWorkout() {
                 if (activeWorkout) void persistSession(activeWorkout, drafts, idx);
               }}
               className={[
-                "tap-target-x shrink-0 rounded-full px-3 py-2 text-xs min-h-[44px]",
+                "tap-target shrink-0 rounded-full px-3 py-2 text-xs",
                 idx === currentExerciseIndex
                   ? "bg-tg-button text-tg-button-text"
                   : done
@@ -1648,7 +1648,7 @@ export function ActiveWorkout() {
             <div className="flex shrink-0 flex-col items-end gap-1">
               <button
                 type="button"
-                className="text-xs text-tg-link"
+                className="tap-target text-xs text-tg-link"
                 onClick={() => {
                   setReplaceOpen(true);
                   setReplaceQuery("");
@@ -1659,7 +1659,7 @@ export function ActiveWorkout() {
               </button>
               <button
                 type="button"
-                className="text-xs text-tg-link"
+                className="tap-target text-xs text-tg-link"
                 disabled={aiAssistLoading}
                 onClick={() => void askAiForCurrent("replace")}
               >
@@ -1668,7 +1668,7 @@ export function ActiveWorkout() {
               {simpleMode ? (
                 <button
                   type="button"
-                  className="text-xs text-tg-hint"
+                  className="tap-target text-xs text-tg-hint"
                   aria-expanded={moreOpen}
                   onClick={() => setMoreOpen((value) => !value)}
                 >

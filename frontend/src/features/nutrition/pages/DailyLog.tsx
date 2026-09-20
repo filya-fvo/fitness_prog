@@ -1114,7 +1114,7 @@ export function DailyLog() {
               type="button"
               onClick={() => setGrams(String(g))}
               className={[
-                "rounded-full px-2.5 py-1 text-[11px]",
+                "tap-target rounded-full px-2.5 py-1 text-[11px]",
                 String(g) === String(Number(grams) || "")
                   ? "bg-tg-button text-tg-button-text"
                   : "bg-tg-bg text-tg-hint",

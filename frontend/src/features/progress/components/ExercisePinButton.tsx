@@ -64,7 +64,7 @@ export function ExercisePinButton({ exerciseId, initialPinned, compact = false, 
         aria-label={pinned ? "Открепить упражнение" : "Закрепить упражнение"}
         disabled={busy || pinned === null}
         onClick={() => void toggle()}
-        className="inline-flex min-h-11 items-center gap-1 rounded-xl bg-tg-bg px-3 text-xs font-semibold text-tg-link disabled:opacity-50"
+        className="tap-target inline-flex items-center justify-center gap-1 rounded-xl bg-tg-bg px-3 text-xs font-semibold text-tg-link disabled:opacity-50"
       >
         <span aria-hidden="true">{pinned ? "★" : "☆"}</span>
         {compact ? null : pinned ? "Закреплено" : "Закрепить"}

@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { expectMinimumTouchTarget } from "./touch-targets";
+
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 
 test("label photo is uploaded as multipart and opens an editable review", async ({ page }) => {
@@ -131,6 +133,7 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   const gramsInput = page.getByLabel("Граммы", { exact: true });
   await expect(gramsInput).toHaveValue("");
   await expect(gramsInput).toHaveAttribute("placeholder", "например, 120");
+  await expectMinimumTouchTarget(page.getByRole("button", { name: "50 г", exact: true }));
   await page.getByRole("button", { name: "100 г", exact: true }).click();
   await expect(gramsInput).toHaveValue("100");
   await gramsInput.fill("137");

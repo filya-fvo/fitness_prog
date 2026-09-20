@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { expectMinimumTouchTarget } from "./touch-targets";
+
 const USER_ID = "a1111111-1111-4111-8111-111111111111";
 const EXERCISE_ID = "a2222222-2222-4222-8222-222222222222";
 
@@ -117,7 +119,7 @@ test("PLUS exercise explorer supports recent, groups, pins and deep links", asyn
   await expect.poll(() => seenGroups).toContain("chest");
 
   await page.getByRole("button", { name: "Закрепить упражнение" }).click();
-  await expect(page.getByRole("button", { name: "Открепить упражнение" })).toBeVisible();
+  await expectMinimumTouchTarget(page.getByRole("button", { name: "Открепить упражнение" }));
   await page.getByRole("button", { name: "Закреплённые" }).click();
   await expect(page.getByText("Жим гантелей лёжа")).toBeVisible();
 
