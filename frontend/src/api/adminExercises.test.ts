@@ -7,7 +7,7 @@ import {
   uploadAdminExerciseMedia,
   type AdminExercisePayload,
 } from "./adminExercises";
-import { apiClient, resolveApiAssetUrl } from "./client";
+import { UPLOAD_API_TIMEOUT_MS, apiClient, resolveApiAssetUrl } from "./client";
 
 const payload: AdminExercisePayload = {
   name_ru: "Жим гантелей",
@@ -106,11 +106,12 @@ describe("admin exercise API", () => {
     await expect(uploadAdminExerciseMedia(item.id, "animation_url", file)).resolves.toMatchObject({
       url: item.animation_url,
     });
-    const [url, form] = vi.mocked(apiClient.post).mock.calls[0];
+    const [url, form, config] = vi.mocked(apiClient.post).mock.calls[0];
     expect(url).toBe(`/admin/exercises/${item.id}/media`);
     expect(form).toBeInstanceOf(FormData);
     expect((form as FormData).get("field")).toBe("animation_url");
     expect((form as FormData).get("image")).toBe(file);
     expect(String((form as FormData).get("idempotency_key"))).toMatch(/^[0-9a-f-]{36}$/);
+    expect(config).toEqual({ timeout: UPLOAD_API_TIMEOUT_MS });
   });
 });

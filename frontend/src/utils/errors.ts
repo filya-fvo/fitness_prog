@@ -36,7 +36,9 @@ export function toUserMessage(error: unknown, fallback = "Что-то пошло
     }
     if (status && STATUS_MESSAGES[status]) return STATUS_MESSAGES[status];
     if (status && status >= 500) return "Сервис временно недоступен. Попробуйте немного позже.";
-    if (error.code === "ECONNABORTED") return "Сервис отвечает слишком долго. Попробуйте ещё раз.";
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return "Сервис отвечает слишком долго. Попробуйте ещё раз.";
+    }
     if (!error.response) return "Не удалось связаться с сервером. Проверьте интернет.";
   }
   if (error instanceof Error) {

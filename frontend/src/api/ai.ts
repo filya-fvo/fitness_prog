@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { apiClient } from "@/api/client";
+import { AI_API_TIMEOUT_MS, apiClient } from "@/api/client";
 
 const chatSchema = z.object({
   session_id: z.string().uuid(),
@@ -36,10 +36,14 @@ export async function sendAIChat(input: {
   message: string;
   sessionId?: string | null;
 }): Promise<AIChatResult> {
-  const { data } = await apiClient.post("/ai/chat", {
-    message: input.message,
-    session_id: input.sessionId ?? null,
-  });
+  const { data } = await apiClient.post(
+    "/ai/chat",
+    {
+      message: input.message,
+      session_id: input.sessionId ?? null,
+    },
+    { timeout: AI_API_TIMEOUT_MS },
+  );
   return chatSchema.parse(data);
 }
 
@@ -47,11 +51,15 @@ export async function analyzeProgress(
   days = 14,
   history?: { sessionId?: string | null; message?: string | null },
 ): Promise<AIAnalyzeResult> {
-  const { data } = await apiClient.post("/ai/analyze", {
-    days,
-    session_id: history?.sessionId ?? null,
-    message: history?.message ?? null,
-  });
+  const { data } = await apiClient.post(
+    "/ai/analyze",
+    {
+      days,
+      session_id: history?.sessionId ?? null,
+      message: history?.message ?? null,
+    },
+    { timeout: AI_API_TIMEOUT_MS },
+  );
   return analyzeSchema.parse(data);
 }
 

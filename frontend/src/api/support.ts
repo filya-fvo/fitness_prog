@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { apiClient } from "@/api/client";
+import { UPLOAD_API_TIMEOUT_MS, apiClient } from "@/api/client";
 import { isTelegramEnvironment } from "@/lib/telegram";
 
 export const supportCategories = ["bug", "question", "idea", "other"] as const;
@@ -59,15 +59,15 @@ export async function createSupportTicket(input: {
   category: SupportCategory;
   message: string;
   page: string;
+  idempotencyKey: string;
 }): Promise<SupportTicketSummary> {
-  const idempotencyKey = crypto.randomUUID();
   const { data } = await apiClient.post("/support/tickets", {
     category: input.category,
     message: input.message,
     page: input.page,
     client: isTelegramEnvironment() ? "telegram" : "browser",
     app_version: __FITNESS_BUILD_ID__,
-    idempotency_key: idempotencyKey,
+    idempotency_key: input.idempotencyKey,
   });
   return summarySchema.parse(data);
 }
@@ -89,7 +89,9 @@ export async function uploadSupportScreenshot(ticketId: string, image: File): Pr
   const form = new FormData();
   form.append("image", image);
   form.append("idempotency_key", crypto.randomUUID());
-  const { data } = await apiClient.post(`/support/tickets/${ticketId}/attachments`, form);
+  const { data } = await apiClient.post(`/support/tickets/${ticketId}/attachments`, form, {
+    timeout: UPLOAD_API_TIMEOUT_MS,
+  });
   return supportAttachmentSchema.parse(data);
 }
 

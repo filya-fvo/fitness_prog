@@ -100,3 +100,43 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
+
+test("timed-out support write can be retried without changing its idempotency key", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "support-timeout-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json", body: JSON.stringify(adminProfile),
+  }));
+
+  const requestBodies: Array<Record<string, unknown>> = [];
+  let releaseFirstRequest: (() => void) | null = null;
+  const firstRequestGate = new Promise<void>((resolve) => {
+    releaseFirstRequest = resolve;
+  });
+  await page.route(/\/support\/tickets(?:\?.*)?$/, async (route) => {
+    if (route.request().resourceType() === "document") return route.continue();
+    if (route.request().method() === "GET") {
+      return route.fulfill({ contentType: "application/json", body: '{"items":[],"total":0}' });
+    }
+    requestBodies.push(route.request().postDataJSON() as Record<string, unknown>);
+    if (requestBodies.length === 1) {
+      await firstRequestGate;
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify(summary) }).catch(() => undefined);
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(summary) });
+  });
+
+  await page.goto("/support");
+  await page.getByPlaceholder("Опишите, что произошло или что хотите узнать").fill("Проверка повтора после таймаута");
+  await page.getByRole("button", { name: "Отправить в поддержку" }).click();
+
+  await expect(page.getByText("Сервис отвечает слишком долго. Попробуйте ещё раз.")).toBeVisible({
+    timeout: 20_000,
+  });
+  releaseFirstRequest?.();
+  await page.getByRole("button", { name: "Отправить в поддержку" }).click();
+  await expect(page).toHaveURL(`/support/${ticketId}`);
+
+  expect(requestBodies).toHaveLength(2);
+  expect(requestBodies[0].idempotency_key).toBe(requestBodies[1].idempotency_key);
+});

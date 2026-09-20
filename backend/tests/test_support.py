@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -13,6 +14,7 @@ from app.models.support import SupportMessage, SupportTicket
 from app.models.user import User
 from app.schemas.support import SupportTicketCreate
 from app.services import support_attachments
+from app.services import support_service
 from app.services.telegram_bot import build_mini_app_open_url
 from app.tasks import notifications
 from app.tasks.notifications import WorkerSettings, send_support_reply_task
@@ -111,6 +113,36 @@ def test_support_contract_rejects_unknown_category_and_too_short_message() -> No
         SupportTicketCreate(category="sales", message="Нужна помощь", **base)
     with pytest.raises(ValidationError):
         SupportTicketCreate(category="question", message="?", **base)
+
+
+@pytest.mark.asyncio
+async def test_ticket_retry_with_same_key_returns_existing_without_second_write() -> None:
+    user = User(id=uuid.uuid4(), username="retry-user")
+    request_key = uuid.uuid4()
+    existing = SupportTicket(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        category="question",
+        subject="Повтор",
+        idempotency_key=request_key,
+    )
+    session = AsyncMock()
+    session.scalar.return_value = existing
+
+    result = await support_service.create_ticket(
+        session,
+        user,
+        SupportTicketCreate(
+            category="question",
+            message="Повтор после таймаута",
+            client="browser",
+            idempotency_key=request_key,
+        ),
+    )
+
+    assert result is existing
+    session.add.assert_not_called()
+    session.commit.assert_not_awaited()
 
 
 def test_support_deep_link_opens_only_the_ticket_route() -> None:

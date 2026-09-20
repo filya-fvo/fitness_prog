@@ -6,6 +6,11 @@ import { plusRequiredDetail } from "@/api/subscriptionError";
 // Timeweb image. Set VITE_API_URL only when the API is intentionally split out.
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
+export const API_TIMEOUT_MS = 15_000;
+export const AI_API_TIMEOUT_MS = 90_000;
+export const OCR_API_TIMEOUT_MS = 60_000;
+export const UPLOAD_API_TIMEOUT_MS = 45_000;
+
 /** Resolve API-owned immutable media when frontend and API use separate origins. */
 export function resolveApiAssetUrl(
   value: string | null | undefined,
@@ -17,6 +22,7 @@ export function resolveApiAssetUrl(
 
 export const apiClient = axios.create({
   baseURL: API_URL,
+  timeout: API_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
   },

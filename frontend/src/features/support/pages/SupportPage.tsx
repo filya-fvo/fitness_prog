@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/api/support";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
-import { toUserMessage } from "@/utils/errors";
+import { isRetryableApiError, toUserMessage } from "@/utils/errors";
 
 import { categoryLabels, formatSupportDate, statusLabels } from "../supportLabels";
 import { prepareSupportScreenshot } from "../supportScreenshot";
@@ -26,6 +26,7 @@ export function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pendingCreateRef = useRef<{ signature: string; key: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -46,9 +47,21 @@ export function SupportPage() {
     if (message.trim().length < 3) return;
     setSending(true);
     setError(null);
+    const trimmedMessage = message.trim();
+    const sourcePage = location.state?.from || "";
+    const signature = JSON.stringify([category, trimmedMessage, sourcePage]);
+    const pending = pendingCreateRef.current;
+    const idempotencyKey = pending?.signature === signature ? pending.key : crypto.randomUUID();
+    pendingCreateRef.current = { signature, key: idempotencyKey };
     try {
       const prepared = screenshot ? await prepareSupportScreenshot(screenshot) : null;
-      const ticket = await createSupportTicket({ category, message: message.trim(), page: location.state?.from || "" });
+      const ticket = await createSupportTicket({
+        category,
+        message: trimmedMessage,
+        page: sourcePage,
+        idempotencyKey,
+      });
+      pendingCreateRef.current = null;
       if (prepared) {
         try {
           await uploadSupportScreenshot(ticket.id, prepared);
@@ -61,6 +74,7 @@ export function SupportPage() {
       }
       navigate(`/support/${ticket.id}`);
     } catch (reason) {
+      if (!isRetryableApiError(reason)) pendingCreateRef.current = null;
       setError(toUserMessage(reason, "Не удалось отправить обращение."));
     } finally {
       setSending(false);

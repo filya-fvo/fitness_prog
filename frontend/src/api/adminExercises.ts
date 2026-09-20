@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { apiClient } from "@/api/client";
+import { UPLOAD_API_TIMEOUT_MS, apiClient } from "@/api/client";
 import { exerciseSchema } from "@/api/exercises";
 
 export const mediaQualitySchema = z.enum(["ready", "unverified", "missing", "rejected"]);
@@ -185,7 +185,9 @@ export async function uploadAdminExerciseMedia(
   form.append("field", field);
   form.append("idempotency_key", crypto.randomUUID());
   form.append("image", image);
-  const { data } = await apiClient.post(`/admin/exercises/${id}/media`, form);
+  const { data } = await apiClient.post(`/admin/exercises/${id}/media`, form, {
+    timeout: UPLOAD_API_TIMEOUT_MS,
+  });
   return mediaUploadSchema.parse(data);
 }
 

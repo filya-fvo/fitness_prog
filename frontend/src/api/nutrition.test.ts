@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { apiClient } from "./client";
+import { OCR_API_TIMEOUT_MS, apiClient } from "./client";
 import { recognizeNutritionLabel } from "./nutrition";
 
 describe("recognizeNutritionLabel", () => {
@@ -33,6 +33,7 @@ describe("recognizeNutritionLabel", () => {
     expect(post).toHaveBeenCalledWith(
       "/nutrition/label/recognize",
       expect.any(FormData),
+      { timeout: OCR_API_TIMEOUT_MS },
     );
     const form = post.mock.calls[0]?.[1] as FormData;
     expect(form.get("image")).toBeTruthy();

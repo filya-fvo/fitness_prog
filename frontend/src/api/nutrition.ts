@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { apiClient } from "@/api/client";
+import { OCR_API_TIMEOUT_MS, apiClient } from "@/api/client";
 
 const productSchema = z.object({
   id: z.string().uuid(),
@@ -210,7 +210,9 @@ export type NutritionLabelRecognition = z.infer<typeof nutritionLabelRecognition
 export async function recognizeNutritionLabel(image: File): Promise<NutritionLabelRecognition> {
   const body = new FormData();
   body.append("image", image, image.name);
-  const { data } = await apiClient.post("/nutrition/label/recognize", body);
+  const { data } = await apiClient.post("/nutrition/label/recognize", body, {
+    timeout: OCR_API_TIMEOUT_MS,
+  });
   return nutritionLabelRecognitionSchema.parse(data);
 }
 
