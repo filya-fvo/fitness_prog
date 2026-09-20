@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 import sys
@@ -17,21 +18,11 @@ from app.core.database import AsyncSessionLocal
 from app.models.exercise import Exercise
 from app.models.program import Program
 from app.models.user import User
-from app.services import program_publication
+from app.services import seed_programs
 
 CONTENT = Path(__file__).resolve().parent / "seed_content"
 
-PROGRAM_RENAMES = {
-    "М · Зал · Новичок · Тренажёры FB": "М · Зал · Новичок · Тренажёры · Всё тело",
-    "М · Зал · Новичок · PPL intro": "М · Зал · Новичок · Жим/тяга/ноги · Введение",
-    "М · Зал · Новичок · Гантели FB": "М · Зал · Новичок · Гантели · Всё тело",
-    "Ж · Зал · Новичок · Тренажёры FB": "Ж · Зал · Новичок · Тренажёры · Всё тело",
-    "М · Зал · Опытный · PPL 3 дня": "М · Зал · Опытный · Жим/тяга/ноги · 3 дня",
-    "Ж · Зал · Опытный · Glute focus 3 дня": "Ж · Зал · Опытный · Акцент на ягодицы · 3 дня",
-    "М · Зал · Продвинутый · PPL 6 дней": "М · Зал · Продвинутый · Жим/тяга/ноги · 6 дней",
-    "М · Дом · Продвинутый · Гантели dense": "М · Дом · Продвинутый · Гантели · Плотный формат",
-    "Ж · Дом · Продвинутый · Резинки dense": "Ж · Дом · Продвинутый · Резинки · Плотный формат",
-}
+PROGRAM_RENAMES = seed_programs.PROGRAM_RENAMES
 
 
 def _load_exercise_renames() -> dict[str, str]:
@@ -86,39 +77,14 @@ async def upsert_exercises(session) -> tuple[int, int]:
     return created, updated
 
 
-async def upsert_programs(session) -> tuple[int, int, int]:
-    """Upsert by name; soft-delete old templates not present in the new payload."""
+async def upsert_programs(session) -> seed_programs.SeedProgramSyncStats:
+    """Synchronize seed programs without mutating published versions in place."""
     payload = json.loads((CONTENT / "programs.json").read_text(encoding="utf-8"))
-    keep_names = {str(row["name"]) for row in payload}
-    existing: dict[str, Program] = {}
-    for item in (await session.scalars(select(Program))).all():
-        current = existing.get(item.name)
-        if current is None or (current.is_deleted and not item.is_deleted):
-            existing[item.name] = item
-    created = 0
-    updated = 0
-    for row in payload:
-        current = existing.get(row["name"])
-        if current is None:
-            session.add(Program(**program_publication.seed_program_payload(row)))
-            created += 1
-            continue
-        for key, value in row.items():
-            setattr(current, key, value)
-        current.is_deleted = False
-        program_publication.mark_seed_program_published(current)
-        updated += 1
-
-    retired = 0
-    for name, item in existing.items():
-        if name in keep_names:
-            continue
-        if item.is_deleted or not item.is_template:
-            continue
-        item.is_deleted = True
-        retired += 1
-    await session.flush()
-    return created, updated, retired
+    return await seed_programs.sync_seed_programs(
+        session,
+        payload,
+        renames=PROGRAM_RENAMES,
+    )
 
 
 async def migrate_renamed_program_references(session) -> int:
@@ -154,28 +120,37 @@ async def migrate_renamed_program_references(session) -> int:
     return migrated
 
 
-async def main() -> None:
+async def main(*, dry_run: bool = False) -> None:
     if not (CONTENT / "exercises.json").exists() or not (CONTENT / "programs.json").exists():
         raise SystemExit("Run scripts/build_programs_v2.py (or generate_seed_content.py) first")
 
     async with AsyncSessionLocal() as session:
         ex_c, ex_u = await upsert_exercises(session)
-        pr_c, pr_u, pr_r = await upsert_programs(session)
+        program_stats = await upsert_programs(session)
         pr_refs = await migrate_renamed_program_references(session)
-        await session.commit()
-
         ex_total = await session.scalar(
             select(func.count()).select_from(Exercise).where(Exercise.is_deleted.is_(False))
         )
         pr_total = await session.scalar(
             select(func.count()).select_from(Program).where(Program.is_deleted.is_(False))
         )
+        if dry_run:
+            await session.rollback()
+        else:
+            await session.commit()
+        result = "SEED_DRY_RUN_OK" if dry_run else "SEED_OK"
         print(
-            f"SEED_OK exercises_created={ex_c} exercises_updated={ex_u} exercises_total={ex_total} "
-            f"programs_created={pr_c} programs_updated={pr_u} programs_retired={pr_r} "
+            f"{result} exercises_created={ex_c} exercises_updated={ex_u} exercises_total={ex_total} "
+            f"programs_created={program_stats.created} "
+            f"programs_unchanged={program_stats.unchanged} "
+            f"programs_versioned={program_stats.versioned} "
+            f"programs_retired={program_stats.retired} "
             f"programs_total={pr_total} program_profile_refs_migrated={pr_refs}"
         )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Publish maintained exercise and program seed")
+    parser.add_argument("--dry-run", action="store_true", help="validate changes and roll them back")
+    args = parser.parse_args()
+    asyncio.run(main(dry_run=args.dry_run))

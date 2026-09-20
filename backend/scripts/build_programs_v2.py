@@ -1627,7 +1627,7 @@ def build_all() -> list[dict]:
         description="Домашняя программа с весом тела, 3 дня.",
         level="beginner", workout_type="home_express",
         sex=["male"], location="home",
-        equipment=["bodyweight", "bands"], limitations=[],
+        equipment=["bodyweight"], limitations=[],
         days_per_week=3, session_min=35,
         schedule=[
             day(1, "Home A", "full", fb_bw_a()),
@@ -2211,8 +2211,8 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="М · Дом · Без нагрузки на колени · Свой вес",
-        description="Дом без гантелей и без нагрузки на колени: отжимания, австралийские подтягивания, мост, кор.",
+        name="М · Дом · Без нагрузки на колени · Свой вес + резинки",
+        description="Дом со своим весом и резинкой, без нагрузки на колени: отжимания, тяга резинки, мост и кор.",
         level="beginner", workout_type="home_express",
         sex=["male"], location="home",
         equipment=["bodyweight", "bands"], limitations=["no_knee"],
@@ -2224,7 +2224,7 @@ def build_all() -> list[dict]:
         ],
     ))
     programs.append(prog(
-        name="Ж · Дом · Без нагрузки на колени · Свой вес",
+        name="Ж · Дом · Без нагрузки на колени · Свой вес + резинки",
         description="Дом, свой вес/резинка, без приседов и выпадов. Акцент: ягодичный мост и кор + верх.",
         level="beginner", workout_type="home_express",
         sex=["female"], location="home",

@@ -60,6 +60,27 @@ def test_programs_only_reference_known_exercises() -> None:
     assert not bad, bad[:20]
 
 
+def test_bodyweight_program_names_match_required_equipment() -> None:
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    named_bodyweight = [program for program in programs if "Свой вес" in program["name"]]
+
+    assert len(named_bodyweight) == 4
+    for program in named_bodyweight:
+        structure = program["structure"]
+        exercise_names = {
+            item["exercise_name"].lower()
+            for day in structure["schedule"]
+            for item in day["exercises"]
+        }
+        if program["name"].endswith("Свой вес"):
+            assert structure["equipment"] == ["bodyweight"], program["name"]
+            assert not any("резинк" in name for name in exercise_names), program["name"]
+        else:
+            assert program["name"].endswith("Свой вес + резинки"), program["name"]
+            assert set(structure["equipment"]) == {"bodyweight", "bands"}, program["name"]
+            assert any("резинк" in name for name in exercise_names), program["name"]
+
+
 def test_regular_programs_cover_the_full_sex_location_level_matrix() -> None:
     programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
     regular = [

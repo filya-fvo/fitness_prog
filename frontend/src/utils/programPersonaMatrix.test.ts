@@ -138,6 +138,23 @@ describe("program recommendation persona matrix", () => {
     }
   }
 
+  it("offers the real seed plan for a male home beginner with bodyweight only", () => {
+    const profile = {
+      sex: "male",
+      location: "home",
+      level: "beginner",
+      primaryGoal: "maintain",
+      daysPerWeek: 3,
+      equipment: ["bodyweight"],
+      limitations: [],
+    };
+    const [recommendation] = recommendPrograms(programs, profile, 1);
+
+    expect(recommendation?.name).toBe("М · Дом · Новичок · Свой вес");
+    expect(programEquipment(recommendation!)).toEqual(["bodyweight"]);
+    expect(compareProgramToProfile(recommendation!, profile)).toEqual([]);
+  });
+
   it("never recommends unselected equipment across all non-empty equipment combinations", () => {
     const equipmentSets = Array.from({ length: (2 ** equipmentOptions.length) - 1 }, (_, index) =>
       equipmentOptions.filter((_, bit) => ((index + 1) & (1 << bit)) !== 0),

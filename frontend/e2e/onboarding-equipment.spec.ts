@@ -98,9 +98,9 @@ test("onboarding does not assign missing equipment and keeps a warned manual cho
   await page.getByRole("button", { name: "Завершить", exact: true }).click();
 
   await expect(page).toHaveURL(/\/programs\?notice=equipment$/);
-  await expect(page.getByRole("status")).toContainText(
-    "Не нашли программу, для которой достаточно выбранного инвентаря",
-  );
+  await expect(page.getByRole("status").filter({
+    hasText: "Не нашли программу, для которой достаточно выбранного инвентаря",
+  })).toBeVisible();
   const payload = savedProfile as { goals?: Record<string, unknown> };
   expect(payload.goals?.equipment).toEqual(["bodyweight"]);
   expect(payload.goals?.active_program_id).toBeUndefined();

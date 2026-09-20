@@ -34,6 +34,7 @@
 ```powershell
 cd C:\fitness_prog\backend
 .\.venv\Scripts\python.exe scripts\build_programs_v2.py
+.\.venv\Scripts\python.exe scripts\seed_prod_content.py --dry-run
 .\.venv\Scripts\python.exe scripts\seed_prod_content.py
 ```
 

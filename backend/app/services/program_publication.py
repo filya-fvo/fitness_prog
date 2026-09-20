@@ -47,13 +47,18 @@ def seed_program_key(name: str) -> str:
     return f"seed-{digest}"
 
 
-def seed_program_payload(row: dict[str, Any]) -> dict[str, Any]:
+def seed_program_payload(
+    row: dict[str, Any],
+    *,
+    program_key: str | None = None,
+    version: int = 1,
+) -> dict[str, Any]:
     """Trusted seed rows are published content, unlike admin-created drafts."""
     payload = dict(row)
     payload.update(
         publication_status="published",
-        program_key=seed_program_key(str(row["name"])),
-        version=1,
+        program_key=program_key or seed_program_key(str(row["name"])),
+        version=version,
         is_current=True,
         published_at=datetime.now(UTC),
         published_by=None,

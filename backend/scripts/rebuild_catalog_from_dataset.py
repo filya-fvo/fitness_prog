@@ -38,8 +38,7 @@ from sqlalchemy import select  # noqa: E402
 
 from app.core.database import AsyncSessionLocal  # noqa: E402
 from app.models.exercise import Exercise  # noqa: E402
-from app.models.program import Program  # noqa: E402
-from app.services import program_publication  # noqa: E402
+from app.services import seed_programs  # noqa: E402
 
 DS_PATH = REPO / "backups" / "exercises-dataset-src" / "data" / "exercises.json"
 GIFS_DIR = REPO / "frontend" / "public" / "exercise-gifs"
@@ -571,6 +570,7 @@ async def apply_db(seed_rows: list[dict], programs: list[dict], *, dry_run: bool
         "ex_retired": 0,
         "pr_created": 0,
         "pr_updated": 0,
+        "pr_versioned": 0,
         "pr_retired": 0,
     }
     if dry_run:
@@ -598,27 +598,11 @@ async def apply_db(seed_rows: list[dict], programs: list[dict], *, dry_run: bool
                 item.is_deleted = True
                 stats["ex_retired"] += 1
 
-        keep_prog = {p["name"] for p in programs}
-        existing_p = {
-            p.name: p
-            for p in (
-                await session.scalars(select(Program).where(Program.is_deleted.is_(False)))
-            ).all()
-        }
-        for row in programs:
-            cur = existing_p.get(row["name"])
-            if cur is None:
-                session.add(Program(**program_publication.seed_program_payload(row)))
-                stats["pr_created"] += 1
-            else:
-                for k, v in row.items():
-                    setattr(cur, k, v)
-                program_publication.mark_seed_program_published(cur)
-                stats["pr_updated"] += 1
-        for name, item in existing_p.items():
-            if name not in keep_prog and item.is_template:
-                item.is_deleted = True
-                stats["pr_retired"] += 1
+        program_stats = await seed_programs.sync_seed_programs(session, programs)
+        stats["pr_created"] = program_stats.created
+        stats["pr_updated"] = program_stats.unchanged
+        stats["pr_versioned"] = program_stats.versioned
+        stats["pr_retired"] = program_stats.retired
 
         await session.commit()
     return stats
