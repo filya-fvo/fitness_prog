@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const adminId = "42424242-4242-4424-8424-424242424242";
@@ -118,8 +119,11 @@ test("admin user card loads detail blocks automatically and confirms notificatio
   await expect(page.getByText(/Грудь \+ спина/)).toBeVisible();
   await expect(page.getByText("Web Push: 1/1", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Канал сообщения")).toHaveValue("telegram");
+  await expect(page.getByRole("combobox", { name: "Раздел данных для очистки" })).toHaveValue("workouts");
   await expect(page.getByRole("option", { name: "Web Push — устройств: 1" })).toBeEnabled();
   await expect(page.getByRole("option", { name: "Email" })).toBeEnabled();
+  const selectNameAudit = await new AxeBuilder({ page }).withRules(["select-name"]).analyze();
+  expect(selectNameAudit.violations, JSON.stringify(selectNameAudit.violations, null, 2)).toEqual([]);
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Выключить все напоминания" }).click();

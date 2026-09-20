@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const adminProfile = {
@@ -95,6 +96,11 @@ test("admin edits exercise only after server preflight", async ({ page }) => {
   await page.goto("/admin/exercises");
   await expect(page.getByRole("heading", { name: "Каталог" })).toBeVisible();
   await expect(page.getByText("Используется: тренировки 2, программы 1")).toBeVisible();
+  for (const name of ["Группа мышц", "Оборудование", "Качество медиа", "Сложность упражнения", "Правило учёта веса", "Тег упражнения"]) {
+    await expect(page.locator(`select[aria-label="${name}"]`)).toBeVisible();
+  }
+  const selectNameAudit = await new AxeBuilder({ page }).withRules(["select-name"]).analyze();
+  expect(selectNameAudit.violations, JSON.stringify(selectNameAudit.violations, null, 2)).toEqual([]);
 
   await page.getByRole("button", { name: "Изменить" }).click();
   await page.getByLabel("Загрузить основное медиа").setInputFiles({

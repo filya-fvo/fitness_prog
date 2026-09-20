@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const adminProfile = {
@@ -111,6 +112,10 @@ test("admin edits, previews, publishes and rolls back a program", async ({ page 
 
   await page.goto("/admin/programs");
   await expect(page.getByRole("heading", { name: "Все версии" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Тип программы" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Уровень программы" })).toBeVisible();
+  const selectNameAudit = await new AxeBuilder({ page }).withRules(["select-name"]).analyze();
+  expect(selectNameAudit.violations, JSON.stringify(selectNameAudit.violations, null, 2)).toEqual([]);
   await page.getByRole("button", { name: "Редактировать" }).click();
   await page.getByLabel("Поиск упражнения").fill("Жим");
   await page.getByRole("button", { name: "Найти" }).click();

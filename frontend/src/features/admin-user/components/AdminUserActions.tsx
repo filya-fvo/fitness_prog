@@ -220,7 +220,8 @@ export function AdminUserActions({
         <h2 className="font-semibold text-red-600 dark:text-red-300">Данные и архив</h2>
         <button type="button" disabled={disabled} onClick={exportData} className="mt-3 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-sm text-tg-link disabled:opacity-40">Скачать данные JSON</button>
         <div className="mt-2 flex gap-2">
-          <select value={scope} disabled={disabled} onChange={(event) => setScope(event.target.value as AdminResetScope)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base">
+          <label htmlFor="admin-clear-data-scope" className="sr-only">Раздел данных для очистки</label>
+          <select id="admin-clear-data-scope" value={scope} disabled={disabled} onChange={(event) => setScope(event.target.value as AdminResetScope)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base">
             <option value="workouts">Тренировки</option>
             <option value="nutrition">Питание</option>
             <option value="measurements">Замеры</option>
