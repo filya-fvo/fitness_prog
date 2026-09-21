@@ -12,7 +12,9 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
   fullyParallel: false,
-  retries: 0,
+  // Hosted browsers occasionally lose a navigation or WebKit process during
+  // the full matrix. Retry once in CI; local runs stay strict and immediate.
+  retries: process.env.CI ? 1 : 0,
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}{ext}",
   expect: {
     toHaveScreenshot: { animations: "disabled", maxDiffPixelRatio: 0.03 },
