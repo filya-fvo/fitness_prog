@@ -528,7 +528,7 @@ docker compose --env-file backend/.env.production run --rm api \
 ## 12. Telegram и GitHub monitor
 
 Когда `https://api.example.ru/health` уже отвечает, зарегистрируйте новый
-webhook, команды `/start`, `/help` и меню команд всех связанных пользователей:
+webhook, команды `/start`, `/help` и кнопку входа всех связанных пользователей:
 
 ```bash
 docker compose --env-file backend/.env.production run --rm api \

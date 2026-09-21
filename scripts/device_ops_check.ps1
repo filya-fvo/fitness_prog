@@ -103,7 +103,8 @@ if ($token -and -not $token.StartsWith("replace_with")) {
     $menu = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getChatMenuButton") -Method Post -TimeoutSec 10 -ContentType "application/json" -Body "{}"
     if ($menu.ok) {
       $t = [string]$menu.result.type
-      if ($t -in @("default", "commands")) { Ok ("standard Telegram menu is active (type=" + $t + "); persistent Open is absent") } else { Bad ("unexpected default Menu Button type=" + $t) }
+      $menuUrl = [string]$menu.result.web_app.url
+      if ($t -eq "web_app" -and $menuUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("Telegram Menu Button opens " + $menuUrl) } else { Bad ("unexpected default Menu Button: type=" + $t + " url=" + $menuUrl) }
     }
   } catch {
     Info "getChatMenuButton skipped/failed"
@@ -114,7 +115,8 @@ if ($token -and -not $token.StartsWith("replace_with")) {
       $body = @{ chat_id = $TelegramChatId } | ConvertTo-Json
       $chatMenu = Invoke-RestMethod -Uri ("https://api.telegram.org/bot" + $token + "/getChatMenuButton") -Method Post -TimeoutSec 10 -ContentType "application/json" -Body $body
       $chatType = [string]$chatMenu.result.type
-      if ($chatType -in @("default", "commands")) { Ok ("standard chat menu active for " + $TelegramChatId + " (type=" + $chatType + ")") } else { Bad ("unexpected chat Menu Button type for " + $TelegramChatId + ": " + $chatType) }
+      $chatMenuUrl = [string]$chatMenu.result.web_app.url
+      if ($chatType -eq "web_app" -and $chatMenuUrl.TrimEnd("/") -eq $mini.TrimEnd("/")) { Ok ("chat Menu Button opens app for " + $TelegramChatId) } else { Bad ("unexpected chat Menu Button for " + $TelegramChatId + ": type=" + $chatType + " url=" + $chatMenuUrl) }
     } catch {
       Bad ("per-chat Menu Button check failed for " + $TelegramChatId)
     }

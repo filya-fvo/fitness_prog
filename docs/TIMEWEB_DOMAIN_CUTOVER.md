@@ -161,7 +161,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -SkipPersistMiniAppUrl
 ```
 
-Скрипт возвращает меню команд `/start` и `/help`, а флаг сохраняет локальный rollback-env;
+Скрипт настраивает слева кнопку входа в приложение, а флаг сохраняет локальный rollback-env;
 production Compose сам отключает webhook без удаления ожидающих updates и запускает
 `telegram-poller`. Это обходит нестабильный входящий маршрут Telegram → Timeweb.
 Проверить:
@@ -172,9 +172,10 @@ production Compose сам отключает webhook без удаления о�
 4. тестовое уведомление приходит один раз;
 5. `api`, `worker` и `telegram-poller` имеют статус `Up`.
 
-Production-poller при запуске также регистрирует `/start`, `/help` и принудительно
-возвращает Menu Button типа `commands`. Приложение открывается актуальной inline-кнопкой
-**Открыть приложение** из ответа `/start`.
+Production-poller при запуске также регистрирует `/start`, `/help` и обновляет Menu
+Button типа `web_app` на актуальный адрес. Постоянные `/start` и `/help` находятся
+под полем ввода, а приложение открывается левой кнопкой **Открыть** или inline-кнопкой
+из ответа `/start`.
 
 Когда VPS стабильно работает и локальный откат больше не должен запускаться после
 перезагрузки Windows, выполните `disable-local-fitness-runtime.cmd`. В отличие от

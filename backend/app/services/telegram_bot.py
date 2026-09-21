@@ -650,8 +650,17 @@ async def set_default_chat_menu_button(
     *,
     chat_id: int | None = None,
 ) -> dict[str, Any]:
-    """Force Telegram's command menu instead of a BotFather Web App override."""
-    payload: dict[str, Any] = {"menu_button": {"type": "commands"}}
+    """Keep the left Telegram Menu Button as the direct Mini App entry."""
+    mini_url = resolve_mini_app_url(settings)
+    if not mini_url:
+        raise TelegramBotError("MINI_APP_URL is required for the Telegram menu button")
+    payload: dict[str, Any] = {
+        "menu_button": {
+            "type": "web_app",
+            "text": "Открыть",
+            "web_app": {"url": mini_url},
+        }
+    }
     if chat_id is not None:
         payload["chat_id"] = chat_id
     return await bot_api(settings, "setChatMenuButton", payload)

@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Restore the standard Telegram menu and configure the /start webhook.
+  Configure the Telegram Web App menu entry and the /start webhook.
 
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File <project>\scripts\setup_telegram_bot.ps1
@@ -91,24 +91,17 @@ if ((-not $SkipPersistMiniAppUrl) -and (Test-Path $BackendEnv)) {
 
 $api = "https://api.telegram.org/bot$token"
 
-if ($UpdateWebAppMenu) {
+if (-not $SkipMenu) {
   $menuBody = @{
     menu_button = @{
       type = "web_app"
-      text = "Open"
+      text = "Открыть"
       web_app = @{ url = $MiniAppUrl }
     }
   } | ConvertTo-Json -Depth 6
   $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
   if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
-  Write-Host "[telegram] Existing web_app Menu Button now opens $MiniAppUrl" -ForegroundColor Green
-} elseif (-not $SkipMenu) {
-  $menuBody = @{
-    menu_button = @{ type = "commands" }
-  } | ConvertTo-Json -Depth 6
-  $menuResp = Invoke-RestMethod -Method Post -Uri "$api/setChatMenuButton" -ContentType "application/json; charset=utf-8" -Body $menuBody
-  if (-not $menuResp.ok) { throw "setChatMenuButton failed: $($menuResp | ConvertTo-Json -Compress)" }
-  Write-Host "[telegram] Command menu restored; persistent Open button removed" -ForegroundColor Green
+  Write-Host "[telegram] Web App Menu Button now opens $MiniAppUrl" -ForegroundColor Green
 
   if ((Test-Path -LiteralPath $BackendPython) -and (Test-Path -LiteralPath $SyncEntrypoints)) {
     Push-Location (Join-Path $Root "backend")
@@ -145,11 +138,9 @@ Write-Host ""
 Write-Host "Next:" -ForegroundColor Magenta
 Write-Host "  1) The production HTTPS app and API must be reachable"
 Write-Host "  2) In Telegram: open @bot -> /start -> expect welcome + Открыть приложение"
-if ($UpdateWebAppMenu) {
-  Write-Host "  3) Existing web_app/Menu Button URL was updated without removing the button"
-} elseif ($SkipMenu) {
+if ($SkipMenu) {
   Write-Host "  3) Existing manual web_app/Menu Button was preserved"
 } else {
-  Write-Host "  3) Persistent Open near the message field should be absent"
+  Write-Host "  3) Left Menu Button opens the app; /start and /help stay under the message field"
 }
 Write-Host ""

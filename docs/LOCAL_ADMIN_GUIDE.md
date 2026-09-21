@@ -176,8 +176,8 @@ start_all_comand.bat
 3. использует постоянный `*.ts.net` адрес Tailscale, проверяет его снаружи и при необходимости повторно включает Funnel;
 4. записывает его в `MINI_APP_URL`;
 5. перезапускает backend только если адрес в `.env` действительно изменился;
-6. убирает общий постоянный Menu Button `Open`, возвращая меню команд `/start` и `/help`;
-7. убирает персональные overrides `Open` у всех Telegram-пользователей из базы;
+6. настраивает общий Menu Button **Открыть** с актуальным адресом приложения;
+7. обновляет такой же Menu Button у всех Telegram-пользователей из базы;
 8. регистрирует webhook с событиями `message` и `callback_query`;
 9. не завершает подготовку Telegram, пока публичные `/` и `/health` не начали отвечать.
 
@@ -201,7 +201,7 @@ URL inline-кнопки хранится внутри конкретного Tel
 
 Новые приветствия, напоминания и уведомления получают текущий `MINI_APP_URL` автоматически.
 
-Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**, обновите её URL на текущий адрес из `scripts\tailscale-url.local.env` либо не используйте старую direct link. Основной скрипт возвращает стандартное меню Telegram; открытие приложения остаётся в актуальных inline-кнопках сообщений.
+Если в BotFather ранее настраивалась отдельная **Main Mini App / Direct Link**, обновите её URL на текущий адрес из `scripts\tailscale-url.local.env` либо не используйте старую direct link. Основной скрипт обновляет системную кнопку **Открыть**; актуальные inline-кнопки в новых сообщениях также продолжают работать.
 
 Для принудительной синхронизации всех персональных кнопок:
 
@@ -233,7 +233,7 @@ cd <папка проекта>\backend
 <папка проекта>\status-notifications.cmd
 ```
 
-Полная проверка локальных сервисов, Funnel, webhook и стандартного меню Telegram:
+Полная проверка локальных сервисов, Funnel, webhook и кнопки входа Telegram:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.ps1
@@ -249,11 +249,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\device_ops_check.p
 
 - локальные `http://127.0.0.1:8001` и `http://127.0.0.1:8001/health` отвечают;
 - публичные `/` и `/health` отвечают `200`;
-- `MINI_APP_URL`, сохранённый Funnel URL и webhook совпадают, а Menu Button имеет тип `commands`, не `web_app`;
+- `MINI_APP_URL`, сохранённый Funnel URL, webhook и URL Menu Button типа `web_app` совпадают;
 - нигде нет `ngrok`;
 - webhook не содержит `last_error_message`.
 
-После этого в Telegram отправьте `/start`: возле поля ввода должны появиться `/start` и `/help`, а inline-кнопка **Открыть приложение** под сообщением должна запускать приложение.
+После этого слева от поля ввода должна быть кнопка **Открыть**, а под полем — постоянные `/start` и `/help`. Inline-кнопка **Открыть приложение** из ответа `/start` также должна запускать приложение.
 
 GitHub Actions workflow `public-health-monitor.yml` проверяет публичный `/health` каждые 15 минут. По умолчанию используется текущий постоянный адрес; при переносе сервера задайте repository variable `PUBLIC_HEALTH_URL`. Краткое переподключение Funnel не считается аварией сразу: probe выполняет до шести попыток с интервалом 15 секунд. Если HTTPS или ответ `{"status":"ok"}` так и не восстановились, проверка отображается как failed workflow и приходит подписанным на Actions участникам по их настройкам GitHub.
 

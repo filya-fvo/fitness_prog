@@ -539,7 +539,7 @@ async def setup_menu_button(
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
     """
-    Restore Telegram's command menu instead of a persistent Web App button.
+    Configure the persistent Telegram Web App entry button.
 
     Dev/ops helper — call once after the permanent MINI_APP_URL is known.
     Disabled in production unless explicitly allowed later.
@@ -554,7 +554,7 @@ async def setup_menu_button(
         data = await set_default_chat_menu_button(settings, chat_id=None)
         return {
             "ok": True,
-            "menu_type": "commands",
+            "menu_type": "web_app",
             "result": data.get("result"),
         }
     except TelegramBotError as exc:

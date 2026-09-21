@@ -122,7 +122,7 @@ async def test_long_polling_preserves_updates_and_uses_ordered_offset(
 
 
 @pytest.mark.asyncio
-async def test_standard_menu_replaces_persistent_open_button(
+async def test_menu_button_opens_configured_mini_app(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
@@ -139,15 +139,27 @@ async def test_standard_menu_replaces_persistent_open_button(
 
     monkeypatch.setattr(telegram_bot, "bot_api", fake_bot_api)
     await telegram_bot.set_default_chat_menu_button(
-        Settings(bot_token="test-token"),
+        Settings(bot_token="test-token", mini_app_url="https://app.example.test"),
         chat_id=42,
     )
 
     assert captured["method"] == "setChatMenuButton"
     assert captured["payload"] == {
         "chat_id": 42,
-        "menu_button": {"type": "commands"},
+        "menu_button": {
+            "type": "web_app",
+            "text": "Открыть",
+            "web_app": {"url": "https://app.example.test"},
+        },
     }
+
+
+@pytest.mark.asyncio
+async def test_menu_button_requires_mini_app_url() -> None:
+    with pytest.raises(telegram_bot.TelegramBotError, match="MINI_APP_URL"):
+        await telegram_bot.set_default_chat_menu_button(
+            Settings(bot_token="test-token", mini_app_url="http://unsafe.example.test")
+        )
 
 
 @pytest.mark.asyncio

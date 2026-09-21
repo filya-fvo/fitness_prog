@@ -169,7 +169,7 @@ async def main() -> None:
             await asyncio.sleep(0.1)
 
     print(f"URL={public_url}")
-    print("MENU_BUTTON=preserved" if args.preserve_menu_button else "DEFAULT_MENU=commands")
+    print("MENU_BUTTON=preserved" if args.preserve_menu_button else f"DEFAULT_MENU=web_app:{public_url}")
     print("BOT_COMMANDS=start,help")
     print(f"CHAT_MENUS_UPDATED={updated}")
     print(f"CHAT_MENUS_FAILED={len(failed)}")
