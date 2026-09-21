@@ -17,7 +17,12 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 $created = 0
 $skipped = 0
 
-Get-ChildItem -LiteralPath $sourceDir -Filter "*.gif" -File | ForEach-Object {
+# Windows wildcard matching treats "*.gif" as matching names such as
+# "exercise.gif_bk" too. Check the actual extension so rejected backup files
+# cannot silently recreate stale thumbnails.
+Get-ChildItem -LiteralPath $sourceDir -File |
+  Where-Object { $_.Extension -ieq ".gif" } |
+  ForEach-Object {
   $output = Join-Path $targetDir ($_.BaseName + ".png")
   if (-not $Force -and (Test-Path -LiteralPath $output) -and
       (Get-Item -LiteralPath $output).LastWriteTimeUtc -ge $_.LastWriteTimeUtc) {
@@ -44,6 +49,6 @@ Get-ChildItem -LiteralPath $sourceDir -Filter "*.gif" -File | ForEach-Object {
     $image.Dispose()
   }
   $created += 1
-}
+  }
 
 Write-Output "Exercise thumbnails: created=$created skipped=$skipped target=$targetDir"

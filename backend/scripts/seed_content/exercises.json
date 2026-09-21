@@ -63,21 +63,22 @@
     "name_ru": "Приседания со своим весом",
     "muscle_group": "ноги",
     "equipment": "свой вес",
-    "description": "Приседания со своим весом. Цель: glutes. Оборудование: body weight. © Gym Visual — https://gymvisual.com/",
+    "description": "Приседания без дополнительного веса. © Gym Visual — https://gymvisual.com/",
     "technique": "1. Встаньте, ноги на ширине плеч.\n2. Опустите тело в присед, согнув колени и отведя бедра назад.\n3. Резко подпрыгните от земли, выпрямляя бедра, колени и лодыжки.\n4. Находясь в воздухе, быстро вытяните руки вперед для равновесия.\n5. Мягко приземлитесь на подушечки стоп и сразу же переходите к следующему повторению.\n6. Повторите необходимое количество повторений.",
     "common_mistakes": null,
     "difficulty": 1,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/3119-75Bgtjy.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
       "gymvisual",
-      "ds:0514",
+      "ds:3119",
       "© Gym Visual",
       "curated",
-      "media:no-exact-gif"
+      "bodyweight",
+      "squat"
     ]
   },
   {
@@ -1260,22 +1261,22 @@
     "name_ru": "Боковая планка",
     "muscle_group": "кор",
     "equipment": "свой вес",
-    "description": "Боковая планка. Цель: abs. Оборудование: body weight. © Gym Visual — https://gymvisual.com/",
+    "description": "Боковая планка на предплечье. © Gym Visual — https://gymvisual.com/",
     "technique": "1. Начните с того, что лягте на бок, вытянув ноги и положив их друг на друга.\n2. Положите предплечье на землю прямо под плечом, согнув локоть под углом 90 градусов.\n3. Напрягите корпус и поднимите бедра от земли, создавая прямую линию от головы до ступней.\n4. Удерживайте это положение желаемое время.\n5. Опустите бедра обратно на землю и повторите то же самое с другой стороны.",
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
-    "animation_url": null,
+    "animation_url": "/exercise-gifs/0705-RKjH6Lt.gif",
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
       "gymvisual",
-      "ds:3544",
+      "ds:0705",
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "bodyweight"
     ]
   },
   {

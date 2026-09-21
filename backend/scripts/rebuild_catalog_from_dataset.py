@@ -54,7 +54,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Приседания со штангой", ["barbell full squat", "barbell high bar squat"], "ноги", 3),
     ("Фронтальные приседания", ["barbell front squat"], "ноги", 4),
     ("Сумо-приседания", ["barbell wide squat", "smith sumo squat"], "ноги", 3),
-    ("Приседания со своим весом", ["jump squat", "bodyweight drop jump squat"], "ноги", 1),
+    ("Приседания со своим весом", ["potty squat"], "ноги", 1),
     ("Приседания с гантелью у груди", ["dumbbell goblet squat"], "ноги", 2),
     ("Приседания в машине Смита", ["smith full squat", "smith squat"], "ноги", 3),
     ("Гакк-приседания", ["sled hack squat", "sled closer hack squat"], "ноги", 2),
@@ -144,7 +144,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Жим вниз на блоке канатом", ["cable pushdown (with rope attachment)"], "трицепс", 2),
     # Core
     ("Планка", ["weighted front plank", "power point plank"], "кор", 2),
-    ("Боковая планка", ["bodyweight incline side plank", "side plank hip adduction"], "кор", 2),
+    ("Боковая планка", ["side bridge v. 2"], "кор", 2),
     ("Планка с касанием плеч", ["shoulder tap", "kneeling plank tap shoulder (male)"], "кор", 2),
     ("Скручивания", ["crunch floor"], "кор", 1),
     ("Скручивания на верхнем блоке", ["cable kneeling crunch"], "кор", 2),
@@ -191,8 +191,6 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
 # The source dataset has no sufficiently accurate animation for these movements.
 # Showing no GIF is safer than teaching a different exercise or equipment variant.
 NO_EXACT_GIF = {
-    "Приседания со своим весом",
-    "Боковая планка",
     "Птица-собака",
     "Удержание «лодочки»",
     "Высокие колени",

@@ -7,6 +7,7 @@ from pathlib import Path
 
 SEED = Path(__file__).resolve().parents[1] / "scripts" / "seed_content"
 GIFS = Path(__file__).resolve().parents[2] / "frontend" / "public" / "exercise-gifs"
+THUMBNAILS = Path(__file__).resolve().parents[2] / "frontend" / "public" / "exercise-thumbnails"
 
 
 def test_exercises_seed_has_traceable_media_and_unique_names() -> None:
@@ -30,6 +31,22 @@ def test_exercises_seed_has_traceable_media_and_unique_names() -> None:
         if not fp.is_file() or fp.stat().st_size < 500:
             missing.append(r["name_ru"])
     assert not missing, f"missing gif files: {missing[:10]}"
+
+
+def test_runtime_media_contains_only_catalog_assets() -> None:
+    rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
+    expected_gifs = {
+        Path(str(row["animation_url"])).name
+        for row in rows
+        if row.get("animation_url")
+    }
+    actual_gifs = {path.name for path in GIFS.iterdir() if path.suffix.lower() == ".gif"}
+    expected_thumbnails = {Path(name).with_suffix(".png").name for name in expected_gifs}
+    actual_thumbnails = {path.name for path in THUMBNAILS.glob("*.png")}
+
+    assert actual_gifs == expected_gifs
+    assert actual_thumbnails == expected_thumbnails
+    assert not list(GIFS.glob("*.gif_bk"))
 
 
 def test_programs_only_reference_known_exercises() -> None:
@@ -118,6 +135,15 @@ def test_corrected_catalog_equipment_and_media_are_explicit() -> None:
     smith_bridge = by_name["Ягодичный мост в машине Смита"]
     assert smith_bridge["animation_url"] is None
     assert "media:no-exact-gif" in smith_bridge["tags"]
+
+    exact_bodyweight_media = {
+        "Приседания со своим весом": ("/exercise-gifs/3119-75Bgtjy.gif", "ds:3119"),
+        "Боковая планка": ("/exercise-gifs/0705-RKjH6Lt.gif", "ds:0705"),
+    }
+    for name, (animation_url, source_tag) in exact_bodyweight_media.items():
+        assert by_name[name]["animation_url"] == animation_url
+        assert source_tag in by_name[name]["tags"]
+        assert "media:no-exact-gif" not in by_name[name]["tags"]
 
 
 def test_hip_adduction_and_abduction_are_available_in_relevant_programs() -> None:

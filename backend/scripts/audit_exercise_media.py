@@ -63,6 +63,15 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
         if len(users) > 1 and ACCEPTABLE_SHARED_MEDIA.get(filename) != users:
             errors.append(f"Непроверенное совместное медиа {filename}: {', '.join(sorted(users))}")
 
+    referenced_gifs = set(users_by_file)
+    local_gifs = {path.name for path in GIFS.iterdir() if path.is_file() and path.suffix.lower() == ".gif"}
+    orphan_gifs = sorted(local_gifs - referenced_gifs)
+    backup_gifs = sorted(path.name for path in GIFS.glob("*.gif_bk") if path.is_file())
+    if orphan_gifs:
+        errors.append(f"Неиспользуемые GIF в runtime-каталоге: {', '.join(orphan_gifs)}")
+    if backup_gifs:
+        errors.append(f"Резервные GIF попали в runtime-каталог: {', '.join(backup_gifs)}")
+
     for row in seed:
         name = str(row["name_ru"])
         tags = {str(tag) for tag in row.get("tags") or []}
@@ -132,7 +141,10 @@ def write_report(path: Path, rows: list[dict[str, str]], errors: list[str]) -> N
         f"- Осознанно отклонено из-за отсутствия точного GIF: **{counts['отклонено: нет точного GIF']}**.",
         f"- Ошибки: **{len(errors)}**.",
         "- «Планка»: файл `2135-VBAWRPG.gif` визуально проверен — обычная планка на предплечьях; включён в каталог.",
-        "- «Боковая планка»: кандидат `3544-5VXmnV5.gif` визуально отклонён как другое упражнение.",
+        "- «Боковая планка»: `0705-RKjH6Lt.gif` визуально подтверждён как точное упражнение; "
+        "кандидат `3544-5VXmnV5.gif` отклонён.",
+        "- «Приседания со своим весом»: `3119-75Bgtjy.gif` визуально подтверждён как "
+        "обычное приседание без прыжка и отягощения.",
         "",
     ]
     if errors:

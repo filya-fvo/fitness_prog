@@ -59,6 +59,8 @@ GIF_BODYWEIGHT_SPLIT_SQUAT = "/exercise-gifs/2368-9E25EOx.gif"
 GIF_BODYWEIGHT_CALF_RAISE = "/exercise-gifs/1373-bJYHBIN.gif"
 GIF_MACHINE_HIP_ADDUCTION = "/exercise-gifs/0598-oHsrypV.gif"
 GIF_MACHINE_HIP_ABDUCTION = "/exercise-gifs/0597-CHpahtl.gif"
+GIF_BODYWEIGHT_SQUAT = "/exercise-gifs/3119-75Bgtjy.gif"
+GIF_SIDE_PLANK = "/exercise-gifs/0705-RKjH6Lt.gif"
 
 
 def ex(
@@ -619,10 +621,20 @@ def patch_seed() -> list[str]:
     rows = json.loads(SEED_PATH.read_text(encoding="utf-8"))
     rows = [row for row in rows if str(row.get("name_ru")) not in DEPRECATED_ALIASES]
     corrections = {
+        "Приседания со своим весом": {
+            "animation_url": GIF_BODYWEIGHT_SQUAT,
+            "description": "Приседания без дополнительного веса. © Gym Visual — https://gymvisual.com/",
+            "tags": ["gymvisual", "ds:3119", "© Gym Visual", "curated", "bodyweight", "squat"],
+        },
         "Планка": {
             "equipment": "свой вес",
             "description": "Планка на предплечьях без дополнительного оборудования. © Gym Visual — https://gymvisual.com/",
             "tags": ["gymvisual", "ds:2135", "© Gym Visual", "curated", "load:timed", "bodyweight"],
+        },
+        "Боковая планка": {
+            "animation_url": GIF_SIDE_PLANK,
+            "description": "Боковая планка на предплечье. © Gym Visual — https://gymvisual.com/",
+            "tags": ["gymvisual", "ds:0705", "© Gym Visual", "curated", "load:timed", "bodyweight"],
         },
         "Ягодичный мост в машине Смита": {
             "animation_url": None,
