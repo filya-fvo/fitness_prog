@@ -471,6 +471,8 @@ def build_seed_rows(
                 tags.append("load:timed")
         if suppress_gif:
             tags.append("media:no-exact-gif")
+        elif gif_ok:
+            tags.extend(["media:verified", "media:reviewed:2026-09-21"])
         if muscle_fb == "кардио":
             if "эллипс" in low or "велотренаж" in low:
                 tags.append("load:cardio_machine")

@@ -13,6 +13,7 @@ SEED = REPO / "backend" / "scripts" / "seed_content" / "exercises.json"
 GIFS = REPO / "frontend" / "public" / "exercise-gifs"
 MANIFEST = GIFS / "exercise-gifs-manifest.json"
 DEFAULT_REPORT = REPO / "docs" / "EXERCISE_MEDIA_AUDIT_2026-08-20.md"
+MANUAL_REVIEW_TAG = "media:reviewed:2026-09-21"
 
 # These catalog entries intentionally share one accurate source animation.
 ACCEPTABLE_SHARED_MEDIA = {
@@ -90,6 +91,8 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
             status = "допустимый вариант" if media_uses[filename] > 1 else "точное"
             if "media:no-exact-gif" in tags:
                 errors.append(f"{name}: GIF назначен, но оставлен тег media:no-exact-gif.")
+            if "media:verified" not in tags or MANUAL_REVIEW_TAG not in tags:
+                errors.append(f"{name}: активный GIF не прошёл визуальную проверку 21 сентября 2026.")
             if not animation.startswith("/exercise-gifs/"):
                 errors.append(f"{name}: некорректный локальный URL {animation}.")
             if source_id and not filename.startswith(f"{source_id}-"):
@@ -130,9 +133,10 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
 def write_report(path: Path, rows: list[dict[str, str]], errors: list[str]) -> None:
     counts = Counter(row["status"] for row in rows)
     lines = [
-        "# Аудит медиа упражнений — 20 августа 2026",
+        "# Аудит медиа упражнений — 21 сентября 2026",
         "",
         "Проверены seed-каталог, manifest, идентификаторы источника `ds:<id>`, наличие файлов и GIF-сигнатуры.",
+        "Все активные анимации просмотрены по кадрам 0/25/50/75% полного цикла; результат закреплён тегом `media:reviewed:2026-09-21`.",
         "Совместное использование одного файла разрешено только для явно перечисленных синонимов/вариантов.",
         "",
         f"- Проверено: **{len(rows)} из {len(rows)} упражнений (100%)**.",
@@ -145,6 +149,8 @@ def write_report(path: Path, rows: list[dict[str, str]], errors: list[str]) -> N
         "кандидат `3544-5VXmnV5.gif` отклонён.",
         "- «Приседания со своим весом»: `3119-75Bgtjy.gif` визуально подтверждён как "
         "обычное приседание без прыжка и отягощения.",
+        "- «Болгарские приседания без веса»: кандидат `2368-9E25EOx.gif` отклонён, потому что показывает сплит-присед без задней опоры.",
+        "- Для карточек без точного GIF исправлены техника и исходное положение; похожее движение больше не выдаётся за требуемое.",
         "",
     ]
     if errors:

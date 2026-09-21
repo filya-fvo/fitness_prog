@@ -24,11 +24,13 @@ def test_every_seed_exercise_has_audited_media_status() -> None:
     assert all(row["status"] != "отсутствует" for row in rows)
 
 
-def test_plank_has_verified_gif_and_side_plank_is_not_substituted() -> None:
+def test_verified_core_media_and_rejected_split_squat_are_explicit() -> None:
     rows, _ = audit()
     by_name = {row["name"]: row for row in rows}
 
     assert by_name["Планка"]["file"] == "2135-VBAWRPG.gif"
     assert by_name["Планка"]["status"] == "точное"
-    assert by_name["Боковая планка"]["file"] == "—"
-    assert by_name["Боковая планка"]["status"] == "отклонено: нет точного GIF"
+    assert by_name["Боковая планка"]["file"] == "0705-RKjH6Lt.gif"
+    assert by_name["Боковая планка"]["status"] == "точное"
+    assert by_name["Болгарские приседания без веса"]["file"] == "—"
+    assert by_name["Болгарские приседания без веса"]["status"] == "отклонено: нет точного GIF"

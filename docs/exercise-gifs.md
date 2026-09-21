@@ -45,6 +45,7 @@ cd C:\fitness_prog\backend
 .\.venv\Scripts\python.exe scripts\rebuild_catalog_from_dataset.py
 # if GIFs already downloaded:
 .\.venv\Scripts\python.exe scripts\rebuild_catalog_from_dataset.py --skip-archive --skip-download
+.\.venv\Scripts\python.exe scripts\_add_replacement_exercises.py
 .\.venv\Scripts\python.exe scripts\add_extra_programs.py
 .\.venv\Scripts\python.exe scripts\apply_video_urls.py --from-checklist
 ```
@@ -81,4 +82,6 @@ Do not run. They are kept only for review under
 backend\.venv\Scripts\python.exe backend\scripts\audit_exercise_media.py --report docs\EXERCISE_MEDIA_AUDIT_2026-08-20.md
 ```
 
-Команда завершается с ошибкой при битом или пустом GIF, расхождении manifest, отсутствии ссылки на источник либо непроверенном совместном использовании одного файла.
+Команда завершается с ошибкой при битом или пустом GIF, расхождении manifest,
+отсутствии ссылки на источник, непроверенном совместном использовании файла или
+отсутствии актуальной отметки ручного покадрового просмотра.
