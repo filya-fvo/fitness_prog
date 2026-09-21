@@ -1125,9 +1125,9 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Медвежья походка",
               "sets": 3,
-              "reps": "15-20",
+              "reps": "20-30с",
               "rest_sec": 45
             },
             {
@@ -1168,9 +1168,9 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Планка с касанием плеч",
               "sets": 3,
-              "reps": "15-20",
+              "reps": "8-12/стор",
               "rest_sec": 45
             },
             {
@@ -1235,9 +1235,9 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Русские скручивания",
+              "exercise_name": "Высокие колени",
               "sets": 3,
-              "reps": "12-16",
+              "reps": "20-30с",
               "rest_sec": 45
             }
           ]
@@ -1378,9 +1378,9 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Альпинисты",
               "sets": 3,
-              "reps": "15-20",
+              "reps": "20-30с",
               "rest_sec": 45
             },
             {
@@ -2485,9 +2485,9 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Медвежья походка",
               "sets": 3,
-              "reps": "12-15",
+              "reps": "20-30с",
               "rest_sec": 45
             }
           ]
@@ -5014,10 +5014,10 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 3,
-              "reps": "12-15",
-              "rest_sec": 40
+              "exercise_name": "Кошка-корова",
+              "sets": 2,
+              "reps": "8-10",
+              "rest_sec": 30
             }
           ]
         },
@@ -5057,9 +5057,9 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Планка с касанием плеч",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "8-12/стор",
+              "reps": "15-20",
               "rest_sec": 40
             }
           ]
@@ -5172,10 +5172,10 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 3,
-              "reps": "12-15",
-              "rest_sec": 40
+              "exercise_name": "Кошка-корова",
+              "sets": 2,
+              "reps": "8-10",
+              "rest_sec": 30
             }
           ]
         },
@@ -5215,9 +5215,9 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Планка с касанием плеч",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "8-12/стор",
+              "reps": "15-20",
               "rest_sec": 40
             }
           ]
@@ -6828,10 +6828,10 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Скручивания",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "12-15",
-              "rest_sec": 35
+              "reps": "15-20",
+              "rest_sec": 40
             }
           ]
         },
@@ -6871,9 +6871,9 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Мёртвый жук",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "8/стор",
+              "reps": "15-20",
               "rest_sec": 40
             }
           ]
@@ -6986,10 +6986,10 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Скручивания",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "12-15",
-              "rest_sec": 35
+              "reps": "15-20",
+              "rest_sec": 40
             }
           ]
         },
@@ -7029,9 +7029,9 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Мёртвый жук",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
-              "reps": "8/стор",
+              "reps": "15-20",
               "rest_sec": 40
             }
           ]
@@ -7099,9 +7099,9 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Медвежья походка",
               "sets": 3,
-              "reps": "12-15",
+              "reps": "20-30с",
               "rest_sec": 45
             }
           ]
@@ -7255,9 +7255,9 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Медвежья походка",
               "sets": 3,
-              "reps": "12-15",
+              "reps": "20-30с",
               "rest_sec": 45
             }
           ]
@@ -7280,9 +7280,9 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Ягодичный мост",
+              "exercise_name": "Мёртвый жук",
               "sets": 3,
-              "reps": "15-20",
+              "reps": "8-10/стор",
               "rest_sec": 40
             },
             {
@@ -7709,16 +7709,16 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Сгибания гантелей на бицепс",
               "sets": 2,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -7746,12 +7746,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Ягодичный мост",
               "sets": 3,
               "reps": "12-20",
@@ -7762,6 +7756,12 @@
               "sets": 2,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Велосипед",
@@ -7789,12 +7789,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Зашагивания на тумбу",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 3,
               "reps": "10-15",
@@ -7805,6 +7799,12 @@
               "sets": 2,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -7867,16 +7867,16 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Сгибания гантелей на бицепс",
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -7904,12 +7904,6 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Ягодичный мост",
               "sets": 4,
               "reps": "12-20",
@@ -7920,6 +7914,12 @@
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Велосипед",
@@ -7947,12 +7947,6 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Зашагивания на тумбу",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 4,
               "reps": "8-12",
@@ -7963,6 +7957,12 @@
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -8019,22 +8019,22 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 60
-            },
-            {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 2,
+              "reps": "10-15",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -8062,12 +8062,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Болгарские выпады",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Ягодичный мост",
               "sets": 3,
               "reps": "12-20",
@@ -8078,6 +8072,12 @@
               "sets": 2,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Велосипед",
@@ -8105,21 +8105,9 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 3,
               "reps": "10-15",
-              "rest_sec": 60
-            },
-            {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
               "rest_sec": 60
             },
             {
@@ -8127,6 +8115,18 @@
               "sets": 2,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 3,
+              "reps": "12-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Мёртвый жук",
@@ -8177,22 +8177,22 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 70
-            },
-            {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 4,
               "reps": "8-12",
               "rest_sec": 70
+            },
+            {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
@@ -8220,12 +8220,6 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Болгарские выпады",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Ягодичный мост",
               "sets": 4,
               "reps": "12-20",
@@ -8236,6 +8230,12 @@
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Велосипед",
@@ -8263,21 +8263,9 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Выпады вперёд",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 70
-            },
-            {
               "exercise_name": "Румынская тяга с гантелями",
               "sets": 4,
               "reps": "8-12",
-              "rest_sec": 70
-            },
-            {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
               "rest_sec": 70
             },
             {
@@ -8285,6 +8273,18 @@
               "sets": 3,
               "reps": "10-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 4,
+              "reps": "12-20",
+              "rest_sec": 45
             },
             {
               "exercise_name": "Мёртвый жук",
@@ -9411,13 +9411,13 @@
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
@@ -9429,13 +9429,13 @@
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 65
             }
@@ -9460,13 +9460,13 @@
             },
             {
               "exercise_name": "Жим Арнольда",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
@@ -9478,13 +9478,13 @@
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 65
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 50
             }
@@ -9509,31 +9509,31 @@
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 95
             },
             {
               "exercise_name": "Французский жим гантели",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 65
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 50
             }
@@ -9576,43 +9576,43 @@
           "exercises": [
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Тяга верхнего блока",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Ягодичный мост со штангой",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 105
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             }
@@ -9625,43 +9625,43 @@
           "exercises": [
             {
               "exercise_name": "Жим в тренажёре",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "5-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Жим Арнольда",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Ягодичный мост с гантелью",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 60
             }
@@ -9674,7 +9674,7 @@
           "exercises": [
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
@@ -9686,31 +9686,31 @@
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 105
             },
             {
               "exercise_name": "Французский жим гантели",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 60
             }
@@ -9765,31 +9765,31 @@
             },
             {
               "exercise_name": "Тяга верхнего блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Отведение ноги назад в кроссовере",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15/стор",
               "rest_sec": 55
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 50
             }
@@ -9814,7 +9814,7 @@
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
@@ -9826,19 +9826,19 @@
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 50
             }
@@ -9863,31 +9863,31 @@
             },
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 50
             }
@@ -9930,43 +9930,43 @@
           "exercises": [
             {
               "exercise_name": "Ягодичный мост со штангой",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 95
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Тяга верхнего блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Отведение ноги назад в кроссовере",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15/стор",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 60
             }
@@ -9979,7 +9979,7 @@
           "exercises": [
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 95
             },
@@ -9991,31 +9991,31 @@
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Ягодичный мост с гантелью",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 60
             }
@@ -10028,7 +10028,7 @@
           "exercises": [
             {
               "exercise_name": "Тяга с канатом между ног",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 90
             },
@@ -10040,31 +10040,31 @@
             },
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             }
@@ -10118,7 +10118,7 @@
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
@@ -10130,19 +10130,19 @@
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 45
             }
@@ -10167,7 +10167,7 @@
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
@@ -10179,19 +10179,19 @@
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Французский жим гантели",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             }
@@ -10216,31 +10216,31 @@
             },
             {
               "exercise_name": "Жим Арнольда",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Разводка в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             }
@@ -10282,43 +10282,43 @@
           "exercises": [
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 95
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 55
             }
@@ -10331,43 +10331,43 @@
           "exercises": [
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Австралийские подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Французский жим гантели",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             }
@@ -10386,37 +10386,37 @@
             },
             {
               "exercise_name": "Австралийские подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Жим Арнольда",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 95
             },
             {
               "exercise_name": "Разводка в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             }
@@ -10470,31 +10470,31 @@
             },
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "25-40с",
               "rest_sec": 45
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 45
             }
@@ -10525,25 +10525,25 @@
             },
             {
               "exercise_name": "Разведение гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-30с",
               "rest_sec": 45
             }
@@ -10568,31 +10568,31 @@
             },
             {
               "exercise_name": "Отжимания с колен",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Разводка в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-16",
               "rest_sec": 45
             }
@@ -10634,43 +10634,43 @@
           "exercises": [
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 85
             },
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 85
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 85
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "25-40с",
               "rest_sec": 55
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             }
@@ -10683,7 +10683,7 @@
           "exercises": [
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
@@ -10695,31 +10695,31 @@
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 80
             },
             {
               "exercise_name": "Разведение гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-30с",
               "rest_sec": 55
             }
@@ -10732,43 +10732,43 @@
           "exercises": [
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 85
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Отжимания с колен",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Тяга гантели в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 80
             },
             {
               "exercise_name": "Разводка в наклоне",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-16",
               "rest_sec": 55
             }
@@ -10822,25 +10822,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 50
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 50
             },
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             }
@@ -10865,27 +10865,27 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 50
             },
             {
               "exercise_name": "Удержание «лодочки»",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-30с",
               "rest_sec": 50
             },
             {
               "exercise_name": "Планка с касанием плеч",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 45
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 4,
-              "reps": "12-15",
-              "rest_sec": 40
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             }
           ]
         },
@@ -10908,26 +10908,26 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 50
             },
             {
               "exercise_name": "Птица-собака",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             },
             {
-              "exercise_name": "Мёртвый жук",
-              "sets": 4,
-              "reps": "8/стор",
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
               "rest_sec": 45
             }
           ]
@@ -10980,25 +10980,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 60
             },
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             }
@@ -11023,27 +11023,27 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Удержание «лодочки»",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-30с",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка с касанием плеч",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 4,
-              "reps": "12-15",
-              "rest_sec": 50
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 55
             }
           ]
         },
@@ -11066,26 +11066,26 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Птица-собака",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             },
             {
-              "exercise_name": "Мёртвый жук",
-              "sets": 4,
-              "reps": "8/стор",
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
               "rest_sec": 55
             }
           ]
@@ -11138,25 +11138,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 50
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 50
             },
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             }
@@ -11181,27 +11181,27 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 50
             },
             {
               "exercise_name": "Удержание «лодочки»",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-30с",
               "rest_sec": 50
             },
             {
               "exercise_name": "Планка с касанием плеч",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 45
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 4,
-              "reps": "12-15",
-              "rest_sec": 40
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 45
             }
           ]
         },
@@ -11224,26 +11224,26 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 50
             },
             {
               "exercise_name": "Птица-собака",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             },
             {
-              "exercise_name": "Мёртвый жук",
-              "sets": 4,
-              "reps": "8/стор",
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
               "rest_sec": 45
             }
           ]
@@ -11296,25 +11296,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 60
             },
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             }
@@ -11339,27 +11339,27 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Удержание «лодочки»",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-30с",
               "rest_sec": 60
             },
             {
               "exercise_name": "Планка с касанием плеч",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
             },
             {
-              "exercise_name": "Скручивания",
-              "sets": 4,
-              "reps": "12-15",
-              "rest_sec": 50
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
+              "rest_sec": 55
             }
           ]
         },
@@ -11382,26 +11382,26 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             },
             {
               "exercise_name": "Птица-собака",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             },
             {
-              "exercise_name": "Мёртвый жук",
-              "sets": 4,
-              "reps": "8/стор",
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 3,
+              "reps": "15-20",
               "rest_sec": 55
             }
           ]
@@ -11443,37 +11443,37 @@
           "exercises": [
             {
               "exercise_name": "Жим ногами",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 105
             },
             {
               "exercise_name": "Жим штанги лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 115
             },
             {
               "exercise_name": "Тяга верхнего блока",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-10",
               "rest_sec": 95
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
             }
@@ -11486,37 +11486,37 @@
           "exercises": [
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Разгибания ног",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Жим Арнольда",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Сгибания со штангой",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-10",
               "rest_sec": 90
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 75
             }
@@ -11529,37 +11529,37 @@
           "exercises": [
             {
               "exercise_name": "Жим в тренажёре",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "5-10",
               "rest_sec": 105
             },
             {
               "exercise_name": "Жим ногами",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 105
             },
             {
               "exercise_name": "Обратные разведения в тренажёре",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Жим лёжа узким хватом",
-              "sets": 4,
+              "sets": 3,
               "reps": "6-10",
               "rest_sec": 95
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "30-45с",
               "rest_sec": 60
             }
@@ -11602,37 +11602,37 @@
           "exercises": [
             {
               "exercise_name": "Жим ногами",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 95
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Тяга верхнего блока",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Жим гантелей лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             }
@@ -11651,31 +11651,31 @@
             },
             {
               "exercise_name": "Тяга горизонтального блока",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Разгибания ног",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 85
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разгибания на блоке",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             }
@@ -11688,7 +11688,7 @@
           "exercises": [
             {
               "exercise_name": "Жим ногами",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12",
               "rest_sec": 95
             },
@@ -11700,25 +11700,25 @@
             },
             {
               "exercise_name": "Сгибания ног лёжа",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Жим гантелей на наклонной",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 90
             },
             {
               "exercise_name": "Тяга к лицу",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 70
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 60
             }
@@ -11773,25 +11773,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             }
@@ -11816,25 +11816,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 50
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             }
@@ -11859,25 +11859,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 45
             }
@@ -11932,25 +11932,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             }
@@ -11975,25 +11975,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             }
@@ -12018,25 +12018,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             }
@@ -12091,25 +12091,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 45
             }
@@ -12134,25 +12134,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 50
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 45
             }
@@ -12177,25 +12177,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 55
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 45
             }
@@ -12250,25 +12250,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 80
             },
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 4,
+              "sets": 3,
               "reps": "8-12",
               "rest_sec": 70
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 4,
+              "sets": 3,
               "reps": "8/стор",
               "rest_sec": 55
             }
@@ -12293,25 +12293,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Разводка гантелей в стороны",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Планка",
-              "sets": 4,
+              "sets": 3,
               "reps": "20-40с",
               "rest_sec": 55
             }
@@ -12336,25 +12336,25 @@
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Жим гантелей сидя",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 75
             },
             {
               "exercise_name": "Разгибания гантели из-за головы",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 4,
+              "sets": 3,
               "reps": "12-15",
               "rest_sec": 55
             }
@@ -12712,37 +12712,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Тяга резинки к поясу",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-15",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             }
@@ -12755,37 +12755,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания с колен",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Тяга резинки к поясу",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-15",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
               "rest_sec": 60
             }
@@ -12798,37 +12798,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 100
             },
             {
               "exercise_name": "Австралийские подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 110
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 5,
+              "sets": 4,
               "reps": "20-40с/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             }
@@ -13186,37 +13186,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания с возвышения",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Тяга резинки к поясу",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-15",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             }
@@ -13229,37 +13229,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания с колен",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Тяга резинки к поясу",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-15",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
               "rest_sec": 60
             }
@@ -13272,37 +13272,37 @@
           "exercises": [
             {
               "exercise_name": "Отжимания узким хватом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 100
             },
             {
               "exercise_name": "Австралийские подтягивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-12",
               "rest_sec": 110
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Боковая планка",
-              "sets": 5,
+              "sets": 4,
               "reps": "20-40с/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             }
@@ -13344,37 +13344,37 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 100
-            },
-            {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
               "rest_sec": 60
             }
@@ -13387,37 +13387,37 @@
           "exercises": [
             {
               "exercise_name": "Приседания с гантелью у груди",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 100
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             }
@@ -13430,37 +13430,37 @@
           "exercises": [
             {
               "exercise_name": "Болгарские выпады",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Зашагивания на тумбу",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             }
@@ -13502,37 +13502,37 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Выпады назад с гантелями",
-              "sets": 5,
-              "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
+              "exercise_name": "Сгибания гантелей на бицепс",
+              "sets": 3,
+              "reps": "10-15",
+              "rest_sec": 65
+            },
+            {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
               "rest_sec": 60
             }
@@ -13545,37 +13545,37 @@
           "exercises": [
             {
               "exercise_name": "Приседания с гантелью у груди",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Болгарские выпады",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 100
             },
             {
               "exercise_name": "Молотковые сгибания",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             }
@@ -13588,37 +13588,37 @@
           "exercises": [
             {
               "exercise_name": "Зашагивания на тумбу",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Выпады вперёд",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
               "exercise_name": "Румынская тяга с гантелями",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 100
-            },
-            {
               "exercise_name": "Сгибания гантелей на бицепс",
-              "sets": 4,
+              "sets": 3,
               "reps": "10-15",
               "rest_sec": 65
             },
             {
+              "exercise_name": "Подъёмы на носки без веса",
+              "sets": 4,
+              "reps": "15-20",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Скручивания",
+              "sets": 4,
+              "reps": "12-20",
+              "rest_sec": 60
+            },
+            {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
             }
@@ -13670,12 +13670,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 50
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
@@ -13692,6 +13686,12 @@
               "sets": 3,
               "reps": "8-15",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 3,
+              "reps": "20-30с",
+              "rest_sec": 45
             }
           ]
         },
@@ -13702,12 +13702,6 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -13735,6 +13729,12 @@
               "sets": 3,
               "reps": "12-20/стор",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 45
             }
           ]
         },
@@ -13756,12 +13756,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 50
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
@@ -13778,6 +13772,12 @@
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 2,
+              "reps": "8-10",
+              "rest_sec": 30
             }
           ]
         }
@@ -13827,12 +13827,6 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 55
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
@@ -13849,6 +13843,12 @@
               "sets": 4,
               "reps": "8-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 4,
+              "reps": "20-30с",
+              "rest_sec": 50
             }
           ]
         },
@@ -13859,12 +13859,6 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -13892,6 +13886,12 @@
               "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 4,
+              "reps": "8-12/стор",
+              "rest_sec": 50
             }
           ]
         },
@@ -13913,12 +13913,6 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 55
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
@@ -13935,6 +13929,12 @@
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 3,
+              "reps": "8-10",
+              "rest_sec": 35
             }
           ]
         }
@@ -13973,38 +13973,38 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Выпады вперёд без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 65
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 4,
+              "reps": "20-30с",
               "rest_sec": 60
             }
           ]
@@ -14016,38 +14016,38 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 4,
+              "reps": "8-12/стор",
               "rest_sec": 60
             }
           ]
@@ -14059,39 +14059,39 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 100
             },
             {
               "exercise_name": "Обратные выпады с поворотом",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 65
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 3,
+              "reps": "8-10",
+              "rest_sec": 45
             }
           ]
         }
@@ -14141,12 +14141,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 50
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
@@ -14163,6 +14157,12 @@
               "sets": 3,
               "reps": "8-15",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 3,
+              "reps": "20-30с",
+              "rest_sec": 45
             }
           ]
         },
@@ -14173,12 +14173,6 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 3,
-              "reps": "8-12/стор",
-              "rest_sec": 60
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -14206,6 +14200,12 @@
               "sets": 3,
               "reps": "12-20/стор",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 3,
+              "reps": "8-12/стор",
+              "rest_sec": 45
             }
           ]
         },
@@ -14227,12 +14227,6 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 3,
-              "reps": "12-20",
-              "rest_sec": 50
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
@@ -14249,6 +14243,12 @@
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 45
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 2,
+              "reps": "8-10",
+              "rest_sec": 30
             }
           ]
         }
@@ -14298,12 +14298,6 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 55
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
@@ -14320,6 +14314,12 @@
               "sets": 4,
               "reps": "8-15",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 4,
+              "reps": "20-30с",
+              "rest_sec": 50
             }
           ]
         },
@@ -14330,12 +14330,6 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 4,
-              "reps": "8-12/стор",
-              "rest_sec": 75
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -14363,6 +14357,12 @@
               "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 4,
+              "reps": "8-12/стор",
+              "rest_sec": 50
             }
           ]
         },
@@ -14384,12 +14384,6 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 4,
-              "reps": "12-20",
-              "rest_sec": 55
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
@@ -14406,6 +14400,12 @@
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 50
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 3,
+              "reps": "8-10",
+              "rest_sec": 35
             }
           ]
         }
@@ -14444,38 +14444,38 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "6-10",
               "rest_sec": 100
             },
             {
               "exercise_name": "Выпады вперёд без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 65
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Подъёмы ног лёжа",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-15",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Высокие колени",
+              "sets": 4,
+              "reps": "20-30с",
               "rest_sec": 60
             }
           ]
@@ -14487,38 +14487,38 @@
           "exercises": [
             {
               "exercise_name": "Боковые выпады без веса",
-              "sets": 5,
-              "reps": "8-12/стор",
-              "rest_sec": 100
-            },
-            {
-              "exercise_name": "Болгарские приседания без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
               "exercise_name": "Ягодичный мост",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 65
             },
             {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Велосипед",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
               "rest_sec": 60
             },
             {
               "exercise_name": "Русские скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20/стор",
+              "rest_sec": 60
+            },
+            {
+              "exercise_name": "Скейтер-прыжки",
+              "sets": 4,
+              "reps": "8-12/стор",
               "rest_sec": 60
             }
           ]
@@ -14530,39 +14530,39 @@
           "exercises": [
             {
               "exercise_name": "Приседания со своим весом",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 100
             },
             {
               "exercise_name": "Обратные выпады с поворотом",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Ягодичный мост",
-              "sets": 5,
-              "reps": "12-20",
-              "rest_sec": 65
-            },
-            {
               "exercise_name": "Подъёмы на носки без веса",
-              "sets": 5,
+              "sets": 4,
               "reps": "15-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Скручивания",
-              "sets": 5,
+              "sets": 4,
               "reps": "12-20",
               "rest_sec": 60
             },
             {
               "exercise_name": "Мёртвый жук",
-              "sets": 5,
+              "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
+            },
+            {
+              "exercise_name": "Наклоны к носкам",
+              "sets": 3,
+              "reps": "8-10",
+              "rest_sec": 45
             }
           ]
         }

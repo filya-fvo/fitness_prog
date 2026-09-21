@@ -55,3 +55,21 @@ def test_seed_program_reports_have_matching_equipment() -> None:
         assert report.estimated_minutes > 0
         assert report.direct_sets
         assert report.pattern_sets
+
+
+def test_seed_program_weekly_direct_volume_stays_within_review_limits() -> None:
+    exercises = json.loads((CONTENT / "exercises.json").read_text(encoding="utf-8"))
+    programs = json.loads((CONTENT / "programs.json").read_text(encoding="utf-8"))
+    by_name = {row["name_ru"]: row for row in exercises}
+    limits = {"beginner": 20, "intermediate": 26, "advanced": 32}
+
+    for program in programs:
+        structure = program["structure"]
+        report = build_program_structure_report(structure["schedule"], by_name)
+        limit = limits[structure["level"]]
+        excessive = {
+            muscle: sets
+            for muscle, sets in report.direct_sets.items()
+            if sets > limit
+        }
+        assert excessive == {}, program["name"]
