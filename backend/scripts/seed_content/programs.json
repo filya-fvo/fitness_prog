@@ -538,7 +538,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
@@ -562,7 +562,7 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "12-15",
               "rest_sec": 75
@@ -581,7 +581,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12",
               "rest_sec": 75
@@ -668,7 +668,7 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -693,7 +693,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -754,7 +754,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -1136,7 +1136,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -1179,7 +1179,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -1191,7 +1191,7 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 40
@@ -1291,7 +1291,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
@@ -1316,7 +1316,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -1359,7 +1359,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
@@ -1959,7 +1959,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "10-15/стор",
               "rest_sec": 60
@@ -2045,7 +2045,7 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -2472,7 +2472,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -2497,7 +2497,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -2621,13 +2621,13 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "10-15/стор",
               "rest_sec": 55
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
@@ -2639,7 +2639,7 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 40
@@ -2695,7 +2695,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -3468,13 +3468,13 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "12-15/стор",
               "rest_sec": 50
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "10-12/стор",
               "rest_sec": 50
@@ -3486,7 +3486,7 @@
               "rest_sec": 40
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 40
@@ -3542,7 +3542,7 @@
           "focus": "lower",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -3672,7 +3672,7 @@
               "rest_sec": 70
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 80
@@ -3684,7 +3684,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-25",
               "rest_sec": 45
@@ -3721,7 +3721,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "12-16/стор",
               "rest_sec": 65
@@ -3752,7 +3752,7 @@
               "rest_sec": 110
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 75
@@ -3858,7 +3858,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "12-16/стор",
               "rest_sec": 60
@@ -3907,7 +3907,7 @@
               "rest_sec": 80
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 65
@@ -3964,7 +3964,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 75
@@ -3994,7 +3994,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-25",
               "rest_sec": 45
@@ -4031,7 +4031,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 65
@@ -4062,7 +4062,7 @@
               "rest_sec": 110
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "12-16/стор",
               "rest_sec": 70
@@ -4125,7 +4125,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 65
@@ -4180,7 +4180,7 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 4,
               "reps": "10-15/стор",
               "rest_sec": 60
@@ -4217,7 +4217,7 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "12-16/стор",
               "rest_sec": 60
@@ -7086,7 +7086,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -7111,7 +7111,7 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -7242,7 +7242,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -7291,7 +7291,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 55
@@ -12412,7 +12412,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -12455,7 +12455,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -12498,7 +12498,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -12570,7 +12570,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -12613,7 +12613,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -12656,7 +12656,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -12728,7 +12728,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -12771,7 +12771,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -12814,7 +12814,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -12886,7 +12886,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -12929,7 +12929,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -12972,7 +12972,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -13044,7 +13044,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13087,7 +13087,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13130,7 +13130,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13202,7 +13202,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -13245,7 +13245,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -13288,7 +13288,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -13663,7 +13663,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -13675,7 +13675,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -13700,13 +13700,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -13718,7 +13718,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -13761,7 +13761,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -13820,7 +13820,7 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -13832,7 +13832,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13857,13 +13857,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -13875,7 +13875,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13918,7 +13918,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -13977,7 +13977,7 @@
               "rest_sec": 100
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
@@ -13989,7 +13989,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -14014,13 +14014,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
@@ -14032,7 +14032,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -14075,7 +14075,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -14134,7 +14134,7 @@
               "rest_sec": 60
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -14146,7 +14146,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -14171,13 +14171,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 3,
               "reps": "8-12/стор",
               "rest_sec": 60
@@ -14189,7 +14189,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -14232,7 +14232,7 @@
               "rest_sec": 50
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "15-20",
               "rest_sec": 45
@@ -14291,7 +14291,7 @@
               "rest_sec": 75
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -14303,7 +14303,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -14328,13 +14328,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 4,
               "reps": "8-12/стор",
               "rest_sec": 75
@@ -14346,7 +14346,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -14389,7 +14389,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "15-20",
               "rest_sec": 50
@@ -14448,7 +14448,7 @@
               "rest_sec": 100
             },
             {
-              "exercise_name": "Выпады вперёд",
+              "exercise_name": "Выпады вперёд без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
@@ -14460,7 +14460,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -14485,13 +14485,13 @@
           "focus": "full",
           "exercises": [
             {
-              "exercise_name": "Боковые выпады",
+              "exercise_name": "Боковые выпады без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
             },
             {
-              "exercise_name": "Болгарские выпады",
+              "exercise_name": "Болгарские приседания без веса",
               "sets": 5,
               "reps": "8-12/стор",
               "rest_sec": 100
@@ -14503,7 +14503,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60
@@ -14546,7 +14546,7 @@
               "rest_sec": 65
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 5,
               "reps": "15-20",
               "rest_sec": 60

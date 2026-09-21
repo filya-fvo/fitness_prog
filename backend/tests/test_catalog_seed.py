@@ -81,6 +81,45 @@ def test_bodyweight_program_names_match_required_equipment() -> None:
             assert any("резинк" in name for name in exercise_names), program["name"]
 
 
+def test_bodyweight_only_programs_use_no_load_leg_variants() -> None:
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    loaded_generic_names = {
+        "Выпады вперёд",
+        "Боковые выпады",
+        "Болгарские выпады",
+        "Подъёмы на носки стоя",
+    }
+    expected_bodyweight_variants = {
+        "Выпады вперёд без веса",
+        "Боковые выпады без веса",
+        "Болгарские приседания без веса",
+        "Подъёмы на носки без веса",
+    }
+    used_variants: set[str] = set()
+    for program in programs:
+        equipment = set(program["structure"].get("equipment") or [])
+        if equipment & {"dumbbells", "barbell", "machines"}:
+            continue
+        names = {
+            item["exercise_name"]
+            for day in program["structure"]["schedule"]
+            for item in day["exercises"]
+        }
+        assert not (names & loaded_generic_names), program["name"]
+        used_variants.update(names & expected_bodyweight_variants)
+    assert used_variants == expected_bodyweight_variants
+
+
+def test_corrected_catalog_equipment_and_media_are_explicit() -> None:
+    rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
+    by_name = {row["name_ru"]: row for row in rows}
+
+    assert by_name["Планка"]["equipment"] == "свой вес"
+    smith_bridge = by_name["Ягодичный мост в машине Смита"]
+    assert smith_bridge["animation_url"] is None
+    assert "media:no-exact-gif" in smith_bridge["tags"]
+
+
 def test_regular_programs_cover_the_full_sex_location_level_matrix() -> None:
     programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
     regular = [

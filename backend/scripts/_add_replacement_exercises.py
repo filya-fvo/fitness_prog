@@ -54,6 +54,9 @@ GIF_PALLOF = "/exercise-gifs/0979-9pa4H5m.gif"
 GIF_CABLE_PULL_THROUGH = "/exercise-gifs/0196-OM46QHm.gif"
 GIF_CABLE_HIP_EXTENSION = "/exercise-gifs/0228-Kpajagk.gif"
 GIF_REVERSE_HYPER = "/exercise-gifs/0593-Krmb3cB.gif"
+GIF_BODYWEIGHT_FORWARD_LUNGE = "/exercise-gifs/3470-kMzUs9Y.gif"
+GIF_BODYWEIGHT_SPLIT_SQUAT = "/exercise-gifs/2368-9E25EOx.gif"
+GIF_BODYWEIGHT_CALF_RAISE = "/exercise-gifs/1373-bJYHBIN.gif"
 
 
 def ex(
@@ -90,6 +93,65 @@ def ex(
 
 
 NEW_ITEMS: list[dict] = [
+    ex(
+        "Выпады вперёд без веса",
+        "ноги",
+        "свой вес",
+        1,
+        "1. Встаньте прямо, стопы на ширине таза.\n"
+        "2. Сделайте контролируемый шаг вперёд и опуститесь до комфортной глубины.\n"
+        "3. Держите корпус устойчиво, а колено направляйте по линии стопы.\n"
+        "4. Оттолкнитесь всей стопой передней ноги и вернитесь.\n"
+        "5. Повторите другой ногой.",
+        description="Выпады вперёд без дополнительного оборудования.",
+        animation_url=GIF_BODYWEIGHT_FORWARD_LUNGE,
+        common_mistakes="Потеря равновесия; завал колена внутрь; удар коленом о пол; слишком короткий шаг.",
+        tags=["gymvisual", "ds:3470", "curated", "bodyweight", "glutes", "unilateral"],
+    ),
+    ex(
+        "Болгарские приседания без веса",
+        "ноги",
+        "свой вес",
+        2,
+        "1. Встаньте спиной к устойчивой опоре и положите на неё носок задней ноги.\n"
+        "2. Подберите расстояние, чтобы передняя стопа полностью оставалась на полу.\n"
+        "3. Опуститесь вниз, удерживая таз ровно и колено по линии стопы.\n"
+        "4. Поднимитесь усилием передней ноги.\n"
+        "5. Выполните подход и смените сторону.",
+        description="Болгарские приседания с собственным весом и устойчивой опорой.",
+        animation_url=GIF_BODYWEIGHT_SPLIT_SQUAT,
+        common_mistakes="Неустойчивая опора; завал колена внутрь; толчок задней ногой; слишком узкая постановка.",
+        tags=["gymvisual", "ds:2368", "curated", "bodyweight", "quads", "unilateral"],
+    ),
+    ex(
+        "Подъёмы на носки без веса",
+        "ноги",
+        "свой вес",
+        1,
+        "1. Встаньте ровно и при необходимости слегка держитесь за устойчивую опору.\n"
+        "2. Поднимитесь на носки как можно выше без рывка.\n"
+        "3. Задержитесь в верхней точке.\n"
+        "4. Медленно опустите пятки и повторите.",
+        description="Подъёмы на носки стоя без дополнительного оборудования.",
+        animation_url=GIF_BODYWEIGHT_CALF_RAISE,
+        common_mistakes="Раскачивание; быстрый отскок внизу; перенос веса на внешнюю сторону стопы.",
+        tags=["gymvisual", "ds:1373", "curated", "bodyweight", "calves"],
+    ),
+    ex(
+        "Боковые выпады без веса",
+        "ноги",
+        "свой вес",
+        1,
+        "1. Встаньте прямо, стопы параллельны.\n"
+        "2. Сделайте широкий шаг в сторону и перенесите таз назад над рабочей ногой.\n"
+        "3. Вторую ногу оставляйте прямой, обе стопы полностью прижаты к полу.\n"
+        "4. Оттолкнитесь рабочей ногой и вернитесь в исходное положение.\n"
+        "5. Повторите в другую сторону.",
+        description="Боковые выпады с собственным весом. Точного GIF в проверенном наборе пока нет.",
+        animation_url=None,
+        common_mistakes="Отрыв пятки; разворот стопы; завал колена внутрь; наклон вместо движения тазом.",
+        tags=["gymvisual", "ds:1410", "curated", "bodyweight", "glutes", "unilateral", "media:no-exact-gif"],
+    ),
     ex(
         "Тяга с канатом между ног",
         "ноги",
@@ -527,6 +589,16 @@ def patch_seed() -> list[str]:
     rows = json.loads(SEED_PATH.read_text(encoding="utf-8"))
     rows = [row for row in rows if str(row.get("name_ru")) not in DEPRECATED_ALIASES]
     corrections = {
+        "Планка": {
+            "equipment": "свой вес",
+            "description": "Планка на предплечьях без дополнительного оборудования. © Gym Visual — https://gymvisual.com/",
+            "tags": ["gymvisual", "ds:2135", "© Gym Visual", "curated", "load:timed", "bodyweight"],
+        },
+        "Ягодичный мост в машине Смита": {
+            "animation_url": None,
+            "description": "Ягодичный мост в машине Смита. Точного проверенного GIF пока нет.",
+            "tags": ["gymvisual", "ds:0756", "curated", "replacement", "smith", "ноги", "media:no-exact-gif"],
+        },
         "Ягодичный мост": {
             "muscle_group": "ноги",
             "equipment": "свой вес",
@@ -546,10 +618,6 @@ def patch_seed() -> list[str]:
             "tags": ["gymvisual", "ds:1409", "© Gym Visual", "curated", "barbell", "ноги"],
         },
     }
-    for row in rows:
-        patch = corrections.get(str(row.get("name_ru")))
-        if patch:
-            row.update(patch)
     by_name = {str(r.get("name_ru")): r for r in rows}
     added: list[str] = []
     for item in NEW_ITEMS:
@@ -562,6 +630,12 @@ def patch_seed() -> list[str]:
         rows.append(item)
         by_name[name] = item
         added.append(name)
+    # Apply factual corrections after merging replacement items so an older
+    # definition in NEW_ITEMS cannot restore media or metadata we rejected.
+    for row in rows:
+        correction = corrections.get(str(row.get("name_ru")))
+        if correction:
+            row.update(correction)
     SEED_PATH.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     manifest = [
         {

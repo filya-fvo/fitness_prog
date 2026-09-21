@@ -2545,6 +2545,25 @@ def build_all() -> list[dict]:
     programs.extend(limitation_matrix_extensions())
     programs.extend(serious_gym_programs())
 
+    # Generic catalog entries for lunges and calf raises use dumbbells or a
+    # barbell. Keep bodyweight-only plans honest by assigning exact no-load
+    # variants instead of showing equipment that the program does not provide.
+    bodyweight_variants = {
+        "Выпады вперёд": "Выпады вперёд без веса",
+        "Боковые выпады": "Боковые выпады без веса",
+        "Болгарские выпады": "Болгарские приседания без веса",
+        "Подъёмы на носки стоя": "Подъёмы на носки без веса",
+    }
+    for program in programs:
+        equipment = set(program["structure"].get("equipment") or [])
+        if equipment & {"dumbbells", "barbell", "machines"}:
+            continue
+        for workout_day in program["structure"].get("schedule") or []:
+            for item in workout_day.get("exercises") or []:
+                replacement = bodyweight_variants.get(str(item.get("exercise_name") or ""))
+                if replacement:
+                    item["exercise_name"] = replacement
+
     limitation_notice = (
         " Это не лечебная программа. При боли остановите тренировку и согласуйте "
         "нагрузку с врачом или реабилитологом."

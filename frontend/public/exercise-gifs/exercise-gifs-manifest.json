@@ -715,8 +715,8 @@
   },
   {
     "name_ru": "Ягодичный мост в машине Смита",
-    "file": "0756-CqhoytW.gif",
-    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "file": "",
+    "animation_url": null,
     "muscle_group": "ноги"
   },
   {
@@ -763,6 +763,30 @@
   },
   {
     "name_ru": "Ягодичный мост с гантелью",
+    "file": "",
+    "animation_url": null,
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Выпады вперёд без веса",
+    "file": "3470-kMzUs9Y.gif",
+    "animation_url": "/exercise-gifs/3470-kMzUs9Y.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Болгарские приседания без веса",
+    "file": "2368-9E25EOx.gif",
+    "animation_url": "/exercise-gifs/2368-9E25EOx.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Подъёмы на носки без веса",
+    "file": "1373-bJYHBIN.gif",
+    "animation_url": "/exercise-gifs/1373-bJYHBIN.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Боковые выпады без веса",
     "file": "",
     "animation_url": null,
     "muscle_group": "ноги"

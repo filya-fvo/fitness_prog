@@ -1237,8 +1237,8 @@
   {
     "name_ru": "Планка",
     "muscle_group": "кор",
-    "equipment": "с отягощением",
-    "description": "Планка. Цель: abs. Оборудование: weighted. © Gym Visual — https://gymvisual.com/",
+    "equipment": "свой вес",
+    "description": "Планка на предплечьях без дополнительного оборудования. © Gym Visual — https://gymvisual.com/",
     "technique": "1. Для начала лягте на пол лицом вниз.\n2. Положите предплечья на землю так, чтобы локти находились прямо под плечами.\n3. Вытяните ноги прямо позади себя, положив пальцы ног на землю.\n4. Напрягите корпус и поднимите тело от земли, балансируя на предплечьях и пальцах ног.\n5. Держите тело на прямой линии от головы до пяток.\n6. Удерживайте это положение желаемое время.\n7. Опустите тело обратно в исходное положение.\n8. Повторите необходимое количество повторений.",
     "common_mistakes": null,
     "difficulty": 2,
@@ -1252,7 +1252,8 @@
       "ds:2135",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "bodyweight"
     ]
   },
   {
@@ -2516,12 +2517,12 @@
     "name_ru": "Ягодичный мост в машине Смита",
     "muscle_group": "ноги",
     "equipment": "машина Смита",
-    "description": "Ягодичный мост в машине Смита. © Gym Visual — https://gymvisual.com/",
+    "description": "Ягодичный мост в машине Смита. Точного проверенного GIF пока нет.",
     "technique": "1. Упритесь верхом спины в скамью, гриф расположите на сгибе таза через накладку.\n2. Поставьте стопы устойчиво.\n3. Поднимите таз до прямой линии плечи–таз–колени.\n4. Сожмите ягодицы и опуститесь подконтрольно.",
     "common_mistakes": null,
     "difficulty": 3,
     "video_url": null,
-    "animation_url": "/exercise-gifs/0756-CqhoytW.gif",
+    "animation_url": null,
     "thumbnail_url": null,
     "media_duration_sec": null,
     "media_source": "none",
@@ -2531,7 +2532,8 @@
       "curated",
       "replacement",
       "smith",
-      "ноги"
+      "ноги",
+      "media:no-exact-gif"
     ]
   },
   {
@@ -2709,6 +2711,94 @@
       "manual_add",
       "dumbbells",
       "glutes",
+      "media:no-exact-gif"
+    ]
+  },
+  {
+    "name_ru": "Выпады вперёд без веса",
+    "muscle_group": "ноги",
+    "equipment": "свой вес",
+    "description": "Выпады вперёд без дополнительного оборудования.",
+    "technique": "1. Встаньте прямо, стопы на ширине таза.\n2. Сделайте контролируемый шаг вперёд и опуститесь до комфортной глубины.\n3. Держите корпус устойчиво, а колено направляйте по линии стопы.\n4. Оттолкнитесь всей стопой передней ноги и вернитесь.\n5. Повторите другой ногой.",
+    "common_mistakes": "Потеря равновесия; завал колена внутрь; удар коленом о пол; слишком короткий шаг.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/3470-kMzUs9Y.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:3470",
+      "curated",
+      "bodyweight",
+      "glutes",
+      "unilateral"
+    ]
+  },
+  {
+    "name_ru": "Болгарские приседания без веса",
+    "muscle_group": "ноги",
+    "equipment": "свой вес",
+    "description": "Болгарские приседания с собственным весом и устойчивой опорой.",
+    "technique": "1. Встаньте спиной к устойчивой опоре и положите на неё носок задней ноги.\n2. Подберите расстояние, чтобы передняя стопа полностью оставалась на полу.\n3. Опуститесь вниз, удерживая таз ровно и колено по линии стопы.\n4. Поднимитесь усилием передней ноги.\n5. Выполните подход и смените сторону.",
+    "common_mistakes": "Неустойчивая опора; завал колена внутрь; толчок задней ногой; слишком узкая постановка.",
+    "difficulty": 2,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/2368-9E25EOx.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:2368",
+      "curated",
+      "bodyweight",
+      "quads",
+      "unilateral"
+    ]
+  },
+  {
+    "name_ru": "Подъёмы на носки без веса",
+    "muscle_group": "ноги",
+    "equipment": "свой вес",
+    "description": "Подъёмы на носки стоя без дополнительного оборудования.",
+    "technique": "1. Встаньте ровно и при необходимости слегка держитесь за устойчивую опору.\n2. Поднимитесь на носки как можно выше без рывка.\n3. Задержитесь в верхней точке.\n4. Медленно опустите пятки и повторите.",
+    "common_mistakes": "Раскачивание; быстрый отскок внизу; перенос веса на внешнюю сторону стопы.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/1373-bJYHBIN.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1373",
+      "curated",
+      "bodyweight",
+      "calves"
+    ]
+  },
+  {
+    "name_ru": "Боковые выпады без веса",
+    "muscle_group": "ноги",
+    "equipment": "свой вес",
+    "description": "Боковые выпады с собственным весом. Точного GIF в проверенном наборе пока нет.",
+    "technique": "1. Встаньте прямо, стопы параллельны.\n2. Сделайте широкий шаг в сторону и перенесите таз назад над рабочей ногой.\n3. Вторую ногу оставляйте прямой, обе стопы полностью прижаты к полу.\n4. Оттолкнитесь рабочей ногой и вернитесь в исходное положение.\n5. Повторите в другую сторону.",
+    "common_mistakes": "Отрыв пятки; разворот стопы; завал колена внутрь; наклон вместо движения тазом.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": null,
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:1410",
+      "curated",
+      "bodyweight",
+      "glutes",
+      "unilateral",
       "media:no-exact-gif"
     ]
   }
