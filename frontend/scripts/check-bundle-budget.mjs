@@ -75,7 +75,9 @@ const limits = {
   // Audited PLUS grant/revoke controls add about 1 KB gzip to AdminUser only.
   // The visual program editor is an isolated admin route (~8.7 KB gzip).
   // Its exercise-catalog API and local-cleanup helpers are admin-only shared chunks.
-  totalJsGzip: 520_000,
+  // Illness pause and recovery choice add about 1.2 KB across the lazy Home and
+  // typed workout API chunks; no vendor or largest-chunk limit changes.
+  totalJsGzip: 522_000,
   productJsGzip: 468_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
