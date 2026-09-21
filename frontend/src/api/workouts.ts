@@ -76,7 +76,7 @@ const scheduleOccurrenceSchema = z.object({
   title: z.string(),
   program_id: z.string().uuid().nullable().optional(),
   day_index: z.number().nullable().optional(),
-  status: z.enum(["scheduled", "moved", "missed", "completed", "cancelled"]),
+  status: z.enum(["scheduled", "moved", "missed", "completed", "cancelled", "paused"]),
   is_override: z.boolean(),
   is_assignment: z.boolean().default(false),
   can_reschedule: z.boolean(),
@@ -206,8 +206,16 @@ const personalRegularitySchema = z.object({
   planned: z.number().int().nonnegative(),
   rescheduled_completed: z.number().int().nonnegative(),
   cancelled: z.number().int().nonnegative(),
+  paused: z.number().int().nonnegative().default(0),
   missed: z.number().int().nonnegative(),
   completion_pct: z.number().min(0).max(100).nullable(),
+});
+
+const illnessPauseSchema = z.object({
+  active: z.boolean(),
+  started_on: z.string().nullable(),
+  recovery_choice_pending: z.boolean(),
+  recovery_light_week_active: z.boolean(),
 });
 
 export type WorkoutScheduleOccurrence = z.infer<typeof scheduleOccurrenceSchema>;
@@ -217,6 +225,7 @@ export type WorkoutScheduleReplacementPreview = z.infer<typeof workoutScheduleRe
 export type WorkoutReschedulePreview = z.infer<typeof workoutReschedulePreviewSchema>;
 export type WorkoutAssignmentPreview = z.infer<typeof workoutAssignmentPreviewSchema>;
 export type PersonalRegularity = z.infer<typeof personalRegularitySchema>;
+export type IllnessPause = z.infer<typeof illnessPauseSchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   return {
@@ -596,6 +605,28 @@ export async function replaceWorkoutScheduleDay(
 export async function fetchPersonalRegularity(days = 28): Promise<PersonalRegularity> {
   const { data } = await apiClient.get("/workouts/regularity", { params: { days } });
   return personalRegularitySchema.parse(data);
+}
+
+export async function fetchIllnessPause(): Promise<IllnessPause> {
+  const { data } = await apiClient.get("/workouts/illness");
+  return illnessPauseSchema.parse(data);
+}
+
+export async function startIllnessPause(): Promise<IllnessPause> {
+  const { data } = await apiClient.post("/workouts/illness/start");
+  return illnessPauseSchema.parse(data);
+}
+
+export async function endIllnessPause(): Promise<IllnessPause> {
+  const { data } = await apiClient.post("/workouts/illness/end");
+  return illnessPauseSchema.parse(data);
+}
+
+export async function chooseIllnessRecovery(
+  choice: "light_week" | "normal",
+): Promise<IllnessPause> {
+  const { data } = await apiClient.post("/workouts/illness/recovery", { choice });
+  return illnessPauseSchema.parse(data);
 }
 
 export async function cancelScheduledWorkout(scheduledDate: string): Promise<WorkoutScheduleOverview> {

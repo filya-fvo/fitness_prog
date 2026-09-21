@@ -11,6 +11,7 @@ export function PlanRegularityCard({ summary, valueSize = "medium" }: Props) {
     ? [
         summary.rescheduled_completed ? `перенесено и выполнено: ${summary.rescheduled_completed}` : "",
         summary.cancelled ? `отменено: ${summary.cancelled}` : "",
+        summary.paused ? `пауза по болезни: ${summary.paused}` : "",
         summary.missed ? `пропущено: ${summary.missed}` : "",
       ].filter(Boolean).join(" · ")
     : "";
@@ -31,7 +32,11 @@ export function PlanRegularityCard({ summary, valueSize = "medium" }: Props) {
       ) : summary.planned === 0 ? (
         <>
           <p className={`mt-1 font-semibold ${valueClass}`}>Пока нет данных</p>
-          <p className="mt-1 text-[11px] text-tg-hint">Сегодняшний план учитывается после выполнения или завершения дня</p>
+          <p className="mt-1 text-[11px] text-tg-hint">
+            {summary.paused
+              ? `Пауза по болезни: ${summary.paused} трен.`
+              : "Сегодняшний план учитывается после выполнения или завершения дня"}
+          </p>
         </>
       ) : (
         <>

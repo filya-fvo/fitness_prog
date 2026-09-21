@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from app.services.notification_prefs import merge_notification_settings, parse_hhmm
+from app.services.illness_pause import is_illness_day
 from app.services.scheduler import (
     _fallback_title,
     _cancellation_for_day,
@@ -47,6 +48,8 @@ def due_workout_notification(
             continue
         override = _override_for_original(goals, original)
         target_date = date.fromisoformat(str(override["target_date"])) if override else original
+        if is_illness_day(goals, target_date):
+            continue
         start = parse_hhmm(str((override or {}).get("target_time") or "")) or workout_start_time_on(goals, original)
         starts_at = datetime.combine(target_date, start, tzinfo=tz)
         if starts_at < local_now:

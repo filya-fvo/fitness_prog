@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.workout import Workout
-from app.services import scheduler
+from app.services import illness_pause, scheduler
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +24,7 @@ class PersonalRegularity:
     planned: int
     rescheduled_completed: int
     cancelled: int
+    paused: int
     missed: int
     completion_pct: float | None
 
@@ -43,6 +44,7 @@ def calculate_personal_regularity(
     planned = 0
     rescheduled_completed = 0
     cancelled = 0
+    paused = 0
     has_active_plan = bool(goals.get("active_program_id"))
     slots = (
         scheduler.workout_schedule_slots(goals, slot_start, local_day)
@@ -52,6 +54,9 @@ def calculate_personal_regularity(
     has_schedule = bool(has_active_plan and (scheduler.workout_days(goals) or slots))
     for slot in slots:
         is_completed = slot.target_date in completed_set
+        if not is_completed and illness_pause.is_illness_day(goals, slot.target_date):
+            paused += 1
+            continue
         is_eligible = is_completed or slot.is_cancelled or slot.target_date < local_day
         if not is_eligible:
             continue
@@ -73,6 +78,7 @@ def calculate_personal_regularity(
         planned=planned,
         rescheduled_completed=rescheduled_completed,
         cancelled=cancelled,
+        paused=paused,
         missed=missed,
         completion_pct=completion_pct,
     )

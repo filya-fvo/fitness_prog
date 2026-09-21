@@ -659,10 +659,16 @@ def workout_schedule_slots(
 
 
 def schedule_overview(goals: dict[str, Any], requested_day: date) -> dict[str, Any]:
+    from app.services.illness_pause import is_illness_day
+
     current_context = effective_workout_context(goals, requested_day)
     current: dict[str, Any] | None = None
     if current_context["is_workout_day"]:
-        current = _occurrence_payload(goals, current_context, status_value="scheduled")
+        current = _occurrence_payload(
+            goals,
+            current_context,
+            status_value="paused" if is_illness_day(goals, requested_day) else "scheduled",
+        )
     elif current_context.get("cancelled"):
         current = _occurrence_payload(goals, current_context, status_value="cancelled")
     elif current_context["moved_away"]:
@@ -671,6 +677,8 @@ def schedule_overview(goals: dict[str, Any], requested_day: date) -> dict[str, A
     upcoming: dict[str, Any] | None = None
     for offset in range(0, 15):
         candidate = requested_day + timedelta(days=offset)
+        if is_illness_day(goals, candidate):
+            continue
         context = effective_workout_context(goals, candidate)
         if context["is_workout_day"]:
             upcoming = _occurrence_payload(goals, context, status_value="scheduled")
@@ -683,10 +691,12 @@ async def get_schedule_overview(
     user: User,
     requested_day: date,
 ) -> dict[str, Any]:
+    from app.services.illness_pause import is_illness_day
+
     goals = user.goals or {}
     overview = schedule_overview(goals, requested_day)
     current = overview.get("current")
-    if isinstance(current, dict) and current.get("status") == "scheduled":
+    if isinstance(current, dict) and current.get("status") in {"scheduled", "paused"}:
         completed_filters = [
             Workout.user_id == user.id,
             Workout.scheduled_date == current["target_date"],
@@ -732,6 +742,8 @@ async def get_schedule_overview(
             if schedule_start is not None and original < schedule_start:
                 break
             if original.weekday() not in workout_days_on(goals, original):
+                continue
+            if is_illness_day(goals, original):
                 continue
             next_base = next_base_workout_date(goals, original)
             if next_base is None or requested_day >= next_base:

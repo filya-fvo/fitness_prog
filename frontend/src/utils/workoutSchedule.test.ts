@@ -9,7 +9,7 @@ import {
 } from "@/utils/workoutSchedule";
 
 function occurrence(
-  status: "scheduled" | "moved" | "missed" | "completed" | "cancelled",
+  status: "scheduled" | "moved" | "missed" | "completed" | "cancelled" | "paused",
   dayIndex: number,
 ) {
   return {
@@ -87,6 +87,14 @@ describe("program schedule actions", () => {
       max: "2026-08-30",
       source: next,
     });
+  });
+
+  it("does not start a program while today's workout is paused by illness", () => {
+    const paused = occurrence("paused", 2);
+    const overview = { requested_date: "2026-09-21", current: paused, next: null };
+
+    expect(startableWorkoutOccurrence(overview)).toBeNull();
+    expect(canStartProgramFromSchedule(overview)).toBe(false);
   });
 
   it("offers only days after a completed workout and before the next one", () => {

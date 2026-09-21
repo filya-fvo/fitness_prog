@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import cycle_training, planned_workout, program_publication
+from app.services import cycle_training, illness_pause, planned_workout, program_publication
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -324,8 +324,11 @@ async def build_program_plan_for_user(
         started_at = scheduled_date
     elif started_at is None:
         started_at = scheduled_date
+    recovery_week = illness_pause.recovery_light_week_active(user.goals or {})
     base_meta = (
-        phase_meta_from_name(week_phase)
+        phase_meta_from_name("light")
+        if recovery_week
+        else phase_meta_from_name(week_phase)
         if week_phase
         else resolve_week_phase_meta(started_at, scheduled_date)
     )
@@ -351,6 +354,9 @@ async def build_program_plan_for_user(
     plan["base_week_phase"] = base_phase
     if adjustment:
         plan.update(adjustment)
+    if recovery_week:
+        plan["load_adjustment"] = "illness_recovery"
+        plan["load_adjustment_label"] = "Восстановительная лёгкая неделя после болезни"
     if not include_saved_override:
         return plan
     return await planned_workout.apply_saved_override(
@@ -456,6 +462,12 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
                 workout_id=existing.id,
                 user_id=user.id,
             )
+
+    if data.program_id is not None and illness_pause.illness_status(user.goals or {})["active"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Сначала завершите паузу по болезни",
+        )
 
     program: Program | None = None
     if data.program_id is not None:
@@ -665,6 +677,7 @@ async def _advance_program_cursor_for_completed_workout(
         goals.pop("active_program_repeat_phase", None)
         goals["active_program_phase_source"] = "manual"
         goals["active_program_workouts_in_phase"] = 0
+        goals = illness_pause.finish_recovery_cycle(goals)
     else:
         phase = base_phase
         goals["active_program_workouts_in_phase"] = day_index

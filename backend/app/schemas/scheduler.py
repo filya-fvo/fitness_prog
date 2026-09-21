@@ -57,6 +57,17 @@ class WorkoutCancellationRequest(BaseModel):
     scheduled_date: date
 
 
+class IllnessRecoveryChoiceRequest(BaseModel):
+    choice: Literal["light_week", "normal"]
+
+
+class IllnessPauseResponse(BaseModel):
+    active: bool
+    started_on: date | None = None
+    recovery_choice_pending: bool = False
+    recovery_light_week_active: bool = False
+
+
 class WorkoutAssignmentPreviewRequest(BaseModel):
     """Validate assigning an upcoming program workout to an earlier date."""
 
@@ -138,7 +149,7 @@ class WorkoutScheduleOccurrence(BaseModel):
     title: str
     program_id: uuid.UUID | None = None
     day_index: int | None = None
-    status: str = Field(pattern=r"^(scheduled|moved|missed|completed|cancelled)$")
+    status: str = Field(pattern=r"^(scheduled|moved|missed|completed|cancelled|paused)$")
     is_override: bool = False
     is_assignment: bool = False
     can_reschedule: bool = False
@@ -168,5 +179,6 @@ class PersonalRegularityResponse(BaseModel):
     planned: int = Field(ge=0)
     rescheduled_completed: int = Field(ge=0)
     cancelled: int = Field(ge=0)
+    paused: int = Field(default=0, ge=0)
     missed: int = Field(ge=0)
     completion_pct: float | None = Field(default=None, ge=0, le=100)

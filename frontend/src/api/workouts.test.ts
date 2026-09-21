@@ -3,9 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "./client";
 import {
   assignWorkoutOccurrence,
+  chooseIllnessRecovery,
   cancelScheduledWorkout,
   fetchExerciseProgress,
   fetchPersonalRegularity,
+  fetchIllnessPause,
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
   fetchWorkoutLoadHints,
@@ -120,6 +122,7 @@ describe("workout schedule API", () => {
         planned: 12,
         rescheduled_completed: 1,
         cancelled: 1,
+        paused: 2,
         missed: 1,
         completion_pct: 83.3,
       },
@@ -128,7 +131,26 @@ describe("workout schedule API", () => {
     const result = await fetchPersonalRegularity();
 
     expect(apiClient.get).toHaveBeenCalledWith("/workouts/regularity", { params: { days: 28 } });
-    expect(result).toMatchObject({ completed: 10, planned: 12, completion_pct: 83.3 });
+    expect(result).toMatchObject({ completed: 10, planned: 12, paused: 2, completion_pct: 83.3 });
+  });
+
+  it("reads illness pause and enables a light recovery week", async () => {
+    const status = {
+      active: false,
+      started_on: null,
+      recovery_choice_pending: true,
+      recovery_light_week_active: false,
+    };
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({ data: status });
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce({
+      data: { ...status, recovery_choice_pending: false, recovery_light_week_active: true },
+    });
+
+    expect((await fetchIllnessPause()).recovery_choice_pending).toBe(true);
+    const recovery = await chooseIllnessRecovery("light_week");
+
+    expect(apiClient.post).toHaveBeenCalledWith("/workouts/illness/recovery", { choice: "light_week" });
+    expect(recovery.recovery_light_week_active).toBe(true);
   });
 
   it("requests a bounded workout-history page", async () => {

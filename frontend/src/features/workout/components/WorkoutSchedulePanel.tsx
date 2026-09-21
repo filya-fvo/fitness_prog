@@ -39,6 +39,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
       overview?.current?.status === "scheduled"
       || overview?.current?.status === "missed"
       || overview?.current?.status === "cancelled"
+      || overview?.current?.status === "paused"
     ) {
       return overview.current;
     }
@@ -54,7 +55,10 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
   const missedBeforeToday = overview.current?.status === "missed";
   const scheduledToday = overview.current?.status === "scheduled";
   const cancelledToday = overview.current?.status === "cancelled";
-  const label = cancelledToday
+  const pausedToday = overview.current?.status === "paused";
+  const label = pausedToday
+    ? "Тренировка на паузе по болезни — пропуска не будет"
+    : cancelledToday
     ? overview.next
       ? `Тренировка отменена · следующая ${formatDate(overview.next.target_date)} в ${shortTime(overview.next.start_time)}`
       : "Тренировка отменена"
@@ -128,6 +132,11 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
         {cancelledToday ? (
           <p className="mt-1 text-[10px] text-tg-hint">
             Порядок программы сохранён: эта тренировка станет следующей.
+          </p>
+        ) : null}
+        {pausedToday ? (
+          <p className="mt-1 text-[10px] text-tg-hint">
+            План и порядок программы сохранены до выздоровления.
           </p>
         ) : null}
         {assignmentRange ? (

@@ -19,6 +19,8 @@ from app.deps import (
 )
 from app.models.user import User
 from app.schemas.scheduler import (
+    IllnessPauseResponse,
+    IllnessRecoveryChoiceRequest,
     PersonalRegularityResponse,
     ShiftScheduleRequest,
     ShiftScheduleResponse,
@@ -56,6 +58,7 @@ from app.schemas.workout import (
 )
 from app.services import (
     exercise_progress,
+    illness_pause,
     personal_regularity,
     planned_workout,
     progress_dashboard,
@@ -236,6 +239,49 @@ async def save_workout_schedule_settings(
         start_time=body.start_time,
     )
     return WorkoutScheduleSettingsResponse.model_validate(settings)
+
+
+@router.get("/illness", response_model=IllnessPauseResponse)
+async def workout_illness_status(
+    user: User = Depends(get_current_user),
+) -> IllnessPauseResponse:
+    return IllnessPauseResponse.model_validate(illness_pause.illness_status(user.goals or {}))
+
+
+@router.post("/illness/start", response_model=IllnessPauseResponse)
+async def start_workout_illness_pause(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> IllnessPauseResponse:
+    result = await illness_pause.start_illness_pause(
+        session,
+        user,
+        local_day=scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return IllnessPauseResponse.model_validate(result)
+
+
+@router.post("/illness/end", response_model=IllnessPauseResponse)
+async def end_workout_illness_pause(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> IllnessPauseResponse:
+    result = await illness_pause.end_illness_pause(
+        session,
+        user,
+        local_day=scheduler_service.local_schedule_day(user.goals or {}),
+    )
+    return IllnessPauseResponse.model_validate(result)
+
+
+@router.post("/illness/recovery", response_model=IllnessPauseResponse)
+async def choose_workout_illness_recovery(
+    body: IllnessRecoveryChoiceRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> IllnessPauseResponse:
+    result = await illness_pause.choose_recovery(session, user, choice=body.choice)
+    return IllnessPauseResponse.model_validate(result)
 
 
 @router.post(

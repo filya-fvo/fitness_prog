@@ -8,9 +8,11 @@ import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
+  fetchIllnessPause,
   fetchPersonalRegularity,
   fetchPlannedWorkoutPlan,
   fetchWorkoutSchedule,
+  type IllnessPause,
   type PersonalRegularity,
   type WorkoutScheduleOverview,
 } from "@/api/workouts";
@@ -20,6 +22,7 @@ import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { WorkoutSchedulePanel } from "@/features/workout/components/WorkoutSchedulePanel";
+import { IllnessPauseCard } from "@/features/workout/components/IllnessPauseCard";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import {
@@ -141,6 +144,7 @@ export function HomePage() {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [todayPlanOpen, setTodayPlanOpen] = useState(false);
   const [workoutSchedule, setWorkoutSchedule] = useState<WorkoutScheduleOverview | null>(null);
+  const [illness, setIllness] = useState<IllnessPause | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
   const [completedProgramIdsToday, setCompletedProgramIdsToday] = useState<string[]>([]);
   const readiness = usePreWorkoutReadiness(
@@ -178,7 +182,9 @@ export function HomePage() {
   const plannedOccurrence = plannedWorkoutOccurrence(workoutSchedule);
   const canStartProgramNow = canStartProgramFromSchedule(workoutSchedule);
   const todayDay = plannedOccurrence?.day_index ?? programCursor?.nextDayIndex ?? 1;
-  const todayPhase: WeekPhase = programCursor?.weekPhase ?? "medium";
+  const todayPhase: WeekPhase = illness?.recovery_light_week_active
+    ? "light"
+    : programCursor?.weekPhase ?? "medium";
   const effectiveTodayPhase = phaseFromPlan(preparedPlan, todayPhase);
   const dayOptions = useMemo(
     () => (todayProgram ? listProgramDays(todayProgram) : []),
@@ -300,12 +306,13 @@ export function HomePage() {
 
         if (getStoredToken() && isOnline()) {
           try {
-            const [programs, profile, exerciseResponse, schedule, planRegularity] = await Promise.all([
+            const [programs, profile, exerciseResponse, schedule, planRegularity, illnessStatus] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
               fetchMyProfile().catch(() => null),
               fetchExercises({ pageSize: 200 }).catch(() => null),
               fetchWorkoutSchedule().catch(() => null),
               plusAccess ? fetchPersonalRegularity().catch(() => null) : Promise.resolve(null),
+              fetchIllnessPause().catch(() => null),
             ]);
             if (exerciseResponse?.items.length) {
               setCatalog(exerciseResponse.items);
@@ -324,6 +331,7 @@ export function HomePage() {
             }
             if (!cancelled && schedule) setWorkoutSchedule(schedule);
             if (!cancelled) setRegularity(planRegularity);
+            if (!cancelled && illnessStatus) setIllness(illnessStatus);
             const rec = recommendPrograms(
               programs.items,
               {
@@ -645,7 +653,17 @@ export function HomePage() {
       <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
-        {daysSinceLastWorkout != null && daysSinceLastWorkout >= 7 && !reentryDismissed && !canResume ? (
+        <IllnessPauseCard
+          status={illness}
+          disabled={!online || canResume}
+          onChange={async (next) => {
+            setIllness(next);
+            const schedule = await fetchWorkoutSchedule().catch(() => null);
+            if (schedule) setWorkoutSchedule(schedule);
+          }}
+        />
+
+        {daysSinceLastWorkout != null && daysSinceLastWorkout >= 7 && !reentryDismissed && !canResume && !illness?.active ? (
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
             <div className="flex items-start justify-between gap-2">
               <div>

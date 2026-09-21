@@ -83,6 +83,7 @@ def test_completed_move_counts_for_original_slot_and_cancellation_does_not() -> 
     assert result.completed == 2
     assert result.rescheduled_completed == 1
     assert result.cancelled == 1
+    assert result.paused == 0
     assert result.missed == 0
     assert result.completion_pct == 66.7
 
