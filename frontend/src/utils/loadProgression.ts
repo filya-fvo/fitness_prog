@@ -1,9 +1,8 @@
 /**
  * 3-week load cycle + weight/reps suggestions from history.
  *
- * Light  — RIR 3–4, more reps, ~90% base weight
- * Medium — RIR 1–2, mid reps, 100% base
- * Heavy  — to failure, 6–8 reps, ~105% base (+ progression)
+ * Phase hints use the latest load from the same phase when possible. If it is
+ * unavailable, a phase-specific ratio is applied to another known phase.
  */
 
 import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
@@ -17,7 +16,7 @@ export type WeekPhaseMeta = {
   label: string;
   rir: string;
   defaultReps: string;
-  /** multiply last base weight */
+  /** phase weight relative to an established heavy working weight */
   weightFactor: number;
   /** absolute bump after a completed heavy week when starting new cycle */
   progressionKg: number;
@@ -26,23 +25,23 @@ export type WeekPhaseMeta = {
 export const WEEK_PHASES: Record<WeekPhase, Omit<WeekPhaseMeta, "phase" | "weekInCycle" | "cycleIndex">> = {
   light: {
     label: "Лёгкая",
-    rir: "3–4 до отказа",
-    defaultReps: "10-15",
-    weightFactor: 0.9,
+    rir: "4–5 повторов в запасе",
+    defaultReps: "12-15",
+    weightFactor: 0.7,
     progressionKg: 0,
   },
   medium: {
     label: "Средняя",
-    rir: "1–2 до отказа",
-    defaultReps: "8-12",
-    weightFactor: 1.0,
+    rir: "3 повтора в запасе",
+    defaultReps: "8-10",
+    weightFactor: 0.825,
     progressionKg: 0,
   },
   heavy: {
     label: "Тяжёлая",
-    rir: "в отказ",
-    defaultReps: "6-8",
-    weightFactor: 1.05,
+    rir: "1–2 повтора в запасе",
+    defaultReps: "5-8",
+    weightFactor: 1.0,
     progressionKg: 0,
   },
 };
@@ -126,6 +125,19 @@ export type PhaseLoadHistory = {
   weightMode: "total" | "per_hand" | null;
   machineParams: Record<string, string | number> | null;
   rpe: number | null;
+};
+
+const PHASE_SOURCE_PRIORITY: Record<WeekPhase, WeekPhase[]> = {
+  light: ["light", "heavy", "medium"],
+  medium: ["medium", "heavy", "light"],
+  heavy: ["heavy", "medium", "light"],
+};
+
+const PHASE_LOAD_RATIOS: Record<WeekPhase, Record<WeekPhase, number>> = {
+  light: { light: 1, heavy: 0.7, medium: 0.85 },
+  medium: { medium: 1, heavy: 0.825, light: 1.175 },
+  // Without an observed heavy set, keep the first heavy suggestion conservative.
+  heavy: { heavy: 1, medium: 1.15, light: 1.25 },
 };
 
 /** Per exercise: last completed session's top set (max weight, then max reps). */
@@ -246,21 +258,31 @@ export function suggestLoad(input: {
     };
   }
 
-  const phasePriority: WeekPhase[] = ["heavy", "medium", "light"];
-  const sourcePhase = phasePriority.find((candidate) => (hist.phaseLoads?.[candidate]?.weight || 0) > 0);
-  const source = sourcePhase ? hist.phaseLoads?.[sourcePhase] : null;
-  const sourceWeight = source?.weight || hist.lastWeight;
-  const phaseRatios: Record<WeekPhase, Record<WeekPhase, number>> = {
-    light: { heavy: 0.85, medium: 0.9, light: 1 },
-    medium: { heavy: 0.95, medium: 1, light: 1.05 },
-    heavy: { heavy: 1, medium: 1.05, light: 1.1 },
-  };
-  const ratio = sourcePhase ? phaseRatios[phase.phase][sourcePhase] : 1;
+  let sourcePhase = PHASE_SOURCE_PRIORITY[phase.phase]
+    .find((candidate) => (hist.phaseLoads?.[candidate]?.weight || 0) > 0);
+  let source = sourcePhase ? hist.phaseLoads?.[sourcePhase] : null;
+  let sourceWeight = source?.weight || hist.lastWeight;
+  let ratio = sourcePhase ? PHASE_LOAD_RATIOS[phase.phase][sourcePhase] : 1;
+  if (phase.phase === "light" && sourcePhase === "light" && (source?.rpe || 0) >= 8) {
+    ratio = 0.95;
+  }
+  const heavy = hist.phaseLoads?.heavy;
+  if (
+    heavy
+    && heavy.weight > 0
+    && phase.phase !== "heavy"
+    && sourceWeight * ratio > heavy.weight * PHASE_LOAD_RATIOS[phase.phase].heavy
+  ) {
+    sourcePhase = "heavy";
+    source = heavy;
+    sourceWeight = heavy.weight;
+    ratio = PHASE_LOAD_RATIOS[phase.phase].heavy;
+  }
   const suggestedWeight = sourceWeight > 0
     ? Math.max(0.5, Math.round(sourceWeight * ratio * 2) / 2)
     : 0;
   const weight = suggestedWeight > 0 ? formatWeight(suggestedWeight) : "";
-  const reps = hist.lastReps > 0 ? String(hist.lastReps) : repsMid;
+  const reps = sourceWeight > 0 ? repsMid : hist.lastReps > 0 ? String(hist.lastReps) : repsMid;
   const date = hist.lastDate
     ? ` (${hist.lastDate.split("-").reverse().join(".")})`
     : "";
@@ -272,9 +294,9 @@ export function suggestLoad(input: {
   const reference = sourcePhase && source
     ? ratio === 1
       ? `${weight} кг — как на ${sourceLabels[sourcePhase]} неделе`
-      : `${weight} кг — ${Math.round(ratio * 100)}% от ${formatWeight(source.weight)} кг на ${sourceLabels[sourcePhase]} неделе`
+      : `${weight} кг — ${Number((ratio * 100).toFixed(1))}% от ${formatWeight(source.weight)} кг на ${sourceLabels[sourcePhase]} неделе`
     : `${weight} кг по последней выполненной тренировке`;
-  const progressionNote = sourcePhase === "light" && phase.phase === "light"
+  const progressionNote = sourcePhase === "light" && phase.phase === "light" && ratio === 1
     ? " Если все подходы были уверенными, можно добавить 1–2,5 кг."
     : "";
 
@@ -287,7 +309,7 @@ export function suggestLoad(input: {
     note: hist.lastDurationSec && !weight && hist.lastReps <= 0
       ? `Прошлый раз${date}: ${Math.floor(hist.lastDurationSec / 60)}:${String(hist.lastDurationSec % 60).padStart(2, "0")}.`
       : weight
-        ? `Прошлый раз${date}: ${formatWeight(hist.lastWeight)} кг × ${reps}${hist.lastRpe ? `, RPE ${hist.lastRpe}` : ""}. Ориентир на ${phase.label.toLowerCase()}: ${reference}.${progressionNote}`
+        ? `Прошлый раз${date}: ${formatWeight(hist.lastWeight)} кг × ${hist.lastReps}${hist.lastRpe ? `, RPE ${hist.lastRpe}` : ""}. Ориентир на ${phase.label.toLowerCase()}: ${reference} × ${reps}, ${phase.rir}.${progressionNote}`
         : `Прошлый раз${date}: ${reps} повт. Цель недели: ${phase.defaultReps}.`,
   };
 }

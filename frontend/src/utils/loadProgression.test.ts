@@ -112,12 +112,13 @@ describe("loadProgression", () => {
     // Legacy history without phase remains a safe as-is fallback.
     expect(Number(sLight.weight)).toBe(100);
     expect(Number(sHeavy.weight)).toBe(100);
-    expect(sLight.reps).toBe("10");
+    expect(sLight.reps).toBe("14");
+    expect(sHeavy.reps).toBe("7");
     expect(sLight.note || "").toMatch(/лёгкая/i);
     expect(sHeavy.note || "").toMatch(/тяжёл/i);
   });
 
-  it("calculates a numeric light-week reference from heavy, then medium, history", () => {
+  it("uses 70% of heavy or 85% of medium for a light week", () => {
     const light = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20));
     const base = {
       exerciseId: "bench",
@@ -131,12 +132,61 @@ describe("loadProgression", () => {
     };
 
     const fromHeavy = suggestLoad({ history: base, phase: light });
-    expect(fromHeavy.weight).toBe("85");
-    expect(fromHeavy.note).toMatch(/85% от 100 кг/i);
+    expect(fromHeavy.weight).toBe("70");
+    expect(fromHeavy.reps).toBe("14");
+    expect(fromHeavy.note).toMatch(/70% от 100 кг/i);
 
     const fromMedium = suggestLoad({ history: { ...base, phaseLoads: { medium: base.phaseLoads.medium } }, phase: light });
-    expect(fromMedium.weight).toBe("81");
-    expect(fromMedium.note).toMatch(/90% от 90 кг/i);
+    expect(fromMedium.weight).toBe("76.5");
+    expect(fromMedium.note).toMatch(/85% от 90 кг/i);
+  });
+
+  it("uses 82.5% of heavy or 117.5% of light for a medium week", () => {
+    const medium = resolveWeekPhase("2026-07-13", new Date(2026, 6, 20));
+    const heavyHistory = {
+      exerciseId: "bench", lastWeight: 100, lastReps: 7, lastDate: "2026-07-17",
+      phaseLoads: { heavy: { weight: 100, reps: 7, date: "2026-07-17", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 8 } },
+    };
+    const lightHistory = {
+      ...heavyHistory,
+      lastWeight: 70,
+      lastReps: 14,
+      phaseLoads: { light: { weight: 70, reps: 14, date: "2026-07-10", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 6 } },
+    };
+
+    expect(suggestLoad({ history: heavyHistory, phase: medium }).weight).toBe("82.5");
+    expect(suggestLoad({ history: lightHistory, phase: medium }).weight).toBe("82.5");
+    expect(suggestLoad({ history: heavyHistory, phase: medium }).reps).toBe("9");
+  });
+
+  it("caps an old overly heavy medium-week history from the known heavy load", () => {
+    const medium = resolveWeekPhase("2026-07-13", new Date(2026, 6, 20));
+    const history = {
+      exerciseId: "bench", lastWeight: 95, lastReps: 10, lastDate: "2026-07-17",
+      phaseLoads: {
+        medium: { weight: 95, reps: 10, date: "2026-07-17", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 9 },
+        heavy: { weight: 100, reps: 7, date: "2026-07-03", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 9 },
+      },
+    };
+
+    const suggestion = suggestLoad({ history, phase: medium });
+    expect(suggestion.weight).toBe("82.5");
+    expect(suggestion.note).toMatch(/82.5% от 100 кг на тяжёлой неделе/i);
+  });
+
+  it("prefers the same phase and trims a hard previous light week by 5%", () => {
+    const light = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20));
+    const history = {
+      exerciseId: "bench", lastWeight: 72, lastReps: 14, lastDate: "2026-07-17",
+      phaseLoads: {
+        light: { weight: 72, reps: 14, date: "2026-07-17", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 8 },
+        heavy: { weight: 100, reps: 7, date: "2026-07-03", durationSec: null, weightMode: "total" as const, machineParams: null, rpe: 9 },
+      },
+    };
+
+    const suggestion = suggestLoad({ history, phase: light });
+    expect(suggestion.weight).toBe("68.5");
+    expect(suggestion.note).toMatch(/95% от 72 кг на лёгкой неделе/i);
   });
 
   it("prefills draft slots from plan target_sets and history", () => {

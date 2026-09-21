@@ -77,11 +77,11 @@ def resolve_week_phase_meta(started_at: date | None, today: date | None = None) 
     weeks = max(0, (today - started_at).days // 7)
     week_in_cycle = (weeks % 3) + 1
     if week_in_cycle == 1:
-        phase, label, rir, reps = "light", "Лёгкая", "3–4 до отказа", "10-15"
+        phase, label, rir, reps = "light", "Лёгкая", "4–5 повторов в запасе", "12-15"
     elif week_in_cycle == 2:
-        phase, label, rir, reps = "medium", "Средняя", "1–2 до отказа", "8-12"
+        phase, label, rir, reps = "medium", "Средняя", "3 повтора в запасе", "8-10"
     else:
-        phase, label, rir, reps = "heavy", "Тяжёлая", "в отказ", "6-8"
+        phase, label, rir, reps = "heavy", "Тяжёлая", "1–2 повтора в запасе", "5-8"
     return {
         "week_phase": phase,
         "week_in_cycle": week_in_cycle,
@@ -102,9 +102,9 @@ def phase_meta_from_name(
     """Build phase meta from explicit light|medium|heavy."""
     key = (phase or "").strip().lower()
     table = {
-        "light": (1, "Лёгкая", "3–4 до отказа", "10-15"),
-        "medium": (2, "Средняя", "1–2 до отказа", "8-12"),
-        "heavy": (3, "Тяжёлая", "в отказ", "6-8"),
+        "light": (1, "Лёгкая", "4–5 повторов в запасе", "12-15"),
+        "medium": (2, "Средняя", "3 повтора в запасе", "8-10"),
+        "heavy": (3, "Тяжёлая", "1–2 повтора в запасе", "5-8"),
     }
     if key not in table:
         key = "medium"
