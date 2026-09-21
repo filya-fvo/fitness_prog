@@ -21,7 +21,13 @@ from app.schemas.program import (
     ProgramUpdate,
 )
 from app.schemas.workout import WorkoutPlan, WorkoutResponse
-from app.services import admin_audit, program_publication, program_service, workout_service
+from app.services import (
+    admin_audit,
+    program_duration,
+    program_publication,
+    program_service,
+    workout_service,
+)
 
 router = APIRouter(prefix="/programs", tags=["programs"])
 
@@ -44,8 +50,21 @@ async def list_programs(
         templates_only=templates_only,
         include_unpublished=admin_view,
     )
+    durations = {} if admin_view else await program_duration.for_programs(
+        session,
+        user_id=user.id,
+        programs=items,
+    )
+    responses: list[ProgramResponse] = []
+    for item in items:
+        response = ProgramResponse.model_validate(item)
+        if item.id in durations:
+            minutes, sample_size = durations[item.id]
+            response.personal_duration_min = minutes
+            response.personal_duration_sample_size = sample_size
+        responses.append(response)
     return ProgramListResponse(
-        items=[ProgramResponse.model_validate(item) for item in items],
+        items=responses,
         total=total,
     )
 

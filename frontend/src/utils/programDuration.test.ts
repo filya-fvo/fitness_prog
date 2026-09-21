@@ -17,6 +17,14 @@ describe("program duration", () => {
     });
   });
 
+  it("prefers a personal median after three completed sessions", () => {
+    expect(programDurationLabel({
+      structure: { session_duration_min: 45, session_duration_max: 60 },
+      personal_duration_min: 67,
+      personal_duration_sample_size: 3,
+    })).toBe("по вашему темпу около 67 мин");
+  });
+
   it("does not show an invented duration without source data", () => {
     expect(programDurationLabel({ structure: {} })).toBeNull();
     expect(programDurationLabel({ structure: { session_duration_min: 0 } })).toBeNull();

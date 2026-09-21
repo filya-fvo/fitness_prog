@@ -49,6 +49,8 @@ class ProgramResponse(BaseModel):
     is_current: bool = False
     published_at: datetime | None = None
     published_by: uuid.UUID | None = None
+    personal_duration_min: int | None = Field(default=None, ge=5, le=240)
+    personal_duration_sample_size: int = Field(default=0, ge=0, le=6)
     created_at: datetime
     updated_at: datetime
 

@@ -19,6 +19,8 @@ const programSchema = z.object({
   version: z.number().int().positive().default(1),
   is_current: z.boolean().default(false),
   published_at: z.string().nullable().optional(),
+  personal_duration_min: z.number().int().min(5).max(240).nullable().optional(),
+  personal_duration_sample_size: z.number().int().min(0).max(6).default(0),
 });
 
 const listSchema = z.object({
@@ -73,6 +75,8 @@ function mapProgram(item: z.infer<typeof programSchema>): Program {
     version: item.version,
     is_current: item.is_current,
     published_at: item.published_at ?? null,
+    personal_duration_min: item.personal_duration_min ?? null,
+    personal_duration_sample_size: item.personal_duration_sample_size,
   };
 }
 

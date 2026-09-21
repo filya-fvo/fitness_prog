@@ -23,7 +23,13 @@ export function programDurationRange(program: Pick<Program, "structure">): Progr
   return { min: minimum, max: maximum };
 }
 
-export function programDurationLabel(program: Pick<Program, "structure">): string | null {
+export function programDurationLabel(
+  program: Pick<Program, "structure" | "personal_duration_min" | "personal_duration_sample_size">,
+): string | null {
+  const personal = validMinutes(program.personal_duration_min);
+  if (personal != null && (program.personal_duration_sample_size ?? 0) >= 3) {
+    return `по вашему темпу около ${personal} мин`;
+  }
   const duration = programDurationRange(program);
   if (!duration) return null;
   if (duration.min === duration.max) return `около ${duration.min} мин`;

@@ -19,6 +19,8 @@ describe("program catalog API", () => {
             version: 2,
             is_current: true,
             published_at: "2026-08-28T10:00:00Z",
+            personal_duration_min: 68,
+            personal_duration_sample_size: 4,
           },
         ],
         total: 1,
@@ -35,6 +37,8 @@ describe("program catalog API", () => {
       program_key: "seed-program",
       version: 2,
       is_current: true,
+      personal_duration_min: 68,
+      personal_duration_sample_size: 4,
     });
   });
 
