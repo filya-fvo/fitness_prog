@@ -44,6 +44,8 @@ _EXERCISE_FIELDS = {
     "equipment",
     "difficulty",
     "media_source",
+    "media_review_status",
+    "media_review_reason",
     "weight_rule",
     "tags",
     "is_deleted",
@@ -132,6 +134,12 @@ def exercise_snapshot(exercise: Exercise) -> dict[str, object]:
         "equipment": _short_text(exercise.equipment, limit=60),
         "difficulty": int(exercise.difficulty),
         "media_source": _short_text(exercise.media_source, limit=40),
+        "media_review_status": _short_text(
+            getattr(exercise, "media_review_status", None), limit=20
+        ),
+        "media_review_reason": _short_text(
+            getattr(exercise, "media_review_reason", None), limit=120
+        ),
         "weight_rule": _short_text(exercise.weight_rule, limit=20),
         "tags": [_short_text(tag, limit=40) for tag in tags[:20] if _short_text(tag, limit=40)],
         "is_deleted": bool(exercise.is_deleted),

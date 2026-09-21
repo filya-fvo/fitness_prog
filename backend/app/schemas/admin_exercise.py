@@ -5,17 +5,20 @@ from __future__ import annotations
 import uuid
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.exercise import ExerciseCreate, ExerciseResponse
 
 MediaQuality = Literal["ready", "unverified", "missing", "rejected"]
+MediaReviewStatus = Literal["pending", "verified", "rejected"]
 MediaField = Literal["video_url", "animation_url", "thumbnail_url"]
 UploadMediaField = Literal["animation_url", "thumbnail_url"]
 
 
 class AdminExerciseItem(ExerciseResponse):
     media_quality: MediaQuality
+    media_review_status: MediaReviewStatus = "pending"
+    media_review_reason: str | None = None
     workout_uses: int = 0
     program_uses: int = 0
     is_archived: bool = False
@@ -59,6 +62,23 @@ class ExerciseMediaCheckResponse(BaseModel):
 class ExerciseMediaUploadResponse(BaseModel):
     url: str
     exercise: AdminExerciseItem
+
+
+class ExerciseMediaRejectRequest(BaseModel):
+    reason: str = Field(min_length=5, max_length=300)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) < 5:
+            raise ValueError("reason must contain at least 5 non-whitespace characters")
+        return cleaned
+
+
+class ExerciseMediaRejectResponse(BaseModel):
+    exercise: AdminExerciseItem
+    message: str
 
 
 class ExercisePreflightRequest(ExerciseCreate):

@@ -4,6 +4,7 @@ import {
   getAdminExercise,
   listAdminExercises,
   preflightAdminExercise,
+  rejectAdminExerciseMedia,
   uploadAdminExerciseMedia,
   type AdminExercisePayload,
 } from "./adminExercises";
@@ -113,5 +114,31 @@ describe("admin exercise API", () => {
     expect((form as FormData).get("image")).toBe(file);
     expect(String((form as FormData).get("idempotency_key"))).toMatch(/^[0-9a-f-]{36}$/);
     expect(config).toEqual({ timeout: UPLOAD_API_TIMEOUT_MS });
+  });
+
+  it("requires a reason when rejecting an exercise GIF", async () => {
+    const item = {
+      id: "00000000-0000-4000-8000-000000000001",
+      ...payload,
+      media_quality: "rejected",
+      media_review_status: "rejected",
+      media_review_reason: "Показано другое упражнение",
+      workout_uses: 0,
+      program_uses: 0,
+      is_archived: false,
+      created_at: "2026-08-30T10:00:00Z",
+      updated_at: "2026-08-30T10:00:00Z",
+    };
+    vi.spyOn(apiClient, "post").mockResolvedValue({ data: {
+      exercise: item,
+      message: "GIF снят с карточки и отправлен на замену.",
+    } });
+
+    const result = await rejectAdminExerciseMedia(item.id, item.media_review_reason);
+
+    expect(result.exercise.media_review_status).toBe("rejected");
+    expect(apiClient.post).toHaveBeenCalledWith(`/admin/exercises/${item.id}/media/reject`, {
+      reason: item.media_review_reason,
+    });
   });
 });

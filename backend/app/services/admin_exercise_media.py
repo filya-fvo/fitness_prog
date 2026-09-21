@@ -141,6 +141,15 @@ async def attach_media(
     await session.flush()
     setattr(exercise, field, f"/exercise-media/{asset.id}")
     exercise.media_source = "none"
+    if field == "animation_url":
+        exercise.media_review_status = "pending"
+        exercise.media_review_reason = None
+        exercise.tags = [
+            str(tag)
+            for tag in exercise.tags or []
+            if tag not in {"media:no-exact-gif", "media:verified", "media:rejected-by-admin"}
+            and not str(tag).startswith("media:reviewed:")
+        ]
     label = "основное медиа" if field == "animation_url" else "миниатюра"
     admin_audit.add_event(
         session,
@@ -168,6 +177,45 @@ async def attach_media(
     await session.refresh(asset)
     await session.refresh(exercise)
     return asset
+
+
+async def reject_animation(
+    session: AsyncSession,
+    exercise: Exercise,
+    *,
+    reason: str,
+    audit_context: admin_audit.AuditContext,
+) -> Exercise:
+    """Detach a wrong GIF while keeping immutable uploaded assets for audit/rollback."""
+    cleaned_reason = reason.strip()
+    if len(cleaned_reason) < 5:
+        raise ValueError("Media rejection reason must contain at least 5 characters")
+    before = admin_audit.exercise_snapshot(exercise)
+    exercise.animation_url = None
+    exercise.thumbnail_url = None
+    exercise.media_review_status = "rejected"
+    exercise.media_review_reason = cleaned_reason
+    preserved_tags = [
+        str(tag)
+        for tag in exercise.tags or []
+        if tag not in {"media:verified", "media:no-exact-gif", "media:rejected-by-admin"}
+        and not str(tag).startswith("media:reviewed:")
+    ]
+    exercise.tags = [*preserved_tags, "media:no-exact-gif", "media:rejected-by-admin"]
+    admin_audit.add_event(
+        session,
+        context=audit_context,
+        action="exercise.media_reject",
+        object_type="exercise",
+        object_id=exercise.id,
+        result="success",
+        description=f"GIF отклонён: {cleaned_reason}",
+        before=before,
+        after=admin_audit.exercise_snapshot(exercise),
+    )
+    await session.commit()
+    await session.refresh(exercise)
+    return exercise
 
 
 async def get_asset(

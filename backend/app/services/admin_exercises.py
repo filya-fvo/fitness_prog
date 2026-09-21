@@ -39,13 +39,17 @@ _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"}
 
 def media_quality(exercise: Exercise) -> MediaQuality:
     tags = {str(item) for item in (exercise.tags or [])}
-    if "media:no-exact-gif" in tags:
+    review_status = str(getattr(exercise, "media_review_status", "") or "")
+    if review_status == "rejected" or "media:no-exact-gif" in tags:
         return "rejected"
     urls = [exercise.animation_url, exercise.video_url, exercise.thumbnail_url]
     if not any(value and value.strip() for value in urls):
         return "missing"
+    if review_status == "pending":
+        return "unverified"
     if (
-        "curated" in tags
+        review_status == "verified"
+        or "curated" in tags
         or "media:verified" in tags
         or any(
             value and value.startswith(("/exercise-gifs/", "/exercise-media/"))
@@ -57,26 +61,23 @@ def media_quality(exercise: Exercise) -> MediaQuality:
 
 
 def _quality_filter(value: MediaQuality):
-    rejected = Exercise.tags.contains(["media:no-exact-gif"])
+    rejected = or_(
+        Exercise.media_review_status == "rejected",
+        Exercise.tags.contains(["media:no-exact-gif"]),
+    )
     has_media = or_(
         func.coalesce(Exercise.video_url, "") != "",
         func.coalesce(Exercise.animation_url, "") != "",
         func.coalesce(Exercise.thumbnail_url, "") != "",
     )
-    verified = or_(
-        Exercise.tags.contains(["curated"]),
-        Exercise.tags.contains(["media:verified"]),
-        Exercise.animation_url.like("/exercise-gifs/%"),
-        Exercise.animation_url.like("/exercise-media/%"),
-        Exercise.thumbnail_url.like("/exercise-media/%"),
-    )
+    verified = Exercise.media_review_status == "verified"
     if value == "rejected":
         return rejected
     if value == "missing":
         return and_(~rejected, ~has_media)
     if value == "ready":
         return and_(~rejected, has_media, verified)
-    return and_(~rejected, has_media, ~verified)
+    return and_(~rejected, has_media, Exercise.media_review_status == "pending")
 
 
 def _program_references(structure: object, exercise_id: uuid.UUID) -> bool:

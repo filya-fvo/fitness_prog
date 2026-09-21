@@ -12,6 +12,8 @@ const adminExerciseSchema = exerciseSchema.extend({
   workout_uses: z.number().int().nonnegative().default(0),
   program_uses: z.number().int().nonnegative().default(0),
   is_archived: z.boolean().default(false),
+  media_review_status: z.enum(["pending", "verified", "rejected"]).default("pending"),
+  media_review_reason: z.string().nullable().default(null),
   created_at: z.string().datetime({ offset: true }),
   updated_at: z.string().datetime({ offset: true }),
 });
@@ -49,6 +51,11 @@ const mediaCheckSchema = z.object({
 const mediaUploadSchema = z.object({
   url: z.string().min(1),
   exercise: adminExerciseSchema,
+});
+
+const mediaRejectSchema = z.object({
+  exercise: adminExerciseSchema,
+  message: z.string(),
 });
 
 const preflightSchema = z.object({
@@ -189,6 +196,11 @@ export async function uploadAdminExerciseMedia(
     timeout: UPLOAD_API_TIMEOUT_MS,
   });
   return mediaUploadSchema.parse(data);
+}
+
+export async function rejectAdminExerciseMedia(id: string, reason: string) {
+  const { data } = await apiClient.post(`/admin/exercises/${id}/media/reject`, { reason });
+  return mediaRejectSchema.parse(data);
 }
 
 export async function previewExerciseImport(items: Array<Record<string, unknown>>) {

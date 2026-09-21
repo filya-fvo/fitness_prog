@@ -64,12 +64,41 @@ async def upsert_exercises(session) -> tuple[int, int]:
     updated = 0
     for row in payload:
         current = existing.get(row["name_ru"])
+        tags = {str(tag) for tag in row.get("tags") or []}
+        desired_review_status = (
+            "rejected"
+            if "media:no-exact-gif" in tags
+            else "verified"
+            if "media:verified" in tags
+            else "pending"
+        )
+        desired_review_reason = (
+            "В каталоге нет точного проверенного GIF."
+            if desired_review_status == "rejected"
+            else None
+        )
         if current is None:
-            session.add(Exercise(**row))
+            session.add(
+                Exercise(
+                    **row,
+                    media_review_status=desired_review_status,
+                    media_review_reason=desired_review_reason,
+                )
+            )
             created += 1
             continue
+        rejected_by_admin = (
+            current.media_review_status == "rejected"
+            and bool(current.media_review_reason)
+            and "media:rejected-by-admin" in {str(tag) for tag in current.tags or []}
+        )
         for key, value in row.items():
+            if rejected_by_admin and key in {"animation_url", "thumbnail_url", "tags"}:
+                continue
             setattr(current, key, value)
+        if not rejected_by_admin:
+            current.media_review_status = desired_review_status
+            current.media_review_reason = desired_review_reason
         updated += 1
     await session.flush()
     if renamed:

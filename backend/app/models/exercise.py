@@ -33,6 +33,13 @@ class Exercise(Base, TimestampSoftDeleteMixin):
     thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     media_duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     media_source: Mapped[str] = mapped_column(Text, nullable=False, default="none", server_default="none")
+    media_review_status: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="pending",
+        server_default="pending",
+    )
+    media_review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
     limitations: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
     weight_rule: Mapped[str] = mapped_column(

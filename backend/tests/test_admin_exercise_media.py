@@ -142,6 +142,9 @@ class AttachSession:
 @pytest.mark.asyncio
 async def test_attaching_media_updates_exercise_atomically_and_adds_safe_audit() -> None:
     item = exercise()
+    item.media_review_status = "rejected"
+    item.media_review_reason = "Показано другое движение"
+    item.tags = ["curated", "media:no-exact-gif", "media:rejected-by-admin"]
     png = image_bytes("PNG")
     media = await admin_exercise_media.read_upload(Upload(png, "image/png"), "animation_url")
     session = AttachSession()
@@ -155,6 +158,9 @@ async def test_attaching_media_updates_exercise_atomically_and_adds_safe_audit()
     )
 
     assert item.animation_url == f"/exercise-media/{asset.id}"
+    assert item.media_review_status == "pending"
+    assert item.media_review_reason is None
+    assert item.tags == ["curated"]
     assert session.commits == 1
     events = [value for value in session.values if isinstance(value, AdminAuditLog)]
     assert len(events) == 1

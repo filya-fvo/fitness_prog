@@ -22,6 +22,8 @@ from app.schemas.admin_exercise import (
     ExerciseImportPreviewResponse,
     ExerciseMediaCheckRequest,
     ExerciseMediaCheckResponse,
+    ExerciseMediaRejectRequest,
+    ExerciseMediaRejectResponse,
     ExerciseMediaUploadResponse,
     ExercisePreflightRequest,
     ExercisePreflightResponse,
@@ -212,6 +214,32 @@ async def upload_media(
     return ExerciseMediaUploadResponse(
         url=str(getattr(exercise, field)),
         exercise=_item(exercise, workout_uses=workout_uses, program_uses=program_uses),
+    )
+
+
+@router.post("/{exercise_id}/media/reject", response_model=ExerciseMediaRejectResponse)
+async def reject_media(
+    exercise_id: uuid.UUID,
+    body: ExerciseMediaRejectRequest,
+    session: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    correlation_id: uuid.UUID = Depends(get_request_id),
+) -> ExerciseMediaRejectResponse:
+    exercise = await exercise_service.get_exercise(session, exercise_id)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Упражнение не найдено")
+    if not exercise.animation_url:
+        raise HTTPException(status_code=409, detail="У упражнения уже нет GIF")
+    await admin_exercise_media.reject_animation(
+        session,
+        exercise,
+        reason=body.reason,
+        audit_context=admin_audit.AuditContext(admin.id, correlation_id),
+    )
+    workout_uses, program_uses = await admin_exercises.usage_counts(session, exercise_id)
+    return ExerciseMediaRejectResponse(
+        exercise=_item(exercise, workout_uses=workout_uses, program_uses=program_uses),
+        message="GIF снят с карточки и отправлен на замену.",
     )
 
 

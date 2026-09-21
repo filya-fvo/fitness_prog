@@ -8,6 +8,7 @@ import {
   getAdminExerciseOptions,
   listAdminExercises,
   preflightAdminExercise,
+  rejectAdminExerciseMedia,
   restoreAdminExercise,
   uploadAdminExerciseMedia,
   updateAdminExercise,
@@ -28,6 +29,7 @@ import { toUserMessage } from "@/utils/errors";
 
 import { ExerciseEditorForm } from "../components/ExerciseEditorForm";
 import { ExerciseImportPreviewPanel } from "../components/ExerciseImportPreview";
+import { RejectExerciseMediaDialog } from "../components/RejectExerciseMediaDialog";
 import {
   draftFromExercise,
   draftsEqual,
@@ -71,6 +73,7 @@ export function AdminExercisesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [rejectingMedia, setRejectingMedia] = useState<AdminExercise | null>(null);
   const loaded = useRef(false);
   const navigationApproved = useRef(false);
   const baselineDraft = useMemo(
@@ -270,6 +273,33 @@ export function AdminExercisesPage() {
     }
   }
 
+  async function openMediaRejection(item: AdminExercise) {
+    if (!await confirmDiscard()) return;
+    if (isDirty) resetEditor();
+    setRejectingMedia(item);
+  }
+
+  async function rejectMedia(reason: string) {
+    if (!rejectingMedia) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await rejectAdminExerciseMedia(rejectingMedia.id, reason);
+      setItems((current) => current.map((item) => item.id === result.exercise.id ? result.exercise : item));
+      if (editing?.id === result.exercise.id) {
+        setEditing(result.exercise);
+        setDraft(draftFromExercise(result.exercise));
+        setPreflight(null);
+      }
+      setRejectingMedia(null);
+      setNotice(result.message);
+    } catch (reasonValue) {
+      setError(toUserMessage(reasonValue, "Не удалось снять неверный GIF."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function imported(count: number) {
     setNotice(`Импортировано упражнений: ${count}.`);
     await load(page, filters);
@@ -327,13 +357,22 @@ export function AdminExercisesPage() {
                   <span className="block font-medium">{item.name_ru}</span>
                   <span className="mt-1 block text-xs text-tg-hint">{item.muscle_group}{item.equipment ? ` · ${item.equipment}` : ""} · сложность {item.difficulty}</span>
                   <span className="mt-1 block text-xs text-tg-hint">Медиа: {qualityLabels[item.media_quality]} · вес: {weightLabels[item.weight_rule]}</span>
+                  {item.media_review_reason ? <span className="mt-1 block text-xs text-amber-700 dark:text-amber-300">Причина: {item.media_review_reason}</span> : null}
                   <span className="mt-1 block text-xs text-tg-hint">Используется: тренировки {item.workout_uses}, программы {item.program_uses}</span>
                 </button>
                 <div className="flex shrink-0 flex-col gap-1 text-right">
                   {item.is_archived ? (
                     <button type="button" onClick={() => void restore(item)} className="min-h-11 text-sm text-emerald-600 dark:text-emerald-300">Восстановить</button>
                   ) : (
-                    <><button type="button" onClick={() => void edit(item)} className="min-h-11 text-sm text-tg-link">Изменить</button><button type="button" onClick={() => void archive(item)} className="min-h-11 text-sm text-red-500">В архив</button></>
+                    <>
+                      <button type="button" onClick={() => void edit(item)} className="min-h-11 text-sm text-tg-link">Изменить</button>
+                      {item.animation_url ? (
+                        <button type="button" onClick={() => void openMediaRejection(item)} className="min-h-11 text-sm text-amber-700 dark:text-amber-300">
+                          GIF неверный
+                        </button>
+                      ) : null}
+                      <button type="button" onClick={() => void archive(item)} className="min-h-11 text-sm text-red-500">В архив</button>
+                    </>
                   )}
                 </div>
               </div>
@@ -345,6 +384,12 @@ export function AdminExercisesPage() {
       <div className="my-4 flex items-center justify-between gap-3"><button type="button" disabled={page <= 1 || loading} onClick={() => move(page - 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Назад</button><span className="text-xs text-tg-hint">Страница {page} из {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span><button type="button" disabled={page * PAGE_SIZE >= total || loading} onClick={() => move(page + 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Дальше</button></div>
 
       <ExerciseImportPreviewPanel onImported={imported} />
+      <RejectExerciseMediaDialog
+        exercise={rejectingMedia}
+        busy={busy}
+        onClose={() => { if (!busy) setRejectingMedia(null); }}
+        onSubmit={rejectMedia}
+      />
     </section>
   );
 }

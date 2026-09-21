@@ -18,10 +18,17 @@ from app.models.exercise import Exercise
 from app.schemas.admin_exercise import (
     ExerciseDuplicateCandidate,
     ExerciseMediaCheckRequest,
+    ExerciseMediaRejectRequest,
     ExercisePreflightRequest,
 )
 from app.schemas.exercise import ExerciseCreate, ExerciseResponse
-from app.services import admin_audit, admin_exercise_import, admin_exercises, exercise_service
+from app.services import (
+    admin_audit,
+    admin_exercise_import,
+    admin_exercise_media,
+    admin_exercises,
+    exercise_service,
+)
 
 
 def exercise(**overrides) -> Exercise:
@@ -75,6 +82,62 @@ def test_media_quality_covers_all_editor_states() -> None:
     assert admin_exercises.media_quality(
         exercise(tags=[], animation_url="https://cdn.example/exercise.gif")
     ) == "unverified"
+    assert admin_exercises.media_quality(
+        exercise(media_review_status="pending", tags=["curated"])
+    ) == "unverified"
+    assert admin_exercises.media_quality(
+        exercise(media_review_status="rejected", tags=["curated"])
+    ) == "rejected"
+
+
+def test_media_rejection_reason_is_trimmed_and_cannot_be_blank() -> None:
+    request = ExerciseMediaRejectRequest(reason="  Другое движение  ")
+    assert request.reason == "Другое движение"
+    with pytest.raises(ValueError):
+        ExerciseMediaRejectRequest(reason="     ")
+
+
+@pytest.mark.asyncio
+async def test_reject_animation_detaches_media_and_records_reason() -> None:
+    class RejectSession:
+        commits = 0
+        refreshed = 0
+        events: list[object]
+
+        def __init__(self) -> None:
+            self.events = []
+
+        def add(self, value):
+            self.events.append(value)
+
+        async def commit(self):
+            self.commits += 1
+
+        async def refresh(self, _value):
+            self.refreshed += 1
+
+    item = exercise(
+        thumbnail_url="/exercise-thumbnails/test.png",
+        media_review_status="verified",
+        media_review_reason=None,
+        tags=["curated", "media:verified", "media:reviewed:2026-09-21"],
+    )
+    session = RejectSession()
+    rejected = await admin_exercise_media.reject_animation(
+        session,  # type: ignore[arg-type]
+        item,
+        reason="Показано другое оборудование",
+        audit_context=admin_audit.AuditContext(uuid.uuid4(), uuid.uuid4()),
+    )
+
+    assert rejected.animation_url is None
+    assert rejected.thumbnail_url is None
+    assert rejected.media_review_status == "rejected"
+    assert rejected.media_review_reason == "Показано другое оборудование"
+    assert "media:no-exact-gif" in rejected.tags
+    assert "media:rejected-by-admin" in rejected.tags
+    assert session.commits == 1
+    assert session.events[0].action == "exercise.media_reject"
 
 
 def test_nested_program_reference_is_exact() -> None:
