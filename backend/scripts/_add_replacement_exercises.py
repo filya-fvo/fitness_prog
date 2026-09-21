@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.services.exercise_classification import enrich_seed_metadata
+
 CONTENT = Path(__file__).resolve().parent / "seed_content"
 SEED_PATH = CONTENT / "exercises.json"
 MANIFEST_PATH = ROOT.parent / "frontend" / "public" / "exercise-gifs" / "exercise-gifs-manifest.json"
@@ -636,6 +638,16 @@ def patch_seed() -> list[str]:
             "description": "Боковая планка на предплечье. © Gym Visual — https://gymvisual.com/",
             "tags": ["gymvisual", "ds:0705", "© Gym Visual", "curated", "load:timed", "bodyweight"],
         },
+        "Удержание «лодочки»": {
+            "equipment": "свой вес",
+            "description": "Статическое удержание корпуса без дополнительного оборудования.",
+            "tags": ["gymvisual", "ds:1014", "curated", "load:timed", "bodyweight", "media:no-exact-gif"],
+        },
+        "Присед + жим гантелей": {
+            "equipment": "гантели",
+            "description": "Приседание с последующим жимом гантелей над головой.",
+            "tags": ["gymvisual", "ds:0550", "curated", "dumbbells", "full_body", "media:no-exact-gif"],
+        },
         "Ягодичный мост в машине Смита": {
             "animation_url": None,
             "description": "Ягодичный мост в машине Смита. Точного проверенного GIF пока нет.",
@@ -678,6 +690,7 @@ def patch_seed() -> list[str]:
         correction = corrections.get(str(row.get("name_ru")))
         if correction:
             row.update(correction)
+        enrich_seed_metadata(row)
     SEED_PATH.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     manifest = [
         {

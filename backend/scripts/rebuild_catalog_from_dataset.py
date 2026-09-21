@@ -38,6 +38,7 @@ from sqlalchemy import select  # noqa: E402
 
 from app.core.database import AsyncSessionLocal  # noqa: E402
 from app.models.exercise import Exercise  # noqa: E402
+from app.services.exercise_classification import enrich_seed_metadata  # noqa: E402
 from app.services import seed_programs  # noqa: E402
 
 DS_PATH = REPO / "backups" / "exercises-dataset-src" / "data" / "exercises.json"
@@ -499,7 +500,7 @@ def build_seed_rows(
             "media_source": prev_media,
             "tags": tags,
         }
-        rows.append(row)
+        rows.append(enrich_seed_metadata(row))
         print(f"OK {name_ru} <- {ds.get('name')} gif={gif_ok}")
 
     return rows, report

@@ -49,9 +49,10 @@ def exercise() -> Exercise:
         id=uuid.uuid4(),
         name_ru="Планка",
         muscle_group="кор",
+        equipment="свой вес",
         secondary_muscle_groups=[],
         difficulty=1,
-        tags=[],
+        tags=["primary:core", "pattern:core_stability", "role:core", "equipment:bodyweight"],
         limitations=[],
         weight_rule="total",
         media_source="none",
@@ -127,7 +128,14 @@ async def test_every_seed_program_is_publishable() -> None:
         (root / "scripts" / "seed_content" / "exercises.json").read_text(encoding="utf-8")
     )
     exercises = [
-        SimpleNamespace(id=uuid.uuid4(), name_ru=row["name_ru"])
+        SimpleNamespace(
+            id=uuid.uuid4(),
+            name_ru=row["name_ru"],
+            muscle_group=row["muscle_group"],
+            secondary_muscle_groups=row.get("secondary_muscle_groups", []),
+            equipment=row.get("equipment"),
+            tags=row.get("tags", []),
+        )
         for row in exercise_rows
     ]
     session = ValidationSession(exercises)
@@ -140,6 +148,43 @@ async def test_every_seed_program_is_publishable() -> None:
             failures[row["name"]] = errors
 
     assert failures == {}
+
+
+@pytest.mark.asyncio
+async def test_program_cannot_hide_required_equipment() -> None:
+    item = exercise()
+    item.name_ru = "Приседания со штангой"
+    item.muscle_group = "ноги"
+    item.equipment = "штанга"
+    item.tags = [
+        "primary:quadriceps", "primary:glutes", "pattern:squat",
+        "role:main", "equipment:barbell",
+    ]
+    draft = program(
+        structure={
+            "level": "beginner",
+            "workout_type": "full_body",
+            "sex": ["any"],
+            "location": "home",
+            "equipment": ["bodyweight"],
+            "limitations": [],
+            "days_per_week": 1,
+            "schedule": [{
+                "day_index": 1,
+                "exercises": [{
+                    "exercise_id": str(item.id),
+                    "sets": 3,
+                    "reps": "8-10",
+                    "rest_sec": 90,
+                }],
+            }],
+        }
+    )
+    errors = await program_publication.validate_for_publication(
+        ValidationSession([item]),  # type: ignore[arg-type]
+        draft,
+    )
+    assert "Добавьте в инвентарь программы: штангу." in errors
 
 
 def test_only_current_published_version_is_public_but_active_old_version_survives() -> None:

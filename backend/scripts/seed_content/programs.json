@@ -295,7 +295,7 @@
               "rest_sec": 55
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 3,
               "reps": "12-15",
               "rest_sec": 40
@@ -623,7 +623,7 @@
   },
   {
     "name": "М · Улица · Новичок · Площадка",
-    "description": "Уличная программа: турник/брусья/свой вес. Разминку на улице — отдельно.",
+    "description": "Уличная программа: турник, брусья, свой вес и резинка. Разминку на улице — отдельно.",
     "target_level": "beginner",
     "level": "beginner",
     "workout_type": "conditioning",
@@ -637,7 +637,8 @@
       ],
       "location": "outdoor",
       "equipment": [
-        "bodyweight"
+        "bodyweight",
+        "bands"
       ],
       "limitations": [],
       "days_per_week": 3,
@@ -3367,7 +3368,7 @@
               "rest_sec": 45
             },
             {
-              "exercise_name": "Подъёмы на носки стоя",
+              "exercise_name": "Подъёмы на носки без веса",
               "sets": 4,
               "reps": "8-12",
               "rest_sec": 40

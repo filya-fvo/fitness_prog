@@ -16,7 +16,14 @@
       "gymvisual",
       "ds:0043",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -36,7 +43,14 @@
       "gymvisual",
       "ds:0042",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -56,7 +70,14 @@
       "gymvisual",
       "ds:0124",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -78,7 +99,14 @@
       "© Gym Visual",
       "curated",
       "bodyweight",
-      "squat"
+      "squat",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -99,7 +127,14 @@
       "gymvisual",
       "ds:1760",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -119,7 +154,14 @@
       "gymvisual",
       "ds:1463",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -139,7 +181,12 @@
       "gymvisual",
       "ds:0585",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "secondary:glutes",
+      "pattern:knee_extension",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -159,7 +206,12 @@
       "gymvisual",
       "ds:0586",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:hamstrings",
+      "secondary:calves",
+      "pattern:knee_flexion",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -179,7 +231,14 @@
       "gymvisual",
       "ds:0085",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -200,7 +259,14 @@
       "gymvisual",
       "ds:1459",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -220,7 +286,14 @@
       "gymvisual",
       "ds:0032",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -241,7 +314,14 @@
       "gymvisual",
       "ds:0410",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -262,7 +342,14 @@
       "gymvisual",
       "ds:0336",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -283,7 +370,14 @@
       "gymvisual",
       "ds:0381",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -303,7 +397,14 @@
       "gymvisual",
       "ds:1410",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -324,7 +425,14 @@
       "gymvisual",
       "ds:0431",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -345,7 +453,13 @@
       "ds:3013",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:hip_extension",
+      "role:accessory",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -367,7 +481,13 @@
       "© Gym Visual",
       "curated",
       "barbell",
-      "ноги"
+      "ноги",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:hip_extension",
+      "role:accessory",
+      "equipment:barbell"
     ]
   },
   {
@@ -387,7 +507,11 @@
       "gymvisual",
       "ds:1372",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:calves",
+      "pattern:calf_raise",
+      "role:accessory",
+      "equipment:barbell"
     ]
   },
   {
@@ -407,7 +531,11 @@
       "gymvisual",
       "ds:0594",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:calves",
+      "pattern:calf_raise",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -427,7 +555,13 @@
       "gymvisual",
       "ds:0025",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -448,7 +582,13 @@
       "gymvisual",
       "ds:0289",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -469,7 +609,13 @@
       "gymvisual",
       "ds:0314",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -489,7 +635,12 @@
       "gymvisual",
       "ds:0030",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -509,7 +660,13 @@
       "gymvisual",
       "ds:0576",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -530,7 +687,13 @@
       "gymvisual",
       "ds:0308",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -550,7 +713,13 @@
       "gymvisual",
       "ds:0188",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -571,7 +740,13 @@
       "ds:0662",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -592,7 +767,13 @@
       "ds:3211",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -613,7 +794,13 @@
       "ds:0493",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -634,7 +821,12 @@
       "ds:0283",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -655,7 +847,13 @@
       "ds:0251",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -676,7 +874,13 @@
       "ds:0652",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -697,7 +901,13 @@
       "ds:0499",
       "© Gym Visual",
       "curated",
-      "load:reps_only"
+      "load:reps_only",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -720,7 +930,13 @@
       "manual_add",
       "replacement",
       "barbell",
-      "спина"
+      "спина",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -741,7 +957,13 @@
       "gymvisual",
       "ds:0292",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -761,7 +983,13 @@
       "gymvisual",
       "ds:0150",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -781,7 +1009,13 @@
       "gymvisual",
       "ds:0861",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -801,7 +1035,13 @@
       "gymvisual",
       "ds:1349",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -821,7 +1061,13 @@
       "gymvisual",
       "ds:3144",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:bands"
     ]
   },
   {
@@ -842,7 +1088,11 @@
       "gymvisual",
       "ds:0375",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "pattern:other",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -862,7 +1112,14 @@
       "gymvisual",
       "ds:0489",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -882,7 +1139,13 @@
       "gymvisual",
       "ds:0203",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -902,7 +1165,13 @@
       "gymvisual",
       "ds:1457",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:upper_chest",
+      "pattern:vertical_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -923,7 +1192,13 @@
       "gymvisual",
       "ds:0405",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:upper_chest",
+      "pattern:vertical_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -944,7 +1219,13 @@
       "gymvisual",
       "ds:2137",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:upper_chest",
+      "pattern:vertical_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -965,7 +1246,12 @@
       "gymvisual",
       "ds:0334",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -986,7 +1272,12 @@
       "gymvisual",
       "ds:2292",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1007,7 +1298,12 @@
       "gymvisual",
       "ds:0310",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1027,7 +1323,11 @@
       "gymvisual",
       "ds:0602",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "pattern:other",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -1047,7 +1347,12 @@
       "gymvisual",
       "ds:0120",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:barbell"
     ]
   },
   {
@@ -1068,7 +1373,12 @@
       "gymvisual",
       "ds:0406",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1089,7 +1399,12 @@
       "gymvisual",
       "ds:0294",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1109,7 +1424,12 @@
       "gymvisual",
       "ds:0031",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:barbell"
     ]
   },
   {
@@ -1130,7 +1450,12 @@
       "gymvisual",
       "ds:0313",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1150,7 +1475,12 @@
       "gymvisual",
       "ds:0070",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:barbell"
     ]
   },
   {
@@ -1170,7 +1500,12 @@
       "gymvisual",
       "ds:0868",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -1190,7 +1525,12 @@
       "gymvisual",
       "ds:0201",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:triceps",
+      "secondary:deltoids",
+      "pattern:elbow_extension",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -1211,7 +1551,11 @@
       "gymvisual",
       "ds:2188",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:triceps",
+      "pattern:other",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1232,7 +1576,13 @@
       "gymvisual",
       "ds:0351",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1254,7 +1604,13 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "bodyweight"
+      "bodyweight",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1276,7 +1632,13 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "bodyweight"
+      "bodyweight",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1297,7 +1659,13 @@
       "ds:3699",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1317,7 +1685,12 @@
       "gymvisual",
       "ds:0274",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:core",
+      "secondary:hip_flexors",
+      "pattern:core_flexion",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1337,7 +1710,12 @@
       "gymvisual",
       "ds:0003",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:core",
+      "secondary:hip_flexors",
+      "pattern:core_flexion",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1357,7 +1735,12 @@
       "gymvisual",
       "ds:0687",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:core",
+      "secondary:hip_flexors",
+      "pattern:core_flexion",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1377,7 +1760,12 @@
       "gymvisual",
       "ds:0620",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:core",
+      "secondary:hip_flexors",
+      "pattern:core_flexion",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1398,7 +1786,13 @@
       "ds:0276",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1420,14 +1814,20 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
     "name_ru": "Удержание «лодочки»",
     "muscle_group": "кор",
-    "equipment": "резинка",
-    "description": "Удержание «лодочки». Цель: abs. Оборудование: band. © Gym Visual — https://gymvisual.com/",
+    "equipment": "свой вес",
+    "description": "Статическое удержание корпуса без дополнительного оборудования.",
     "technique": "1. Лягте на спину, выпрямите ноги и вытяните руки над головой, удерживая ленту.\n2. Включив пресс, одновременно поднимите ноги и верхнюю часть тела от земли, потянув руки к пальцам ног.\n3. Задержитесь на мгновение в верхней точке, затем медленно опустите ноги и верхнюю часть тела обратно в исходное положение.\n4. Повторите необходимое количество повторений.",
     "common_mistakes": null,
     "difficulty": 2,
@@ -1439,10 +1839,16 @@
     "tags": [
       "gymvisual",
       "ds:1014",
-      "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "bodyweight",
+      "media:no-exact-gif",
+      "primary:core",
+      "secondary:back",
+      "secondary:glutes",
+      "pattern:core_stability",
+      "role:core",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1462,7 +1868,12 @@
       "gymvisual",
       "ds:0630",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1483,7 +1894,12 @@
       "ds:1160",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1507,7 +1923,12 @@
       "load:cardio_machine",
       "treadmill",
       "cardio",
-      "machine"
+      "machine",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:machines"
     ]
   },
   {
@@ -1529,7 +1950,12 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1550,7 +1976,12 @@
       "ds:2612",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1571,7 +2002,12 @@
       "ds:3223",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1592,7 +2028,12 @@
       "ds:3361",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1613,7 +2054,12 @@
       "ds:2141",
       "© Gym Visual",
       "curated",
-      "load:cardio_machine"
+      "load:cardio_machine",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:machines"
     ]
   },
   {
@@ -1634,7 +2080,12 @@
       "ds:0798",
       "© Gym Visual",
       "curated",
-      "load:cardio_machine"
+      "load:cardio_machine",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:machines"
     ]
   },
   {
@@ -1655,7 +2106,12 @@
       "ds:0549",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:kettlebell"
     ]
   },
   {
@@ -1676,7 +2132,12 @@
       "gymvisual",
       "ds:2133",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1696,14 +2157,19 @@
       "gymvisual",
       "ds:3360",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:cardiovascular",
+      "secondary:full_body",
+      "pattern:conditioning",
+      "role:conditioning",
+      "equipment:bodyweight"
     ]
   },
   {
     "name_ru": "Присед + жим гантелей",
     "muscle_group": "плечи",
-    "equipment": "гиря",
-    "description": "Присед + жим гантелей. Цель: delts. Оборудование: kettlebell. © Gym Visual — https://gymvisual.com/",
+    "equipment": "гантели",
+    "description": "Приседание с последующим жимом гантелей над головой.",
     "technique": "1. Начните с того, что встаньте, поставив ноги на ширине плеч, держа гирю перед грудью обеими руками, ладони обращены друг к другу.\n2. Опуститесь в присед, согнув колени и отведя бедра назад, сохраняя грудь поднятой, а спину прямой.\n3. Достигнув нижней точки приседа, резко поднимите пятки, чтобы встать, одновременно нажимая гирю над головой.\n4. Зафиксируйте руки в верхней точке движения, полностью разгибая локти.\n5. Опустите гирю обратно в исходное положение, изменив движение, согнув локти и опустив вес обратно на грудь.\n6. Повторите необходимое количество повторений.",
     "common_mistakes": null,
     "difficulty": 3,
@@ -1715,9 +2181,18 @@
     "tags": [
       "gymvisual",
       "ds:0550",
-      "© Gym Visual",
       "curated",
-      "media:no-exact-gif"
+      "dumbbells",
+      "full_body",
+      "media:no-exact-gif",
+      "primary:quadriceps",
+      "primary:glutes",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:core",
+      "pattern:squat_to_press",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1737,7 +2212,14 @@
       "gymvisual",
       "ds:3305",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -1757,7 +2239,14 @@
       "gymvisual",
       "ds:3305",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -1778,7 +2267,14 @@
       "gymvisual",
       "ds:1658",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -1798,7 +2294,14 @@
       "gymvisual",
       "ds:1688",
       "© Gym Visual",
-      "curated"
+      "curated",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1820,7 +2323,11 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1841,7 +2348,11 @@
       "ds:1368",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1863,7 +2374,11 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bands"
     ]
   },
   {
@@ -1885,7 +2400,11 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1906,7 +2425,11 @@
       "ds:2567",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1927,7 +2450,11 @@
       "ds:1564",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1949,7 +2476,11 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1971,7 +2502,11 @@
       "© Gym Visual",
       "curated",
       "load:timed",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -1992,7 +2527,11 @@
       "ds:3212",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2013,7 +2552,11 @@
       "ds:1604",
       "© Gym Visual",
       "curated",
-      "load:timed"
+      "load:timed",
+      "primary:mobility",
+      "pattern:mobility",
+      "role:mobility",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2037,7 +2580,11 @@
       "replacement",
       "cable",
       "pullover",
-      "спина"
+      "спина",
+      "primary:back",
+      "pattern:other",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2061,7 +2608,13 @@
       "replacement",
       "barbell",
       "трицепс",
-      "french press"
+      "french press",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -2084,7 +2637,13 @@
       "manual_add",
       "replacement",
       "barbell",
-      "трицепс"
+      "трицепс",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -2107,7 +2666,13 @@
       "manual_add",
       "replacement",
       "barbell",
-      "трицепс"
+      "трицепс",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:upper_chest",
+      "pattern:vertical_push",
+      "role:main",
+      "equipment:barbell"
     ]
   },
   {
@@ -2130,7 +2695,12 @@
       "manual_add",
       "replacement",
       "cable",
-      "трицепс"
+      "трицепс",
+      "primary:triceps",
+      "secondary:deltoids",
+      "pattern:elbow_extension",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2153,7 +2723,13 @@
       "manual_add",
       "replacement",
       "cable",
-      "трицепс"
+      "трицепс",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2176,7 +2752,13 @@
       "manual_add",
       "replacement",
       "cable",
-      "спина"
+      "спина",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2199,7 +2781,11 @@
       "manual_add",
       "replacement",
       "cable",
-      "грудь"
+      "грудь",
+      "primary:chest",
+      "pattern:other",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2222,7 +2808,12 @@
       "curated",
       "manual_add",
       "replacement",
-      "плечи"
+      "плечи",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -2244,7 +2835,13 @@
       "curated",
       "manual_add",
       "replacement",
-      "спина"
+      "спина",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2268,7 +2865,11 @@
       "manual_add",
       "replacement",
       "pullover",
-      "спина"
+      "спина",
+      "primary:back",
+      "pattern:other",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -2290,7 +2891,14 @@
       "© Gym Visual",
       "curated",
       "replacement",
-      "smith"
+      "smith",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2312,7 +2920,14 @@
       "© Gym Visual",
       "curated",
       "replacement",
-      "machine"
+      "machine",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:squat",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2335,7 +2950,14 @@
       "curated",
       "replacement",
       "smith",
-      "unilateral"
+      "unilateral",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2357,7 +2979,13 @@
       "curated",
       "replacement",
       "smith",
-      "грудь"
+      "грудь",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2379,7 +3007,13 @@
       "curated",
       "replacement",
       "machine",
-      "грудь"
+      "грудь",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2401,7 +3035,13 @@
       "curated",
       "replacement",
       "machine",
-      "грудь"
+      "грудь",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2423,7 +3063,13 @@
       "curated",
       "replacement",
       "machine",
-      "плечи"
+      "плечи",
+      "primary:deltoids",
+      "secondary:triceps",
+      "secondary:upper_chest",
+      "pattern:vertical_push",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2445,7 +3091,12 @@
       "curated",
       "replacement",
       "cable",
-      "плечи"
+      "плечи",
+      "primary:deltoids",
+      "secondary:trapezius",
+      "pattern:shoulder_accessory",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2467,7 +3118,13 @@
       "curated",
       "replacement",
       "machine",
-      "спина"
+      "спина",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:rear_deltoids",
+      "pattern:horizontal_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2489,7 +3146,13 @@
       "curated",
       "replacement",
       "cable",
-      "спина"
+      "спина",
+      "primary:back",
+      "secondary:biceps",
+      "secondary:forearms",
+      "pattern:vertical_pull",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2511,7 +3174,12 @@
       "curated",
       "replacement",
       "machine",
-      "ноги"
+      "ноги",
+      "primary:hamstrings",
+      "secondary:calves",
+      "pattern:knee_flexion",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2534,7 +3202,13 @@
       "replacement",
       "smith",
       "ноги",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:hip_extension",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2556,7 +3230,11 @@
       "curated",
       "replacement",
       "machine",
-      "ноги"
+      "ноги",
+      "primary:calves",
+      "pattern:calf_raise",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2579,7 +3257,12 @@
       "curated",
       "replacement",
       "dumbbells",
-      "бицепс"
+      "бицепс",
+      "primary:biceps",
+      "secondary:forearms",
+      "pattern:elbow_flexion",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -2601,7 +3284,12 @@
       "curated",
       "replacement",
       "cable",
-      "кор"
+      "кор",
+      "primary:core",
+      "secondary:hip_flexors",
+      "pattern:core_flexion",
+      "role:core",
+      "equipment:machines"
     ]
   },
   {
@@ -2623,7 +3311,13 @@
       "curated",
       "replacement",
       "bands",
-      "кор"
+      "кор",
+      "primary:chest",
+      "secondary:triceps",
+      "secondary:deltoids",
+      "pattern:horizontal_push",
+      "role:main",
+      "equipment:bands"
     ]
   },
   {
@@ -2645,7 +3339,14 @@
       "curated",
       "cable",
       "glutes",
-      "hinge"
+      "hinge",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2667,7 +3368,13 @@
       "curated",
       "cable",
       "glutes",
-      "unilateral"
+      "unilateral",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:hip_extension",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2689,7 +3396,14 @@
       "curated",
       "machine",
       "glutes",
-      "hinge"
+      "hinge",
+      "primary:hamstrings",
+      "primary:glutes",
+      "secondary:back",
+      "secondary:core",
+      "pattern:hinge",
+      "role:main",
+      "equipment:machines"
     ]
   },
   {
@@ -2712,7 +3426,13 @@
       "manual_add",
       "dumbbells",
       "glutes",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:hip_extension",
+      "role:accessory",
+      "equipment:dumbbells"
     ]
   },
   {
@@ -2734,7 +3454,14 @@
       "curated",
       "bodyweight",
       "glutes",
-      "unilateral"
+      "unilateral",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2756,7 +3483,14 @@
       "curated",
       "bodyweight",
       "quads",
-      "unilateral"
+      "unilateral",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2777,7 +3511,11 @@
       "ds:1373",
       "curated",
       "bodyweight",
-      "calves"
+      "calves",
+      "primary:calves",
+      "pattern:calf_raise",
+      "role:accessory",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2800,7 +3538,14 @@
       "bodyweight",
       "glutes",
       "unilateral",
-      "media:no-exact-gif"
+      "media:no-exact-gif",
+      "primary:quadriceps",
+      "primary:glutes",
+      "secondary:hamstrings",
+      "secondary:core",
+      "pattern:lunge",
+      "role:main",
+      "equipment:bodyweight"
     ]
   },
   {
@@ -2822,7 +3567,12 @@
       "curated",
       "machine",
       "adductors",
-      "isolation"
+      "isolation",
+      "primary:adductors",
+      "secondary:glutes",
+      "pattern:hip_adduction",
+      "role:accessory",
+      "equipment:machines"
     ]
   },
   {
@@ -2845,7 +3595,13 @@
       "machine",
       "glutes",
       "abductors",
-      "isolation"
+      "isolation",
+      "primary:gluteus_medius",
+      "secondary:glutes",
+      "secondary:core",
+      "pattern:hip_abduction",
+      "role:accessory",
+      "equipment:machines"
     ]
   }
 ]

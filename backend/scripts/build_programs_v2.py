@@ -1637,10 +1637,10 @@ def build_all() -> list[dict]:
     ))
     programs.append(prog(
         name="М · Улица · Новичок · Площадка",
-        description="Уличная программа: турник/брусья/свой вес. Разминку на улице — отдельно.",
+        description="Уличная программа: турник, брусья, свой вес и резинка. Разминку на улице — отдельно.",
         level="beginner", workout_type="conditioning",
         sex=["male"], location="outdoor",
-        equipment=["bodyweight"], limitations=[],
+        equipment=["bodyweight", "bands"], limitations=[],
         days_per_week=3, session_min=40,
         schedule=[
             day(1, "Outdoor A", "full", outdoor_a()),
@@ -2545,23 +2545,22 @@ def build_all() -> list[dict]:
     programs.extend(limitation_matrix_extensions())
     programs.extend(serious_gym_programs())
 
-    # Generic catalog entries for lunges and calf raises use dumbbells or a
-    # barbell. Keep bodyweight-only plans honest by assigning exact no-load
-    # variants instead of showing equipment that the program does not provide.
-    bodyweight_variants = {
-        "Выпады вперёд": "Выпады вперёд без веса",
-        "Боковые выпады": "Боковые выпады без веса",
-        "Болгарские выпады": "Болгарские приседания без веса",
-        "Подъёмы на носки стоя": "Подъёмы на носки без веса",
+    # Generic catalog entries for lunges and calf raises use a specific load.
+    # Assign exact no-load variants whenever a plan does not declare that
+    # equipment instead of showing an unavailable dumbbell or barbell.
+    equipment_variants = {
+        "Выпады вперёд": ("dumbbells", "Выпады вперёд без веса"),
+        "Боковые выпады": ("barbell", "Боковые выпады без веса"),
+        "Болгарские выпады": ("dumbbells", "Болгарские приседания без веса"),
+        "Подъёмы на носки стоя": ("barbell", "Подъёмы на носки без веса"),
     }
     for program in programs:
         equipment = set(program["structure"].get("equipment") or [])
-        if equipment & {"dumbbells", "barbell", "machines"}:
-            continue
         for workout_day in program["structure"].get("schedule") or []:
             for item in workout_day.get("exercises") or []:
-                replacement = bodyweight_variants.get(str(item.get("exercise_name") or ""))
-                if replacement:
+                variant = equipment_variants.get(str(item.get("exercise_name") or ""))
+                if variant and variant[0] not in equipment:
+                    replacement = variant[1]
                     item["exercise_name"] = replacement
 
     limitation_notice = (

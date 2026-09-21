@@ -13,11 +13,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.exercise import Exercise
 from app.models.program import Program
 from app.services import admin_audit
+from app.services.exercise_classification import (
+    build_program_structure_report,
+    classify_exercise,
+)
 
 LEVELS = {"beginner", "intermediate", "advanced"}
 LOCATIONS = {"gym", "home", "outdoor"}
 SEXES = {"male", "female", "any", "unisex"}
-EQUIPMENT = {"bodyweight", "bands", "dumbbells", "barbell", "machines"}
+EQUIPMENT = {"bodyweight", "bands", "dumbbells", "barbell", "machines", "kettlebell"}
+EQUIPMENT_LABELS = {
+    "bands": "резинки",
+    "dumbbells": "гантели",
+    "barbell": "штангу",
+    "machines": "тренажёры",
+    "kettlebell": "гирю",
+}
+DIRECT_SET_LIMITS = {"beginner": 36, "intermediate": 48, "advanced": 60}
 LIMITATIONS = {"no_knee", "no_spine", "shoulder_sensitive"}
 WORKOUT_TYPES = {
     "full_body",
@@ -241,6 +253,57 @@ async def validate_for_publication(session: AsyncSession, program: Program) -> l
         errors.append(
             "Некоторые упражнения не найдены или находятся в архиве: "
             + ", ".join([*(str(item) for item in sorted(missing_ids, key=str)), *sorted(missing_names)])[:500]
+        )
+        return errors
+
+    by_id = {item.id: item for item in rows}
+    by_name = {item.name_ru: item for item in rows}
+    resolved_schedule: list[dict[str, Any]] = []
+    required_equipment: set[str] = set()
+    for raw_day in schedule:
+        if not isinstance(raw_day, dict):
+            continue
+        resolved_items: list[dict[str, Any]] = []
+        for raw_item in raw_day.get("exercises") or []:
+            if not isinstance(raw_item, dict):
+                continue
+            exercise: Exercise | None = None
+            raw_id = raw_item.get("exercise_id")
+            if raw_id:
+                try:
+                    exercise = by_id.get(uuid.UUID(str(raw_id)))
+                except ValueError:
+                    exercise = None
+            if exercise is None:
+                exercise = by_name.get(str(raw_item.get("exercise_name") or "").strip())
+            if exercise is None:
+                continue
+            classification = classify_exercise(exercise)
+            required_equipment.add(classification.equipment)
+            resolved_items.append({**raw_item, "exercise_name": exercise.name_ru})
+        resolved_schedule.append({**raw_day, "exercises": resolved_items})
+
+    declared_equipment = set(equipment or [])
+    missing_equipment = sorted(required_equipment - declared_equipment - {"bodyweight"})
+    if missing_equipment:
+        labels = [EQUIPMENT_LABELS.get(item, item) for item in missing_equipment]
+        errors.append("Добавьте в инвентарь программы: " + ", ".join(labels) + ".")
+
+    report = build_program_structure_report(resolved_schedule, by_name)
+    direct_set_limit = DIRECT_SET_LIMITS.get(level, DIRECT_SET_LIMITS["beginner"])
+    excessive_volume = {
+        muscle: sets
+        for muscle, sets in report.direct_sets.items()
+        if sets > direct_set_limit
+    }
+    if excessive_volume:
+        details = ", ".join(
+            f"{muscle} — {sets}"
+            for muscle, sets in sorted(excessive_volume.items())
+        )
+        errors.append(
+            f"Слишком много прямых подходов в неделю для этого уровня: {details}. "
+            f"Допустимо не более {direct_set_limit}."
         )
     return errors
 
