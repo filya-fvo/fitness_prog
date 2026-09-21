@@ -57,6 +57,8 @@ GIF_REVERSE_HYPER = "/exercise-gifs/0593-Krmb3cB.gif"
 GIF_BODYWEIGHT_FORWARD_LUNGE = "/exercise-gifs/3470-kMzUs9Y.gif"
 GIF_BODYWEIGHT_SPLIT_SQUAT = "/exercise-gifs/2368-9E25EOx.gif"
 GIF_BODYWEIGHT_CALF_RAISE = "/exercise-gifs/1373-bJYHBIN.gif"
+GIF_MACHINE_HIP_ADDUCTION = "/exercise-gifs/0598-oHsrypV.gif"
+GIF_MACHINE_HIP_ABDUCTION = "/exercise-gifs/0597-CHpahtl.gif"
 
 
 def ex(
@@ -93,6 +95,34 @@ def ex(
 
 
 NEW_ITEMS: list[dict] = [
+    ex(
+        "Сведение ног в тренажёре",
+        "ноги",
+        "тренажёр",
+        1,
+        "1. Настройте сиденье и ограничители так, чтобы стартовое положение было комфортным.\n"
+        "2. Прижмите спину к опоре, поставьте стопы на подножки и удерживайте таз неподвижно.\n"
+        "3. Плавно сведите бёдра без рывка.\n"
+        "4. Коротко задержитесь и подконтрольно вернитесь, не бросая вес.",
+        description="Сведение ног сидя в тренажёре с акцентом на приводящие мышцы бедра.",
+        animation_url=GIF_MACHINE_HIP_ADDUCTION,
+        common_mistakes="Слишком широкая стартовая позиция; рывок; отрыв таза; удар плит стека.",
+        tags=["gymvisual", "ds:0598", "curated", "machine", "adductors", "isolation"],
+    ),
+    ex(
+        "Разведение ног в тренажёре",
+        "ноги",
+        "тренажёр",
+        1,
+        "1. Настройте сиденье и ограничители, затем плотно прижмите спину к опоре.\n"
+        "2. Поставьте стопы на подножки и сохраняйте таз неподвижным.\n"
+        "3. Плавно разведите колени до комфортной амплитуды.\n"
+        "4. Коротко задержитесь и медленно верните ноги, сохраняя натяжение.",
+        description="Разведение ног сидя в тренажёре с акцентом на среднюю ягодичную мышцу.",
+        animation_url=GIF_MACHINE_HIP_ABDUCTION,
+        common_mistakes="Раскачивание корпуса; рывок; чрезмерная амплитуда; неконтролируемое сведение ног.",
+        tags=["gymvisual", "ds:0597", "curated", "machine", "glutes", "abductors", "isolation"],
+    ),
     ex(
         "Выпады вперёд без веса",
         "ноги",

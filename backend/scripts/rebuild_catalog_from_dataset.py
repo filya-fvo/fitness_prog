@@ -74,6 +74,8 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Ягодичный мост со штангой", ["barbell glute bridge"], "ноги", 3),
     ("Ягодичный мост в машине Смита", ["smith hip raise"], "ноги", 3),
     ("Сгибания ног сидя", ["lever seated leg curl"], "ноги", 2),
+    ("Сведение ног в тренажёре", ["lever seated hip adduction"], "ноги", 1),
+    ("Разведение ног в тренажёре", ["lever seated hip abduction"], "ноги", 1),
     ("Подъёмы на носки стоя в тренажёре", ["lever standing calf raise"], "ноги", 2),
     ("Подъёмы на носки стоя", ["barbell standing calf raise", "dumbbell standing calf raise", "bodyweight standing calf raise"], "ноги", 1),
     ("Подъёмы на носки сидя", ["lever seated calf raise", "barbell seated calf raise"], "ноги", 1),

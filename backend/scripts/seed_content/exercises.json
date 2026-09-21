@@ -2801,5 +2801,50 @@
       "unilateral",
       "media:no-exact-gif"
     ]
+  },
+  {
+    "name_ru": "Сведение ног в тренажёре",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Сведение ног сидя в тренажёре с акцентом на приводящие мышцы бедра.",
+    "technique": "1. Настройте сиденье и ограничители так, чтобы стартовое положение было комфортным.\n2. Прижмите спину к опоре, поставьте стопы на подножки и удерживайте таз неподвижно.\n3. Плавно сведите бёдра без рывка.\n4. Коротко задержитесь и подконтрольно вернитесь, не бросая вес.",
+    "common_mistakes": "Слишком широкая стартовая позиция; рывок; отрыв таза; удар плит стека.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0598-oHsrypV.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0598",
+      "curated",
+      "machine",
+      "adductors",
+      "isolation"
+    ]
+  },
+  {
+    "name_ru": "Разведение ног в тренажёре",
+    "muscle_group": "ноги",
+    "equipment": "тренажёр",
+    "description": "Разведение ног сидя в тренажёре с акцентом на среднюю ягодичную мышцу.",
+    "technique": "1. Настройте сиденье и ограничители, затем плотно прижмите спину к опоре.\n2. Поставьте стопы на подножки и сохраняйте таз неподвижным.\n3. Плавно разведите колени до комфортной амплитуды.\n4. Коротко задержитесь и медленно верните ноги, сохраняя натяжение.",
+    "common_mistakes": "Раскачивание корпуса; рывок; чрезмерная амплитуда; неконтролируемое сведение ног.",
+    "difficulty": 1,
+    "video_url": null,
+    "animation_url": "/exercise-gifs/0597-CHpahtl.gif",
+    "thumbnail_url": null,
+    "media_duration_sec": null,
+    "media_source": "none",
+    "tags": [
+      "gymvisual",
+      "ds:0597",
+      "curated",
+      "machine",
+      "glutes",
+      "abductors",
+      "isolation"
+    ]
   }
 ]

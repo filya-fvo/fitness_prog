@@ -790,5 +790,17 @@
     "file": "",
     "animation_url": null,
     "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Сведение ног в тренажёре",
+    "file": "0598-oHsrypV.gif",
+    "animation_url": "/exercise-gifs/0598-oHsrypV.gif",
+    "muscle_group": "ноги"
+  },
+  {
+    "name_ru": "Разведение ног в тренажёре",
+    "file": "0597-CHpahtl.gif",
+    "animation_url": "/exercise-gifs/0597-CHpahtl.gif",
+    "muscle_group": "ноги"
   }
 ]

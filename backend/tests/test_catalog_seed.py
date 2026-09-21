@@ -120,6 +120,35 @@ def test_corrected_catalog_equipment_and_media_are_explicit() -> None:
     assert "media:no-exact-gif" in smith_bridge["tags"]
 
 
+def test_hip_adduction_and_abduction_are_available_in_relevant_programs() -> None:
+    rows = json.loads((SEED / "exercises.json").read_text(encoding="utf-8"))
+    by_name = {row["name_ru"]: row for row in rows}
+    expected_media = {
+        "Сведение ног в тренажёре": ("/exercise-gifs/0598-oHsrypV.gif", "ds:0598"),
+        "Разведение ног в тренажёре": ("/exercise-gifs/0597-CHpahtl.gif", "ds:0597"),
+    }
+    for name, (animation_url, source_tag) in expected_media.items():
+        assert by_name[name]["equipment"] == "тренажёр"
+        assert by_name[name]["animation_url"] == animation_url
+        assert source_tag in by_name[name]["tags"]
+
+    programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
+    by_program = {program["name"]: program for program in programs}
+    target_programs = [
+        by_program["М · Зал · Опытный · Только тренажёры 4 дня"],
+        by_program["Ж · Зал · Опытный · Только тренажёры 4 дня"],
+        by_program["Ж · Зал · Новичок · Ягодицы + верх"],
+        by_program["Ж · Зал · Опытный · Верх/Низ 4 дня"],
+    ]
+    for program in target_programs:
+        names = {
+            item["exercise_name"]
+            for workout_day in program["structure"]["schedule"]
+            for item in workout_day["exercises"]
+        }
+        assert expected_media.keys() <= names, program["name"]
+
+
 def test_regular_programs_cover_the_full_sex_location_level_matrix() -> None:
     programs = json.loads((SEED / "programs.json").read_text(encoding="utf-8"))
     regular = [
