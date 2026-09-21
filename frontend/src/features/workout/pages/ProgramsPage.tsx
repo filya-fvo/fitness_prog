@@ -30,6 +30,7 @@ import {
 import { isOnline } from "@/utils/network";
 import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
+import { programDurationLabel } from "@/utils/programDuration";
 import { toUserMessage } from "@/utils/errors";
 import { cycleTrainingEnabledForProfile } from "@/utils/cycleTraining";
 import {
@@ -489,6 +490,7 @@ export function ProgramsPage() {
     const todayIdx = pickTodayDayIndex(program);
     const reasons = why?.length ? why : reasonsById.get(program.id) || [];
     const mismatches = compareProgramToProfile(program, recommendInput);
+    const duration = programDurationLabel(program);
 
     return (
       <article key={`${badge || "all"}-${program.id}`} className="rounded-2xl bg-tg-secondary p-4">
@@ -528,6 +530,7 @@ export function ProgramsPage() {
                 ? ` · ${enumLabel(program.level || program.target_level)}`
                 : ""}
               {days ? ` · ${days} дн.` : ""}
+              {duration ? ` · ${duration}` : ""}
             </p>
             {reasons.length ? (
               <p className="mt-1 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p>
@@ -575,6 +578,7 @@ export function ProgramsPage() {
                         </p>
                         <p className="text-[11px] text-tg-hint">
                           {exCount ? exercisesCount(exCount) : "упражнения по шаблону"}
+                          {duration ? ` · ${duration}` : ""}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">

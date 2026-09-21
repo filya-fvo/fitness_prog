@@ -52,6 +52,7 @@ import {
 import { OTP_DRAFT_LINK_KEY, readOtpDraft } from "@/utils/otpDraft";
 import { toUserMessage } from "@/utils/errors";
 import { programDayLabel } from "@/utils/localization";
+import { programDurationLabel } from "@/utils/programDuration";
 import { PlusBadge } from "@/features/subscription/components/PlusBadge";
 import { hasPlus, plusValidUntilText } from "@/features/subscription/subscriptionAccess";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
@@ -292,7 +293,9 @@ function programMetaLine(program: Program): string {
   const type = PROGRAM_TYPE_LABELS[program.workout_type] ?? program.workout_type;
   const loc = String(st.location || "");
   const locLabel = loc === "home" ? "Дом" : loc === "gym" ? "Зал" : loc === "outdoor" ? "Улица" : loc;
-  return [type, lvl, locLabel, days ? `${days} дн.` : ""].filter(Boolean).join(" · ");
+  return [type, lvl, locLabel, days ? `${days} дн.` : "", programDurationLabel(program) || ""]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 

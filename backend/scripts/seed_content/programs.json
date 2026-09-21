@@ -21,6 +21,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -177,6 +178,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -332,6 +334,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -487,6 +490,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -643,6 +647,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -800,6 +805,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -956,6 +962,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -1111,6 +1118,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -1266,6 +1274,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -1423,6 +1432,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -1623,6 +1633,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -1779,6 +1790,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -1934,6 +1946,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -2091,6 +2104,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -2248,6 +2262,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -2447,6 +2462,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -2602,6 +2618,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -2759,6 +2776,7 @@
       "limitations": [],
       "days_per_week": 6,
       "session_duration_min": 70,
+      "session_duration_max": 85,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -3045,6 +3063,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -3250,6 +3269,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -3449,6 +3469,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -3647,6 +3668,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -3802,6 +3824,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -3957,6 +3980,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -4112,6 +4136,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -4271,6 +4296,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -4448,6 +4474,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -4624,6 +4651,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -4800,6 +4828,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -4976,6 +5005,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -5134,6 +5164,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -5290,6 +5321,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -5446,6 +5478,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -5602,6 +5635,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -5760,6 +5794,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -5936,6 +5971,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -6113,6 +6149,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -6271,6 +6308,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -6430,6 +6468,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -6589,6 +6628,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -6747,6 +6787,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -6905,6 +6946,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -7061,6 +7103,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -7217,6 +7260,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -7374,6 +7418,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -7531,6 +7576,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -7689,6 +7735,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -7847,6 +7894,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -8005,6 +8053,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -8163,6 +8212,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -8323,6 +8373,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -8501,6 +8552,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -8679,6 +8731,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -8857,6 +8910,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9035,6 +9089,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9213,6 +9268,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9390,6 +9446,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9567,6 +9624,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9744,6 +9802,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -9921,6 +9980,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -10097,6 +10157,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -10273,6 +10334,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -10449,6 +10511,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -10625,6 +10688,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -10801,6 +10865,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -10959,6 +11024,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -11117,6 +11183,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -11275,6 +11342,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -11434,6 +11502,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -11593,6 +11662,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -11752,6 +11822,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -11911,6 +11982,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -12070,6 +12142,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -12229,6 +12302,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 50,
+      "session_duration_max": 65,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -12387,6 +12461,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -12545,6 +12620,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -12703,6 +12779,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -12861,6 +12938,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -13019,6 +13097,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -13177,6 +13256,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -13335,6 +13415,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -13493,6 +13574,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 55,
+      "session_duration_max": 70,
       "exclude_warmup": false,
       "schedule": [
         {
@@ -13650,6 +13732,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -13807,6 +13890,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -13964,6 +14048,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14121,6 +14206,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 35,
+      "session_duration_max": 50,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14278,6 +14364,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 40,
+      "session_duration_max": 55,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14435,6 +14522,7 @@
       ],
       "days_per_week": 3,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14593,6 +14681,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 65,
+      "session_duration_max": 80,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14751,6 +14840,7 @@
       "limitations": [],
       "days_per_week": 3,
       "session_duration_min": 65,
+      "session_duration_max": 80,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -14909,6 +14999,7 @@
       "limitations": [],
       "days_per_week": 5,
       "session_duration_min": 70,
+      "session_duration_max": 85,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -15153,6 +15244,7 @@
       "limitations": [],
       "days_per_week": 5,
       "session_duration_min": 70,
+      "session_duration_max": 85,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -15397,6 +15489,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 70,
+      "session_duration_max": 85,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -15598,6 +15691,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 70,
+      "session_duration_max": 85,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -15799,6 +15893,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 65,
+      "session_duration_max": 80,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16000,6 +16095,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 65,
+      "session_duration_max": 80,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16198,6 +16294,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16396,6 +16493,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 60,
+      "session_duration_max": 75,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16596,6 +16694,7 @@
       "limitations": [],
       "days_per_week": 2,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16710,6 +16809,7 @@
       "limitations": [],
       "days_per_week": 2,
       "session_duration_min": 45,
+      "session_duration_max": 60,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -16825,6 +16925,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 75,
+      "session_duration_max": 90,
       "exclude_warmup": true,
       "schedule": [
         {
@@ -17026,6 +17127,7 @@
       "limitations": [],
       "days_per_week": 4,
       "session_duration_min": 75,
+      "session_duration_max": 90,
       "exclude_warmup": true,
       "schedule": [
         {

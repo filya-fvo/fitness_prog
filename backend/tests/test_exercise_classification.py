@@ -48,6 +48,7 @@ def test_seed_program_reports_have_matching_equipment() -> None:
     by_name = {row["name_ru"]: row for row in exercises}
     for program in programs:
         structure = program["structure"]
+        assert 5 <= structure["session_duration_min"] <= structure["session_duration_max"] <= 240
         report = build_program_structure_report(structure["schedule"], by_name)
         declared = set(structure.get("equipment") or [])
         required = set(report.required_equipment) - {"bodyweight"}

@@ -35,7 +35,9 @@ def prog(
     schedule: list[dict],
     duration_weeks: int = 6,
     session_min: int = 45,
+    session_max: int | None = None,
 ) -> dict:
+    session_max = session_max or session_min + 15
     return {
         "name": name,
         "description": description,
@@ -53,6 +55,7 @@ def prog(
             "limitations": limitations,
             "days_per_week": days_per_week,
             "session_duration_min": session_min,
+            "session_duration_max": session_max,
             "exclude_warmup": location in {"gym", "outdoor"},
             "schedule": schedule,
         },
