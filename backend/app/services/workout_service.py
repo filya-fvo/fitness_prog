@@ -530,9 +530,11 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         user.goals = mark_occurrence_started(user.goals or {}, data.scheduled_date)
         flag_modified(user, "goals")
     session.add(workout)
-    await session.flush()
-    _create_set_slots(session, workout.id, plan)
     try:
+        # The unique idempotency constraint can fail during flush, before
+        # commit, when two offline clients replay the same operation together.
+        await session.flush()
+        _create_set_slots(session, workout.id, plan)
         await session.commit()
     except IntegrityError:
         await session.rollback()

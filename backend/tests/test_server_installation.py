@@ -143,6 +143,9 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "ALTER TABLE exercises ADD COLUMN embedding double precision[]" in ci
     assert 'test "$actual" = "vector(1536)"' in ci
     assert "docker build -f backend/Dockerfile -t fitness-api:ci ." in ci
+    assert "Test real PostgreSQL and Redis invariants" in ci
+    assert "QA_STAGE_C_INTEGRATION=1" in ci
+    assert "python scripts/verify_stage_c_integration.py" in ci
     assert "-t fitness-web:ci ./frontend" in ci
 
 

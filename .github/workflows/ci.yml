@@ -150,7 +150,7 @@ jobs:
         run: |
           set -euo pipefail
           compose=(docker compose --env-file backend/.env.production)
-          "${compose[@]}" up -d db
+          "${compose[@]}" up -d db redis
           "${compose[@]}" run --rm migrate
           "${compose[@]}" exec -T db psql -U fitness -d fitness -v ON_ERROR_STOP=1 <<'SQL'
           DROP INDEX IF EXISTS idx_exercises_embedding_hnsw;
@@ -161,9 +161,22 @@ jobs:
           actual="$("${compose[@]}" exec -T db psql -U fitness -d fitness -tAc \
             "SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = 'exercises'::regclass AND attname = 'embedding' AND NOT attisdropped")"
           test "$actual" = "vector(1536)"
-          "${compose[@]}" stop db
       - name: Build backend image
         run: docker build -f backend/Dockerfile -t fitness-api:ci .
+      - name: Test real PostgreSQL and Redis invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --network fitness_default \
+            --env-file backend/.env.production \
+            --env CI=true \
+            --env QA_STAGE_C_INTEGRATION=1 \
+            --env ENVIRONMENT=test \
+            --env REDIS_URL=redis://redis:6379/0 \
+            fitness-api:ci \
+            python scripts/verify_stage_c_integration.py
+          docker compose --env-file backend/.env.production stop db redis
       - name: Build frontend image
         run: >-
           docker build

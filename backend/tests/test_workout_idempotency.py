@@ -1,22 +1,64 @@
 """Offline retries must converge on one server-side workout state."""
 
 from datetime import date
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from app.models.program import Program
 from app.models.user import User
 from app.models.workout import Workout
-from app.schemas.workout import WorkoutCompleteRequest
+from app.schemas.workout import WorkoutCompleteRequest, WorkoutCreate
 from app.services import workout_service
 
 
 class NoCommitSession:
     async def commit(self) -> None:
         raise AssertionError("an idempotent completion must not write again")
+
+
+@pytest.mark.asyncio
+async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flush(
+    monkeypatch,
+) -> None:
+    user = User(id=uuid4(), telegram_id=None, anthropometry={}, goals={})
+    client_workout_id = uuid4()
+    existing = Workout(
+        id=uuid4(),
+        user_id=user.id,
+        client_workout_id=client_workout_id,
+        scheduled_date=date(2026, 9, 22),
+        status="planned",
+        plan={},
+    )
+    session = MagicMock()
+    session.scalar = AsyncMock(side_effect=[None, existing])
+    session.flush = AsyncMock(
+        side_effect=IntegrityError("INSERT", {}, RuntimeError("duplicate"))
+    )
+    session.rollback = AsyncMock()
+    session.commit = AsyncMock()
+
+    async def fake_get(*_args, **_kwargs):
+        return existing
+
+    monkeypatch.setattr(workout_service, "_get_workout_for_user", fake_get)
+
+    result = await workout_service.create_workout(
+        session,
+        user,
+        WorkoutCreate(
+            scheduled_date=date(2026, 9, 22),
+            client_workout_id=client_workout_id,
+        ),
+    )
+
+    assert result is existing
+    session.rollback.assert_awaited_once()
+    session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
