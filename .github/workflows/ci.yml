@@ -180,12 +180,14 @@ jobs:
               "$db_container" | head -n 1
           )"
           test -n "$compose_network"
+          database_url="$(sed -n 's/^DATABASE_URL=//p' backend/.env.production)"
+          test -n "$database_url"
           docker run --rm \
             --network "$compose_network" \
-            --env-file backend/.env.production \
             --env CI=true \
             --env QA_STAGE_C_INTEGRATION=1 \
             --env ENVIRONMENT=test \
+            --env DATABASE_URL="$database_url" \
             --env REDIS_URL=redis://redis:6379/0 \
             fitness-api:ci \
             python scripts/verify_stage_c_integration.py

@@ -147,6 +147,8 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "QA_STAGE_C_INTEGRATION=1" in ci
     assert 'compose_network="$(' in ci
     assert '--network "$compose_network"' in ci
+    assert 'database_url="$(sed -n' in ci
+    assert '--env DATABASE_URL="$database_url"' in ci
     assert "python scripts/verify_stage_c_integration.py" in ci
     assert "-t fitness-web:ci ./frontend" in ci
 
