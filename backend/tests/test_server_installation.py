@@ -154,6 +154,7 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert "docker pause fitness-chaos-api" in ci
     assert "python scripts/verify_stage_c_chaos.py --redis-outage" in ci
     assert "fitness:qa:chaos:sentinel" in ci
+    assert "--env LOG_DIR=/app/logs" in ci
     assert "-t fitness-web:ci ./frontend" in ci
 
 

@@ -245,6 +245,7 @@ jobs:
             --env DATABASE_URL="$database_url" \
             --env REDIS_URL=redis://redis:6379/0 \
             --env JWT_SECRET=stage-c-chaos-only \
+            --env LOG_DIR=/app/logs \
             fitness-api:ci
           api_ready=false
           for attempt in {1..30}; do

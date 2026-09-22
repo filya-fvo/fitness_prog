@@ -185,10 +185,10 @@ async def check_api(api_url: str, expectation: str) -> None:
             response = await client.get(f"{api_url}/health")
     except httpx.TimeoutException:
         if expectation != "timeout":
-            raise
+            raise AssertionError(f"API timed out while expecting {expectation}") from None
     except httpx.RequestError:
         if expectation != "unavailable":
-            raise
+            raise AssertionError(f"API was unavailable while expecting {expectation}") from None
     else:
         if expectation != "healthy":
             raise AssertionError(f"API unexpectedly answered during {expectation}")
