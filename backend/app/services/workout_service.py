@@ -447,12 +447,30 @@ def _create_set_slots(session: AsyncSession, workout_id: uuid.UUID, plan: dict[s
             )
 
 
+async def _lock_workout_idempotency_key(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    client_workout_id: uuid.UUID,
+) -> None:
+    """Serialize the same offline operation across API processes and clients."""
+    key = f"workout:{user_id}:{client_workout_id}"
+    await session.execute(
+        select(func.pg_advisory_xact_lock(func.hashtextextended(key, 0)))
+    )
+
+
 async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate) -> Workout:
     # Rollback expires ORM attributes even with expire_on_commit=False. Keep the
     # stable identifier outside the transaction so the idempotency recovery path
     # never triggers implicit async IO by reading user.id after rollback.
     user_id = user.id
     if data.client_workout_id is not None:
+        await _lock_workout_idempotency_key(
+            session,
+            user_id=user_id,
+            client_workout_id=data.client_workout_id,
+        )
         existing = await session.scalar(
             select(Workout).where(
                 Workout.user_id == user_id,

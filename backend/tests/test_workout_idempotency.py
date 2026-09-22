@@ -47,6 +47,7 @@ async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flus
         plan={},
     )
     session = MagicMock()
+    session.execute = AsyncMock()
     session.scalar = AsyncMock(side_effect=[None, existing])
     session.flush = AsyncMock(
         side_effect=IntegrityError("INSERT", {}, RuntimeError("duplicate"))
@@ -74,6 +75,7 @@ async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flus
     )
 
     assert result is existing
+    session.execute.assert_awaited_once()
     session.rollback.assert_awaited_once()
     session.commit.assert_not_awaited()
 
