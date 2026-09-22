@@ -191,6 +191,93 @@ jobs:
             --env REDIS_URL=redis://redis:6379/0 \
             fitness-api:ci \
             python scripts/verify_stage_c_integration.py
+      - name: Test isolated service outages and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose --env-file backend/.env.production)
+          "${compose[@]}" up -d db redis
+          db_container="$("${compose[@]}" ps -q db)"
+          test -n "$db_container"
+          compose_network="$(
+            docker inspect \
+              --format '{{range $name, $settings := .NetworkSettings.Networks}}{{$name}}{{println}}{{end}}' \
+              "$db_container" | head -n 1
+          )"
+          test -n "$compose_network"
+          database_url="$(sed -n 's/^DATABASE_URL=//p' backend/.env.production)"
+          test -n "$database_url"
+          chaos_env=(
+            --env CI=true
+            --env QA_STAGE_C_CHAOS=1
+            --env ENVIRONMENT=test
+            --env REDIS_URL=redis://redis:6379/0
+          )
+          cleanup() {
+            docker unpause fitness-chaos-api >/dev/null 2>&1 || true
+            docker rm --force fitness-chaos-api >/dev/null 2>&1 || true
+            "${compose[@]}" stop db redis >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --rm "${chaos_env[@]}" fitness-api:ci \
+            python scripts/verify_stage_c_chaos.py --http-faults
+
+          "${compose[@]}" exec -T redis redis-cli SET fitness:qa:chaos:sentinel preserved
+          "${compose[@]}" exec -T redis redis-cli SAVE
+          "${compose[@]}" stop redis
+          docker run --rm --network "$compose_network" "${chaos_env[@]}" fitness-api:ci \
+            python scripts/verify_stage_c_chaos.py --redis-outage
+          "${compose[@]}" start redis
+          for attempt in {1..30}; do
+            if "${compose[@]}" exec -T redis redis-cli ping | grep -q PONG; then
+              break
+            fi
+            sleep 1
+          done
+          test "$("${compose[@]}" exec -T redis redis-cli GET fitness:qa:chaos:sentinel)" = preserved
+          "${compose[@]}" exec -T redis redis-cli DEL fitness:qa:chaos:sentinel
+
+          docker run --detach --name fitness-chaos-api \
+            --network "$compose_network" \
+            --network-alias fitness-chaos-api \
+            --env ENVIRONMENT=test \
+            --env DATABASE_URL="$database_url" \
+            --env REDIS_URL=redis://redis:6379/0 \
+            --env JWT_SECRET=stage-c-chaos-only \
+            fitness-api:ci
+          api_ready=false
+          for attempt in {1..30}; do
+            if docker run --rm --network "$compose_network" "${chaos_env[@]}" fitness-api:ci \
+              python scripts/verify_stage_c_chaos.py \
+                --api-url http://fitness-chaos-api:8000 --expect-api healthy; then
+              api_ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$api_ready" = true
+          docker pause fitness-chaos-api
+          docker run --rm --network "$compose_network" "${chaos_env[@]}" fitness-api:ci \
+            python scripts/verify_stage_c_chaos.py \
+              --api-url http://fitness-chaos-api:8000 --expect-api timeout
+          docker unpause fitness-chaos-api
+          docker stop fitness-chaos-api
+          docker run --rm --network "$compose_network" "${chaos_env[@]}" fitness-api:ci \
+            python scripts/verify_stage_c_chaos.py \
+              --api-url http://fitness-chaos-api:8000 --expect-api unavailable
+          docker start fitness-chaos-api
+          api_recovered=false
+          for attempt in {1..30}; do
+            if docker run --rm --network "$compose_network" "${chaos_env[@]}" fitness-api:ci \
+              python scripts/verify_stage_c_chaos.py \
+                --api-url http://fitness-chaos-api:8000 --expect-api healthy; then
+              api_recovered=true
+              break
+            fi
+            sleep 1
+          done
+          test "$api_recovered" = true
       - name: Build frontend image
         run: >-
           docker build

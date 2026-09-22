@@ -150,6 +150,10 @@ def test_vps_compose_keeps_data_services_private_and_runs_migrations() -> None:
     assert 'database_url="$(sed -n' in ci
     assert '--env DATABASE_URL="$database_url"' in ci
     assert "python scripts/verify_stage_c_integration.py" in ci
+    assert "python scripts/verify_stage_c_chaos.py --http-faults" in ci
+    assert "docker pause fitness-chaos-api" in ci
+    assert "python scripts/verify_stage_c_chaos.py --redis-outage" in ci
+    assert "fitness:qa:chaos:sentinel" in ci
     assert "-t fitness-web:ci ./frontend" in ci
 
 
