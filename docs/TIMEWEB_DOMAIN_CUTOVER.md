@@ -232,6 +232,19 @@ docker compose --env-file backend/.env.production ps
 docker builder prune --all --force --filter until=72h
 ```
 
+После создания backup его можно проверить без изменения production-БД. Скрипт
+поднимает временный PostgreSQL без сети и опубликованных портов, восстанавливает
+dump, дважды прогоняет миграции, сверяет таблицы и append-only audit trigger, а
+затем удаляет только свой временный контейнер и volume:
+
+```bash
+sh scripts/verify-postgres-backup.sh \
+  /opt/fitness/backups/fitness-YYYYMMDDTHHMMSSZ.dump
+```
+
+Успешный результат начинается с `RESTORE_VERIFY_OK` и содержит длительность,
+обезличенные количества строк и fingerprint полноты таблиц.
+
 API, worker и telegram-poller подключены к отдельной dual-stack сети `ipv6_egress`: Telegram Bot
 API в текущей сети Timeweb недоступен по IPv4, но доступен по IPv6. На VPS должен
 быть установлен версионированный sysctl-файл и применены его параметры:

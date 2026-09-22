@@ -245,6 +245,9 @@ def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
     restore = (ROOT / "scripts" / "restore-timeweb-postgres.sh").read_text(
         encoding="utf-8"
     )
+    verify_restore = (ROOT / "scripts" / "verify-postgres-backup.sh").read_text(
+        encoding="utf-8"
+    )
     replace = (ROOT / "scripts" / "replace-timeweb-postgres.sh").read_text(
         encoding="utf-8"
     )
@@ -261,6 +264,15 @@ def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
     assert "--exit-on-error" in restore
     assert "--no-owner" in restore
     assert "--clean" not in restore
+    assert 'case "${resolved_dump}"' in verify_restore
+    assert '"${resolved_backup_root}"/*.dump' in verify_restore
+    assert "--network none" in verify_restore
+    assert "fitness-restore-verify-" in verify_restore
+    assert "pg_restore --list /backup.dump" in verify_restore
+    assert "--exit-on-error" in verify_restore
+    assert "sh /apply-migrations.sh" in verify_restore
+    assert "admin_audit_log is append-only" in verify_restore
+    assert "RESTORE_VERIFY_OK" in verify_restore
     assert "backup_vps.sh" in replace
     assert "SHA256 mismatch" in replace
     assert "stop worker api web caddy" in replace
