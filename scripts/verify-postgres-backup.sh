@@ -79,7 +79,9 @@ docker run --detach \
 
 ready=0
 for _attempt in $(seq 1 60); do
-  if docker exec "${container}" pg_isready -U fitness_restore -d fitness_restore >/dev/null 2>&1; then
+  if docker exec "${container}" sh -ec \
+    'test "$(cat /proc/1/comm)" = postgres; pg_isready -U fitness_restore -d fitness_restore' \
+    >/dev/null 2>&1; then
     ready=1
     break
   fi

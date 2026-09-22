@@ -268,6 +268,7 @@ def test_timeweb_vps_bootstrap_and_restore_have_safety_guards() -> None:
     assert '"${resolved_backup_root}"/*.dump' in verify_restore
     assert "--network none" in verify_restore
     assert "fitness-restore-verify-" in verify_restore
+    assert 'cat /proc/1/comm' in verify_restore
     assert "pg_restore --list /backup.dump" in verify_restore
     assert "--exit-on-error" in verify_restore
     assert "sh /apply-migrations.sh" in verify_restore

@@ -238,7 +238,7 @@ dump, дважды прогоняет миграции, сверяет табл�
 затем удаляет только свой временный контейнер и volume:
 
 ```bash
-sh scripts/verify-postgres-backup.sh \
+bash scripts/verify-postgres-backup.sh \
   /opt/fitness/backups/fitness-YYYYMMDDTHHMMSSZ.dump
 ```
 
