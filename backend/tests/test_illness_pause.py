@@ -8,6 +8,7 @@ import pytest
 
 from app.models.user import User
 from app.services import illness_pause
+from app.services.notification_prefs import due_notifications
 from app.services.personal_regularity import calculate_personal_regularity
 from app.services.scheduler import get_schedule_overview, schedule_overview
 from app.services.workout_notifications import due_workout_notification
@@ -46,6 +47,28 @@ def test_active_illness_pauses_schedule_and_reminders() -> None:
     assert overview["current"]["can_cancel"] is False
     assert overview["next"] is None
     assert reminder is None
+
+
+def test_active_illness_suppresses_legacy_workout_and_relative_supplement_reminders() -> None:
+    goals = _goals()
+    goals[illness_pause.PERIODS_KEY] = [{"started_on": "2026-09-21", "ended_on": None}]
+    goals["notification_settings"]["measurements"] = {"enabled": False}
+    goals["supplements"] = [
+        {
+            "id": "pre",
+            "name_ru": "Добавка",
+            "schedule": [{"slot": "pre_workout", "days": "workout"}],
+        }
+    ]
+
+    due = due_notifications(
+        goals,
+        now=datetime(2026, 9, 21, 17, 30, tzinfo=timezone(timedelta(hours=3))),
+        catch_up=False,
+        window_minutes=1,
+    )
+
+    assert not {item["kind"] for item in due} & {"workout", "supplement"}
 
 
 @pytest.mark.asyncio

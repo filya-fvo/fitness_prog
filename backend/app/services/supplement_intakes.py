@@ -13,15 +13,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.supplement_intake import SupplementIntake
 from app.models.user import User
 from app.services.notification_prefs import (
+    SPECIAL_TIMES,
     _resolve_slot_time,
     _resolve_tz,
     merge_notification_settings,
     normalize_supplement_schedule,
 )
+from app.services.illness_pause import is_illness_day
 from app.services.scheduler import effective_workout_context
 
 VALID_STATUSES = {"pending", "taken", "skipped"}
 VALID_SOURCES = {"telegram", "web", "app"}
+
+
+def _schedule_allowed_during_illness(
+    goals: dict[str, Any],
+    day: date,
+    *,
+    slot: str,
+    days_mode: str,
+) -> bool:
+    """Keep daily/rest supplements while suppressing anything tied to a workout."""
+    if not is_illness_day(goals, day):
+        return True
+    return days_mode != "workout" and slot not in SPECIAL_TIMES
 
 
 def local_day_for_user(user: User, now: datetime | None = None) -> date:
@@ -51,7 +66,7 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
     tz = _resolve_tz(str(settings.get("timezone") or "Europe/Moscow"))
     workout_context = effective_workout_context(goals, day)
     workout_t = workout_context["start_time"]
-    workout_day = bool(workout_context["is_workout_day"])
+    workout_day = bool(workout_context["is_workout_day"]) and not is_illness_day(goals, day)
     rows: list[dict[str, Any]] = []
     supplements = goals.get("supplements")
     if not isinstance(supplements, list):
@@ -62,11 +77,18 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
         entry_id = str(item.get("id") or item.get("key") or item.get("name_ru") or "supplement")
         for schedule in normalize_supplement_schedule(item):
             mode = schedule.get("days") or "every"
+            slot = schedule["slot"]
+            if not _schedule_allowed_during_illness(
+                goals,
+                day,
+                slot=slot,
+                days_mode=mode,
+            ):
+                continue
             if mode == "workout" and not workout_day:
                 continue
             if mode == "rest" and workout_day:
                 continue
-            slot = schedule["slot"]
             target = _resolve_slot_time(slot, workout_t)
             if target is None:
                 continue
@@ -169,6 +191,16 @@ async def day_items(
             .order_by(SupplementIntake.scheduled_at, SupplementIntake.name_ru)
         )
     )
+    items = [
+        item
+        for item in items
+        if _schedule_allowed_during_illness(
+            user.goals or {},
+            day,
+            slot=item.slot,
+            days_mode=item.days_mode,
+        )
+    ]
     return timezone_name, items
 
 
@@ -348,6 +380,16 @@ async def due_groups(
             .with_for_update(skip_locked=True)
         )
     )
+    rows = [
+        row
+        for row in rows
+        if _schedule_allowed_during_illness(
+            user.goals or {},
+            local_day,
+            slot=row.slot,
+            days_mode=row.days_mode,
+        )
+    ]
     grouped: dict[datetime, list[SupplementIntake]] = {}
     for row in rows:
         key = row.snoozed_until or row.scheduled_at

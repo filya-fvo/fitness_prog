@@ -6,6 +6,8 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from app.services.illness_pause import is_illness_day
+
 DEFAULT_TZ = "Europe/Moscow"
 
 SPECIAL_TIMES = {
@@ -375,6 +377,7 @@ def due_notifications(
     state = _state(goals)
     use_catch_up = settings.get("catch_up", True) if catch_up is None else bool(catch_up)
     due: list[dict[str, Any]] = []
+    illness_today = is_illness_day(goals, now.date())
 
     mcfg = settings.get("measurements") or {}
     if mcfg.get("enabled"):
@@ -414,7 +417,7 @@ def due_notifications(
                 )
 
     wcfg = settings.get("workouts") or {}
-    if wcfg.get("enabled"):
+    if wcfg.get("enabled") and not illness_today:
         t = parse_hhmm(str(wcfg.get("time") or "18:30"))
         days = wcfg.get("days") or []
         try:
@@ -449,7 +452,7 @@ def due_notifications(
             sent = state.get("supplement_marks") or {}
             if not isinstance(sent, dict):
                 sent = {}
-            today_is_workout = bool(workout_context["is_workout_day"])
+            today_is_workout = bool(workout_context["is_workout_day"]) and not illness_today
             for sup in supplements:
                 if not isinstance(sup, dict) or not sup.get("enabled", True):
                     continue
@@ -459,6 +462,8 @@ def due_notifications(
                 for entry in normalize_supplement_schedule(sup):
                     slot_s = entry["slot"]
                     days_mode = entry.get("days") or "every"
+                    if illness_today and (days_mode == "workout" or slot_s in SPECIAL_TIMES):
+                        continue
                     if days_mode == "workout" and not today_is_workout:
                         continue
                     if days_mode == "rest" and today_is_workout:
