@@ -37,6 +37,12 @@ export default defineConfig({
       testMatch: /iphone-(layout|telegram-entry)\.spec\.ts/,
       use: { ...devices["iPhone 13"] },
     },
+    {
+      name: "firefox",
+      testMatch:
+        /(?:browser-session|critical-path|nutrition-label|onboarding|stale-release-update|support|telegram-browser-login|workout-recovery)\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
   ],
   webServer: {
     command: "node ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173",
