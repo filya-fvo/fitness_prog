@@ -167,8 +167,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          compose=(docker compose --env-file backend/.env.production)
+          cleanup() {
+            "${compose[@]}" stop db redis >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          db_container="$("${compose[@]}" ps -q db)"
+          test -n "$db_container"
+          compose_network="$(
+            docker inspect \
+              --format '{{range $name, $settings := .NetworkSettings.Networks}}{{$name}}{{println}}{{end}}' \
+              "$db_container" | head -n 1
+          )"
+          test -n "$compose_network"
           docker run --rm \
-            --network fitness_default \
+            --network "$compose_network" \
             --env-file backend/.env.production \
             --env CI=true \
             --env QA_STAGE_C_INTEGRATION=1 \
@@ -176,7 +189,6 @@ jobs:
             --env REDIS_URL=redis://redis:6379/0 \
             fitness-api:ci \
             python scripts/verify_stage_c_integration.py
-          docker compose --env-file backend/.env.production stop db redis
       - name: Build frontend image
         run: >-
           docker build
