@@ -24,7 +24,19 @@ class NoCommitSession:
 async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flush(
     monkeypatch,
 ) -> None:
-    user = User(id=uuid4(), telegram_id=None, anthropometry={}, goals={})
+    class RollbackExpiringUser:
+        def __init__(self) -> None:
+            self._id = uuid4()
+            self.expired = False
+            self.goals = {}
+
+        @property
+        def id(self):
+            if self.expired:
+                raise AssertionError("user.id was read after rollback")
+            return self._id
+
+    user = RollbackExpiringUser()
     client_workout_id = uuid4()
     existing = Workout(
         id=uuid4(),
@@ -42,6 +54,11 @@ async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flus
     session.rollback = AsyncMock()
     session.commit = AsyncMock()
 
+    async def expire_user() -> None:
+        user.expired = True
+
+    session.rollback.side_effect = expire_user
+
     async def fake_get(*_args, **_kwargs):
         return existing
 
@@ -49,7 +66,7 @@ async def test_create_workout_recovers_when_idempotency_conflict_happens_on_flus
 
     result = await workout_service.create_workout(
         session,
-        user,
+        user,  # type: ignore[arg-type]
         WorkoutCreate(
             scheduled_date=date(2026, 9, 22),
             client_workout_id=client_workout_id,

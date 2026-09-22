@@ -448,10 +448,14 @@ def _create_set_slots(session: AsyncSession, workout_id: uuid.UUID, plan: dict[s
 
 
 async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate) -> Workout:
+    # Rollback expires ORM attributes even with expire_on_commit=False. Keep the
+    # stable identifier outside the transaction so the idempotency recovery path
+    # never triggers implicit async IO by reading user.id after rollback.
+    user_id = user.id
     if data.client_workout_id is not None:
         existing = await session.scalar(
             select(Workout).where(
-                Workout.user_id == user.id,
+                Workout.user_id == user_id,
                 Workout.client_workout_id == data.client_workout_id,
                 Workout.is_deleted.is_(False),
             )
@@ -460,7 +464,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             return await _get_workout_for_user(
                 session,
                 workout_id=existing.id,
-                user_id=user.id,
+                user_id=user_id,
             )
 
     if data.program_id is not None and illness_pause.illness_status(user.goals or {})["active"]:
@@ -516,7 +520,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         }
 
     workout = Workout(
-        user_id=user.id,
+        user_id=user_id,
         client_workout_id=data.client_workout_id,
         program_id=data.program_id,
         scheduled_date=data.scheduled_date,
@@ -542,7 +546,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             raise
         existing = await session.scalar(
             select(Workout).where(
-                Workout.user_id == user.id,
+                Workout.user_id == user_id,
                 Workout.client_workout_id == data.client_workout_id,
                 Workout.is_deleted.is_(False),
             )
@@ -550,7 +554,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         if existing is None:
             raise
         workout = existing
-    return await _get_workout_for_user(session, workout_id=workout.id, user_id=user.id)
+    return await _get_workout_for_user(session, workout_id=workout.id, user_id=user_id)
 
 
 async def start_program_workout(
