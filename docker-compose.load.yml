@@ -1,0 +1,112 @@
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg18-bookworm
+    shm_size: 256mb
+    environment:
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: fitness-load-only
+      POSTGRES_DB: fitness
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitness -d fitness"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - load_pgdata:/var/lib/postgresql
+    networks: [load_internal]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - load_redisdata:/data
+    networks: [load_internal]
+
+  migrate:
+    image: pgvector/pgvector:0.8.6-pg18-bookworm
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: fitness
+      PGPASSWORD: fitness-load-only
+      PGDATABASE: fitness
+    volumes:
+      - ./supabase/migrations:/migrations:ro
+      - ./scripts/apply_migrations_vps.sh:/apply-migrations.sh:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ["/bin/sh /apply-migrations.sh"]
+    networks: [load_internal]
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: &load_environment
+      BOT_TOKEN: load-test-bot-token
+      JWT_SECRET: load-test-jwt-secret
+      DATABASE_URL: postgresql+asyncpg://fitness:fitness-load-only@db:5432/fitness
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: test
+      LOG_DIR: /tmp/fitness-load-logs
+      LLM_PROVIDER: local
+      LLM_BASE_URL: http://unused-llm:8080/v1
+      OCR_BASE_URL: http://unused-ocr:8090
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      load_internal:
+        aliases: [fitness-load-api]
+
+  load:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      <<: *load_environment
+      CI: "true"
+      QA_STAGE_C_LOAD: "1"
+    depends_on:
+      api:
+        condition: service_healthy
+    command:
+      - python
+      - scripts/verify_stage_c_load.py
+      - --base-url
+      - http://api:8000
+      - --users
+      - ${QA_LOAD_USERS:-50}
+      - --duration-seconds
+      - ${QA_LOAD_DURATION_SECONDS:-600}
+      - --read-ratio
+      - ${QA_LOAD_READ_RATIO:-0.70}
+      - --think-time-ms
+      - ${QA_LOAD_THINK_TIME_MS:-1000}
+      - --p95-limit-ms
+      - ${QA_LOAD_P95_LIMIT_MS:-500}
+      - --max-error-rate
+      - ${QA_LOAD_MAX_ERROR_RATE:-0.01}
+    networks: [load_internal]
+
+networks:
+  load_internal:
+    internal: true
+
+volumes:
+  load_pgdata:
+  load_redisdata:

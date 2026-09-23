@@ -1,0 +1,64 @@
+name: Stage C load QA
+
+on:
+  push:
+    branches: [timeweb-production-20260825]
+    paths:
+      - backend/scripts/verify_stage_c_load.py
+      - docker-compose.load.yml
+      - .github/workflows/load.yml
+  workflow_dispatch:
+    inputs:
+      users:
+        description: Concurrent virtual users (1-100)
+        required: true
+        default: "50"
+      duration_seconds:
+        description: Test duration in seconds (5-900)
+        required: true
+        default: "600"
+      p95_limit_ms:
+        description: Overall p95 acceptance limit
+        required: true
+        default: "500"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage-c-load-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  load:
+    name: Isolated API load profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      QA_LOAD_USERS: ${{ inputs.users || '50' }}
+      QA_LOAD_DURATION_SECONDS: ${{ inputs.duration_seconds || '600' }}
+      QA_LOAD_READ_RATIO: "0.70"
+      QA_LOAD_THINK_TIME_MS: "1000"
+      QA_LOAD_P95_LIMIT_MS: ${{ inputs.p95_limit_ms || '500' }}
+      QA_LOAD_MAX_ERROR_RATE: "0.01"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run isolated PostgreSQL, Redis and API load profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          project="fitness-load-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() {
+            docker compose -f docker-compose.load.yml -p "$project" down --volumes --remove-orphans
+          }
+          trap cleanup EXIT
+          docker compose -f docker-compose.load.yml -p "$project" \
+            up --build --abort-on-container-exit --exit-code-from load load 2>&1 | tee load-result.log
+      - name: Upload failed load-test log
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: stage-c-load-failure
+          path: load-result.log
+          if-no-files-found: ignore
+          retention-days: 7
