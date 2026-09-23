@@ -54,6 +54,10 @@ jobs:
           trap cleanup EXIT
           docker compose -f docker-compose.load.yml -p "$project" \
             up --build --abort-on-container-exit --exit-code-from load load 2>&1 | tee load-result.log
+          result="$(grep -E 'LOAD_RESULT .*p95_ms=' load-result.log | tail -n 1 | sed 's/^.*LOAD_RESULT /LOAD_RESULT /')"
+          test -n "$result"
+          echo "::notice title=Stage C LOAD-01::$result"
+          printf '### Stage C LOAD-01\n\n`%s`\n' "$result" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload failed load-test log
         if: failure()
         uses: actions/upload-artifact@v6
