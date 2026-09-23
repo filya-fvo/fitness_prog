@@ -100,10 +100,15 @@ test("new user can progress and postpone the activation checklist", async ({ pag
 });
 
 test("existing profile without rollout state receives the checklist", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
   await mockHome(page, false);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Главная" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Привет, new-user" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Открыть дневник/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Освойте приложение" })).toBeVisible();
+  if (process.platform === "win32") {
+    await expect(page).toHaveScreenshot("home-dashboard-mobile.png", { fullPage: false });
+  }
 });
 
 test("new user can hide the checklist permanently", async ({ page }) => {

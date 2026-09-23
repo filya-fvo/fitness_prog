@@ -169,6 +169,47 @@ body {
     pointer-events: none;
   }
 
+  .home-media-card {
+    color: #f7fff2;
+  }
+
+  .home-media-card .text-tg-hint {
+    color: rgba(235, 244, 235, 0.76);
+  }
+
+  .home-media-card .bg-tg-bg {
+    background-color: rgba(5, 12, 10, 0.72);
+    color: #f7fff2;
+  }
+
+  .home-hero-title {
+    max-width: 19rem;
+    overflow-wrap: anywhere;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  .home-primary-action {
+    display: flex;
+    min-height: 44px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  @media (min-width: 640px) {
+    .home-primary-action {
+      max-width: 20rem;
+    }
+  }
+
   .signal-action {
     border: 1px solid color-mix(in srgb, var(--app-signal) 72%, transparent);
     background: var(--app-signal);

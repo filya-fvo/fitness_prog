@@ -69,6 +69,7 @@ import { enumLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
+import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
 import { workoutPauseDays } from "@/utils/workoutRecency";
 import {
   canStartProgramFromSchedule,
@@ -649,8 +650,11 @@ export function HomePage() {
 
   return (
     <section className="min-w-0 max-w-full">
-      <Header title="Главная" subtitle="Сегодняшняя тренировка и прогресс" />
-      <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 [&>*]:min-w-0">
+      <Header
+        title={user?.username ? `Привет, ${user.username.replace(/^@/, "")}` : "Ваш день"}
+        subtitle="Сегодня — ещё один шаг к сильной версии себя"
+      />
+      <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
         <IllnessPauseCard
@@ -719,9 +723,9 @@ export function HomePage() {
 
         {/* Primary hero CTA first — review P0 */}
         {canResume ? (
-          <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сейчас</p>
-            <p className="break-words text-base font-semibold [overflow-wrap:anywhere]">
+          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+            <p className="section-kicker">Сейчас</p>
+            <p className="home-hero-title">
               {activeWorkout?.title || "Тренировка в процессе"}
             </p>
             {hasReplacements ? (
@@ -730,7 +734,7 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => navigate(`/workouts/active/${resumeId}`)}
-              className="block w-full rounded-xl bg-tg-button px-4 py-3.5 text-center text-sm font-semibold text-tg-button-text"
+              className="signal-action home-primary-action"
             >
               Продолжить тренировку
             </button>
@@ -749,10 +753,10 @@ export function HomePage() {
             <p className="text-center text-[11px] text-tg-hint">
               Чтобы выбрать другой день — сначала завершите текущую сессию.
             </p>
-          </div>
+          </HomeMediaCard>
         ) : todayProgram && todayProgramCompleted ? (
-          <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Сегодня</p>
+          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+            <p className="section-kicker">Сегодня</p>
             <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
               <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
                 Тренировка выполнена
@@ -777,14 +781,14 @@ export function HomePage() {
                 Подготовить следующую тренировку
               </Link>
             ) : null}
-          </div>
+          </HomeMediaCard>
         ) : todayProgram ? (
-          <div className="min-w-0 space-y-2 overflow-hidden rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">
+          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+            <p className="section-kicker">
               {canStartProgramNow ? "Сегодня" : "Следующая тренировка"}
             </p>
-            <p className="break-words text-base font-semibold [overflow-wrap:anywhere]">{todayProgram.name}</p>
-            <p className="break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
+            <p className="home-hero-title">{todayProgram.name}</p>
+            <p className="max-w-[20rem] break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
               {todayDayTitle}
               {" · "}
               {phaseMetaFromName(effectiveTodayPhase).label}
@@ -883,7 +887,7 @@ export function HomePage() {
               ) : null;
             })()}
             {canStartProgramNow ? (
-              <div className="flex overflow-hidden rounded-xl bg-tg-button">
+              <div className="signal-action mt-4 flex overflow-hidden rounded-xl sm:max-w-sm">
                 <button
                   type="button"
                   disabled={starting}
@@ -914,24 +918,38 @@ export function HomePage() {
                 Начать её можно в день тренировки. Сейчас доступны просмотр плана и замены.
               </p>
             )}
-          </div>
+          </HomeMediaCard>
         ) : (
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">С чего начать</p>
-            <p className="text-base font-semibold">Выберите программу на 10 минут</p>
-            <p className="text-sm text-tg-hint">
+          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+            <p className="section-kicker">С чего начать</p>
+            <p className="home-hero-title">Выберите свою первую программу</p>
+            <p className="max-w-[20rem] text-sm text-tg-hint">
               Готовый план тренировочных дней для зала или дома — либо соберите день из каталога.
               {!online ? " Сейчас нет сети — сессия сохранится на устройстве." : ""}
             </p>
             <button
               type="button"
               onClick={() => navigate("/programs")}
-              className="block w-full rounded-xl bg-tg-button px-4 py-3.5 text-center text-sm font-semibold text-tg-button-text"
+              className="signal-action home-primary-action"
             >
               Выбрать программу
             </button>
-          </div>
+          </HomeMediaCard>
         )}
+
+        <HomeMediaCard imageUrl="/app-media/home-nutrition-hero.jpg">
+          <p className="section-kicker">Питание сегодня</p>
+          <h2 className="home-hero-title">Держите рацион под контролем</h2>
+          <p className="max-w-[17rem] text-sm text-tg-hint">
+            Калории, приёмы пищи и вода в одном месте
+          </p>
+          <Link
+            to="/nutrition"
+            className="signal-action home-primary-action justify-between"
+          >
+            Открыть дневник <span aria-hidden="true">→</span>
+          </Link>
+        </HomeMediaCard>
 
         <ActivationChecklistCard
           state={activationChecklist.state}
@@ -996,38 +1014,6 @@ export function HomePage() {
             exercise={detailExercise}
             onClose={() => setDetailExercise(null)}
           />
-        ) : null}
-
-        {completedCount > 0 || canResume || todayProgram ? (
-          <div className="rounded-2xl border border-tg-button/20 bg-tg-secondary px-4 py-3">
-            <p className="text-sm font-semibold">Спросить тренера</p>
-            <p className="mt-0.5 text-xs text-tg-hint">
-              Замена, разбор недели или питание после тренировки
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Link
-                to="/ai?q=Замени%20упражнение%20при%20дискомфорте"
-                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
-              >
-                Замена
-              </Link>
-              <Link
-                to={plusAccess ? "/ai?q=Проанализируй%20мой%20прогресс%20за%20месяц" : "/faq?article=plus"}
-                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
-              >
-                Разбор недели · PLUS
-              </Link>
-              <Link
-                to="/ai?q=Что%20есть%20после%20тренировки"
-                className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link"
-              >
-                После тренировки
-              </Link>
-              <Link to="/ai" className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px]">
-                Открыть чат
-              </Link>
-            </div>
-          </div>
         ) : null}
 
         {pickerOpen && todayProgram ? (
