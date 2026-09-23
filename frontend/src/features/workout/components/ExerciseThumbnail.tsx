@@ -4,8 +4,8 @@ import type { Exercise } from "@/types/workout";
 import { exerciseThumbnailUrl } from "@/utils/exerciseMedia";
 
 type Props = {
-  exercise: Pick<Exercise, "name_ru" | "muscle_group" | "animation_url" | "thumbnail_url">;
-  size?: "sm" | "md";
+  exercise: Pick<Exercise, "muscle_group" | "animation_url" | "thumbnail_url">;
+  size?: "sm" | "md" | "cover";
 };
 
 function FallbackIcon() {
@@ -27,16 +27,15 @@ export function ExerciseThumbnail({ exercise, size = "md" }: Props) {
     <span
       className={[
         "exercise-thumbnail shrink-0",
-        size === "sm" ? "h-10 w-10" : "h-14 w-14",
+        size === "sm" ? "h-10 w-10" : size === "cover" ? "h-36 w-full rounded-none border-0" : "h-14 w-14",
       ].join(" ")}
       aria-hidden="true"
-      title={exercise.name_ru}
     >
       {url && !failed ? (
         <img
           src={url}
           alt=""
-          className="h-full w-full object-contain"
+          className={size === "cover" ? "h-full w-full object-contain p-2" : "h-full w-full object-contain"}
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}

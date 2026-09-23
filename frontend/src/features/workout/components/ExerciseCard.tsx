@@ -4,88 +4,46 @@ import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbna
 
 type ExerciseCardProps = {
   exercise: Exercise;
-  selected?: boolean;
-  onSelect?: (exercise: Exercise) => void;
-  onOpenDetail?: (exercise: Exercise) => void;
-  compact?: boolean;
+  selected: boolean;
+  onSelect: (exercise: Exercise) => void;
+  onOpenDetail: (exercise: Exercise) => void;
 };
 
-/**
- * Compact catalog card.
- * Nested buttons + Tailwind line-clamp often expand to full text height on iOS WebKit.
- */
 export function ExerciseCard({
   exercise,
-  selected = false,
+  selected,
   onSelect,
   onOpenDetail,
-  compact = false,
 }: ExerciseCardProps) {
-  const openDetail = () => {
-    if (onOpenDetail) onOpenDetail(exercise);
-    else onSelect?.(exercise);
-  };
-
-  const technique = (exercise.technique || "").replace(/\s+/g, " ").trim();
+  const technique = exercise.technique?.trim();
 
   return (
-    <article
-      className={[
-        "w-full rounded-2xl border px-3 py-2.5 text-left transition",
-        selected ? "border-tg-button bg-tg-button/10" : "border-transparent bg-tg-secondary",
-      ].join(" ")}
-    >
-      <div className="flex items-start gap-2">
-        <ExerciseThumbnail exercise={exercise} />
-        <div className="min-w-0 flex-1">
-          <button type="button" onClick={openDetail} className="w-full text-left">
-            <p className="text-sm font-medium leading-snug text-tg-text">{exercise.name_ru}</p>
-            <p className="mt-0.5 text-[11px] leading-snug text-tg-hint">
-              {enumLabel(exercise.muscle_group)}
-              {exercise.equipment ? ` · ${enumLabel(exercise.equipment)}` : ""}
-            </p>
-          </button>
-          {technique && !compact ? (
-            <p
-              className="mt-1 overflow-hidden text-[12px] leading-snug text-tg-hint"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                maxHeight: "2.6em",
-              }}
-            >
-              {technique}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-          <span title="Сложность техники: 1 — легко, 5 — сложно" className={["rounded-full bg-black/5 px-2 py-0.5 text-[10px] text-tg-hint", compact ? "hidden sm:inline" : ""].join(" ")}>
-            Сложность: {exercise.difficulty}/5
+    <article className={[
+      "w-full overflow-hidden rounded-3xl border bg-tg-secondary text-left shadow-lg transition",
+      selected ? "border-[var(--app-signal)] ring-1 ring-[var(--app-signal)]/30" : "border-[var(--border-subtle)]",
+    ].join(" ")}>
+      <button type="button" onClick={() => onOpenDetail(exercise)} className="block w-full text-left">
+        <div className="relative overflow-hidden bg-[#eef3ef]">
+          <ExerciseThumbnail exercise={exercise} size="cover" />
+          <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur">
+            Сложность {exercise.difficulty}/5
           </span>
-          {onOpenDetail ? (
-            <button
-              type="button"
-              onClick={() => onOpenDetail(exercise)}
-              className="tap-target flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg px-1 text-[11px] leading-none text-tg-link"
-            >
-              Детали
-            </button>
-          ) : null}
         </div>
-      </div>
-      {onSelect ? (
-        <button
-          type="button"
-          onClick={() => onSelect(exercise)}
-          className={[
-            "mt-2 w-full rounded-xl px-3 py-2 text-xs font-semibold leading-none",
-            selected ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-text",
-          ].join(" ")}
-        >
-          {selected ? "Выбрано · убрать" : "Выбрать в тренировку"}
+        <div className="p-4 pb-3">
+          <p className="section-kicker">{enumLabel(exercise.muscle_group)}</p>
+          <h2 className="mt-1.5 text-xl font-bold leading-tight tracking-[-0.025em]">{exercise.name_ru}</h2>
+          <p className="mt-1 text-xs text-tg-hint">{exercise.equipment ? enumLabel(exercise.equipment) : "Без оборудования"}</p>
+          {technique ? <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-tg-hint">{technique}</p> : null}
+        </div>
+      </button>
+      <div className="flex gap-2 px-4 pb-4">
+        <button type="button" onClick={() => onOpenDetail(exercise)} aria-label={`Открыть технику: ${exercise.name_ru}`} className="signal-outline min-h-11 flex-1 rounded-xl px-2 text-xs font-semibold">
+          ▷ Техника
         </button>
-      ) : null}
+        <button type="button" onClick={() => onSelect(exercise)} aria-label={selected ? "Выбрано · убрать" : "Выбрать в тренировку"} className={["min-h-11 flex-1 rounded-xl px-2 text-xs font-semibold", selected ? "signal-action" : "bg-tg-bg text-tg-text"].join(" ")}>
+          {selected ? "✓ Выбрано" : "+ Добавить"}
+        </button>
+      </div>
     </article>
   );
 }

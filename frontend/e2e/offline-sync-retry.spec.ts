@@ -103,6 +103,7 @@ test("opening the app retries an exhausted offline workout without deleting it",
 });
 
 test("temporary API failure keeps a complete custom workout plan locally", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
   const exerciseId = "55555555-5555-4555-8555-555555555555";
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
   await page.route("**/users/me", async (route) => route.fulfill({
@@ -156,6 +157,12 @@ test("temporary API failure keeps a complete custom workout plan locally", async
   });
 
   await page.goto("/workouts");
+  await expect(page.getByRole("searchbox", { name: "Поиск упражнения" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Спина", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Открыть технику: Тяга верхнего блока/ })).toBeVisible();
+  if (process.platform === "win32") {
+    await expect(page).toHaveScreenshot("catalog-mobile.png", { fullPage: false });
+  }
   await page.getByRole("button", { name: "Выбрать в тренировку" }).click();
   await page.getByRole("button", { name: /Начать .*\(1\)/ }).click();
   await expect(page).toHaveURL(/\/workouts\/active\//);

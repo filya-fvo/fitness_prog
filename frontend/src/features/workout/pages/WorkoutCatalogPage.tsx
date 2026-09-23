@@ -5,7 +5,6 @@ import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { createWorkout } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
-import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
@@ -17,6 +16,7 @@ import {
 import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseCard } from "@/features/workout/components/ExerciseCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { MuscleGroupFilter } from "@/features/workout/components/MuscleGroupFilter";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
 import { trackEvent } from "@/lib/analytics";
 import { getTelegramWebApp, isTelegramEnvironment } from "@/lib/telegram";
@@ -49,7 +49,6 @@ type CatalogUiState = {
   searchQuery?: string;
   visibleCount?: number;
   scrollY?: number;
-  compactMode?: boolean;
 };
 
 function readCatalogUi(): CatalogUiState {
@@ -123,7 +122,6 @@ export function WorkoutCatalogPage() {
   const [fromCache, setFromCache] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [visibleCount, setVisibleCount] = useState(Math.max(CATALOG_PAGE_SIZE, initialUi.visibleCount || 0));
-  const [compactMode, setCompactMode] = useState(initialUi.compactMode ?? true);
   const scrollRestoredRef = useRef(false);
   const filtersMountedRef = useRef(false);
   const usesNativeMainButton =
@@ -216,9 +214,9 @@ export function WorkoutCatalogPage() {
   useEffect(() => {
     sessionStorage.setItem(
       CATALOG_UI_KEY,
-      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, compactMode, scrollY: window.scrollY }),
+      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, scrollY: window.scrollY }),
     );
-  }, [compactMode, muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
+  }, [muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
 
   useEffect(() => {
     if (loading || scrollRestoredRef.current) return;
@@ -365,9 +363,25 @@ export function WorkoutCatalogPage() {
         </button>
       ) : null}
 
-      <div className="mb-3 rounded-2xl bg-tg-secondary p-3">
-        <p className="mb-2 text-xs font-medium text-tg-hint">Быстрый день</p>
-        <div className="mb-3 flex flex-wrap gap-2">
+      <label className="mb-4 block">
+        <span className="sr-only">Поиск упражнения</span>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Найти упражнение"
+          className="w-full rounded-2xl border border-[var(--border-subtle)] bg-tg-secondary px-4 py-3 text-base shadow-lg"
+        />
+      </label>
+
+      <MuscleGroupFilter groups={muscleGroups} value={muscleFilter} onChange={setMuscleFilter} />
+
+      <details className="mb-3 rounded-2xl bg-tg-secondary p-3">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">
+          Быстрая тренировка
+          <span className="text-xs font-normal text-tg-link">{activeTemplate.label} · настроить</span>
+        </summary>
+        <div className="mb-3 mt-2 flex flex-wrap gap-2 border-t border-[var(--border-subtle)] pt-3">
           {WORKOUT_DAY_PRESETS.map((preset) => (
             <button
               key={preset.id}
@@ -410,62 +424,12 @@ export function WorkoutCatalogPage() {
             ? ` · выбрано ${selectedExercises.length}`
             : " · выберите ≥1 упражнение (лучше ≥4)"}
         </p>
-      </div>
-
-      <CollapsibleFilterPanel
-        activeCount={Number(Boolean(searchQuery)) + Number(Boolean(muscleFilter))}
-        summary={[searchQuery ? `«${searchQuery}»` : "", muscleFilter ? enumLabel(muscleFilter) : "Все группы"].filter(Boolean).join(" · ")}
-      >
-        <label className="mb-2 block text-xs text-tg-hint">
-          Поиск
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск упражнения"
-            className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-          />
-        </label>
-
-        <div className="flex max-h-24 flex-wrap gap-2 overflow-y-auto">
-        <button
-          type="button"
-          onClick={() => setMuscleFilter("")}
-          className={[
-            "rounded-full px-3 py-1 text-xs",
-            !muscleFilter ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-          ].join(" ")}
-        >
-          Все группы
-        </button>
-        {muscleGroups.map((group) => (
-          <button
-            key={group}
-            type="button"
-            onClick={() => setMuscleFilter(group)}
-            className={[
-              "rounded-full px-3 py-1 text-xs",
-              muscleFilter === group ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
-          >
-            {enumLabel(group)}
-          </button>
-        ))}
-        </div>
-      </CollapsibleFilterPanel>
+      </details>
 
       {!loading && catalog.length > 0 ? (
         <div className="sticky top-0 z-10 mb-3 flex items-center justify-between gap-3 rounded-xl bg-tg-bg/95 py-1 text-xs text-tg-hint backdrop-blur lg:top-16">
           <span>Найдено упражнений: {visibleCatalog.length}</span>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-pressed={compactMode}
-              onClick={() => setCompactMode((value) => !value)}
-              className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
-            >
-              {compactMode ? "Подробнее" : "Компактно"}
-            </button>
           {searchQuery || muscleFilter ? (
             <button
               type="button"
@@ -553,7 +517,6 @@ export function WorkoutCatalogPage() {
             selected={selectedIds.includes(exercise.id)}
             onSelect={toggleExercise}
             onOpenDetail={setDetailExercise}
-            compact={compactMode}
           />
         ))}
       </div>
