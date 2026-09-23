@@ -53,13 +53,12 @@ function NavIcon({ name }: { name: NavIconName }) {
 export function BottomNavigation() {
   return (
     <nav
-      className="app-bottom-navigation fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-xl lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0"
+      className="app-bottom-navigation fixed bottom-0 left-0 right-0 z-20 border backdrop-blur-xl lg:bottom-auto lg:top-0 lg:border-t-0"
       aria-label="Основная навигация"
     >
-      <ul className="mx-auto flex max-w-5xl items-stretch justify-between px-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5 lg:h-16 lg:items-center lg:justify-start lg:gap-1 lg:px-4 lg:py-2">
+      <ul className="mx-auto flex max-w-5xl items-stretch justify-between px-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 lg:h-16 lg:items-center lg:justify-start lg:gap-1 lg:px-4 lg:py-2">
         <li className="mr-auto hidden items-center gap-2 text-sm font-semibold lg:flex">
-          <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-cyan-300 to-violet-500 shadow-[0_0_14px_rgba(67,199,255,0.65)]" />
-          Fitness
+          <span className="brand-lockup">FIL<span className="brand-lockup-accent">FIT</span></span>
         </li>
         {items.map((item) => (
           <li key={item.to} className="flex-1 lg:flex-none">
@@ -68,14 +67,14 @@ export function BottomNavigation() {
               end={"end" in item ? item.end : false}
               className={({ isActive }) =>
                 [
-                  "tap-target relative flex min-h-[48px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] font-medium transition-colors lg:flex-row lg:gap-2 lg:px-3 lg:text-xs",
+                  "app-nav-link tap-target relative flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 pb-2 pt-1 text-[11px] font-medium transition-[color,background-color,transform] active:scale-[0.97] lg:min-h-[44px] lg:flex-row lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs",
                   isActive
-                    ? "bg-gradient-to-b from-cyan-400/15 to-violet-500/10 font-semibold text-tg-link ring-1 ring-cyan-300/15"
+                    ? "app-nav-link-active bg-black/10 font-semibold"
                     : "text-tg-hint hover:bg-black/5 hover:text-tg-text",
                 ].join(" ")
               }
             >
-              <span className="mb-0.5 leading-none lg:mb-0"><NavIcon name={item.icon} /></span>
+              <span className="mb-0.5 leading-none lg:mb-0 [&>svg]:h-6 [&>svg]:w-6 lg:[&>svg]:h-5 lg:[&>svg]:w-5"><NavIcon name={item.icon} /></span>
               <span>{item.label}</span>
             </NavLink>
           </li>

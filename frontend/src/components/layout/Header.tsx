@@ -13,8 +13,8 @@ type HeaderProps = {
 
 function BrandMark() {
   return (
-    <span className="brand-mark" aria-hidden="true">
-      <span className="brand-letter">F</span>
+    <span className="brand-lockup" aria-hidden="true">
+      FIL<span className="brand-lockup-accent">FIT</span>
     </span>
   );
 }
@@ -44,7 +44,7 @@ export function Header({ title, subtitle, showBack, fallbackTo, beforeBack }: He
   }, [beforeBack, fallbackTo, location.pathname, navigate]);
 
   return (
-    <header className="app-page-header mb-5">
+    <header className="app-page-header mb-6">
       <div className="flex min-w-0 items-center gap-3">
         {backVisible ? (
           <button
@@ -59,7 +59,7 @@ export function Header({ title, subtitle, showBack, fallbackTo, beforeBack }: He
           <BrandMark />
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[1.35rem] font-semibold tracking-[-0.02em] text-tg-text">{title}</h1>
+          <h1 className="app-page-title truncate text-tg-text">{title}</h1>
           {subtitle ? <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-tg-hint">{subtitle}</p> : null}
         </div>
       </div>

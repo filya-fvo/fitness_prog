@@ -16,6 +16,9 @@
   --app-hint: #91a4bd;
   --app-accent: #43c7ff;
   --app-accent-strong: #006699;
+  --app-signal: #b7f94a;
+  --app-signal-strong: #8fd126;
+  --app-signal-text: #102000;
   --app-violet: #8b6cff;
   --app-button: #006699;
   --app-button-text: #ffffff;
@@ -46,6 +49,9 @@
   --app-hint: #60758d;
   --app-accent: #006da3;
   --app-accent-strong: #006699;
+  --app-signal: #557a12;
+  --app-signal-strong: #3f6200;
+  --app-signal-text: #ffffff;
   --app-violet: #6954d9;
   --app-button: #006699;
   --app-button-text: #ffffff;
@@ -135,6 +141,46 @@ body {
     background: var(--surface-inset);
   }
 
+  .section-kicker {
+    color: var(--app-signal);
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .media-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--app-signal) 24%, var(--border-subtle));
+    border-radius: 1.5rem;
+    background-color: #08110d;
+    box-shadow: 0 20px 48px rgba(0, 4, 12, 0.24);
+  }
+
+  .media-card::after {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(100deg, rgba(4, 10, 8, 0.96) 4%, rgba(4, 10, 8, 0.78) 58%, rgba(4, 10, 8, 0.28));
+    content: "";
+    pointer-events: none;
+  }
+
+  .signal-action {
+    border: 1px solid color-mix(in srgb, var(--app-signal) 72%, transparent);
+    background: var(--app-signal);
+    color: var(--app-signal-text);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--app-signal) 20%, transparent);
+  }
+
+  .signal-outline {
+    border: 1px solid color-mix(in srgb, var(--app-signal) 56%, transparent);
+    color: var(--app-signal);
+  }
+
   .state-success {
     color: var(--color-success);
     background: color-mix(in srgb, var(--color-success) 10%, transparent);
@@ -152,28 +198,29 @@ body {
 
   .app-page-header {
     position: relative;
-    padding-top: 0.125rem;
+    padding-top: 0.25rem;
   }
 
-  .brand-mark {
+  .app-page-title {
+    font-size: clamp(1.55rem, 6vw, 2rem);
+    font-weight: 760;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+
+  .brand-lockup {
     display: inline-flex;
     min-height: 44px;
-    min-width: 44px;
     align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(74, 199, 255, 0.22);
-    border-radius: 0.9rem;
-    background: linear-gradient(145deg, rgba(52, 183, 244, 0.16), rgba(52, 122, 215, 0.12));
-    color: var(--app-accent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 7, 22, 0.18);
+    gap: 0.12em;
+    color: var(--app-text);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
   }
 
-  .brand-letter {
-    font-size: 1.5rem;
-    font-weight: 800;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: -0.03em;
+  .brand-lockup-accent {
+    color: var(--app-signal);
   }
 
   .exercise-thumbnail {
@@ -207,13 +254,40 @@ body {
 
   .app-bottom-navigation {
     border-color: var(--border-subtle);
-    background: color-mix(in srgb, var(--app-bg) 90%, transparent);
-    box-shadow: 0 -12px 36px rgba(0, 4, 12, 0.2);
+    border-radius: 1.75rem 1.75rem 0 0;
+    background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+    box-shadow: 0 -16px 44px rgba(0, 4, 12, 0.3);
+  }
+
+  .app-nav-link::after {
+    position: absolute;
+    right: 50%;
+    bottom: 0.1rem;
+    width: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--app-signal);
+    content: "";
+    transform: translateX(50%);
+    transition: width 160ms ease;
+  }
+
+  .app-nav-link-active {
+    color: var(--app-signal);
+  }
+
+  .app-nav-link-active::after {
+    width: 1.9rem;
   }
 
   @media (min-width: 1024px) {
     .app-bottom-navigation {
+      border-radius: 0 0 1.5rem 1.5rem;
       box-shadow: 0 12px 36px rgba(0, 4, 12, 0.16);
+    }
+
+    .app-nav-link::after {
+      bottom: 0.05rem;
     }
   }
 }
