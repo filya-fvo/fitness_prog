@@ -873,7 +873,7 @@ setAuthEmail(p.auth_email ?? null);
   }
 
   return (
-    <section className="mx-auto max-w-4xl" onChangeCapture={() => setDirtyTabs((current) => new Set(current).add(tab))}>
+    <section className="profile-page mx-auto max-w-4xl" onChangeCapture={() => setDirtyTabs((current) => new Set(current).add(tab))}>
       <Header title="Профиль" subtitle="Тело и цели, программа, питание, уведомления и аккаунт" />
       {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -884,7 +884,7 @@ setAuthEmail(p.auth_email ?? null);
         </div>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="profile-tabs">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -892,10 +892,7 @@ setAuthEmail(p.auth_email ?? null);
             onClick={() => {
               selectTab(t.id);
             }}
-            className={[
-              "rounded-full px-3 py-1.5 text-xs font-medium",
-              tab === t.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
+            className={`profile-tab${tab === t.id ? " profile-tab-active" : ""}`}
           >
             {t.label}
           </button>
@@ -908,7 +905,7 @@ setAuthEmail(p.auth_email ?? null);
             type="button"
             aria-expanded={bodyAdvanced}
             onClick={() => setBodyAdvanced((value) => !value)}
-            className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
+            className="profile-secondary-action"
           >
             {bodyAdvanced ? "Скрыть дополнительные параметры" : "Дополнительные параметры тела и калорий"}
           </button>
@@ -1667,7 +1664,7 @@ setAuthEmail(p.auth_email ?? null);
 
       {tab === "supplements" ? (
         <div className="space-y-3">
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
+          <div className="profile-program-hero">
             <div>
               <p className="font-medium">Сегодня</p>
               <p className="text-xs text-tg-hint">
@@ -2147,7 +2144,7 @@ setAuthEmail(p.auth_email ?? null);
 
       {tab === "account" ? (
         <div className="space-y-4">
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <div className="profile-account-card">
             <p className="text-sm font-semibold">Аккаунт</p>
             <p className="mt-2 break-all text-sm">
               {authEmail || (storeUser?.username ? `@${storeUser.username.replace(/^@/, "")}` : "Telegram-аккаунт")}
@@ -2189,7 +2186,7 @@ setAuthEmail(p.auth_email ?? null);
         </div>
       ) : null}
 
-      <Link to="/nutrition" className="mt-4 block text-center text-xs text-tg-link">
+      <Link to="/nutrition" className="profile-footer-link">
         К дневнику питания
       </Link>
       {detailExercise ? (

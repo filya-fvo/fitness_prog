@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const USER_ID = "82222222-2222-4222-8222-222222222222";
 const PROGRAM_ID = "83333333-3333-4333-8333-333333333333";
@@ -207,6 +208,30 @@ for (const entry of [
   test(`readiness also guards the ${entry.path} program entry point`, async ({ page }) => {
     const startPayloads = await mockHome(page, "female");
     await page.goto(entry.path);
+
+    if (entry.path === "/programs") {
+      await expect(page.getByRole("heading", { name: "Программы" })).toBeVisible();
+      if (process.platform === "win32") {
+        await expect(page).toHaveScreenshot("programs-mobile.png", { fullPage: false });
+      }
+      const blocking = (await new AxeBuilder({ page }).analyze()).violations.filter(
+        (item) => item.impact === "critical" || item.impact === "serious",
+      );
+      expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
+
+      for (const width of [320, 1440]) {
+        await page.setViewportSize({ width, height: 852 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+      }
+
+      await page.evaluate(() => localStorage.setItem("fitness_theme_preference", "dark"));
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      const darkBlocking = (await new AxeBuilder({ page }).analyze()).violations.filter(
+        (item) => item.impact === "critical" || item.impact === "serious",
+      );
+      expect(darkBlocking, JSON.stringify(darkBlocking, null, 2)).toEqual([]);
+    }
 
     await page.getByRole("button", { name: entry.buttonName }).first().click();
     const dialog = page.getByRole("dialog", { name: "Как вы себя чувствуете перед тренировкой?" });

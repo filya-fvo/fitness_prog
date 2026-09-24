@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const WORKOUT_ID = "11111111-1111-4111-8111-111111111111";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -33,6 +34,7 @@ function profile(autoAdvance: boolean) {
 test("auto-advance preference is saved when the switch is toggled", async ({ page }) => {
   let savedValue: unknown = null;
 
+  await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => {
     localStorage.setItem("fitness_jwt", "e2e-token");
   });
@@ -55,6 +57,27 @@ test("auto-advance preference is saved when the switch is toggled", async ({ pag
   });
 
   await page.goto("/profile");
+  await expect(page.getByRole("heading", { name: "Профиль" })).toBeVisible();
+  if (process.platform === "win32") {
+    await expect(page).toHaveScreenshot("profile-mobile.png", { fullPage: false });
+  }
+  const blocking = (await new AxeBuilder({ page }).analyze()).violations.filter(
+    (item) => item.impact === "critical" || item.impact === "serious",
+  );
+  expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
+
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 852 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+  }
+
+  await page.evaluate(() => localStorage.setItem("fitness_theme_preference", "dark"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const darkBlocking = (await new AxeBuilder({ page }).analyze()).violations.filter(
+    (item) => item.impact === "critical" || item.impact === "serious",
+  );
+  expect(darkBlocking, JSON.stringify(darkBlocking, null, 2)).toEqual([]);
   const preference = page.getByRole("switch", {
     name: "Автопереход между упражнениями",
   });

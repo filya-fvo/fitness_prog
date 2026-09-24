@@ -33,7 +33,7 @@ test("cached browser session renders while server verification is still pending"
   try {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect.poll(() => verificationStarted).toBe(true);
-    await expect(page.getByRole("heading", { name: "Главная" })).toBeVisible({ timeout: 1_000 });
+    await expect(page.getByRole("heading", { name: "Привет, cached-athlete" })).toBeVisible({ timeout: 1_000 });
     await expect(page.getByText("Авторизация…")).toBeHidden();
   } finally {
     releaseVerification();

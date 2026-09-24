@@ -72,7 +72,7 @@ test("page arrow navigates inside the app while Telegram BackButton stays hidden
 
 test("a right swipe from the left edge closes the Telegram Mini App", async ({ page }) => {
   await openAsTelegramUser(page, "/");
-  await expect(page.getByRole("heading", { name: "Главная" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Привет, back-e2e-user" })).toBeVisible();
 
   await page.evaluate(() => {
     document.dispatchEvent(new PointerEvent("pointerdown", {

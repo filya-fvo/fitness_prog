@@ -493,11 +493,11 @@ export function ProgramsPage() {
     const duration = programDurationLabel(program);
 
     return (
-      <article key={`${badge || "all"}-${program.id}`} className="rounded-2xl bg-tg-secondary p-4">
+      <article key={`${badge || "all"}-${program.id}`} className="program-card">
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-medium">{programDayLabel(program.name)}</h2>
+              <h2 className="program-card-title">{programDayLabel(program.name)}</h2>
               {badge ? (
                 <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-medium text-tg-link">
                   {badge}
@@ -543,14 +543,14 @@ export function ProgramsPage() {
           </div>
           <button
             type="button"
-            className="tap-target flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg px-1 text-xs text-tg-link"
+            className="program-card-details"
             onClick={() => setExpandedId(open ? null : program.id)}
           >
             {open ? "Скрыть" : "Детали"}
           </button>
         </div>
         {program.description ? (
-          <p className="mt-2 text-sm text-tg-hint">{program.description}</p>
+          <p className="program-card-description">{program.description}</p>
         ) : null}
 
         {open ? (
@@ -658,7 +658,7 @@ export function ProgramsPage() {
           type="button"
           disabled={startingKey === `${program.id}:${todayIdx}`}
           onClick={() => void startProgram(program, todayIdx)}
-          className="mt-3 w-full rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+          className="program-start-button"
         >
           {startingKey === `${program.id}:${todayIdx}`
             ? "Стартуем…"
@@ -718,7 +718,7 @@ export function ProgramsPage() {
   }
 
   return (
-    <section>
+    <section className="programs-page">
       <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {selectionNoticeText ? (
@@ -727,28 +727,28 @@ export function ProgramsPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-tg-secondary p-1" role="group" aria-label="Режим списка программ">
+      <div className="program-view-switch" role="group" aria-label="Режим списка программ">
         <button
           type="button"
           onClick={() => setViewMode("recommended")}
-          className={viewMode === "recommended" ? "rounded-xl bg-tg-bg px-3 py-2 text-sm font-semibold shadow-sm" : "rounded-xl px-3 py-2 text-sm text-tg-hint"}
+          className={`program-view-option${viewMode === "recommended" ? " program-view-option-active" : ""}`}
         >
           Подходят вам
         </button>
         <button
           type="button"
           onClick={() => setViewMode("all")}
-          className={viewMode === "all" ? "rounded-xl bg-tg-bg px-3 py-2 text-sm font-semibold shadow-sm" : "rounded-xl px-3 py-2 text-sm text-tg-hint"}
+          className={`program-view-option${viewMode === "all" ? " program-view-option-active" : ""}`}
         >
           Все программы
         </button>
       </div>
 
       {!loading && showRecommendations && topRecommended.length > 0 ? (
-        <div className="mb-4 grid gap-3 md:grid-cols-2">
-          <p className="text-sm font-medium md:col-span-2">Лучшие совпадения с анкетой</p>
+        <div className="program-grid">
+          <p className="section-kicker md:col-span-2">Лучшие совпадения с анкетой</p>
           {topRecommended.map((row) => renderCard(row.program, "для вас", row.reasons))}
-          <button type="button" onClick={() => setViewMode("all")} className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link md:col-span-2">
+          <button type="button" onClick={() => setViewMode("all")} className="program-secondary-action md:col-span-2">
             Посмотреть все программы
           </button>
         </div>
@@ -897,7 +897,7 @@ export function ProgramsPage() {
         </div>
       ) : null}
 
-      {viewMode === "all" ? <div className="grid gap-3 md:grid-cols-2">
+      {viewMode === "all" ? <div className="program-grid">
         {visiblePrograms.map((program) => renderCard(program))}
       </div> : null}
 
@@ -911,7 +911,7 @@ export function ProgramsPage() {
         </button>
       ) : null}
 
-      <Link to="/workouts" className="mt-4 block text-center text-xs text-tg-link">
+      <Link to="/workouts" className="program-catalog-link">
         Или собрать свою тренировку из каталога
       </Link>
 
