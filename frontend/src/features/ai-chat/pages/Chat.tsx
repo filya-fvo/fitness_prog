@@ -163,7 +163,7 @@ export function Chat() {
               setShowPlusGate(false);
               void send(item.text);
             }}
-            className="rounded-full bg-tg-secondary px-3 py-1.5 text-xs"
+            className="app-chip app-chip-info min-h-11 px-3 text-xs disabled:opacity-50"
           >
             {item.text}{item.premium ? " · PLUS" : ""}
           </button>
