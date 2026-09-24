@@ -119,6 +119,10 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
   await page.getByRole("button", { name: "Сохранить тело и калории" }).click();
   await expect.poll(() => savedTarget).toBe(72.5);
   await expect(page.getByText("Профиль сохранён.")).toHaveClass(/app-card-success/);
+
+  await page.goto("/profile/settings?section=program");
+  await expect(page.getByText("Активная программа").locator(".."))
+    .toHaveClass(/app-card/);
 });
 
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {

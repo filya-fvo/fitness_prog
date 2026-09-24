@@ -1256,7 +1256,7 @@ setAuthEmail(p.auth_email ?? null);
 
       {tab === "program" ? (
         <div className="space-y-3">
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
+          <div className="app-card app-card-plum p-4 text-sm">
             <p className="font-medium">Активная программа</p>
             <p className="mt-1 text-xs text-tg-hint">
               {sex === "unspecified"
