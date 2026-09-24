@@ -146,7 +146,7 @@ export function Chat() {
         title="ИИ-тренер"
         subtitle={!historyReady ? "Загрузка истории…" : "Локально · без дневного лимита"}
       />
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-3 p-3 text-sm">{error}</div> : null}
       {showPlusGate ? <div className="mb-3"><PlusAccessSummary feature="ai_progress_analysis" title="Разбор истории доступен в PLUS" compact /></div> : null}
 
       <div className="mb-3 flex flex-wrap gap-2">
