@@ -131,6 +131,8 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
     .toHaveClass(/app-card/);
   await expect(page.getByText("Добавить из каталога").locator(".."))
     .toHaveClass(/app-card/);
+  await expect(page.getByText("Своя добавка").locator(".."))
+    .toHaveClass(/app-card/);
 });
 
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {
