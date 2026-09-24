@@ -50,6 +50,16 @@ const ProfilePage = lazy(() =>
     default: module.ProfilePage,
   })),
 );
+const ProfileHubPage = lazy(() =>
+  import("@/features/profile/pages/ProfileHubPage").then((module) => ({
+    default: module.ProfileHubPage,
+  })),
+);
+const HelpHubPage = lazy(() =>
+  import("@/features/help/pages/HelpHubPage").then((module) => ({
+    default: module.HelpHubPage,
+  })),
+);
 const NotificationSettingsPage = lazy(() =>
   import("@/features/notifications/pages/NotificationSettingsPage").then((module) => ({
     default: module.NotificationSettingsPage,
@@ -114,9 +124,6 @@ const SocialPage = lazy(() =>
 const HomePage = lazy(() =>
   import("@/pages/HomePage").then((module) => ({ default: module.HomePage })),
 );
-const MorePage = lazy(() =>
-  import("@/pages/MorePage").then((module) => ({ default: module.MorePage })),
-);
 const HelpPage = lazy(() =>
   import("@/pages/HelpPage").then((module) => ({ default: module.HelpPage })),
 );
@@ -171,12 +178,14 @@ export function App() {
             <Route path="workouts/active/:workoutId" element={<ActiveWorkout />} />
             <Route path="nutrition" element={<DailyLog />} />
             <Route path="measurements" element={<MeasurementsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile" element={<ProfileHubPage />} />
+            <Route path="profile/settings" element={<ProfilePage />} />
             <Route path="notifications" element={<NotificationSettingsPage />} />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="progress/exercises" element={<ExerciseExplorerPage />} />
             <Route path="ai" element={<Chat />} />
-            <Route path="more" element={<MorePage />} />
+            <Route path="help-center" element={<HelpHubPage />} />
+            <Route path="more" element={<Navigate to="/profile" replace />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="support/:ticketId" element={<SupportTicketPage />} />
             <Route path="invite" element={<InvitePage />} />

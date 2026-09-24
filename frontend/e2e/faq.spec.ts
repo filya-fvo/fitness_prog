@@ -45,13 +45,13 @@ test.describe("unified public help and FAQ", () => {
     await expect(page.getByText("Сколько белка нужно при тренировках")).toBeVisible();
   });
 
-  test("the single entry in More returns to the previous app context", async ({ page }) => {
-    await page.goto("/more");
+  test("the Help hub returns to its app context from public FAQ", async ({ page }) => {
+    await page.goto("/help-center");
     const entry = page.locator("section").getByRole("link", { name: /Помощь и FAQ/ });
     await expect(entry).toHaveCount(1);
     await entry.click();
     await expect(page).toHaveURL(/\/faq$/);
     await page.getByRole("button", { name: "Вернуться в приложение" }).click();
-    await expect(page).toHaveURL(/\/more$/);
+    await expect(page).toHaveURL(/\/help-center$/);
   });
 });

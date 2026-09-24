@@ -78,8 +78,11 @@ const limits = {
   // Illness pause and recovery choice add about 1.2 KB across the lazy Home and
   // typed workout API chunks; no vendor or largest-chunk limit changes.
   // Personal program duration estimates add 0.4 KB across lazy program routes.
-  totalJsGzip: 522_000,
-  productJsGzip: 468_500,
+  // The five-section root navigation replaces the old More route with two lazy
+  // Help/Profile hubs and a shared card. It adds 1.1 KB gzip net, keeps the
+  // largest vendor chunk unchanged, and removes the old More chunk.
+  totalJsGzip: 524_000,
+  productJsGzip: 470_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

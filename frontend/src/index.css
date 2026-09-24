@@ -390,9 +390,9 @@ body {
 
   .app-bottom-navigation {
     border-color: var(--border-subtle);
-    border-radius: 1.75rem 1.75rem 0 0;
-    background: color-mix(in srgb, var(--app-surface) 94%, transparent);
-    box-shadow: 0 -16px 44px rgba(0, 4, 12, 0.3);
+    border-radius: 1.25rem 1.25rem 0 0;
+    background: color-mix(in srgb, var(--app-surface-raised) 95%, transparent);
+    box-shadow: 0 -12px 34px rgba(0, 4, 12, 0.28);
   }
 
   .app-nav-link::after {
@@ -402,14 +402,22 @@ body {
     width: 0;
     height: 3px;
     border-radius: 999px;
-    background: var(--app-signal);
+    background: linear-gradient(90deg, var(--app-brand-start), var(--app-brand-mid) 52%, var(--app-brand-end));
     content: "";
     transform: translateX(50%);
     transition: width 160ms ease;
   }
 
   .app-nav-link-active {
-    color: var(--app-signal);
+    color: var(--app-brand-mid);
+  }
+
+  .app-nav-link-active > span:last-child {
+    background: linear-gradient(105deg, var(--app-brand-start), var(--app-brand-mid) 52%, var(--app-brand-end));
+    background-clip: text;
+    color: transparent;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .app-nav-link-active::after {
@@ -418,7 +426,7 @@ body {
 
   @media (min-width: 1024px) {
     .app-bottom-navigation {
-      border-radius: 0 0 1.5rem 1.5rem;
+      border-radius: 0 0 1.25rem 1.25rem;
       box-shadow: 0 12px 36px rgba(0, 4, 12, 0.16);
     }
 

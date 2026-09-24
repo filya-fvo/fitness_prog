@@ -27,7 +27,7 @@ function safeReturnTo(state: NavigationState): string {
   const value = state?.returnTo;
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
     ? value
-    : "/more";
+    : "/help-center";
 }
 
 function ArticleCard({ article, highlighted }: {

@@ -10,3 +10,6 @@ export function isAdminUsername(username: string | null | undefined): boolean {
   return Boolean(normalized && configuredAdminUsernames.has(normalized));
 }
 
+export function isAdminUser(user: { username?: string | null } | null | undefined): boolean {
+  return isAdminUsername(user?.username);
+}

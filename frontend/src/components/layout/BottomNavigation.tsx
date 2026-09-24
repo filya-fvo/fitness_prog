@@ -1,84 +1,54 @@
-import { NavLink } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-const items = [
-  { to: "/", label: "Главная", icon: "home", end: true },
-  { to: "/train", label: "Тренировки", icon: "training", end: false },
-  { to: "/nutrition", label: "Питание", icon: "nutrition", end: false },
-  { to: "/progress", label: "Прогресс", icon: "progress", end: false },
-  { to: "/more", label: "Ещё", icon: "more", end: false },
-] as const;
+import { NAV_ITEMS, rootSectionForPath, type NavigationIconName } from "@/components/layout/navigation";
 
-type NavIconName = (typeof items)[number]["icon"];
+function NavIcon({ active, name }: { active: boolean; name: NavigationIconName }) {
+  const gradientId = `nav-gradient-${name}`;
+  const stroke = active ? `url(#${gradientId})` : "currentColor";
+  const common = "h-6 w-6";
 
-function NavIcon({ name }: { name: NavIconName }) {
-  if (name === "home") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-        <path d="M3.5 10.5 12 3.7l8.5 6.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (name === "training") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-        <path d="M7 8v8M4.5 9.5v5M17 8v8m2.5-6.5v5M7 12h10M2.5 11v2m19-2v2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (name === "nutrition") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-        <path d="M7 3v7m-2-7v5a2 2 0 0 0 4 0V3M7 10v11M15 3v18m0-18c3 1 4 4 4 7h-4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (name === "progress") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-        <path d="M4 19V5M4 19h16M7 15l4-4 3 2 5-6" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M15.5 7H19v3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
+  const paths = (() => {
+    if (name === "home") return <><path d="M3.5 10.5 12 3.7l8.5 6.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6" strokeLinecap="round" strokeLinejoin="round" /></>;
+    if (name === "exercise") return <><path d="M7 8v8M4.5 9.5v5M17 8v8m2.5-6.5v5M7 12h10M2.5 11v2m19-2v2" strokeLinecap="round" /></>;
+    if (name === "diary") return <><path d="M6 3.5h9.5L19 7v13.5H6z" strokeLinecap="round" strokeLinejoin="round" /><path d="M15.5 3.5V7H19M9 11h7M9 15h7M9 19h4" strokeLinecap="round" /></>;
+    if (name === "help") return <><circle cx="12" cy="12" r="8.5" /><path d="M9.7 9.3a2.4 2.4 0 1 1 3.5 2.1c-.9.45-1.2 1.05-1.2 1.85M12 17h.01" strokeLinecap="round" /></>;
+    return <><circle cx="12" cy="8" r="3.1" /><path d="M5 20c.8-3.8 3.1-5.9 7-5.9s6.2 2.1 7 5.9" strokeLinecap="round" /></>;
+  })();
+
   return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-      <circle cx="5" cy="12" r="1.7" />
-      <circle cx="12" cy="12" r="1.7" />
-      <circle cx="19" cy="12" r="1.7" />
+    <svg viewBox="0 0 24 24" className={common} fill="none" stroke={stroke} strokeWidth="1.8" aria-hidden="true">
+      {active ? <defs><linearGradient id={gradientId} x1="3" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse"><stop stopColor="var(--app-brand-start)" /><stop offset="0.52" stopColor="var(--app-brand-mid)" /><stop offset="1" stopColor="var(--app-brand-end)" /></linearGradient></defs> : null}
+      {paths}
     </svg>
   );
 }
 
 export function BottomNavigation() {
+  const location = useLocation();
+  const activeRoot = rootSectionForPath(location.pathname);
+
   return (
-    <nav
-      className="app-bottom-navigation fixed bottom-0 left-0 right-0 z-20 border backdrop-blur-xl lg:bottom-auto lg:top-0 lg:border-t-0"
-      aria-label="Основная навигация"
-    >
-      <ul className="mx-auto flex max-w-5xl items-stretch justify-between px-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-2 lg:h-16 lg:items-center lg:justify-start lg:gap-1 lg:px-4 lg:py-2">
-        <li className="mr-auto hidden items-center gap-2 text-sm font-semibold lg:flex">
-          <span className="brand-lockup">FIL<span className="brand-lockup-accent">FIT</span></span>
-        </li>
-        {items.map((item) => (
-          <li key={item.to} className="flex-1 lg:flex-none">
-            <NavLink
-              to={item.to}
-              end={"end" in item ? item.end : false}
-              className={({ isActive }) =>
-                [
-                  "app-nav-link tap-target relative flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 pb-2 pt-1 text-[11px] font-medium transition-[color,background-color,transform] active:scale-[0.97] lg:min-h-[44px] lg:flex-row lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs",
-                  isActive
-                    ? "app-nav-link-active bg-black/10 font-semibold"
-                    : "text-tg-hint hover:bg-black/5 hover:text-tg-text",
-                ].join(" ")
-              }
-            >
-              <span className="mb-0.5 leading-none lg:mb-0 [&>svg]:h-6 [&>svg]:w-6 lg:[&>svg]:h-5 lg:[&>svg]:w-5"><NavIcon name={item.icon} /></span>
-              <span>{item.label}</span>
-            </NavLink>
-          </li>
-        ))}
+    <nav className="app-bottom-navigation fixed bottom-0 left-0 right-0 z-20 border backdrop-blur-xl lg:bottom-auto lg:top-0 lg:border-t-0" aria-label="Основная навигация">
+      <ul className="mx-auto flex max-w-5xl items-stretch justify-between px-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 lg:h-16 lg:items-center lg:justify-start lg:gap-1 lg:px-4 lg:py-2">
+        <li className="mr-auto hidden items-center gap-2 text-sm font-semibold lg:flex"><span className="brand-lockup">FIL<span className="brand-lockup-accent">FIT</span></span></li>
+        {NAV_ITEMS.map((item) => {
+          const active = activeRoot === item.to;
+          return (
+            <li key={item.to} className="flex-1 lg:flex-none">
+              <Link
+                to={item.to}
+                aria-current={active ? "page" : undefined}
+                className={[
+                  "app-nav-link tap-target relative flex min-h-[52px] flex-col items-center justify-center px-1 pb-2 pt-1 text-[11px] font-medium transition-[color,transform] active:scale-[0.97] lg:min-h-[44px] lg:flex-row lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs",
+                  active ? "app-nav-link-active font-semibold" : "text-tg-hint hover:text-tg-text",
+                ].join(" ")}
+              >
+                <span className="mb-0.5 leading-none lg:mb-0"><NavIcon active={active} name={item.icon} /></span>
+                <span>{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
