@@ -57,6 +57,8 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
   }));
 
   await page.goto("/support");
+  await expect(page.getByRole("heading", { name: "Новое обращение" }).locator(".."))
+    .toHaveClass(/app-card/);
   await page.locator("select").selectOption("bug");
   await page.getByPlaceholder("Опишите, что произошло или что хотите узнать").fill(userMessage.body);
   await page.locator('input[type="file"]').setInputFiles({ name: "problem.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64") });
