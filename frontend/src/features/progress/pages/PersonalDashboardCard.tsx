@@ -28,7 +28,7 @@ export function PersonalDashboardCard({
     <section className="mb-3 rounded-2xl border border-tg-link/20 bg-tg-secondary p-4" aria-labelledby="personal-dashboard-title">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-tg-link">Ваш дашборд</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-tg-link">Дневник</p>
           <h1 id="personal-dashboard-title" className="mt-1 text-lg font-semibold">{config.label}</h1>
           <p className="mt-1 text-xs text-tg-hint">{config.description}</p>
         </div>
@@ -57,12 +57,12 @@ export function PersonalDashboardCard({
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/10 pt-3 dark:border-white/10">
         <div>
-          <p className="text-xs font-medium">Глубина аналитики</p>
+          <p className="text-xs font-medium">Режим Дневника</p>
           <p className="mt-0.5 text-[10px] text-tg-hint">
-            {level === "advanced" ? "Расширенный режим выбран по анкете" : "Можно открыть сложные показатели вручную"}
+            {level === "advanced" ? "Расширенный режим выбран по анкете" : "В Основном — ежедневная динамика, в Расширенном — разбор нагрузки"}
           </p>
         </div>
-        <div className="grid shrink-0 grid-cols-2 rounded-xl bg-tg-bg p-1 text-[11px]" aria-label="Глубина аналитики">
+        <div className="grid shrink-0 grid-cols-2 rounded-xl bg-tg-bg p-1 text-[11px]" aria-label="Режим Дневника">
           <button
             type="button"
             aria-pressed={!expanded}
