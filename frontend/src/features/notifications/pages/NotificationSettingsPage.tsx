@@ -186,7 +186,7 @@ export function NotificationSettingsPage() {
     <section className="mx-auto max-w-3xl">
       <Header title="Уведомления" subtitle="Один канал и отдельные категории" />
       {error ? <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{error}</p> : null}
-      {ok ? <p role="status" className="mb-3 rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-600">{ok}</p> : null}
+      {ok ? <p role="status" className="app-card app-card-success mb-3 p-3 text-sm">{ok}</p> : null}
       {!settings ? (
         error ? null : <PageSkeleton />
       ) : (

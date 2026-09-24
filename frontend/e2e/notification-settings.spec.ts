@@ -85,7 +85,9 @@ test("notification settings keep one channel and independent category drafts", a
   await water.getByRole("checkbox", { name: "Напоминать о воде" }).check();
   await water.getByLabel("Цель, мл в день").fill("3000");
   await water.getByRole("button", { name: "Сохранить раздел" }).click();
-  await expect(page.getByText("Раздел сохранён")).toBeVisible();
+  const saved = page.getByText("Раздел сохранён");
+  await expect(saved).toBeVisible();
+  await expect(saved).toHaveClass(/app-card/);
   await expect(nutrition.getByLabel("Время напоминания 1")).toHaveValue("13:00");
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
