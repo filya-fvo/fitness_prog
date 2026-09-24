@@ -14,6 +14,10 @@ test.describe("unified public help and FAQ", () => {
     await search.fill("перенести пятницу");
     await expect(page.locator("#faq-reschedule")).toBeVisible();
     await expect(page.locator("#faq-reschedule")).toContainText(/перенести/i);
+
+    await search.fill("несуществующая тема");
+    await expect(page.getByText("Ответ не найден").locator(".."))
+      .toHaveClass(/app-card-warning/);
   });
 
   test("legacy URLs keep both grouped content types and their familiar order", async ({ page }) => {

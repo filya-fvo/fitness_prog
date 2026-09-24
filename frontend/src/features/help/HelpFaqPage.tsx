@@ -174,7 +174,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
           </section>
         ))}
         {!visibleArticles.length ? (
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+          <div className="app-card app-card-warning p-4 text-sm text-tg-hint">
             <p className="font-medium text-tg-text">Ответ не найден</p>
             <p className="mt-1">Попробуйте другое слово или опишите вопрос поддержке.</p>
           </div>
