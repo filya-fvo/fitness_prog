@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   getTelegramBrowserLoginConfig,
+  loginWithLocalTestUser,
   loginWithTelegram,
   loginWithTelegramIdToken,
 } from "./auth";
@@ -74,6 +75,17 @@ describe("loginWithTelegram", () => {
       id_token: "telegram-id-token",
       nonce: "n".repeat(40),
     });
+    expect(setItem).toHaveBeenCalledWith("fitness_jwt", "token");
+    vi.unstubAllGlobals();
+  });
+
+  it("stores the regular session returned by the local QA entrypoint", async () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("localStorage", { getItem: vi.fn(), setItem, removeItem: vi.fn() });
+    const post = vi.spyOn(apiClient, "post").mockResolvedValue({ data: authResponse });
+
+    await expect(loginWithLocalTestUser()).resolves.toEqual(authResponse);
+    expect(post).toHaveBeenCalledWith("/auth/local-test-user");
     expect(setItem).toHaveBeenCalledWith("fitness_jwt", "token");
     vi.unstubAllGlobals();
   });

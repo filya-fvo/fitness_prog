@@ -25,7 +25,9 @@ from app.schemas.auth import (
     TelegramBrowserAuthRequest,
     TelegramBrowserLoginConfig,
 )
+from app.schemas.subscription import SubscriptionState
 from app.services.auth_service import authenticate_telegram, authenticate_telegram_browser
+from app.services.local_test_auth import login_local_test_user
 from app.services.email_auth_service import (
     request_link_code,
     request_login_code,
@@ -40,6 +42,10 @@ from app.services.telegram_browser_auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _is_loopback(request: Request) -> bool:
+    return request.client is not None and request.client.host in {"127.0.0.1", "::1"}
 
 
 def _user_response(profile) -> AuthUserResponse:
@@ -60,6 +66,32 @@ def _user_response(profile) -> AuthUserResponse:
         onboarding_completed=profile.onboarding_completed,
         merged_from_user_ids=merged_ids,
         last_merge_preference=goals.get("_last_merge_preference"),
+    )
+
+
+@router.post("/local-test-user", response_model=TelegramAuthResponse, include_in_schema=False)
+async def auth_local_test_user(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TelegramAuthResponse:
+    """Manual QA entrypoint; deliberately invisible outside local development."""
+    if settings.environment != "development" or not _is_loopback(request):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Не найдено")
+    user, token = await login_local_test_user(session, settings)
+    goals = user.goals if isinstance(user.goals, dict) else {}
+    return TelegramAuthResponse(
+        access_token=token,
+        expires_in_days=settings.jwt_expire_days,
+        user=AuthUserResponse(
+            id=user.id,
+            telegram_id=None,
+            username=user.username,
+            auth_email=user.auth_email,
+            subscription=SubscriptionState(tier="free", active=False),
+            subscription_status="free",
+            onboarding_completed=bool(goals.get("onboarding_completed")),
+        ),
     )
 
 

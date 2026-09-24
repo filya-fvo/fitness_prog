@@ -95,6 +95,14 @@ export async function loginWithTelegramIdToken(
   return parsed;
 }
 
+/** Local QA only: backend independently rejects this endpoint outside localhost development. */
+export async function loginWithLocalTestUser(): Promise<AuthResponse> {
+  const { data } = await apiClient.post("/auth/local-test-user");
+  const parsed = authResponseSchema.parse(data);
+  setStoredToken(parsed.access_token);
+  return parsed;
+}
+
 export async function requestEmailLoginCode(email: string): Promise<EmailOtpRequestResult> {
   const { data } = await apiClient.post("/auth/email/request-code", { email: email.trim() });
   return emailOtpRequestSchema.parse(data);

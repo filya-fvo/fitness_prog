@@ -5,7 +5,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { hasSession, loginWithTelegram, type AuthUser } from "@/api/auth";
+import { hasSession, loginWithLocalTestUser, loginWithTelegram, type AuthUser } from "@/api/auth";
 import { clearStoredToken } from "@/api/client";
 import { fetchMyProfile } from "@/api/users";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
@@ -269,6 +269,21 @@ export function Shell() {
     setAuthError(null);
   };
 
+  const canUseLocalTestLogin = import.meta.env.DEV && ["127.0.0.1", "localhost"].includes(window.location.hostname);
+
+  async function completeLocalTestLogin() {
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      const result = await loginWithLocalTestUser();
+      completeBrowserLogin(result.user);
+    } catch (error) {
+      setAuthError(toUserMessage(error, "Не удалось открыть тестовый аккаунт"));
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
   return (
     <div className="app-shell min-h-screen bg-transparent text-tg-text">
       <div
@@ -301,6 +316,15 @@ export function Shell() {
 
         {!isAuthLoading && !isTelegramEnvironment() && !user ? (
           <>
+            {canUseLocalTestLogin ? (
+              <button
+                type="button"
+                onClick={() => void completeLocalTestLogin()}
+                className="app-button app-secondary-action mb-3 min-h-11 w-full"
+              >
+                Войти как тестовый пользователь
+              </button>
+            ) : null}
             <TelegramBrowserLogin onSuccess={completeBrowserLogin} />
             <EmailLoginForm onSuccess={completeBrowserLogin} />
           </>
