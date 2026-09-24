@@ -876,10 +876,10 @@ setAuthEmail(p.auth_email ?? null);
     <section className="profile-page mx-auto max-w-4xl" onChangeCapture={() => setDirtyTabs((current) => new Set(current).add(tab))}>
       <Header title="Профиль" subtitle="Тело и цели, программа, питание, уведомления и аккаунт" />
       {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
-      {ok ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-link">{ok}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-3 p-3 text-sm">{error}</div> : null}
+      {ok ? <div role="status" className="app-card app-card-success mb-3 p-3 text-sm">{ok}</div> : null}
       {dirtyTabs.has(tab) ? (
-        <div role="status" className="mb-3 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-800">
+        <div role="status" className="app-card app-card-warning mb-3 px-3 py-2 text-xs">
           Есть несохранённые изменения в этом разделе.
         </div>
       ) : null}
@@ -1001,7 +1001,7 @@ setAuthEmail(p.auth_email ?? null);
                   {weight ? `${String(weight).replace(".", ",")} кг` : "не указан"}
                 </span>
               </div>
-              <Link to="/measurements" className="mt-2 inline-block min-h-[44px] py-3 font-medium text-tg-link">
+              <Link to="/measurements" className="mt-2 inline-block min-h-[44px] py-3 font-medium text-tg-text underline decoration-tg-link decoration-2 underline-offset-4">
                 Изменить в замерах →
               </Link>
             </div>

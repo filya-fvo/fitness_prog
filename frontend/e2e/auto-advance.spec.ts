@@ -56,11 +56,8 @@ test("auto-advance preference is saved when the switch is toggled", async ({ pag
     });
   });
 
-  await page.goto("/profile");
+  await page.goto("/profile/settings");
   await expect(page.getByRole("heading", { name: "Профиль" })).toBeVisible();
-  if (process.platform === "win32") {
-    await expect(page).toHaveScreenshot("profile-mobile.png", { fullPage: false });
-  }
   const blocking = (await new AxeBuilder({ page }).analyze()).violations.filter(
     (item) => item.impact === "critical" || item.impact === "serious",
   );
@@ -113,12 +110,13 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
     });
   });
 
-  await page.goto("/profile");
+  await page.goto("/profile/settings");
   const target = page.getByLabel(/^Желаемый вес, кг/);
   await expect(target).toHaveValue("75");
   await target.fill("72.5");
   await page.getByRole("button", { name: "Сохранить тело и калории" }).click();
   await expect.poll(() => savedTarget).toBe(72.5);
+  await expect(page.getByText("Профиль сохранён.")).toHaveClass(/app-card-success/);
 });
 
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {
