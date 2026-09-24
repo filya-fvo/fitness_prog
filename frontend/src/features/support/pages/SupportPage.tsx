@@ -109,7 +109,7 @@ export function SupportPage() {
           {sending ? "Отправляем…" : "Отправить в поддержку"}
         </button>
       </form>
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}<button type="button" onClick={() => void load()} className="mt-2 block text-tg-link">Повторить загрузку</button></div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-4 p-4 text-sm">{error}<button type="button" onClick={() => void load()} className="mt-2 block text-tg-link">Повторить загрузку</button></div> : null}
       <h2 className="mb-2 font-semibold">Мои обращения</h2>
       {loading ? <PageSkeleton cards={3} /> : items.length ? (
         <div className="space-y-3">

@@ -133,6 +133,8 @@ test("timed-out support write can be retried without changing its idempotency ke
   await expect(page.getByText("Сервис отвечает слишком долго. Попробуйте ещё раз.")).toBeVisible({
     timeout: 20_000,
   });
+  await expect(page.getByRole("alert"))
+    .toHaveClass(/app-card-danger/);
   releaseFirstRequest?.();
   await page.getByRole("button", { name: "Отправить в поддержку" }).click();
   await expect(page).toHaveURL(`/support/${ticketId}`);
