@@ -50,7 +50,7 @@ export function Header({ title, subtitle, showBack, fallbackTo, beforeBack }: He
           <button
             type="button"
             onClick={() => void goBack()}
-            className="app-back-button tap-target shrink-0"
+            className="app-back-button app-button app-ghost-action tap-target shrink-0 p-0"
             aria-label="Вернуться назад"
           >
             <BackIcon />
