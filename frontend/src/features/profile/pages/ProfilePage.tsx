@@ -2055,7 +2055,7 @@ setAuthEmail(p.auth_email ?? null);
             Сохранить дозы и время
           </button>
 
-          <div className="rounded-2xl bg-tg-secondary p-4 space-y-2">
+          <div className="app-card app-card-indigo space-y-2 p-4">
             <p className="text-sm font-medium">Добавить из каталога</p>
             <select
               value={pickerKey}
