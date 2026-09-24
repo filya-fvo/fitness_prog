@@ -181,7 +181,7 @@ export function Chat() {
                 "max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
                 m.role === "user"
                   ? "ml-auto bg-tg-button text-tg-button-text"
-                  : "mr-auto bg-tg-secondary",
+                  : "app-card app-card-ocean mr-auto",
               ].join(" ")}
             >
               {isLong && !isExpanded ? previewAiMessage(m.content) : m.content}
