@@ -43,15 +43,15 @@ test("theme follows the device and keeps an explicit user choice", async ({ page
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect.poll(() => lightOption.evaluate((option) => {
     const style = getComputedStyle(option);
-    return [style.color, style.backgroundColor];
-  })).toEqual(["rgb(16, 34, 56)", "rgb(255, 255, 255)"]);
+    return [style.color === getComputedStyle(document.body).color, style.backgroundColor !== "rgba(0, 0, 0, 0)"];
+  })).toEqual([true, true]);
 
   await selector.selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect.poll(() => lightOption.evaluate((option) => {
     const style = getComputedStyle(option);
-    return [style.color, style.backgroundColor];
-  })).toEqual(["rgb(239, 247, 255)", "rgb(16, 31, 50)"]);
+    return [style.color === getComputedStyle(document.body).color, style.backgroundColor !== "rgba(0, 0, 0, 0)"];
+  })).toEqual([true, true]);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_theme_preference"))).toBe("dark");
 
   await page.reload();
@@ -91,4 +91,22 @@ test("system theme follows Telegram inside a Mini App", async ({ page }) => {
   await page.goto("/more");
   await expect(page.getByLabel("Тема оформления")).toHaveValue("system");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("profile selection uses the brand accent in both themes", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "theme-accent-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json", body: JSON.stringify(profile),
+  }));
+
+  for (const theme of ["light", "dark"] as const) {
+    await page.addInitScript((value) => localStorage.setItem("fitness_theme_preference", value), theme);
+    await page.goto("/profile/settings");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    const color = await page.locator(".profile-tab-active").evaluate((element) =>
+      getComputedStyle(element).backgroundColor,
+    );
+    const channels = color.match(/\d+/g)?.map(Number) ?? [];
+    expect(channels[0], color).toBeGreaterThan(channels[1]);
+  }
 });

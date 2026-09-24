@@ -24,9 +24,9 @@
   --app-danger: #ff5f72;
   --app-accent: var(--app-info);
   --app-accent-strong: #006699;
-  --app-signal: #b7f94a;
-  --app-signal-strong: #8fd126;
-  --app-signal-text: #102000;
+  --app-signal: var(--app-brand-start);
+  --app-signal-strong: var(--app-brand-mid);
+  --app-signal-text: #07111f;
   --app-violet: #8b6cff;
   --app-button: #006699;
   --app-button-text: #ffffff;
@@ -65,9 +65,9 @@
   --app-danger: #b4233d;
   --app-accent: var(--app-info);
   --app-accent-strong: #006699;
-  --app-signal: #557a12;
-  --app-signal-strong: #3f6200;
-  --app-signal-text: #ffffff;
+  --app-signal: var(--app-brand-start);
+  --app-signal-strong: var(--app-brand-mid);
+  --app-signal-text: #07111f;
   --app-violet: #6954d9;
   --app-button: #006699;
   --app-button-text: #ffffff;
