@@ -133,6 +133,12 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
     .toHaveClass(/app-card/);
   await expect(page.getByText("Своя добавка").locator(".."))
     .toHaveClass(/app-card/);
+  await expect(page.getByText("Стек пуст — добавьте из каталога ниже.").locator(".."))
+    .toHaveClass(/app-card/);
+  await page.getByRole("link", { name: "Как работают добавки и отметки?" }).click();
+  await expect(page).toHaveURL(/\/faq\?article=supplements/);
+  await page.getByRole("button", { name: "Вернуться в приложение" }).click();
+  await expect(page).toHaveURL(/\/profile\/settings\?section=supplements/);
 });
 
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {

@@ -1798,11 +1798,11 @@ setAuthEmail(p.auth_email ?? null);
           </div>
 
           {stack.length === 0 ? (
-            <div className="text-sm text-tg-hint">
+            <div className="app-card app-card-inset p-4 text-sm text-tg-hint">
               <p>Стек пуст — добавьте из каталога ниже.</p>
               <Link
                 to="/faq?article=supplements"
-                state={{ returnTo: "/profile?section=supplements" }}
+                state={{ returnTo: "/profile/settings?section=supplements" }}
                 className="mt-1 block min-h-11 py-3 text-xs text-tg-link"
               >
                 Как работают добавки и отметки?
