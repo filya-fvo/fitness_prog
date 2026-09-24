@@ -932,7 +932,7 @@ setAuthEmail(p.auth_email ?? null);
             </div>
           )}
 
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <div className="app-card app-card-ocean p-4">
             <p className="mb-2 text-sm font-medium">Пол</p>
             <p className="mb-2 text-xs leading-5 text-tg-hint">
               Используется для отдельной линейки программ и примерного расчёта калорий.
@@ -992,7 +992,7 @@ setAuthEmail(p.auth_email ?? null);
             />
           ) : null}
 
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+          <div className="app-card app-card-indigo space-y-2 p-4">
             <p className="text-sm font-medium">Базовые данные</p>
             <div className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
               <div className="flex items-center justify-between gap-3">
@@ -1065,7 +1065,7 @@ setAuthEmail(p.auth_email ?? null);
           </div>
 
           {bodyAdvanced ? (
-            <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+            <div className="app-card app-card-ocean space-y-2 p-4">
               <p className="text-sm font-medium">Замеры тела</p>
               <p className="text-xs text-tg-hint">
                 Обхваты теперь сохраняются отдельными датированными записями и не перезаписывают историю.
@@ -1079,7 +1079,7 @@ setAuthEmail(p.auth_email ?? null);
             </div>
           ) : null}
 
-          <div className="space-y-2 rounded-2xl bg-tg-secondary p-4">
+          <div className="app-card app-card-ember space-y-2 p-4">
             <p className="text-sm font-medium">Цель и калории</p>
             <div className="flex flex-wrap gap-2">
               {GOAL_OPTIONS.map((g) => (

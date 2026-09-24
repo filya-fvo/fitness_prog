@@ -111,6 +111,8 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
   });
 
   await page.goto("/profile/settings");
+  await expect(page.getByText("Базовые данные").locator(".."))
+    .toHaveClass(/app-card/);
   const target = page.getByLabel(/^Желаемый вес, кг/);
   await expect(target).toHaveValue("75");
   await target.fill("72.5");
