@@ -65,6 +65,8 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
   await page.getByRole("button", { name: "Отправить в поддержку" }).click();
   await expect(page).toHaveURL(`/support/${ticketId}`);
   await expect(page.getByText(userMessage.body, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Обновить" }).locator(".."))
+    .toHaveClass(/app-card/);
   await expect(page.getByLabel("Сообщение поддержке").locator(".."))
     .toHaveClass(/app-card/);
   await expect(page.getByAltText("Скриншот обращения")).toBeVisible();

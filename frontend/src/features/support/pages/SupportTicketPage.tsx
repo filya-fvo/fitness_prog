@@ -79,7 +79,7 @@ export function SupportTicketPage() {
       {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}<button type="button" onClick={() => void load()} className="mt-2 block text-tg-link">Повторить</button></div> : null}
       {loading ? <PageSkeleton cards={4} /> : ticket ? (
         <>
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary p-3 text-xs text-tg-hint">
+          <div className="app-card app-card-ocean mb-3 flex items-center justify-between gap-3 p-3 text-xs text-tg-hint">
             <span>{statusLabels[ticket.status]}</span><button type="button" onClick={() => void load()} className="min-h-11 px-2 text-tg-link">Обновить</button>
           </div>
           <div aria-live="polite" className="space-y-3">
