@@ -125,6 +125,10 @@ test("target weight is loaded and saved with profile goals", async ({ page }) =>
   await page.goto("/profile/settings?section=program");
   await expect(page.getByText("Активная программа").locator(".."))
     .toHaveClass(/app-card/);
+
+  await page.goto("/profile/settings?section=supplements");
+  await expect(page.getByText("Мой стек добавок").locator(".."))
+    .toHaveClass(/app-card/);
 });
 
 test("completed planned sets advance to the next exercise after the countdown", async ({ page }) => {

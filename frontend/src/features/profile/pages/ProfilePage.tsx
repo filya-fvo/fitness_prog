@@ -1763,7 +1763,7 @@ setAuthEmail(p.auth_email ?? null);
               </div>
             ) : null}
           </div>
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
+          <div className="app-card app-card-ember p-4 text-sm">
             <p className="font-medium">Мой стек добавок</p>
             <p className="mt-1 text-xs text-tg-hint">
               По умолчанию стек пуст — добавьте сами из каталога (только добавки с доказанной
