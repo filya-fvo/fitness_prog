@@ -239,6 +239,15 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
     animations: "disabled",
   });
+  await page.getByRole("button", { name: /Упражнение 1/ }).first().click();
+  const detail = page.getByRole("dialog", { name: "Упражнение 1" });
+  await expect(detail).toBeVisible();
+  await detail.getByRole("tab", { name: "Анимация" }).click();
+  await expect(detail.getByRole("img", { name: "Упражнение 1" })).toBeVisible();
+  await detail.getByRole("tab", { name: "Видео" }).click();
+  await expect(detail.getByText("Видео-инструкция для этого упражнения пока не добавлена.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(detail).toBeHidden();
   await page.getByRole("button", { name: /Показать ещё · осталось 5/ }).click();
   await expect(page.locator("article")).toHaveCount(25);
 });

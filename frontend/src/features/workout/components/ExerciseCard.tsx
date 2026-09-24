@@ -19,8 +19,8 @@ export function ExerciseCard({
 
   return (
     <article className={[
-      "w-full overflow-hidden rounded-3xl border bg-tg-secondary text-left shadow-lg transition",
-      selected ? "border-[var(--app-signal)] ring-1 ring-[var(--app-signal)]/30" : "border-[var(--border-subtle)]",
+      "app-card app-card-interactive w-full overflow-hidden text-left",
+      selected ? "border-[var(--app-brand-middle)] ring-1 ring-[var(--app-brand-middle)]/30" : "",
     ].join(" ")}>
       <button type="button" onClick={() => onOpenDetail(exercise)} className="block w-full text-left">
         <div className="relative overflow-hidden bg-[#eef3ef]">

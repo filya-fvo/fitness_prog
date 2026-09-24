@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
 
+import { resolveApiAssetUrl } from "@/api/client";
+import { MuscleGroupIcon } from "@/features/workout/components/MuscleGroupIcon";
 import type { Exercise } from "@/types/workout";
 import { exerciseThumbnailUrl } from "@/utils/exerciseMedia";
+import { resolveExercisePreview } from "@/utils/exerciseMediaPresentation";
 
 type Props = {
   exercise: Pick<Exercise, "muscle_group" | "animation_url" | "thumbnail_url">;
   size?: "sm" | "md" | "cover";
 };
 
-function FallbackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <circle cx="16" cy="7" r="3" />
-      <path d="M16 10v8m0-5-6 4m6-4 6 4m-6 1-5 8m5-8 5 8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export function ExerciseThumbnail({ exercise, size = "md" }: Props) {
-  const url = exerciseThumbnailUrl(exercise);
+  const preferredUrl = exerciseThumbnailUrl(exercise);
+  const preview = resolveExercisePreview(exercise);
+  const url = preferredUrl ?? (preview.kind === "anatomy" ? null : resolveApiAssetUrl(preview.src));
   const [failed, setFailed] = useState(false);
 
   useEffect(() => setFailed(false), [url]);
@@ -35,13 +31,13 @@ export function ExerciseThumbnail({ exercise, size = "md" }: Props) {
         <img
           src={url}
           alt=""
-          className={size === "cover" ? "h-full w-full object-contain p-2" : "h-full w-full object-contain"}
+          className={size === "cover" ? "h-full w-full object-cover" : "h-full w-full object-cover"}
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}
         />
       ) : (
-        <FallbackIcon />
+        <MuscleGroupIcon group={exercise.muscle_group} className={size === "cover" ? "h-20 w-20" : "h-7 w-7"} />
       )}
     </span>
   );

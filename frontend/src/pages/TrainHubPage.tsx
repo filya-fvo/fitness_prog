@@ -20,11 +20,11 @@ import { Header } from "@/components/layout/Header";
 import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorkoutEditor";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { WorkoutScheduleSettingsCard } from "@/features/workout/components/WorkoutScheduleSettingsCard";
+import { ExerciseHubCards } from "@/features/workout/components/ExerciseHubCards";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import {
   cacheExercises,
   readCachedExercises,
-  readCachedWorkouts,
   rememberWorkoutId,
   saveLocalSession,
 } from "@/db/syncQueue";
@@ -32,8 +32,6 @@ import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
-import { useUserStore } from "@/store/userStore";
-import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import {
   draftsWithSuggestions,
@@ -83,7 +81,6 @@ function draftsFromWorkout(workout: {
 export function TrainHubPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const plusAccess = useUserStore((state) => hasPlus(state.user));
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -97,7 +94,6 @@ export function TrainHubPage() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recentTitles, setRecentTitles] = useState<string[]>([]);
   const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
   const [scheduleSettings, setScheduleSettings] = useState<WorkoutScheduleSettings | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
@@ -189,25 +185,6 @@ export function TrainHubPage() {
             setProgram(active);
             setSchedule(scheduleOverview);
             setScheduleSettings(recurringSchedule);
-            if (plusAccess) {
-              const titles = (await readCachedWorkouts())
-                .filter((w: { status?: string }) => w.status === "completed")
-                .slice(0, 3)
-                .map((w: { title?: string | null }) => w.title || "Тренировка");
-              setRecentTitles(titles);
-            } else {
-              setRecentTitles([]);
-            }
-          }
-        } else {
-          const cached = plusAccess ? await readCachedWorkouts() : [];
-          if (!cancelled) {
-            setRecentTitles(
-              cached
-                .filter((w) => w.status === "completed")
-                .slice(0, 3)
-                .map((w) => w.title || "Тренировка"),
-            );
           }
         }
       } catch (err) {
@@ -220,7 +197,7 @@ export function TrainHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [plusAccess]);
+  }, []);
 
   useEffect(() => {
     if (location.hash !== "#schedule" || !scheduleSettings) return;
@@ -461,32 +438,7 @@ export function TrainHubPage() {
           />
         ) : null}
 
-        <Link to="/programs" className="block rounded-2xl bg-tg-secondary p-4 active:opacity-90">
-          <p className="text-sm font-semibold">Программы</p>
-          <p className="mt-1 text-xs text-tg-hint">
-            Готовые сплиты под зал, дом и улицу. Фильтры по полу, уровню и ограничениям.
-          </p>
-        </Link>
-        <Link to="/workouts" className="block rounded-2xl bg-tg-secondary p-4 active:opacity-90">
-          <p className="text-sm font-semibold">Каталог · своя тренировка</p>
-          <p className="mt-1 text-xs text-tg-hint">
-            Соберите день из упражнений: поиск, мышцы, шаблон подходов.
-          </p>
-        </Link>
-
-        {recentTitles.length ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <p className="text-sm font-semibold">Недавние</p>
-            <ul className="mt-2 space-y-1 text-xs text-tg-hint">
-              {recentTitles.map((t, i) => (
-                <li key={`${t}-${i}`}>· {t}</li>
-              ))}
-            </ul>
-            <Link to="/progress" className="mt-2 inline-block text-xs text-tg-link">
-              Вся история в прогрессе →
-            </Link>
-          </div>
-        ) : null}
+        <ExerciseHubCards />
 
         <Link to="/" className="block rounded-2xl bg-tg-bg px-4 py-3 text-center text-sm text-tg-link">
           ← На главную · «Сегодня»

@@ -84,8 +84,11 @@ const limits = {
   // The home activity modules replace one dense form with cards and an
   // accessible day editor. They add 1.2 KB gzip without a dependency or vendor
   // increase; the editor stays inside the already-lazy Home route.
-  totalJsGzip: 525_000,
-  productJsGzip: 471_000,
+  // Anatomical fallbacks and explicit media tabs replace letter placeholders and
+  // add a measured 1.2 KB gzip across the already-lazy exercise routes. No
+  // vendor or eager shell chunk grows.
+  totalJsGzip: 526_500,
+  productJsGzip: 472_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

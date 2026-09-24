@@ -1,4 +1,4 @@
-import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTabs";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise } from "@/types/workout";
@@ -51,7 +51,7 @@ export function ExerciseDetailModal({
           </button>
         </div>
 
-        <ExerciseMediaPlayer exercise={exercise} />
+        <ExerciseMediaTabs exercise={exercise} />
         <ExerciseProgressSection
           exerciseId={exercise.id}
           exerciseName={exercise.name_ru}

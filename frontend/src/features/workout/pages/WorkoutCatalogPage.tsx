@@ -351,7 +351,7 @@ export function WorkoutCatalogPage() {
 
   return (
     <section>
-      <Header title="Каталог" subtitle="Своя тренировка: выберите несколько упражнений" />
+      <Header title="База упражнений" subtitle="Соберите тренировку: техника, мышцы и подходы" />
 
       {canResume ? (
         <button
