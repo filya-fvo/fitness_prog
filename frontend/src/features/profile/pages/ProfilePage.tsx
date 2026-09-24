@@ -1205,7 +1205,7 @@ setAuthEmail(p.auth_email ?? null);
             ) : null}
           </div>
 
-          <div className="rounded-2xl bg-tg-secondary p-4 text-sm">
+          <div className="app-card app-card-ocean p-4 text-sm">
             <p className="font-medium">Расчёт калорий</p>
             {preview.complete ? (
               <ul className="mt-2 space-y-2 text-tg-hint">
