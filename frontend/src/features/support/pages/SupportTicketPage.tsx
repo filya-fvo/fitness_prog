@@ -93,7 +93,7 @@ export function SupportTicketPage() {
             })}
           </div>
           {ticket.status !== "closed" ? (
-            <form onSubmit={reply} className="mt-4 space-y-3 rounded-2xl bg-tg-secondary p-4">
+            <form onSubmit={reply} className="app-card app-card-indigo mt-4 space-y-3 p-4">
               <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={3500} rows={4} aria-label="Сообщение поддержке" placeholder="Написать сообщение…" className="w-full rounded-xl bg-tg-bg p-3 text-base text-tg-text" />
               <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl bg-tg-bg px-3 text-sm text-tg-link"><span>{screenshot ? "Заменить скриншот" : "Прикрепить скриншот"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/*" onChange={(event) => setScreenshot(event.target.files?.[0] ?? null)} className="sr-only" /></label>
               <p className="text-xs text-tg-hint">JPEG, PNG или WebP, до 8 МБ.</p>
