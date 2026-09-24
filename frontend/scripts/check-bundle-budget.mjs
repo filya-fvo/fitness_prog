@@ -81,8 +81,11 @@ const limits = {
   // The five-section root navigation replaces the old More route with two lazy
   // Help/Profile hubs and a shared card. It adds 1.1 KB gzip net, keeps the
   // largest vendor chunk unchanged, and removes the old More chunk.
-  totalJsGzip: 524_000,
-  productJsGzip: 470_000,
+  // The home activity modules replace one dense form with cards and an
+  // accessible day editor. They add 1.2 KB gzip without a dependency or vendor
+  // increase; the editor stays inside the already-lazy Home route.
+  totalJsGzip: 525_000,
+  productJsGzip: 471_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

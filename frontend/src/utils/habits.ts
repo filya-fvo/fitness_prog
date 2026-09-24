@@ -19,6 +19,55 @@ export type HabitDay = {
   checkedIn: boolean;
 };
 
+export type DailyActivityCard = {
+  id: "sleep" | "water" | "steps";
+  label: string;
+  value: string;
+  detail: string;
+  progress: number | null;
+};
+
+type DailyActivityInput = Pick<HabitDay, "sleepHours" | "waterMl" | "steps">;
+
+function formatActivityNumber(value: number): string {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value).replace(/\s/g, " ");
+}
+
+export function activityCards(
+  day: DailyActivityInput,
+  targets: { sleepHours?: number; waterMl?: number; steps?: number } = {},
+): DailyActivityCard[] {
+  const sleepTarget = targets.sleepHours ?? 8;
+  const waterTarget = targets.waterMl ?? 2500;
+  const stepsTarget = targets.steps ?? 8000;
+  const progress = (value: number | null | undefined, target: number) =>
+    value == null ? null : Math.min(1, Math.max(0, value / target));
+
+  return [
+    {
+      id: "sleep",
+      label: "Сон",
+      value: day.sleepHours == null ? "—" : `${formatActivityNumber(day.sleepHours)} ч`,
+      detail: `цель ${formatActivityNumber(sleepTarget)} ч`,
+      progress: progress(day.sleepHours, sleepTarget),
+    },
+    {
+      id: "water",
+      label: "Вода",
+      value: `${formatActivityNumber(day.waterMl)} мл`,
+      detail: `цель ${formatActivityNumber(waterTarget)} мл`,
+      progress: progress(day.waterMl, waterTarget),
+    },
+    {
+      id: "steps",
+      label: "Шаги",
+      value: day.steps == null ? "—" : formatActivityNumber(day.steps),
+      detail: `цель ${formatActivityNumber(stepsTarget)}`,
+      progress: progress(day.steps, stepsTarget),
+    },
+  ];
+}
+
 type Store = Record<string, HabitDay>;
 
 function ownerKey(ownerUserId?: string | null): string {

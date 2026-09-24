@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   addWater,
   adoptHabitHistory,
+  activityCards,
   clearLegacyWeightHistory,
   clearWaterHistory,
   getHabitDay,
@@ -128,5 +129,23 @@ describe("habit history clearing", () => {
       waterPending: true,
     });
     expect(getHabitDay("2026-08-10", "old-user").waterMl).toBe(0);
+  });
+});
+
+describe("daily activity cards", () => {
+  it("formats sleep, water and steps as compact card values", () => {
+    expect(activityCards({ sleepHours: 7.5, waterMl: 1250, steps: 6200 })).toEqual([
+      expect.objectContaining({ id: "sleep", value: "7,5 ч" }),
+      expect.objectContaining({ id: "water", value: "1 250 мл" }),
+      expect.objectContaining({ id: "steps", value: "6 200" }),
+    ]);
+  });
+
+  it("keeps an empty metric distinct from a real zero", () => {
+    const cards = activityCards({ sleepHours: null, waterMl: 0, steps: null });
+
+    expect(cards[0]).toMatchObject({ value: "—", progress: null });
+    expect(cards[1]).toMatchObject({ value: "0 мл", progress: 0 });
+    expect(cards[2]).toMatchObject({ value: "—", progress: null });
   });
 });

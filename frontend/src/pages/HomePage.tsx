@@ -16,7 +16,6 @@ import {
   type PersonalRegularity,
   type WorkoutScheduleOverview,
 } from "@/api/workouts";
-import { HabitsCheckin } from "@/components/HabitsCheckin";
 import { Header } from "@/components/layout/Header";
 import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
@@ -70,6 +69,10 @@ import { compareProgramToProfile, programMismatchSummary } from "@/utils/program
 import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
+import { DailyActivityCards } from "@/features/home/components/DailyActivityCards";
+import { DailyActivityDialog } from "@/features/home/components/DailyActivityDialog";
+import { HomeNutritionSummary } from "@/features/home/components/HomeNutritionSummary";
+import { useDailyActivity } from "@/features/home/hooks/useDailyActivity";
 import { workoutPauseDays } from "@/utils/workoutRecency";
 import {
   canStartProgramFromSchedule,
@@ -117,6 +120,8 @@ export function HomePage() {
   const setDrafts = useWorkoutStore((s) => s.setDrafts);
   const setIdMapping = useWorkoutStore((s) => s.setIdMapping);
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
+  const dailyActivity = useDailyActivity();
+  const [dailyActivityOpen, setDailyActivityOpen] = useState(false);
 
   const [regularity, setRegularity] = useState<PersonalRegularity | null>(null);
   const [cachedLastCompletedDate, setCachedLastCompletedDate] = useState<string | null>(null);
@@ -937,19 +942,13 @@ export function HomePage() {
           </HomeMediaCard>
         )}
 
-        <HomeMediaCard imageUrl="/app-media/home-nutrition-hero.jpg">
-          <p className="section-kicker">Питание сегодня</p>
-          <h2 className="home-hero-title">Держите рацион под контролем</h2>
-          <p className="max-w-[17rem] text-sm text-tg-hint">
-            Калории, приёмы пищи и вода в одном месте
-          </p>
-          <Link
-            to="/nutrition"
-            className="signal-action home-primary-action justify-between"
-          >
-            Открыть дневник <span aria-hidden="true">→</span>
-          </Link>
-        </HomeMediaCard>
+        <HomeNutritionSummary calories={todayCalories} target={calorieTarget} />
+
+        <DailyActivityCards
+          day={dailyActivity.day}
+          waterTargetMl={dailyActivity.waterTargetMl ?? waterTargetMl}
+          onOpen={() => setDailyActivityOpen(true)}
+        />
 
         <ActivationChecklistCard
           state={activationChecklist.state}
@@ -967,10 +966,7 @@ export function HomePage() {
             });
           }}
           onOpenCheckin={() => {
-            document.getElementById("daily-checkin")?.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
+            setDailyActivityOpen(true);
           }}
           onSnooze={activationChecklist.snooze}
           onDismiss={activationChecklist.dismiss}
@@ -1001,7 +997,11 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <HabitsCheckin />
+        <DailyActivityDialog
+          open={dailyActivityOpen}
+          activity={dailyActivity}
+          onClose={() => setDailyActivityOpen(false)}
+        />
 
         <PreWorkoutReadinessDialog
           open={readiness.open}
