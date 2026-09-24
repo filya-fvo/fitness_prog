@@ -716,7 +716,7 @@ export function DailyLog() {
       {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {okNote ? (
-        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-link">{okNote}</div>
+        <div role="status" className="app-card app-card-success mb-3 p-3 text-sm">{okNote}</div>
       ) : null}
 
       {!isAuthed ? (

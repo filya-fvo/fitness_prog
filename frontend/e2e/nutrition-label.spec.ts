@@ -121,7 +121,9 @@ test("label photo is uploaded as multipart and opens an editable review", async 
 
   await review.getByRole("button", { name: "Создать и выбрать" }).click();
   await expect(review).toHaveCount(0);
-  await expect(page.getByText(/Тестовый йогурт: продукт создан и выбран.*Проверьте граммы/i)).toBeVisible();
+  const productCreated = page.getByText(/Тестовый йогурт: продукт создан и выбран.*Проверьте граммы/i);
+  await expect(productCreated).toBeVisible();
+  await expect(productCreated).toHaveClass(/app-card/);
   expect(createdProductBody).toMatchObject({
     name_ru: "Тестовый йогурт",
     calories: 81,
