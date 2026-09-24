@@ -65,6 +65,8 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
   await page.getByRole("button", { name: "Отправить в поддержку" }).click();
   await expect(page).toHaveURL(`/support/${ticketId}`);
   await expect(page.getByText(userMessage.body, { exact: true })).toBeVisible();
+  await expect(page.getByText(userMessage.body, { exact: true }).locator(".."))
+    .toHaveClass(/app-card/);
   await expect(page.getByRole("button", { name: "Обновить" }).locator(".."))
     .toHaveClass(/app-card/);
   await expect(page.getByLabel("Сообщение поддержке").locator(".."))
@@ -105,6 +107,22 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
     await page.setViewportSize({ width, height: 850 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
+});
+
+test("closed support ticket keeps its conversation and explains why replies are unavailable", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "support-closed-token"));
+  await page.route("**/users/me", (route) => route.fulfill({
+    contentType: "application/json", body: JSON.stringify(adminProfile),
+  }));
+  await page.route(`**/support/tickets/${ticketId}`, (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ ...summary, status: "closed", unread: false, source_page: "/workouts", client: "browser", app_version: "e2e", messages: [userMessage] }),
+  }));
+  await page.goto(`/support/${ticketId}`);
+  await expect(page.getByText(userMessage.body, { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Сообщение поддержке")).toHaveCount(0);
+  await expect(page.getByText("Обращение закрыто. Создайте новое, если нужна дополнительная помощь."))
+    .toHaveClass(/app-card/);
 });
 
 test("timed-out support write can be retried without changing its idempotency key", async ({ page }) => {

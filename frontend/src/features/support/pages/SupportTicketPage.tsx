@@ -75,8 +75,8 @@ export function SupportTicketPage() {
   return (
     <section>
       <Header title="Поддержка Fitness Trainer" subtitle={ticket ? categoryLabels[ticket.category] : "Обращение"} fallbackTo="/support" />
-      {uploadNotice ? <div role="status" className="mb-4 rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">{uploadNotice}</div> : null}
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}<button type="button" onClick={() => void load()} className="mt-2 block text-tg-link">Повторить</button></div> : null}
+      {uploadNotice ? <div role="status" className="app-card app-card-warning mb-4 p-4 text-sm">{uploadNotice}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-4 p-4 text-sm">{error}<button type="button" onClick={() => void load()} className="mt-2 block text-tg-link">Повторить</button></div> : null}
       {loading ? <PageSkeleton cards={4} /> : ticket ? (
         <>
           <div className="app-card app-card-ocean mb-3 flex items-center justify-between gap-3 p-3 text-xs text-tg-hint">
@@ -85,7 +85,7 @@ export function SupportTicketPage() {
           <div aria-live="polite" className="space-y-3">
             {ticket.messages.map((item) => {
               const fromSupport = item.author_type === "admin";
-              return <article key={item.id} className={`max-w-[90%] rounded-2xl p-4 ${fromSupport ? "bg-tg-secondary" : "ml-auto bg-tg-button text-tg-button-text"}`}>
+              return <article key={item.id} className={`app-card max-w-[90%] p-4 ${fromSupport ? "app-card-ocean" : "app-card-plum ml-auto"}`}>
                 <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{item.body}</p>
                 {item.attachments.map((attachment) => <SupportScreenshot key={attachment.id} attachment={attachment} />)}
                 <p className={`mt-2 text-xs ${fromSupport ? "text-tg-hint" : "opacity-75"}`}>{fromSupport ? "Поддержка Fitness Trainer" : "Вы"} · {formatSupportDate(item.created_at)}</p>
@@ -101,7 +101,7 @@ export function SupportTicketPage() {
               <button type="submit" disabled={sending || (!message.trim() && !screenshot)} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">{sending ? "Отправляем…" : "Отправить"}</button>
               <button type="button" onClick={() => void closeTicket()} className="min-h-11 w-full rounded-xl bg-tg-bg px-4 text-sm text-tg-hint">Закрыть обращение</button>
             </form>
-          ) : <div className="mt-4 rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Обращение закрыто. Создайте новое, если нужна дополнительная помощь.</div>}
+          ) : <div className="app-card app-card-warning mt-4 p-4 text-sm">Обращение закрыто. Создайте новое, если нужна дополнительная помощь.</div>}
         </>
       ) : null}
     </section>
