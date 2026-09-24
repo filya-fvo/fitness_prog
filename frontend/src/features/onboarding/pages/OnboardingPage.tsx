@@ -477,7 +477,7 @@ export function OnboardingPage() {
       ) : null}
 
       {step === 5 ? (
-        <div className="space-y-3 rounded-2xl bg-tg-secondary p-4">
+        <div className="app-card space-y-3 p-4">
           <p className="text-sm font-medium">Антропометрия и калории</p>
           <p className="text-xs leading-5 text-tg-hint">
             Пол используется для отдельной линейки программ и примерного расчёта калорий.

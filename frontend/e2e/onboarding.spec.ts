@@ -73,6 +73,8 @@ test("onboarding requires explicit choices, supports unspecified sex and allows 
 
   await expect(next).toBeDisabled();
   await page.getByRole("button", { name: "Не указывать" }).click();
+  await expect(page.getByText("Антропометрия и калории").locator(".."))
+    .toHaveClass(/app-card/);
   await page.getByLabel("Цель калорий на день").fill("2100");
   await page.getByRole("textbox", { name: "Вес, кг", exact: true }).fill("70");
   await page.getByLabel("Рост, см").fill("170");
