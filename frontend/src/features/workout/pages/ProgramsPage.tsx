@@ -17,6 +17,7 @@ import {
 import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { ProgramOverviewCard } from "@/features/workout/components/ProgramOverviewCard";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import { trackEvent } from "@/lib/analytics";
@@ -485,7 +486,6 @@ export function ProgramsPage() {
 
   function renderCard(program: Program, badge?: string, why?: string[]) {
     const schedule = scheduleOf(program);
-    const days = schedule.length;
     const open = expandedId === program.id;
     const todayIdx = pickTodayDayIndex(program);
     const reasons = why?.length ? why : reasonsById.get(program.id) || [];
@@ -495,51 +495,20 @@ export function ProgramsPage() {
     return (
       <article key={`${badge || "all"}-${program.id}`} className="program-card">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="program-card-title">{programDayLabel(program.name)}</h2>
-              {badge ? (
-                <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-medium text-tg-link">
-                  {badge}
-                </span>
-              ) : null}
-              {programLimitations(program).includes("no_knee") ? (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-700">
-                  без колен
-                </span>
-              ) : null}
-              {programLimitations(program).includes("no_spine") ? (
-                <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] text-sky-700">
-                  без спины
-                </span>
-              ) : null}
-              {programLimitations(program).includes("shoulder_sensitive") ? (
-                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] text-violet-700">
-                  щадяще для плеч
-                </span>
-              ) : null}
-              {userJointLimits.length > 0 && limitationConflict(program, userJointLimits) ? (
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-800">
-                  не под ограничение
-                </span>
-              ) : null}
+          <div className="min-w-0 flex-1">
+            <ProgramOverviewCard
+              program={program}
+              exerciseById={exerciseById}
+              badge={badge}
+              reasons={reasons}
+              mismatches={mismatches}
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {programLimitations(program).includes("no_knee") ? <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-700">без колен</span> : null}
+              {programLimitations(program).includes("no_spine") ? <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] text-sky-700">без спины</span> : null}
+              {programLimitations(program).includes("shoulder_sensitive") ? <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] text-violet-700">щадяще для плеч</span> : null}
+              {userJointLimits.length > 0 && limitationConflict(program, userJointLimits) ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-800">не под ограничение</span> : null}
             </div>
-            <p className="mt-1 text-xs text-tg-hint">
-              {enumLabel(program.workout_type)}
-              {program.level || program.target_level
-                ? ` · ${enumLabel(program.level || program.target_level)}`
-                : ""}
-              {days ? ` · ${days} дн.` : ""}
-              {duration ? ` · ${duration}` : ""}
-            </p>
-            {reasons.length ? (
-              <p className="mt-1 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p>
-            ) : null}
-            {mismatches.length ? (
-              <p className={mismatches.some((item) => item.critical) ? "mt-1 text-xs text-red-600" : "mt-1 text-xs text-amber-700"}>
-                Не совпадает с анкетой: {programMismatchSummary(mismatches)}
-              </p>
-            ) : null}
           </div>
           <button
             type="button"
@@ -549,10 +518,6 @@ export function ProgramsPage() {
             {open ? "Скрыть" : "Детали"}
           </button>
         </div>
-        {program.description ? (
-          <p className="program-card-description">{program.description}</p>
-        ) : null}
-
         {open ? (
           <div className="mt-3 space-y-2 rounded-xl bg-tg-bg p-3">
             {schedule.length === 0 ? (

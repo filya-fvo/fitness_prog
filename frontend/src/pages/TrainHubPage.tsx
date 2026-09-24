@@ -328,7 +328,7 @@ export function TrainHubPage() {
 
   return (
     <section>
-      <Header title="Тренировки" subtitle="Программы и свой день" />
+      <Header title="Тренировки" subtitle="Программы тренировок и свой день" />
       <div className="space-y-3">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}

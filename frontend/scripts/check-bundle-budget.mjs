@@ -87,8 +87,10 @@ const limits = {
   // Anatomical fallbacks and explicit media tabs replace letter placeholders and
   // add a measured 1.2 KB gzip across the already-lazy exercise routes. No
   // vendor or eager shell chunk grows.
+  // Program focus maps add 0.75 KB gzip to the existing lazy programs route;
+  // its exercise catalog and all interaction flows remain unchanged.
   totalJsGzip: 526_500,
-  productJsGzip: 472_500,
+  productJsGzip: 473_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
