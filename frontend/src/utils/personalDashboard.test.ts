@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProgressDashboard } from "@/api/progressDashboard";
-import { analyticsDepth, dashboardGuidance, visibleDashboardSections } from "@/utils/personalDashboard";
+import {
+  ADVANCED_DIARY_SECTIONS,
+  BASIC_DIARY_SECTIONS,
+  analyticsDepth,
+  dashboardGuidance,
+  visibleDashboardSections,
+} from "@/utils/personalDashboard";
 
 function dashboard(current = 4, previous = 3): ProgressDashboard {
   const totals = (completed: number) => ({ completed_workouts: completed, active_days: completed, completed_sets: completed * 5, planned_sets: completed * 6, volume_kg: completed * 1000, average_rpe: null, rpe_workouts: 0 });
@@ -22,10 +28,17 @@ describe("personal dashboard", () => {
     expect(analyticsDepth("advanced", false)).toBe("standard");
   });
 
-  it("prioritizes sections by goal without hiding advanced access", () => {
-    expect(visibleDashboardSections("lose_fat", "basic")).toEqual(["measurements", "nutrition"]);
-    expect(visibleDashboardSections("gain_muscle", "standard")[0]).toBe("strength");
-    expect(visibleDashboardSections("maintain", "advanced")).toHaveLength(5);
+  it("renders different dashboard collections for basic and expanded modes", () => {
+    expect(visibleDashboardSections("lose_fat", "basic")).toEqual(["wellness", "measurements", "weekly"]);
+    expect(visibleDashboardSections("gain_muscle", "standard")).toEqual(["wellness", "measurements", "weekly"]);
+    expect(visibleDashboardSections("maintain", "advanced")).toEqual(["strength", "nutrition"]);
+  });
+
+  it("keeps the basic diary and expanded analytics as distinct views", () => {
+    expect(BASIC_DIARY_SECTIONS).toEqual(["adherence", "calendar", "wellness", "measurements"]);
+    expect(ADVANCED_DIARY_SECTIONS).toEqual(["training-load", "muscle-balance", "strength", "nutrition", "recovery"]);
+    const expanded = new Set<string>(ADVANCED_DIARY_SECTIONS);
+    expect(BASIC_DIARY_SECTIONS.some((section) => expanded.has(section))).toBe(false);
   });
 
   it("does not treat empty nutrition days as zero intake", () => {

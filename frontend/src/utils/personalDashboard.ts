@@ -4,6 +4,10 @@ import type { PersonalRegularity } from "@/api/workouts";
 export type AnalyticsDepth = "basic" | "standard" | "advanced";
 export type DashboardSectionId = "measurements" | "nutrition" | "wellness" | "weekly" | "strength";
 
+/** Kept independent so the Diary does not render the same analytics twice. */
+export const BASIC_DIARY_SECTIONS = ["adherence", "calendar", "wellness", "measurements"] as const;
+export const ADVANCED_DIARY_SECTIONS = ["training-load", "muscle-balance", "strength", "nutrition", "recovery"] as const;
+
 export const GOAL_DASHBOARD: Record<string, {
   label: string;
   description: string;
@@ -44,13 +48,11 @@ export function analyticsDepth(
 }
 
 export function visibleDashboardSections(
-  goal: unknown,
+  _goal: unknown,
   depth: AnalyticsDepth,
 ): DashboardSectionId[] {
-  const sections = GOAL_DASHBOARD[String(goal)]?.sections ?? GOAL_DASHBOARD.maintain.sections;
-  if (depth === "basic") return sections.slice(0, 2);
-  if (depth === "standard") return sections.slice(0, 4);
-  return sections;
+  if (depth === "advanced") return ["strength", "nutrition"];
+  return ["wellness", "measurements", "weekly"];
 }
 
 export type DashboardGuidance = {

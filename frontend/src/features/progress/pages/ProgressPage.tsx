@@ -385,7 +385,7 @@ export function ProgressPage() {
   if (!plusAccess) {
     return (
       <section className="mx-auto max-w-4xl">
-        <Header title="Прогресс" subtitle="Тренировки, питание и календарь" />
+        <Header title="Дневник" subtitle="Регулярность, восстановление и замеры" />
         <PlusAccessSummary feature="progress_dashboard" />
       </section>
     );
@@ -393,7 +393,7 @@ export function ProgressPage() {
 
   return (
     <section className="mx-auto max-w-4xl">
-      <Header title="Прогресс" subtitle="Тренировки, питание и календарь" />
+      <Header title="Дневник" subtitle="Регулярность, восстановление и замеры" />
 
       {loading ? <PageSkeleton cards={2} /> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -431,7 +431,7 @@ export function ProgressPage() {
           <div key={section} className="contents">{renderDashboardSection(section)}</div>
         ))}
 
-        {depth !== "basic" ? <TrainingLoadAnalytics
+        {depth === "advanced" ? <TrainingLoadAnalytics
           data={dashboard}
           loading={dashboardLoading}
           error={dashboardError}
