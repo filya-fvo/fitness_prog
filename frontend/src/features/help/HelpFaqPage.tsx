@@ -30,10 +30,9 @@ function safeReturnTo(state: NavigationState): string {
     : "/more";
 }
 
-function ArticleCard({ article, highlighted, showType }: {
+function ArticleCard({ article, highlighted }: {
   article: FaqArticle;
   highlighted: boolean;
-  showType: boolean;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
@@ -49,25 +48,17 @@ function ArticleCard({ article, highlighted, showType }: {
     <details
       id={`faq-${article.id}`}
       ref={detailsRef}
-      className={[
-        "scroll-mt-4 rounded-2xl bg-tg-secondary p-4",
-        highlighted ? "ring-2 ring-tg-button/60" : "",
-      ].join(" ")}
+      className={`faq-article-card${highlighted ? " faq-article-highlighted" : ""}`}
     >
-      <summary className="cursor-pointer list-none pr-2 text-sm font-semibold marker:hidden">
-        <span className="flex items-start justify-between gap-3">
+      <summary className="faq-article-summary">
+        <span className="faq-article-heading">
           <span>{article.title}</span>
-          {showType ? (
-            <span className="shrink-0 rounded-full bg-tg-bg px-2 py-1 text-[10px] font-normal text-tg-hint">
-              {article.tab === "howto" ? "Как сделать" : "Знания"}
-            </span>
-          ) : null}
         </span>
-        <span className="mt-1 block text-xs font-normal leading-relaxed text-tg-hint">
+        <span className="faq-article-description">
           {article.summary}
         </span>
       </summary>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-tg-hint">
+      <ul className="faq-article-points">
         {article.points.map((point) => <li key={point}>{point}</li>)}
       </ul>
     </details>
@@ -107,13 +98,16 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
   }
 
   return (
-    <section className="mx-auto max-w-3xl">
-      <Header title="Помощь и FAQ" subtitle="Действия в приложении, тренировки и питание" />
+    <section className={["mx-auto max-w-3xl", defaultTab === "knowledge" ? "knowledge-page" : ""].join(" ")}>
+      <Header
+        title={defaultTab === "knowledge" ? "Питание без лишних правил" : "Помощь и FAQ"}
+        subtitle={defaultTab === "knowledge" ? "Практический гид по рациону и прогрессу" : "Действия в приложении, тренировки и питание"}
+      />
 
-      <label className="block rounded-2xl bg-tg-secondary p-3 text-xs font-medium text-tg-hint">
+      <label className="faq-search">
         Поиск ответа
-        <div className="mt-2 flex items-center gap-2 rounded-xl bg-tg-bg px-3">
-          <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <div className="faq-search-control">
+          <svg viewBox="0 0 24 24" className="faq-search-icon" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
             <circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" strokeLinecap="round" />
           </svg>
           <input
@@ -124,27 +118,24 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
               setSearchParams({}, { replace: true });
             }}
             placeholder="Например: вода, таблетки, перенести пятницу"
-            className="min-h-12 w-full bg-transparent text-base text-tg-text outline-none placeholder:text-tg-hint"
+            className="faq-search-input"
           />
           {query ? (
-            <button type="button" onClick={() => setQuery("")} className="min-h-11 shrink-0 px-2 text-xs text-tg-link">
+            <button type="button" onClick={() => setQuery("")} className="faq-search-clear">
               Очистить
             </button>
           ) : null}
         </div>
       </label>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Быстрые темы">
+      <div className="faq-topics" aria-label="Быстрые темы">
         {QUICK_TOPICS.map((item) => (
           <button
             key={item.id ?? "all"}
             type="button"
             aria-pressed={topic === item.id}
             onClick={() => selectTopic(item.id)}
-            className={[
-              "min-h-11 shrink-0 rounded-full px-3 text-xs font-medium",
-              topic === item.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-text",
-            ].join(" ")}
+            className={`faq-topic${topic === item.id ? " faq-topic-active" : ""}`}
           >
             {item.label}
           </button>
@@ -177,7 +168,6 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
                   key={article.id}
                   article={article}
                   highlighted={requestedArticle?.id === article.id}
-                  showType={false}
                 />
               ))}
             </div>

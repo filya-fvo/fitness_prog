@@ -729,7 +729,7 @@ export function DailyLog() {
         </div>
       ) : null}
 
-      <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
+      <div className="nutrition-summary-card">
         <div className="flex items-end justify-between gap-2">
           <div>
             <p className="text-xs text-tg-hint">
@@ -800,9 +800,14 @@ export function DailyLog() {
             ) : null}
           </div>
         </div>
-        <Link to="/measurements" className="mt-3 block text-center text-xs text-tg-link">
-          Замеры и % дефицита/профицита
-        </Link>
+        <div className="nutrition-guide-links">
+          <Link to="/measurements">
+            Замеры и баланс
+          </Link>
+          <Link to="/knowledge">
+            Гид по питанию ↗
+          </Link>
+        </div>
       </div>
 
       {!addPanelOpen ? (
@@ -810,7 +815,7 @@ export function DailyLog() {
           type="button"
           onClick={() => setAddPanelOpen(true)}
           aria-expanded={false}
-          className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 mb-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text shadow-lg"
+          className="nutrition-add-button"
         >
           + Добавить продукт
         </button>
@@ -1251,11 +1256,11 @@ export function DailyLog() {
         </button>
       </div> : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="nutrition-meals">
         {MEALS.map((m) => {
           const items = data?.meals?.[m.id] ?? [];
           return (
-            <div key={m.id} className="rounded-2xl bg-tg-secondary p-4 max-[359px]:p-3">
+            <div key={m.id} className="nutrition-meal-card">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium">{m.label}</p>
                 <button
