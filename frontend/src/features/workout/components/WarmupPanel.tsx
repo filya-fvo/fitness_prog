@@ -97,7 +97,7 @@ export function WarmupPanel({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-ember space-y-3 p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">Разминка</h2>
@@ -107,7 +107,7 @@ export function WarmupPanel({
               : "Короткая мобильность 3–5 мин. Можно пропустить шаги или всю разминку."}
           </p>
         </div>
-        <button type="button" className="text-xs text-tg-link" onClick={onSkipAll}>
+        <button type="button" className="app-button app-ghost-action shrink-0 px-2 text-xs" onClick={onSkipAll}>
           Пропустить всё
         </button>
       </div>
@@ -122,7 +122,7 @@ export function WarmupPanel({
           <li
             key={step.id}
             className={[
-              "rounded-xl bg-tg-bg p-3",
+              "app-card app-card-ocean p-3",
               step.done || step.skipped ? "opacity-60" : "",
             ].join(" ")}
           >
@@ -142,7 +142,7 @@ export function WarmupPanel({
                       <select
                         value={cardioId ?? ""}
                         onChange={(e) => setCardioId(e.target.value || null)}
-                        className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm text-tg-text"
+                        className="app-field mt-1 px-2 py-1.5 text-base"
                       >
                         {machines.map((m) => (
                           <option key={m.id} value={m.id}>
@@ -160,7 +160,7 @@ export function WarmupPanel({
                         max={40}
                         value={cardioMin}
                         onChange={(e) => setCardioMin(Math.max(1, Number(e.target.value) || 1))}
-                        className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-sm"
+                        className="app-field mt-1 px-2 py-1.5 text-base"
                       />
                     </label>
                     <div
@@ -175,7 +175,7 @@ export function WarmupPanel({
                             step={field.step}
                             value={machineValues[field.key]}
                             onValueChange={(value) => setMachineValue(field.key, value)}
-                            className="mt-1 w-full rounded-lg bg-tg-secondary px-2 py-1 text-sm"
+                            className="app-field mt-1 px-2 py-1 text-base"
                           />
                         </label>
                       ))}
@@ -194,7 +194,7 @@ export function WarmupPanel({
                     {mediaExercise?.animation_url || mediaExercise?.thumbnail_url ? (
                       <button
                         type="button"
-                        className="text-[11px] font-medium text-tg-link"
+                        className="app-button app-ghost-action px-2 text-xs"
                         aria-expanded={mediaOpenId === step.id}
                         onClick={() =>
                           setMediaOpenId((current) => (current === step.id ? null : step.id))
@@ -211,7 +211,7 @@ export function WarmupPanel({
                   <>
                     <button
                       type="button"
-                      className="rounded-lg bg-tg-button px-2 py-1 text-[11px] font-semibold text-tg-button-text"
+                      className="app-button app-gradient-action px-2 text-xs"
                       onClick={() => mark(step.id, false)}
                     >
                       Готово
@@ -219,7 +219,7 @@ export function WarmupPanel({
                     {step.skippable ? (
                       <button
                         type="button"
-                        className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] text-tg-hint"
+                        className="app-button app-secondary-action px-2 text-xs"
                         onClick={() => mark(step.id, true)}
                       >
                         Пропуск
@@ -247,7 +247,7 @@ export function WarmupPanel({
         type="button"
         disabled={!allDone}
         onClick={finish}
-        className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+        className="app-button app-gradient-action w-full"
       >
         {allDone ? "К основной тренировке" : "Отметьте или пропустите шаги"}
       </button>

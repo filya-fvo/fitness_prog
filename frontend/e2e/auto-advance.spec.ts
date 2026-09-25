@@ -157,6 +157,8 @@ test("completed planned sets advance to the next exercise after the countdown", 
     plan: {
       title: "Тренировка с автопереходом",
       workout_type: "custom",
+      warmup_pending: true,
+      warmup_location: "gym",
       exercises: [
         {
           exercise_id: FIRST_EXERCISE_ID,
@@ -244,6 +246,11 @@ test("completed planned sets advance to the next exercise after the countdown", 
   );
 
   await page.goto(`/workouts/active/${WORKOUT_ID}`);
+  const warmup = page.getByRole("heading", { name: "Разминка" }).locator("../../..");
+  await expect(warmup).toHaveClass(/app-card/);
+  const skipWarmup = warmup.getByRole("button", { name: "Пропустить всё" });
+  expect((await skipWarmup.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await skipWarmup.click();
   await expect(page.getByText("Первое упражнение", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Готово" }).click();
 
