@@ -680,6 +680,7 @@ test("home lets program exercises be replaced and saved before workout start", a
   await expect(dialog.getByText("Болгарские выпады с гантелями")).toBeVisible();
   await dialog.getByRole("button", { name: "Посмотреть Болгарские выпады с гантелями" }).click();
   const detail = page.getByRole("dialog", { name: "Болгарские выпады с гантелями" });
+  await expect(detail.locator(":scope > div")).toHaveClass(/app-card/);
   await expect(detail.getByText("Свободная замена из другой мышечной группы.")).toBeVisible();
   await detail.getByRole("button", { name: "Закрыть" }).click();
   const freeChoiceCard = dialog.getByRole("button", { name: "Посмотреть Болгарские выпады с гантелями" }).locator("..");
