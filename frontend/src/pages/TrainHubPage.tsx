@@ -17,6 +17,8 @@ import {
   type WorkoutScheduleSettings,
 } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
+import { AppCard } from "@/components/ui/AppCard";
+import { StatusNotice } from "@/components/ui/StatusNotice";
 import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorkoutEditor";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { WorkoutScheduleSettingsCard } from "@/features/workout/components/WorkoutScheduleSettingsCard";
@@ -32,6 +34,7 @@ import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
+import { buttonClass } from "@/theme/visualStyles";
 import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import {
   draftsWithSuggestions,
@@ -330,11 +333,11 @@ export function TrainHubPage() {
     <section>
       <Header title="Тренировки" subtitle="Программы тренировок и свой день" />
       <div className="space-y-3">
-        {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+        {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
 
         {canResume ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <AppCard tone="ember" className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">В работе</p>
             <p className="mt-1 text-base font-semibold">
               {activeWorkout?.title || "Активная тренировка"}
@@ -342,13 +345,13 @@ export function TrainHubPage() {
             <button
               type="button"
               onClick={() => navigate(`/workouts/active/${resumeId}`)}
-              className="mt-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+              className={`${buttonClass()} mt-3 w-full`}
             >
               Продолжить
             </button>
-          </div>
+          </AppCard>
         ) : program && todayProgramCompleted ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <AppCard tone="success" className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Моя программа</p>
             <p className="mt-1 text-base font-semibold">Тренировка выполнена</p>
             <p className="mt-1 text-xs text-tg-hint">
@@ -356,7 +359,7 @@ export function TrainHubPage() {
             </p>
             <Link
               to="/progress"
-              className="mt-3 block min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+              className={`${buttonClass()} mt-3 w-full`}
             >
               Открыть прогресс
             </Link>
@@ -369,9 +372,9 @@ export function TrainHubPage() {
                 disabled={!isOnline()}
               />
             ) : null}
-          </div>
+          </AppCard>
         ) : program ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <AppCard tone="ember" className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">
               {canStartProgramNow ? "Моя программа" : "Следующая тренировка"}
             </p>
@@ -381,7 +384,7 @@ export function TrainHubPage() {
               {levelLabel ? ` · ${levelLabel}` : ""}
             </p>
             {preparedPlan?.load_adjustment_label ? (
-              <p className="mt-2 rounded-xl bg-tg-bg px-3 py-2 text-xs text-tg-hint">
+              <p className="app-card-inset mt-2 px-3 py-2 text-xs text-tg-hint">
                 {preparedPlan.load_adjustment_label}. Базовая фаза программы не сдвигается.
               </p>
             ) : null}
@@ -390,12 +393,12 @@ export function TrainHubPage() {
                 type="button"
                 disabled={starting}
                 onClick={() => void startToday()}
-                className="mt-3 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+                className={`${buttonClass()} mt-3 w-full`}
               >
                 {starting ? "Стартуем…" : `Начать · ${dayTitle}`}
               </button>
             ) : (
-              <p className="mt-3 rounded-xl bg-tg-bg px-3 py-2.5 text-center text-xs text-tg-hint">
+              <p className="app-card-inset mt-3 px-3 py-2.5 text-center text-xs text-tg-hint">
                 До дня тренировки доступны просмотр плана и подготовка замен.
               </p>
             )}
@@ -414,20 +417,20 @@ export function TrainHubPage() {
             <Link to="/" className="mt-2 block text-center text-xs text-tg-link">
               Выбрать день / неделю на главной
             </Link>
-          </div>
+          </AppCard>
         ) : !loading ? (
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <AppCard tone="indigo" className="p-4">
             <p className="text-sm font-semibold">Нет активной программы</p>
             <p className="mt-1 text-xs text-tg-hint">
               Выберите сплит — здесь появится быстрый старт.
             </p>
             <Link
               to="/programs"
-              className="mt-3 block w-full rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text"
+              className={`${buttonClass()} mt-3 w-full`}
             >
               Выбрать программу
             </Link>
-          </div>
+          </AppCard>
         ) : null}
 
         {scheduleSettings ? (
@@ -440,7 +443,7 @@ export function TrainHubPage() {
 
         <ExerciseHubCards />
 
-        <Link to="/" className="block rounded-2xl bg-tg-bg px-4 py-3 text-center text-sm text-tg-link">
+        <Link to="/" className={`${buttonClass("secondary")} w-full`}>
           ← На главную · «Сегодня»
         </Link>
       </div>

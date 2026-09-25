@@ -63,6 +63,9 @@ test("recurring schedule is edited in Training, independently from reminders", a
   });
 
   await page.goto("/train#schedule");
+  const emptyProgram = page.getByText("Нет активной программы").locator("..");
+  await expect(emptyProgram).toHaveClass(/app-card/);
+  await expect(emptyProgram.getByRole("link", { name: "Выбрать программу" })).toHaveClass(/app-gradient-action/);
   const card = page.getByRole("region", { name: "Постоянные тренировочные дни" });
   await expect(card).toBeVisible();
   await expect(card).toBeFocused();
@@ -804,6 +807,7 @@ test("completed scheduled workout is not offered for a second start", async ({ p
   await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
   await page.goto("/train");
   await expect(page.getByText("Тренировка выполнена")).toBeVisible();
+  await expect(page.getByText("Тренировка выполнена").locator("..")).toHaveClass(/app-card-success/);
   await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
   expect(starts).toBe(0);
 });
