@@ -63,7 +63,7 @@ export function WorkoutScheduleSettingsCard({ settings, disabled = false, onSave
       id="schedule"
       tabIndex={-1}
       aria-labelledby="workout-schedule-title"
-      className="scroll-mt-4 rounded-2xl bg-tg-secondary p-4 outline-none focus-visible:ring-2 focus-visible:ring-tg-button"
+      className="app-card app-card-ocean scroll-mt-4 p-4 outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-brand-mid)]"
     >
       <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Расписание</p>
       <h2 id="workout-schedule-title" className="mt-1 text-base font-semibold">
@@ -81,8 +81,8 @@ export function WorkoutScheduleSettingsCard({ settings, disabled = false, onSave
             disabled={disabled || saving}
             onClick={() => toggleDay(day.id)}
             className={[
-              "min-h-[44px] min-w-[44px] rounded-full px-3 text-xs disabled:opacity-50",
-              days.includes(day.id) ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+              "app-button min-w-[44px] rounded-full px-3 text-xs disabled:opacity-50",
+              days.includes(day.id) ? "app-gradient-action" : "app-secondary-action",
             ].join(" ")}
           >
             {day.label}
@@ -100,7 +100,7 @@ export function WorkoutScheduleSettingsCard({ settings, disabled = false, onSave
             setStartTime(event.target.value);
             setMessage(null);
           }}
-          className="mt-1 min-h-[44px] w-full rounded-xl border border-black/10 bg-tg-bg px-3 py-2 text-base disabled:opacity-50"
+          className="app-field mt-1 px-3 py-2 text-base disabled:opacity-50"
         />
       </label>
       {message ? <p role="status" className="mt-2 text-xs text-tg-hint">{message}</p> : null}
@@ -111,7 +111,7 @@ export function WorkoutScheduleSettingsCard({ settings, disabled = false, onSave
         type="button"
         disabled={disabled || saving || !changed}
         onClick={() => void save()}
-        className="mt-3 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+        className="app-button app-gradient-action mt-3 w-full disabled:opacity-50"
       >
         {saving ? "Сохраняем…" : "Сохранить расписание"}
       </button>

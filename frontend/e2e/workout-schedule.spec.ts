@@ -69,6 +69,9 @@ test("recurring schedule is edited in Training, independently from reminders", a
   const card = page.getByRole("region", { name: "Постоянные тренировочные дни" });
   await expect(card).toBeVisible();
   await expect(card).toBeFocused();
+  await expect(card).toHaveClass(/app-card-ocean/);
+  await expect(card.getByRole("button", { name: "Пн" })).toHaveClass(/app-gradient-action/);
+  await expect(card.getByLabel("Время начала")).toHaveClass(/app-field/);
   await card.getByRole("button", { name: "Пт" }).click();
   await card.getByRole("button", { name: "Сб" }).click();
   await card.getByLabel("Время начала").fill("07:15");
