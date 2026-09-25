@@ -91,7 +91,7 @@ export function PlannedExercisePicker({
         ← К плану
       </button>
 
-      <div className="flex items-center gap-3 rounded-xl bg-tg-secondary p-3">
+      <div className="app-card app-card-ember flex items-center gap-3 p-3">
         <ExerciseThumbnail exercise={source} />
         <div className="min-w-0 flex-1">
           <p className="text-[11px] text-tg-hint">Заменяем</p>
@@ -105,12 +105,12 @@ export function PlannedExercisePicker({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 rounded-xl bg-tg-secondary p-1" role="group" aria-label="Режим выбора замены">
+      <div className="app-card-inset mt-3 grid grid-cols-2 p-1" role="group" aria-label="Режим выбора замены">
         <button
           type="button"
           aria-pressed={mode === "recommended"}
           onClick={() => setMode("recommended")}
-          className={`min-h-[44px] rounded-lg px-2 text-xs font-medium ${mode === "recommended" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}
+          className={`app-button px-2 text-xs ${mode === "recommended" ? "app-gradient-action" : "app-ghost-action"}`}
         >
           Рекомендуемые
         </button>
@@ -118,7 +118,7 @@ export function PlannedExercisePicker({
           type="button"
           aria-pressed={mode === "catalog"}
           onClick={() => setMode("catalog")}
-          className={`min-h-[44px] rounded-lg px-2 text-xs font-medium ${mode === "catalog" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}
+          className={`app-button px-2 text-xs ${mode === "catalog" ? "app-gradient-action" : "app-ghost-action"}`}
         >
           Весь каталог
         </button>
@@ -129,39 +129,39 @@ export function PlannedExercisePicker({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder={mode === "recommended" ? "Поиск среди рекомендаций" : "Поиск по всему каталогу"}
-        className="mt-3 w-full rounded-xl bg-tg-secondary px-3 py-3 text-base"
+        className="app-field mt-3 px-3 py-3 text-base"
       />
 
       {mode === "catalog" ? (
         <>
-          <p className="mt-2 rounded-xl bg-amber-500/10 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300">
+          <p className="app-status app-status-warning mt-2 text-[11px]">
             Свободный выбор может изменить целевую мышечную группу. Подходы и повторы исходного упражнения сохранятся.
           </p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="text-[11px] text-tg-hint">
               Группа мышц
-              <select value={muscle} onChange={(event) => setMuscle(event.target.value)} className="mt-1 w-full rounded-xl bg-tg-secondary px-2 py-2 text-base text-tg-text">
+              <select value={muscle} onChange={(event) => setMuscle(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
                 <option value="">Все группы</option>
                 {muscleGroups.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
               </select>
             </label>
             <label className="text-[11px] text-tg-hint">
               Оборудование
-              <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="mt-1 w-full rounded-xl bg-tg-secondary px-2 py-2 text-base text-tg-text">
+              <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
                 <option value="">Любое</option>
                 {equipmentOptions.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
               </select>
             </label>
             <label className="text-[11px] text-tg-hint">
               Сложность
-              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="mt-1 w-full rounded-xl bg-tg-secondary px-2 py-2 text-base text-tg-text">
+              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
                 <option value="">Любая</option>
                 {[1, 2, 3, 4, 5].map((item) => <option key={item} value={item}>{item} из 5</option>)}
               </select>
             </label>
             <label className="text-[11px] text-tg-hint">
               Сортировка
-              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)} className="mt-1 w-full rounded-xl bg-tg-secondary px-2 py-2 text-base text-tg-text">
+              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)} className="app-field mt-1 px-2 py-2 text-base">
                 <option value="name">По названию</option>
                 <option value="muscle">По группе</option>
                 <option value="difficulty">По сложности</option>
@@ -174,7 +174,7 @@ export function PlannedExercisePicker({
       <p className="mt-3 text-[11px] text-tg-hint">Найдено: {candidates.length}</p>
       <div className="mt-2 space-y-2">
         {visibleCandidates.map((item) => (
-          <div key={item.id} className="flex min-h-[68px] items-center gap-2 rounded-xl bg-tg-secondary p-2">
+          <div key={item.id} className="app-card app-card-ocean flex min-h-[68px] items-center gap-2 p-2">
             <button type="button" onClick={() => onOpenDetail(item)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-label={`Посмотреть ${item.name_ru}`}>
               <ExerciseThumbnail exercise={item} size="sm" />
               <span className="min-w-0">
@@ -184,19 +184,19 @@ export function PlannedExercisePicker({
                 </span>
               </span>
             </button>
-            <button type="button" onClick={() => onChoose(item)} className="min-h-[44px] shrink-0 rounded-lg bg-tg-button px-3 text-xs font-semibold text-tg-button-text">
+            <button type="button" onClick={() => onChoose(item)} className="app-button app-gradient-action shrink-0 px-3 text-xs">
               Выбрать
             </button>
           </div>
         ))}
         {!candidates.length ? (
-          <p className="rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
+          <p className="app-card-inset p-3 text-xs text-tg-hint">
             Ничего не найдено. Измените поиск или фильтры.
           </p>
         ) : null}
       </div>
       {visibleCandidates.length < candidates.length ? (
-        <button type="button" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)} className="mt-3 min-h-[44px] w-full rounded-xl bg-tg-secondary text-sm text-tg-link">
+        <button type="button" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)} className="app-button app-secondary-action mt-3 w-full">
           Показать ещё · осталось {candidates.length - visibleCandidates.length}
         </button>
       ) : null}

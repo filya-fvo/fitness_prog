@@ -668,10 +668,14 @@ test("home lets program exercises be replaced and saved before workout start", a
   await expect(dialog.locator(".exercise-thumbnail").first()).toBeVisible();
   await dialog.getByRole("button", { name: "Заменить" }).click();
   await expect(dialog.getByRole("button", { name: "Рекомендуемые" })).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("button", { name: "Рекомендуемые" })).toHaveClass(/app-gradient-action/);
+  await expect(dialog.getByPlaceholder("Поиск среди рекомендаций")).toHaveClass(/app-field/);
   const recommendedCard = dialog.getByRole("button", { name: "Посмотреть Подтягивания в тренажёре" }).locator("..");
+  await expect(recommendedCard).toHaveClass(/app-card-ocean/);
   await recommendedCard.getByRole("button", { name: "Выбрать" }).click();
   await dialog.getByRole("button", { name: "Заменить" }).click();
   await dialog.getByRole("button", { name: "Весь каталог" }).click();
+  await expect(dialog.getByRole("button", { name: "Весь каталог" })).toHaveClass(/app-gradient-action/);
   await dialog.getByLabel("Группа мышц").selectOption({ label: "Ноги" });
   await expect(dialog.getByText("Болгарские выпады с гантелями")).toBeVisible();
   await dialog.getByRole("button", { name: "Посмотреть Болгарские выпады с гантелями" }).click();
