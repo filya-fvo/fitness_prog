@@ -306,14 +306,14 @@ body {
 
   .signal-action {
     border: 1px solid color-mix(in srgb, var(--app-brand-start) 55%, transparent);
-    background: linear-gradient(105deg, var(--app-brand-start), var(--app-brand-middle), var(--app-brand-end));
+    background: linear-gradient(105deg, var(--app-brand-start), var(--app-brand-mid), var(--app-brand-end));
     color: #fff;
-    box-shadow: 0 12px 30px color-mix(in srgb, var(--app-brand-middle) 28%, transparent);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--app-brand-mid) 28%, transparent);
   }
 
   .signal-outline {
-    border: 1px solid color-mix(in srgb, var(--app-brand-middle) 62%, transparent);
-    color: var(--app-brand-middle);
+    border: 1px solid color-mix(in srgb, var(--app-brand-mid) 62%, transparent);
+    color: var(--app-brand-mid);
   }
 
   .state-success {

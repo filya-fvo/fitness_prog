@@ -32,11 +32,11 @@ export function MuscleGroupFilter({ groups, value, onChange }: MuscleGroupFilter
               className={[
                 "flex min-h-[104px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-1 py-2 text-center text-[11px] active:scale-[0.97]",
                 selected
-                  ? "border-[var(--app-brand-middle)] bg-[color-mix(in_srgb,var(--app-brand-middle)_12%,var(--app-surface))] text-tg-text"
+                  ? "border-[var(--app-brand-mid)] bg-[color-mix(in_srgb,var(--app-brand-mid)_12%,var(--app-surface))] text-tg-text"
                   : "border-[var(--border-subtle)] bg-tg-secondary text-tg-hint",
               ].join(" ")}
             >
-              <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-inset)] text-[var(--app-brand-middle)]">
+              <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-inset)] text-[var(--app-brand-mid)]">
                 <MuscleGroupIcon group={group} className="h-8 w-8" />
               </span>
               <span className="w-full truncate">{label}</span>

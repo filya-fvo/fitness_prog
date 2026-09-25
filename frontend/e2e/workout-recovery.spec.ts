@@ -239,6 +239,9 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
     animations: "disabled",
   });
+  await page.getByRole("button", { name: "Выбрать в тренировку" }).first().click();
+  const selectedAction = page.getByRole("button", { name: "Выбрано · убрать" }).first();
+  expect(await selectedAction.evaluate((element) => getComputedStyle(element).backgroundImage)).toContain("linear-gradient");
   await page.getByRole("button", { name: /Упражнение 1/ }).first().click();
   const detail = page.getByRole("dialog", { name: "Упражнение 1" });
   await expect(detail).toBeVisible();

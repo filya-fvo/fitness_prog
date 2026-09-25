@@ -26,7 +26,7 @@ export function ExerciseMediaTabs({ exercise }: { exercise: Exercise }) {
       </div>
       {tab === "photo" ? (
         photo ? <img src={photo} alt={`Фото: ${exercise.name_ru}`} className="h-52 w-full rounded-xl bg-black/10 object-cover" loading="lazy" /> : (
-          <div className="app-card-inset grid h-52 place-items-center text-[var(--app-brand-middle)]">
+          <div className="app-card-inset grid h-52 place-items-center text-[var(--app-brand-mid)]">
             <MuscleGroupIcon group={exercise.muscle_group} className="h-20 w-20" />
           </div>
         )

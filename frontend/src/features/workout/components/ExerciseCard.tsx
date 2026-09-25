@@ -20,7 +20,7 @@ export function ExerciseCard({
   return (
     <article className={[
       "app-card app-card-interactive w-full overflow-hidden text-left",
-      selected ? "border-[var(--app-brand-middle)] ring-1 ring-[var(--app-brand-middle)]/30" : "",
+      selected ? "border-[var(--app-brand-mid)] ring-1 ring-[var(--app-brand-mid)]/30" : "",
     ].join(" ")}>
       <button type="button" onClick={() => onOpenDetail(exercise)} className="block w-full text-left">
         <div className="relative overflow-hidden bg-[#eef3ef]">
