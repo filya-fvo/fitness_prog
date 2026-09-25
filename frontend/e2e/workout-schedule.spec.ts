@@ -662,6 +662,8 @@ test("home lets program exercises be replaced and saved before workout start", a
   await page.getByRole("link", { name: "Заменить упражнения до старта" }).click();
   await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
   const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  await expect(dialog).toHaveClass(/app-card/);
+  await expect(dialog.locator(".app-card")).toHaveCount(1);
   await expect(dialog.getByText("Тяга верхнего блока")).toBeVisible();
   await expect(dialog.locator(".exercise-thumbnail").first()).toBeVisible();
   await dialog.getByRole("button", { name: "Заменить" }).click();

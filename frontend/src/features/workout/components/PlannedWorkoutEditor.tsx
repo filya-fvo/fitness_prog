@@ -143,7 +143,7 @@ export function PlannedWorkoutEditor(props: Props) {
         type="button"
         disabled={props.disabled}
         onClick={() => void showEditor()}
-        className="mt-2 min-h-[44px] w-full rounded-xl bg-tg-bg px-4 py-2.5 text-sm font-medium text-tg-link disabled:opacity-50"
+        className="app-button app-secondary-action mt-2 w-full"
       >
         Подготовить упражнения · {formatDate(props.scheduledDate)}
       </button>
@@ -155,7 +155,7 @@ export function PlannedWorkoutEditor(props: Props) {
             aria-modal="true"
             aria-labelledby="planned-workout-editor-title"
             tabIndex={-1}
-            className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+            className="app-card flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden"
           >
             <div className="flex items-start justify-between gap-3 border-b border-black/5 px-4 py-3">
               <div>
@@ -168,7 +168,7 @@ export function PlannedWorkoutEditor(props: Props) {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
               {loading ? <p className="text-sm text-tg-hint">Загрузка плана…</p> : null}
-              {error ? <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p> : null}
+              {error ? <p role="alert" className="app-status app-status-danger text-xs">{error}</p> : null}
               {editingSourceId ? (
                 sourceExercise ? (
                   <PlannedExercisePicker
@@ -181,7 +181,7 @@ export function PlannedWorkoutEditor(props: Props) {
                     onOpenDetail={setDetailExercise}
                   />
                 ) : (
-                  <div className="rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">
+                  <div className="app-card-inset p-3 text-xs text-tg-hint">
                     <p>Исходное упражнение не найдено в каталоге.</p>
                     <button type="button" onClick={() => setEditingSourceId(null)} className="mt-2 min-h-[44px] text-tg-link">← К плану</button>
                   </div>
@@ -191,7 +191,7 @@ export function PlannedWorkoutEditor(props: Props) {
                   {plan.exercises.map((item) => {
                     const exercise = byId.get(item.exercise_id) ?? null;
                     return (
-                      <div key={item.order} className="rounded-xl bg-tg-secondary p-3">
+                      <div key={item.order} className="app-card app-card-ocean p-3">
                         <div className="flex items-center gap-3">
                           {exercise ? <ExerciseThumbnail exercise={exercise} /> : null}
                           <div className="min-w-0 flex-1">
@@ -214,7 +214,7 @@ export function PlannedWorkoutEditor(props: Props) {
             </div>
             {plan && !editingSourceId ? (
               <div className="space-y-2 border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                <button type="button" disabled={saving} onClick={() => void save()} className="min-h-[48px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
+                <button type="button" disabled={saving} onClick={() => void save()} className="app-button app-gradient-action min-h-[48px] w-full">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
                 {replacementCount ? <button type="button" disabled={saving} onClick={restoreDefaults} className="min-h-[44px] w-full text-xs text-tg-hint">Вернуть упражнения программы</button> : null}
               </div>
             ) : null}
