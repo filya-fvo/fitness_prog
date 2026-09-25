@@ -178,6 +178,9 @@ body {
   .app-card-warning { border-color: color-mix(in srgb, var(--app-warning) 42%, var(--border-subtle)); background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface)); }
   .app-card-danger { border-color: color-mix(in srgb, var(--app-danger) 42%, var(--border-subtle)); background: color-mix(in srgb, var(--app-danger) 12%, var(--app-surface)); }
 
+  .app-rest-chip { border: 1px solid var(--border-subtle); background: var(--app-surface-raised); }
+  .app-rest-timer { background: var(--app-bg); color: var(--app-text); }
+
   .app-button {
     display: inline-flex;
     min-height: 44px;

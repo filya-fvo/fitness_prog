@@ -70,7 +70,7 @@ export function RestTimer({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="fixed bottom-24 left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#101f32]/95 shadow-lg ring-1 ring-cyan-300/15 backdrop-blur"
+          className="app-rest-chip fixed bottom-24 left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-lg backdrop-blur"
           aria-label={`Отдых ${formatRestTime(secondsLeft)}. Открыть таймер`}
         >
           <svg width={size} height={size} className={reduceMotion ? "" : "-rotate-90"}>
@@ -87,14 +87,14 @@ export function RestTimer({
               cy={size / 2}
               r={r}
               fill="none"
-              stroke="#b8f56e"
+              stroke="var(--app-brand-mid)"
               strokeWidth={stroke}
               strokeLinecap="round"
               strokeDasharray={reduceMotion ? undefined : `${dash} ${c}`}
               opacity={reduceMotion ? 0.35 : 1}
             />
           </svg>
-          <span className="absolute text-[11px] font-semibold tabular-nums text-white">
+          <span className="absolute text-[11px] font-semibold tabular-nums text-tg-text">
             {formatRestTime(secondsLeft)}
           </span>
         </button>
@@ -108,14 +108,14 @@ export function RestTimer({
           aria-modal="true"
           aria-labelledby="rest-timer-title"
           tabIndex={-1}
-          className="fixed inset-0 z-50 flex flex-col bg-[#121214] text-white"
+          className="app-rest-timer fixed inset-0 z-50 flex flex-col"
         >
           <div className="flex items-center justify-between px-4 py-3">
-            <p id="rest-timer-title" className="text-sm font-medium text-white/80">Таймер отдыха</p>
+            <p id="rest-timer-title" className="text-sm font-medium text-tg-hint">Таймер отдыха</p>
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="rounded-lg px-2 py-1 text-xl leading-none text-white/70"
+              className="app-button app-ghost-action text-xl leading-none"
               aria-label="Свернуть"
             >
               ⌄
@@ -138,7 +138,7 @@ export function RestTimer({
                   cy={bigSize / 2}
                   r={bigR}
                   fill="none"
-                  stroke="#b8f56e"
+                  stroke="var(--app-brand-mid)"
                   strokeWidth={bigStroke}
                   strokeLinecap="round"
                   strokeDasharray={reduceMotion ? undefined : `${bigDash} ${bigC}`}
@@ -156,14 +156,14 @@ export function RestTimer({
               type="button"
               onClick={() => onAdjust?.(-15)}
               disabled={!onAdjust}
-              className="rounded-full bg-white/10 py-3 text-sm font-semibold disabled:opacity-40"
+              className="app-button app-secondary-action rounded-full"
             >
               − 15 сек
             </button>
             <button
               type="button"
               onClick={onSkip}
-              className="rounded-full bg-white py-3 text-sm font-semibold text-black"
+              className="app-button app-gradient-action rounded-full"
             >
               Стоп
             </button>
@@ -171,7 +171,7 @@ export function RestTimer({
               type="button"
               onClick={() => onAdjust?.(15)}
               disabled={!onAdjust}
-              className="rounded-full bg-white/10 py-3 text-sm font-semibold disabled:opacity-40"
+              className="app-button app-secondary-action rounded-full"
             >
               + 15 сек
             </button>

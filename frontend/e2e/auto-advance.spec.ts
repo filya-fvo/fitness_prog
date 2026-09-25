@@ -163,7 +163,7 @@ test("completed planned sets advance to the next exercise after the countdown", 
         {
           exercise_id: FIRST_EXERCISE_ID,
           order: 1,
-          target_sets: 1,
+          target_sets: 2,
           target_reps: "10",
           rest_sec: 60,
           name_ru: "Первое упражнение",
@@ -252,7 +252,17 @@ test("completed planned sets advance to the next exercise after the countdown", 
   expect((await skipWarmup.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await skipWarmup.click();
   await expect(page.getByText("Первое упражнение", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Готово" }).click();
+  await page.getByRole("button", { name: "Готово" }).first().click();
+  const restChip = page.getByRole("button", { name: /Открыть таймер/ });
+  await expect(restChip).toBeVisible();
+  await expect(restChip.locator("circle").nth(1)).toHaveAttribute("stroke", "var(--app-brand-mid)");
+  await restChip.click();
+  const timer = page.getByRole("dialog", { name: "Таймер отдыха" });
+  await expect(timer).toHaveClass(/app-rest-timer/);
+  await expect(timer.locator("circle").nth(1)).toHaveAttribute("stroke", "var(--app-brand-mid)");
+  await timer.getByRole("button", { name: "Стоп" }).click();
+  await page.getByRole("button", { name: "Как прошлый" }).click();
+  await page.getByRole("button", { name: "Готово" }).first().click();
 
   await expect(page.getByText("Упражнение выполнено")).toBeVisible();
   await expect(page.getByText("Второе упражнение", { exact: true })).toBeVisible({
