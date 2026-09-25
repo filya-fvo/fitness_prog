@@ -235,6 +235,7 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await page.goto("/workouts");
   await expect(page.getByText("Найдено упражнений: 25")).toBeVisible();
   await expect(page.locator("article")).toHaveCount(20);
+  await expect(page.locator("article").first()).toHaveClass(/app-card-indigo/);
   await expect(page.locator('img[src="/exercise-thumbnails/0043-qXTaZnJ.png"]')).toBeVisible();
   await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
     animations: "disabled",
