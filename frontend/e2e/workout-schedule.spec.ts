@@ -315,6 +315,8 @@ test("workout day can be replaced permanently after an explicit preview", async 
   await page.goto("/");
   await page.getByRole("button", { name: "Перенести" }).click();
   const dialog = page.getByRole("dialog", { name: "Перенести тренировку" });
+  await expect(dialog).toHaveClass(/app-card/);
+  await expect(dialog.getByRole("button", { name: "Перенести только эту тренировку" })).toHaveClass(/app-gradient-action/);
   await dialog.getByLabel("Заменить день постоянно").check();
   await dialog.getByLabel("Новый день").fill("2026-08-22");
   await dialog.getByLabel("Время начала").fill("09:00");

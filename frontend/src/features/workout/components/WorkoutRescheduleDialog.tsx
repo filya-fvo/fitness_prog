@@ -184,22 +184,22 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="reschedule-workout-title" tabIndex={-1} className="max-h-[92dvh] w-full min-w-0 max-w-md overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="reschedule-workout-title" tabIndex={-1} className="app-card max-h-[92dvh] w-full min-w-0 max-w-md overflow-y-auto p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 id="reschedule-workout-title" className="text-base font-semibold">Перенести тренировку</h3>
             <p className="mt-1 break-words text-xs text-tg-hint [overflow-wrap:anywhere]">{occurrence.title}</p>
           </div>
-          <button type="button" aria-label="Закрыть" onClick={onClose} className="min-h-[44px] min-w-[44px] text-tg-hint">✕</button>
+          <button type="button" aria-label="Закрыть" onClick={onClose} className="app-button app-ghost-action min-w-[44px]">✕</button>
         </div>
 
         <fieldset className="mt-3 space-y-2">
           <legend className="text-xs font-medium">Как перенести?</legend>
-          <label className="flex min-h-[44px] items-center gap-3 rounded-xl bg-tg-secondary px-3 py-2 text-sm">
+          <label className="app-card-inset flex min-h-[44px] items-center gap-3 px-3 py-2 text-sm">
             <input type="radio" name="move-mode" checked={mode === "once"} onChange={() => { setMode("once"); resetPreview(); }} />
             Только эту тренировку
           </label>
-          <label className="flex min-h-[44px] items-center gap-3 rounded-xl bg-tg-secondary px-3 py-2 text-sm">
+          <label className="app-card-inset flex min-h-[44px] items-center gap-3 px-3 py-2 text-sm">
             <input type="radio" name="move-mode" checked={mode === "permanent"} onChange={() => { setMode("permanent"); resetPreview(); }} />
             Заменить день постоянно
           </label>
@@ -208,11 +208,11 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="min-w-0 text-xs text-tg-hint">
             Новый день
-            <input type="date" value={targetDate} min={mode === "once" ? overview.requested_date : permanentMin} max={mode === "permanent" ? permanentMax : undefined} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="mt-1 min-h-[44px] min-w-0 w-full rounded-xl border border-tg-hint/20 bg-tg-secondary px-3 py-2.5 text-base text-tg-text" />
+            <input type="date" value={targetDate} min={mode === "once" ? overview.requested_date : permanentMin} max={mode === "permanent" ? permanentMax : undefined} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
           </label>
           <label className="min-w-0 text-xs text-tg-hint">
             Время начала
-            <input type="time" value={targetTime} onChange={(event) => { setTargetTime(event.target.value); resetPreview(); }} className="mt-1 min-h-[44px] min-w-0 w-full rounded-xl border border-tg-hint/20 bg-tg-secondary px-3 py-2.5 text-base text-tg-text" />
+            <input type="time" value={targetTime} onChange={(event) => { setTargetTime(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
           </label>
         </div>
 
@@ -229,32 +229,32 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
             </label>
           </fieldset>
         ) : (
-          <p className="mt-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint">Постоянные дни останутся без изменений. Можно выбрать любой день этой недели.</p>
+          <p className="app-card-inset mt-3 px-3 py-2 text-xs text-tg-hint">Постоянные дни останутся без изменений. Можно выбрать любой день этой недели.</p>
         )}
 
         {outsideOccurrenceWeek ? (
-          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
-            <p className="text-amber-800 dark:text-amber-200">На другую неделю разово переносить нельзя: так порядок программы не смешается. Отмените эту тренировку — перед следующим занятием можно выбрать нужную тренировку и нагрузку.</p>
-            <button type="button" disabled={saving} onClick={() => void cancelInstead()} className="mt-2 min-h-[44px] w-full rounded-xl border border-amber-500/40 px-3 py-2 font-semibold text-amber-800 disabled:opacity-50 dark:text-amber-200">
+          <div className="app-card app-card-warning mt-3 p-3 text-xs">
+            <p>На другую неделю разово переносить нельзя: так порядок программы не смешается. Отмените эту тренировку — перед следующим занятием можно выбрать нужную тренировку и нагрузку.</p>
+            <button type="button" disabled={saving} onClick={() => void cancelInstead()} className="app-button app-danger-action mt-2 w-full">
               Отменить эту тренировку
             </button>
           </div>
         ) : null}
 
         {mode === "once" && oncePreview?.conflict ? (
-          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
-            <p className="font-semibold text-amber-900 dark:text-amber-100">На {formatDate(oncePreview.target_date)} уже есть тренировка</p>
-            <p className="mt-1 text-amber-800 dark:text-amber-200">{oncePreview.warning}</p>
+          <div className="app-card app-card-warning mt-3 p-3 text-xs">
+            <p className="font-semibold">На {formatDate(oncePreview.target_date)} уже есть тренировка</p>
+            <p className="mt-1">{oncePreview.warning}</p>
             <div className="mt-2 space-y-2">
               {oncePreview.suggested_displaced_date ? (
-                <button type="button" disabled={saving} onClick={() => void applyOnce("move_existing")} className="min-h-[44px] w-full rounded-xl bg-tg-button px-3 py-2 font-semibold text-tg-button-text disabled:opacity-50">
+                <button type="button" disabled={saving} onClick={() => void applyOnce("move_existing")} className="app-button app-gradient-action w-full">
                   Перенести её на {formatDate(oncePreview.suggested_displaced_date)}
                 </button>
               ) : null}
-              <button type="button" disabled={saving} onClick={() => void applyOnce("cancel_existing")} className="min-h-[44px] w-full rounded-xl border border-amber-500/40 px-3 py-2 font-semibold text-amber-800 disabled:opacity-50 dark:text-amber-200">
+              <button type="button" disabled={saving} onClick={() => void applyOnce("cancel_existing")} className="app-button app-danger-action w-full">
                 Отменить её и перенести эту
               </button>
-              <button type="button" disabled={saving} onClick={() => setOncePreview(null)} className="min-h-[44px] w-full rounded-xl px-3 py-2 text-tg-link disabled:opacity-50">
+              <button type="button" disabled={saving} onClick={() => setOncePreview(null)} className="app-button app-secondary-action w-full">
                 Выбрать другую дату
               </button>
             </div>
@@ -262,13 +262,13 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         ) : null}
 
         {preview ? (
-          <div className="mt-3 rounded-xl border border-tg-button/20 bg-tg-secondary p-3 text-xs">
+          <div className="app-card app-card-ocean mt-3 p-3 text-xs">
             <p><span className="text-tg-hint">Было:</span> {daysLabel(preview.previous_days)}</p>
             <p className="mt-1"><span className="text-tg-hint">Станет:</span> {daysLabel(preview.new_days)} · {preview.start_time.slice(0, 5)}</p>
             <p className="mt-1 text-tg-hint">Ближайшие занятия: {preview.upcoming_dates.map(formatDate).join(", ")}</p>
-            {preview.warning ? <p className="mt-2 text-amber-700 dark:text-amber-300">{preview.warning}</p> : null}
+            {preview.warning ? <p className="app-status app-status-warning mt-2">{preview.warning}</p> : null}
             {preview.requires_conflict_resolution ? (
-              <label className="mt-2 flex min-h-[44px] items-center gap-3 rounded-lg bg-tg-bg px-2 py-1.5">
+              <label className="app-card-inset mt-2 flex min-h-[44px] items-center gap-3 px-2 py-1.5">
                 <input type="checkbox" checked={conflictResolution === "reduce"} onChange={(event) => { setConflictResolution(event.target.checked ? "reduce" : null); setError(null); }} />
                 Убрать {WEEKDAYS[preview.source_weekday]} и оставить {WEEKDAYS[preview.target_weekday]}
               </label>
@@ -276,17 +276,17 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
           </div>
         ) : null}
 
-        {error ? <p role="alert" className="mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{error}</p> : null}
+        {error ? <p role="alert" className="app-status app-status-danger mt-3 text-xs">{error}</p> : null}
         {mode === "once" && !oncePreview?.conflict && !outsideOccurrenceWeek ? (
-          <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void submitOnce()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void submitOnce()} className="app-button app-gradient-action mt-4 w-full">
             {saving ? "Проверяем…" : "Перенести только эту тренировку"}
           </button>
         ) : mode === "permanent" && preview ? (
-          <button type="button" disabled={saving || (preview.requires_conflict_resolution && conflictResolution !== "reduce")} onClick={() => void applyPermanent()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={saving || (preview.requires_conflict_resolution && conflictResolution !== "reduce")} onClick={() => void applyPermanent()} className="app-button app-gradient-action mt-4 w-full">
             {saving ? "Сохраняем…" : "Подтвердить новое расписание"}
           </button>
         ) : mode === "permanent" ? (
-          <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void loadPreview()} className="mt-4 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={saving || !targetDate || !targetTime} onClick={() => void loadPreview()} className="app-button app-gradient-action mt-4 w-full">
             {saving ? "Проверяем…" : "Показать новое расписание"}
           </button>
         ) : null}
