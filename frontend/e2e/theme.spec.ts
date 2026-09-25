@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const profile = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -103,10 +104,12 @@ test("profile selection uses the brand accent in both themes", async ({ page }) 
     await page.addInitScript((value) => localStorage.setItem("fitness_theme_preference", value), theme);
     await page.goto("/profile/settings");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-    const color = await page.locator(".profile-tab-active").evaluate((element) =>
-      getComputedStyle(element).backgroundColor,
-    );
-    const channels = color.match(/\d+/g)?.map(Number) ?? [];
-    expect(channels[0], color).toBeGreaterThan(channels[1]);
+    await expect.poll(() => page.locator(".profile-tab-active").evaluate((element) =>
+      getComputedStyle(element).backgroundImage,
+    )).toContain("linear-gradient");
+    await page.goto("/profile/settings?section=program");
+    await expect(page.locator(".profile-page")).toBeVisible();
+    const contrast = await new AxeBuilder({ page }).include(".profile-page").withRules(["color-contrast"]).analyze();
+    expect(contrast.violations, JSON.stringify(contrast.violations, null, 2)).toEqual([]);
   }
 });
