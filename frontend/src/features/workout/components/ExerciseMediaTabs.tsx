@@ -16,17 +16,17 @@ export function ExerciseMediaTabs({ exercise }: { exercise: Exercise }) {
   const photo = exercise.thumbnail_url ? resolveApiAssetUrl(exercise.thumbnail_url) : null;
   return (
     <section aria-label="Материалы упражнения">
-      <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-[var(--app-surface-inset)] p-1" role="tablist" aria-label="Материалы">
+      <div className="app-card-inset mb-3 grid grid-cols-3 gap-1 p-1" role="tablist" aria-label="Материалы">
         {tabs.map((item) => (
           <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}
-            className={`min-h-10 rounded-lg px-2 text-xs font-semibold ${tab === item.id ? "app-gradient-action text-white" : "text-tg-hint"}`}>
+            className={`min-h-11 rounded-lg px-2 text-xs font-semibold ${tab === item.id ? "app-gradient-action text-white" : "text-tg-hint"}`}>
             {item.label}
           </button>
         ))}
       </div>
       {tab === "photo" ? (
         photo ? <img src={photo} alt={`Фото: ${exercise.name_ru}`} className="h-52 w-full rounded-xl bg-black/10 object-cover" loading="lazy" /> : (
-          <div className="grid h-52 place-items-center rounded-xl bg-[var(--app-surface-inset)] text-[var(--app-brand-middle)]">
+          <div className="app-card-inset grid h-52 place-items-center text-[var(--app-brand-middle)]">
             <MuscleGroupIcon group={exercise.muscle_group} className="h-20 w-20" />
           </div>
         )
