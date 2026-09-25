@@ -110,17 +110,17 @@ export function WorkoutAssignmentDialog({ source, minDate, maxDate, onClose, onC
         aria-modal="true"
         aria-labelledby="assign-workout-title"
         tabIndex={-1}
-        className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
+        className="app-card max-h-[92dvh] w-full max-w-md overflow-y-auto p-4"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 id="assign-workout-title" className="text-base font-semibold">Назначить тренировку</h3>
             <p className="mt-1 text-xs text-tg-hint">{source.title}</p>
           </div>
-          <button type="button" aria-label="Закрыть" onClick={onClose} className="min-h-[44px] min-w-[44px] rounded-xl text-xl text-tg-hint">×</button>
+          <button type="button" aria-label="Закрыть" onClick={onClose} className="app-button app-ghost-action min-w-[44px] text-xl">×</button>
         </div>
 
-        <p className="mt-3 rounded-xl bg-tg-secondary px-3 py-2.5 text-xs leading-5 text-tg-hint">
+        <p className="app-card-inset mt-3 px-3 py-2.5 text-xs leading-5 text-tg-hint">
           На выбранную дату добавится следующий день программы. Тренировка {sourceLabel} останется в календаре и после выполнения получит следующий день программы.
         </p>
 
@@ -135,7 +135,7 @@ export function WorkoutAssignmentDialog({ source, minDate, maxDate, onClose, onC
               setTargetDate(event.target.value);
               setTargetTime(initialTime(source.start_time, event.target.value));
             }}
-            className="mt-1 min-h-[44px] w-full rounded-xl border border-tg-hint/25 bg-tg-secondary px-3 text-base text-tg-text"
+            className="app-field mt-1 px-3 text-base"
           />
         </label>
         <label className="mt-3 block text-xs text-tg-hint">
@@ -144,19 +144,19 @@ export function WorkoutAssignmentDialog({ source, minDate, maxDate, onClose, onC
             type="time"
             value={targetTime}
             onChange={(event) => setTargetTime(event.target.value)}
-            className="mt-1 min-h-[44px] w-full rounded-xl border border-tg-hint/25 bg-tg-secondary px-3 text-base text-tg-text"
+            className="app-field mt-1 px-3 text-base"
           />
         </label>
 
         {loadingPreview ? <p className="mt-3 text-xs text-tg-hint">Проверяем дату…</p> : null}
-        {preview?.warning ? <p role="alert" className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">{preview.warning}</p> : null}
-        {error ? <p role="alert" className="mt-3 text-xs text-red-600">{error}</p> : null}
+        {preview?.warning ? <p role="alert" className="app-status app-status-warning mt-3 text-xs">{preview.warning}</p> : null}
+        {error ? <p role="alert" className="app-status app-status-danger mt-3 text-xs">{error}</p> : null}
 
         <button
           type="button"
           disabled={saving || loadingPreview || !preview?.can_assign || !targetTime}
           onClick={() => void submit()}
-          className="mt-4 min-h-[48px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+          className="app-button app-gradient-action mt-4 min-h-[48px] w-full"
         >
           {saving ? "Назначаем…" : `Назначить на ${formatDate(targetDate)}`}
         </button>

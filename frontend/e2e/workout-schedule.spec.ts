@@ -481,7 +481,10 @@ test("cancelled workout becomes the same program day on the next schedule date",
   await expect(page.getByText("Порядок программы сохранён: эта тренировка станет следующей.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Отменить" })).toHaveCount(0);
   await page.getByRole("button", { name: "Назначить тренировку раньше" }).click();
-  await expect(page.getByRole("dialog", { name: "Назначить тренировку" })).toBeVisible();
+  const assignmentDialog = page.getByRole("dialog", { name: "Назначить тренировку" });
+  await expect(assignmentDialog).toBeVisible();
+  await expect(assignmentDialog).toHaveClass(/app-card/);
+  await expect(assignmentDialog.getByLabel("Дата")).toHaveClass(/app-field/);
   await page.getByRole("button", { name: /Назначить на/ }).click();
   expect(assignmentPayload).toEqual({
     source_original_date: "2026-08-31",
