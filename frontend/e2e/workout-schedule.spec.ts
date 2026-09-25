@@ -198,6 +198,7 @@ test("one workout can be moved without changing the recurring schedule", async (
 
   await page.goto("/");
   await expect(page.getByText("По расписанию сегодня в 06:15")).toBeVisible();
+  await expect(page.getByText("По расписанию сегодня в 06:15").locator("../../..")).toHaveClass(/app-card-ocean/);
   const pageWidth = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

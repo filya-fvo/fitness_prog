@@ -97,7 +97,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
 
   return (
     <>
-      <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-tg-button/20 bg-tg-bg/70 px-3 py-2.5">
+      <div className={`app-card ${pausedToday ? "app-card-warning" : cancelledToday ? "app-card-danger" : "app-card-ocean"} min-w-0 max-w-full overflow-hidden px-3 py-2.5`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="break-words text-xs font-semibold leading-snug text-tg-link [overflow-wrap:anywhere]">{label}</p>
@@ -109,7 +109,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
                 type="button"
                 disabled={disabled || saving}
                 onClick={showDialog}
-                className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link disabled:opacity-50"
+                className="app-button app-ghost-action px-2 text-xs"
               >
                 Перенести
               </button>
@@ -119,7 +119,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
                 type="button"
                 disabled={disabled || saving}
                 onClick={() => void cancelOccurrence()}
-                className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-amber-700 disabled:opacity-50 dark:text-amber-300"
+                className="app-button app-danger-action px-2 text-xs"
               >
                 Отменить
               </button>
@@ -144,13 +144,13 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
             type="button"
             disabled={disabled || saving}
             onClick={() => setAssignmentOpen(true)}
-            className="mt-2 min-h-[44px] w-full rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-tg-link disabled:opacity-50"
+            className="app-button app-secondary-action mt-2 w-full px-3 text-xs"
           >
             Назначить тренировку раньше
           </button>
         ) : null}
         {error && !open ? (
-          <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>
+          <p role="alert" className="app-status app-status-danger mt-2 text-xs">{error}</p>
         ) : null}
       </div>
 
