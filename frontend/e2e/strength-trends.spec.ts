@@ -39,6 +39,7 @@ test("PLUS progress explains next, best and user-selected strength trends", asyn
         onboarding_completed: true,
         primary_goal: "gain_muscle",
         level: "intermediate",
+        advanced_analytics_enabled: true,
       },
       subscription: { tier: "plus", active: true, sources: ["qa"], valid_until: null },
       subscription_status: "plus",

@@ -100,5 +100,5 @@ test("a direct deep link uses its owning section as the safe fallback", async ({
   await openAsTelegramUser(page, "/measurements");
   await expect(page.getByLabel("Вес, кг")).toBeVisible();
   await page.getByRole("button", { name: "Вернуться назад" }).click();
-  await expect(page).toHaveURL(/\/more$/);
+  await expect(page).toHaveURL(/\/progress$/);
 });

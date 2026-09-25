@@ -14,32 +14,30 @@ test.describe("P3 funnel path", () => {
     await expect(page.getByRole("heading", { name: "Знания" })).toBeVisible();
     await expect(page.getByText("Как настроить питание под цель")).toBeVisible();
   });
-  test("bottom nav covers train / nutrition / progress / more", async ({ page }) => {
+  test("bottom nav covers the five approved sections", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#root")).toBeVisible({ timeout: 15_000 });
 
     // Bottom nav labels (P0.3 / P3 a11y)
     const nav = page.getByRole("navigation", { name: /Основная навигация/i });
     await expect(nav).toBeVisible();
-    for (const label of ["Главная", "Тренировки", "Питание", "Прогресс", "Ещё"]) {
+    for (const label of ["Главная", "Упражнения", "Дневник", "Помощь", "Профиль"]) {
       await expect(nav.getByRole("link", { name: label })).toBeVisible();
     }
 
-    await nav.getByRole("link", { name: "Тренировки" }).click();
-    await expect(page.getByText(/Программы|Каталог|своя/i).first()).toBeVisible({
+    await nav.getByRole("link", { name: "Упражнения" }).click();
+    await expect(page.getByText(/Программы|База упражнений|свой день/i).first()).toBeVisible({
       timeout: 10_000,
     });
 
-    await nav.getByRole("link", { name: "Питание" }).click();
-    await expect(page.getByText(/Питание|Дневник|Калории|авторизац/i).first()).toBeVisible();
+    await nav.getByRole("link", { name: "Дневник" }).click();
+    await expect(page).toHaveURL(/\/progress$/);
 
-    await nav.getByRole("link", { name: "Прогресс" }).click();
-    await expect(
-      page.getByText(/Прогресс|Streak|Силовые|Достижения|Привычки/i).first(),
-    ).toBeVisible();
+    await nav.getByRole("link", { name: "Помощь" }).click();
+    await expect(page).toHaveURL(/\/help-center$/);
 
-    await nav.getByRole("link", { name: "Ещё" }).click();
-    await expect(page.getByText(/Профиль|AI-тренер|Ещё/i).first()).toBeVisible();
+    await nav.getByRole("link", { name: "Профиль" }).click();
+    await expect(page).toHaveURL(/\/profile$/);
   });
 
   test("onboarding → home shell path is reachable", async ({ page }) => {

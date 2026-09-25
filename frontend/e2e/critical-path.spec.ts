@@ -48,7 +48,7 @@ test.describe("critical path smoke", () => {
     expect(programsBody).toMatch(/Программ|Dev mode|авторизац|онлайн|Загруз/i);
 
     await page.goto("/workouts");
-    await expect(page.getByRole("heading", { name: /Каталог/i })).toBeVisible({
+    await expect(page.getByRole("heading", { name: /База упражнений/i })).toBeVisible({
       timeout: 10_000,
     });
     const catalogBody = await page.locator("body").innerText();
