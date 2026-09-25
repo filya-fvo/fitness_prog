@@ -49,7 +49,7 @@ export function IllnessPauseCard({ status, disabled = false, onChange }: Props) 
 
   if (status.active) {
     return (
-      <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4">
+      <div className="app-card app-card-ocean p-4">
         <p className="text-sm font-semibold">Тренировки на паузе</p>
         <p className="mt-1 text-xs leading-5 text-tg-hint">
           Болезнь отмечена с {formatDate(status.started_on)}. Тренировки остаются в плане,
@@ -59,38 +59,38 @@ export function IllnessPauseCard({ status, disabled = false, onChange }: Props) 
           type="button"
           disabled={saving || disabled}
           onClick={() => void run(endIllnessPause)}
-          className="mt-3 min-h-11 w-full rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+          className="app-button app-gradient-action mt-3 w-full"
         >
           {saving ? "Сохраняем…" : "Я выздоровел(а)"}
         </button>
-        {error ? <p role="alert" className="mt-2 text-xs text-red-600">{error}</p> : null}
+        {error ? <p role="alert" className="app-status app-status-danger mt-2 text-xs">{error}</p> : null}
       </div>
     );
   }
 
   if (status.recovery_choice_pending) {
     return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+      <div className="app-card app-card-warning p-4">
         <p className="text-sm font-semibold">Как вернуться к тренировкам?</p>
         <p className="mt-1 text-xs leading-5 text-tg-hint">
           Рекомендуем один лёгкий проход программы с запасом повторений, затем среднюю неделю.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <button type="button" disabled={saving || disabled} onClick={() => void run(() => chooseIllnessRecovery("light_week"))} className="min-h-11 rounded-xl bg-tg-button px-3 text-xs font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={saving || disabled} onClick={() => void run(() => chooseIllnessRecovery("light_week"))} className="app-button app-gradient-action px-3 text-xs">
             Начать с лёгкой недели
           </button>
-          <button type="button" disabled={saving || disabled} onClick={() => void run(() => chooseIllnessRecovery("normal"))} className="min-h-11 rounded-xl bg-tg-secondary px-3 text-xs font-medium text-tg-link disabled:opacity-50">
+          <button type="button" disabled={saving || disabled} onClick={() => void run(() => chooseIllnessRecovery("normal"))} className="app-button app-secondary-action px-3 text-xs">
             Продолжить обычный цикл
           </button>
         </div>
-        {error ? <p role="alert" className="mt-2 text-xs text-red-600">{error}</p> : null}
+        {error ? <p role="alert" className="app-status app-status-danger mt-2 text-xs">{error}</p> : null}
       </div>
     );
   }
 
   if (status.recovery_light_week_active) {
     return (
-      <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+      <div className="app-card app-card-success p-4">
         <p className="text-sm font-semibold">Восстановительная лёгкая неделя</p>
         <p className="mt-1 text-xs leading-5 text-tg-hint">
           Для текущего прохода программы выбран лёгкий вес. После него начнётся средняя неделя.
@@ -100,11 +100,11 @@ export function IllnessPauseCard({ status, disabled = false, onChange }: Props) 
   }
 
   return (
-    <div className="rounded-2xl bg-tg-secondary p-3">
-      <button type="button" disabled={saving || disabled} onClick={() => void start()} className="min-h-11 w-full rounded-xl px-3 text-sm font-medium text-tg-link disabled:opacity-50">
+    <div className="app-card p-3">
+      <button type="button" disabled={saving || disabled} onClick={() => void start()} className="app-button app-secondary-action w-full px-3 text-sm">
         {saving ? "Сохраняем…" : "Приболел(а)? Поставить тренировки на паузу"}
       </button>
-      {error ? <p role="alert" className="mt-2 text-xs text-red-600">{error}</p> : null}
+      {error ? <p role="alert" className="app-status app-status-danger mt-2 text-xs">{error}</p> : null}
     </div>
   );
 }
