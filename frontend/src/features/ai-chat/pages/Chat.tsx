@@ -224,13 +224,13 @@ export function Chat() {
           onChange={(e) => setText(e.target.value)}
           disabled={!historyReady}
           placeholder="Сообщение тренеру…"
-          className="flex-1 rounded-xl border border-black/10 bg-tg-secondary px-3 py-3 text-sm"
+          className="app-field min-w-0 flex-1"
         />
         <button
           type="submit"
           aria-label="Отправить сообщение"
           disabled={sending || !historyReady || !text.trim()}
-          className="rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+          className="app-button app-primary-action app-gradient-action px-4 text-sm font-semibold"
         >
           {sending ? "…" : "→"}
         </button>
