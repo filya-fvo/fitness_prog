@@ -58,4 +58,13 @@ test.describe("unified public help and FAQ", () => {
     await page.getByRole("button", { name: "Вернуться в приложение" }).click();
     await expect(page).toHaveURL(/\/help-center$/);
   });
+
+  test("FAQ closing actions use the shared visual surfaces", async ({ page }) => {
+    await page.goto("/faq");
+
+    const supportLink = page.getByRole("link", { name: "Написать в поддержку" });
+    await expect(supportLink.locator("..")).toHaveClass(/app-card/);
+    await expect(supportLink).toHaveClass(/app-gradient-action/);
+    await expect(page.getByRole("button", { name: "Вернуться в приложение" })).toHaveClass(/app-secondary-action/);
+  });
 });

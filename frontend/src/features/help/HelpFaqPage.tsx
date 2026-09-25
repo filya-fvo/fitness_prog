@@ -182,7 +182,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
       </div>
 
       {groups.some((group) => group.tab === "knowledge") ? (
-        <details className="mt-3 rounded-2xl bg-tg-secondary p-4">
+        <details className="app-card app-card-ocean mt-3 p-4">
           <summary className="cursor-pointer text-sm font-semibold">Источники и исследования</summary>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
             {FAQ_SOURCES.map((source) => (
@@ -194,10 +194,10 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
         </details>
       ) : null}
 
-      <div className="mt-4 rounded-2xl bg-tg-secondary p-4">
+      <div className="app-card app-card-indigo mt-4 p-4">
         <p className="text-sm font-semibold">Не нашли ответ?</p>
         <p className="mt-1 text-xs text-tg-hint">Опишите ситуацию — ответ появится внутри приложения.</p>
-        <Link to="/support" className="mt-3 block min-h-11 rounded-xl bg-tg-button px-4 py-3 text-center text-sm font-semibold text-tg-button-text">
+        <Link to="/support" className="app-button app-primary-action app-gradient-action mt-3 flex min-h-11 items-center justify-center px-4 text-center text-sm font-semibold">
           Написать в поддержку
         </Link>
       </div>
@@ -205,7 +205,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
       <button
         type="button"
         onClick={() => navigate(safeReturnTo(location.state as NavigationState))}
-        className="mt-3 min-h-11 w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-text"
+        className="app-button app-secondary-action mt-3 min-h-11 w-full px-4 py-3 text-sm font-medium"
       >
         Вернуться в приложение
       </button>
