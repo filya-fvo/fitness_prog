@@ -27,7 +27,7 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="program-card-title">{programDayLabel(program.name)}</h2>
-            {badge ? <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-medium text-tg-link">{badge}</span> : null}
+            {badge ? <span className="app-chip app-chip-info text-[10px]">{badge}</span> : null}
           </div>
           <p className="mt-1 text-xs text-tg-hint">
             {enumLabel(program.workout_type)}
@@ -42,7 +42,7 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
       {equipment.length ? <p className="mt-2 text-[11px] text-tg-hint">Инвентарь: {equipment.map((item) => enumLabel(item)).join(" · ")}</p> : null}
       {reasons.length ? <p className="mt-2 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p> : null}
       {mismatches.length ? (
-        <p className={mismatches.some((item) => item.critical) ? "mt-2 text-xs text-red-600" : "mt-2 text-xs text-amber-700"}>
+        <p className={mismatches.some((item) => item.critical) ? "app-status app-status-danger mt-2 text-xs" : "app-status app-status-warning mt-2 text-xs"}>
           Не совпадает с анкетой: {programMismatchSummary(mismatches)}
         </p>
       ) : null}
