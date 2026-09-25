@@ -35,7 +35,7 @@ export function PreWorkoutReadinessDialog({ open, onChoose, onClose }: Props) {
         aria-modal="true"
         aria-labelledby="pre-workout-readiness-title"
         tabIndex={-1}
-        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-tg-bg p-4 text-tg-text shadow-xl"
+        className="app-card max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4 text-tg-text"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -50,14 +50,14 @@ export function PreWorkoutReadinessDialog({ open, onChoose, onClose }: Props) {
             type="button"
             aria-label="Закрыть"
             onClick={onClose}
-            className="min-h-11 min-w-11 shrink-0 rounded-xl bg-tg-secondary text-lg text-tg-hint"
+            className="app-button app-ghost-action min-w-11 shrink-0 text-lg"
           >
             ×
           </button>
         </div>
 
         {confirmRest ? (
-          <div className="mt-4 rounded-xl bg-amber-500/10 p-3">
+          <div className="app-card app-card-warning mt-4 p-3">
             <p className="text-sm font-medium">Лучше дать организму восстановиться</p>
             <p className="mt-1 text-xs leading-5 text-tg-hint">
               При сильной или необычной боли, головокружении либо очень обильном кровотечении
@@ -68,21 +68,21 @@ export function PreWorkoutReadinessDialog({ open, onChoose, onClose }: Props) {
                 type="button"
                 autoFocus
                 onClick={onClose}
-                className="min-h-11 rounded-xl bg-tg-button px-4 py-2 text-sm font-semibold text-tg-button-text"
+                className="app-button app-gradient-action w-full"
               >
                 Отложить тренировку
               </button>
               <button
                 type="button"
                 onClick={() => onChoose("rest")}
-                className="min-h-11 rounded-xl bg-tg-secondary px-4 py-2 text-sm font-medium"
+                className="app-button app-secondary-action w-full"
               >
                 Всё равно начать лёгкую
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmRest(false)}
-                className="min-h-11 rounded-xl px-4 py-2 text-sm text-tg-link"
+                className="app-button app-ghost-action w-full"
               >
                 Вернуться к выбору
               </button>
@@ -99,7 +99,7 @@ export function PreWorkoutReadinessDialog({ open, onChoose, onClose }: Props) {
                   if (option.value === "rest") setConfirmRest(true);
                   else onChoose(option.value);
                 }}
-                className="min-h-[56px] rounded-xl bg-tg-secondary px-4 py-3 text-left"
+                className="app-card app-card-ocean min-h-[56px] px-4 py-3 text-left"
               >
                 <span className="block text-sm font-medium">{option.label}</span>
                 <span className="mt-0.5 block text-xs text-tg-hint">{option.hint}</span>

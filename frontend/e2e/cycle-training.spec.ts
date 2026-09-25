@@ -172,12 +172,15 @@ test("readiness is requested at start and rest can defer without creating a work
   });
   const dialog = page.getByRole("dialog", { name: "Как вы себя чувствуете перед тренировкой?" });
   await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveClass(/app-card/);
+  await expect(dialog.getByRole("button", { name: /Всё хорошо/ })).toHaveClass(/app-card-ocean/);
   await expect(dialog.getByRole("button", { name: /Всё хорошо/ })).toBeFocused();
   expect(startPayloads).toHaveLength(0);
 
   await dialog.getByRole("button", { name: /Нужно восстановление/ }).click();
   const deferButton = dialog.getByRole("button", { name: "Отложить тренировку" });
   await expect(deferButton).toBeFocused();
+  await expect(deferButton).toHaveClass(/app-gradient-action/);
   await deferButton.click();
   await expect(dialog).toBeHidden();
   expect(startPayloads).toHaveLength(0);
