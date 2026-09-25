@@ -30,10 +30,10 @@ export function MuscleGroupFilter({ groups, value, onChange }: MuscleGroupFilter
               aria-pressed={selected}
               onClick={() => onChange(selected ? "" : group)}
               className={[
-                "flex min-h-[104px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-1 py-2 text-center text-[11px] active:scale-[0.97]",
+                "app-card app-card-interactive flex min-h-[104px] min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-center text-[11px]",
                 selected
-                  ? "border-[var(--app-brand-mid)] bg-[color-mix(in_srgb,var(--app-brand-mid)_12%,var(--app-surface))] text-tg-text"
-                  : "border-[var(--border-subtle)] bg-tg-secondary text-tg-hint",
+                  ? "app-card-ember border-[var(--app-brand-mid)] text-tg-text"
+                  : "app-card-ocean text-tg-hint",
               ].join(" ")}
             >
               <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-inset)] text-[var(--app-brand-mid)]">

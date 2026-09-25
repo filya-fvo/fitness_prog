@@ -240,6 +240,11 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
     animations: "disabled",
   });
+  const chestGroup = page.getByRole("button", { name: "грудь", exact: true });
+  await expect(chestGroup).toHaveClass(/app-card-ocean/);
+  await chestGroup.click();
+  await expect(chestGroup).toHaveClass(/app-card-ember/);
+  await chestGroup.click();
   await page.getByRole("button", { name: "Выбрать в тренировку" }).first().click();
   const selectedAction = page.getByRole("button", { name: "Выбрано · убрать" }).first();
   expect(await selectedAction.evaluate((element) => getComputedStyle(element).backgroundImage)).toContain("linear-gradient");
