@@ -3,7 +3,11 @@ import { normalizeMuscleGroup } from "@/utils/muscleGroups";
 type Props = { group: string | null | undefined; side?: "front" | "back"; className?: string };
 
 const frontPaths = {
-  legs: <><path d="M10 17 8 29h6l2-12m2 0 2 12h6l-2-12" /><path d="M10 29h4m6 0h4" /></>,
+  legs: <>
+    <path d="M10 17 8 29h6l2-12m2 0 2 12h6l-2-12M10 29h4m6 0h4" />
+    <path d="m10.5 18 4.1.2-1 6.2-4.6-.3z" fill="currentColor" stroke="none" opacity=".9" />
+    <path d="m17.4 18.2 4.1-.2 1.5 6.1-4.6.3z" fill="currentColor" stroke="none" opacity=".9" />
+  </>,
   glutes: <path d="M10 17c0 5 12 5 12 0" />, shoulders: <path d="M7 10c2-3 8-3 10 0m0 0c3-3 7-1 8 2" />,
   chest: <path d="M9 12c2-2 4-2 7 1 3-3 5-3 7-1M9 12v4m14-4v4" />,
   biceps: <path d="M8 12c-2 4 1 6 4 5m12-5c2 4-1 6-4 5" />,
