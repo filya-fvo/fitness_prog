@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import { DiaryModeTabs } from "@/features/progress/components/DiaryModeTabs";
 import type { DashboardGuidance, AnalyticsDepth } from "@/utils/personalDashboard";
 import { GOAL_DASHBOARD, LEVEL_LABELS } from "@/utils/personalDashboard";
 
@@ -55,34 +56,7 @@ export function PersonalDashboardCard({
         {guidance.action}
       </Link>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/10 pt-3 dark:border-white/10">
-        <div>
-          <p className="text-xs font-medium">Режим Дневника</p>
-          <p className="mt-0.5 text-[10px] text-tg-hint">
-            {level === "advanced" ? "Расширенный режим выбран по анкете" : "В Основном — ежедневная динамика, в Расширенном — разбор нагрузки"}
-          </p>
-        </div>
-        <div className="grid shrink-0 grid-cols-2 rounded-xl bg-tg-bg p-1 text-[11px]" aria-label="Режим Дневника">
-          <button
-            type="button"
-            aria-pressed={!expanded}
-            disabled={saving}
-            onClick={() => onExpandedChange(false)}
-            className={`min-h-11 rounded-lg px-3 ${!expanded ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}
-          >
-            Основное
-          </button>
-          <button
-            type="button"
-            aria-pressed={expanded}
-            disabled={saving}
-            onClick={() => onExpandedChange(true)}
-            className={`min-h-11 rounded-lg px-3 ${expanded ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}
-          >
-            Расширенно
-          </button>
-        </div>
-      </div>
+      <DiaryModeTabs expanded={expanded} saving={saving} level={level} onChange={onExpandedChange} />
       {error ? <p role="status" className="mt-2 text-xs text-amber-500">{error}</p> : null}
     </section>
   );

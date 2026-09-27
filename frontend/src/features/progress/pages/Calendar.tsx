@@ -33,11 +33,11 @@ export function Calendar({ year, monthIndex, days, onPrev, onNext, onSelectDate 
   return (
     <section className="rounded-2xl bg-tg-secondary p-4">
       <div className="mb-3 flex items-center justify-between">
-        <button type="button" onClick={onPrev} className="rounded-lg px-2 py-1 text-sm text-tg-link">
+        <button type="button" onClick={onPrev} aria-label="Предыдущий месяц" className="min-h-11 min-w-11 rounded-lg px-2 py-1 text-sm text-tg-link">
           ←
         </button>
         <h2 className="text-sm font-semibold capitalize">{monthLabel(year, monthIndex)}</h2>
-        <button type="button" onClick={onNext} className="rounded-lg px-2 py-1 text-sm text-tg-link">
+        <button type="button" onClick={onNext} aria-label="Следующий месяц" className="min-h-11 min-w-11 rounded-lg px-2 py-1 text-sm text-tg-link">
           →
         </button>
       </div>

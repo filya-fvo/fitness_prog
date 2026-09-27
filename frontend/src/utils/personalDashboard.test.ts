@@ -6,7 +6,6 @@ import {
   BASIC_DIARY_SECTIONS,
   analyticsDepth,
   dashboardGuidance,
-  visibleDashboardSections,
 } from "@/utils/personalDashboard";
 
 function dashboard(current = 4, previous = 3): ProgressDashboard {
@@ -26,12 +25,6 @@ describe("personal dashboard", () => {
     expect(analyticsDepth("advanced", undefined)).toBe("advanced");
     expect(analyticsDepth("beginner", true)).toBe("advanced");
     expect(analyticsDepth("advanced", false)).toBe("standard");
-  });
-
-  it("renders different dashboard collections for basic and expanded modes", () => {
-    expect(visibleDashboardSections("lose_fat", "basic")).toEqual(["wellness", "measurements", "weekly"]);
-    expect(visibleDashboardSections("gain_muscle", "standard")).toEqual(["wellness", "measurements", "weekly"]);
-    expect(visibleDashboardSections("maintain", "advanced")).toEqual(["strength", "nutrition"]);
   });
 
   it("keeps the basic diary and expanded analytics as distinct views", () => {

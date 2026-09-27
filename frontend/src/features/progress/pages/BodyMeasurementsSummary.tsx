@@ -74,7 +74,7 @@ export function BodyMeasurementsSummary() {
           <h2 className="text-sm font-semibold">Замеры тела</h2>
           <p className="mt-0.5 text-[11px] text-tg-hint">База и изменение за период</p>
         </div>
-        <Link to="/measurements" className="text-xs font-medium text-tg-link">Открыть →</Link>
+        <Link to="/measurements" className="flex min-h-11 items-center text-xs font-medium text-tg-link">Журнал замеров →</Link>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-1" aria-label="Период аналитики замеров">
         {PERIODS.map((period) => (

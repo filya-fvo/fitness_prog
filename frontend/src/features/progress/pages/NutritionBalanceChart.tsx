@@ -1,4 +1,5 @@
 import type { NutritionBalanceDay, NutritionPeriodTotals } from "@/utils/progress";
+import { StatusNotice } from "@/components/ui/StatusNotice";
 
 type Props = {
   mode: "day" | "week";
@@ -25,7 +26,7 @@ function fmtKcal(n: number | null | undefined): string {
 
 function PeriodCard({ item }: { item: NutritionPeriodTotals }) {
   const deltaClass =
-    item.delta == null
+    item.daysWithLogs === 0 || item.delta == null
       ? ""
       : item.delta > 0
         ? "text-orange-600"
@@ -37,20 +38,19 @@ function PeriodCard({ item }: { item: NutritionPeriodTotals }) {
       <p className="text-[11px] font-medium text-tg-text">{item.label}</p>
       <p className="text-[10px] text-tg-hint">{item.rangeLabel}</p>
       <p className="mt-1.5 text-lg font-semibold tabular-nums leading-none">
-        {fmtKcal(item.eaten)}
-        <span className="ml-0.5 text-[11px] font-normal text-tg-hint">ккал</span>
+        {item.daysWithLogs ? <>{fmtKcal(item.eaten)}<span className="ml-0.5 text-[11px] font-normal text-tg-hint">ккал</span></> : "Нет записей"}
       </p>
       <p className="mt-1 text-[10px] text-tg-hint">
         цель {fmtKcal(item.target)}
         {item.daysCount > 1 ? ` · ${item.daysCount} дн.` : ""}
       </p>
       <p className={["mt-0.5 text-xs font-semibold tabular-nums", deltaClass].join(" ")}>
-        {item.delta == null
+        {item.daysWithLogs === 0 || item.delta == null
           ? "баланс —"
           : item.delta > 0
             ? `перебор ${fmtDelta(item.delta)}`
             : item.delta < 0
-              ? `недобор ${fmtDelta(Math.abs(item.delta))}`
+              ? `недобор ${fmtKcal(Math.abs(item.delta))}`
               : "в цели"}
       </p>
     </div>
@@ -80,16 +80,15 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
         </div>
       ) : null}
 
-      <p className="mt-3 text-xs text-tg-hint">
-        {mode === "day"
-          ? "График по дням: выше линии — перебор, ниже — недобор относительно дневной цели."
-          : "График по неделям: суммарный перебор/недобор за неделю."}
-      </p>
-
-      {!series.length ? (
-        <p className="mt-4 text-xs text-tg-hint">Пока нет данных питания за период.</p>
+      {!series.some((day) => day.hasLogs) ? (
+        <StatusNotice className="mt-4">Пока нет данных питания за период.</StatusNotice>
       ) : (
         <div className="mt-3">
+          <p className="mb-3 text-xs text-tg-hint">
+            {mode === "day"
+              ? "График по дням: выше линии — перебор, ниже — недобор относительно дневной цели."
+              : "График по неделям: суммарный перебор/недобор за неделю."}
+          </p>
           <div className="relative flex h-40 items-stretch gap-1">
             <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-black/20" />
             {series.map((day) => {

@@ -1,5 +1,4 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { analyzeProgress } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
@@ -18,7 +17,6 @@ import {
   fetchWorkoutHistory,
   type PersonalRegularity,
 } from "@/api/workouts";
-import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
@@ -30,17 +28,10 @@ import {
   readCachedExercises,
   readCachedWorkouts,
 } from "@/db/syncQueue";
-import { Calendar } from "@/features/progress/pages/Calendar";
 import { WorkoutDayDetails } from "@/features/progress/pages/WorkoutDayDetails";
-import { Charts } from "@/features/progress/pages/Charts";
-import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
-import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
-import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
-import { StrengthTrendSetsCard } from "@/features/progress/pages/StrengthTrendSets";
-import { WellnessSummary } from "@/features/progress/pages/WellnessSummary";
+import { DiaryAdvancedView } from "@/features/progress/pages/DiaryAdvancedView";
+import { DiaryBasicView } from "@/features/progress/pages/DiaryBasicView";
 import { PersonalDashboardCard } from "@/features/progress/pages/PersonalDashboardCard";
-import { TrainingLoadAnalytics } from "@/features/progress/pages/TrainingLoadAnalytics";
-import { NutritionSummaryCard } from "@/features/progress/pages/NutritionSummaryCard";
 import type { Exercise, Workout } from "@/types/workout";
 import { computeBadges } from "@/utils/achievements";
 import { isOnline } from "@/utils/network";
@@ -61,8 +52,6 @@ import { trackEvent } from "@/lib/analytics";
 import {
   analyticsDepth,
   dashboardGuidance,
-  visibleDashboardSections,
-  type DashboardSectionId,
 } from "@/utils/personalDashboard";
 
 type NutritionRangeMode = "day" | "week";
@@ -97,7 +86,6 @@ export function ProgressPage() {
   const [weekAiBusy, setWeekAiBusy] = useState(false);
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
@@ -240,7 +228,6 @@ export function ProgressPage() {
   const level = String(profileGoals.level || "beginner");
   const goal = String(profileGoals.primary_goal || "maintain");
   const depth = analyticsDepth(level, profileGoals.advanced_analytics_enabled);
-  const visibleSections = visibleDashboardSections(goal, depth);
 
   async function askWeekAi() {
     if (weekAiBusy) return;
@@ -334,54 +321,6 @@ export function ProgressPage() {
     }
   }
 
-  function renderDashboardSection(section: DashboardSectionId) {
-    if (section === "wellness") {
-      return <WellnessSummary days={dailyMetrics} error={dailyMetricsError} />;
-    }
-    if (section === "measurements") return <BodyMeasurementsSummary />;
-    if (section === "nutrition") {
-      return <NutritionSummaryCard
-        mode={nutritionMode}
-        onModeChange={setNutritionMode}
-        error={nutritionError}
-        series={nutritionSeries}
-        dailyTarget={nutrition?.dailyTarget ?? null}
-        periods={nutritionPeriods}
-      />;
-    }
-    if (section === "strength") {
-      return <StrengthTrendSetsCard
-        data={strengthTrendSets}
-        error={strengthTrendsError}
-        simple={depth === "basic"}
-      />;
-    }
-    return <div className="contents">
-      <WeeklyOverview
-        overview={weekOverview}
-        onAskAi={() => void askWeekAi()}
-        aiBusy={weekAiBusy}
-      />
-      {weekAiError ? (
-        <p className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{weekAiError}</p>
-      ) : null}
-      {weekAiText ? (
-        <div className="rounded-2xl bg-tg-secondary p-4">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold">ИИ · разбор недели</p>
-            <button type="button" className="text-xs text-tg-hint" onClick={() => setWeekAiText(null)}>
-              Скрыть
-            </button>
-          </div>
-          <p className="whitespace-pre-wrap text-sm text-tg-hint">{weekAiText}</p>
-          <Link to="/ai" className="mt-2 inline-block text-xs text-tg-link">
-            Открыть чат с тренером →
-          </Link>
-        </div>
-      ) : null}
-    </div>;
-  }
-
   if (!plusAccess) {
     return (
       <section className="mx-auto max-w-4xl">
@@ -408,17 +347,6 @@ export function ProgressPage() {
         onExpandedChange={(expanded) => void setAdvancedAnalytics(expanded)}
       /> : null}
 
-      {!loading ? (
-        <div className="mb-3 grid grid-cols-2 gap-3">
-          <PlanRegularityCard summary={regularity} valueSize="large" />
-          <div className="rounded-2xl bg-tg-secondary p-4">
-            <p className="text-xs text-tg-hint">Завершено</p>
-            <p className="mt-1 text-2xl font-semibold">{completedCount}</p>
-            <p className="mt-1 text-[11px] text-tg-hint">Всего завершённых тренировок</p>
-          </div>
-        </div>
-      ) : null}
-
       {pending > 0 || source === "cache" ? (
         <p className="mb-3 text-xs text-tg-hint">
           {source === "cache" ? "Показаны сохранённые данные" : "Данные обновлены"}
@@ -426,41 +354,45 @@ export function ProgressPage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {visibleSections.map((section) => (
-          <div key={section} className="contents">{renderDashboardSection(section)}</div>
-        ))}
-
-        {depth === "advanced" ? <TrainingLoadAnalytics
-          data={dashboard}
-          loading={dashboardLoading}
-          error={dashboardError}
-          advanced={depth === "advanced"}
+      {!loading && (depth === "advanced" ? (
+        <DiaryAdvancedView
+          dashboard={dashboard}
+          dashboardLoading={dashboardLoading}
+          dashboardError={dashboardError}
           onPeriodChange={(period) => void changeDashboardPeriod(period)}
-        /> : null}
-
-        <button
-          type="button"
-          onClick={() => setDetailsOpen((value) => !value)}
-          aria-expanded={detailsOpen}
-          className="w-full rounded-xl bg-tg-secondary px-4 py-3 text-sm font-medium text-tg-link"
-        >
-          {detailsOpen ? "Скрыть подробную аналитику" : "Календарь, достижения и подробные графики"}
-        </button>
-
-        {detailsOpen ? <>
-        <BadgesPanel badges={badges} />
-        <Charts series={series} />
-        <Calendar
+          strengthTrendSets={strengthTrendSets}
+          strengthTrendsError={strengthTrendsError}
+          nutritionMode={nutritionMode}
+          onNutritionModeChange={setNutritionMode}
+          nutritionError={nutritionError}
+          nutritionSeries={nutritionSeries}
+          nutritionTarget={nutrition?.dailyTarget ?? null}
+          nutritionPeriods={nutritionPeriods}
+          volumeSeries={series}
+          dailyMetrics={dailyMetrics}
+          dailyMetricsError={dailyMetricsError}
+        />
+      ) : (
+        <DiaryBasicView
+          regularity={regularity}
+          completedCount={completedCount}
+          dailyMetrics={dailyMetrics}
+          dailyMetricsError={dailyMetricsError}
+          weekOverview={weekOverview}
+          onAskWeekAi={() => void askWeekAi()}
+          weekAiBusy={weekAiBusy}
+          weekAiError={weekAiError}
+          weekAiText={weekAiText}
+          onClearWeekAi={() => setWeekAiText(null)}
           year={year}
           monthIndex={monthIndex}
-          days={calendarDays}
-          onPrev={() => shiftMonth(-1)}
-          onNext={() => shiftMonth(1)}
+          calendarDays={calendarDays}
+          onPrevMonth={() => shiftMonth(-1)}
+          onNextMonth={() => shiftMonth(1)}
           onSelectDate={setSelectedDate}
+          badges={badges}
         />
-        </> : null}
-      </div>
+      ))}
       {selectedDate ? <WorkoutDayDetails
         date={selectedDate}
         workouts={workouts.filter((workout) => workoutDateKey(workout) === selectedDate)}

@@ -2,7 +2,6 @@ import type { ProgressDashboard } from "@/api/progressDashboard";
 import type { PersonalRegularity } from "@/api/workouts";
 
 export type AnalyticsDepth = "basic" | "standard" | "advanced";
-export type DashboardSectionId = "measurements" | "nutrition" | "wellness" | "weekly" | "strength";
 
 /** Kept independent so the Diary does not render the same analytics twice. */
 export const BASIC_DIARY_SECTIONS = ["adherence", "calendar", "wellness", "measurements"] as const;
@@ -11,22 +10,18 @@ export const ADVANCED_DIARY_SECTIONS = ["training-load", "muscle-balance", "stre
 export const GOAL_DASHBOARD: Record<string, {
   label: string;
   description: string;
-  sections: DashboardSectionId[];
 }> = {
   lose_fat: {
     label: "Снижение веса",
     description: "Вес и талия, питание и сохранение силовых результатов",
-    sections: ["measurements", "nutrition", "strength", "weekly", "wellness"],
   },
   gain_muscle: {
     label: "Набор мышц",
     description: "Силовая прогрессия, объём тренировок и динамика замеров",
-    sections: ["strength", "weekly", "measurements", "nutrition", "wellness"],
   },
   maintain: {
     label: "Поддержание формы",
     description: "Регулярность, восстановление и стабильность результатов",
-    sections: ["wellness", "weekly", "strength", "measurements", "nutrition"],
   },
 };
 
@@ -45,14 +40,6 @@ export function analyticsDepth(
   if (level === "advanced") return "advanced";
   if (level === "intermediate") return "standard";
   return "basic";
-}
-
-export function visibleDashboardSections(
-  _goal: unknown,
-  depth: AnalyticsDepth,
-): DashboardSectionId[] {
-  if (depth === "advanced") return ["strength", "nutrition"];
-  return ["wellness", "measurements", "weekly"];
 }
 
 export type DashboardGuidance = {

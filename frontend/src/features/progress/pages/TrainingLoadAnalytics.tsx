@@ -1,4 +1,5 @@
 import type { ProgressDashboard, ProgressDashboardPeriod } from "@/api/progressDashboard";
+import { StatusNotice } from "@/components/ui/StatusNotice";
 
 const PERIODS: ProgressDashboardPeriod[] = [28, 56, 84];
 
@@ -49,8 +50,12 @@ export function TrainingLoadAnalytics({
       </div>
 
       {loading ? <div className="mt-3 h-36 animate-pulse rounded-xl bg-tg-bg" /> : null}
-      {error ? <p role="status" className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-amber-500">{error}</p> : null}
-      {data && !loading ? (
+      {error ? <StatusNotice role="status" tone="danger" className="mt-3">{error}</StatusNotice> : null}
+      {!data && !loading && !error ? <StatusNotice className="mt-3">Данные о нагрузке пока недоступны.</StatusNotice> : null}
+      {data && !loading && data.current.completed_workouts === 0 ? (
+        <StatusNotice className="mt-3">За выбранный период завершённых тренировок нет.</StatusNotice>
+      ) : null}
+      {data && !loading && data.current.completed_workouts > 0 ? (
         <>
           <p className="mt-3 text-[11px] text-tg-hint">
             {data.period_start.split("-").reverse().join(".")}–{data.period_end.split("-").reverse().join(".")} · {data.current.completed_workouts} тренировок

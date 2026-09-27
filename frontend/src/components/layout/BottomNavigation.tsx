@@ -34,17 +34,17 @@ export function BottomNavigation() {
         {NAV_ITEMS.map((item) => {
           const active = activeRoot === item.to;
           return (
-            <li key={item.to} className="flex-1 lg:flex-none">
+            <li key={item.to} className="min-w-0 flex-1 lg:flex-none">
               <Link
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={[
-                  "app-nav-link tap-target relative flex min-h-[52px] flex-col items-center justify-center px-1 pb-2 pt-1 text-[11px] font-medium transition-[color,transform] active:scale-[0.97] lg:min-h-[44px] lg:flex-row lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs",
+                  "app-nav-link tap-target relative flex min-h-[52px] min-w-0 flex-col items-center justify-center px-0.5 pb-2 pt-1 text-[10px] font-medium transition-[color,transform] active:scale-[0.97] max-[359px]:min-h-[64px] sm:px-1 sm:text-[11px] lg:min-h-[44px] lg:flex-row lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs",
                   active ? "app-nav-link-active font-semibold" : "text-tg-hint hover:text-tg-text",
                 ].join(" ")}
               >
                 <span className="mb-0.5 leading-none lg:mb-0"><NavIcon active={active} name={item.icon} /></span>
-                <span>{item.label}</span>
+                <span className="max-w-full break-all text-center leading-tight">{item.label}</span>
               </Link>
             </li>
           );
