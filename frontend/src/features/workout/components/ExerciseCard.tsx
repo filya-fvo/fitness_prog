@@ -15,34 +15,28 @@ export function ExerciseCard({
   onSelect,
   onOpenDetail,
 }: ExerciseCardProps) {
-  const technique = exercise.technique?.trim();
-
   return (
     <article className={[
-      "app-card app-card-indigo app-card-interactive w-full overflow-hidden text-left",
+      "app-card app-card-indigo app-card-interactive flex w-full gap-2.5 overflow-hidden p-2.5 text-left",
       selected ? "border-[var(--app-brand-mid)] ring-1 ring-[var(--app-brand-mid)]/30" : "",
     ].join(" ")}>
-      <button type="button" onClick={() => onOpenDetail(exercise)} className="block w-full text-left">
-        <div className="relative overflow-hidden bg-[var(--app-surface-inset)]">
-          <ExerciseThumbnail exercise={exercise} size="cover" />
-          <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur">
-            Сложность {exercise.difficulty}/5
-          </span>
-        </div>
-        <div className="p-4 pb-3">
-          <p className="section-kicker">{enumLabel(exercise.muscle_group)}</p>
-          <h2 className="mt-1.5 text-xl font-bold leading-tight tracking-[-0.025em]">{exercise.name_ru}</h2>
-          <p className="mt-1 text-xs text-tg-hint">{exercise.equipment ? enumLabel(exercise.equipment) : "Без оборудования"}</p>
-          {technique ? <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-tg-hint">{technique}</p> : null}
-        </div>
+      <button type="button" onClick={() => onOpenDetail(exercise)} aria-label={`Открыть технику: ${exercise.name_ru}`} className="shrink-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-brand-mid)]">
+        <ExerciseThumbnail exercise={exercise} size="tile" />
       </button>
-      <div className="flex gap-2 px-4 pb-4">
-        <button type="button" onClick={() => onOpenDetail(exercise)} aria-label={`Открыть технику: ${exercise.name_ru}`} className="app-button app-secondary-action flex-1 px-2 text-xs">
-          ▷ Техника
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 py-0.5">
+        <button type="button" onClick={() => onOpenDetail(exercise)} className="min-h-11 text-left">
+          <p className="section-kicker">{enumLabel(exercise.muscle_group)} · {exercise.difficulty}/5</p>
+          <h2 className="mt-1 line-clamp-2 text-sm font-bold leading-snug">{exercise.name_ru}</h2>
+          <p className="mt-0.5 truncate text-xs text-tg-hint">{exercise.equipment ? enumLabel(exercise.equipment) : "Без оборудования"}</p>
         </button>
-        <button type="button" onClick={() => onSelect(exercise)} aria-label={selected ? "Выбрано · убрать" : "Выбрать в тренировку"} className={["app-button flex-1 px-2 text-xs", selected ? "app-gradient-action" : "app-secondary-action"].join(" ")}>
-          {selected ? "✓ Выбрано" : "+ Добавить"}
-        </button>
+        <div className="flex gap-1.5">
+          <button type="button" onClick={() => onOpenDetail(exercise)} className="app-button app-secondary-action min-h-11 min-w-11 flex-1 whitespace-nowrap px-1 text-xs">
+            Техника
+          </button>
+          <button type="button" onClick={() => onSelect(exercise)} aria-label={selected ? "Выбрано · убрать" : "Выбрать в тренировку"} className={["app-button min-h-11 min-w-11 flex-1 whitespace-nowrap px-1 text-xs", selected ? "app-gradient-action" : "app-secondary-action"].join(" ")}>
+            {selected ? "✓ Выбрано" : "+ Добавить"}
+          </button>
+        </div>
       </div>
     </article>
   );
