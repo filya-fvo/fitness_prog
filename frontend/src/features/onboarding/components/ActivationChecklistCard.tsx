@@ -103,7 +103,7 @@ export function ActivationChecklistCard(props: Props) {
 
   async function dismiss() {
     const accepted = await confirmAction(
-      "Скрыть подсказки навсегда? Раздел «Помощь и FAQ» останется доступен во вкладке «Ещё».",
+      "Скрыть подсказки навсегда? Раздел «Помощь и FAQ» останется доступен во вкладке «Помощь».",
     );
     if (!accepted) return;
     trackEvent("activation_checklist_dismissed", { completed: completed.length });
@@ -111,7 +111,7 @@ export function ActivationChecklistCard(props: Props) {
   }
 
   return (
-    <section aria-labelledby="activation-checklist-title" className="rounded-2xl border border-tg-button/25 bg-tg-secondary p-4">
+    <section aria-labelledby="activation-checklist-title" className="app-card app-card-indigo p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wide text-tg-link">Первые шаги</p>
@@ -136,7 +136,7 @@ export function ActivationChecklistCard(props: Props) {
         className="mt-3 h-1.5 overflow-hidden rounded-full bg-tg-bg"
       >
         <div
-          className="h-full rounded-full bg-tg-button transition-[width]"
+          className="app-gradient-action h-full rounded-full transition-[width]"
           style={{ width: `${completed.length / ACTIVATION_CHECKLIST_ITEM_IDS.length * 100}%` }}
         />
       </div>

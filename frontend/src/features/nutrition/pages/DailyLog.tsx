@@ -22,6 +22,9 @@ import {
   type NutritionProduct,
 } from "@/api/nutrition";
 import { Header } from "@/components/layout/Header";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppCard } from "@/components/ui/AppCard";
+import { AppField } from "@/components/ui/AppField";
 import { MealNutritionSummary } from "@/features/nutrition/components/MealNutritionSummary";
 import { DecimalInput } from "@/components/DecimalInput";
 import { parseDecimalInput } from "@/components/decimalInputValue";
@@ -729,7 +732,7 @@ export function DailyLog() {
         </div>
       ) : null}
 
-      <div className="nutrition-summary-card">
+      <AppCard tone="hero" className="nutrition-summary-card">
         <div className="flex items-end justify-between gap-2">
           <div>
             <p className="text-xs text-tg-hint">
@@ -808,17 +811,16 @@ export function DailyLog() {
             Гид по питанию ↗
           </Link>
         </div>
-      </div>
+      </AppCard>
 
       {!addPanelOpen ? (
-        <button
-          type="button"
+        <AppButton
           onClick={() => setAddPanelOpen(true)}
           aria-expanded={false}
           className="nutrition-add-button"
         >
           + Добавить продукт
-        </button>
+        </AppButton>
       ) : null}
 
       {addPanelOpen ? <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
@@ -1260,7 +1262,7 @@ export function DailyLog() {
         {MEALS.map((m) => {
           const items = data?.meals?.[m.id] ?? [];
           return (
-            <div key={m.id} className="nutrition-meal-card">
+            <AppCard key={m.id} className="nutrition-meal-card">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium">{m.label}</p>
                 <button
@@ -1326,7 +1328,7 @@ export function DailyLog() {
                   </ul>
                 </>
               )}
-            </div>
+            </AppCard>
           );
         })}
       </div>
@@ -1453,15 +1455,12 @@ export function DailyLog() {
               {pendingBarcode ? <p>Штрихкод {pendingBarcode} будет сохранён с этим продуктом.</p> : null}
               <p>БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
             </div>}
-            <label className="block text-xs text-tg-hint">
-              Название
-              <input value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-3 py-2 text-base" />
-            </label>
+            <AppField label="Название" value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full" />
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
-              <label className="text-xs text-tg-hint">Белки<DecimalInput value={cP} onValueChange={setCP} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
-              <label className="text-xs text-tg-hint">Жиры<DecimalInput value={cF} onValueChange={setCF} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
-              <label className="text-xs text-tg-hint">Углеводы<DecimalInput value={cC} onValueChange={setCC} className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-2 py-1.5 text-base" /></label>
+              <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="app-field mt-1 w-full" /></label>
+              <label className="text-xs text-tg-hint">Белки<DecimalInput value={cP} onValueChange={setCP} className="app-field mt-1 w-full" /></label>
+              <label className="text-xs text-tg-hint">Жиры<DecimalInput value={cF} onValueChange={setCF} className="app-field mt-1 w-full" /></label>
+              <label className="text-xs text-tg-hint">Углеводы<DecimalInput value={cC} onValueChange={setCC} className="app-field mt-1 w-full" /></label>
             </div>
             {customError ? (
               <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">

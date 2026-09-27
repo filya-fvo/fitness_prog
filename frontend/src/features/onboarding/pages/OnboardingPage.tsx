@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchPrograms } from "@/api/programs";
 import { updateMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
+import { AppButton } from "@/components/ui/AppButton";
 import { DecimalInput } from "@/components/DecimalInput";
 import { clearQueuedProfileUpdate, enqueueProfileUpdate } from "@/db/syncQueue";
 import { useMainButton } from "@/features/workout/hooks/useMainButton";
@@ -382,7 +383,7 @@ export function OnboardingPage() {
               }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
-                primaryGoal === g.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                primaryGoal === g.id ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               {g.label}
@@ -401,7 +402,7 @@ export function OnboardingPage() {
               onClick={() => setLevel(l.id)}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
-                level === l.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                level === l.id ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               {l.label}
@@ -423,7 +424,7 @@ export function OnboardingPage() {
               }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
-                location === loc.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                location === loc.id ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               {loc.label}
@@ -447,7 +448,7 @@ export function OnboardingPage() {
                 onClick={() => toggleEquipment(e.id)}
                 className={[
                   "w-full rounded-xl px-4 py-3 text-left text-sm",
-                  on ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                  on ? "app-gradient-action text-white" : "bg-tg-secondary",
                 ].join(" ")}
               >
                 {e.label}
@@ -467,7 +468,7 @@ export function OnboardingPage() {
               onClick={() => setDaysPerWeek(d)}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
-                daysPerWeek === d ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                daysPerWeek === d ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               {d} дн./нед.
@@ -490,7 +491,7 @@ export function OnboardingPage() {
                 onClick={() => setSex(o.id)}
                 className={[
                   "flex-1 rounded-xl px-3 py-2 text-sm",
-                  sex === o.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                  sex === o.id ? "app-gradient-action text-white" : "bg-tg-bg",
                 ].join(" ")}
               >
                 {o.label}
@@ -664,7 +665,7 @@ export function OnboardingPage() {
                     onClick={() => toggleJointLimit(lim.id)}
                     className={[
                       "w-full rounded-xl px-4 py-3 text-left text-sm",
-                      on ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                      on ? "app-gradient-action text-white" : "bg-tg-bg",
                     ].join(" ")}
                   >
                     {lim.label}
@@ -704,14 +705,13 @@ export function OnboardingPage() {
 
       {!usesNativeMainButton ? (
         <div className="sticky bottom-0 z-10 -mx-4 mt-4 border-t border-black/5 bg-tg-bg/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-          <button
-            type="button"
+          <AppButton
             disabled={!canNext || saving}
             onClick={runPrimaryAction}
-            className="tap-target-x w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            className="tap-target-x w-full"
           >
             {primaryActionText}
-          </button>
+          </AppButton>
         </div>
       ) : null}
     </section>

@@ -86,6 +86,9 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   });
 
   await page.goto("/nutrition");
+  await expect(page.locator(".nutrition-summary-card")).toHaveClass(/app-card-hero/);
+  await expect(page.locator(".nutrition-meal-card").first()).toHaveClass(/app-card/);
+  await expect(page.getByRole("button", { name: "+ Добавить продукт" })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
   await expect(page.getByRole("button", { name: /Снять этикетку/ })).toHaveCount(0);
   await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
@@ -108,6 +111,7 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   const review = page.getByRole("dialog", { name: "Проверьте этикетку" });
   await expect(review).toBeVisible();
   await expect(review.getByLabel("Название")).toHaveValue("Тестовый йогурт");
+  await expect(review.getByLabel("Название")).toHaveClass(/app-field/);
   await expect(review.getByLabel("Ккал")).toHaveValue("81");
   await expect(review.getByLabel("Белки")).toHaveValue("5,2");
   await expect(review.getByLabel("Жиры")).toHaveValue("2,5");

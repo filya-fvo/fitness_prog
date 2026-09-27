@@ -84,6 +84,7 @@ test("new user can progress and postpone the activation checklist", async ({ pag
 
   const card = page.getByRole("region", { name: "Освойте приложение" });
   await expect(card).toBeVisible();
+  await expect(card).toHaveClass(/app-card-indigo/);
   await expect(card).toContainText("Выполнено 2 из 6");
   await expect(card.getByRole("listitem")).toHaveCount(3);
   await expect(card.getByText("Откройте питание и помощь")).toHaveCount(0);
@@ -113,7 +114,10 @@ test("existing profile without rollout state receives the checklist", async ({ p
 
 test("new user can hide the checklist permanently", async ({ page }) => {
   await mockHome(page);
-  page.on("dialog", (dialog) => dialog.accept());
+  page.on("dialog", (dialog) => {
+    expect(dialog.message()).toContain("во вкладке «Помощь»");
+    void dialog.accept();
+  });
   await page.goto("/");
   const card = page.getByRole("region", { name: "Освойте приложение" });
   await card.getByRole("button", { name: "Скрыть навсегда" }).click();

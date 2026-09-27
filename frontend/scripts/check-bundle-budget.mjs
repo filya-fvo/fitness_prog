@@ -93,8 +93,10 @@ const limits = {
   // map add about 0.3 KB gzip to lazy program and exercise chunks.
   // Separate Diary modes and a paired load/sleep summary add about 1.1 KB
   // gzip inside the already lazy Progress route, without a new vendor chunk.
-  totalJsGzip: 528_100,
-  productJsGzip: 474_600,
+  // Shared card, field and button primitives on Nutrition and Onboarding add
+  // 0.4 KB gzip across their existing lazy routes; vendor size is unchanged.
+  totalJsGzip: 528_700,
+  productJsGzip: 475_200,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

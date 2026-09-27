@@ -50,8 +50,10 @@ test("onboarding requires explicit choices, supports unspecified sex and allows 
   await page.goto("/onboarding");
 
   const next = page.getByRole("button", { name: "Далее" });
+  await expect(next).toHaveClass(/app-gradient-action/);
   await expect(next).toBeDisabled();
   await page.getByRole("button", { name: "Поддержание" }).click();
+  await expect(page.getByRole("button", { name: "Поддержание" })).toHaveClass(/app-gradient-action/);
   await expect(next).toBeEnabled();
   await next.click();
 
