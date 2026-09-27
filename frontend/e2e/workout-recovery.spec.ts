@@ -132,6 +132,8 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await page.goto(`/?startapp=workout_${WORKOUT_ID}`);
   await expect(page.getByRole("heading", { name: "Восстановленная тренировка" })).toBeVisible();
   await expect(page.getByText("Тестовый жим", { exact: true })).toBeVisible();
+  await expect(page.getByText("Таймер тренировки").locator("../..")).toHaveClass(/app-card/);
+  await expect(page.locator("article").filter({ has: page.getByRole("heading", { name: "Тестовый жим" }) })).toHaveClass(/app-card/);
   await expect(page.getByRole("button", { name: /Развернуть медиа и технику/ })).toBeVisible();
   await expect(page.getByRole("img", { name: "Тестовый жим" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Основная навигация" })).toHaveCount(0);
@@ -187,6 +189,14 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await expect(page.getByText("Войдите по email")).toHaveCount(0);
   await expect(page.getByText(/Нет сети/).first()).toBeVisible();
   expect(workoutRequests).toBe(1);
+
+  await page.getByRole("button", { name: "Ещё", exact: true }).click();
+  await page.getByRole("button", { name: "Добавить +" }).click();
+  const addSetDialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(addSetDialog).toHaveClass(/app-card-hero/);
+  await expect(addSetDialog.getByRole("button", { name: "Применить" })).toHaveClass(/app-gradient-action/);
+  await page.keyboard.press("Escape");
+  await expect(addSetDialog).toHaveCount(0);
 });
 
 test("exercise catalog renders progressively", async ({ page }) => {

@@ -1476,7 +1476,7 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary px-4 py-3">
+      <div className="app-card app-card-indigo mb-3 flex items-center justify-between gap-3 px-4 py-3">
         <WorkoutElapsedClock
           startedAt={activeWorkout.started_at}
           frozenSec={elapsedFinalSec}
@@ -1609,7 +1609,7 @@ export function ActiveWorkout() {
               className={[
                 "tap-target shrink-0 rounded-full px-3 py-2 text-xs",
                 idx === currentExerciseIndex
-                  ? "bg-tg-button text-tg-button-text"
+                  ? "app-gradient-action text-white"
                   : done
                     ? "bg-tg-secondary text-tg-hint"
                     : "bg-tg-secondary",
@@ -1622,7 +1622,7 @@ export function ActiveWorkout() {
       </div>
 
       {currentExercise ? (
-        <article className="space-y-3 rounded-2xl bg-tg-secondary p-4">
+        <article className="app-card app-card-indigo space-y-3 p-4">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="font-medium">{currentExercise.name_ru}</h2>
@@ -1779,7 +1779,7 @@ export function ActiveWorkout() {
                     const n = Number(e.target.value);
                     if (Number.isFinite(n)) applyRestForCurrentExercise(n);
                   }}
-                  className="h-9 min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-secondary px-2 text-center text-sm"
+                  className="app-field min-w-0 flex-1 text-center"
                   aria-label="Отдых в секундах"
                 />
                 <button
@@ -1815,7 +1815,7 @@ export function ActiveWorkout() {
                       className={[
                         "rounded-full px-2.5 py-1 text-[11px]",
                         currentRestSec === sec
-                          ? "bg-tg-button text-tg-button-text"
+                          ? "app-gradient-action text-white"
                           : "bg-tg-secondary text-tg-hint",
                       ].join(" ")}
                     >
@@ -1839,7 +1839,7 @@ export function ActiveWorkout() {
             <p className="text-xs text-tg-hint">Частые ошибки: {currentExercise.common_mistakes}</p>
           ) : null}
 
-          <div className="space-y-2">
+          <div className="app-card-inset space-y-2 rounded-xl p-2">
             {currentSets.map((draft) => {
               const key = `${draft.exerciseId}:${draft.setNumber}`;
               const dur = draft.durationSec;
@@ -1853,7 +1853,7 @@ export function ActiveWorkout() {
                 <div
                   key={key}
                   className={[
-                    "flex items-center justify-between rounded-xl bg-tg-bg px-3 py-2 text-sm",
+                    "flex items-center justify-between rounded-xl px-3 py-2 text-sm",
                     draft.isCompleted ? "opacity-80" : "",
                     isFocus ? "ring-2 ring-tg-button/40" : "",
                   ].join(" ")}
@@ -1908,7 +1908,7 @@ export function ActiveWorkout() {
                             void completeSet(draft.exerciseId, draft.setNumber);
                           }}
                           className={[
-                            "tap-target-x rounded-lg bg-tg-button px-3 font-semibold text-tg-button-text disabled:opacity-50",
+                            "app-button app-gradient-action tap-target-x rounded-lg px-3 disabled:opacity-50",
                             isFocus ? "min-h-[52px] px-5 text-sm" : "min-h-[44px] py-2 text-xs",
                           ].join(" ")}
                         >
@@ -2016,7 +2016,7 @@ export function ActiveWorkout() {
                   setEditingSetNumber(null);
                   setAddSetOpen(true);
                 }}
-                className="flex-1 rounded-full bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+                className="app-button app-gradient-action flex-1 rounded-full"
               >
                 Добавить +
               </button>

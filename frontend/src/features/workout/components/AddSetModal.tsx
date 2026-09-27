@@ -116,7 +116,7 @@ export function AddSetModal({
         aria-modal="true"
         aria-labelledby="add-set-title"
         tabIndex={-1}
-        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101f32] p-4 text-white shadow-xl"
+        className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto border-white/10 bg-[#101f32] p-4 text-white"
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 id="add-set-title" className="text-base font-semibold">Добавить подход</h3>
@@ -172,7 +172,7 @@ export function AddSetModal({
                       step={field.step}
                       value={machineValues[field.key]}
                       onValueChange={(value) => setMachineValue(field.key, value)}
-                      className="mt-1 w-full rounded-lg bg-black/30 px-2 py-1.5 text-white"
+                      className="app-field mt-1 w-full bg-black/30 text-white"
                     />
                   </label>
                 ))}
@@ -201,7 +201,7 @@ export function AddSetModal({
               onChange={(e) => setNote(e.target.value)}
               placeholder="Добавить примечание (по желанию)"
               rows={2}
-              className="w-full rounded-xl bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/40"
+              className="app-field w-full bg-black/30 text-white placeholder:text-white/40"
             />
           )}
 
@@ -210,7 +210,7 @@ export function AddSetModal({
             <select
               value={restSec}
               onChange={(e) => setRestSec(Number(e.target.value))}
-              className="rounded-lg bg-black/40 px-2 py-1 text-white"
+              className="app-field bg-black/40 text-white"
             >
               {[30, 45, 60, 75, 90, 120, 150, 180].map((s) => (
                 <option key={s} value={s}>
@@ -246,7 +246,7 @@ export function AddSetModal({
 
         <button
           type="button"
-          className="mt-4 w-full rounded-full bg-white px-4 py-3 text-sm font-semibold text-black"
+          className="app-button app-gradient-action mt-4 w-full rounded-full"
           onClick={() =>
             onApply({
               reps:
