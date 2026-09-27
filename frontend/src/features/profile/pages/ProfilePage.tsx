@@ -1444,7 +1444,7 @@ setAuthEmail(p.auth_email ?? null);
                   key={p.id}
                   className={[
                     "app-card p-4",
-                    selected ? "app-card-plum ring-2 ring-[#e83d81]/60" : "app-card-inset",
+                    selected ? "app-brand-ring app-card-plum" : "app-card-inset",
                   ].join(" ")}
                 >
                   <div className="flex items-start justify-between gap-2">

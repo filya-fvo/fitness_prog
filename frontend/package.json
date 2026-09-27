@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:e2e": "node ./scripts/run-e2e.mjs",
     "check:bundle": "node ./scripts/check-bundle-budget.mjs",
+    "check:visual": "node ./scripts/check-visual-system.mjs",
     "audit:lighthouse": "node ./scripts/lighthouse-audit.mjs"
   },
   "dependencies": {

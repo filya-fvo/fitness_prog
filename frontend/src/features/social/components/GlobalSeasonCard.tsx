@@ -167,7 +167,7 @@ export function GlobalSeasonCard() {
           ) : (
             <ol className="mt-3 space-y-2" aria-label="Рейтинг сезона">
               {season.leaderboard.map((entry) => (
-                <li key={entry.alias} className={`flex items-center gap-3 rounded-xl p-3 ${entry.is_me ? "bg-[#e83d81]/10" : "bg-tg-bg"}`}>
+                <li key={entry.alias} className={`flex items-center gap-3 rounded-xl p-3 ${entry.is_me ? "app-brand-tint" : "bg-tg-bg"}`}>
                   <span className="w-7 text-sm font-semibold">{entry.rank}</span>
                   <span className="min-w-0 flex-1 truncate text-sm">{entry.alias}{entry.is_me ? " · Вы" : ""}</span>
                   <span className="text-sm font-semibold">{entry.score}%</span>

@@ -176,7 +176,7 @@ export function NutritionLabelCameraModal({ open, busy, onClose, onPhoto }: Prop
             </div>
           ) : null}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-            <div className="h-[72%] w-full rounded-xl border-2 border-[#e83d81]/80" />
+            <div className="app-brand-border h-[72%] w-full rounded-xl border-2" />
           </div>
         </div>
 

@@ -19,7 +19,7 @@ export function HomeNutritionSummary({ calories, target }: Props) {
       </div>
       {progress != null ? (
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/15">
-          <div className="h-full rounded-full bg-[linear-gradient(90deg,#FF6B24,#E83D81,#7C4DFF)]" style={{ width: `${Math.round(progress * 100)}%` }} />
+          <div className="app-brand-progress h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
       ) : null}
       <Link to="/nutrition" className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-tg-link">

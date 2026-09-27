@@ -41,7 +41,7 @@ export function DailyActivityCards({ day, waterTargetMl, onOpen }: Props) {
               <strong className="mt-1 block text-base leading-tight">{card.value}</strong>
               <span className="mt-2 block h-1 overflow-hidden rounded-full bg-black/15">
                 <span
-                  className="block h-full rounded-full bg-[linear-gradient(90deg,#FF6B24,#E83D81,#7C4DFF)]"
+                  className="app-brand-progress block h-full rounded-full"
                   style={{ width: `${Math.round((card.progress ?? 0) * 100)}%` }}
                 />
               </span>

@@ -358,7 +358,7 @@ export function BarcodeScannerModal({
             </div>
           ) : null}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-28 w-[78%] rounded-xl border-2 border-[#e83d81]/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
+            <div className="app-brand-border h-28 w-[78%] rounded-xl border-2 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
           </div>
         </div>
 

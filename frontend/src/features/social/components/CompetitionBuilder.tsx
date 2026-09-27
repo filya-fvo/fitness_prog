@@ -93,7 +93,7 @@ export function CompetitionBuilder({ friends, busy, onCreate }: Props) {
           {FACTORS.map((factor) => {
             const selected = metrics.includes(factor.metric);
             return (
-              <label key={factor.metric} className={`flex min-h-[68px] cursor-pointer gap-3 rounded-xl border p-3 ${selected ? "border-[#e83d81] bg-[#e83d81]/10" : "border-transparent bg-tg-bg"}`}>
+              <label key={factor.metric} className={`flex min-h-[68px] cursor-pointer gap-3 rounded-xl border p-3 ${selected ? "app-brand-border app-brand-tint" : "border-transparent bg-tg-bg"}`}>
                 <input type="checkbox" checked={selected} onChange={() => toggle(factor.metric)} className="mt-1 h-5 w-5" />
                 <span><span className="block text-sm font-medium">{factor.title}</span><span className="mt-1 block text-xs leading-relaxed text-tg-hint">{factor.hint}</span></span>
               </label>
