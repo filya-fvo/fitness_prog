@@ -1280,7 +1280,7 @@ setAuthEmail(p.auth_email ?? null);
                   <button
                     type="button"
                     onClick={() => applyRecommendedProgram()}
-                    className="rounded-lg bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text"
+                    className="app-button app-gradient-action text-xs"
                   >
                     Назначить рекомендуемую
                   </button>
@@ -1311,7 +1311,7 @@ setAuthEmail(p.auth_email ?? null);
               value={programSearch}
               onChange={(e) => setProgramSearch(e.target.value)}
               placeholder="Поиск программы"
-              className="mt-1 w-full rounded-xl border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              className="app-field mt-1 w-full"
             />
           </label>
 
@@ -1330,7 +1330,7 @@ setAuthEmail(p.auth_email ?? null);
                 className={[
                   "rounded-full px-3 py-1 text-xs",
                   programSexFilter === opt.id
-                    ? "bg-tg-button text-tg-button-text"
+                    ? "app-gradient-action text-white"
                     : "bg-tg-secondary",
                 ].join(" ")}
               >
@@ -1345,7 +1345,7 @@ setAuthEmail(p.auth_email ?? null);
               onClick={() => setProgramTypeFilter("")}
               className={[
                 "rounded-full px-3 py-1 text-xs",
-                !programTypeFilter ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                !programTypeFilter ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               Все типы
@@ -1358,7 +1358,7 @@ setAuthEmail(p.auth_email ?? null);
                 className={[
                   "rounded-full px-3 py-1 text-xs",
                   programTypeFilter === t
-                    ? "bg-tg-button text-tg-button-text"
+                    ? "app-gradient-action text-white"
                     : "bg-tg-secondary",
                 ].join(" ")}
               >
@@ -1383,7 +1383,7 @@ setAuthEmail(p.auth_email ?? null);
                 className={[
                   "rounded-full px-3 py-1 text-xs",
                   programLevelFilter === opt.id
-                    ? "bg-tg-button text-tg-button-text"
+                    ? "app-gradient-action text-white"
                     : "bg-tg-secondary",
                 ].join(" ")}
               >
@@ -1403,7 +1403,7 @@ setAuthEmail(p.auth_email ?? null);
               }}
               className={[
                 "w-full rounded-xl px-4 py-3 text-left text-sm",
-                !activeProgramId ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                !activeProgramId ? "app-gradient-action text-white" : "bg-tg-secondary",
               ].join(" ")}
             >
               Без фиксированной программы
@@ -1413,7 +1413,7 @@ setAuthEmail(p.auth_email ?? null);
                 type="button"
                 disabled={saving}
                 onClick={() => void saveProgramOnly()}
-                className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+                className="app-button app-gradient-action w-full disabled:opacity-60"
               >
                 {saving ? "Сохраняем…" : "Сохранить: без программы"}
               </button>
@@ -1443,8 +1443,8 @@ setAuthEmail(p.auth_email ?? null);
                 <article
                   key={p.id}
                   className={[
-                    "rounded-2xl p-4",
-                    selected ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
+                    "app-card p-4",
+                    selected ? "app-card-plum ring-2 ring-[#e83d81]/60" : "app-card-inset",
                   ].join(" ")}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -1460,7 +1460,7 @@ setAuthEmail(p.auth_email ?? null);
                             className={[
                               "rounded-full px-2 py-0.5 text-[10px] font-medium",
                               selected
-                                ? "bg-white/20 text-tg-button-text"
+                                ? "bg-tg-bg text-tg-text"
                                 : "bg-tg-button/15 text-tg-link",
                             ].join(" ")}
                           >
@@ -1496,7 +1496,7 @@ setAuthEmail(p.auth_email ?? null);
                       type="button"
                       className={[
                         "shrink-0 text-xs",
-                        selected ? "text-tg-button-text underline" : "text-tg-link",
+                        selected ? "text-tg-text underline" : "text-tg-link",
                       ].join(" ")}
                       onClick={() => setExpandedProgramId(open ? null : p.id)}
                     >
@@ -1614,8 +1614,8 @@ setAuthEmail(p.auth_email ?? null);
                         className={[
                           "mt-1 w-full rounded-lg px-3 py-2 text-xs font-semibold",
                           selected
-                            ? "bg-white/20 text-tg-button-text"
-                            : "bg-tg-button text-tg-button-text",
+                            ? "bg-tg-bg text-tg-text"
+                            : "app-gradient-action text-white",
                         ].join(" ")}
                       >
                         {selected ? "Выбрана" : "Выбрать программу"}
@@ -1717,7 +1717,7 @@ setAuthEmail(p.auth_email ?? null);
                       <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
-                          className="rounded-lg bg-tg-button px-2 py-2 text-xs text-tg-button-text"
+                          className="app-button app-gradient-action text-xs"
                           onClick={() => {
                             void markSupplementIntake(item.id, "taken")
                               .then(() => fetchTodaySupplementIntakes())
@@ -1785,7 +1785,7 @@ setAuthEmail(p.auth_email ?? null);
                 className={[
                   "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
                   supEnabled
-                    ? "bg-tg-button text-tg-button-text"
+                    ? "app-gradient-action text-white"
                     : "bg-tg-secondary text-tg-hint",
                 ].join(" ")}
               >
@@ -1814,7 +1814,7 @@ setAuthEmail(p.auth_email ?? null);
                 const meta = catalogByKey.get(item.key);
                 const open = detailKey === item.id;
                 return (
-                  <li key={item.id} className="rounded-2xl bg-tg-secondary p-3">
+                  <li key={item.id} className="app-card app-card-inset p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-sm font-medium">{item.name_ru}</p>
@@ -1883,7 +1883,7 @@ setAuthEmail(p.auth_email ?? null);
                                 prev.map((x) => (x.id === item.id ? { ...x, dose } : x)),
                               );
                             }}
-                            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5"
+                            className="app-field mt-1 w-full"
                           />
                         </label>
                         <div className="mt-2 space-y-2">
@@ -1926,7 +1926,7 @@ setAuthEmail(p.auth_email ?? null);
                                         }),
                                       );
                                     }}
-                                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                    className="app-field mt-1 w-full"
                                   >
                                     {SUPPLEMENT_SLOT_PRESETS.map((p) => (
                                       <option key={p.id} value={p.id}>
@@ -1960,7 +1960,7 @@ setAuthEmail(p.auth_email ?? null);
                                           }),
                                         );
                                       }}
-                                      className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                      className="app-field mt-1 w-full"
                                     />
                                   </label>
                                 ) : null}
@@ -1983,7 +1983,7 @@ setAuthEmail(p.auth_email ?? null);
                                         }),
                                       );
                                     }}
-                                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-secondary px-2 py-1.5 text-sm"
+                                    className="app-field mt-1 w-full"
                                   >
                                     <option value="every">Каждый день</option>
                                     <option value="workout">В день тренировки</option>
@@ -2045,7 +2045,7 @@ setAuthEmail(p.auth_email ?? null);
 
           <button
             type="button"
-            className="w-full rounded-xl bg-tg-button px-4 py-2 text-sm font-semibold text-tg-button-text"
+            className="app-button app-gradient-action w-full"
             onClick={() => {
               void persistStack(stack)
                 .then(() => setOk("Стек добавок сохранён"))
@@ -2060,7 +2060,7 @@ setAuthEmail(p.auth_email ?? null);
             <select
               value={pickerKey}
               onChange={(e) => setPickerKey(e.target.value)}
-              className="w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              className="app-field w-full"
             >
               {unusedCatalog.length === 0 ? (
                 <option value="">Все из каталога уже добавлены</option>
@@ -2085,7 +2085,7 @@ setAuthEmail(p.auth_email ?? null);
             <button
               type="button"
               disabled={!pickerKey || unusedCatalog.length === 0}
-              className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm text-tg-button-text disabled:opacity-50"
+              className="app-button app-gradient-action w-full disabled:opacity-50"
               onClick={() => {
                 void addSupplementFromCatalog(pickerKey)
                   .then(async (r) => {
@@ -2108,18 +2108,18 @@ setAuthEmail(p.auth_email ?? null);
               placeholder="Название"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
-              className="w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              className="app-field w-full"
             />
             <input
               placeholder="Доза, напр. 5 г"
               value={customDose}
               onChange={(e) => setCustomDose(e.target.value)}
-              className="w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+              className="app-field w-full"
             />
             <button
               type="button"
               disabled={!customName.trim()}
-              className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm text-tg-button-text disabled:opacity-50"
+              className="app-button app-gradient-action w-full disabled:opacity-50"
               onClick={() => {
                 void addCustomSupplement({
                   name_ru: customName.trim(),

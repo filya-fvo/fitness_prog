@@ -118,6 +118,7 @@ test("profile selection uses the brand accent in both themes", async ({ page }) 
     )).toContain("linear-gradient");
     await page.goto("/profile/settings?section=program");
     await expect(page.locator(".profile-page")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Без фиксированной программы" })).toHaveClass(/app-gradient-action/);
     const contrast = await new AxeBuilder({ page }).include(".profile-page").withRules(["color-contrast"]).analyze();
     expect(contrast.violations, JSON.stringify(contrast.violations, null, 2)).toEqual([]);
   }
