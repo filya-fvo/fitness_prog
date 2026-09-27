@@ -327,7 +327,7 @@ export function BarcodeScannerModal({
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
         tabIndex={-1}
-        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101f32] text-white shadow-xl"
+        className="app-card app-card-hero max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-white/10 bg-[#101f32] text-white"
       >
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
@@ -358,7 +358,7 @@ export function BarcodeScannerModal({
             </div>
           ) : null}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-28 w-[78%] rounded-xl border-2 border-emerald-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
+            <div className="h-28 w-[78%] rounded-xl border-2 border-[#e83d81]/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
           </div>
         </div>
 
@@ -379,13 +379,13 @@ export function BarcodeScannerModal({
                 onChange={(e) => setManual(e.target.value.replace(/[^\d]/g, "").slice(0, 14))}
                 inputMode="numeric"
                 placeholder="4601234567890"
-                className="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white"
+                className="app-field min-w-0 w-full border-white/15 bg-white/10 text-white"
               />
               <button
                 type="button"
                 disabled={manual.replace(/\D/g, "").length < 8}
                 onClick={() => onDetected(manual.replace(/\D/g, ""))}
-                className="shrink-0 rounded-lg bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+                className="app-button app-gradient-action shrink-0 disabled:opacity-50"
               >
                 Найти
               </button>

@@ -22,7 +22,7 @@ export function MealNutritionSummary({
   return (
     <dl
       aria-label={`Итого за приём пищи «${mealLabel}»`}
-      className="mt-2 grid grid-cols-4 gap-1 rounded-xl bg-tg-bg/60 px-2 py-2.5 text-center"
+      className="app-card app-card-inset mt-2 grid grid-cols-4 gap-1 px-2 py-2.5 text-center"
     >
       <div>
         <dt className="text-[10px] text-tg-hint">Ккал</dt>

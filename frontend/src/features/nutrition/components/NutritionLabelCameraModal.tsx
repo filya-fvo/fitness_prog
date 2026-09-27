@@ -143,7 +143,7 @@ export function NutritionLabelCameraModal({ open, busy, onClose, onPhoto }: Prop
         aria-modal="true"
         aria-labelledby="nutrition-label-camera-title"
         tabIndex={-1}
-        className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#101f32] text-white shadow-xl"
+        className="app-card app-card-hero max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto border-white/10 bg-[#101f32] text-white"
       >
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
           <div>
@@ -176,7 +176,7 @@ export function NutritionLabelCameraModal({ open, busy, onClose, onPhoto }: Prop
             </div>
           ) : null}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-            <div className="h-[72%] w-full rounded-xl border-2 border-emerald-400/80" />
+            <div className="h-[72%] w-full rounded-xl border-2 border-[#e83d81]/80" />
           </div>
         </div>
 
@@ -186,7 +186,7 @@ export function NutritionLabelCameraModal({ open, busy, onClose, onPhoto }: Prop
             type="button"
             disabled={!ready || busy}
             onClick={() => void takePhoto()}
-            className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+            className="app-button app-gradient-action w-full disabled:opacity-50"
           >
             {busy ? "Распознаём…" : "Сфотографировать"}
           </button>

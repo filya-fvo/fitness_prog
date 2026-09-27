@@ -92,10 +92,15 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
   await expect(page.getByRole("button", { name: /Снять этикетку/ })).toHaveCount(0);
   await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
-  await page.getByRole("dialog", { name: "Сканер штрихкода" }).getByRole("button", { name: "Этикетка" }).click();
+  const scannerDialog = page.getByRole("dialog", { name: "Сканер штрихкода" });
+  await expect(scannerDialog).toHaveClass(/app-card-hero/);
+  await expect(scannerDialog.getByLabel("Код вручную (если камера не считывает)")).toHaveClass(/app-field/);
+  await scannerDialog.getByRole("button", { name: "Этикетка" }).click();
 
   const cameraDialog = page.getByRole("dialog", { name: "Фото этикетки" });
   await expect(cameraDialog).toBeVisible();
+  await expect(cameraDialog).toHaveClass(/app-card-hero/);
+  await expect(cameraDialog.getByRole("button", { name: "Сфотографировать" })).toHaveClass(/app-gradient-action/);
   const cameraBox = await cameraDialog.boundingBox();
   expect(cameraBox).not.toBeNull();
   expect(cameraBox!.y).toBeGreaterThanOrEqual(0);
