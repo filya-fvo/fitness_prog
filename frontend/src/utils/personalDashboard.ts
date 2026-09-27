@@ -66,6 +66,9 @@ export type DashboardGuidance = {
 
 function workoutComparison(data: ProgressDashboard | null): string {
   if (!data) return "Сравнение появится после загрузки данных.";
+  if (data.current.completed_workouts === 0 && data.previous.completed_workouts === 0) {
+    return "Завершённых тренировок пока нет.";
+  }
   const delta = data.current.completed_workouts - data.previous.completed_workouts;
   if (delta === 0) return "Столько же завершённых тренировок, сколько в прошлом периоде.";
   return `${Math.abs(delta)} ${delta > 0 ? "больше" : "меньше"} завершённых тренировок, чем в прошлом периоде.`;

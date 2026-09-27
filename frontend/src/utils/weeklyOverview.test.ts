@@ -54,6 +54,21 @@ describe("buildWeeklyWorkoutOverview", () => {
     expect(o.days[0].weekdayShort).toBe("пн");
     expect(o.totalVolume).toBeGreaterThan(0);
   });
+
+  it("excludes cancelled workouts and unfinished sets from weekly load", () => {
+    const today = new Date(2026, 7, 5, 12, 0, 0);
+    const completed = w({ id: "done", completed_at: "2026-08-05T10:00:00" });
+    completed.sets.push({ ...completed.sets[0], id: "unfinished", is_completed: false, weight: 200 });
+    const cancelled = w({ id: "cancelled", completed_at: "2026-08-05T11:00:00" });
+    cancelled.status = "skipped";
+
+    const overview = buildWeeklyWorkoutOverview([completed, cancelled], today);
+    expect(overview.completedWorkouts).toBe(1);
+    expect(overview.totalSets).toBe(1);
+    expect(overview.totalVolume).toBe(500);
+    expect(overview.vsPrevWeek.prevWorkouts).toBe(0);
+    expect(overview.vsPrevWeek.volumeDelta).toBe(500);
+  });
 });
 
 describe("formatWeekDelta", () => {

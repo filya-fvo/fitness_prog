@@ -71,6 +71,27 @@ def test_weekly_rows_include_empty_weeks_and_keep_partial_period() -> None:
     assert result[2]["volume_kg"] == Decimal("0.0")
 
 
+def test_adjacent_periods_count_boundary_day_once() -> None:
+    workouts = [
+        {"date": date(2026, 8, 31), "completed_workouts": 1, "rpe_sum": 7, "rpe_workouts": 1},
+        {"date": date(2026, 9, 1), "completed_workouts": 2, "rpe_sum": 16, "rpe_workouts": 2},
+    ]
+    sets = [
+        {"date": date(2026, 8, 31), "completed_sets": 3, "volume_kg": 300},
+        {"date": date(2026, 9, 1), "completed_sets": 5, "volume_kg": 500},
+    ]
+    planned = [
+        {"date": date(2026, 8, 31), "planned_sets": 4},
+        {"date": date(2026, 9, 1), "planned_sets": 6},
+    ]
+
+    previous = progress_dashboard._summary(workouts, sets, planned, start=date(2026, 8, 4), end=date(2026, 8, 31))
+    current = progress_dashboard._summary(workouts, sets, planned, start=date(2026, 9, 1), end=date(2026, 9, 28))
+
+    assert (previous["completed_workouts"], previous["completed_sets"], previous["volume_kg"]) == (1, 3, Decimal("300.0"))
+    assert (current["completed_workouts"], current["completed_sets"], current["volume_kg"]) == (2, 5, Decimal("500.0"))
+
+
 def test_dashboard_queries_are_user_scoped_bounded_and_ignore_unfinished_sets() -> None:
     user_id = uuid.uuid4()
     kwargs = {"user_id": user_id, "start": date(2026, 6, 1), "end": date(2026, 9, 1)}
@@ -85,8 +106,18 @@ def test_dashboard_queries_are_user_scoped_bounded_and_ignore_unfinished_sets() 
         assert "workouts.scheduled_date >=" in sql
         assert "workouts.scheduled_date <=" in sql
         assert "workouts.status" in sql
+        assert "workouts.is_deleted" in sql
+    for statement in (
+        progress_dashboard._daily_workout_statement(**kwargs),
+        progress_dashboard._daily_set_statement(**kwargs),
+        progress_dashboard._muscle_group_statement(**kwargs),
+        progress_dashboard._daily_planned_set_statement(**kwargs),
+    ):
+        assert "completed" in statement.compile(dialect=dialect).params.values()
     assert "workout_sets.is_completed" in set_sql
     assert "workout_sets.is_completed" in muscle_sql
+    # Archiving an exercise must not erase historical sets from muscle totals.
+    assert "exercises.is_deleted" not in muscle_sql
     assert "LIMIT" in muscle_sql
     assert "jsonb_array_elements" in planned_sql
 

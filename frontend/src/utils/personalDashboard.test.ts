@@ -53,4 +53,15 @@ describe("personal dashboard", () => {
     expect(guidance.comparisonLabel).toBe("Изменение за 4 недели");
     expect(guidance.comparison).toContain("1 больше");
   });
+
+  it("does not claim unchanged progress when both periods have no workouts", () => {
+    const guidance = dashboardGuidance({
+      goal: "maintain",
+      dashboard: dashboard(0, 0),
+      regularity: null,
+      nutritionDays: 0,
+      wellnessDays: 0,
+    });
+    expect(guidance.comparison).toBe("Завершённых тренировок пока нет.");
+  });
 });

@@ -15,4 +15,12 @@ describe("buildWellnessChart", () => {
     expect(chart.connections[0]?.crossesMissingDays).toBe(true);
     expect(chart.connections[1]?.crossesMissingDays).toBe(false);
   });
+
+  it("keeps missing series empty while preserving a recorded zero", () => {
+    const missing = buildWellnessChart([null, undefined, Number.NaN], (index) => index, (value) => value);
+    expect(missing).toEqual({ points: [], connections: [] });
+
+    const recordedZero = buildWellnessChart([null, 0], (index) => index, (value) => value);
+    expect(recordedZero.points).toEqual([{ index: 1, x: 1, y: 0, value: 0 }]);
+  });
 });

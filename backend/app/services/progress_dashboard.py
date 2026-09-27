@@ -127,7 +127,6 @@ def _muscle_group_statement(*, user_id: uuid.UUID, start: date, end: date):
             Workout.scheduled_date <= end,
             WorkoutSet.is_completed.is_(True),
             WorkoutSet.is_deleted.is_(False),
-            Exercise.is_deleted.is_(False),
         )
         .group_by(Exercise.muscle_group)
         .order_by(func.count(WorkoutSet.id).desc(), Exercise.muscle_group.asc())
