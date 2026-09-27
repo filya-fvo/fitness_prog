@@ -36,8 +36,8 @@ export function MuscleGroupFilter({ groups, value, onChange }: MuscleGroupFilter
                   : "app-card-ocean text-tg-hint",
               ].join(" ")}
             >
-              <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-inset)] text-[var(--app-brand-mid)]">
-                <MuscleGroupIcon group={group} className="h-8 w-8" />
+              <span aria-hidden="true" className="grid h-14 w-14 place-items-center text-[var(--app-brand-mid)]">
+                <MuscleGroupIcon group={group} className="h-12 w-10" />
               </span>
               <span className="w-full truncate">{label}</span>
             </button>

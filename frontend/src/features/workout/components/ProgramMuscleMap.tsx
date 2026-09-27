@@ -15,7 +15,7 @@ export function ProgramMuscleMap({ muscles }: Props) {
       <ul className="mt-2 flex flex-wrap gap-2" aria-label="Группы мышц программы">
         {muscles.slice(0, 5).map((muscle) => (
           <li key={muscle.group} className="app-chip flex items-center gap-1.5 px-2 py-1.5 text-xs">
-            <MuscleGroupIcon group={muscle.group} className="h-5 w-5 text-[var(--app-brand-mid)]" />
+            <MuscleGroupIcon group={muscle.group} className="h-8 w-6 text-[var(--app-brand-mid)]" />
             <span>{enumLabel(muscle.group)}</span>
             <span className="text-tg-hint">{muscle.exerciseCount}</span>
           </li>

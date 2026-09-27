@@ -1,33 +1,77 @@
-import { normalizeMuscleGroup } from "@/utils/muscleGroups";
+import type { ReactNode } from "react";
+
+import { normalizeMuscleGroup, type MuscleGroupKey } from "@/utils/muscleGroups";
 
 type Props = { group: string | null | undefined; side?: "front" | "back"; className?: string };
 
-const frontPaths = {
+const rearGroups = new Set<MuscleGroupKey>(["back", "glutes", "triceps"]);
+
+const muscleRegions: Record<MuscleGroupKey, ReactNode> = {
   legs: <>
-    <path d="M10 17 8 29h6l2-12m2 0 2 12h6l-2-12M10 29h4m6 0h4" />
-    <path d="m10.5 18 4.1.2-1 6.2-4.6-.3z" fill="currentColor" stroke="none" opacity=".9" />
-    <path d="m17.4 18.2 4.1-.2 1.5 6.1-4.6.3z" fill="currentColor" stroke="none" opacity=".9" />
+    <path d="M23 57c2 1 5 1 7 0l-1 12-3 10-6-1 1-10z" fill="currentColor" />
+    <path d="M34 57c2 1 5 1 7 0l2 11 1 10-6 1-3-10z" fill="currentColor" />
   </>,
-  glutes: <path d="M10 17c0 5 12 5 12 0" />, shoulders: <path d="M7 10c2-3 8-3 10 0m0 0c3-3 7-1 8 2" />,
-  chest: <path d="M9 12c2-2 4-2 7 1 3-3 5-3 7-1M9 12v4m14-4v4" />,
-  biceps: <path d="M8 12c-2 4 1 6 4 5m12-5c2 4-1 6-4 5" />,
-  triceps: <path d="M9 13c-2 3-1 5 2 6m10-6c2 3 1 5-2 6" />,
-  abs: <path d="M13 12h6m-6 4h6m-6 4h6M16 10v11" />,
-  cardio: <path d="m16 22-7-7c-3-4 3-8 7-3 4-5 10-1 7 3z" />,
-  core: <path d="M12 11c-1 5-1 9 0 12m8-12c1 5 1 9 0 12M12 17h8" />,
-  mobility: <path d="M8 22c5-7 11-7 16 0M9 14l3-3m3-1 1-4m3 5 3 3" />,
-  back: <path d="M10 12c2 2 10 2 12 0m-10 2 4 9 4-9" />,
-  neutral: <path d="M9 13h14M11 18h10M13 23h6" />,
+  back: <>
+    <path d="M20 26c3-2 7-3 11-3v28l-7-4-5-10z" fill="currentColor" />
+    <path d="M33 23c4 0 8 1 11 3l1 11-5 10-7 4z" fill="currentColor" />
+  </>,
+  glutes: <>
+    <path d="M22 49h9v10c-5 3-9 0-10-4z" fill="currentColor" />
+    <path d="M33 49h9l1 6c-1 4-5 7-10 4z" fill="currentColor" />
+  </>,
+  chest: <>
+    <path d="M20 26c4-2 8-2 11 0v12c-5 3-9 1-12-3z" fill="currentColor" />
+    <path d="M33 26c3-2 7-2 11 0l1 9c-3 4-7 6-12 3z" fill="currentColor" />
+  </>,
+  shoulders: <>
+    <path d="M17 25c-3 2-5 6-5 11l7 3 4-12z" fill="currentColor" />
+    <path d="M47 25c3 2 5 6 5 11l-7 3-4-12z" fill="currentColor" />
+  </>,
+  biceps: <>
+    <path d="M13 36l7 3-3 12-7-2z" fill="currentColor" />
+    <path d="M44 39l7-3 3 13-7 2z" fill="currentColor" />
+  </>,
+  triceps: <>
+    <path d="M13 33l7 2-3 15-7-2z" fill="currentColor" />
+    <path d="M44 35l7-2 3 15-7 2z" fill="currentColor" />
+  </>,
+  abs: <>
+    <path d="M26 38h5v6h-6zm7 0h5l1 6h-6zm-8 8h6v6h-7zm8 0h6l1 6h-7z" fill="currentColor" />
+  </>,
+  core: <>
+    <path d="M24 38h7v16h-9zm9 0h7l2 16h-9z" fill="currentColor" />
+  </>,
+  cardio: <>
+    <path d="M32 41c-9-10-17 2 0 14 17-12 9-24 0-14z" fill="currentColor" />
+    <path d="m23 47 5 1 3-5 3 9 3-5h4" fill="none" stroke="#fff" strokeWidth="1.6" />
+  </>,
+  mobility: <>
+    <circle cx="18" cy="34" r="4" fill="currentColor" />
+    <circle cx="46" cy="34" r="4" fill="currentColor" />
+    <circle cx="23" cy="58" r="4" fill="currentColor" />
+    <circle cx="41" cy="58" r="4" fill="currentColor" />
+  </>,
+  neutral: null,
 };
 
-export function MuscleGroupIcon({ group, side = "front", className = "" }: Props) {
-  const normalized = normalizeMuscleGroup(group);
-  const highlighted = normalized === "back" && side === "back" ? frontPaths.back : frontPaths[normalized];
+export function MuscleGroupIcon({ group, side, className = "" }: Props) {
+  const muscle = normalizeMuscleGroup(group);
+  const view = side ?? (rearGroups.has(muscle) ? "back" : "front");
+
   return (
-    <svg viewBox="0 0 32 32" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="16" cy="5.5" r="3" />
-      <path d="M10 10c2-1 10-1 12 0l2 7-3 2-2-5v10h-6V14l-2 5-3-2z" opacity=".45" />
-      {highlighted}
+    <svg viewBox="0 0 64 96" className={className} data-muscle={muscle} data-view={view} aria-hidden="true">
+      <g fill="#8196b5" stroke="#adc1dc" strokeWidth="0.8" strokeLinejoin="round">
+        <path d="M26 3c4-3 8-3 12 0 3 3 4 8 2 13-2 4-5 6-8 6s-6-2-8-6c-2-5-1-10 2-13z" />
+        <path d="M25 20c-5 1-9 3-11 7l5 12 2 16c3 2 7 3 11 3s8-1 11-3l2-16 5-12c-2-4-6-6-11-7l-3 5h-8z" />
+        <path d="M14 27c-3 1-4 4-5 8L5 52c-1 4 0 8 3 9l5-1 7-21-1-9z" />
+        <path d="M50 27c3 1 4 4 5 8l4 17c1 4 0 8-3 9l-5-1-7-21 1-9z" />
+        <path d="M22 55c-2 5-2 10-2 15l-3 20c2 3 7 4 11 2l4-24V57z" />
+        <path d="M42 55c2 5 2 10 2 15l3 20c-2 3-7 4-11 2l-4-24V57z" />
+      </g>
+      <g fill="none" stroke="#c8d7e9" strokeWidth="0.8" opacity=".75">
+        <path d="M32 26v29M22 38c4 3 7 3 10 1 3 2 6 2 10-1M24 47c3 2 5 2 8 1 3 1 5 1 8-1" />
+      </g>
+      <g opacity=".96">{muscleRegions[muscle]}</g>
     </svg>
   );
 }
