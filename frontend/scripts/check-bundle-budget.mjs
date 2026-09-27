@@ -89,8 +89,10 @@ const limits = {
   // vendor or eager shell chunk grows.
   // Program focus maps add 0.75 KB gzip to the existing lazy programs route;
   // its exercise catalog and all interaction flows remain unchanged.
-  totalJsGzip: 526_500,
-  productJsGzip: 473_000,
+  // Name-based seed exercise resolution and the expandable full-body program
+  // map add about 0.3 KB gzip to lazy program and exercise chunks.
+  totalJsGzip: 526_900,
+  productJsGzip: 473_400,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

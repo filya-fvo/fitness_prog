@@ -13,9 +13,10 @@ type Props = {
   badge?: string;
   reasons: string[];
   mismatches: ProgramMismatch[];
+  expanded?: boolean;
 };
 
-export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mismatches }: Props) {
+export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mismatches, expanded = false }: Props) {
   const duration = programDurationLabel(program);
   const days = programDays(program);
   const equipment = programEquipment(program);
@@ -23,7 +24,7 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
 
   return (
     <>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 pr-16">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="program-card-title">{programDayLabel(program.name)}</h2>
@@ -38,7 +39,16 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
         </div>
       </div>
       {program.description ? <p className="program-card-description">{program.description}</p> : null}
-      {muscles.length ? <ProgramMuscleMap muscles={muscles} /> : null}
+      {muscles.length ? (
+        expanded ? (
+          <>
+            <div className="program-focus-hero mt-3" aria-hidden="true" />
+            <ProgramMuscleMap muscles={muscles} />
+          </>
+        ) : (
+          <p className="mt-2 text-xs text-tg-hint">Мышцы: {muscles.slice(0, 4).map(({ group }) => enumLabel(group)).join(" · ")}</p>
+        )
+      ) : null}
       {equipment.length ? <p className="mt-2 text-[11px] text-tg-hint">Инвентарь: {equipment.map((item) => enumLabel(item)).join(" · ")}</p> : null}
       {reasons.length ? <p className="mt-2 text-[11px] text-tg-link">Почему: {reasons.join(" · ")}</p> : null}
       {mismatches.length ? (

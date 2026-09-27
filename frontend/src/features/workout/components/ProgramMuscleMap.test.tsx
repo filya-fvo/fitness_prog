@@ -6,9 +6,12 @@ import { ProgramMuscleMap } from "./ProgramMuscleMap";
 
 it("uses the shared inset surface and readable group chips", () => {
   const markup = renderToStaticMarkup(createElement(ProgramMuscleMap, {
-    muscles: [{ group: "legs", exerciseCount: 4 }],
+    muscles: [{ group: "legs", exerciseCount: 4 }, { group: "back", exerciseCount: 2 }],
   }));
   expect(markup).toContain("app-card-inset");
   expect(markup).toContain("app-chip");
   expect(markup).toContain("Ноги");
+  expect(markup).toContain("Спереди");
+  expect(markup).toContain("Сзади");
+  expect(markup.match(/<svg/g)).toHaveLength(2);
 });

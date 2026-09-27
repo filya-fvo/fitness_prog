@@ -5,8 +5,7 @@ const USER_ID = "82222222-2222-4222-8222-222222222222";
 const PROGRAM_ID = "83333333-3333-4333-8333-333333333333";
 const WORKOUT_ID = "84444444-4444-4444-8444-444444444444";
 
-async function mockHome(page: Page, sex: "female" | "male") {
-  const today = new Date().toISOString().slice(0, 10);
+async function mockHome(page: Page, sex: "female" | "male", today = new Date().toISOString().slice(0, 10)) {
   const startPayloads: Array<Record<string, unknown>> = [];
   const profile = {
     id: USER_ID,
@@ -209,7 +208,10 @@ for (const entry of [
   { path: "/programs", buttonName: /Начать сегодня/ },
 ]) {
   test(`readiness also guards the ${entry.path} program entry point`, async ({ page }) => {
-    const startPayloads = await mockHome(page, "female");
+    if (entry.path === "/programs") {
+      await page.clock.install({ time: new Date("2026-09-24T10:00:00+03:00") });
+    }
+    const startPayloads = await mockHome(page, "female", entry.path === "/programs" ? "2026-09-24" : undefined);
     await page.goto(entry.path);
 
     if (entry.path === "/programs") {

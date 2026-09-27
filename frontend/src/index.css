@@ -59,7 +59,7 @@
   --app-brand-start: #d94c20;
   --app-brand-mid: #b63070;
   --app-brand-end: #6040c7;
-  --app-info: #007c9b;
+  --app-info: #006783;
   --app-success: #087a54;
   --app-warning: #855b00;
   --app-danger: #b4233d;
@@ -823,6 +823,15 @@ body {
   color: color-mix(in srgb, var(--app-hint) 78%, var(--app-text));
   font-size: 0.875rem;
   line-height: 1.55;
+}
+
+.program-focus-hero {
+  height: 8rem;
+  border: 1px solid color-mix(in srgb, var(--app-brand-mid) 35%, transparent);
+  border-radius: 1rem;
+  background:
+    linear-gradient(90deg, rgba(7, 17, 31, 0.2), rgba(7, 17, 31, 0.05)),
+    url("/app-media/program-training-hero.png") center / cover;
 }
 
 .program-card-details {

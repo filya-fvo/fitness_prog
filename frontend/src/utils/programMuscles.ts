@@ -20,6 +20,10 @@ const GROUP_ORDER: ReadonlyArray<ProgramMuscle["group"]> = [
   "mobility",
 ];
 
+export function normalizeExerciseName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function exerciseIds(program: Pick<Program, "structure">): Set<string> {
   const rawDays = program.structure.schedule ?? program.structure.days;
   const days = Array.isArray(rawDays) ? rawDays : [];
@@ -36,7 +40,8 @@ function exerciseIds(program: Pick<Program, "structure">): Set<string> {
     for (const rawExercise of exercises) {
       if (!rawExercise || typeof rawExercise !== "object") continue;
       const item = rawExercise as Record<string, unknown>;
-      const id = item.exercise_id ?? item.id;
+      const name = typeof item.exercise_name === "string" ? item.exercise_name : null;
+      const id = item.exercise_id ?? item.id ?? (name ? `name:${normalizeExerciseName(name)}` : null);
       if (id != null && String(id).trim()) ids.add(String(id));
     }
   }
@@ -45,12 +50,18 @@ function exerciseIds(program: Pick<Program, "structure">): Set<string> {
 
 export function programMuscles(
   program: Pick<Program, "structure">,
-  exerciseById: ReadonlyMap<string, Pick<Exercise, "muscle_group">>,
+  exerciseById: ReadonlyMap<string, Pick<Exercise, "muscle_group" | "name_ru">>,
 ): ProgramMuscle[] {
   const counts = new Map<ProgramMuscle["group"], number>();
+  const byName = new Map<string, Pick<Exercise, "muscle_group" | "name_ru">>();
+  for (const exercise of exerciseById.values()) {
+    byName.set(normalizeExerciseName(exercise.name_ru), exercise);
+  }
+  const seen = new Set<Pick<Exercise, "muscle_group" | "name_ru">>();
   for (const id of exerciseIds(program)) {
-    const exercise = exerciseById.get(id);
-    if (!exercise) continue;
+    const exercise = id.startsWith("name:") ? byName.get(id.slice(5)) : exerciseById.get(id);
+    if (!exercise || seen.has(exercise)) continue;
+    seen.add(exercise);
     const group = normalizeMuscleGroup(exercise.muscle_group);
     if (group === "neutral") continue;
     counts.set(group, (counts.get(group) ?? 0) + 1);

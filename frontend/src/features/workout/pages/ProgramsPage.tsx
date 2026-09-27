@@ -32,6 +32,7 @@ import { isOnline } from "@/utils/network";
 import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { programDurationLabel } from "@/utils/programDuration";
+import { normalizeExerciseName as normalizeName } from "@/utils/programMuscles";
 import { toUserMessage } from "@/utils/errors";
 import { cycleTrainingEnabledForProfile } from "@/utils/cycleTraining";
 import {
@@ -186,10 +187,6 @@ function dayExerciseRows(day: Record<string, unknown>): DayExerciseRow[] {
     exerciseId: id != null ? String(id) : undefined,
     name: `Упражнение ${idx + 1}`,
   }));
-}
-
-function normalizeName(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function resolveExerciseFromCatalog(
@@ -493,15 +490,16 @@ export function ProgramsPage() {
     const duration = programDurationLabel(program);
 
     return (
-      <article key={`${badge || "all"}-${program.id}`} className="program-card">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
+      <article key={`${badge || "all"}-${program.id}`} className="program-card relative">
+        <div>
+          <div className="min-w-0">
             <ProgramOverviewCard
               program={program}
               exerciseById={exerciseById}
               badge={badge}
               reasons={reasons}
               mismatches={mismatches}
+              expanded={open}
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {programLimitations(program).includes("no_knee") ? <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-700">без колен</span> : null}
@@ -510,14 +508,14 @@ export function ProgramsPage() {
               {userJointLimits.length > 0 && limitationConflict(program, userJointLimits) ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-800">не под ограничение</span> : null}
             </div>
           </div>
-          <button
-            type="button"
-            className="program-card-details"
-            onClick={() => setExpandedId(open ? null : program.id)}
-          >
-            {open ? "Скрыть" : "Детали"}
-          </button>
         </div>
+        <button
+          type="button"
+          className="program-card-details absolute right-4 top-4"
+          onClick={() => setExpandedId(open ? null : program.id)}
+        >
+          {open ? "Скрыть" : "Детали"}
+        </button>
         {open ? (
           <div className="mt-3 space-y-2 rounded-xl bg-tg-bg p-3">
             {schedule.length === 0 ? (

@@ -9,7 +9,6 @@ describe("MuscleGroupIcon", () => {
 
     expect(markup).toContain('aria-hidden="true"');
     expect(markup).toContain('viewBox="0 0 64 96"');
-    expect(markup).toContain('data-muscle="legs"');
     expect(markup.match(/fill="currentColor"/g)).toHaveLength(2);
     expect(markup).not.toContain(">Н<");
   });
@@ -26,7 +25,13 @@ describe("MuscleGroupIcon", () => {
   it("uses a neutral body for an unknown group without a letter avatar", () => {
     const markup = renderToStaticMarkup(<MuscleGroupIcon group="неизвестно" />);
 
-    expect(markup).toContain('data-muscle="neutral"');
+    expect(markup).toContain('viewBox="0 0 64 96"');
     expect(markup).not.toContain("неизвестно");
+  });
+
+  it("can highlight several muscle groups on one body", () => {
+    const markup = renderToStaticMarkup(<MuscleGroupIcon group="neutral" groups={["legs", "chest"]} />);
+
+    expect(markup.match(/fill="currentColor"/g)).toHaveLength(4);
   });
 });

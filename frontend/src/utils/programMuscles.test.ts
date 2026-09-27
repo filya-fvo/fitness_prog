@@ -71,4 +71,20 @@ describe("programMuscles", () => {
       { group: "chest", exerciseCount: 1 },
     ]);
   });
+
+  it("resolves seed programs that reference exercises by name", () => {
+    const source = program({
+      schedule: [
+        { exercises: [{ exercise_name: "Жим гантелей лёжа" }, { exercise_name: "Тяга гантели" }] },
+        { exercises: [{ exercise_name: "Жим гантелей лёжа" }, { exercise_name: "Неизвестное упражнение" }] },
+      ],
+    });
+    const press = { ...exercise("press", "грудь"), name_ru: "Жим гантелей лёжа" };
+    const row = { ...exercise("row", "спина"), name_ru: "Тяга гантели" };
+
+    expect(programMuscles(source, new Map([[press.id, press], [row.id, row]]))).toEqual([
+      { group: "back", exerciseCount: 1 },
+      { group: "chest", exerciseCount: 1 },
+    ]);
+  });
 });
