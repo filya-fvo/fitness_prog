@@ -1,9 +1,9 @@
 import { useState } from "react";
 
-import { resolveApiAssetUrl } from "@/api/client";
 import { MuscleGroupIcon } from "@/features/workout/components/MuscleGroupIcon";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import type { Exercise } from "@/types/workout";
+import { exerciseThumbnailUrl } from "@/utils/exerciseMedia";
 
 type ExerciseMediaTab = "photo" | "animation" | "video";
 
@@ -13,7 +13,7 @@ const tabs: Array<{ id: ExerciseMediaTab; label: string }> = [
 
 export function ExerciseMediaTabs({ exercise }: { exercise: Exercise }) {
   const [tab, setTab] = useState<ExerciseMediaTab>("photo");
-  const photo = exercise.thumbnail_url ? resolveApiAssetUrl(exercise.thumbnail_url) : null;
+  const photo = exerciseThumbnailUrl(exercise);
   return (
     <section aria-label="Материалы упражнения">
       <div className="app-card-inset mb-3 grid grid-cols-3 gap-1 p-1" role="tablist" aria-label="Материалы">
