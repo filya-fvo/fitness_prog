@@ -94,18 +94,18 @@ export function SocialPage() {
 
   return (
     <section>
-      <Header title="Друзья и соревнования" subtitle="Честный прогресс относительно своего старта" fallbackTo="/more" />
+      <Header title="Друзья и соревнования" subtitle="Честный прогресс относительно своего старта" fallbackTo="/profile" />
 
-      <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm leading-relaxed text-tg-hint">
+      <div className="app-card app-card-ocean mb-4 p-4 text-sm leading-relaxed text-tg-hint">
         Вы сами выбираете срок и до четырёх факторов. Система сравнивает проценты прогресса от личной исходной точки; абсолютный вес и обхваты другу не показываются.
       </div>
       <GlobalSeasonCard />
-      {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
+      {notice ? <div role="status" className="app-card app-card-success mb-4 p-4 text-sm">{notice}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-4 p-4 text-sm">{error}</div> : null}
 
-      {loading ? <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Загружаем друзей и соревнования…</div> : (
+      {loading ? <div className="app-card p-4 text-sm text-tg-hint">Загружаем друзей и соревнования…</div> : (
         <>
-          <div className="mb-4 rounded-2xl bg-tg-secondary p-4">
+          <div className="app-card app-card-indigo mb-4 p-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">Друзья</h2>
               <Link to="/invite" className="min-h-11 content-center text-sm font-medium text-tg-link">Пригласить</Link>
@@ -146,7 +146,7 @@ export function SocialPage() {
             )}
           /> : null}
 
-          <div className="rounded-2xl bg-tg-secondary p-4">
+          <div className="app-card app-card-plum p-4">
             <h2 className="font-semibold">Соревнования</h2>
             {competitions.length === 0 ? <p className="mt-2 text-sm text-tg-hint">Активных и завершённых соревнований пока нет.</p> : (
               <div className="mt-3 space-y-3">

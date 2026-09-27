@@ -173,15 +173,15 @@ export function InvitePage() {
 
   return (
     <section>
-      <Header title="Пригласить друга" subtitle="Тренироваться вместе интереснее" fallbackTo="/more" />
+      <Header title="Пригласить друга" subtitle="Тренироваться вместе интереснее" fallbackTo="/profile" />
 
-      {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
+      {notice ? <div role="status" className="app-card app-card-success mb-4 p-4 text-sm">{notice}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-4 p-4 text-sm">{error}</div> : null}
 
       {loadingPreview ? (
-        <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Проверяем приглашение…</div>
+        <div className="app-card mb-4 p-4 text-sm text-tg-hint">Проверяем приглашение…</div>
       ) : preview ? (
-        <div className="mb-4 rounded-2xl bg-tg-secondary p-4">
+        <div className="app-card app-card-plum mb-4 p-4">
           <h2 className="font-semibold">Вас приглашает {preview.inviter_label}</h2>
           <p className="mt-2 text-sm leading-relaxed text-tg-hint">
             {preview.mode === "social"
@@ -189,7 +189,7 @@ export function InvitePage() {
               : "После подтверждения мы сохраним источник приглашения. Дружба и соревнование для нового аккаунта не добавляются автоматически."}
           </p>
           <p className="mt-2 text-xs text-tg-hint">Действует до {formatExpiry(preview.expires_at)}</p>
-          <button type="button" onClick={() => void accept()} disabled={accepting || Boolean(accepted)} className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-55">
+          <button type="button" onClick={() => void accept()} disabled={accepting || Boolean(accepted)} className="app-button app-gradient-action mt-4 w-full disabled:opacity-55">
             {accepted ? "Приглашение принято" : accepting ? "Подтверждаем…" : preview.mode === "social" ? "Добавить друга и начать" : "Принять приглашение"}
           </button>
           {accepted?.mode === "social" ? <Link to="/social" className="mt-2 flex min-h-11 items-center justify-center rounded-xl bg-tg-bg px-4 text-sm font-medium text-tg-link">Открыть друзей и соревнования</Link> : null}
@@ -197,23 +197,23 @@ export function InvitePage() {
       ) : null}
 
       {!preview && !loadingPreview ? (
-        <form onSubmit={submitCode} className="mb-4 rounded-2xl bg-tg-secondary p-4">
+        <form onSubmit={submitCode} className="app-card app-card-indigo mb-4 p-4">
           <h2 className="font-semibold">Есть код приглашения?</h2>
           <label className="mt-3 block text-sm text-tg-hint">
             Код
-            <input value={manualCode} onChange={(event) => setManualCode(event.target.value.toUpperCase())} placeholder="ABCD-EFGH" autoCapitalize="characters" className="mt-1 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-base uppercase tracking-wider text-tg-text" />
+            <input value={manualCode} onChange={(event) => setManualCode(event.target.value.toUpperCase())} placeholder="ABCD-EFGH" autoCapitalize="characters" className="app-field mt-1 w-full uppercase tracking-wider" />
           </label>
           <button type="submit" disabled={manualCode.trim().length < 6} className="mt-3 min-h-11 w-full rounded-xl bg-tg-bg px-4 font-medium text-tg-link disabled:opacity-50">Проверить код</button>
         </form>
       ) : null}
 
-      <div className="rounded-2xl bg-tg-secondary p-4">
+      <div className="app-card app-card-ocean p-4">
         <h2 className="font-semibold">Моё приглашение</h2>
         <p className="mt-2 text-sm leading-relaxed text-tg-hint">
           Ссылка не содержит ваши данные и действует 14 дней. Для существующего пользователя подтверждение добавит вас в друзья и запустит соревнование на регулярность. Для нового пользователя сохранится только источник приглашения.
         </p>
         {!created ? (
-          <button type="button" onClick={() => void generate()} disabled={creating} className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-55">
+          <button type="button" onClick={() => void generate()} disabled={creating} className="app-button app-gradient-action mt-4 w-full disabled:opacity-55">
             {creating ? "Создаём…" : "Создать приглашение"}
           </button>
         ) : (
@@ -223,7 +223,7 @@ export function InvitePage() {
               <p className="mt-1 text-xl font-semibold tracking-[0.18em]">{created.code}</p>
               <p className="mt-1 text-xs text-tg-hint">Действует до {formatExpiry(created.expires_at)}</p>
             </div>
-            <button type="button" onClick={() => void share()} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text">Поделиться приглашением</button>
+            <button type="button" onClick={() => void share()} className="app-button app-gradient-action w-full">Поделиться приглашением</button>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => void copyCode()} className="min-h-11 rounded-xl bg-tg-bg px-3 text-sm text-tg-link">Скопировать код</button>
               <button type="button" onClick={() => void revoke()} className="min-h-11 rounded-xl bg-tg-bg px-3 text-sm text-red-500">Отозвать</button>

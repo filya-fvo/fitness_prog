@@ -63,11 +63,14 @@ test("user explicitly accepts a deep-link invite and can create a share code", a
 
   await page.goto(`/invite?token=${token}`);
   await expect(page.getByText("Вас приглашает @training_friend")).toBeVisible();
+  await expect(page.getByText("Вас приглашает @training_friend").locator("..")).toHaveClass(/app-card/);
+  await expect(page.getByRole("button", { name: "Принять приглашение" })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: "Принять приглашение" }).click();
   await expect(page.getByRole("status")).toContainText("Приглашение принято");
   expect(acceptedValue).toBe(token);
 
   await page.goto("/invite");
+  await expect(page.getByPlaceholder("ABCD-EFGH")).toHaveClass(/app-field/);
   await page.getByRole("button", { name: "Создать приглашение" }).click();
   await expect(page.getByText("ABCD-EFGH")).toBeVisible();
 
@@ -226,6 +229,7 @@ test("existing user explicitly starts a private regularity competition", async (
   await expect(page.getByRole("status")).toContainText("Соревнование началось");
   await page.getByRole("link", { name: "Открыть друзей и соревнования" }).click();
   await expect(page.getByRole("heading", { name: "Друзья и соревнования" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Участвовать в сезоне" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByText("Идёт сейчас")).toBeVisible();
   await page.getByRole("button", { name: "Участвовать в сезоне" }).click();
   await expect(page.getByText("Вы участвуете")).toBeVisible();
@@ -272,6 +276,9 @@ test("friend competition accepts a custom period and fair progress factors", asy
   });
 
   await page.goto("/social");
+  await expect(page.getByRole("region", { name: "Новое соревнование" })).toHaveClass(/app-card/);
+  await expect(page.getByLabel("Срок, дней")).toHaveClass(/app-field/);
+  await expect(page.getByRole("button", { name: "Предложить соревнование" })).toHaveClass(/app-gradient-action/);
   await page.getByLabel("Срок, дней").fill("180");
   await page.getByRole("checkbox", { name: /Снижение веса/ }).check();
   await page.getByRole("checkbox", { name: /Относительная сила/ }).check();

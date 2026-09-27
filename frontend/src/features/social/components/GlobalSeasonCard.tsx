@@ -102,14 +102,14 @@ export function GlobalSeasonCard() {
 
   if (loading) {
     return (
-      <div className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+      <div className="app-card mb-4 p-4 text-sm text-tg-hint">
         Загружаем общий сезон…
       </div>
     );
   }
 
   return (
-    <section className="mb-4 rounded-2xl bg-tg-secondary p-4" aria-labelledby="global-season-title">
+    <section className="app-card app-card-ember mb-4 p-4" aria-labelledby="global-season-title">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-tg-link">Общий сезон</p>
@@ -146,7 +146,7 @@ export function GlobalSeasonCard() {
               Срок входа в рейтинг прошёл. Можно вести личный результат, но место появится только в следующем сезоне.
             </p>
           ) : null}
-          <button type="button" disabled={busy} onClick={() => void join()} className="mt-3 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={busy} onClick={() => void join()} className="app-button app-gradient-action mt-3 w-full disabled:opacity-50">
             {busy ? "Присоединяем…" : "Участвовать в сезоне"}
           </button>
           <p className="mt-2 text-xs leading-relaxed text-tg-hint">
@@ -167,7 +167,7 @@ export function GlobalSeasonCard() {
           ) : (
             <ol className="mt-3 space-y-2" aria-label="Рейтинг сезона">
               {season.leaderboard.map((entry) => (
-                <li key={entry.alias} className={`flex items-center gap-3 rounded-xl p-3 ${entry.is_me ? "bg-tg-button/10" : "bg-tg-bg"}`}>
+                <li key={entry.alias} className={`flex items-center gap-3 rounded-xl p-3 ${entry.is_me ? "bg-[#e83d81]/10" : "bg-tg-bg"}`}>
                   <span className="w-7 text-sm font-semibold">{entry.rank}</span>
                   <span className="min-w-0 flex-1 truncate text-sm">{entry.alias}{entry.is_me ? " · Вы" : ""}</span>
                   <span className="text-sm font-semibold">{entry.score}%</span>

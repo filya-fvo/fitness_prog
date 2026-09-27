@@ -35,7 +35,7 @@ export function CompetitionCard({ competition, busy, onAccept, onLeave }: Props)
   const resultLabel = competition.winner === "me" ? "Вы впереди" : competition.winner === "friend" ? `${competition.friend_label} впереди` : competition.winner === "tie" ? "Пока ничья" : "Ждём данные";
 
   return (
-    <article className="rounded-xl bg-tg-bg p-3">
+    <article className="app-card app-card-inset p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate text-sm font-semibold">{competition.title || `С ${competition.friend_label}`}</h3>
@@ -79,7 +79,7 @@ export function CompetitionCard({ competition, busy, onAccept, onLeave }: Props)
         <p className="mt-3 text-sm text-tg-hint">{competition.created_by_me ? "Ждём согласия друга." : "Проверьте срок и факторы. Старт и фиксация исходных значений произойдут только после вашего согласия."}</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        {competition.can_accept ? <button type="button" disabled={busy} onClick={() => void onAccept()} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">Принять</button> : null}
+        {competition.can_accept ? <button type="button" disabled={busy} onClick={() => void onAccept()} className="app-button app-gradient-action disabled:opacity-50">Принять</button> : null}
         {competition.status === "pending" || competition.status === "active" ? <button type="button" disabled={busy} onClick={() => void onLeave()} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm text-red-500 disabled:opacity-50">{competition.status === "pending" ? "Отказаться" : "Выйти"}</button> : null}
       </div>
     </article>
