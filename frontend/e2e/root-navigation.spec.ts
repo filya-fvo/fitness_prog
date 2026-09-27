@@ -3,6 +3,14 @@ import { expect, test } from "@playwright/test";
 import { expectMinimumTouchTarget } from "./touch-targets";
 
 test.describe("five-section root navigation", () => {
+  test("names the exercise hub and program list as in the reference", async ({ page }) => {
+    await page.goto("/train");
+    await expect(page.getByRole("heading", { name: "Упражнения", exact: true })).toBeVisible();
+
+    await page.goto("/programs");
+    await expect(page.getByRole("heading", { name: "Программы тренировок", exact: true })).toBeVisible();
+  });
+
   test("uses the approved labels and preserves child-route ownership", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.goto("/");

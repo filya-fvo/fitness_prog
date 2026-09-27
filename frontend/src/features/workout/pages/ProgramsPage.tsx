@@ -684,7 +684,7 @@ export function ProgramsPage() {
 
   return (
     <section className="programs-page">
-      <Header title="Программы" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
+      <Header title="Программы тренировок" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {selectionNoticeText ? (
         <div role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">

@@ -1,5 +1,5 @@
 /**
- * Training hub — programs + custom workout (bottom nav «Тренировки»).
+ * Exercise hub — programs + custom workout (bottom nav «Упражнения»).
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -331,7 +331,7 @@ export function TrainHubPage() {
 
   return (
     <section>
-      <Header title="Тренировки" subtitle="Программы тренировок и свой день" />
+      <Header title="Упражнения" subtitle="Программы тренировок и свой день" />
       <div className="space-y-3">
         {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
