@@ -59,6 +59,8 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
   await page.goto("/support");
   await expect(page.getByRole("heading", { name: "Новое обращение" }).locator(".."))
     .toHaveClass(/app-card/);
+  await expect(page.getByRole("button", { name: "Отправить в поддержку" })).toHaveClass(/app-gradient-action/);
+  await expect(page.getByPlaceholder("Опишите, что произошло или что хотите узнать")).toHaveClass(/app-field/);
   await page.locator("select").selectOption("bug");
   await page.getByPlaceholder("Опишите, что произошло или что хотите узнать").fill(userMessage.body);
   await page.locator('input[type="file"]').setInputFiles({ name: "problem.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64") });
@@ -71,6 +73,7 @@ test("support keeps the user/admin conversation in the app", async ({ page }) =>
     .toHaveClass(/app-card/);
   await expect(page.getByLabel("Сообщение поддержке").locator(".."))
     .toHaveClass(/app-card/);
+  await expect(page.getByRole("button", { name: "Отправить", exact: true })).toHaveClass(/app-gradient-action/);
   await expect(page.getByAltText("Скриншот обращения")).toBeVisible();
   await expect.poll(() => createdBody).toMatchObject({ category: "bug", message: userMessage.body });
   expect(uploadContentType).toContain("multipart/form-data; boundary=");

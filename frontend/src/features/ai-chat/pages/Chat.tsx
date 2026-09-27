@@ -178,10 +178,10 @@ export function Chat() {
             <div
               key={m.id}
               className={[
-                "max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
+                "app-card max-w-[90%] whitespace-pre-wrap px-3 py-2 text-sm",
                 m.role === "user"
-                  ? "ml-auto bg-tg-button text-tg-button-text"
-                  : "app-card app-card-ocean mr-auto",
+                  ? "app-card-plum ml-auto"
+                  : "app-card-ocean mr-auto",
               ].join(" ")}
             >
               {isLong && !isExpanded ? previewAiMessage(m.content) : m.content}

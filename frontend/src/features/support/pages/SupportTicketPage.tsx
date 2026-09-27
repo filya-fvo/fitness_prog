@@ -94,11 +94,11 @@ export function SupportTicketPage() {
           </div>
           {ticket.status !== "closed" ? (
             <form onSubmit={reply} className="app-card app-card-indigo mt-4 space-y-3 p-4">
-              <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={3500} rows={4} aria-label="Сообщение поддержке" placeholder="Написать сообщение…" className="w-full rounded-xl bg-tg-bg p-3 text-base text-tg-text" />
+              <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={3500} rows={4} aria-label="Сообщение поддержке" placeholder="Написать сообщение…" className="app-field w-full" />
               <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl bg-tg-bg px-3 text-sm text-tg-link"><span>{screenshot ? "Заменить скриншот" : "Прикрепить скриншот"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/*" onChange={(event) => setScreenshot(event.target.files?.[0] ?? null)} className="sr-only" /></label>
               <p className="text-xs text-tg-hint">JPEG, PNG или WebP, до 8 МБ.</p>
               {screenshot ? <div className="flex items-center justify-between gap-2 text-xs text-tg-hint"><span className="truncate">{screenshot.name}</span><button type="button" onClick={() => setScreenshot(null)} className="min-h-11 px-2 text-tg-link">Убрать</button></div> : null}
-              <button type="submit" disabled={sending || (!message.trim() && !screenshot)} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">{sending ? "Отправляем…" : "Отправить"}</button>
+              <button type="submit" disabled={sending || (!message.trim() && !screenshot)} className="app-button app-gradient-action w-full disabled:opacity-50">{sending ? "Отправляем…" : "Отправить"}</button>
               <button type="button" onClick={() => void closeTicket()} className="min-h-11 w-full rounded-xl bg-tg-bg px-4 text-sm text-tg-hint">Закрыть обращение</button>
             </form>
           ) : <div className="app-card app-card-warning mt-4 p-4 text-sm">Обращение закрыто. Создайте новое, если нужна дополнительная помощь.</div>}

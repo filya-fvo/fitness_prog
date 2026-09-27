@@ -83,7 +83,7 @@ export function SupportPage() {
 
   return (
     <section>
-      <Header title="Поддержка" subtitle="Переписка внутри приложения" fallbackTo="/more" />
+      <Header title="Поддержка" subtitle="Переписка внутри приложения" fallbackTo="/help-center" />
       <div className="app-card app-card-ocean mb-4 p-4 text-sm leading-relaxed text-tg-hint">
         Ответ придёт сюда. Если аккаунт связан с Telegram, бот также пришлёт уведомление. Личный аккаунт сотрудника не показывается.
       </div>
@@ -91,7 +91,7 @@ export function SupportPage() {
         <h2 className="font-semibold">Новое обращение</h2>
         <label className="block text-sm text-tg-hint">
           Тема
-          <select value={category} onChange={(event) => setCategory(event.target.value as SupportCategory)} className="mt-1 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-base text-tg-text">
+          <select value={category} onChange={(event) => setCategory(event.target.value as SupportCategory)} className="app-field mt-1 w-full">
             {supportCategories.map((value) => <option key={value} value={value}>{categoryLabels[value]}</option>)}
           </select>
         </label>
@@ -103,9 +103,9 @@ export function SupportPage() {
         {screenshot ? <div className="flex items-center justify-between gap-2 text-xs text-tg-hint"><span className="truncate">{screenshot.name}</span><button type="button" onClick={() => setScreenshot(null)} className="min-h-11 px-2 text-tg-link">Убрать</button></div> : null}
         <label className="block text-sm text-tg-hint">
           Сообщение
-          <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={3500} rows={5} placeholder="Опишите, что произошло или что хотите узнать" className="mt-1 w-full rounded-xl bg-tg-bg p-3 text-base text-tg-text" />
+          <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={3500} rows={5} placeholder="Опишите, что произошло или что хотите узнать" className="app-field mt-1 w-full" />
         </label>
-        <button type="submit" disabled={sending || message.trim().length < 3} className="min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-50">
+        <button type="submit" disabled={sending || message.trim().length < 3} className="app-button app-gradient-action w-full disabled:opacity-50">
           {sending ? "Отправляем…" : "Отправить в поддержку"}
         </button>
       </form>
@@ -115,7 +115,7 @@ export function SupportPage() {
         <div className="space-y-3">
           {items.map((ticket) => (
             <Link key={ticket.id} to={`/support/${ticket.id}`} className="app-card app-card-interactive block p-4">
-              <div className="flex items-start justify-between gap-3"><span className="font-medium">{categoryLabels[ticket.category]}</span>{ticket.unread ? <span className="rounded-full bg-tg-button px-2 py-1 text-xs text-tg-button-text">Новый ответ</span> : null}</div>
+              <div className="flex items-start justify-between gap-3"><span className="font-medium">{categoryLabels[ticket.category]}</span>{ticket.unread ? <span className="app-chip app-chip-info">Новый ответ</span> : null}</div>
               <p className="mt-1 line-clamp-2 text-sm text-tg-hint">{ticket.last_message_preview}</p>
               <div className="mt-3 flex justify-between gap-2 text-xs text-tg-hint"><span>{statusLabels[ticket.status]}</span><span>{formatSupportDate(ticket.last_message_at)}</span></div>
             </Link>
