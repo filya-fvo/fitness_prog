@@ -1350,7 +1350,7 @@ export function ActiveWorkout() {
     return (
       <section className="pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <Header title="Тренировка завершена" subtitle={weekPhase.label} />
-        <div className="mb-3 rounded-2xl bg-tg-secondary p-4 text-center">
+        <div className="app-card app-card-indigo mb-3 p-4 text-center">
           <p className="text-xs text-tg-hint">Время тренировки</p>
           <WorkoutElapsedClock
             startedAt={null}
@@ -1360,38 +1360,38 @@ export function ActiveWorkout() {
         </div>
         {summaryFacts ? (
           <div className="mb-3 grid grid-cols-2 gap-2" aria-label="Итоги тренировки">
-            <div className="rounded-2xl bg-tg-secondary p-3">
+            <div className="app-card app-card-inset p-3">
               <p className="text-xs text-tg-hint">Упражнения</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
                 {summaryFacts.completedExercises}/{summaryFacts.totalExercises}
               </p>
             </div>
-            <div className="rounded-2xl bg-tg-secondary p-3">
+            <div className="app-card app-card-inset p-3">
               <p className="text-xs text-tg-hint">Подходы</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
                 {summaryFacts.completedSets}/{summaryFacts.totalSets}
               </p>
             </div>
-            <div className="rounded-2xl bg-tg-secondary p-3">
+            <div className="app-card app-card-inset p-3">
               <p className="text-xs text-tg-hint">Объём нагрузки</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
                 {summaryFacts.tonnageKg.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} кг
               </p>
             </div>
-            <div className="rounded-2xl bg-tg-secondary p-3">
+            <div className="app-card app-card-inset p-3">
               <p className="text-xs text-tg-hint">Тяжесть (RPE)</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">{summaryFacts.rpe}/10</p>
             </div>
           </div>
         ) : null}
-        <div className="rounded-2xl bg-tg-secondary p-4 text-sm leading-relaxed">{summary}</div>
+        <div className="app-card app-card-ocean p-4 text-sm leading-relaxed">{summary}</div>
         {offlineNote ? (
           <p className="mt-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-800">
             {offlineNote} Данные отправятся автоматически после восстановления сети.
           </p>
         ) : null}
         {summaryFacts ? (
-          <div className="mt-3 rounded-2xl border border-tg-button/20 bg-tg-secondary p-4">
+          <div className="app-card app-card-plum mt-3 p-4">
             <p className="text-sm font-semibold">Комментарий тренера ИИ</p>
             <p className="mt-1 text-xs leading-relaxed text-tg-hint">
               Только по вашему запросу и только по фактам этой тренировки.
@@ -1417,7 +1417,7 @@ export function ActiveWorkout() {
         ) : null}
         <button
           type="button"
-          className="mt-4 min-h-[48px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+          className="app-button app-gradient-action mt-4 min-h-[48px] w-full"
           onClick={() => navigate("/progress")}
         >
           К прогрессу
@@ -1430,7 +1430,7 @@ export function ActiveWorkout() {
     return (
       <section>
         <Header title="Тренировка" />
-        {plusRequired ? <PlusAccessSummary feature="workout_details" title="История тренировки доступна в PLUS" /> : <div className="rounded-2xl bg-tg-secondary p-4">
+        {plusRequired ? <PlusAccessSummary feature="workout_details" title="История тренировки доступна в PLUS" /> : <div className="app-card app-card-warning p-4">
           <p className="text-sm font-medium">Сессия не найдена</p>
           <p className="mt-1 text-sm text-tg-hint">
             {error || "Откройте каталог или вернитесь на главную."}
@@ -1446,7 +1446,7 @@ export function ActiveWorkout() {
             <button
               type="button"
               onClick={() => navigate("/workouts")}
-              className="tap-target-x flex-1 rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text"
+              className="app-button app-gradient-action tap-target-x flex-1"
             >
               В каталог
             </button>
@@ -1467,7 +1467,7 @@ export function ActiveWorkout() {
         повторов осталось бы выполнить до отказа.
       </p>
       {plan.load_adjustment_label ? (
-        <div className="mb-3 rounded-xl border border-tg-button/20 bg-tg-secondary p-3">
+        <div className="app-card app-card-warning mb-3 p-3">
           <p className="text-sm font-medium">{plan.load_adjustment_label}</p>
           <p className="mt-1 text-xs leading-5 text-tg-hint">
             План облегчён по вашей сегодняшней отметке. Ориентируйтесь на самочувствие.
@@ -1508,12 +1508,12 @@ export function ActiveWorkout() {
         </div>
       </div>
 
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {error ? <div role="alert" className="app-card app-card-danger mb-3 p-3 text-sm">{error}</div> : null}
       {offlineNote ? (
-        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">{offlineNote}</div>
+        <div className="app-card app-card-warning mb-3 p-3 text-xs">{offlineNote}</div>
       ) : null}
       {suggestNote ? (
-        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">{suggestNote}</div>
+        <div className="app-card app-card-ocean mb-3 p-3 text-xs">{suggestNote}</div>
       ) : null}
 
       
@@ -2193,22 +2193,22 @@ export function ActiveWorkout() {
       <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
 
       {autoAdvance != null ? (
-        <div className="fixed inset-x-3 bottom-24 z-50 rounded-2xl border border-cyan-300/15 bg-[#101f32] p-4 text-white shadow-2xl">
+        <div className="app-card app-card-indigo fixed inset-x-3 bottom-24 z-50 p-4 text-tg-text shadow-2xl">
           <p className="text-sm font-semibold">Упражнение выполнено</p>
-          <p className="mt-1 text-xs text-white/70">
+          <p className="mt-1 text-xs text-tg-hint">
             Переход к следующему через {autoAdvance.seconds} сек.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-black"
+              className="app-button app-gradient-action"
               onClick={() => setAutoAdvance((value) => value ? { ...value, seconds: 0 } : null)}
             >
               Перейти сейчас
             </button>
             <button
               type="button"
-              className="rounded-xl bg-white/10 px-3 py-2 text-sm font-medium"
+              className="app-button app-secondary-action"
               onClick={() => setAutoAdvance(null)}
             >
               Отмена
@@ -2242,7 +2242,7 @@ export function ActiveWorkout() {
             aria-modal="true"
             aria-labelledby="finish-workout-title"
             tabIndex={-1}
-            className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+            className="app-card app-card-hero flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden"
           >
             <div className="flex items-center justify-between gap-3 border-b border-black/5 px-4 py-3">
               <div>
@@ -2285,7 +2285,7 @@ export function ActiveWorkout() {
                       className={[
                         "min-h-11 rounded-xl text-sm font-semibold",
                         rpe === value
-                          ? "bg-tg-button text-tg-button-text"
+                          ? "app-gradient-action text-white"
                           : "bg-tg-secondary text-tg-text",
                       ].join(" ")}
                     >
@@ -2301,7 +2301,7 @@ export function ActiveWorkout() {
                   onChange={(event) => setNotes(event.target.value)}
                   rows={4}
                   placeholder="Самочувствие, техника, что изменить в следующий раз…"
-                  className="mt-2 w-full resize-none rounded-xl border border-black/10 bg-tg-secondary px-3 py-3 text-sm"
+                  className="app-field mt-2 w-full resize-none"
                 />
               </label>
             </div>
@@ -2310,7 +2310,7 @@ export function ActiveWorkout() {
                 type="button"
                 disabled={completing}
                 onClick={() => void finishWorkout()}
-                className="w-full rounded-xl bg-tg-button px-4 py-3.5 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+                className="app-button app-gradient-action w-full disabled:opacity-60"
               >
                 {completing ? "Сохраняем…" : `Завершить · тяжесть ${rpe}/10`}
               </button>
@@ -2327,7 +2327,7 @@ export function ActiveWorkout() {
             aria-modal="true"
             aria-labelledby="bulk-replace-title"
             tabIndex={-1}
-            className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+            className="app-card app-card-hero max-h-[85vh] w-full max-w-lg overflow-hidden"
           >
             <div className="border-b border-black/5 px-4 py-3">
               <p id="bulk-replace-title" className="text-sm font-semibold">
@@ -2377,7 +2377,7 @@ export function ActiveWorkout() {
               <button
                 type="button"
                 onClick={applyBulkReplacement}
-                className="flex-1 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+                className="app-button app-gradient-action flex-1"
               >
                 Заменить {bulkReplacementPlan.replacements.length}
               </button>
@@ -2394,7 +2394,7 @@ export function ActiveWorkout() {
             aria-modal="true"
             aria-labelledby="replace-exercise-title"
             tabIndex={-1}
-            className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-tg-bg shadow-xl"
+            className="app-card app-card-hero max-h-[85vh] w-full max-w-lg overflow-hidden"
           >
             <div className="flex items-center justify-between border-b border-black/5 px-4 py-3">
               <div>
@@ -2449,7 +2449,7 @@ export function ActiveWorkout() {
                   value={replaceQuery}
                   onChange={(e) => setReplaceQuery(e.target.value)}
                   placeholder="Название, мышца, инвентарь"
-                  className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
+                  className="app-field mt-1 w-full"
                 />
               </label>
 
@@ -2459,7 +2459,7 @@ export function ActiveWorkout() {
                   onClick={() => setReplaceMuscle("")}
                   className={[
                     "rounded-full px-2.5 py-1 text-[11px]",
-                    !replaceMuscle ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint",
+                    !replaceMuscle ? "app-gradient-action text-white" : "bg-tg-secondary text-tg-hint",
                   ].join(" ")}
                 >
                   Все
@@ -2472,7 +2472,7 @@ export function ActiveWorkout() {
                     className={[
                       "rounded-full px-2.5 py-1 text-[11px]",
                       replaceMuscle === g
-                        ? "bg-tg-button text-tg-button-text"
+                        ? "app-gradient-action text-white"
                         : "bg-tg-secondary text-tg-hint",
                     ].join(" ")}
                   >
@@ -2520,7 +2520,7 @@ export function ActiveWorkout() {
             aria-modal="true"
             aria-labelledby="ai-assist-title"
             tabIndex={-1}
-            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg touch-pan-y overflow-y-auto overscroll-contain rounded-2xl bg-tg-bg p-4 shadow-xl [overflow-anchor:none]"
+            className="app-card app-card-hero max-h-[calc(100dvh-1.5rem)] w-full max-w-lg touch-pan-y overflow-y-auto overscroll-contain p-4 [overflow-anchor:none]"
           >
             <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-2 flex items-center justify-between gap-2 rounded-t-2xl bg-tg-bg px-4 pb-2 pt-4">
               <p id="ai-assist-title" className="text-sm font-semibold">
@@ -2609,7 +2609,7 @@ export function ActiveWorkout() {
                   className={[
                     "rounded-full px-2.5 py-1 text-[11px]",
                     aiAssistMode === mode
-                      ? "bg-tg-button text-tg-button-text"
+                      ? "app-gradient-action text-white"
                       : "bg-tg-secondary text-tg-link",
                   ].join(" ")}
                 >

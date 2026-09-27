@@ -169,6 +169,7 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await page.getByRole("button", { name: "Заменить", exact: true }).click();
   const replaceDialog = page.getByRole("dialog", { name: "Замена упражнения" });
   await expect(replaceDialog).toBeVisible();
+  await expect(replaceDialog).toHaveClass(/app-card-hero/);
   await expect(replaceDialog.getByRole("button", { name: "Закрыть" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(replaceDialog).toHaveCount(0);
@@ -386,9 +387,13 @@ test("workout completion is instant and AI coach runs only on request", async ({
   await page.goto(`/workouts/active/${WORKOUT_ID}`);
   await expect(page.getByRole("heading", { name: "Итоговая тренировка" })).toBeVisible();
   await page.getByText("Завершить тренировку", { exact: true }).click();
+  const finishDialog = page.getByRole("dialog", { name: "Завершить тренировку" });
+  await expect(finishDialog).toHaveClass(/app-card-hero/);
+  await expect(finishDialog.getByRole("button", { name: /Завершить · тяжесть 7\/10/ })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: /Завершить · тяжесть 7\/10/ }).click();
 
   await expect(page.getByRole("heading", { name: "Тренировка завершена" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "К прогрессу" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByLabel("Итоги тренировки").getByText("0/1")).toBeVisible();
   await expect(page.getByLabel("Итоги тренировки").getByText("0/2")).toBeVisible();
   await expect(page.getByText(/Выполненный объём уже учтён/)).toBeVisible();
