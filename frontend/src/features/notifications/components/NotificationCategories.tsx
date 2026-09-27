@@ -82,7 +82,7 @@ export function NotificationCategories(props: Props) {
                 ...settings.water,
                 daily_ml: Number(event.target.value),
               })}
-              className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+              className="app-field mt-1 w-full"
             />
           </label>
           <label className="block text-xs text-tg-hint">Интервал, минут
@@ -96,7 +96,7 @@ export function NotificationCategories(props: Props) {
                 ...settings.water,
                 interval_minutes: Number(event.target.value),
               })}
-              className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+              className="app-field mt-1 w-full"
             />
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -106,7 +106,7 @@ export function NotificationCategories(props: Props) {
                   type="time"
                   value={settings.water[key]}
                   onChange={(event) => update("water", { ...settings.water, [key]: event.target.value })}
-                  className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+                  className="app-field mt-1 w-full"
                 />
               </label>
             ))}
@@ -141,7 +141,7 @@ export function NotificationCategories(props: Props) {
                   times[index] = event.target.value;
                   update("calories", { ...settings.calories, times });
                 }}
-                className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+                className="app-field min-w-0 flex-1"
               />
               <button
                 type="button"
@@ -192,7 +192,7 @@ export function NotificationCategories(props: Props) {
               type="time"
               value={settings.measurements.time}
               onChange={(event) => update("measurements", { ...settings.measurements, time: event.target.value })}
-              className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+              className="app-field mt-1 w-full"
             />
           </label>
           <label className="text-xs text-tg-hint">Интервал, дней
@@ -205,7 +205,7 @@ export function NotificationCategories(props: Props) {
                 ...settings.measurements,
                 interval_days: Number(event.target.value),
               })}
-              className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base"
+              className="app-field mt-1 w-full"
             />
           </label>
         </div>
@@ -214,14 +214,14 @@ export function NotificationCategories(props: Props) {
           <button
             type="button"
             onClick={() => update("measurements", { ...settings.measurements, weekday: null })}
-            className={`min-h-11 rounded-xl text-xs ${settings.measurements.weekday === null ? "bg-tg-button text-tg-button-text" : "bg-tg-bg"}`}
+            className={`min-h-11 rounded-xl text-xs ${settings.measurements.weekday === null ? "app-gradient-action text-white" : "bg-tg-bg"}`}
           >Любой</button>
           {WEEKDAYS.map((day, index) => (
             <button
               key={day}
               type="button"
               onClick={() => update("measurements", { ...settings.measurements, weekday: index })}
-              className={`min-h-11 rounded-xl text-xs ${settings.measurements.weekday === index ? "bg-tg-button text-tg-button-text" : "bg-tg-bg"}`}
+              className={`min-h-11 rounded-xl text-xs ${settings.measurements.weekday === index ? "app-gradient-action text-white" : "bg-tg-bg"}`}
             >{day}</button>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function NotificationSection({
   title,
@@ -12,7 +13,7 @@ export function NotificationSection({
   children: ReactNode;
 }) {
   return (
-    <details className="group rounded-2xl bg-tg-secondary">
+    <details className="app-card group">
       <summary className="flex min-h-[68px] cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
         <span
           className={`h-2.5 w-2.5 shrink-0 rounded-full ${enabled ? "bg-emerald-500" : "bg-tg-hint/40"}`}
@@ -37,13 +38,12 @@ export function SaveSectionButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <AppButton
       disabled={busy}
       onClick={onClick}
-      className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+      className="mt-4 w-full"
     >
       {busy ? "Сохраняем…" : "Сохранить раздел"}
-    </button>
+    </AppButton>
   );
 }

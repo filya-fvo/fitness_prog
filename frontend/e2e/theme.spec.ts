@@ -39,6 +39,8 @@ test("theme follows the device and keeps an explicit user choice", async ({ page
 
   await page.goto("/more");
   const selector = page.getByLabel("Тема оформления");
+  await expect(page.getByRole("region", { name: "Оформление" })).toHaveClass(/app-card/);
+  await expect(selector).toHaveClass(/app-field/);
   const lightOption = selector.locator('option[value="light"]');
   await expect(selector).toHaveValue("system");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -95,6 +97,7 @@ test("system theme follows Telegram inside a Mini App", async ({ page }) => {
 });
 
 test("profile selection uses the brand accent in both themes", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "theme-accent-token"));
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json", body: JSON.stringify(profile),
@@ -104,6 +107,12 @@ test("profile selection uses the brand accent in both themes", async ({ page }) 
     await page.addInitScript((value) => localStorage.setItem("fitness_theme_preference", value), theme);
     await page.goto("/profile/settings");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.getByRole("button", { name: "Сохранить тело и калории" })).toHaveClass(/app-gradient-action/);
+    expect(await page.locator(".profile-tabs").evaluate((tabs) => {
+      const buttons = Array.from(tabs.querySelectorAll("button"));
+      return buttons.every((button, index) => index === 0
+        || buttons[index - 1].getBoundingClientRect().right <= button.getBoundingClientRect().left);
+    })).toBe(true);
     await expect.poll(() => page.locator(".profile-tab-active").evaluate((element) =>
       getComputedStyle(element).backgroundImage,
     )).toContain("linear-gradient");

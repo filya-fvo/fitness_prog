@@ -1,4 +1,5 @@
 import type { NotificationSettings } from "@/api/notifications";
+import { AppButton } from "@/components/ui/AppButton";
 import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
 import {
   detectedTimezone,
@@ -44,7 +45,7 @@ export function NotificationDeliveryCard(props: Props) {
     : !props.browserEnabled;
 
   return (
-    <section className="space-y-4 rounded-2xl bg-tg-secondary p-4" aria-labelledby="delivery-title">
+    <section className="app-card app-card-indigo space-y-4 p-4" aria-labelledby="delivery-title">
       <div>
         <h2 id="delivery-title" className="text-sm font-semibold">Куда присылать</h2>
         <p className="mt-1 text-xs text-tg-hint">
@@ -65,7 +66,7 @@ export function NotificationDeliveryCard(props: Props) {
               disabled={!available}
               onClick={() => props.onChange({ ...settings, delivery_channel: channel })}
               className={`min-h-11 rounded-xl px-3 text-sm font-medium disabled:opacity-40 ${
-                selected ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-text"
+                selected ? "app-gradient-action text-white" : "bg-tg-bg text-tg-text"
               }`}
             >
               {channel === "telegram" ? "Только Telegram" : "Только браузер"}
@@ -106,7 +107,7 @@ export function NotificationDeliveryCard(props: Props) {
         <select
           value={settings.timezone}
           onChange={(event) => props.onChange({ ...settings, timezone: event.target.value })}
-          className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-bg px-3 text-base text-tg-text"
+          className="app-field mt-1 w-full"
         >
           {timezones.map((timezone) => (
             <option key={timezone} value={timezone}>{timezoneLabel(timezone)}</option>
@@ -146,7 +147,7 @@ export function NotificationDeliveryCard(props: Props) {
                   ...settings,
                   quiet_hours: { ...settings.quiet_hours, start_time: event.target.value },
                 })}
-                className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
+                className="app-field mt-1 w-full"
               />
             </label>
             <label className="text-xs text-tg-hint">До
@@ -157,7 +158,7 @@ export function NotificationDeliveryCard(props: Props) {
                   ...settings,
                   quiet_hours: { ...settings.quiet_hours, end_time: event.target.value },
                 })}
-                className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
+                className="app-field mt-1 w-full"
               />
             </label>
           </div>
@@ -186,14 +187,13 @@ export function NotificationDeliveryCard(props: Props) {
       />
 
       <p className="text-xs text-tg-hint">Последняя доставка: {lastDeliveryLabel(props.lastDelivery)}</p>
-      <button
-        type="button"
+      <AppButton
         disabled={props.busy}
         onClick={props.onSave}
-        className="min-h-11 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+        className="w-full"
       >
         {props.busy ? "Сохраняем…" : "Сохранить доставку и тишину"}
-      </button>
+      </AppButton>
       <button
         type="button"
         disabled={props.busy || testUnavailable}

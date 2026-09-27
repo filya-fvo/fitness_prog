@@ -5,7 +5,7 @@ type Props = {
 
 export function CycleTrainingSettings({ enabled, onChange }: Props) {
   return (
-    <div className="rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-plum p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">Учитывать самочувствие во время цикла</p>
@@ -22,7 +22,7 @@ export function CycleTrainingSettings({ enabled, onChange }: Props) {
           onClick={() => onChange(!enabled)}
           className={[
             "shrink-0 rounded-full px-3 py-2 text-xs font-semibold",
-            enabled ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint",
+            enabled ? "app-gradient-action text-white" : "bg-tg-bg text-tg-hint",
           ].join(" ")}
         >
           {enabled ? "Вкл" : "Выкл"}

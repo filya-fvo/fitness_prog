@@ -12,7 +12,7 @@ export function ServiceMessageConsentCard({
   onEmailEnabledChange,
 }: Props) {
   return (
-    <div className="rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-inset p-4">
       <label className="flex items-center justify-between gap-3 text-sm">
         <span>
           <span className="font-medium">Служебные сообщения на email</span>

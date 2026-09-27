@@ -948,7 +948,7 @@ setAuthEmail(p.auth_email ?? null);
                   }}
                   className={[
                     "flex-1 rounded-xl px-3 py-2 text-sm",
-                    sex === o.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                    sex === o.id ? "app-gradient-action text-white" : "bg-tg-bg",
                   ].join(" ")}
                 >
                   {o.label}
@@ -970,7 +970,7 @@ setAuthEmail(p.auth_email ?? null);
                     markDirty("body");
                   }}
                   placeholder="Например, 2100"
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
+                  className="app-field mt-1 w-full"
                 />
                 <span className="mt-1 block text-[11px] leading-snug">
                   Формула по полу не применяется.
@@ -1012,7 +1012,7 @@ setAuthEmail(p.auth_email ?? null);
                 max={250}
                 value={height}
                 onValueChange={setHeight}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
               />
             </label>
             <label className="block text-xs text-tg-hint">
@@ -1028,7 +1028,7 @@ setAuthEmail(p.auth_email ?? null);
                   const next = ageFromBirthDate(v);
                   if (next != null) setAge(String(next));
                 }}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
               />
             </label>
             {birthYearFromDate(birthDate) != null ? (
@@ -1050,7 +1050,7 @@ setAuthEmail(p.auth_email ?? null);
                   max={100}
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                  className="app-field mt-1 w-full"
                 />
               </label>
             ) : (
@@ -1095,7 +1095,7 @@ setAuthEmail(p.auth_email ?? null);
                   }}
                   className={[
                     "rounded-full px-3 py-1 text-xs",
-                    primaryGoal === g.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                    primaryGoal === g.id ? "app-gradient-action text-white" : "bg-tg-bg",
                   ].join(" ")}
                 >
                   {g.label}
@@ -1107,7 +1107,7 @@ setAuthEmail(p.auth_email ?? null);
               <select
                 value={activity}
                 onChange={(e) => setActivity(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
               >
                 {ACTIVITY_OPTIONS.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -1124,7 +1124,7 @@ setAuthEmail(p.auth_email ?? null);
                 max={7}
                 value={daysPerWeek}
                 onChange={(e) => setDaysPerWeek(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
               />
             </label>
             <label className="block text-xs text-tg-hint">
@@ -1137,7 +1137,7 @@ setAuthEmail(p.auth_email ?? null);
                   setTargetWeight(value);
                   markDirty("body");
                 }}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
               />
               <span className="mt-1 block text-[11px] leading-snug">
                 Используется ИИ-тренером как ориентир вместе с калорийной целью и историей занятий.
@@ -1156,7 +1156,7 @@ setAuthEmail(p.auth_email ?? null);
                       onClick={() => toggleJointLimit(option.id)}
                       className={[
                         "rounded-full px-3 py-2 text-left text-xs",
-                        selected ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
+                        selected ? "app-gradient-action text-white" : "bg-tg-bg",
                       ].join(" ")}
                     >
                       {option.label}
@@ -1187,7 +1187,7 @@ setAuthEmail(p.auth_email ?? null);
                 onClick={() => void toggleAutoAdvance()}
                 className={[
                   "shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-60",
-                  autoAdvanceExercises ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint",
+                  autoAdvanceExercises ? "app-gradient-action text-white" : "bg-tg-secondary text-tg-hint",
                 ].join(" ")}
               >
                 {autoAdvanceSaving ? "…" : autoAdvanceExercises ? "Вкл" : "Выкл"}
@@ -1199,7 +1199,7 @@ setAuthEmail(p.auth_email ?? null);
                 <DecimalInput
                   value={adjPct}
                   onValueChange={setAdjPct}
-                  className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                  className="app-field mt-1 w-full"
                 />
               </label>
             ) : null}
@@ -1247,7 +1247,7 @@ setAuthEmail(p.auth_email ?? null);
             type="button"
             disabled={saving}
             onClick={() => void saveBody()}
-            className="w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            className="app-button app-gradient-action w-full disabled:opacity-60"
           >
             {saving ? "Сохраняем…" : "Сохранить тело и калории"}
           </button>

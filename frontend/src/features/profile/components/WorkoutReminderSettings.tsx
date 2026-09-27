@@ -44,7 +44,7 @@ export function WorkoutReminderSettings({
     .join(", ");
 
   return (
-    <div className="space-y-3 rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-inset space-y-3 p-4">
       <label className="flex items-center justify-between text-sm">
         <span>Тренировки по расписанию</span>
         <input
@@ -62,7 +62,7 @@ export function WorkoutReminderSettings({
           <select
             value={remindBeforeMinutes}
             onChange={(event) => onLeadChange(Number(event.target.value))}
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
+            className="app-field mt-1 w-full"
           >
             {LEAD_OPTIONS.map(([minutes, label]) => (
               <option key={minutes} value={minutes}>{label}</option>

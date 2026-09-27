@@ -71,6 +71,9 @@ test("notification settings keep one channel and independent category drafts", a
 
   await page.goto("/notifications");
   await expect(page.getByRole("heading", { name: "Уведомления" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Куда присылать" })).toHaveClass(/app-card/);
+  await expect(page.getByLabel("Ваш часовой пояс")).toHaveClass(/app-field/);
+  await expect(page.getByRole("button", { name: "Сохранить доставку и тишину" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("Браузерные уведомления временно недоступны.")).toBeVisible();
   await expect(page.getByText("Пн, Ср, Пт · 18:30").first()).toBeVisible();
@@ -81,7 +84,10 @@ test("notification settings keep one channel and independent category drafts", a
   await nutrition.getByLabel("Время напоминания 1").fill("13:00");
 
   const water = page.locator("details").filter({ hasText: "Вода и дневной чек-ин" });
+  await expect(water).toHaveClass(/app-card/);
   await water.locator("summary").click();
+  await expect(water.getByLabel("Цель, мл в день")).toHaveClass(/app-field/);
+  await expect(water.getByRole("button", { name: "Сохранить раздел" })).toHaveClass(/app-gradient-action/);
   await water.getByRole("checkbox", { name: "Напоминать о воде" }).check();
   await water.getByLabel("Цель, мл в день").fill("3000");
   await water.getByRole("button", { name: "Сохранить раздел" }).click();

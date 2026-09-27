@@ -143,7 +143,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
   }
 
   return (
-    <div className="rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-indigo p-4">
       <p className="text-sm font-medium">Почта для входа в браузере</p>
       <p className="mt-1 text-xs text-tg-hint">
         Привяжите электронную почту к этому аккаунту — потом можно открыть приложение в браузере и войти
@@ -188,7 +188,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
               <div className="rounded-lg bg-tg-secondary p-2"><p className="font-medium">Почта</p><p className="mt-1 text-tg-hint">Тренировок: {mergePreview.email.counts.workouts ?? 0}</p><p className="text-tg-hint">Питание: {mergePreview.email.counts.nutrition ?? 0}</p><p className="text-tg-hint">Показатели: {mergePreview.email.counts.daily_metrics ?? 0}</p><p className="text-tg-hint">Замеры: {mergePreview.email.counts.body_measurements ?? 0}</p></div>
               <div className="rounded-lg bg-tg-secondary p-2"><p className="font-medium">Telegram</p><p className="mt-1 text-tg-hint">Тренировок: {mergePreview.telegram.counts.workouts ?? 0}</p><p className="text-tg-hint">Питание: {mergePreview.telegram.counts.nutrition ?? 0}</p><p className="text-tg-hint">Показатели: {mergePreview.telegram.counts.daily_metrics ?? 0}</p><p className="text-tg-hint">Замеры: {mergePreview.telegram.counts.body_measurements ?? 0}</p></div>
             </div>
-            <button type="button" disabled={busy} onClick={() => void verifyOrMerge("email")} className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-60">Основные данные — из почты</button>
+            <button type="button" disabled={busy} onClick={() => void verifyOrMerge("email")} className="app-button app-gradient-action w-full disabled:opacity-60">Основные данные — из почты</button>
             <button type="button" disabled={busy} onClick={() => void verifyOrMerge("telegram")} className="w-full rounded-xl bg-tg-secondary px-3 py-2 text-sm font-semibold disabled:opacity-60">Основные данные — из Telegram</button>
             <button
               type="button"
@@ -216,7 +216,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@mail.ru"
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                className="app-field mt-1 w-full"
                 required
               />
             </label>
@@ -224,7 +224,7 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
               <button
                 type="submit"
                 disabled={busy}
-                className="flex-1 rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+                className="app-button app-gradient-action flex-1 disabled:opacity-60"
               >
                 {busy ? "Отправляем…" : "Получить код"}
               </button>
@@ -259,14 +259,14 @@ export function LinkEmailCard({ currentEmail, onLinked }: Props) {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 placeholder="6 цифр"
-                className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-center text-lg font-semibold tracking-[0.25em]"
+                className="app-field mt-1 w-full text-center font-semibold tracking-[0.25em]"
                 required
               />
             </label>
             <button
               type="submit"
               disabled={busy || code.length < 4}
-              className="w-full rounded-xl bg-tg-button px-3 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+              className="app-button app-gradient-action w-full disabled:opacity-60"
             >
               {busy ? "Проверяем…" : "Привязать почту"}
             </button>
