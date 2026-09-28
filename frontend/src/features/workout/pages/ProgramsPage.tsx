@@ -6,7 +6,6 @@ import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
-import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
@@ -18,6 +17,7 @@ import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { ProgramOverviewCard } from "@/features/workout/components/ProgramOverviewCard";
+import { ProgramFilters } from "@/features/workout/components/ProgramFilters";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import { trackEvent } from "@/lib/analytics";
@@ -29,16 +29,17 @@ import {
   resolveWeekPhase,
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
-import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
+import { exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
 import { programDurationLabel } from "@/utils/programDuration";
 import { normalizeExerciseName as normalizeName } from "@/utils/programMuscles";
 import { toUserMessage } from "@/utils/errors";
+import { programHeroImage } from "@/utils/programVisuals";
 import { cycleTrainingEnabledForProfile } from "@/utils/cycleTraining";
 import {
-  LEVEL_LABELS,
   pickTodayDayIndex,
   programLimitations,
+  programLocation,
   programSex,
   scorePrograms,
   type ProgramScoreBreakdown,
@@ -52,6 +53,7 @@ type ProgramsUiState = {
   searchQuery?: string;
   typeFilter?: string;
   levelFilter?: string;
+  locationFilter?: string;
   sexFilter?: string;
   limitsOnly?: boolean;
   visibleCount?: number;
@@ -248,6 +250,7 @@ export function ProgramsPage() {
   const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || initialUi.typeFilter || "");
   const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || initialUi.levelFilter || "");
+  const [locationFilter, setLocationFilter] = useState<string>(searchParams.get("location") || initialUi.locationFilter || "");
   // male | female | "" (all). URL ?sex=male|female or default from profile after load.
   const [sexFilter, setSexFilter] = useState<string>(() => {
     const q = (searchParams.get("sex") || "").toLowerCase();
@@ -395,6 +398,7 @@ export function ProgramsPage() {
         const lvl = (p.level || p.target_level || "").toLowerCase();
         if (lvl !== levelFilter.toLowerCase()) return false;
       }
+      if (locationFilter && programLocation(p) !== locationFilter) return false;
       if (sexFilter === "male" || sexFilter === "female") {
         const pSex = programSex(p).map((s) => s.toLowerCase());
         // empty / any / unisex / both → show for any sex filter
@@ -412,7 +416,7 @@ export function ProgramsPage() {
       }
       return true;
     });
-  }, [items, levelFilter, typeFilter, sexFilter, searchQuery, limitsOnly, userJointLimits]);
+  }, [items, levelFilter, locationFilter, typeFilter, sexFilter, searchQuery, limitsOnly, userJointLimits]);
 
   const types = useMemo(() => {
     const set = new Set(items.map((p) => p.workout_type).filter(Boolean));
@@ -490,7 +494,7 @@ export function ProgramsPage() {
     const duration = programDurationLabel(program);
 
     return (
-      <article key={`${badge || "all"}-${program.id}`} className="program-card relative">
+      <article key={`${badge || "all"}-${program.id}`} className="program-card program-card-photo relative" style={{ backgroundImage: `linear-gradient(90deg, rgba(9, 18, 38, .97), rgba(13, 22, 49, .91) 56%, rgba(13, 22, 49, .42)), url(${programHeroImage(program)})` }}>
         <div>
           <div className="min-w-0">
             <ProgramOverviewCard
@@ -517,7 +521,18 @@ export function ProgramsPage() {
           {open ? "Скрыть" : "Детали"}
         </button>
         {open ? (
-          <div className="mt-3 space-y-2 rounded-xl bg-tg-bg p-3">
+          <div className="mt-3 space-y-2 rounded-xl bg-[#0b1930]/90 p-3">
+            {schedule.length ? (
+              <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="mb-2 text-xs font-semibold text-white">План на неделю · пример ритма</p>
+                <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-white/70">
+                  {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day, index) => {
+                    const training = Array.from({ length: Math.min(schedule.length, 7) }, (_, slot) => Math.floor(slot * 7 / Math.min(schedule.length, 7))).includes(index);
+                    return <span key={day} className={training ? "rounded-lg bg-gradient-to-br from-orange-500 to-violet-600 py-2 font-semibold text-white" : "rounded-lg bg-white/5 py-2"}>{day}</span>;
+                  })}
+                </div>
+              </div>
+            ) : null}
             {schedule.length === 0 ? (
               <p className="text-xs text-tg-hint">В программе пока нет дней.</p>
             ) : (
@@ -637,24 +652,20 @@ export function ProgramsPage() {
     userJointLimits.length > 0 || recommendInput.equipment.length > 0;
   const filteredWithoutTop = filtered;
   const visiblePrograms = filteredWithoutTop.slice(0, visibleCount);
-  const hasActiveFilters = Boolean(
-    searchQuery.trim() || typeFilter || levelFilter || limitsOnly || sexFilter,
-  );
-
   useEffect(() => {
     if (!filtersMountedRef.current) {
       filtersMountedRef.current = true;
       return;
     }
     setVisibleCount(PROGRAM_PAGE_SIZE);
-  }, [levelFilter, limitsOnly, searchQuery, sexFilter, typeFilter]);
+  }, [levelFilter, locationFilter, limitsOnly, searchQuery, sexFilter, typeFilter]);
 
   useEffect(() => {
     sessionStorage.setItem(
       PROGRAMS_UI_KEY,
-      JSON.stringify({ viewMode, searchQuery, typeFilter, levelFilter, sexFilter, limitsOnly, visibleCount, scrollY: window.scrollY }),
+      JSON.stringify({ viewMode, searchQuery, typeFilter, levelFilter, locationFilter, sexFilter, limitsOnly, visibleCount, scrollY: window.scrollY }),
     );
-  }, [levelFilter, limitsOnly, searchQuery, sexFilter, typeFilter, viewMode, visibleCount]);
+  }, [levelFilter, locationFilter, limitsOnly, searchQuery, sexFilter, typeFilter, viewMode, visibleCount]);
 
   useEffect(() => {
     if (loading || scrollRestoredRef.current) return;
@@ -675,6 +686,7 @@ export function ProgramsPage() {
     setSearchQuery("");
     setTypeFilter("");
     setLevelFilter("");
+    setLocationFilter("");
     setLimitsOnly(false);
     setSexFilter("");
     sexFilterTouchedRef.current = true;
@@ -732,118 +744,15 @@ export function ProgramsPage() {
         </div>
       ) : null}
 
-      {viewMode === "all" ? (
-      <CollapsibleFilterPanel
-        activeCount={Number(Boolean(searchQuery)) + Number(Boolean(sexFilter)) + Number(Boolean(typeFilter)) + Number(Boolean(levelFilter)) + Number(limitsOnly)}
-        summary={[searchQuery ? `«${searchQuery}»` : "", sexFilter ? (sexFilter === "male" ? "Мужские" : "Женские") : "", typeFilter ? enumLabel(typeFilter) : "", levelFilter ? (LEVEL_LABELS[levelFilter] ?? levelFilter) : ""].filter(Boolean).join(" · ") || "Все программы"}
-      >
-      <label className="mb-2 block text-xs text-tg-hint">
-        Поиск
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Поиск программы"
-          className="mt-1 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 py-2 text-sm"
-        />
-      </label>
-
-      <div className="mb-2 flex flex-wrap gap-2">
-        {(
-          [
-            { id: "", label: "Все" },
-            { id: "male", label: "Мужские" },
-            { id: "female", label: "Женские" },
-          ] as const
-        ).map((opt) => (
-          <button
-            key={opt.id || "all-sex"}
-            type="button"
-            onClick={() => {
-              sexFilterTouchedRef.current = true;
-              setSexFilter(opt.id);
-            }}
-            className={[
-              "rounded-full px-3 py-1 text-xs",
-              sexFilter === opt.id ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setTypeFilter("")}
-          className={[
-            "rounded-full px-3 py-1 text-xs",
-            !typeFilter ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-          ].join(" ")}
-        >
-          Все типы
-        </button>
-        {types.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTypeFilter(t)}
-            className={[
-              "rounded-full px-3 py-1 text-xs",
-              typeFilter === t ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
-          >
-            {enumLabel(t)}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-2">
-        {["", "beginner", "intermediate", "advanced"].map((lvl) => (
-          <button
-            key={lvl || "all-lvl"}
-            type="button"
-            onClick={() => setLevelFilter(lvl)}
-            className={[
-              "rounded-full px-3 py-1 text-xs",
-              levelFilter === lvl ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
-          >
-            {lvl === "" ? "Все уровни" : (LEVEL_LABELS[lvl] ?? lvl)}
-          </button>
-        ))}
-        {userJointLimits.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setLimitsOnly((v) => !v)}
-            className={[
-              "rounded-full px-3 py-1 text-xs",
-              limitsOnly ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary",
-            ].join(" ")}
-          >
-            {limitsOnly ? "✓ Под мои ограничения" : "Под мои ограничения"}
-          </button>
-        ) : null}
-      </div>
-
-      {!loading ? (
-        <div className="mb-3 flex items-center justify-between gap-3 text-xs text-tg-hint">
-          <span>Найдено программ: {filtered.length}</span>
-          {hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
-            >
-              Сбросить фильтры
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      </CollapsibleFilterPanel>
-      ) : null}
-
+      {viewMode === "all" ? <ProgramFilters
+        search={searchQuery} onSearch={setSearchQuery}
+        sex={sexFilter} onSex={(value) => { sexFilterTouchedRef.current = true; setSexFilter(value); }}
+        location={locationFilter} onLocation={setLocationFilter}
+        level={levelFilter} onLevel={setLevelFilter}
+        limitsOnly={limitsOnly} onLimitsOnly={setLimitsOnly} hasProfileLimits={userJointLimits.length > 0}
+        type={typeFilter} onType={setTypeFilter} types={types}
+        count={filtered.length} onReset={resetFilters}
+      /> : null}
       {loading ? <PageSkeleton cards={4} /> : null}
 
       {!loading && viewMode === "all" && filtered.length === 0 ? (

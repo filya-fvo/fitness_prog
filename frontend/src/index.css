@@ -898,6 +898,41 @@ body {
   line-height: 1.55;
 }
 
+.program-card-photo {
+  background-color: #101b31;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+
+.program-card-photo .program-card-title,
+.program-card-photo .text-tg-text {
+  color: #fff;
+}
+
+.program-card-photo .text-tg-hint,
+.program-card-photo .program-card-description {
+  color: rgba(255, 255, 255, .76);
+}
+
+.program-card-photo .program-card-details {
+  color: #98e8ff;
+  border-color: rgba(108, 217, 255, .42);
+  background: rgba(9, 23, 47, .68);
+}
+
+.program-detail-hero {
+  min-height: 13rem;
+  margin: -.35rem -.35rem 1rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(108, 217, 255, .24);
+  border-radius: 1.1rem;
+  background-color: #0c1b36;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+
 .program-focus-hero {
   height: 8rem;
   border: 1px solid color-mix(in srgb, var(--app-brand-mid) 35%, transparent);

@@ -6,6 +6,7 @@ import { programDurationLabel } from "@/utils/programDuration";
 import { programDays, programEquipment } from "@/utils/programRecommend";
 import { programMuscles } from "@/utils/programMuscles";
 import { enumLabel, programDayLabel } from "@/utils/localization";
+import { programGoal, programHeroImage, programVisualTitle } from "@/utils/programVisuals";
 
 type Props = {
   program: Program;
@@ -24,6 +25,17 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
 
   return (
     <>
+      {expanded ? (
+        <div className="program-detail-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(6, 17, 36, .95), rgba(9, 19, 43, .44)), url(${programHeroImage(program)})` }}>
+          <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-cyan-300">Программа тренировок</p>
+          <h3 className="mt-2 max-w-[70%] text-2xl font-bold leading-tight">{programVisualTitle(program)}</h3>
+          <p className="mt-2 max-w-[75%] text-xs text-white/80">{programDayLabel(program.name)}</p>
+          <div className="mt-4 flex gap-4 text-xs text-white/90">
+            <span>◎ {programGoal(program)}</span>
+            {program.duration_weeks ? <span>▦ {program.duration_weeks} нед.</span> : null}
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-2 pr-16">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -42,7 +54,6 @@ export function ProgramOverviewCard({ program, exerciseById, badge, reasons, mis
       {muscles.length ? (
         expanded ? (
           <>
-            <div className="program-focus-hero mt-3" aria-hidden="true" />
             <ProgramMuscleMap muscles={muscles} />
           </>
         ) : (
