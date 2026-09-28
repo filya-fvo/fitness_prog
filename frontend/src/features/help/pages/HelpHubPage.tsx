@@ -1,14 +1,14 @@
 import { Header } from "@/components/layout/Header";
-import { HubLinkCard } from "@/components/ui/HubLinkCard";
+import { HelpFeatureCard } from "@/features/help/components/HelpFeatureCard";
 
 export function HelpHubPage() {
   return (
     <section>
-      <Header title="Помощь" subtitle="Подсказки, поддержка и персональный разбор" />
+      <Header title="Помощь" subtitle="Мы рядом на каждом этапе" />
       <div className="space-y-3">
-        <HubLinkCard to="/ai" title="ИИ-тренер" description="Техника, замены упражнений и разбор прогресса" icon="ai" tone="plum" />
-        <HubLinkCard to="/support" title="Поддержка" description="Задайте вопрос и следите за ответом внутри приложения" icon="support" tone="ocean" />
-        <HubLinkCard to="/faq" title="Помощь и FAQ" description="Быстрые ответы по тренировкам, питанию и приложению" icon="faq" tone="indigo" />
+        <HelpFeatureCard to="/ai" title="ИИ-тренер" description="Персональные рекомендации, ответы на вопросы и поддержка 24/7" action="Задать вопрос" feature="coach" badge="Новое" />
+        <HelpFeatureCard to="/support" title="Поддержка" description="Наша команда поможет решить любой вопрос" action="Написать в поддержку" feature="support" />
+        <HelpFeatureCard to="/faq" title="Помощь и FAQ" description="База знаний, инструкции и ответы на популярные вопросы" action="Открыть FAQ" feature="faq" />
       </div>
     </section>
   );
