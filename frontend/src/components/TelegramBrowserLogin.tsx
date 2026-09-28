@@ -37,16 +37,16 @@ export function TelegramBrowserLogin({ onSuccess }: Props) {
   }
 
   return (
-    <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-inset mb-3 p-4">
       <button
         type="button"
         disabled={busy}
         onClick={() => void login()}
-        className="min-h-11 w-full rounded-xl bg-[#0875AD] px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        className="app-button app-secondary-action w-full"
       >
         {busy ? "Открываем…" : "Войти через Telegram"}
       </button>
-      {error ? <p className="mt-2 text-xs text-red-500" role="alert">{error}</p> : null}
+      {error ? <p className="app-status app-status-danger mt-2" role="alert">{error}</p> : null}
     </div>
   );
 }

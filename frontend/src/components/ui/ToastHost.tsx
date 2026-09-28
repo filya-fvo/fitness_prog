@@ -14,17 +14,17 @@ export function ToastHost() {
       {items.map((t) => {
         const tone =
           t.kind === "error"
-            ? "bg-red-600 text-white"
+            ? "app-status-danger"
             : t.kind === "info"
-              ? "bg-tg-secondary text-tg-text border border-black/10"
-              : "bg-emerald-700 text-white";
+              ? "app-status-info"
+              : "app-status-success";
         return (
           <button
             key={t.id}
             type="button"
             onClick={() => dismiss(t.id)}
             className={[
-              "pointer-events-auto max-w-sm rounded-2xl px-4 py-2.5 text-center text-sm font-medium shadow-lg",
+              "app-status pointer-events-auto min-h-11 max-w-sm text-center font-medium shadow-lg",
               tone,
             ].join(" ")}
           >

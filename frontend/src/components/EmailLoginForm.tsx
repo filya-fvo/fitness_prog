@@ -118,7 +118,7 @@ export function EmailLoginForm({ onSuccess }: Props) {
   }
 
   return (
-    <div className="mb-3 rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card mb-3 p-4">
       <p className="text-sm font-semibold">Вход или регистрация по электронной почте</p>
       <p className="mt-1 text-xs text-tg-hint">
         Если аккаунта ещё нет, он будет создан после подтверждения кода. Код придёт с адреса fil_fit_bot@mail.ru.
@@ -137,14 +137,14 @@ export function EmailLoginForm({ onSuccess }: Props) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="mt-1 w-full rounded-xl border border-black/10 bg-tg-bg px-3 py-2 text-sm text-tg-text"
+              className="app-field mt-1"
               required
             />
           </label>
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-xl bg-tg-button px-3 py-2.5 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            className="app-button app-gradient-action w-full"
           >
             {busy ? "Отправляем…" : "Получить код"}
           </button>
@@ -163,14 +163,14 @@ export function EmailLoginForm({ onSuccess }: Props) {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
               placeholder="6 цифр"
-              className="mt-1 w-full rounded-xl border border-black/10 bg-tg-bg px-3 py-2 text-center text-lg font-semibold tracking-[0.3em] text-tg-text"
+              className="app-field mt-1 text-center text-lg font-semibold tracking-[0.3em]"
               required
             />
           </label>
           <button
             type="submit"
             disabled={busy || code.length < 4}
-            className="w-full rounded-xl bg-tg-button px-3 py-2.5 text-sm font-semibold text-tg-button-text disabled:opacity-60"
+            className="app-button app-gradient-action w-full"
           >
             {busy ? "Проверяем…" : "Войти или зарегистрироваться"}
           </button>
@@ -201,13 +201,13 @@ export function EmailLoginForm({ onSuccess }: Props) {
         </form>
       )}
 
-      {info ? <p className="mt-2 text-xs text-tg-hint">{info}</p> : null}
+      {info ? <p role="status" className="app-status app-status-info mt-2">{info}</p> : null}
       {devCode ? (
-        <p className="mt-2 rounded-lg bg-amber-500/15 px-2 py-1.5 text-xs text-amber-800 dark:text-amber-200">
+        <p className="app-status app-status-warning mt-2">
           Dev-режим (SMTP не настроен): код <span className="font-mono font-semibold">{devCode}</span>
         </p>
       ) : null}
-      {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
+      {error ? <p role="alert" className="app-status app-status-danger mt-2">{error}</p> : null}
     </div>
   );
 }

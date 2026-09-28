@@ -58,7 +58,7 @@ export function TimeSlotsEditor({ times, onChange }: Props) {
                     if (v === "__clock__") updateAt(idx, "10:00");
                     else if (v) updateAt(idx, v);
                   }}
-                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5 text-xs"
+                  className="app-field min-w-0 flex-1"
                 >
                   {!special ? <option value="">Слот</option> : null}
                   {SPECIAL.map((s) => (
@@ -73,12 +73,13 @@ export function TimeSlotsEditor({ times, onChange }: Props) {
                   type="time"
                   value={slot.length === 4 ? `0${slot}` : slot}
                   onChange={(e) => updateAt(idx, e.target.value)}
-                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-2 py-1.5 text-xs"
+                  className="app-field min-w-0 flex-1"
                 />
               )}
               <button
                 type="button"
-                className="shrink-0 text-xs text-red-500"
+                className="app-button app-danger-action shrink-0 px-3"
+                aria-label={`Удалить время ${special?.label ?? slot}`}
                 onClick={() => removeAt(idx)}
               >
                 ✕
@@ -91,7 +92,7 @@ export function TimeSlotsEditor({ times, onChange }: Props) {
         <button
           type="button"
           onClick={addClock}
-          className="rounded-full bg-tg-bg px-3 py-1 text-[11px]"
+          className="app-button app-secondary-action"
         >
           + время
         </button>
@@ -101,7 +102,7 @@ export function TimeSlotsEditor({ times, onChange }: Props) {
             type="button"
             disabled={list.includes(s.id)}
             onClick={() => addSpecial(s.id)}
-            className="rounded-full bg-tg-bg px-3 py-1 text-[11px] disabled:opacity-40"
+            className="app-button app-secondary-action"
           >
             + {s.label.split(" ")[0]}…
           </button>

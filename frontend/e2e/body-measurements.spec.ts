@@ -105,6 +105,7 @@ test("measurement saved offline is sent once after reconnect", async ({ page, co
   await expect(page.getByText("новый замер")).toBeVisible();
   await context.setOffline(true);
   await expect(page.getByText("Нет сети", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Нет сети" })).toHaveClass(/app-status-warning/);
   await page.getByLabel("Вес, кг").fill("79,5");
   await page.getByRole("button", { name: "Сохранить замер" }).click();
   await expect(page.getByText("ждёт синхронизации")).toBeVisible();

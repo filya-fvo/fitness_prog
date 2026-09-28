@@ -77,7 +77,7 @@ export function OfflineBanner() {
     return (
       <div
         role="status"
-        className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100"
+        className="app-status app-status-warning mb-3"
       >
         <p className="font-semibold">Нет сети</p>
         <p className="mt-0.5 opacity-90">
@@ -91,7 +91,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="mb-3 rounded-xl bg-tg-secondary px-3 py-2 text-xs text-tg-hint"
+      className="app-status app-status-info mb-3"
     >
       <p className="font-medium text-tg-text">
         {syncing ? "Отправляем сохранённые действия…" : "Есть несохранённые на сервер действия"}
@@ -100,7 +100,7 @@ export function OfflineBanner() {
         В очереди: {pending}. Можно продолжать — синхронизация идёт в фоне.
       </p>
       {lastError ? (
-        <p className="mt-1 break-words text-[11px] text-amber-700 dark:text-amber-200">
+        <p className="mt-1 break-words text-sm text-[var(--app-warning)]">
           Последняя ошибка: {lastError}
         </p>
       ) : null}
@@ -109,7 +109,7 @@ export function OfflineBanner() {
           type="button"
           disabled={syncing}
           onClick={() => void runFlush(true)}
-          className="rounded-lg bg-tg-button px-2.5 py-1 text-[11px] font-medium text-tg-button-text disabled:opacity-60"
+          className="app-button app-gradient-action"
         >
           {syncing ? "Отправляем…" : "Повторить сейчас"}
         </button>
@@ -123,7 +123,7 @@ export function OfflineBanner() {
               if (accepted) void clearSyncQueue().then(() => refresh());
             });
           }}
-          className="rounded-lg bg-tg-bg px-2.5 py-1 text-[11px] text-tg-hint disabled:opacity-60"
+          className="app-button app-danger-action"
         >
           Очистить очередь
         </button>

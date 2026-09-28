@@ -51,6 +51,9 @@ test("expired browser token is cleared instead of delaying every reload", async 
   await page.goto("/");
 
   await expect(page.getByRole("button", { name: "Войти через Telegram" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Войти через Telegram" })).toHaveClass(/app-secondary-action/);
+  await expect(page.getByRole("button", { name: "Получить код" })).toHaveClass(/app-gradient-action/);
+  await expect(page.getByRole("textbox", { name: "Электронная почта" })).toHaveClass(/app-field/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_jwt"))).toBeNull();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_cached_user_v1")))
     .toBeNull();

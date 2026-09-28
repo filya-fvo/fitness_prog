@@ -41,7 +41,7 @@ export function CollapsibleFilterPanel({
   }
 
   return (
-    <div className={`sticky top-0 z-10 -mx-1 mb-3 rounded-2xl bg-tg-bg/95 p-1 shadow-sm backdrop-blur ${className}`}>
+    <div className={`app-card app-card-inset sticky top-0 z-10 -mx-1 mb-3 p-1 backdrop-blur ${className}`}>
       <button
         type="button"
         onClick={toggle}
