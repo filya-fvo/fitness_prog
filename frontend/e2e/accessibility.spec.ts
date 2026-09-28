@@ -39,7 +39,7 @@ for (const preference of ["light", "dark"] as const) {
   });
 }
 
-for (const route of ["/", "/train", "/progress", "/help-center", "/profile"]) {
+for (const route of ["/", "/activity", "/train", "/progress", "/help-center", "/profile"]) {
   test(`${route} keeps the root experience accessible`, async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.goto(route);

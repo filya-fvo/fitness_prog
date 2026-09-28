@@ -10,6 +10,9 @@ const Chat = lazy(() =>
 const DailyLog = lazy(() =>
   import("@/features/nutrition/pages/DailyLog").then((module) => ({ default: module.DailyLog })),
 );
+const DailyActivityPage = lazy(() =>
+  import("@/features/home/pages/DailyActivityPage").then((module) => ({ default: module.DailyActivityPage })),
+);
 const MeasurementsPage = lazy(() =>
   import("@/features/measurements/pages/MeasurementsPage").then((module) => ({
     default: module.MeasurementsPage,
@@ -177,6 +180,7 @@ export function App() {
             <Route path="programs" element={<ProgramsPage />} />
             <Route path="workouts/active/:workoutId" element={<ActiveWorkout />} />
             <Route path="nutrition" element={<DailyLog />} />
+            <Route path="activity" element={<DailyActivityPage />} />
             <Route path="measurements" element={<MeasurementsPage />} />
             <Route path="profile" element={<ProfileHubPage />} />
             <Route path="profile/settings" element={<ProfilePage />} />

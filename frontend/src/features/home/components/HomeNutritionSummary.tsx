@@ -39,9 +39,9 @@ export function HomeNutritionSummary({ nutrition }: Props) {
           aria-valuemax={calorieTarget ?? Math.max(calories, 1)}
           aria-valuenow={calories}
         >
-          <div className="grid h-[5.5rem] w-[5.5rem] place-content-center rounded-full bg-[#0b1d34] text-center">
+          <div className="grid h-[5.5rem] w-[5.5rem] place-content-center rounded-full bg-[#0b1d34] text-center text-white">
             <strong className="text-xl leading-none">{calories.toLocaleString("ru-RU")}</strong>
-            <span className="mt-1 text-[10px] leading-tight text-tg-hint">
+            <span className="mt-1 text-[10px] leading-tight text-slate-200">
               {calorieTarget ? `из ${Math.round(calorieTarget).toLocaleString("ru-RU")} ккал` : "ккал сегодня"}
             </span>
           </div>

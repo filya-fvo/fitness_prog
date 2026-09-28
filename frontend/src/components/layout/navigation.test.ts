@@ -15,6 +15,7 @@ describe("root navigation", () => {
 
   it.each([
     ["/nutrition", "/"],
+    ["/activity", "/"],
     ["/programs", "/train"],
     ["/workouts/active/42", "/train"],
     ["/measurements", "/progress"],

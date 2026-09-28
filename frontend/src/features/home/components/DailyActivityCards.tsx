@@ -10,7 +10,7 @@ type Props = {
 const colors = { sleep: "text-violet-400", water: "text-cyan-400", steps: "text-teal-400" };
 const bars = { sleep: "bg-sky-400", water: "bg-cyan-400", steps: "bg-teal-400" };
 
-function ActivityIcon({ kind }: { kind: "sleep" | "water" | "steps" }) {
+export function ActivityIcon({ kind }: { kind: "sleep" | "water" | "steps" }) {
   const paths = {
     sleep: <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />,
     water: <path d="M12 2C9.3 6.3 5 10.2 5 14a7 7 0 0 0 14 0c0-3.8-4.3-7.7-7-12Z" />,

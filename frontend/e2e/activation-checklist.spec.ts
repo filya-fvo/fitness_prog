@@ -105,7 +105,7 @@ test("existing profile without rollout state receives the checklist", async ({ p
   await mockHome(page, false);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Привет, new-user" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Открыть питание/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Подробнее/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Освойте приложение" })).toBeVisible();
   if (process.platform === "win32") {
     await expect(page).toHaveScreenshot("home-dashboard-mobile.png", { fullPage: false });

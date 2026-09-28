@@ -165,7 +165,7 @@ test("readiness is requested at start and rest can defer without creating a work
   await expect(page.getByText("Как цикл влияет на готовность сегодня?")).toHaveCount(0);
   await expect(page.getByText("Тяжёлая неделя", { exact: false })).toBeVisible();
 
-  await page.getByRole("button", { name: /Начать ·/ }).evaluate((button) => {
+  await page.getByRole("button", { name: /Начать тренировку/ }).evaluate((button) => {
     button.click();
     button.click();
   });
@@ -184,7 +184,7 @@ test("readiness is requested at start and rest can defer without creating a work
   await expect(dialog).toBeHidden();
   expect(startPayloads).toHaveLength(0);
 
-  await page.getByRole("button", { name: /Начать ·/ }).click();
+  await page.getByRole("button", { name: /Начать тренировку/ }).click();
   await dialog.getByRole("button", { name: /Нужна лёгкая/ }).click();
   await expect.poll(() => startPayloads.length).toBe(1);
   expect(startPayloads[0].cycle_readiness).toBe("reduce");
@@ -197,7 +197,7 @@ test("male profile ignores an erroneous legacy cycle setting", async ({ page }) 
   const startPayloads = await mockHome(page, "male");
   await page.goto("/");
 
-  await page.getByRole("button", { name: /Начать ·/ }).click();
+  await page.getByRole("button", { name: /Начать тренировку/ }).click();
   await expect.poll(() => startPayloads.length).toBe(1);
   expect(startPayloads[0]).not.toHaveProperty("cycle_readiness");
   await expect(page.getByRole("dialog", { name: "Как вы себя чувствуете перед тренировкой?" })).toHaveCount(0);

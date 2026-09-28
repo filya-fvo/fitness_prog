@@ -71,7 +71,6 @@ import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
 import { homeTrainingImage } from "@/features/home/homeTrainingImage";
 import { DailyActivityCards } from "@/features/home/components/DailyActivityCards";
-import { DailyActivityDialog } from "@/features/home/components/DailyActivityDialog";
 import { HomeNutritionSummary } from "@/features/home/components/HomeNutritionSummary";
 import { useDailyActivity } from "@/features/home/hooks/useDailyActivity";
 import { workoutPauseDays } from "@/utils/workoutRecency";
@@ -122,7 +121,6 @@ export function HomePage() {
   const setIdMapping = useWorkoutStore((s) => s.setIdMapping);
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
   const dailyActivity = useDailyActivity();
-  const [dailyActivityOpen, setDailyActivityOpen] = useState(false);
 
   const [regularity, setRegularity] = useState<PersonalRegularity | null>(null);
   const [cachedLastCompletedDate, setCachedLastCompletedDate] = useState<string | null>(null);
@@ -814,7 +812,7 @@ export function HomePage() {
             <div className="app-card app-card-neutral space-y-3 p-4">
               <p className="text-sm font-semibold">{todayProgram.name}</p>
               <p className="break-words text-xs text-tg-hint [overflow-wrap:anywhere]">
-                {todayDayTitle} · {phaseMetaFromName(effectiveTodayPhase).label}
+                {todayDayTitle} · {phaseMetaFromName(effectiveTodayPhase).label} неделя
                 {todayProgram.workout_type ? ` · ${enumLabel(todayProgram.workout_type)}` : ""}
               </p>
             {preparedPlan?.load_adjustment_label ? (
@@ -941,7 +939,7 @@ export function HomePage() {
         <DailyActivityCards
           day={dailyActivity.day}
           waterTargetMl={dailyActivity.waterTargetMl ?? waterTargetMl}
-          onOpen={() => setDailyActivityOpen(true)}
+          onOpen={() => navigate("/activity")}
         />
 
         <ActivationChecklistCard
@@ -960,7 +958,7 @@ export function HomePage() {
             });
           }}
           onOpenCheckin={() => {
-            setDailyActivityOpen(true);
+            navigate("/activity");
           }}
           onSnooze={activationChecklist.snooze}
           onDismiss={activationChecklist.dismiss}
@@ -991,11 +989,6 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <DailyActivityDialog
-          open={dailyActivityOpen}
-          activity={dailyActivity}
-          onClose={() => setDailyActivityOpen(false)}
-        />
 
         <PreWorkoutReadinessDialog
           open={readiness.open}

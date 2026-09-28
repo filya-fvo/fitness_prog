@@ -11,7 +11,7 @@ export const NAV_ITEMS = [
 export type NavigationIconName = (typeof NAV_ITEMS)[number]["icon"];
 
 const ROOT_PATHS: ReadonlyArray<readonly [RootRoute, readonly string[]]> = [
-  ["/", ["/", "/nutrition", "/onboarding"]],
+  ["/", ["/", "/nutrition", "/activity", "/onboarding"]],
   ["/train", ["/train", "/workouts", "/programs"]],
   ["/progress", ["/progress", "/measurements"]],
   ["/help-center", ["/help-center", "/ai", "/support"]],

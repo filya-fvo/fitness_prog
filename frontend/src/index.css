@@ -283,6 +283,13 @@ body {
     border-color: color-mix(in srgb, var(--app-brand-mid) 42%, var(--border-subtle));
   }
 
+  .daily-activity-page .app-page-title {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+  }
+
   .home-media-card .text-tg-hint {
     color: rgba(235, 244, 235, 0.76);
   }

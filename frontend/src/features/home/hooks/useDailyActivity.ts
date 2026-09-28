@@ -45,8 +45,10 @@ export type DailyActivity = {
   setSteps: (value: string) => void;
   setActiveMinutes: (value: string) => void;
   shiftDate: (delta: number) => void;
+  selectDate: (date: string) => void;
   saveCheckin: () => Promise<void>;
   addWater: (ml: number) => void;
+  setWaterMl: (ml: number) => void;
   resetWater: () => void;
 };
 
@@ -194,6 +196,15 @@ export function useDailyActivity(date?: string): DailyActivity {
     syncPendingWater(selectedDate);
   }, [ownerUserId, selectedDate, syncPendingWater]);
 
+  const setWaterAmount = useCallback((ml: number) => {
+    if (!Number.isFinite(ml) || ml < 0 || ml > 10000) return;
+    const next = saveHabitDay({
+      ...getHabitDay(selectedDate, ownerUserId), waterMl: Math.round(ml), waterPending: true,
+    }, ownerUserId);
+    setDay(next);
+    syncPendingWater(selectedDate);
+  }, [ownerUserId, selectedDate, syncPendingWater]);
+
   const resetWater = useCallback(() => {
     const next = saveHabitDay({ ...getHabitDay(selectedDate, ownerUserId), waterMl: 0, waterPending: true }, ownerUserId);
     setDay(next);
@@ -207,6 +218,12 @@ export function useDailyActivity(date?: string): DailyActivity {
     if (key <= today) setInternalDate(key);
   }, [selectedDate, today]);
 
+  const selectDate = useCallback((next: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(next) && next <= today && !Number.isNaN(Date.parse(`${next}T12:00:00`))) {
+      setInternalDate(next);
+    }
+  }, [today]);
+
   const dateLabel = selectedDate === today
     ? "Сегодня"
     : new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(`${selectedDate}T12:00:00`));
@@ -215,6 +232,6 @@ export function useDailyActivity(date?: string): DailyActivity {
     selectedDate, today, day, sleep, steps, activeMinutes, waterTargetMl,
     waterLeft: waterTargetMl == null ? null : Math.max(0, waterTargetMl - day.waterMl),
     dateLabel, streak, saving, loading, syncingWater, setSleep, setSteps, setActiveMinutes,
-    shiftDate, saveCheckin, addWater: addWaterAmount, resetWater,
+    shiftDate, selectDate, saveCheckin, addWater: addWaterAmount, setWaterMl: setWaterAmount, resetWater,
   };
 }
