@@ -26,7 +26,7 @@ export function HomeNutritionSummary({ nutrition }: Props) {
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">Питание сегодня</h2>
         <Link to="/nutrition" className="inline-flex min-h-[44px] items-center text-xs font-medium text-tg-link">
-          Подробнее <span aria-hidden="true" className="ml-1">›</span>
+          Питание <span aria-hidden="true" className="ml-1">›</span>
         </Link>
       </div>
       <div className="flex items-center gap-3">

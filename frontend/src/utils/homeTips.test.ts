@@ -12,8 +12,6 @@ describe("buildHomeTips", () => {
       canResume: false,
       waterMl: 0,
       waterTargetMl: null,
-      todayCalories: null,
-      calorieTarget: null,
     });
     expect(tips.some((t) => t.id === "pick_program")).toBe(true);
   });
@@ -27,9 +25,26 @@ describe("buildHomeTips", () => {
       canResume: false,
       waterMl: 200,
       waterTargetMl: 2500,
-      todayCalories: 400,
-      calorieTarget: 2200,
     });
     expect(tips.length).toBeLessThanOrEqual(2);
+  });
+
+  it("does not repeat nutrition advice below the nutrition card", () => {
+    const base = {
+      daysSinceLastWorkout: null,
+      completedWorkouts: 5,
+      regularity: null,
+      hasProgram: true,
+      canResume: false,
+      waterMl: 2000,
+      waterTargetMl: 2500,
+      calorieTarget: 2200,
+    };
+
+    for (const todayCalories of [400, 2600]) {
+      const input = { ...base, todayCalories };
+      const tips = buildHomeTips(input);
+      expect(tips.some((tip) => tip.ctaTo === "/nutrition")).toBe(false);
+    }
   });
 });

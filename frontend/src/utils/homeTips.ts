@@ -17,8 +17,6 @@ export function buildHomeTips(input: {
   canResume: boolean;
   waterMl: number;
   waterTargetMl: number | null;
-  todayCalories: number | null;
-  calorieTarget: number | null;
 }): HomeTip[] {
   const tips: HomeTip[] = [];
 
@@ -69,34 +67,6 @@ export function buildHomeTips(input: {
     tips.push({
       id: "water",
       text: `Вода ${input.waterMl} / ${input.waterTargetMl} мл — доберите стакан-два.`,
-    });
-  }
-
-  if (
-    input.calorieTarget != null &&
-    input.todayCalories != null &&
-    input.todayCalories > 0 &&
-    input.todayCalories < input.calorieTarget * 0.55
-  ) {
-    const left = Math.round(input.calorieTarget - input.todayCalories);
-    tips.push({
-      id: "calories_low",
-      text: `По калориям недобор ~${left} ккал до цели — можно добавить приём в дневнике.`,
-      ctaLabel: "Питание",
-      ctaTo: "/nutrition",
-    });
-  }
-
-  if (
-    input.calorieTarget != null &&
-    input.todayCalories != null &&
-    input.todayCalories > input.calorieTarget * 1.15
-  ) {
-    tips.push({
-      id: "calories_high",
-      text: "Сегодня калорий больше цели — ок, если осознанно; иначе скорректируйте ужин.",
-      ctaLabel: "Дневник",
-      ctaTo: "/nutrition",
     });
   }
 

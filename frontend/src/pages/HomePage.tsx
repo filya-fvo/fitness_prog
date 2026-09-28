@@ -142,9 +142,7 @@ export function HomePage() {
   const [pickPhase, setPickPhase] = useState<WeekPhase>("medium");
   const [completedCount, setCompletedCount] = useState(0);
   const [hasCompletedSet, setHasCompletedSet] = useState(false);
-  const [todayCalories, setTodayCalories] = useState<number | null>(null);
   const [todayNutrition, setTodayNutrition] = useState<DailyNutrition | null>(null);
-  const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
   const [waterMl, setWaterMl] = useState(() => getHabitDay(undefined, user?.id).waterMl);
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
@@ -398,11 +396,6 @@ export function HomePage() {
             ]);
             if (!cancelled && daily) {
               setTodayNutrition(daily);
-              setTodayCalories(Number(daily.totals?.calories) || 0);
-              const t = daily.targets;
-              if (t?.complete && t.calories_target != null) {
-                setCalorieTarget(Number(t.calories_target));
-              }
             }
             if (!cancelled && water) {
               if (water.daily_target_ml != null) setWaterTargetMl(water.daily_target_ml);
@@ -439,16 +432,12 @@ export function HomePage() {
         canResume,
         waterMl,
         waterTargetMl,
-        todayCalories,
-        calorieTarget,
       }),
     [
-      calorieTarget,
       canResume,
       completedCount,
       daysSinceLastWorkout,
       regularity,
-      todayCalories,
       todayProgram,
       waterMl,
       waterTargetMl,
