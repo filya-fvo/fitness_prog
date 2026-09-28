@@ -10,6 +10,8 @@ test("profile hero uses saved data at mobile width without overflow", async ({ p
   const hero = page.getByRole("link", { name: /На пути к лучшей версии себя/ });
   await expect(hero).toBeVisible();
   await expect(hero.locator("svg")).toHaveCount(2);
+  const settingsIcon = page.getByRole("link", { name: /Настройки профиля/ }).locator("span").first();
+  expect(await settingsIcon.evaluate((element) => getComputedStyle(element).backgroundImage)).toContain("linear-gradient");
   const { clientWidth, scrollWidth } = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

@@ -4,6 +4,13 @@ import { joinClassNames } from "@/theme/visualStyles";
 
 export type HubIconName = "ai" | "support" | "faq" | "settings" | "notifications" | "social" | "invite" | "measurements" | "admin";
 
+const iconTone = {
+  indigo: "from-blue-500/30 via-indigo-500/20 to-violet-500/20 text-cyan-300",
+  plum: "from-fuchsia-500/30 via-violet-500/20 to-indigo-500/20 text-pink-300",
+  ember: "from-orange-500/30 via-rose-500/20 to-fuchsia-500/20 text-orange-300",
+  ocean: "from-cyan-500/30 via-sky-500/20 to-blue-500/20 text-cyan-300",
+} as const;
+
 type HubLinkCardProps = {
   to: string;
   title: string;
@@ -32,7 +39,7 @@ export function HubLinkCard({ className, description, icon, title, to, tone = "i
       to={to}
       className={joinClassNames("app-card", `app-card-${tone}`, "app-card-interactive group flex min-h-[88px] items-center gap-3 p-4", className)}
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black/10 text-tg-link ring-1 ring-white/10">
+      <span className={joinClassNames("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-white/15 shadow-[0_4px_12px_rgba(0,0,0,.15)]", iconTone[tone])}>
         <HubIcon name={icon} />
       </span>
       <span className="min-w-0 flex-1">
