@@ -26,6 +26,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppCard } from "@/components/ui/AppCard";
 import { AppField } from "@/components/ui/AppField";
 import { MealNutritionSummary } from "@/features/nutrition/components/MealNutritionSummary";
+import { NutritionSummaryCard } from "@/features/nutrition/components/NutritionSummaryCard";
 import { DecimalInput } from "@/components/DecimalInput";
 import { parseDecimalInput } from "@/components/decimalInputValue";
 import { NutritionLabelCameraModal } from "@/features/nutrition/components/NutritionLabelCameraModal";
@@ -140,7 +141,6 @@ export function DailyLog() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [addPanelOpen, setAddPanelOpen] = useState(false);
-  const [goalDetailsOpen, setGoalDetailsOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editGrams, setEditGrams] = useState("100");
   const [editMeal, setEditMeal] = useState<MealId>("breakfast");
@@ -676,45 +676,12 @@ export function DailyLog() {
 
   const totals = data?.totals ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
   const targets = data?.targets;
-  const calorieGoal =
-    targets?.complete && targets.calories_target ? Number(targets.calories_target) : 2200;
-  const calPct = Math.min(100, Math.round((totals.calories / Math.max(1, calorieGoal)) * 100));
-  const remaining = Math.round(calorieGoal - totals.calories);
-  const adj = targets?.calorie_adjustment_pct;
   const isAuthed = Boolean(getStoredToken());
   const isToday = day === todayISO();
 
   return (
     <section className="mx-auto max-w-4xl">
       <Header title="Питание" subtitle={`Дневник · ${formatDayLabel(day)}`} />
-
-      <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-tg-secondary px-2 py-2">
-        <button
-          type="button"
-          aria-label="Предыдущий день"
-          onClick={() => setDay((d) => shiftISODate(d, -1))}
-          className="tap-target-x min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg font-semibold"
-        >
-          ‹
-        </button>
-        <button
-          type="button"
-          onClick={() => setDay(todayISO())}
-          className="min-w-0 flex-1 px-2 text-center text-sm font-semibold"
-        >
-          {formatDayLabel(day)}
-          <span className="mt-0.5 block text-[11px] font-normal text-tg-hint">{day}</span>
-        </button>
-        <button
-          type="button"
-          aria-label="Следующий день"
-          disabled={isToday}
-          onClick={() => setDay((d) => shiftISODate(d, 1))}
-          className="tap-target-x min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg font-semibold disabled:opacity-40"
-        >
-          ›
-        </button>
-      </div>
 
       {loading ? <p className="mb-3 text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
@@ -732,86 +699,15 @@ export function DailyLog() {
         </div>
       ) : null}
 
-      <AppCard tone="hero" className="nutrition-summary-card">
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <p className="text-xs text-tg-hint">
-              Калории, ккал · {isToday ? "сегодня" : formatDayLabel(day)}
-            </p>
-            <p className="text-2xl font-semibold">{totals.calories.toFixed(0)} <span className="text-sm font-normal text-tg-hint">ккал</span></p>
-          </div>
-          <div className="text-right text-xs text-tg-hint">
-            <p>
-              цель{" "}
-              <span className="font-medium text-tg-text">
-                {targets?.complete ? calorieGoal : "~2200"}
-              </span>
-            </p>
-            {targets?.complete ? (
-              <p className="mt-0.5">
-                {remaining >= 0 ? `осталось ${remaining}` : `превышение ${Math.abs(remaining)}`}
-                {adj != null ? ` · ${adj > 0 ? "+" : ""}${adj}%` : ""}
-              </p>
-            ) : (
-              <p className="mt-0.5">
-                <Link to="/profile" className="text-tg-link">
-                  Заполните профиль
-                </Link>{" "}
-                для точной цели
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-tg-bg">
-          <div className="h-full rounded-full bg-tg-button" style={{ width: `${calPct}%` }} />
-        </div>
-        {targets?.complete && targets.bmr && targets.tdee ? (
-          <div className="mt-2">
-            <button type="button" onClick={() => setGoalDetailsOpen((value) => !value)} className="text-xs font-medium text-tg-link">
-              {goalDetailsOpen ? "Скрыть расчёт цели" : "Как рассчитана цель"}
-            </button>
-            {goalDetailsOpen ? (
-              <p className="mt-1 rounded-xl bg-tg-bg/70 p-2 text-xs text-tg-hint">
-                Основной обмен — энергия в покое: {targets.bmr} ккал · суточный расход с активностью: {targets.tdee} ккал
-                {targets.macros
-                  ? ` · цель Б/Ж/У ${targets.macros.proteins_g ?? "—"}/${targets.macros.fats_g ?? "—"}/${targets.macros.carbs_g ?? "—"} г`
-                  : ""}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-          <div>
-            <p className="text-tg-hint">Белки, г</p>
-            <p className="font-medium">{totals.proteins.toFixed(0)}</p>
-            {targets?.macros?.proteins_g ? (
-              <p className="text-[10px] text-tg-hint">/ {targets.macros.proteins_g}</p>
-            ) : null}
-          </div>
-          <div>
-            <p className="text-tg-hint">Жиры, г</p>
-            <p className="font-medium">{totals.fats.toFixed(0)}</p>
-            {targets?.macros?.fats_g ? (
-              <p className="text-[10px] text-tg-hint">/ {targets.macros.fats_g}</p>
-            ) : null}
-          </div>
-          <div>
-            <p className="text-tg-hint">Углеводы, г</p>
-            <p className="font-medium">{totals.carbs.toFixed(0)}</p>
-            {targets?.macros?.carbs_g ? (
-              <p className="text-[10px] text-tg-hint">/ {targets.macros.carbs_g}</p>
-            ) : null}
-          </div>
-        </div>
-        <div className="nutrition-guide-links">
-          <Link to="/measurements">
-            Замеры и баланс
-          </Link>
-          <Link to="/knowledge">
-            Гид по питанию ↗
-          </Link>
-        </div>
-      </AppCard>
+      <NutritionSummaryCard
+        day={day}
+        isToday={isToday}
+        totals={totals}
+        targets={targets}
+        onPrevious={() => setDay((current) => shiftISODate(current, -1))}
+        onToday={() => setDay(todayISO())}
+        onNext={() => setDay((current) => shiftISODate(current, 1))}
+      />
 
       {!addPanelOpen ? (
         <AppButton

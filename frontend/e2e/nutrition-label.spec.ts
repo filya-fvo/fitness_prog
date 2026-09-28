@@ -87,6 +87,8 @@ test("label photo is uploaded as multipart and opens an editable review", async 
 
   await page.goto("/nutrition");
   await expect(page.locator(".nutrition-summary-card")).toHaveClass(/app-card-hero/);
+  await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "0");
+  await expect(page.locator(".nutrition-summary-card").getByRole("progressbar")).toHaveCount(3);
   await expect(page.locator(".nutrition-meal-card").first()).toHaveClass(/app-card/);
   await expect(page.getByRole("button", { name: "+ Добавить продукт" })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
