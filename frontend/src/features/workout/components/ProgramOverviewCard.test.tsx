@@ -48,8 +48,8 @@ it("shows the training image and body map when program details open", () => {
   const collapsed = renderToStaticMarkup(createElement(ProgramOverviewCard, { ...props, expanded: false }));
   const expanded = renderToStaticMarkup(createElement(ProgramOverviewCard, { ...props, expanded: true }));
 
-  expect(collapsed).not.toContain("program-focus-hero");
+  expect(collapsed).not.toContain("program-detail-hero");
   expect(collapsed).toContain("Грудь");
-  expect(expanded).toContain("program-focus-hero");
+  expect(expanded).toContain("program-detail-hero");
   expect(expanded).toContain('aria-label="Карта мышц программы"');
 });

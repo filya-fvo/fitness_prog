@@ -98,12 +98,16 @@ const limits = {
   // The four approved Home/activity reference corrections add the calorie ring,
   // macro bars and a dedicated day editor; artwork stays in static media assets.
   // Allow up to 7.3 KB growth in lazy product routes, with vendor isolation intact.
-  totalJsGzip: 536_000,
-  productJsGzip: 482_500,
+  // The approved exercise hub, private-program builder, nutrition guidance and
+  // illustrated help cards grow existing lazy routes by 7.6 KB gzip product.
+  // No new eager vendor dependency appears; retain <2 KB product headroom.
+  totalJsGzip: 548_000,
+  productJsGzip: 492_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
-  adminJsGzip: 53_600,
+  // The separate admin nutrition/catalog screens account for ~2.2 KB gzip.
+  adminJsGzip: 56_000,
   largestJsGzip: 140_000,
 };
 const failures = [];

@@ -7,7 +7,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
-import { fetchWorkoutHistory } from "@/api/workouts";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPlannedWorkoutPlan,
@@ -37,7 +36,7 @@ import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { buttonClass } from "@/theme/visualStyles";
-import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
 import {
   draftsWithSuggestions,
   ensureProgramStartDate,
@@ -105,7 +104,6 @@ export function TrainHubPage() {
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
   const [hubCatalog, setHubCatalog] = useState<Exercise[]>([]);
   const [exerciseCount, setExerciseCount] = useState<number>();
-  const [recentHistory, setRecentHistory] = useState<Workout[]>([]);
   const readiness = usePreWorkoutReadiness(cycleTrainingEnabledForProfile(goals));
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
@@ -184,14 +182,13 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, myPrograms, profile, scheduleOverview, recurringSchedule, exercises, history] = await Promise.all([
+          const [programs, myPrograms, profile, scheduleOverview, recurringSchedule, exercises] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
             fetchMyPrograms().catch(() => ({ items: [] })),
             fetchMyProfile().catch(() => null),
             fetchWorkoutSchedule().catch(() => null),
             fetchWorkoutScheduleSettings().catch(() => null),
             fetchExercises({ pageSize: 200 }).catch(() => null),
-            fetchWorkoutHistory({ limit: 30 }).catch(() => []),
           ]);
           const g = (profile?.goals as Record<string, unknown>) || {};
           const anthropometry = (profile?.anthropometry as Record<string, unknown>) || {};
@@ -209,7 +206,6 @@ export function TrainHubPage() {
               setExerciseCount(exercises.total);
               void cacheExercises(exercises.items);
             }
-            setRecentHistory(history);
           }
         }
       } catch (err) {
@@ -468,7 +464,7 @@ export function TrainHubPage() {
           <span aria-hidden="true" className="text-lg text-tg-link">⌕</span>
           Найти подходящее упражнение
         </Link>
-        <ExerciseHubDiscovery catalog={hubCatalog} history={recentHistory} />
+        <ExerciseHubDiscovery catalog={hubCatalog} history={[]} />
 
         <Link to="/" className={`${buttonClass("secondary")} w-full`}>
           ← На главную · «Сегодня»
