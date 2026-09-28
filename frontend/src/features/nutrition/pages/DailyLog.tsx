@@ -151,6 +151,7 @@ export function DailyLog() {
   const [ovF, setOvF] = useState("");
   const [ovC, setOvC] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
+  const addDialogRef = useModalAccessibility(addPanelOpen, () => setAddPanelOpen(false));
   const editDialogRef = useModalAccessibility(Boolean(editingLog), () => setEditingLog(null));
   const customDialogRef = useModalAccessibility(customOpen, () => setCustomOpen(false));
   const [cName, setCName] = useState("");
@@ -719,9 +720,22 @@ export function DailyLog() {
         </AppButton>
       ) : null}
 
-      {addPanelOpen ? <div className="mb-4 space-y-2 rounded-2xl bg-tg-secondary p-4">
+      {addPanelOpen ? <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-3 sm:items-center">
+        <div
+          ref={addDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Добавить продукт"
+          tabIndex={-1}
+          className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl"
+        >
+        <AppCard tone="indigo" className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium">Добавить продукт</p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-tg-hint">{selected ? "Шаг 2 из 2" : "Шаг 1 из 2"}</p>
+            <p className="text-base font-semibold">{selected ? "Укажите порцию" : "Выберите продукт"}</p>
+          </div>
+          {!selected ? (
           <button
             type="button"
             disabled={copyingYesterday || saving}
@@ -730,7 +744,9 @@ export function DailyLog() {
           >
             {copyingYesterday ? "Копируем…" : "Как вчера"}
           </button>
+          ) : null}
         </div>
+        {!selected ? <>
         <button
           type="button"
           disabled={barcodeBusy || labelBusy || saving || !isOnline()}
@@ -743,10 +759,7 @@ export function DailyLog() {
         >
           {barcodeBusy ? "Ищем…" : "▦ Сканировать штрихкод"}
         </button>
-        <p className="text-[11px] text-tg-hint">
-          Начните со штрихкода. Внутри сканера можно перейти к фото этикетки или ручному
-          вводу. Если товар не найден, приложение само предложит эти варианты.
-        </p>
+        <p className="text-xs text-tg-hint">Сканируйте штрихкод или найдите продукт по названию.</p>
         {labelFeedback ? (
           <div
             role={labelFeedback.error ? "alert" : "status"}
@@ -884,7 +897,7 @@ export function DailyLog() {
               type="button"
               onClick={() => setMealType(m.id)}
               className={[
-                "rounded-lg px-3 py-1.5 text-xs",
+                "min-h-11 rounded-lg px-3 py-1.5 text-xs",
                 mealType === m.id ? "bg-tg-button text-tg-button-text" : "bg-tg-bg",
               ].join(" ")}
             >
@@ -900,7 +913,7 @@ export function DailyLog() {
             setSelected(null);
           }}
           placeholder="Поиск: яблоко, курица…"
-          className="w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+          className="min-h-11 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
         />
         {suggestions.length > 0 && !selected ? (
           <ul className="max-h-40 overflow-auto rounded-lg bg-tg-bg">
@@ -976,10 +989,7 @@ export function DailyLog() {
                   <li key={p.id}>
                     <button
                       type="button"
-                      className={[
-                        "w-full px-3 py-2 text-left text-sm hover:bg-black/5",
-                        selected?.id === p.id ? "bg-black/5" : "",
-                      ].join(" ")}
+                      className="min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-black/5"
                       onClick={() => pickProduct(p)}
                     >
                       <span className="font-medium">{p.name_ru}</span>
@@ -999,6 +1009,27 @@ export function DailyLog() {
           </div>
         ) : null}
 
+        <button
+          type="button"
+          onClick={() => {
+            setLabelReview(null);
+            setCustomError(null);
+            setCustomOpen(true);
+          }}
+          className="min-h-11 w-full rounded-xl border border-tg-button/20 px-3 text-sm font-medium text-tg-link"
+        >
+          + Свой продукт в общий каталог
+        </button>
+        </> : (
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-bg/60 p-3">
+            <p className="min-w-0 truncate font-medium">{selected.name_ru}</p>
+            <button type="button" onClick={clearSelectedDraft} className="min-h-11 shrink-0 text-xs font-medium text-tg-link">
+              Другой продукт
+            </button>
+          </div>
+        )}
+
+        {selected ? <>
         <label className="block text-xs text-tg-hint">
           Граммы
           <DecimalInput
@@ -1007,7 +1038,7 @@ export function DailyLog() {
             value={grams}
             onValueChange={setGrams}
             placeholder="например, 120"
-            className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+            className="mt-1 min-h-11 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
           />
         </label>
         <div className="flex flex-wrap gap-1.5">
@@ -1030,19 +1061,6 @@ export function DailyLog() {
 
         {selected ? (
           <div className="space-y-2 rounded-xl bg-tg-bg p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[11px] text-tg-hint">Выбрано · ещё не в дневнике</p>
-                <p className="text-sm font-medium">{selected.name_ru}</p>
-              </div>
-              <button
-                type="button"
-                onClick={clearSelectedDraft}
-                className="shrink-0 rounded-lg bg-tg-secondary px-2.5 py-1 text-[11px] font-medium text-tg-hint"
-              >
-                Убрать
-              </button>
-            </div>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -1115,25 +1133,16 @@ export function DailyLog() {
           </p>
         ) : null}
         <div className="flex gap-2">
-          {selected ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={clearSelectedDraft}
-              className="shrink-0 rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium disabled:opacity-50"
-            >
-              Отмена
-            </button>
-          ) : null}
           <button
             type="button"
-            disabled={!selected || saving}
+            disabled={saving}
             onClick={() => void submit()}
             className="min-w-0 flex-1 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50"
           >
             {saving ? "Сохраняем…" : "Добавить и продолжить"}
           </button>
         </div>
+        </> : null}
         <button
           type="button"
           onClick={() => setAddPanelOpen(false)}
@@ -1141,17 +1150,8 @@ export function DailyLog() {
         >
           Закрыть добавление
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setLabelReview(null);
-            setCustomError(null);
-            setCustomOpen(true);
-          }}
-          className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium"
-        >
-          + Свой продукт в общий каталог
-        </button>
+        </AppCard>
+        </div>
       </div> : null}
 
       <div className="nutrition-meals">

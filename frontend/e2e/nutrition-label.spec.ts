@@ -92,6 +92,8 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   await expect(page.locator(".nutrition-meal-card").first()).toHaveClass(/app-card/);
   await expect(page.getByRole("button", { name: "+ Добавить продукт" })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
+  await expect(page.getByRole("dialog", { name: "Добавить продукт" })).toBeVisible();
+  await expect(page.getByLabel("Граммы", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Снять этикетку/ })).toHaveCount(0);
   await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
   const scannerDialog = page.getByRole("dialog", { name: "Сканер штрихкода" });
