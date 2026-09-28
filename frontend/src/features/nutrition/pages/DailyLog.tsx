@@ -11,6 +11,7 @@ import {
   deleteNutritionLog,
   fetchDailyNutrition,
   fetchProductCategories,
+  fetchProduct,
   lookupBarcode,
   previewKbju,
   recognizeNutritionLabel,
@@ -84,6 +85,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 type MealId = (typeof MEALS)[number]["id"];
+type Per100Field = "calories" | "proteins" | "fats" | "carbs";
+const PER_100_FIELDS: Array<{ key: Per100Field; label: string; max: number }> = [
+  { key: "calories", label: "Ккал на 100 г", max: 1200 },
+  { key: "proteins", label: "Белки на 100 г", max: 100 },
+  { key: "fats", label: "Жиры на 100 г", max: 100 },
+  { key: "carbs", label: "Углеводы на 100 г", max: 100 },
+];
 
 function todayISO(): string {
   const d = new Date();
@@ -136,6 +144,7 @@ export function DailyLog() {
   const [category, setCategory] = useState("");
   const [selected, setSelected] = useState<NutritionProduct | null>(null);
   const [grams, setGrams] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -144,6 +153,8 @@ export function DailyLog() {
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editGrams, setEditGrams] = useState("100");
   const [editMeal, setEditMeal] = useState<MealId>("breakfast");
+  const [editPer100, setEditPer100] = useState<Record<Per100Field, string>>({ calories: "", proteins: "", fats: "", carbs: "" });
+  const [editError, setEditError] = useState<string | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [ovCal, setOvCal] = useState("");
@@ -290,6 +301,7 @@ export function DailyLog() {
     setOvC(String(p.carbs));
     setOverrideOpen(false);
     setOkNote(null);
+    setAddError(null);
     setGrams(opts?.grams && opts.grams > 0 ? String(opts.grams) : "");
     if (opts?.meal) setMealType(opts.meal);
   }
@@ -303,9 +315,10 @@ export function DailyLog() {
     setOverrideOpen(false);
     setOkNote(null);
     setError(null);
+    setAddError(null);
   }
 
-  function pickQuick(q: QuickProduct) {
+  async function pickQuick(q: QuickProduct) {
     const meal =
       q.lastMeal === "breakfast" ||
       q.lastMeal === "lunch" ||
@@ -313,7 +326,8 @@ export function DailyLog() {
       q.lastMeal === "snack"
         ? q.lastMeal
         : undefined;
-    pickProduct(productFromQuick(q), {
+    const product = await fetchProduct(q.id).catch(() => productFromQuick(q));
+    pickProduct(product, {
       grams: q.lastGrams && q.lastGrams > 0 ? q.lastGrams : undefined,
       meal,
     });
@@ -346,24 +360,35 @@ export function DailyLog() {
 
   async function submit() {
     if (!selected || saving) return;
-    const g = Number(grams);
-    if (!g || g <= 0) {
-      setError("Укажите граммовку > 0");
+    const g = parseDecimalInput(grams);
+    if (g == null || g <= 0 || g > 100_000) {
+      setAddError("Укажите граммы больше 0 и не более 100 000");
       return;
     }
+    const override = overrideOpen ? PER_100_FIELDS.map(({ key }) => parseDecimalInput({
+      calories: ovCal, proteins: ovP, fats: ovF, carbs: ovC,
+    }[key])) : null;
+    if (override && override.some((value, index) => value == null || value > PER_100_FIELDS[index].max)) {
+      setAddError("Заполните ккал и БЖУ на 100 г допустимыми числами");
+      return;
+    }
+    const reviewedValues = override as [number, number, number, number] | null;
+    const needsCatalogReview = reviewedValues != null && PER_100_FIELDS.some(({ key }, index) =>
+      reviewedValues[index] !== selected[key],
+    );
     setSaving(true);
     setError(null);
+    setAddError(null);
     try {
-      const useOv = overrideOpen;
       await addNutritionLog({
         productId: selected.id,
         quantityGrams: g,
         mealType,
         date: day,
-        caloriesPer100: useOv && ovCal !== "" ? Number(ovCal) : undefined,
-        proteinsPer100: useOv && ovP !== "" ? Number(ovP) : undefined,
-        fatsPer100: useOv && ovF !== "" ? Number(ovF) : undefined,
-        carbsPer100: useOv && ovC !== "" ? Number(ovC) : undefined,
+        caloriesPer100: reviewedValues?.[0],
+        proteinsPer100: reviewedValues?.[1],
+        fatsPer100: reviewedValues?.[2],
+        carbsPer100: reviewedValues?.[3],
       });
       trackEvent("nutrition_logged", {
         meal_type: mealType,
@@ -371,7 +396,13 @@ export function DailyLog() {
         product_id: selected.id,
         source: "manual",
       });
-      setRecent(rememberRecentProduct(selected, { grams: g, mealType }));
+      setRecent(rememberRecentProduct({
+        ...selected,
+        ...(reviewedValues ? {
+          calories: reviewedValues[0], proteins: reviewedValues[1],
+          fats: reviewedValues[2], carbs: reviewedValues[3],
+        } : {}),
+      }, { grams: g, mealType }));
       setQuery("");
       setSelected(null);
       setSuggestions([]);
@@ -379,11 +410,13 @@ export function DailyLog() {
       setOverrideOpen(false);
       await reload();
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
-      setOkNote(`${selected.name_ru} добавлен в «${mealLabel}». Можно сразу выбрать следующий продукт.`);
+      setOkNote(needsCatalogReview
+        ? `${selected.name_ru} добавлен в «${mealLabel}». БЖУ сохранены для вас и будущих добавлений; общий продукт отправлен на проверку.`
+        : `${selected.name_ru} добавлен в «${mealLabel}». Можно сразу выбрать следующий продукт.`);
       toast(`Добавлено · ${selected.name_ru} · ${g} г · ${mealLabel}`);
       window.requestAnimationFrame(() => productSearchRef.current?.focus());
     } catch (err) {
-      setError(toUserMessage(err, "Не удалось добавить продукт"));
+      setAddError(toUserMessage(err, "Не удалось добавить продукт"));
     } finally {
       setSaving(false);
     }
@@ -393,21 +426,44 @@ export function DailyLog() {
     if (!editingLog || editBusy) return;
     const g = Number(editGrams);
     if (!g || g <= 0) {
-      setError("Укажите граммовку > 0");
+      setEditError("Укажите граммовку больше 0");
       return;
     }
+    const values = PER_100_FIELDS.map(({ key }) => parseDecimalInput(editPer100[key]));
+    if (values.some((value, index) => value == null || value > PER_100_FIELDS[index].max)) {
+      setEditError("Проверьте ккал и БЖУ на 100 г: заполните все поля допустимыми числами");
+      return;
+    }
+    const [calories, proteins, fats, carbs] = values as [number, number, number, number];
+    const previous = editingLog.calculated_kbj?.per_100_override as Partial<Record<Per100Field, number>> | undefined;
+    const changed = PER_100_FIELDS.some(({ key }, index) =>
+      values[index] !== Number(previous?.[key] ?? editingLog.product?.[key] ?? 0),
+    );
+    const sentForReview = changed && PER_100_FIELDS.some(({ key }, index) =>
+      values[index] !== Number(editingLog.product?.[key] ?? 0),
+    );
     setEditBusy(true);
     setError(null);
+    setEditError(null);
     try {
       await updateNutritionLog(editingLog.id, {
         quantityGrams: g,
         mealType: editMeal,
+        ...(changed ? {
+          caloriesPer100: calories,
+          proteinsPer100: proteins,
+          fatsPer100: fats,
+          carbsPer100: carbs,
+        } : {}),
       });
       setEditingLog(null);
       await reload();
+      if (sentForReview) {
+        setOkNote("БЖУ сохранены для вас и будущих добавлений. Исправление общего продукта отправлено администратору на проверку.");
+      }
       toast(`Обновлено · ${g} г`);
     } catch (err) {
-      setError(toUserMessage(err, "Не удалось изменить запись"));
+      setEditError(toUserMessage(err, "Не удалось изменить запись"));
     } finally {
       setEditBusy(false);
     }
@@ -746,6 +802,7 @@ export function DailyLog() {
           </button>
           ) : null}
         </div>
+        {addError ? <p role="alert" className="app-status app-status-danger text-sm">{addError}</p> : null}
         {!selected ? <>
         <button
           type="button"
@@ -1199,6 +1256,14 @@ export function DailyLog() {
                             onClick={() => {
                               setEditingLog(item);
                               setEditGrams(String(item.quantity_grams));
+                              const prior = item.calculated_kbj?.per_100_override as Partial<Record<Per100Field, number>> | undefined;
+                              setEditPer100({
+                                calories: String(prior?.calories ?? item.product?.calories ?? 0),
+                                proteins: String(prior?.proteins ?? item.product?.proteins ?? 0),
+                                fats: String(prior?.fats ?? item.product?.fats ?? 0),
+                                carbs: String(prior?.carbs ?? item.product?.carbs ?? 0),
+                              });
+                              setEditError(null);
                               setEditMeal(
                                 (item.meal_type as MealId) in
                                   { breakfast: 1, lunch: 1, dinner: 1, snack: 1 }
@@ -1206,7 +1271,7 @@ export function DailyLog() {
                                   : m.id,
                               );
                             }}
-                            className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] font-medium text-tg-link disabled:opacity-50"
+                            className="min-h-11 rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium text-tg-link disabled:opacity-50"
                           >
                             Изменить
                           </button>
@@ -1214,7 +1279,7 @@ export function DailyLog() {
                             type="button"
                             disabled={editBusy}
                             onClick={() => void removeLog(item)}
-                            className="rounded-lg bg-tg-secondary px-2 py-1 text-[11px] text-tg-hint disabled:opacity-50"
+                            className="min-h-11 rounded-lg bg-tg-secondary px-3 py-2 text-xs text-tg-hint disabled:opacity-50"
                           >
                             Удалить
                           </button>
@@ -1253,14 +1318,27 @@ export function DailyLog() {
             <p className="text-sm font-medium">
               {editingLog.product?.name_ru ?? "Продукт"}
             </p>
+            {editError ? <p role="alert" className="app-status app-status-danger text-sm">{editError}</p> : null}
             <label className="block text-xs text-tg-hint">
               Граммы
               <DecimalInput
                 value={editGrams}
                 onValueChange={setEditGrams}
-                className="mt-1 w-full rounded-lg bg-tg-secondary px-3 py-2 text-sm"
+                className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-3 py-2 text-base"
               />
             </label>
+            <div className="grid grid-cols-2 gap-2">
+              {PER_100_FIELDS.map(({ key, label }) => (
+                <label key={key} className="block text-xs text-tg-hint">
+                  {label}
+                  <DecimalInput
+                    value={editPer100[key]}
+                    onValueChange={(value) => setEditPer100((current) => ({ ...current, [key]: value }))}
+                    className="mt-1 min-h-11 w-full rounded-lg bg-tg-secondary px-3 py-2 text-base"
+                  />
+                </label>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-2">
               {MEALS.map((m) => (
                 <button
@@ -1268,7 +1346,7 @@ export function DailyLog() {
                   type="button"
                   onClick={() => setEditMeal(m.id)}
                   className={[
-                    "rounded-full px-3 py-1 text-xs",
+                    "min-h-11 rounded-full px-3 py-2 text-sm",
                     editMeal === m.id
                       ? "bg-tg-button text-tg-button-text"
                       : "bg-tg-secondary",

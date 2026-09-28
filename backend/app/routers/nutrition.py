@@ -7,11 +7,13 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import get_current_user, require_plus, user_local_day
 from app.models.user import User
+from app.models.nutrition import NutritionProduct
 from app.schemas.nutrition import (
     BarcodeLookupResponse,
     DailyNutritionResponse,
@@ -26,21 +28,22 @@ from app.schemas.nutrition import (
     NutritionProductResponse,
     NutritionRangeResponse,
 )
-from app.services import nutrition_label_vision, nutrition_service
+from app.services import nutrition_corrections, nutrition_label_vision, nutrition_service
 from app.services.energy_targets import compute_energy_targets
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
 
-def _product_resp(p) -> NutritionProductResponse:
+def _product_resp(p, values: dict[str, float] | None = None) -> NutritionProductResponse:
+    kbju = values or nutrition_corrections.catalog_values(p)
     return NutritionProductResponse(
         id=p.id,
         name_ru=p.name_ru,
         barcode=p.barcode,
-        calories=float(p.calories or 0),
-        proteins=float(p.proteins or 0),
-        fats=float(p.fats or 0),
-        carbs=float(p.carbs or 0),
+        calories=kbju["calories"],
+        proteins=kbju["proteins"],
+        fats=kbju["fats"],
+        carbs=kbju["carbs"],
         category=p.category,
         source=p.source,
     )
@@ -55,7 +58,6 @@ async def search_products(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> NutritionProductListResponse:
-    _ = user
     items, total = await nutrition_service.search_products(
         session,
         q=q,
@@ -63,10 +65,30 @@ async def search_products(
         limit=limit,
         offset=offset,
     )
+    personal = await nutrition_corrections.personal_values_map(
+        session, user_id=user.id, product_ids=[p.id for p in items],
+    )
     return NutritionProductListResponse(
-        items=[_product_resp(p) for p in items],
+        items=[_product_resp(p, personal.get(p.id)) for p in items],
         total=total,
     )
+
+
+@router.get("/products/{product_id}", response_model=NutritionProductResponse)
+async def get_product(
+    product_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> NutritionProductResponse:
+    product = await session.scalar(select(NutritionProduct).where(
+        NutritionProduct.id == product_id, NutritionProduct.is_deleted.is_(False),
+    ))
+    if product is None:
+        raise HTTPException(status_code=404, detail="Продукт не найден")
+    personal = await nutrition_corrections.personal_values(
+        session, user_id=user.id, product_id=product_id,
+    )
+    return _product_resp(product, personal)
 
 
 
@@ -99,13 +121,15 @@ async def lookup_barcode(
     user: User = Depends(get_current_user),
 ) -> BarcodeLookupResponse:
     """Resolve EAN/UPC barcode via local catalog, then Open Food Facts (cached)."""
-    _ = user
     product, meta = await nutrition_service.lookup_barcode(session, code, fetch_remote=True)
+    personal = await nutrition_corrections.personal_values(
+        session, user_id=user.id, product_id=product.id,
+    ) if product is not None else None
     return BarcodeLookupResponse(
         found=bool(meta.get("found")),
         barcode=str(meta.get("barcode") or code),
         source=meta.get("source"),
-        product=_product_resp(product) if product is not None else None,
+        product=_product_resp(product, personal) if product is not None else None,
         serving_grams=(
             float(meta["serving_grams"])
             if meta.get("serving_grams") is not None

@@ -14,6 +14,7 @@ import {
   type AdminUser,
 } from "@/api/admin";
 import { getStoredToken } from "@/api/client";
+import { fetchAdminNutritionCorrections } from "@/api/adminNutrition";
 import { Header } from "@/components/layout/Header";
 import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
 import {
@@ -71,6 +72,7 @@ export function AdminPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
   const [usersLoading, setUsersLoading] = useState(false);
   const [okNote, setOkNote] = useState<string | null>(null);
+  const [pendingNutritionCorrections, setPendingNutritionCorrections] = useState<number | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [resetScope, setResetScope] = useState<AdminResetScope>("workouts");
   const resetDialogRef = useModalAccessibility(Boolean(resetTarget), () => setResetTarget(null));
@@ -81,6 +83,13 @@ export function AdminPage() {
       /* loadUsers sets error */
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, isAuthLoading]);
+
+  useEffect(() => {
+    if (isAuthLoading || !allowed) return;
+    void fetchAdminNutritionCorrections("pending", 1)
+      .then((response) => setPendingNutritionCorrections(response.pending_count))
+      .catch(() => setPendingNutritionCorrections(null));
   }, [allowed, isAuthLoading]);
 
   async function loadUsers(filters = userFilters) {
@@ -278,6 +287,19 @@ export function AdminPage() {
         <span>
           <span className="block font-medium text-tg-text">Поддержка пользователей</span>
           <span className="mt-0.5 block text-xs text-tg-hint">Обращения, ответы и статусы без личного Telegram</span>
+        </span>
+        <span aria-hidden="true" className="text-tg-link">→</span>
+      </Link>
+
+      <Link
+        to="/admin/nutrition"
+        className="app-card app-card-interactive mb-3 flex min-h-11 items-center justify-between px-4 py-3 text-sm"
+      >
+        <span>
+          <span className="block font-medium text-tg-text">Исправления продуктов</span>
+          <span className="mt-0.5 block text-xs text-tg-hint">
+            {pendingNutritionCorrections == null ? "Предложения по БЖУ общего каталога" : `Ждут проверки: ${pendingNutritionCorrections}`}
+          </span>
         </span>
         <span aria-hidden="true" className="text-tg-link">→</span>
       </Link>

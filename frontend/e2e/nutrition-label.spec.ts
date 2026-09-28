@@ -37,6 +37,9 @@ test("label photo is uploaded as multipart and opens an editable review", async 
         targets: {
           complete: true,
           calories_target: 2000,
+          bmr: 1700,
+          tdee: 2500,
+          calorie_adjustment_pct: -20,
           macros: { proteins_g: 120, fats_g: 65, carbs_g: 220 },
         },
       }),
@@ -89,6 +92,7 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   await expect(page.locator(".nutrition-summary-card")).toHaveClass(/app-card-hero/);
   await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "0");
   await expect(page.locator(".nutrition-summary-card").getByRole("progressbar")).toHaveCount(3);
+  await expect(page.getByText("Цель учитывает дефицит 20% от расхода с активностью.")).toBeVisible();
   await expect(page.locator(".nutrition-meal-card").first()).toHaveClass(/app-card/);
   await expect(page.getByRole("button", { name: "+ Добавить продукт" })).toHaveClass(/app-gradient-action/);
   await page.getByRole("button", { name: "+ Добавить продукт" }).click();
@@ -153,6 +157,11 @@ test("label photo is uploaded as multipart and opens an editable review", async 
   await expect(gramsInput).toHaveValue("100");
   await gramsInput.fill("137");
   await expect(gramsInput).toHaveValue("137");
+  const addDialog = page.getByRole("dialog", { name: "Добавить продукт" });
+  await addDialog.getByRole("button", { name: "Изменить БЖУ / 100 г" }).click();
+  await addDialog.getByLabel("Белки", { exact: true }).fill("");
+  await addDialog.getByRole("button", { name: "Добавить и продолжить" }).click();
+  await expect(addDialog.getByText(/Заполните ккал и БЖУ/)).toBeVisible();
 });
 
 test("unknown barcode offers label, rescan and manual product entry", async ({ page }) => {
@@ -247,6 +256,7 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
 });
 
 test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
+  let updatedLog: Record<string, unknown> | null = null;
   const productId = "33333333-3333-4333-8333-333333333333";
   const logId = "44444444-4444-4444-8444-444444444444";
   await page.setViewportSize({ width: 320, height: 800 });
@@ -283,6 +293,7 @@ test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
             proteins: 34.4,
             fats: 0.86,
             carbs: 1.72,
+            per_100_override: { calories: 360, proteins: 81, fats: 2, carbs: 4 },
           },
           product: {
             id: productId,
@@ -321,4 +332,16 @@ test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
   expect(box?.width).toBeGreaterThanOrEqual(330);
   expect(box?.x).toBeGreaterThanOrEqual(10);
   expect(box ? box.x + box.width : 999).toBeLessThanOrEqual(350);
+  await expect(dialog.getByLabel("Белки на 100 г")).toHaveValue("81");
+  await dialog.getByLabel("Белки на 100 г").fill("78");
+  await page.route(/\/nutrition\/log\//, async (route) => {
+    updatedLog = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      id: logId, user_id: USER_ID, date: "2026-08-24", meal_type: "breakfast",
+      product_id: productId, quantity_grams: 43, calculated_kbj: {},
+    }) });
+  });
+  await dialog.getByRole("button", { name: "Сохранить" }).click();
+  await expect.poll(() => updatedLog).toMatchObject({ proteins_per_100: 78 });
+  await expect(page.getByRole("status").getByText(/БЖУ.*проверку/)).toBeVisible();
 });

@@ -33,11 +33,21 @@ function dayHeading(day: string, isToday: boolean): string {
 }
 
 export function NutritionSummaryCard({ day, isToday, totals, targets, onPrevious, onToday, onNext }: Props) {
-  const [goalDetailsOpen, setGoalDetailsOpen] = useState(false);
+  const [goalDetailsOpen, setGoalDetailsOpen] = useState(true);
   const goal = targets?.complete ? targets.calories_target : null;
   const eaten = Math.round(totals.calories);
   const remaining = goal == null ? null : Math.round(goal - totals.calories);
   const calorieProgress = progress(totals.calories, goal);
+  const adjustment = targets?.calorie_adjustment_pct;
+  const goalReason = targets?.formula === "manual"
+    ? "Цель задана вручную в профиле."
+    : adjustment == null
+      ? null
+      : adjustment < 0
+        ? `Цель учитывает дефицит ${Math.abs(adjustment)}% от расхода с активностью.`
+        : adjustment > 0
+          ? `Цель учитывает профицит ${adjustment}% к расходу с активностью.`
+          : "Цель равна расходу с активностью, без дефицита и профицита.";
 
   return (
     <AppCard tone="hero" className="nutrition-summary-card" role="region" aria-label="Итоги питания за день">
@@ -92,12 +102,17 @@ export function NutritionSummaryCard({ day, isToday, totals, targets, onPrevious
 
       {!targets?.complete ? (
         <Link to="/profile" className="nutrition-summary-profile-link">Заполните профиль, чтобы увидеть свою цель</Link>
-      ) : targets.bmr && targets.tdee ? (
+      ) : goalReason ? (
         <div className="nutrition-summary-details">
           <button type="button" onClick={() => setGoalDetailsOpen((open) => !open)}>
             {goalDetailsOpen ? "Скрыть расчёт цели" : "Как рассчитана цель"}
           </button>
-          {goalDetailsOpen ? <p>Основной обмен: {targets.bmr} ккал · расход с активностью: {targets.tdee} ккал.</p> : null}
+          {goalDetailsOpen ? <p>
+            {targets.bmr && targets.tdee ? <>
+              Основной обмен: {targets.bmr} ккал · расход с активностью: {targets.tdee} ккал.<br />
+            </> : null}
+            {goalReason}
+          </p> : null}
         </div>
       ) : null}
       <div className="nutrition-summary-links">

@@ -106,6 +106,11 @@ const AdminSupportPage = lazy(() =>
     default: module.AdminSupportPage,
   })),
 );
+const AdminNutritionPage = lazy(() =>
+  import("@/features/admin-nutrition/pages/AdminNutritionPage").then((module) => ({
+    default: module.AdminNutritionPage,
+  })),
+);
 const SupportPage = lazy(() =>
   import("@/features/support/pages/SupportPage").then((module) => ({ default: module.SupportPage })),
 );
@@ -202,6 +207,7 @@ export function App() {
             <Route path="admin/exercises" element={<AdminExercisesPage />} />
             <Route path="admin/programs" element={<AdminProgramsPage />} />
             <Route path="admin/support" element={<AdminSupportPage />} />
+            <Route path="admin/nutrition" element={<AdminNutritionPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

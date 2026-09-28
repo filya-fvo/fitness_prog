@@ -79,6 +79,7 @@ _BROADCAST_FIELDS = {
     "timezone",
 }
 _AUDIT_EXPORT_FIELDS = {"format", "exported_count", "total_matches", "truncated"}
+_NUTRITION_PRODUCT_FIELDS = {"calories", "proteins", "fats", "carbs", "status"}
 _STAT_FIELDS = {
     "workout_sets",
     "workouts",
@@ -224,6 +225,7 @@ def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, 
         "program": _PROGRAM_FIELDS,
         "broadcast": _BROADCAST_FIELDS,
         "audit_export": _AUDIT_EXPORT_FIELDS,
+        "nutrition_product": _NUTRITION_PRODUCT_FIELDS,
     }.get(object_type, set())
     return {key: item for key, item in value.items() if key in allowed}
 

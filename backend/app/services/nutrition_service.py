@@ -19,6 +19,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.models.nutrition import NutritionLog, NutritionProduct
 from app.models.user import User
 from app.schemas.nutrition import NutritionLogCreate, NutritionLogUpdate
+from app.services import nutrition_corrections
 
 _BARCODE_RE = re.compile(r"^\d{8,14}$")
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -129,10 +130,14 @@ async def add_log(
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
-    cal = data.calories_per_100 if data.calories_per_100 is not None else product.calories
-    prot = data.proteins_per_100 if data.proteins_per_100 is not None else product.proteins
-    fat = data.fats_per_100 if data.fats_per_100 is not None else product.fats
-    carb = data.carbs_per_100 if data.carbs_per_100 is not None else product.carbs
+    personal = await nutrition_corrections.personal_values(
+        session, user_id=user.id, product_id=product.id,
+    )
+    base = personal or nutrition_corrections.catalog_values(product)
+    cal = data.calories_per_100 if data.calories_per_100 is not None else base["calories"]
+    prot = data.proteins_per_100 if data.proteins_per_100 is not None else base["proteins"]
+    fat = data.fats_per_100 if data.fats_per_100 is not None else base["fats"]
+    carb = data.carbs_per_100 if data.carbs_per_100 is not None else base["carbs"]
     kbj = calc_kbju(
         calories_per_100=cal,
         proteins_per_100=prot,
@@ -141,7 +146,7 @@ async def add_log(
         quantity_grams=data.quantity_grams,
     )
     # Keep override snapshot for UI/history
-    if any(
+    changed_per_100 = any(
         x is not None
         for x in (
             data.calories_per_100,
@@ -149,7 +154,8 @@ async def add_log(
             data.fats_per_100,
             data.carbs_per_100,
         )
-    ):
+    )
+    if changed_per_100 or personal:
         kbj["per_100_override"] = {
             "calories": float(cal),
             "proteins": float(prot),
@@ -165,6 +171,18 @@ async def add_log(
         calculated_kbj=kbj,
     )
     session.add(row)
+    if changed_per_100:
+        await session.flush()
+        await nutrition_corrections.save_personal_values(
+            session, user_id=user.id, product_id=product.id, values=kbj["per_100_override"],
+        )
+        await nutrition_corrections.queue_from_log(
+            session,
+            product=product,
+            user_id=user.id,
+            log_id=row.id,
+            proposed=kbj["per_100_override"],
+        )
     await session.commit()
     await session.refresh(row)
     return row
@@ -180,7 +198,7 @@ async def get_user_log(
             NutritionLog.id == log_id,
             NutritionLog.user_id == user.id,
             NutritionLog.is_deleted.is_(False),
-        )
+        ).with_for_update()
     )
 
 
@@ -252,6 +270,17 @@ async def update_log(
         }
     row.calculated_kbj = kbj
     flag_modified(row, "calculated_kbj")
+    if touch_override:
+        await nutrition_corrections.save_personal_values(
+            session, user_id=user.id, product_id=product.id, values=kbj["per_100_override"],
+        )
+        await nutrition_corrections.queue_from_log(
+            session,
+            product=product,
+            user_id=user.id,
+            log_id=row.id,
+            proposed=kbj["per_100_override"],
+        )
     await session.commit()
     await session.refresh(row)
     return row

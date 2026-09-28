@@ -83,6 +83,11 @@ export async function searchProducts(
   return z.object({ items: z.array(productSchema), total: z.number() }).parse(data);
 }
 
+export async function fetchProduct(productId: string): Promise<NutritionProduct> {
+  const { data } = await apiClient.get(`/nutrition/products/${productId}`);
+  return productSchema.parse(data);
+}
+
 export async function fetchProductCategories(): Promise<string[]> {
   const { data } = await apiClient.get("/nutrition/categories");
   const parsed = z.object({ items: z.array(z.string()), total: z.number() }).parse(data);

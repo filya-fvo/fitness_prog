@@ -12,6 +12,8 @@ from app.models.exercise_media import ExerciseMediaAsset
 from app.models.global_competition import GlobalCompetitionParticipant, GlobalCompetitionSeason
 from app.models.invite import Invite, InviteLookupAttempt, InviteRedemption, ReferralAttribution
 from app.models.nutrition import NutritionLog, NutritionProduct
+from app.models.nutrition_correction import NutritionCorrection
+from app.models.nutrition_personal_value import NutritionPersonalValue
 from app.models.program import Program
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
@@ -44,6 +46,8 @@ __all__ = [
     "WorkoutPlanOverride",
     "NutritionProduct",
     "NutritionLog",
+    "NutritionCorrection",
+    "NutritionPersonalValue",
     "AIConversation",
     "AdminBroadcast",
     "AdminBroadcastDelivery",
