@@ -907,6 +907,82 @@ body {
     url("/app-media/program-training-hero.png") center / cover;
 }
 
+.exercise-hub-banner {
+  min-height: 12rem;
+  overflow: hidden;
+  color: #fff;
+  background-color: #101b2f;
+  background-size: cover;
+  background-position: 62% center;
+}
+
+.exercise-hub-programs {
+  background-image:
+    linear-gradient(90deg, rgba(12, 18, 39, .97), rgba(22, 20, 49, .78) 53%, rgba(9, 17, 34, .1)),
+    url("/app-media/training-programs-hero.webp");
+}
+
+.exercise-hub-catalog {
+  background-image:
+    linear-gradient(90deg, rgba(15, 18, 40, .97), rgba(19, 24, 52, .76) 53%, rgba(9, 17, 34, .08)),
+    url("/app-media/exercise-catalog-hero.webp");
+}
+
+.train-program-hero {
+  color: #fff;
+  background-color: #101b2f;
+  background-size: cover;
+  background-position: center;
+}
+
+.train-program-hero-gym {
+  background-image: linear-gradient(90deg, rgba(7, 17, 31, .94), rgba(7, 17, 31, .75)), url("/app-media/home-training-hero.jpg");
+}
+
+.train-program-hero-home {
+  background-image: linear-gradient(90deg, rgba(7, 17, 31, .94), rgba(7, 17, 31, .72)), url("/app-media/train-home.webp");
+}
+
+.train-program-hero-outdoor {
+  background-image: linear-gradient(90deg, rgba(7, 17, 31, .94), rgba(7, 17, 31, .72)), url("/app-media/train-outdoor.webp");
+}
+
+.train-program-hero > .text-tg-hint,
+.train-program-hero > a.text-tg-link {
+  color: rgba(255, 255, 255, .78);
+}
+
+.training-schedule-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(120deg, #142444, #10243d 55%, #243052);
+  color: #fff;
+}
+
+.training-schedule-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -.5rem;
+  right: -1.5rem;
+  width: 48%;
+  height: 11rem;
+  transform: rotate(-9deg);
+  border: 1px solid rgba(151, 183, 232, .18);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle, rgba(232, 61, 129, .75) 0 4px, transparent 5px) 1.8rem 2rem / 3rem 3rem,
+    repeating-linear-gradient(90deg, transparent 0 2.85rem, rgba(166, 193, 230, .14) 2.85rem 3rem),
+    repeating-linear-gradient(0deg, transparent 0 2.85rem, rgba(166, 193, 230, .14) 2.85rem 3rem),
+    #20375d;
+  opacity: .55;
+}
+
+.training-schedule-hero .text-tg-hint {
+  color: rgba(255, 255, 255, .78);
+}
+
 .program-card-details {
   display: inline-flex;
   min-width: 44px;

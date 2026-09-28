@@ -63,7 +63,7 @@ export function WorkoutScheduleSettingsCard({ settings, disabled = false, onSave
       id="schedule"
       tabIndex={-1}
       aria-labelledby="workout-schedule-title"
-      className="app-card app-card-ocean scroll-mt-4 p-4 outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-brand-mid)]"
+      className="app-card app-card-ocean training-schedule-hero scroll-mt-4 p-4 outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-brand-mid)]"
     >
       <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Расписание</p>
       <h2 id="workout-schedule-title" className="mt-1 text-base font-semibold">

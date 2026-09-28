@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
@@ -46,6 +46,7 @@ type CatalogUiState = {
   selectedIds?: string[];
   templateId?: string;
   muscleFilter?: string;
+  kindFilter?: string;
   searchQuery?: string;
   visibleCount?: number;
   scrollY?: number;
@@ -103,6 +104,10 @@ function buildDrafts(
 export function WorkoutCatalogPage() {
   const initialUi = useMemo(readCatalogUi, []);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const muscleParam = searchParams.get("muscle") || "";
+  const exerciseParam = searchParams.get("exercise") || "";
+  const focusSearch = searchParams.get("focus") === "search";
   const user = useUserStore((s) => s.user);
   const catalog = useWorkoutStore((s) => s.catalog);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
@@ -114,7 +119,8 @@ export function WorkoutCatalogPage() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>(initialUi.selectedIds || []);
   const [templateId, setTemplateId] = useState(initialUi.templateId || defaultSetTemplate().id);
-  const [muscleFilter, setMuscleFilter] = useState(initialUi.muscleFilter || "");
+  const [muscleFilter, setMuscleFilter] = useState(muscleParam || initialUi.muscleFilter || "");
+  const [kindFilter, setKindFilter] = useState(initialUi.kindFilter || "");
   const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +129,7 @@ export function WorkoutCatalogPage() {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [visibleCount, setVisibleCount] = useState(Math.max(CATALOG_PAGE_SIZE, initialUi.visibleCount || 0));
   const scrollRestoredRef = useRef(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const filtersMountedRef = useRef(false);
   const usesNativeMainButton =
     isTelegramEnvironment() && Boolean(getTelegramWebApp()?.MainButton);
@@ -189,13 +196,30 @@ export function WorkoutCatalogPage() {
     const q = searchQuery.trim().toLowerCase();
     return catalog.filter((item) => {
       if (muscleFilter && item.muscle_group !== muscleFilter) return false;
+      if (kindFilter === "strength" && !item.tags.includes("role:main")) return false;
+      if (kindFilter === "isolation" && !item.tags.includes("role:accessory")) return false;
+      if (kindFilter === "bodyweight" && !item.tags.includes("equipment:bodyweight") && item.equipment !== "свой вес") return false;
       if (!q) return true;
       const hay = [item.name_ru, item.muscle_group, item.equipment || "", item.description || ""]
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [catalog, muscleFilter, searchQuery]);
+  }, [catalog, kindFilter, muscleFilter, searchQuery]);
+
+  useEffect(() => {
+    if (muscleParam) setMuscleFilter(muscleParam);
+  }, [muscleParam]);
+
+  useEffect(() => {
+    if (!loading && exerciseParam) {
+      setDetailExercise(catalog.find((item) => item.id === exerciseParam) ?? null);
+    }
+  }, [catalog, exerciseParam, loading]);
+
+  useEffect(() => {
+    if (!loading && focusSearch) searchInputRef.current?.focus();
+  }, [focusSearch, loading]);
 
   const selectedExercises = useMemo(
     () => catalog.filter((item) => selectedIds.includes(item.id)),
@@ -209,19 +233,21 @@ export function WorkoutCatalogPage() {
       return;
     }
     setVisibleCount(CATALOG_PAGE_SIZE);
-  }, [muscleFilter, searchQuery]);
+  }, [kindFilter, muscleFilter, searchQuery]);
 
   useEffect(() => {
     sessionStorage.setItem(
       CATALOG_UI_KEY,
-      JSON.stringify({ selectedIds, templateId, muscleFilter, searchQuery, visibleCount, scrollY: window.scrollY }),
+      JSON.stringify({ selectedIds, templateId, muscleFilter, kindFilter, searchQuery, visibleCount, scrollY: window.scrollY }),
     );
-  }, [muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
+  }, [kindFilter, muscleFilter, searchQuery, selectedIds, templateId, visibleCount]);
 
   useEffect(() => {
     if (loading || scrollRestoredRef.current) return;
     scrollRestoredRef.current = true;
-    window.requestAnimationFrame(() => window.scrollTo({ top: initialUi.scrollY || 0 }));
+    if (!muscleParam && !exerciseParam && !focusSearch) {
+      window.requestAnimationFrame(() => window.scrollTo({ top: initialUi.scrollY || 0 }));
+    }
     const rememberScroll = () => {
       const state = readCatalogUi();
       sessionStorage.setItem(CATALOG_UI_KEY, JSON.stringify({ ...state, scrollY: window.scrollY }));
@@ -231,7 +257,7 @@ export function WorkoutCatalogPage() {
       rememberScroll();
       window.removeEventListener("scroll", rememberScroll);
     };
-  }, [initialUi.scrollY, loading]);
+  }, [exerciseParam, focusSearch, initialUi.scrollY, loading, muscleParam]);
 
   function toggleExercise(exercise: Exercise) {
     setSelectedIds((prev) =>
@@ -366,6 +392,7 @@ export function WorkoutCatalogPage() {
       <label className="mb-4 block">
         <span className="sr-only">Поиск упражнения</span>
         <input
+          ref={searchInputRef}
           type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
@@ -374,7 +401,7 @@ export function WorkoutCatalogPage() {
         />
       </label>
 
-      <MuscleGroupFilter groups={muscleGroups} value={muscleFilter} onChange={setMuscleFilter} />
+      <MuscleGroupFilter groups={muscleGroups} value={muscleFilter} onChange={setMuscleFilter} kind={kindFilter} onKindChange={setKindFilter} />
 
       <details className="mb-3 rounded-2xl bg-tg-secondary p-3">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold">
@@ -430,12 +457,13 @@ export function WorkoutCatalogPage() {
         <div className="sticky top-0 z-10 mb-3 flex items-center justify-between gap-3 rounded-xl bg-tg-bg/95 py-1 text-xs text-tg-hint backdrop-blur lg:top-16">
           <span>Найдено упражнений: {visibleCatalog.length}</span>
           <div className="flex items-center gap-1">
-          {searchQuery || muscleFilter ? (
+          {searchQuery || muscleFilter || kindFilter ? (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery("");
                 setMuscleFilter("");
+                setKindFilter("");
               }}
               className="tap-target-x rounded-lg px-2 py-1 text-tg-link"
             >

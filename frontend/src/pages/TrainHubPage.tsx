@@ -7,6 +7,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchWorkoutHistory } from "@/api/workouts";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPlannedWorkoutPlan,
@@ -23,6 +24,7 @@ import { PlannedWorkoutEditor } from "@/features/workout/components/PlannedWorko
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
 import { WorkoutScheduleSettingsCard } from "@/features/workout/components/WorkoutScheduleSettingsCard";
 import { ExerciseHubCards } from "@/features/workout/components/ExerciseHubCards";
+import { ExerciseHubDiscovery } from "@/features/workout/components/ExerciseHubDiscovery";
 import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutReadiness";
 import {
   cacheExercises,
@@ -35,7 +37,7 @@ import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { buttonClass } from "@/theme/visualStyles";
-import type { LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
 import {
   draftsWithSuggestions,
   ensureProgramStartDate,
@@ -49,6 +51,7 @@ import {
   phaseMetaFromName,
   readProgramCursor,
 } from "@/utils/programProgress";
+import { programLocation } from "@/utils/programRecommend";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import { toUserMessage } from "@/utils/errors";
 import { cycleTrainingEnabledForProfile, phaseFromPlan } from "@/utils/cycleTraining";
@@ -100,6 +103,9 @@ export function TrainHubPage() {
   const [schedule, setSchedule] = useState<WorkoutScheduleOverview | null>(null);
   const [scheduleSettings, setScheduleSettings] = useState<WorkoutScheduleSettings | null>(null);
   const [preparedPlan, setPreparedPlan] = useState<WorkoutPlan | null>(null);
+  const [hubCatalog, setHubCatalog] = useState<Exercise[]>([]);
+  const [exerciseCount, setExerciseCount] = useState<number>();
+  const [recentHistory, setRecentHistory] = useState<Workout[]>([]);
   const readiness = usePreWorkoutReadiness(cycleTrainingEnabledForProfile(goals));
 
   const resumeId = clientWorkoutId ?? activeWorkout?.id ?? null;
@@ -130,6 +136,8 @@ export function TrainHubPage() {
   const todayProgramCompleted = schedule?.current?.status === "completed";
   const preparedDate = plannedOccurrence?.target_date ?? localDateKey();
   const effectiveWeekPhase = phaseFromPlan(preparedPlan, weekPhase);
+  const programPlace = program ? programLocation(program) || String(goals.location || "gym") : "gym";
+  const heroPlace = programPlace === "home" || programPlace === "outdoor" ? programPlace : "gym";
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +168,11 @@ export function TrainHubPage() {
       setLoading(true);
       setError(null);
       try {
+        const cachedExercises = await readCachedExercises();
+        if (!cancelled && cachedExercises.length) {
+          setHubCatalog(cachedExercises);
+          setExerciseCount(cachedExercises.length);
+        }
         const store = useWorkoutStore.getState();
         if (
           !store.activeWorkout ||
@@ -171,11 +184,13 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, profile, scheduleOverview, recurringSchedule] = await Promise.all([
+          const [programs, profile, scheduleOverview, recurringSchedule, exercises, history] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
             fetchMyProfile().catch(() => null),
             fetchWorkoutSchedule().catch(() => null),
             fetchWorkoutScheduleSettings().catch(() => null),
+            fetchExercises({ pageSize: 200 }).catch(() => null),
+            fetchWorkoutHistory({ limit: 30 }).catch(() => []),
           ]);
           const g = (profile?.goals as Record<string, unknown>) || {};
           const anthropometry = (profile?.anthropometry as Record<string, unknown>) || {};
@@ -188,6 +203,12 @@ export function TrainHubPage() {
             setProgram(active);
             setSchedule(scheduleOverview);
             setScheduleSettings(recurringSchedule);
+            if (exercises) {
+              setHubCatalog(exercises.items);
+              setExerciseCount(exercises.total);
+              void cacheExercises(exercises.items);
+            }
+            setRecentHistory(history);
           }
         }
       } catch (err) {
@@ -351,7 +372,7 @@ export function TrainHubPage() {
             </button>
           </AppCard>
         ) : program && todayProgramCompleted ? (
-          <AppCard tone="success" className="p-4">
+          <AppCard tone="success" className={`train-program-hero train-program-hero-${heroPlace} p-4`}>
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">Моя программа</p>
             <p className="mt-1 text-base font-semibold">Тренировка выполнена</p>
             <p className="mt-1 text-xs text-tg-hint">
@@ -374,7 +395,7 @@ export function TrainHubPage() {
             ) : null}
           </AppCard>
         ) : program ? (
-          <AppCard tone="ember" className="p-4">
+          <AppCard tone="ember" className={`train-program-hero train-program-hero-${heroPlace} p-4`}>
             <p className="text-xs font-medium uppercase tracking-wide text-tg-hint">
               {canStartProgramNow ? "Моя программа" : "Следующая тренировка"}
             </p>
@@ -441,7 +462,12 @@ export function TrainHubPage() {
           />
         ) : null}
 
-        <ExerciseHubCards />
+        <ExerciseHubCards exerciseCount={exerciseCount} />
+        <Link to="/workouts?focus=search" aria-label="Найти упражнение" className="app-card app-card-indigo flex min-h-11 items-center gap-2 px-4 py-3 text-sm text-tg-hint">
+          <span aria-hidden="true" className="text-lg text-tg-link">⌕</span>
+          Найти подходящее упражнение
+        </Link>
+        <ExerciseHubDiscovery catalog={hubCatalog} history={recentHistory} />
 
         <Link to="/" className={`${buttonClass("secondary")} w-full`}>
           ← На главную · «Сегодня»
