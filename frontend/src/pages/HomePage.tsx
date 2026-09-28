@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
-import { fetchDailyNutrition } from "@/api/nutrition";
+import { fetchDailyNutrition, type DailyNutrition } from "@/api/nutrition";
 import { fetchWaterLog } from "@/api/notifications";
 import { fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
@@ -144,6 +144,7 @@ export function HomePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [hasCompletedSet, setHasCompletedSet] = useState(false);
   const [todayCalories, setTodayCalories] = useState<number | null>(null);
+  const [todayNutrition, setTodayNutrition] = useState<DailyNutrition | null>(null);
   const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
   const [waterMl, setWaterMl] = useState(() => getHabitDay(undefined, user?.id).waterMl);
   const [waterTargetMl, setWaterTargetMl] = useState<number | null>(null);
@@ -397,6 +398,7 @@ export function HomePage() {
               fetchWaterLog().catch(() => null),
             ]);
             if (!cancelled && daily) {
+              setTodayNutrition(daily);
               setTodayCalories(Number(daily.totals?.calories) || 0);
               const t = daily.targets;
               if (t?.complete && t.calories_target != null) {
@@ -942,7 +944,7 @@ export function HomePage() {
           </HomeMediaCard>
         )}
 
-        <HomeNutritionSummary calories={todayCalories} target={calorieTarget} />
+        <HomeNutritionSummary nutrition={todayNutrition} />
 
         <DailyActivityCards
           day={dailyActivity.day}
