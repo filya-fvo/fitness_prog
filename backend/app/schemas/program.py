@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProgramCreate(BaseModel):
@@ -18,6 +18,50 @@ class ProgramCreate(BaseModel):
     workout_type: str = "custom"
     level: str | None = None
     is_template: bool = True
+
+
+class PersonalProgramExercise(BaseModel):
+    exercise_id: uuid.UUID
+    sets: int = Field(ge=1, le=8)
+    reps: str = Field(min_length=1, max_length=20, pattern=r"^[0-9\-–сs ]+$")
+    rest_sec: int = Field(default=60, ge=15, le=300)
+
+    @field_validator("reps")
+    @classmethod
+    def validate_reps(cls, value: str) -> str:
+        value = value.strip()
+        if not any(character.isdigit() for character in value):
+            raise ValueError("Укажите число повторений")
+        return value
+
+
+class PersonalProgramDay(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    exercises: list[PersonalProgramExercise] = Field(min_length=1, max_length=12)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Укажите название дня")
+        return value
+
+
+class PersonalProgramCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=80)
+    location: Literal["gym", "home", "outdoor"]
+    progression: Literal["linear", "phased"] = "phased"
+    duration_weeks: int = Field(default=8, ge=1, le=52)
+    days: list[PersonalProgramDay] = Field(min_length=1, max_length=7)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("Название программы слишком короткое")
+        return value
 
 
 class ProgramUpdate(BaseModel):
@@ -49,6 +93,7 @@ class ProgramResponse(BaseModel):
     is_current: bool = False
     published_at: datetime | None = None
     published_by: uuid.UUID | None = None
+    owner_id: uuid.UUID | None = None
     personal_duration_min: int | None = Field(default=None, ge=5, le=240)
     personal_duration_sample_size: int = Field(default=0, ge=0, le=6)
     created_at: datetime

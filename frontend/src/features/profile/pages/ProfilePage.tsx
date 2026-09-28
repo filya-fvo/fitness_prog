@@ -9,7 +9,7 @@ import {
   fetchNotificationSettings,
   saveNotificationSettings,
 } from "@/api/notifications";
-import { fetchPrograms } from "@/api/programs";
+import { fetchMyPrograms, fetchPrograms } from "@/api/programs";
 import {
   addCustomSupplement,
   addSupplementFromCatalog,
@@ -362,9 +362,10 @@ export function ProfilePage() {
         return;
       }
       try {
-        const [p, prog, sup, nset, exCatalog, todayIntakes] = await Promise.all([
+        const [p, prog, myPrograms, sup, nset, exCatalog, todayIntakes] = await Promise.all([
           fetchMyProfile(),
           fetchPrograms({ templatesOnly: true }).catch(() => ({ items: [] as Program[] })),
+          fetchMyPrograms().catch(() => ({ items: [] as Program[] })),
           fetchSupplementStack().catch(() => ({ items: [], catalog: [] })),
           fetchNotificationSettings().catch(() => null),
           fetchExercises({ pageSize: 200 }).catch(() => ({ items: [] as Exercise[] })),
@@ -407,16 +408,16 @@ setAuthEmail(p.auth_email ?? null);
         setDaysPerWeek(numOrEmpty(g.days_per_week || 3));
         const existingActive = String(g.active_program_id || "");
         setActiveProgramId(existingActive);
-        const programItems = prog.items || [];
+        const programItems = [...(prog.items || []), ...(myPrograms.items || [])];
         setPrograms(programItems);
         if (exCatalog?.items?.length) {
           setExerciseCatalog(exCatalog.items);
         }
 
         // Auto-assign recommended program if user has none yet
-        if (!existingActive && programItems.length && sexFromProfile !== "unspecified") {
+        if (!existingActive && prog.items.length && sexFromProfile !== "unspecified") {
           const rec = recommendPrograms(
-            programItems,
+            prog.items,
             {
               primaryGoal: String(g.primary_goal || "maintain"),
               level: String(g.level || "beginner"),
@@ -518,7 +519,7 @@ setAuthEmail(p.auth_email ?? null);
   const recommendedPrograms = useMemo(
     () =>
       recommendPrograms(
-        programs,
+        programs.filter((program) => !program.owner_id),
         {
           primaryGoal,
           level: String(profileGoalsKeep.level || "beginner"),

@@ -43,6 +43,11 @@ const ProgramsPage = lazy(() =>
     default: module.ProgramsPage,
   })),
 );
+const PersonalProgramBuilderPage = lazy(() =>
+  import("@/features/workout/pages/PersonalProgramBuilderPage").then((module) => ({
+    default: module.PersonalProgramBuilderPage,
+  })),
+);
 const WorkoutCatalogPage = lazy(() =>
   import("@/features/workout/pages/WorkoutCatalogPage").then((module) => ({
     default: module.WorkoutCatalogPage,
@@ -183,6 +188,7 @@ export function App() {
             <Route path="train" element={<TrainHubPage />} />
             <Route path="workouts" element={<WorkoutCatalogPage />} />
             <Route path="programs" element={<ProgramsPage />} />
+            <Route path="programs/new" element={<PersonalProgramBuilderPage />} />
             <Route path="workouts/active/:workoutId" element={<ActiveWorkout />} />
             <Route path="nutrition" element={<DailyLog />} />
             <Route path="activity" element={<DailyActivityPage />} />

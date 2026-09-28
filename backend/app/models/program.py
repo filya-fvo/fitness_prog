@@ -51,3 +51,9 @@ class Program(Base, TimestampSoftDeleteMixin):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )

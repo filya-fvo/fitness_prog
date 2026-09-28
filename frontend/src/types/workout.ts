@@ -173,6 +173,7 @@ export type Program = {
   version?: number;
   is_current?: boolean;
   published_at?: string | null;
+  owner_id?: string | null;
   personal_duration_min?: number | null;
   personal_duration_sample_size?: number;
 };

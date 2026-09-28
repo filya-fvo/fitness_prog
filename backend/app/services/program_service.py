@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.program import Program
-from app.schemas.program import ProgramCreate, ProgramUpdate
+from app.models.exercise import Exercise
+from app.schemas.program import PersonalProgramCreate, ProgramCreate, ProgramUpdate
 from app.services import admin_audit, program_publication
 
 
@@ -20,7 +23,7 @@ async def list_programs(
     templates_only: bool = False,
     include_unpublished: bool = False,
 ) -> tuple[list[Program], int]:
-    filters = [Program.is_deleted.is_(False)]
+    filters = [Program.is_deleted.is_(False), Program.owner_id.is_(None)]
     if not include_unpublished:
         filters.extend(
             [
@@ -45,21 +48,100 @@ async def get_program(
     program_id: uuid.UUID,
     *,
     active_program_id: object = None,
+    user_id: uuid.UUID | None = None,
 ) -> Program | None:
     result = await session.execute(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
     )
     program = result.scalar_one_or_none()
     if program is None or not program_publication.is_accessible_to_user(
-        program, active_program_id
+        program, active_program_id, user_id=user_id
     ):
         return None
     return program
 
 
+async def list_personal_programs(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+) -> tuple[list[Program], int]:
+    filters = [Program.owner_id == user_id, Program.is_deleted.is_(False)]
+    total = await session.scalar(select(func.count()).select_from(Program).where(*filters))
+    result = await session.execute(
+        select(Program).where(*filters).order_by(Program.created_at.desc()).limit(100)
+    )
+    return list(result.scalars().all()), int(total or 0)
+
+
+async def create_personal_program(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    data: PersonalProgramCreate,
+) -> Program:
+    exercise_ids = {item.exercise_id for day in data.days for item in day.exercises}
+    result = await session.scalars(
+        select(Exercise).where(Exercise.id.in_(exercise_ids), Exercise.is_deleted.is_(False))
+    )
+    by_id = {exercise.id: exercise for exercise in result.all()}
+    if len(by_id) != len(exercise_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Одно из упражнений больше недоступно. Выберите другое.",
+        )
+
+    schedule = [
+        {
+            "day_index": day_index,
+            "name": day.name.strip(),
+            "exercises": [
+                {
+                    "exercise_id": str(item.exercise_id),
+                    "exercise_name": by_id[item.exercise_id].name_ru,
+                    "sets": item.sets,
+                    "reps": item.reps.strip(),
+                    "rest_sec": item.rest_sec,
+                }
+                for item in day.exercises
+            ],
+        }
+        for day_index, day in enumerate(data.days, start=1)
+    ]
+    program = Program(
+        name=data.name.strip(),
+        description=(
+            "Личная программа · "
+            + ("одинаковые подходы каждую неделю" if data.progression == "linear" else "чередование лёгкой, средней и тяжёлой недели")
+        ),
+        duration_weeks=data.duration_weeks,
+        structure={
+            "days_per_week": len(schedule),
+            "location": data.location,
+            "progression": data.progression,
+            "schedule": schedule,
+        },
+        workout_type="custom",
+        is_template=False,
+        owner_id=user_id,
+        publication_status="published",
+        is_current=True,
+        published_at=datetime.now(UTC),
+        program_key=f"personal-{uuid.uuid4().hex}",
+    )
+    session.add(program)
+    await session.commit()
+    await session.refresh(program)
+    return program
+
+
 async def get_program_for_admin(session: AsyncSession, program_id: uuid.UUID) -> Program | None:
     result = await session.execute(
-        select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
+        select(Program).where(
+            Program.id == program_id,
+            Program.is_deleted.is_(False),
+            Program.owner_id.is_(None),
+        )
     )
     return result.scalar_one_or_none()
 

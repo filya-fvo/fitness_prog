@@ -13,6 +13,7 @@ from app.core.request_id import get_request_id
 from app.deps import get_current_user, require_admin, user_is_admin
 from app.models.user import User
 from app.schemas.program import (
+    PersonalProgramCreate,
     ProgramCreate,
     ProgramListResponse,
     ProgramPublicationResponse,
@@ -69,6 +70,32 @@ async def list_programs(
     )
 
 
+@router.get("/mine", response_model=ProgramListResponse)
+async def list_my_programs(
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ProgramListResponse:
+    items, total = await program_service.list_personal_programs(session, user_id=user.id)
+    return ProgramListResponse(
+        items=[ProgramResponse.model_validate(item) for item in items],
+        total=total,
+    )
+
+
+@router.post("/mine", response_model=ProgramResponse, status_code=status.HTTP_201_CREATED)
+async def create_my_program(
+    body: PersonalProgramCreate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ProgramResponse:
+    program = await program_service.create_personal_program(
+        session,
+        user_id=user.id,
+        data=body,
+    )
+    return ProgramResponse.model_validate(program)
+
+
 @router.get("/{program_id}", response_model=ProgramResponse)
 async def get_program(
     program_id: uuid.UUID,
@@ -79,6 +106,7 @@ async def get_program(
         session,
         program_id,
         active_program_id=(user.goals or {}).get("active_program_id"),
+        user_id=user.id,
     )
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")

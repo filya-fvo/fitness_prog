@@ -5,7 +5,7 @@ import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchDailyNutrition, type DailyNutrition } from "@/api/nutrition";
 import { fetchWaterLog } from "@/api/notifications";
-import { fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchIllnessPause,
@@ -310,8 +310,9 @@ export function HomePage() {
 
         if (getStoredToken() && isOnline()) {
           try {
-            const [programs, profile, exerciseResponse, schedule, planRegularity, illnessStatus] = await Promise.all([
+            const [programs, myPrograms, profile, exerciseResponse, schedule, planRegularity, illnessStatus] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
+              fetchMyPrograms().catch(() => ({ items: [] })),
               fetchMyProfile().catch(() => null),
               fetchExercises({ pageSize: 200 }).catch(() => null),
               fetchWorkoutSchedule().catch(() => null),
@@ -325,7 +326,7 @@ export function HomePage() {
             const goals = (profile?.goals as Record<string, unknown>) || {};
             const activeId = String(goals.active_program_id || "");
             const active = activeId
-              ? programs.items.find((p) => p.id === activeId) || null
+              ? [...programs.items, ...myPrograms.items].find((p) => p.id === activeId) || null
               : null;
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };

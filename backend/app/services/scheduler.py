@@ -537,6 +537,8 @@ async def active_program_snapshot(
     )
     if program is None:
         return None, None, _fallback_title(goals)
+    if getattr(program, "owner_id", None) is not None and program.owner_id != user.id:
+        return None, None, _fallback_title(goals)
     try:
         day_index = max(1, int(goals.get("active_program_next_day") or 1))
     except (TypeError, ValueError):

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
-import { fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
@@ -49,7 +49,7 @@ const PROGRAM_PAGE_SIZE = 8;
 const PROGRAMS_UI_KEY = "fitness_programs_ui_v1";
 
 type ProgramsUiState = {
-  viewMode?: "recommended" | "all";
+  viewMode?: "recommended" | "all" | "mine";
   searchQuery?: string;
   typeFilter?: string;
   levelFilter?: string;
@@ -246,7 +246,8 @@ export function ProgramsPage() {
   const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [items, setItems] = useState<Program[]>([]);
-  const [viewMode, setViewMode] = useState<"recommended" | "all">(initialUi.viewMode || "recommended");
+  const [myItems, setMyItems] = useState<Program[]>([]);
+  const [viewMode, setViewMode] = useState<"recommended" | "all" | "mine">(searchParams.get("view") === "mine" ? "mine" : initialUi.viewMode || "recommended");
   const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || initialUi.typeFilter || "");
   const [levelFilter, setLevelFilter] = useState<string>(searchParams.get("level") || initialUi.levelFilter || "");
@@ -296,13 +297,15 @@ export function ProgramsPage() {
           }
           return;
         }
-        const [result, profile, exercises] = await Promise.all([
+        const [result, mine, profile, exercises] = await Promise.all([
           fetchPrograms({ templatesOnly: true }),
+          fetchMyPrograms(),
           fetchMyProfile().catch(() => null),
           fetchExercises({ pageSize: 200 }).catch(() => null),
         ]);
         if (!cancelled) {
           setItems(result.items);
+          setMyItems(mine.items);
           const goals = (profile?.goals as Record<string, unknown>) || {};
           const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
           setProfileGoals(goals);
@@ -717,7 +720,18 @@ export function ProgramsPage() {
         >
           Все программы
         </button>
+        <button type="button" onClick={() => setViewMode("mine")}
+          className={`program-view-option${viewMode === "mine" ? " program-view-option-active" : ""}`}>
+          Мои программы{myItems.length ? ` · ${myItems.length}` : ""}
+        </button>
       </div>
+      <Link to="/programs/new" className="app-button app-gradient-action mb-4 flex w-full items-center justify-center text-sm">
+        + Создать свою программу
+      </Link>
+
+      {!loading && viewMode === "mine" ? <div className="program-grid">
+        {myItems.length ? myItems.map((program) => renderCard(program, "моя")) : <p className="app-card p-4 text-sm text-tg-hint">Пока нет своих программ. Выберите дни и упражнения, чтобы создать первую.</p>}
+      </div> : null}
 
       {!loading && showRecommendations && topRecommended.length > 0 ? (
         <div className="program-grid">

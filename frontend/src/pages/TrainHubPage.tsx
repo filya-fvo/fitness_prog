@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
-import { fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchWorkoutHistory } from "@/api/workouts";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
@@ -184,8 +184,9 @@ export function TrainHubPage() {
         }
 
         if (getStoredToken() && isOnline()) {
-          const [programs, profile, scheduleOverview, recurringSchedule, exercises, history] = await Promise.all([
+          const [programs, myPrograms, profile, scheduleOverview, recurringSchedule, exercises, history] = await Promise.all([
             fetchPrograms({ templatesOnly: true }),
+            fetchMyPrograms().catch(() => ({ items: [] })),
             fetchMyProfile().catch(() => null),
             fetchWorkoutSchedule().catch(() => null),
             fetchWorkoutScheduleSettings().catch(() => null),
@@ -197,7 +198,7 @@ export function TrainHubPage() {
           const goalsWithSex = { ...g, sex: anthropometry.sex || g.sex || "" };
           const activeId = String(g.active_program_id || "");
           const active =
-            (activeId && programs.items.find((p) => p.id === activeId)) || null;
+            (activeId && [...programs.items, ...myPrograms.items].find((p) => p.id === activeId)) || null;
           if (!cancelled) {
             setGoals(goalsWithSex);
             setProgram(active);

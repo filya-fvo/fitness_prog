@@ -88,13 +88,22 @@ def mark_seed_program_published(program: Program) -> None:
 def is_public_catalog_program(program: Program) -> bool:
     return (
         not program.is_deleted
+        and getattr(program, "owner_id", None) is None
         and program.publication_status == "published"
         and program.is_current
     )
 
 
-def is_accessible_to_user(program: Program, active_program_id: object) -> bool:
+def is_accessible_to_user(
+    program: Program,
+    active_program_id: object,
+    *,
+    user_id: uuid.UUID | None = None,
+) -> bool:
     """Allow the public current version or the immutable version already in use."""
+    owner_id = getattr(program, "owner_id", None)
+    if owner_id is not None:
+        return not program.is_deleted and user_id is not None and owner_id == user_id
     if is_public_catalog_program(program):
         return True
     return (

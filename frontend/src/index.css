@@ -229,6 +229,7 @@ body {
   .app-field-error { color: var(--app-danger); font-size: 0.8125rem; line-height: 1.35; }
 
   .app-chip { display: inline-flex; min-height: 28px; align-items: center; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.25rem 0.55rem; background: var(--app-surface-inset); color: var(--app-hint); font-size: 0.75rem; font-weight: 650; line-height: 1.2; }
+  .app-chip.app-gradient-action { border-color: transparent; background: linear-gradient(105deg, var(--app-brand-start), var(--app-brand-mid), var(--app-brand-end)); color: #fff; }
   .app-chip-info { border-color: color-mix(in srgb, var(--app-info) 35%, var(--border-subtle)); color: var(--app-info); }
   .app-chip-success { border-color: color-mix(in srgb, var(--app-success) 35%, var(--border-subtle)); color: var(--app-success); }
   .app-chip-warning { border-color: color-mix(in srgb, var(--app-warning) 35%, var(--border-subtle)); color: var(--app-warning); }
@@ -844,7 +845,7 @@ body {
 
 .program-view-switch {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.35rem;
   margin-bottom: 1rem;
   border: 1px solid var(--border-subtle);

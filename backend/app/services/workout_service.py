@@ -203,6 +203,10 @@ async def build_plan_from_program_day(
         )
     else:
         phase = resolve_week_phase_meta(program_started_at, today)
+    linear_progression = structure.get("progression") == "linear"
+    if linear_progression:
+        phase["week_label"] = "Линейный план"
+        phase["week_rir"] = "Повторы по вашему плану"
     raw_exercises = day.get("exercises") or []
     if not raw_exercises:
         raw_ids = day.get("exercise_ids") or []
@@ -250,7 +254,7 @@ async def build_plan_from_program_day(
             continue
         target_sets = int(item.get("sets") or item.get("target_sets") or 3)
         # Prefer phase-based reps (3-week cycle) over static seed reps
-        target_reps = phase["target_reps"]
+        target_reps = str(item.get("reps") or phase["target_reps"]) if linear_progression else phase["target_reps"]
         rest_sec = int(item.get("rest_sec") or day.get("rest_sec_default") or 60)
         if phase["week_phase"] == "heavy":
             rest_sec = max(rest_sec, 90)
@@ -386,7 +390,7 @@ async def preview_program_plan(
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     if not program_publication.is_accessible_to_user(
-        program, (user.goals or {}).get("active_program_id")
+        program, (user.goals or {}).get("active_program_id"), user_id=user.id
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     return await build_program_plan_for_user(
@@ -499,7 +503,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         if program is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
         if not program_publication.is_accessible_to_user(
-            program, (user.goals or {}).get("active_program_id")
+            program, (user.goals or {}).get("active_program_id"), user_id=user.id
         ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
@@ -591,7 +595,7 @@ async def start_program_workout(
     if program is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
     if not program_publication.is_accessible_to_user(
-        program, (user.goals or {}).get("active_program_id")
+        program, (user.goals or {}).get("active_program_id"), user_id=user.id
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
