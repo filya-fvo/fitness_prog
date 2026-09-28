@@ -46,14 +46,14 @@ export function RestTimer({
 
   const total = Math.max(1, totalRef.current);
   const progress = Math.max(0, Math.min(1, secondsLeft / total));
-  const size = 56;
-  const stroke = 5;
+  const size = 68;
+  const stroke = 6;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * progress;
 
-  const bigSize = 220;
-  const bigStroke = 14;
+  const bigSize = 400;
+  const bigStroke = 18;
   const bigR = (bigSize - bigStroke) / 2;
   const bigC = 2 * Math.PI * bigR;
   const bigDash = bigC * progress;
@@ -70,7 +70,7 @@ export function RestTimer({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="app-rest-chip fixed bottom-24 left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-lg backdrop-blur"
+          className="app-rest-chip fixed bottom-24 left-3 z-40 flex h-[68px] w-[68px] items-center justify-center rounded-full shadow-lg backdrop-blur"
           aria-label={`Отдых ${formatRestTime(secondsLeft)}. Открыть таймер`}
         >
           <svg width={size} height={size} className={reduceMotion ? "" : "-rotate-90"}>
@@ -94,7 +94,7 @@ export function RestTimer({
               opacity={reduceMotion ? 0.35 : 1}
             />
           </svg>
-          <span className="absolute text-[11px] font-semibold tabular-nums text-tg-text">
+          <span className="absolute text-xs font-semibold tabular-nums text-tg-text">
             {formatRestTime(secondsLeft)}
           </span>
         </button>
@@ -124,7 +124,7 @@ export function RestTimer({
 
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
             <div className="relative flex items-center justify-center">
-              <svg width={bigSize} height={bigSize} className={reduceMotion ? "" : "-rotate-90"}>
+              <svg width={bigSize} height={bigSize} viewBox={`0 0 ${bigSize} ${bigSize}`} style={{ width: "min(88vw, 58vh, 420px)", height: "auto" }} className={reduceMotion ? "" : "-rotate-90"}>
                 <circle
                   cx={bigSize / 2}
                   cy={bigSize / 2}
@@ -145,7 +145,7 @@ export function RestTimer({
                   opacity={reduceMotion ? 0.4 : 1}
                 />
               </svg>
-              <p className="absolute text-5xl font-semibold tabular-nums tracking-tight">
+              <p className="absolute text-6xl font-semibold tabular-nums tracking-tight sm:text-7xl">
                 {formatRestTime(secondsLeft)}
               </p>
             </div>

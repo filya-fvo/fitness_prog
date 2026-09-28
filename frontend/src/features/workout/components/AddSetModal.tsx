@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { WheelPicker } from "@/components/WheelPicker";
+import { SetWeightSelector } from "@/features/workout/components/SetWeightSelector";
 import { DecimalInput } from "@/components/DecimalInput";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, LocalSetDraft } from "@/types/workout";
@@ -74,7 +75,7 @@ export function AddSetModal({
     defaultTimedSeconds(exercise);
 
   const [reps, setReps] = useState(initReps);
-  const [kgWhole, setKgWhole] = useState(w0 || 20);
+  const [kgWhole, setKgWhole] = useState(w0);
   const [kgTenth, setKgTenth] = useState(t0);
   const [min, setMin] = useState(Math.floor(initDur / 60));
   const [sec, setSec] = useState(initDur % 60);
@@ -128,19 +129,14 @@ export function AddSetModal({
 
         {loadType === "weight_reps" ? (
           <div>
-          <div className="flex gap-2">
-            <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
-            <WheelPicker label={weightInput.label} value={kgWhole} options={rangeInts(0, 300)} onChange={setKgWhole} />
-            <WheelPicker
-              label=""
-              value={kgTenth}
-              options={rangeInts(0, 9)}
-              onChange={setKgTenth}
-              format={(n) => String(n)}
-              className="max-w-[72px]"
-            />
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 p-2">
+              <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
+              <p className="mt-2 text-center text-lg font-semibold tabular-nums">{reps} повт.</p>
+            </div>
+            <SetWeightSelector label={weightInput.label} hint={weightInput.hint} whole={kgWhole} tenth={kgTenth}
+              onChange={(whole, tenth) => { setKgWhole(whole); setKgTenth(tenth); }} previousWeight={initWeight} />
           </div>
-          {weightInput.hint ? <p className="mt-2 text-xs text-white/60">{weightInput.hint}</p> : null}
           </div>
         ) : null}
 

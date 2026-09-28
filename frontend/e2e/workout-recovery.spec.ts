@@ -196,6 +196,7 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   const addSetDialog = page.getByRole("dialog", { name: "Добавить подход" });
   await expect(addSetDialog).toHaveClass(/app-card-hero/);
   await expect(addSetDialog.getByRole("button", { name: "Применить" })).toHaveClass(/app-gradient-action/);
+  await expect(addSetDialog).toHaveScreenshot("add-set-weight-picker-mobile.png", { animations: "disabled" });
   await page.keyboard.press("Escape");
   await expect(addSetDialog).toHaveCount(0);
 });

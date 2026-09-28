@@ -260,6 +260,7 @@ test("completed planned sets advance to the next exercise after the countdown", 
   const timer = page.getByRole("dialog", { name: "Таймер отдыха" });
   await expect(timer).toHaveClass(/app-rest-timer/);
   await expect(timer.locator("circle").nth(1)).toHaveAttribute("stroke", "var(--app-brand-mid)");
+  expect((await timer.locator("svg").boundingBox())?.width).toBeGreaterThan(300);
   await timer.getByRole("button", { name: "Стоп" }).click();
   await page.getByRole("button", { name: "Как прошлый" }).click();
   await page.getByRole("button", { name: "Готово" }).first().click();

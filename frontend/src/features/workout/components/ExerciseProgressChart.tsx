@@ -49,7 +49,7 @@ function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric
   const labelStep = Math.max(1, Math.ceil(points.length / 7));
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-white/5 bg-tg-bg p-2">
+    <div className="mt-3 overflow-hidden rounded-xl border border-white/5 bg-[#081426] p-2">
       <svg viewBox="0 0 600 220" className="h-52 w-full" role="img" aria-label="Динамика рабочих весов упражнения">
         <defs>
           <linearGradient id="exercise-progress-area" x1="0" y1="0" x2="0" y2="1">
@@ -60,9 +60,9 @@ function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric
         {[top, (top + bottom) / 2, bottom].map((gridY) => (
           <line key={gridY} x1={left} x2={right} y1={gridY} y2={gridY} stroke="currentColor" opacity="0.12" strokeDasharray="4 5" />
         ))}
-        <text x="4" y={top + 4} className="fill-tg-hint text-[10px]">{Math.round(max)} кг</text>
-        <text x="4" y={bottom + 4} className="fill-tg-hint text-[10px]">{Math.round(min)} кг</text>
-        <polygon points={area} fill="url(#exercise-progress-area)" />
+        <text x="4" y={top + 4} className="fill-white/65 text-[10px]">{Math.round(max)} кг</text>
+        <text x="4" y={bottom + 4} className="fill-white/65 text-[10px]">{Math.round(min)} кг</text>
+        {points.length > 1 ? <polygon points={area} fill="url(#exercise-progress-area)" /> : null}
         {points.length > 1 ? <polyline points={polyline} fill="none" stroke="var(--app-accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /> : null}
         {coords.map(({ x: pointX, y: pointY, point }, index) => {
           const showLabel = index % labelStep === 0 || index === coords.length - 1;
@@ -70,11 +70,11 @@ function LineChart({ points, metric }: { points: ExerciseProgressPoint[]; metric
             <circle cx={pointX} cy={pointY} r="4.5" fill="var(--app-accent)" stroke="var(--app-bg)" strokeWidth="2">
               <title>{shortDate(point.date)}: {point[metric]} кг · {displayWeight(point)} × {point.reps}</title>
             </circle>
-            {showLabel ? <text x={pointX} y={Math.max(13, pointY - 9)} textAnchor="middle" className="fill-tg-text text-[10px] font-semibold">{point[metric]}</text> : null}
+            {showLabel ? <text x={pointX} y={Math.max(13, pointY - 9)} textAnchor="middle" className="fill-white text-[10px] font-semibold">{point[metric]}</text> : null}
           </g>;
         })}
         {[0, Math.floor((points.length - 1) / 2), points.length - 1].filter((value, index, all) => all.indexOf(value) === index).map((index) => (
-          <text key={index} x={x(index)} y="207" textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} className="fill-tg-hint text-[10px]">{shortDate(points[index].date)}</text>
+          <text key={index} x={x(index)} y="207" textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} className="fill-white/65 text-[10px]">{shortDate(points[index].date)}</text>
         ))}
       </svg>
     </div>
@@ -90,41 +90,42 @@ export function ExerciseProgressChart({ allPoints }: { allPoints: ExerciseProgre
   const first = points[0] ?? null;
   const latest = points.at(-1) ?? null;
   const best = points.length ? Math.max(...points.map((point) => point[metric])) : null;
-  const delta = first && latest ? Math.round((latest[metric] - first[metric]) * 10) / 10 : null;
+  const delta = points.length > 1 && first && latest ? Math.round((latest[metric] - first[metric]) * 10) / 10 : null;
   const tablePoints = points.slice(-visibleRows).reverse();
 
   useEffect(() => setVisibleRows(12), [period, phase]);
 
   return (
     <div>
-      <div className="flex rounded-xl bg-tg-bg p-1 text-xs" aria-label="Период истории упражнения">
+      <div className="flex rounded-xl bg-[#081426] p-1 text-xs" aria-label="Период истории упражнения">
         {([[7, "Неделя"], [30, "Месяц"], [365, "Год"]] as const).map(([value, label]) => (
-          <button key={value} type="button" onClick={() => setPeriod(value)} className={`flex-1 rounded-lg px-2 py-2 ${period === value ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}>{label}</button>
+          <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)} className={`min-h-11 flex-1 rounded-lg px-2 py-2 ${period === value ? "app-gradient-action font-semibold text-white" : "text-white/65"}`}>{label}</button>
         ))}
       </div>
       <div className="mt-2 flex gap-1 overflow-x-auto pb-1" aria-label="Фаза недели">
-        {PHASES.map((item) => <button key={item.id} type="button" onClick={() => setPhase(item.id)} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] ${phase === item.id ? "bg-tg-button/20 font-semibold text-tg-link" : "bg-tg-bg text-tg-hint"}`}>{item.label}</button>)}
+        {PHASES.map((item) => <button key={item.id} type="button" aria-pressed={phase === item.id} onClick={() => setPhase(item.id)} className={`min-h-11 shrink-0 rounded-full px-3 py-2 text-xs ${phase === item.id ? "bg-cyan-400/15 font-semibold text-cyan-300" : "bg-[#081426] text-white/65"}`}>{item.label}</button>)}
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <p className="text-[11px] text-tg-hint">Лучший завершённый подход за тренировку</p>
-        <div className="flex rounded-full bg-tg-bg p-0.5 text-[11px]">
-          <button type="button" onClick={() => setMetric("totalWeight")} className={`rounded-full px-2 py-1 ${metric === "totalWeight" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>Вес</button>
-          <button type="button" onClick={() => setMetric("estimated1rm")} className={`rounded-full px-2 py-1 ${metric === "estimated1rm" ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>1ПМ</button>
+        <p className="text-[11px] text-white/65">Лучший завершённый подход за тренировку</p>
+        <div className="flex rounded-full bg-[#081426] p-0.5 text-[11px]">
+          <button type="button" aria-pressed={metric === "totalWeight"} onClick={() => setMetric("totalWeight")} className={`min-h-11 rounded-full px-3 py-1 ${metric === "totalWeight" ? "app-gradient-action text-white" : "text-white/65"}`}>Вес</button>
+          <button type="button" aria-pressed={metric === "estimated1rm"} onClick={() => setMetric("estimated1rm")} className={`min-h-11 rounded-full px-3 py-1 ${metric === "estimated1rm" ? "app-gradient-action text-white" : "text-white/65"}`}>1ПМ</button>
         </div>
       </div>
-      {!points.length ? <div className="mt-3 rounded-xl bg-tg-bg p-4 text-center text-xs text-tg-hint">Нет завершённых подходов с весом за выбранный период и тип недели.</div> : null}
+      {!points.length ? <div className="mt-3 rounded-xl bg-[#081426] p-4 text-center text-xs text-white/65">Нет завершённых подходов с весом за выбранный период и тип недели.</div> : null}
       {points.length ? <>
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-tg-bg p-2"><p className="text-[10px] text-tg-hint">Последнее</p><p className="mt-1 text-sm font-semibold tabular-nums">{latest?.[metric]} кг</p></div>
-          <div className="rounded-xl bg-tg-bg p-2"><p className="text-[10px] text-tg-hint">Лучшее</p><p className="mt-1 text-sm font-semibold tabular-nums">{best} кг</p></div>
-          <div className="rounded-xl bg-tg-bg p-2"><p className="text-[10px] text-tg-hint">Изменение</p><p className={`mt-1 text-sm font-semibold tabular-nums ${delta != null && delta > 0 ? "text-emerald-400" : ""}`}>{delta == null ? "—" : `${delta > 0 ? "+" : ""}${delta} кг`}</p></div>
+          <div className="rounded-xl bg-[#081426] p-2"><p className="text-[10px] text-white/65">Последнее</p><p className="mt-1 text-sm font-semibold tabular-nums">{latest?.[metric]} кг</p></div>
+          <div className="rounded-xl bg-[#081426] p-2"><p className="text-[10px] text-white/65">Лучшее</p><p className="mt-1 text-sm font-semibold tabular-nums">{best} кг</p></div>
+          <div className="rounded-xl bg-[#081426] p-2"><p className="text-[10px] text-white/65">Изменение</p><p className={`mt-1 text-sm font-semibold tabular-nums ${delta != null && delta > 0 ? "text-emerald-400" : ""}`}>{delta == null ? "—" : `${delta > 0 ? "+" : ""}${delta} кг`}</p></div>
         </div>
         <LineChart points={points} metric={metric} />
-        {metric === "estimated1rm" ? <p className="mt-2 text-[11px] text-tg-hint">1ПМ — расчёт по формуле Эпли, а не рекомендация проверять максимальный вес.</p> : null}
+        {points.length === 1 ? <p className="mt-2 text-xs text-white/65">Пока есть один результат. Линия появится после следующей тренировки.</p> : null}
+        {metric === "estimated1rm" ? <p className="mt-2 text-[11px] text-white/65">1ПМ — расчёт по формуле Эпли, а не рекомендация проверять максимальный вес.</p> : null}
         <div className="mt-4 overflow-x-auto rounded-xl border border-white/5">
           <table className="w-full min-w-[420px] border-collapse text-left text-xs">
             <caption className="sr-only">Табличные данные динамики упражнения</caption>
-            <thead className="bg-tg-bg text-tg-hint">
+            <thead className="bg-[#081426] text-white/65">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">Дата</th>
                 <th scope="col" className="px-3 py-2 font-medium">Неделя</th>
@@ -150,7 +151,7 @@ export function ExerciseProgressChart({ allPoints }: { allPoints: ExerciseProgre
           <button
             type="button"
             onClick={() => setVisibleRows((current) => Math.min(points.length, current + 25))}
-            className="mt-2 min-h-11 w-full rounded-xl bg-tg-bg px-3 py-2 text-xs font-medium text-tg-link"
+            className="mt-2 min-h-11 w-full rounded-xl bg-[#081426] px-3 py-2 text-xs font-medium text-cyan-300"
           >
             Показать ещё ({points.length - visibleRows})
           </button>
