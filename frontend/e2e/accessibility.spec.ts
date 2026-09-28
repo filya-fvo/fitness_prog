@@ -38,3 +38,18 @@ for (const preference of ["light", "dark"] as const) {
     expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
   });
 }
+
+for (const route of ["/", "/train", "/progress", "/help-center", "/profile"]) {
+  test(`${route} keeps the root experience accessible`, async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto(route);
+    await expect(page.locator("main, section").first()).toBeVisible();
+    const result = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    const blocking = result.violations.filter((item) =>
+      item.impact === "critical" || item.impact === "serious"
+    );
+    expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
+  });
+}

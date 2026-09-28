@@ -196,6 +196,14 @@ services → SQLAlchemy models → PostgreSQL
 ### Frontend
 
 - `frontend/src/App.tsx` — lazy routes и публичные `/help`, `/knowledge`.
+  Пять корневых разделов: `/` — Главная, `/train` — Упражнения,
+  `/progress` — Дневник, `/help-center` — Помощь, `/profile` — Профиль.
+  `/nutrition` относится к Главной; `/workouts` и `/programs` — к Упражнениям;
+  `/measurements` — к Дневнику; `/ai` и `/support` — к Помощи;
+  `/notifications`, `/social`, `/invite` и `/admin` — к Профилю.
+- `frontend/src/components/layout/BottomNavigation.tsx` — пять корневых вкладок,
+  дочерняя принадлежность и mobile/desktop навигация. Общие визуальные варианты:
+  `frontend/src/theme/visualStyles.ts` и `frontend/src/components/ui/`.
 - `frontend/src/components/layout/Shell.tsx` — авторизация, reconnect, offline
   sync, общий layout и навигация; `hooks/useTelegramExitGesture.ts` сохраняет
   системный выход Android и добавляет узкий edge-swipe выхода для Telegram iOS.
@@ -219,7 +227,8 @@ services → SQLAlchemy models → PostgreSQL
   блоками активности/связи и визуально отделёнными опасными действиями.
 - `frontend/src/features/admin-broadcasts/` — редактор, Telegram-preview,
   подтверждение запуска, прогресс и серверная история рассылок.
-- `frontend/src/pages/` — общие страницы: Главная, Ещё, справка, админ.
+- `frontend/src/pages/` — общие страницы: Главная, хаб Упражнений, справка и
+  админка; старый `/more` перенаправляет в Профиль.
 - `frontend/src/db/syncQueue.ts` — IndexedDB, общая очередь тренировок, профиля и
   замеров, а также снимок активной сессии; `db/bodyMeasurements.ts` —
   пользовательский кэш и объединение операций замера по дате.

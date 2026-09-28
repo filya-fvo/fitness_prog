@@ -773,6 +773,12 @@ body {
   color: white;
 }
 
+.programs-page .app-page-title {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+
 .programs-page .app-back-button {
   border-color: color-mix(in srgb, var(--app-brand-start) 55%, transparent);
   background: rgba(7, 15, 18, 0.72);

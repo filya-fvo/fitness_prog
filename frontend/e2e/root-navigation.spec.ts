@@ -44,4 +44,19 @@ test.describe("five-section root navigation", () => {
     await expect(page.getByRole("heading", { name: "Профиль" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Админ", exact: true })).toHaveCount(0);
   });
+
+  test("keeps all five labels on one line at narrow mobile widths", async ({ page }) => {
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto("/");
+      const label = page.getByRole("navigation", { name: "Основная навигация" })
+        .getByRole("link", { name: "Упражнения" }).locator("span").last();
+      const { height, lineHeight } = await label.evaluate((element) => ({
+        height: element.getBoundingClientRect().height,
+        lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
+      }));
+      expect(height).toBeLessThanOrEqual(lineHeight + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+  });
 });

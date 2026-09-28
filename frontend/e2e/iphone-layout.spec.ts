@@ -28,3 +28,20 @@ test("browser login remains usable in an iPhone-sized WebKit viewport", async ({
   expect(box).not.toBeNull();
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual((viewport?.height ?? 0) + 1);
 });
+
+test("compact phone keeps login and navigation usable at low height", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  await expect(page.getByText("Вход или регистрация по электронной почте")).toBeVisible({ timeout: 15_000 });
+  const email = page.getByLabel("Электронная почта");
+  const nav = page.getByRole("navigation", { name: "Основная навигация" });
+  await expect(email).toBeVisible();
+  await expect(nav).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.innerWidth);
+  const box = await nav.boundingBox();
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(568);
+});
