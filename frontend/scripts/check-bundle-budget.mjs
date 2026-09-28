@@ -95,8 +95,11 @@ const limits = {
   // gzip inside the already lazy Progress route, without a new vendor chunk.
   // Shared card, field and button primitives on Nutrition and Onboarding add
   // 0.4 KB gzip across their existing lazy routes; vendor size is unchanged.
-  totalJsGzip: 528_700,
-  productJsGzip: 475_200,
+  // The four approved Home/activity reference corrections add the calorie ring,
+  // macro bars and a dedicated day editor; artwork stays in static media assets.
+  // Allow up to 7.3 KB growth in lazy product routes, with vendor isolation intact.
+  totalJsGzip: 536_000,
+  productJsGzip: 482_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

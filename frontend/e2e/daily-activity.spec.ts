@@ -45,4 +45,13 @@ test("home activity cards open an accessible daily editor and switch dates", asy
   await expect(dialog.getByRole("button", { name: "Следующий день" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+
+  await expect(page.locator(".home-media-card")).toHaveCSS("background-image", /home-training-male.webp/);
+  await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+    id: USER_ID, username: "new-user", telegram_id: null, auth_email: null,
+    anthropometry: { sex: "female" }, goals: { onboarding_completed: true },
+    subscription_status: "free", stars_balance: 0, onboarding_completed: true,
+  }) }));
+  await page.reload();
+  await expect(page.locator(".home-media-card")).toHaveCSS("background-image", /home-training-female.webp/);
 });

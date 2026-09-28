@@ -69,6 +69,7 @@ import { compareProgramToProfile, programMismatchSummary } from "@/utils/program
 import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
+import { homeTrainingImage } from "@/features/home/homeTrainingImage";
 import { DailyActivityCards } from "@/features/home/components/DailyActivityCards";
 import { DailyActivityDialog } from "@/features/home/components/DailyActivityDialog";
 import { HomeNutritionSummary } from "@/features/home/components/HomeNutritionSummary";
@@ -655,6 +656,8 @@ export function HomePage() {
     });
   }
 
+  const homeHeroImage = homeTrainingImage(String(profileGoals.sex || ""));
+
   return (
     <section className="min-w-0 max-w-full">
       <Header
@@ -730,7 +733,7 @@ export function HomePage() {
 
         {/* Primary hero CTA first — review P0 */}
         {canResume ? (
-          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+          <HomeMediaCard imageUrl={homeHeroImage}>
             <p className="section-kicker">Сейчас</p>
             <p className="home-hero-title">
               {activeWorkout?.title || "Тренировка в процессе"}
@@ -762,7 +765,7 @@ export function HomePage() {
             </p>
           </HomeMediaCard>
         ) : todayProgram && todayProgramCompleted ? (
-          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+          <HomeMediaCard imageUrl={homeHeroImage}>
             <p className="section-kicker">Сегодня</p>
             <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
               <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
@@ -790,21 +793,30 @@ export function HomePage() {
             ) : null}
           </HomeMediaCard>
         ) : todayProgram ? (
-          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
-            <p className="section-kicker">
-              {canStartProgramNow ? "Сегодня" : "Следующая тренировка"}
-            </p>
-            <p className="home-hero-title">{todayProgram.name}</p>
-            <p className="max-w-[20rem] break-words text-sm text-tg-hint [overflow-wrap:anywhere]">
-              {todayDayTitle}
-              {" · "}
-              {phaseMetaFromName(effectiveTodayPhase).label}
-              {todayProgram.workout_type ? ` · ${enumLabel(todayProgram.workout_type)}` : ""}
-              {(() => {
-                const lvl = String(todayProgram.level || todayProgram.target_level || "");
-                return lvl ? ` · ${enumLabel(lvl)}` : "";
-              })()}
-            </p>
+          <div className="space-y-3">
+            <HomeMediaCard imageUrl={homeHeroImage} compact>
+              <p className="max-w-[55%] text-[1.35rem] font-bold leading-tight text-white">Продолжай<br />свой путь</p>
+              <p className="mt-2 max-w-[55%] text-xs text-white/75">
+                {canStartProgramNow ? "Тренировка сегодня" : "Следующая тренировка"}
+                {todayExercises.length ? ` · ${todayExercises.length} упр.` : ""}
+              </p>
+              {canStartProgramNow ? (
+                <button type="button" disabled={starting} onClick={() => void startToday()}
+                  className="signal-action mt-auto inline-flex min-h-[44px] max-w-[58%] items-center rounded-full px-3 text-xs font-semibold text-white disabled:opacity-60">
+                  {starting ? "Стартуем…" : "Начать тренировку →"}
+                </button>
+              ) : (
+                <Link to="/train" className="signal-action mt-auto inline-flex min-h-[44px] max-w-[58%] items-center rounded-full px-3 text-xs font-semibold text-white">
+                  Открыть план →
+                </Link>
+              )}
+            </HomeMediaCard>
+            <div className="app-card app-card-neutral space-y-3 p-4">
+              <p className="text-sm font-semibold">{todayProgram.name}</p>
+              <p className="break-words text-xs text-tg-hint [overflow-wrap:anywhere]">
+                {todayDayTitle} · {phaseMetaFromName(effectiveTodayPhase).label}
+                {todayProgram.workout_type ? ` · ${enumLabel(todayProgram.workout_type)}` : ""}
+              </p>
             {preparedPlan?.load_adjustment_label ? (
               <p className="rounded-xl bg-tg-bg px-3 py-2 text-xs leading-5 text-tg-hint">
                 {preparedPlan.load_adjustment_label}. Базовая фаза программы не сдвигается.
@@ -894,40 +906,20 @@ export function HomePage() {
               ) : null;
             })()}
             {canStartProgramNow ? (
-              <div className="signal-action mt-4 flex overflow-hidden rounded-xl sm:max-w-sm">
-                <button
-                  type="button"
-                  disabled={starting}
-                  onClick={() => void startToday()}
-                  className="min-w-0 flex-1 break-words px-3 py-3.5 text-left text-sm font-semibold text-tg-button-text [overflow-wrap:anywhere] disabled:opacity-60"
-                >
-                  {starting ? "Стартуем…" : `Начать · ${todayDayTitle}`}
-                  <span className="mt-0.5 block text-[10px] font-normal opacity-80">
-                    {phaseMetaFromName(effectiveTodayPhase).label} неделя
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={starting}
-                  aria-label="Выбрать день и неделю программы"
-                  onClick={() => {
-                    setPickDay(todayDay);
-                    setPickPhase(todayPhase);
-                    setPickerOpen(true);
-                  }}
-                  className="shrink-0 border-l border-black/10 px-4 py-3 text-lg font-semibold text-tg-button-text disabled:opacity-60"
-                >
-                  ▾
-                </button>
-              </div>
+              <button type="button" disabled={starting} aria-label="Выбрать день и неделю программы"
+                onClick={() => { setPickDay(todayDay); setPickPhase(todayPhase); setPickerOpen(true); }}
+                className="app-secondary-action tap-target min-h-[44px] w-full rounded-xl px-3 text-sm font-medium disabled:opacity-60">
+                Выбрать день и неделю программы
+              </button>
             ) : (
               <p className="rounded-xl bg-tg-bg px-3 py-2.5 text-center text-xs text-tg-hint">
                 Начать её можно в день тренировки. Сейчас доступны просмотр плана и замены.
               </p>
             )}
-          </HomeMediaCard>
+            </div>
+          </div>
         ) : (
-          <HomeMediaCard imageUrl="/app-media/home-training-hero.jpg">
+          <HomeMediaCard imageUrl={homeHeroImage}>
             <p className="section-kicker">С чего начать</p>
             <p className="home-hero-title">Выберите свою первую программу</p>
             <p className="max-w-[20rem] text-sm text-tg-hint">

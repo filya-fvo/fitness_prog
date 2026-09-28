@@ -198,6 +198,9 @@ test("one workout can be moved without changing the recurring schedule", async (
 
   await page.goto("/");
   await expect(page.getByText("По расписанию сегодня в 06:15")).toBeVisible();
+  await expect(page.getByText(/Продолжай/)).toBeVisible();
+  await expect(page.locator(".home-media-card")).toHaveCSS("background-image", /home-training-male.webp/);
+  expect((await page.locator(".home-media-card").boundingBox())?.height).toBeLessThan(280);
   await expect(page.getByText("По расписанию сегодня в 06:15").locator("../../..")).toHaveClass(/app-card-ocean/);
   const pageWidth = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -663,7 +666,7 @@ test("home lets program exercises be replaced and saved before workout start", a
   });
 
   await page.goto("/");
-  await expect(page.getByText("Следующая тренировка", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Следующая тренировка/)).toBeVisible();
   await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Заменить упражнения до старта" }).click();
   await page.getByRole("button", { name: /Подготовить упражнения/ }).click();

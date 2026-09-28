@@ -277,6 +277,12 @@ body {
     color: #f7fff2;
   }
 
+  .home-media-card--compact {
+    background-color: #071b35;
+    background-position: 69% center;
+    border-color: color-mix(in srgb, var(--app-brand-mid) 42%, var(--border-subtle));
+  }
+
   .home-media-card .text-tg-hint {
     color: rgba(235, 244, 235, 0.76);
   }
