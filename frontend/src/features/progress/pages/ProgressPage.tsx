@@ -31,6 +31,7 @@ import {
 import { WorkoutDayDetails } from "@/features/progress/pages/WorkoutDayDetails";
 import { DiaryAdvancedView } from "@/features/progress/pages/DiaryAdvancedView";
 import { DiaryBasicView } from "@/features/progress/pages/DiaryBasicView";
+import { DiarySections } from "@/features/progress/pages/DiarySections";
 import { PersonalDashboardCard } from "@/features/progress/pages/PersonalDashboardCard";
 import type { Exercise, Workout } from "@/types/workout";
 import { computeBadges } from "@/utils/achievements";
@@ -354,26 +355,9 @@ export function ProgressPage() {
         </p>
       ) : null}
 
-      {!loading && (depth === "advanced" ? (
-        <DiaryAdvancedView
-          dashboard={dashboard}
-          dashboardLoading={dashboardLoading}
-          dashboardError={dashboardError}
-          onPeriodChange={(period) => void changeDashboardPeriod(period)}
-          strengthTrendSets={strengthTrendSets}
-          strengthTrendsError={strengthTrendsError}
-          nutritionMode={nutritionMode}
-          onNutritionModeChange={setNutritionMode}
-          nutritionError={nutritionError}
-          nutritionSeries={nutritionSeries}
-          nutritionTarget={nutrition?.dailyTarget ?? null}
-          nutritionPeriods={nutritionPeriods}
-          volumeSeries={series}
-          dailyMetrics={dailyMetrics}
-          dailyMetricsError={dailyMetricsError}
-        />
-      ) : (
-        <DiaryBasicView
+      {!loading ? <DiarySections
+        showAnalytics={depth === "advanced"}
+        overview={<DiaryBasicView
           regularity={regularity}
           completedCount={completedCount}
           dailyMetrics={dailyMetrics}
@@ -391,8 +375,25 @@ export function ProgressPage() {
           onNextMonth={() => shiftMonth(1)}
           onSelectDate={setSelectedDate}
           badges={badges}
-        />
-      ))}
+        />}
+        analytics={<DiaryAdvancedView
+          dashboard={dashboard}
+          dashboardLoading={dashboardLoading}
+          dashboardError={dashboardError}
+          onPeriodChange={(period) => void changeDashboardPeriod(period)}
+          strengthTrendSets={strengthTrendSets}
+          strengthTrendsError={strengthTrendsError}
+          nutritionMode={nutritionMode}
+          onNutritionModeChange={setNutritionMode}
+          nutritionError={nutritionError}
+          nutritionSeries={nutritionSeries}
+          nutritionTarget={nutrition?.dailyTarget ?? null}
+          nutritionPeriods={nutritionPeriods}
+          volumeSeries={series}
+          dailyMetrics={dailyMetrics}
+          dailyMetricsError={dailyMetricsError}
+        />}
+      /> : null}
       {selectedDate ? <WorkoutDayDetails
         date={selectedDate}
         workouts={workouts.filter((workout) => workoutDateKey(workout) === selectedDate)}
