@@ -32,7 +32,10 @@ test("home activity cards open an accessible daily editor and switch dates", asy
   await expect(nutrition.getByText("90 / 180 г")).toBeVisible();
   await expect(nutrition.getByText("Жиры")).toBeVisible();
   await expect(nutrition.getByText("Углеводы")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Самочувствие" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Сегодня", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Заполнить: Сон" })).toContainText("из 8 ч");
+  await expect(page.getByRole("button", { name: "Заполнить: Вода" })).toContainText("из 2,5 л");
+  await expect(page.getByRole("button", { name: "Заполнить: Шаги" })).toContainText("из 10 000");
   await page.getByRole("button", { name: "Заполнить: Вода" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Сон, вода и шаги" });

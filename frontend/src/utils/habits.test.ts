@@ -135,9 +135,9 @@ describe("habit history clearing", () => {
 describe("daily activity cards", () => {
   it("formats sleep, water and steps as compact card values", () => {
     expect(activityCards({ sleepHours: 7.5, waterMl: 1250, steps: 6200 })).toEqual([
-      expect.objectContaining({ id: "sleep", value: "7,5 ч" }),
-      expect.objectContaining({ id: "water", value: "1 250 мл" }),
-      expect.objectContaining({ id: "steps", value: "6 200" }),
+      expect.objectContaining({ id: "sleep", value: "7 ч 30 мин", detail: "из 8 ч" }),
+      expect.objectContaining({ id: "water", value: "1,25 л", detail: "из 2,5 л" }),
+      expect.objectContaining({ id: "steps", value: "6 200", detail: "из 10 000" }),
     ]);
   });
 

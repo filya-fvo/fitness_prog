@@ -33,13 +33,26 @@ function formatActivityNumber(value: number): string {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value).replace(/\s/g, " ");
 }
 
+function formatSleep(hours: number): string {
+  const minutes = Math.round(hours * 60);
+  const wholeHours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${wholeHours} ч ${rest} мин` : `${wholeHours} ч`;
+}
+
+function formatWater(ml: number): string {
+  return ml >= 1000
+    ? `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(ml / 1000)} л`
+    : `${formatActivityNumber(ml)} мл`;
+}
+
 export function activityCards(
   day: DailyActivityInput,
   targets: { sleepHours?: number; waterMl?: number; steps?: number } = {},
 ): DailyActivityCard[] {
   const sleepTarget = targets.sleepHours ?? 8;
   const waterTarget = targets.waterMl ?? 2500;
-  const stepsTarget = targets.steps ?? 8000;
+  const stepsTarget = targets.steps ?? 10000;
   const progress = (value: number | null | undefined, target: number) =>
     value == null ? null : Math.min(1, Math.max(0, value / target));
 
@@ -47,22 +60,22 @@ export function activityCards(
     {
       id: "sleep",
       label: "Сон",
-      value: day.sleepHours == null ? "—" : `${formatActivityNumber(day.sleepHours)} ч`,
-      detail: `цель ${formatActivityNumber(sleepTarget)} ч`,
+      value: day.sleepHours == null ? "—" : formatSleep(day.sleepHours),
+      detail: `из ${formatSleep(sleepTarget)}`,
       progress: progress(day.sleepHours, sleepTarget),
     },
     {
       id: "water",
       label: "Вода",
-      value: `${formatActivityNumber(day.waterMl)} мл`,
-      detail: `цель ${formatActivityNumber(waterTarget)} мл`,
+      value: formatWater(day.waterMl),
+      detail: `из ${formatWater(waterTarget)}`,
       progress: progress(day.waterMl, waterTarget),
     },
     {
       id: "steps",
       label: "Шаги",
       value: day.steps == null ? "—" : formatActivityNumber(day.steps),
-      detail: `цель ${formatActivityNumber(stepsTarget)}`,
+      detail: `из ${formatActivityNumber(stepsTarget)}`,
       progress: progress(day.steps, stepsTarget),
     },
   ];
