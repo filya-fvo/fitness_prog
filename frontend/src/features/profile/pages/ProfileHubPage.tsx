@@ -1,25 +1,35 @@
+import { useEffect, useState } from "react";
+
+import { fetchMyProfile, type UserProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import { HubLinkCard } from "@/components/ui/HubLinkCard";
+import { StatusNotice } from "@/components/ui/StatusNotice";
+import { ProfileHeroCard } from "@/features/profile/components/ProfileHeroCard";
 import { ThemeSelector } from "@/features/theme/ThemeSelector";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUser } from "@/utils/adminAccess";
-import { subscriptionLabel } from "@/utils/localization";
-import { hasPlus } from "@/features/subscription/subscriptionAccess";
 
 export function ProfileHubPage() {
   const user = useUserStore((state) => state.user);
-  const accountLabel = user?.auth_email || (user?.username ? `@${user.username.replace(/^@/, "")}` : "Аккаунт");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileError, setProfileError] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void fetchMyProfile().then((saved) => {
+      if (!cancelled) { setProfile(saved); setProfileError(false); }
+    }).catch(() => {
+      if (!cancelled) setProfileError(true);
+    });
+    return () => { cancelled = true; };
+  }, [user]);
 
   return (
     <section>
       <Header title="Профиль" subtitle="Аккаунт, настройки и ваши связи" />
-      <div className="mb-3 app-card app-card-plum flex items-center justify-between gap-3 p-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-tg-text">{accountLabel}</p>
-          <p className="mt-1 text-xs text-tg-hint">Профиль и подписка</p>
-        </div>
-        {user ? <span className="app-chip app-chip-info shrink-0">{hasPlus(user) ? "PLUS" : subscriptionLabel(user.subscription_status)}</span> : null}
-      </div>
+      <ProfileHeroCard user={user} profile={profile} />
+      {profileError ? <StatusNotice tone="info" className="mb-3 text-xs">Показаны данные аккаунта. Вес и рост обновятся после подключения.</StatusNotice> : null}
       <div className="space-y-3">
         <HubLinkCard to="/profile/settings" title="Настройки профиля" description="Цели, программа, питание, добавки и аккаунт" icon="settings" tone="plum" />
         <HubLinkCard to="/notifications" title="Уведомления" description="Канал доставки, тихие часы и виды напоминаний" icon="notifications" tone="ocean" />
