@@ -254,21 +254,21 @@ export function AdminProgramsPage() {
   }
 
   if (isAuthLoading) return <section><Header title="Редактор программ" subtitle="Проверка доступа…" fallbackTo="/admin" /><PageSkeleton cards={5} /></section>;
-  if (!allowed) return <section><Header title="Редактор программ" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Программы доступны только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
+  if (!allowed) return <section><Header title="Редактор программ" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="app-card app-card-inset p-4 text-sm text-tg-hint">Программы доступны только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
 
   return (
     <section>
       <Header title="Редактор программ" subtitle="Дни, упражнения, версии и публикация" fallbackTo="/admin" beforeBack={confirmDiscard} />
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
-      {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
+      {error ? <div role="alert" className="app-status app-status-danger mb-4">{error}</div> : null}
+      {notice ? <div role="status" className="app-status app-status-success mb-4">{notice}</div> : null}
       {draft ? <ProgramEditor draft={draft} busy={busy} onChange={setDraft} onSave={() => void saveDraft()} onCancel={() => void closeEditor()} /> : (
-        <div className="rounded-2xl bg-tg-secondary p-4">
+        <div className="app-card app-card-inset p-4">
           <h2 className="font-semibold">Новая программа</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <input value={createName} onChange={(event) => setCreateName(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base sm:col-span-3" placeholder="Название программы" maxLength={200} />
             <select aria-label="Тип программы" value={createType} onChange={(event) => setCreateType(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"><option value="full_body">Всё тело</option><option value="upper_lower">Верх/низ</option><option value="strength">Сила</option><option value="hypertrophy">Масса</option><option value="conditioning">Выносливость</option><option value="custom">Своя</option></select>
             <select aria-label="Уровень программы" value={createLevel} onChange={(event) => setCreateLevel(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"><option value="beginner">Новичок</option><option value="intermediate">Средний</option><option value="advanced">Продвинутый</option></select>
-            <button type="button" disabled={busy || !createName.trim()} onClick={() => void createProgram()} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">Создать черновик</button>
+            <button type="button" disabled={busy || !createName.trim()} onClick={() => void createProgram()} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">Создать черновик</button>
           </div>
         </div>
       )}
@@ -276,7 +276,7 @@ export function AdminProgramsPage() {
       <div className="my-5 flex items-center justify-between gap-3"><h2 className="font-semibold">Все версии</h2><button type="button" disabled={loading || busy} onClick={() => void load()} className="min-h-11 text-sm text-tg-link disabled:opacity-50">Обновить</button></div>
       {loading ? <PageSkeleton cards={5} /> : programs.length ? (
         <ul className="space-y-3">{programs.map((program) => <AdminProgramCard key={program.id} program={program} focused={program.id === focusedId} busy={busy} onEdit={() => void editProgram(program)} onPreview={() => void showPreview(program)} onPublish={() => void publish(program)} onRollback={() => void rollback(program)} onDelete={() => void remove(program)} />)}</ul>
-      ) : <div className="rounded-2xl bg-tg-secondary p-5 text-center text-sm text-tg-hint">Программ пока нет.</div>}
+      ) : <div className="app-card app-card-inset p-5 text-center text-sm text-tg-hint">Программ пока нет.</div>}
       {preview ? <ProgramPreviewDialog {...preview} onDay={(dayIndex) => void showPreview(preview.program, dayIndex)} onClose={() => setPreview(null)} /> : null}
     </section>
   );

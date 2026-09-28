@@ -164,10 +164,10 @@ export function AdminUserActions({
   const disabled = busy !== null;
   return (
     <div className="space-y-4">
-      {notice ? <p className="rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">{notice}</p> : null}
-      {error ? <p role="alert" className="rounded-xl bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
+      {notice ? <p className="app-status app-status-success">{notice}</p> : null}
+      {error ? <p role="alert" className="app-status app-status-danger">{error}</p> : null}
 
-      <section className="rounded-2xl bg-tg-secondary p-4">
+      <section className="app-card app-card-inset p-4">
         <h2 className="font-semibold">Связаться</h2>
         <p className="mt-2 text-xs text-tg-hint">
           Выберите один канал. Web Push доступен только при активной подписке, email — после отдельного согласия пользователя.
@@ -198,7 +198,7 @@ export function AdminUserActions({
           placeholder={channelAvailable[messageChannel] ? "Служебное сообщение пользователю" : "Нет доступного канала"}
           className="mt-3 w-full rounded-xl border border-black/10 bg-tg-bg p-3 text-base"
         />
-        <button type="button" disabled={!channelAvailable[messageChannel] || disabled || !message.trim()} onClick={() => void sendMessage()} className="mt-2 min-h-11 w-full rounded-xl bg-tg-button px-4 font-semibold text-tg-button-text disabled:opacity-40">
+        <button type="button" disabled={!channelAvailable[messageChannel] || disabled || !message.trim()} onClick={() => void sendMessage()} className="mt-2 min-h-11 w-full rounded-xl app-gradient-action px-4 font-semibold disabled:opacity-40">
           {busy === "message" ? "Отправка…" : "Отправить сообщение"}
         </button>
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -216,7 +216,7 @@ export function AdminUserActions({
         </button>
       </section>
 
-      <section className="rounded-2xl border border-red-500/30 bg-tg-secondary p-4">
+      <section className="app-card app-card-danger p-4">
         <h2 className="font-semibold text-red-600 dark:text-red-300">Данные и архив</h2>
         <button type="button" disabled={disabled} onClick={exportData} className="mt-3 min-h-11 w-full rounded-xl bg-tg-bg px-3 text-sm text-tg-link disabled:opacity-40">Скачать данные JSON</button>
         <div className="mt-2 flex gap-2">

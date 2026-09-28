@@ -216,7 +216,7 @@ export function AdminAuditPage() {
     return (
       <section>
         <Header title="Журнал действий" subtitle="Доступ ограничен" fallbackTo="/admin" />
-        <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+        <div className="app-card app-card-inset p-4 text-sm text-tg-hint">
           Журнал доступен только настроенным администраторам.
           <Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link>
         </div>
@@ -232,7 +232,7 @@ export function AdminAuditPage() {
         fallbackTo="/admin"
       />
 
-      <form onSubmit={applyFilters} className="mb-4 grid gap-3 rounded-2xl bg-tg-secondary p-4 md:grid-cols-2">
+      <form onSubmit={applyFilters} className="mb-4 grid gap-3 app-card app-card-inset p-4 md:grid-cols-2">
         <SavedAdminFilters
           storageKey={adminFilterStorageKey(user!.id, "audit")}
           allowedKeys={AUDIT_FILTER_KEYS}
@@ -304,7 +304,7 @@ export function AdminAuditPage() {
             <option value="failure">Ошибка</option>
           </select>
         </label>
-        <button type="submit" disabled={loading} className="min-h-11 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
+        <button type="submit" disabled={loading} className="min-h-11 rounded-xl app-gradient-action px-4 py-3 text-sm font-semibold disabled:opacity-50">
           Применить
         </button>
         <button type="button" disabled={loading} onClick={clearFilters} className="min-h-11 rounded-xl bg-tg-bg px-4 py-3 text-sm text-tg-link disabled:opacity-50">
@@ -316,15 +316,15 @@ export function AdminAuditPage() {
 
       {loading && !data ? <PageSkeleton cards={4} /> : null}
       {error ? (
-        <div role="alert" className="mb-4 rounded-2xl bg-tg-secondary p-4 text-sm">
+        <div role="alert" className="app-status app-status-danger mb-4">
           <p>{error}</p>
-          <button type="button" onClick={() => void load(filters, offset)} className="mt-3 min-h-11 w-full rounded-xl bg-tg-button px-4 py-3 font-semibold text-tg-button-text">
+          <button type="button" onClick={() => void load(filters, offset)} className="mt-3 min-h-11 w-full rounded-xl app-gradient-action px-4 py-3 font-semibold">
             Повторить
           </button>
         </div>
       ) : null}
       {!loading && !error && data?.items.length === 0 ? (
-        <div className="rounded-2xl bg-tg-secondary p-5 text-center text-sm text-tg-hint">
+        <div className="app-card app-card-inset p-5 text-center text-sm text-tg-hint">
           За выбранный период действий нет.
         </div>
       ) : null}
@@ -332,7 +332,7 @@ export function AdminAuditPage() {
       {!error && data?.items.length ? (
         <div className="space-y-3" aria-busy={loading}>
           {data.items.map((item) => (
-            <article key={item.id} className="rounded-2xl bg-tg-secondary p-4">
+            <article key={item.id} className="app-card app-card-inset p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-tg-text">{ACTION_LABELS[item.action] || "Другое действие"}</h2>
@@ -340,7 +340,7 @@ export function AdminAuditPage() {
                     {item.actor_label} · {dateFormatter.format(new Date(item.created_at))}
                   </p>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.result === "success" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-red-500/15 text-red-700 dark:text-red-300"}`}>
+                <span className={`app-chip ${item.result === "success" ? "app-chip-success" : "app-chip-danger"}`}>
                   {item.result === "success" ? "Успешно" : "Ошибка"}
                 </span>
               </div>
@@ -366,7 +366,7 @@ export function AdminAuditPage() {
               </dl>
             </article>
           ))}
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-tg-secondary p-3 text-xs">
+          <div className="flex items-center justify-between gap-3 app-card app-card-inset p-3 text-xs">
             <button type="button" disabled={loading || offset === 0} onClick={() => movePage(Math.max(0, offset - ADMIN_AUDIT_PAGE_SIZE))} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Назад</button>
             <span className="text-center text-tg-hint">{offset + 1}–{Math.min(offset + data.items.length, data.total)} из {data.total}</span>
             <button type="button" disabled={loading || offset + data.items.length >= data.total} onClick={() => movePage(offset + ADMIN_AUDIT_PAGE_SIZE)} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Дальше</button>

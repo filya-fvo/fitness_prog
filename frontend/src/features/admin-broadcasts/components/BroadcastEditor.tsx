@@ -177,13 +177,13 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl bg-tg-secondary p-4">
+    <div className="space-y-4 app-card app-card-inset p-4">
       <div>
         <h2 className="font-semibold text-tg-text">Редактор сообщения</h2>
         <p className="mt-1 text-xs text-tg-hint">Сначала сохраните и отправьте тест только себе.</p>
       </div>
-      {error ? <p role="alert" className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</p> : null}
-      {previewError ? <p role="alert" className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">{previewError}</p> : null}
+      {error ? <p role="alert" className="app-status app-status-danger">{error}</p> : null}
+      {previewError ? <p role="alert" className="app-status app-status-warning">{previewError}</p> : null}
       {note ? <p className="rounded-xl bg-tg-bg p-3 text-sm text-tg-hint">{note}</p> : null}
       <label className="block text-xs text-tg-hint">
         Заголовок
@@ -214,7 +214,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
         <div className="mt-2 max-w-md rounded-2xl rounded-bl-md bg-tg-secondary p-3 text-sm whitespace-pre-wrap">
           <p className="font-semibold">🔔 {title || "Заголовок"}</p>
           <p className="mt-1">{message || "Текст сообщения появится здесь."}</p>
-          <div className="mt-3 rounded-lg bg-tg-button px-3 py-2 text-center text-xs font-semibold text-tg-button-text">Открыть приложение</div>
+          <div className="mt-3 rounded-lg app-gradient-action px-3 py-2 text-center text-xs font-semibold">Открыть приложение</div>
         </div>
       </div>
 
@@ -264,7 +264,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
 
       <div className="grid gap-2 sm:grid-cols-2">
         <button type="button" disabled={!canSave || Boolean(busy)} onClick={() => void onSave()} className="min-h-11 rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-link disabled:opacity-40">{busy === "save" ? "Сохраняем…" : "Сохранить черновик"}</button>
-        <button type="button" disabled={!canSave || Boolean(busy)} onClick={() => void onTest()} className="min-h-11 rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-40">{busy === "test" ? "Отправляем…" : "Отправить тест себе"}</button>
+        <button type="button" disabled={!canSave || Boolean(busy)} onClick={() => void onTest()} className="min-h-11 rounded-xl app-gradient-action px-4 py-3 text-sm font-semibold disabled:opacity-40">{busy === "test" ? "Отправляем…" : "Отправить тест себе"}</button>
       </div>
 
       {campaign?.status === "tested" && !dirty ? (

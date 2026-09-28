@@ -193,6 +193,8 @@ test("admin filters users and exports only selected rows", async ({ page }) => {
   });
 
   await page.goto("/admin");
+  await expect(page.getByRole("link", { name: /Состояние системы/ })).toHaveClass(/app-card/);
+  await expect(page.getByRole("button", { name: /Пользователи \(/ })).toHaveClass(/app-gradient-action/);
   await expect(page.getByText("Иван Тестовый")).toBeVisible();
   await page.getByLabel("Статус анкеты").selectOption("false");
   await page.getByLabel("Уровень пользователя").selectOption("beginner");

@@ -21,7 +21,7 @@ function statusLabel(program: Program): string {
 export function AdminProgramCard({ program, focused, busy, onEdit, onPreview, onPublish, onRollback, onDelete }: Props) {
   const schedule = Array.isArray(program.structure.schedule) ? program.structure.schedule : [];
   return (
-    <li id={`admin-program-${program.id}`} className={`rounded-2xl bg-tg-secondary p-4 ${focused ? "ring-2 ring-tg-button" : ""}`}>
+    <li id={`admin-program-${program.id}`} className={`app-card app-card-inset p-4 ${focused ? "app-brand-ring" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold">{programDayLabel(program.name)}</h2>
@@ -38,7 +38,7 @@ export function AdminProgramCard({ program, focused, busy, onEdit, onPreview, on
           {program.publication_status === "draft" ? "Редактировать" : "Новая версия"}
         </button>
         {program.publication_status === "draft" ? (
-          <button type="button" disabled={busy} onClick={onPublish} className="col-span-2 min-h-11 rounded-xl bg-tg-button px-3 text-sm font-semibold text-tg-button-text disabled:opacity-40">Проверить и опубликовать</button>
+          <button type="button" disabled={busy} onClick={onPublish} className="col-span-2 min-h-11 rounded-xl app-gradient-action px-3 text-sm font-semibold disabled:opacity-40">Проверить и опубликовать</button>
         ) : null}
         {program.publication_status === "published" && program.is_current && (program.version ?? 1) > 1 ? (
           <button type="button" disabled={busy} onClick={onRollback} className="col-span-2 min-h-11 rounded-xl bg-amber-500/15 px-3 text-sm font-medium text-amber-700 disabled:opacity-40 dark:text-amber-300">Вернуть предыдущую версию</button>

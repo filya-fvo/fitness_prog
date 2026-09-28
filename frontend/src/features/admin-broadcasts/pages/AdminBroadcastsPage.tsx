@@ -98,12 +98,12 @@ export function AdminBroadcastsPage() {
   }
 
   if (isAuthLoading) return <section><Header title="Центр рассылок" subtitle="Проверка доступа…" fallbackTo="/admin" /><PageSkeleton cards={5} /></section>;
-  if (!allowed) return <section><Header title="Центр рассылок" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Рассылки доступны только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
+  if (!allowed) return <section><Header title="Центр рассылок" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="app-card app-card-inset p-4 text-sm text-tg-hint">Рассылки доступны только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
 
   return (
     <section>
       <Header title="Центр рассылок" subtitle="Безопасные Telegram-сообщения выбранной аудитории" fallbackTo="/admin" />
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}<button type="button" onClick={() => void load(offset)} className="mt-2 block min-h-11 w-full rounded-xl bg-tg-button px-3 font-semibold text-tg-button-text">Повторить загрузку</button></div> : null}
+      {error ? <div role="alert" className="app-status app-status-danger mb-4">{error}<button type="button" onClick={() => void load(offset)} className="mt-2 block min-h-11 w-full rounded-xl app-gradient-action px-3 font-semibold">Повторить загрузку</button></div> : null}
       <BroadcastEditor selected={selected} programs={programs} onChanged={mergeCampaign} />
       <div className="my-5 border-t border-black/10" />
       {loading && !items.length ? <PageSkeleton cards={4} /> : (
@@ -120,7 +120,7 @@ export function AdminBroadcastsPage() {
           onCancel={(item) => action(() => cancelAdminBroadcast(item.id))}
         />
       )}
-      {total > PAGE_SIZE ? <div className="mt-3 flex items-center justify-between rounded-2xl bg-tg-secondary p-3 text-xs"><button type="button" disabled={loading || offset === 0} onClick={() => move(Math.max(0, offset - PAGE_SIZE))} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Назад</button><span className="text-tg-hint">{offset + 1}–{Math.min(offset + items.length, total)} из {total}</span><button type="button" disabled={loading || offset + items.length >= total} onClick={() => move(offset + PAGE_SIZE)} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Дальше</button></div> : null}
+      {total > PAGE_SIZE ? <div className="mt-3 flex items-center justify-between app-card app-card-inset p-3 text-xs"><button type="button" disabled={loading || offset === 0} onClick={() => move(Math.max(0, offset - PAGE_SIZE))} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Назад</button><span className="text-tg-hint">{offset + 1}–{Math.min(offset + items.length, total)} из {total}</span><button type="button" disabled={loading || offset + items.length >= total} onClick={() => move(offset + PAGE_SIZE)} className="min-h-11 rounded-xl bg-tg-bg px-4 text-tg-link disabled:opacity-40">Дальше</button></div> : null}
     </section>
   );
 }

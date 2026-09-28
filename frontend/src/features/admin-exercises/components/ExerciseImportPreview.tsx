@@ -63,12 +63,12 @@ export function ExerciseImportPreviewPanel({ onImported }: Props) {
   }
 
   return (
-    <details className="rounded-2xl bg-tg-secondary p-4">
+    <details className="app-card app-card-inset p-4">
       <summary className="min-h-11 cursor-pointer py-2 font-semibold">Предварительная проверка импорта</summary>
       <p className="mb-3 text-xs text-tg-hint">Вставьте JSON-массив до 500 упражнений. Сначала выполняется проверка без записи. Медиа задаются только ссылками; файлы через эту форму не загружаются.</p>
       <textarea value={source} onChange={(event) => { setSource(event.target.value); setResult(null); }} className="min-h-40 w-full resize-y rounded-xl border border-black/10 bg-tg-bg p-3 font-mono text-base" placeholder={'[{"name_ru":"…","muscle_group":"…"}]'} />
-      <button type="button" disabled={busy || !source.trim()} onClick={() => void preview()} className="mt-2 min-h-11 w-full rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">{busy ? "Проверяем…" : "Проверить без импорта"}</button>
-      {error ? <p role="alert" className="mt-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-300">{error}</p> : null}
+      <button type="button" disabled={busy || !source.trim()} onClick={() => void preview()} className="mt-2 min-h-11 w-full rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">{busy ? "Проверяем…" : "Проверить без импорта"}</button>
+      {error ? <p role="alert" className="mt-3 app-status app-status-danger">{error}</p> : null}
       {result ? (
         <div className="mt-3 text-sm">
           <p className="font-medium">Всего {result.total} · готово {result.valid} · с ошибками {result.invalid}</p>

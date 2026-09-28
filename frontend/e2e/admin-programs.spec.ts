@@ -111,6 +111,7 @@ test("admin edits, previews, publishes and rolls back a program", async ({ page 
   page.on("dialog", (dialog) => void dialog.accept());
 
   await page.goto("/admin/programs");
+  await expect(page.getByRole("button", { name: "Создать черновик" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByRole("heading", { name: "Все версии" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Тип программы" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Уровень программы" })).toBeVisible();

@@ -47,7 +47,7 @@ export function ProgramExercisePicker({ selectedIds, onPick }: Props) {
           type="button"
           disabled={loading}
           onClick={() => void search()}
-          className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+          className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50"
         >
           {loading ? "…" : "Найти"}
         </button>

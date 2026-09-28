@@ -77,6 +77,7 @@ test("broadcast requires test and double confirmation before launch", async ({ p
   });
 
   await page.goto("/admin/broadcasts");
+  await expect(page.getByRole("button", { name: "Отправить тест себе" })).toHaveClass(/app-gradient-action/);
   await page.waitForTimeout(500);
   expect(pageErrors).toEqual([]);
   await expect(page.getByRole("heading", { name: "Центр рассылок" })).toBeVisible();

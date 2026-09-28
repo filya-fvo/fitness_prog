@@ -215,7 +215,7 @@ export function AdminPage() {
     return (
       <section>
         <Header title="Админка" subtitle="Доступ ограничен" />
-        <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+        <div className="app-card app-card-inset p-4 text-sm text-tg-hint">
           Админка доступна только пользователям из настроенного списка администраторов.
           <Link to="/" className="mt-3 block text-center text-tg-link">
             На главную
@@ -228,10 +228,10 @@ export function AdminPage() {
   return (
     <section>
       <Header title="Админка" subtitle="Пользователи · каталог · контроль" />
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
-      {okNote ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm text-tg-hint">{okNote}</div> : null}
+      {error ? <div role="alert" className="app-status app-status-danger mb-3">{error}</div> : null}
+      {okNote ? <div role="status" className="app-status app-status-success mb-3">{okNote}</div> : null}
 
-      <div className="mb-3 rounded-2xl border border-tg-button/25 bg-tg-secondary px-4 py-3 text-sm">
+      <div className="app-card app-card-ocean mb-3 px-4 py-3 text-sm">
         <p className="font-medium text-tg-text">Инструкция администратора</p>
         <p className="mt-1 text-xs text-tg-hint">
           Отправьте боту скрытую команду <code className="text-tg-link">/admin</code> — он пришлёт актуальное руководство файлом.
@@ -240,7 +240,7 @@ export function AdminPage() {
 
       <Link
         to="/admin/system"
-        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+        className="app-card app-card-interactive mb-3 flex min-h-11 items-center justify-between px-4 py-3 text-sm"
       >
         <span>
           <span className="block font-medium text-tg-text">Состояние системы</span>
@@ -251,7 +251,7 @@ export function AdminPage() {
 
       <Link
         to="/admin/audit"
-        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+        className="app-card app-card-interactive mb-3 flex min-h-11 items-center justify-between px-4 py-3 text-sm"
       >
         <span>
           <span className="block font-medium text-tg-text">Журнал действий</span>
@@ -262,7 +262,7 @@ export function AdminPage() {
 
       <Link
         to="/admin/broadcasts"
-        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+        className="app-card app-card-interactive mb-3 flex min-h-11 items-center justify-between px-4 py-3 text-sm"
       >
         <span>
           <span className="block font-medium text-tg-text">Центр рассылок</span>
@@ -273,7 +273,7 @@ export function AdminPage() {
 
       <Link
         to="/admin/support"
-        className="mb-3 flex min-h-11 items-center justify-between rounded-2xl bg-tg-secondary px-4 py-3 text-sm"
+        className="app-card app-card-interactive mb-3 flex min-h-11 items-center justify-between px-4 py-3 text-sm"
       >
         <span>
           <span className="block font-medium text-tg-text">Поддержка пользователей</span>
@@ -282,13 +282,13 @@ export function AdminPage() {
         <span aria-hidden="true" className="text-tg-link">→</span>
       </Link>
 
-      <div className="mb-3 flex rounded-full bg-tg-secondary p-0.5 text-xs">
+      <div className="app-card app-card-inset mb-3 flex p-0.5 text-xs">
         <button
           type="button"
           onClick={() => setTab("users")}
           className={[
-            "flex-1 rounded-full px-3 py-2 font-medium",
-            tab === "users" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+            "min-h-11 flex-1 rounded-xl px-3 py-2 font-medium",
+            tab === "users" ? "app-gradient-action" : "text-tg-hint",
           ].join(" ")}
         >
           Пользователи ({usersTotal || users.length})
@@ -297,8 +297,8 @@ export function AdminPage() {
           type="button"
           onClick={() => setTab("content")}
           className={[
-            "flex-1 rounded-full px-3 py-2 font-medium",
-            tab === "content" ? "bg-tg-button text-tg-button-text" : "text-tg-hint",
+            "min-h-11 flex-1 rounded-xl px-3 py-2 font-medium",
+            tab === "content" ? "app-gradient-action" : "text-tg-hint",
           ].join(" ")}
         >
           Каталог
@@ -306,7 +306,7 @@ export function AdminPage() {
       </div>
 
       {tab === "users" ? (
-        <div className="mb-6 space-y-3 rounded-2xl bg-tg-secondary p-4">
+        <div className="app-card mb-6 space-y-3 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-medium">Зарегистрированные</h2>
             <button
@@ -343,7 +343,7 @@ export function AdminPage() {
           ) : null}
           <ul className="max-h-[28rem] space-y-2 overflow-y-auto">
             {users.map((u) => (
-              <li key={u.id} className="rounded-xl bg-tg-bg px-3 py-2.5 text-sm">
+              <li key={u.id} className="app-card app-card-inset px-3 py-2.5 text-sm">
                 <div className="flex items-start justify-between gap-2">
                   <label className="flex min-h-11 min-w-11 shrink-0 items-start justify-center pt-1" aria-label={`Выбрать ${u.display_name}`}>
                     <input
@@ -406,12 +406,12 @@ export function AdminPage() {
       ) : null}
 
       <div className={tab === "content" ? "space-y-6" : "hidden"}>
-        <Link to="/admin/exercises" className="flex min-h-20 items-center justify-between rounded-2xl bg-tg-secondary p-4">
+        <Link to="/admin/exercises" className="app-card app-card-interactive flex min-h-20 items-center justify-between p-4">
           <span><span className="block font-medium">Редактор упражнений</span><span className="mt-1 block text-xs text-tg-hint">Поиск, фильтры, техника, медиа, дубли и безопасная архивация</span></span>
           <span aria-hidden="true" className="text-tg-link">→</span>
         </Link>
 
-        <Link to="/admin/programs" className="flex min-h-20 items-center justify-between rounded-2xl bg-tg-secondary p-4">
+        <Link to="/admin/programs" className="app-card app-card-interactive flex min-h-20 items-center justify-between p-4">
           <span><span className="block font-medium">Редактор программ</span><span className="mt-1 block text-xs text-tg-hint">Дни, упражнения, предпросмотр, версии, публикация и откат</span></span>
           <span aria-hidden="true" className="text-tg-link">→</span>
         </Link>
@@ -425,7 +425,7 @@ export function AdminPage() {
             aria-modal="true"
             aria-labelledby="admin-reset-title"
             tabIndex={-1}
-            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-tg-bg p-4 shadow-xl"
+            className="app-card max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -459,7 +459,7 @@ export function AdminPage() {
                   className={[
                     "w-full rounded-xl border px-3 py-3 text-left disabled:opacity-50",
                     resetScope === option.scope
-                      ? "border-tg-button bg-tg-button/10"
+                      ? "app-brand-border app-brand-tint"
                       : "border-black/10 bg-tg-secondary",
                   ].join(" ")}
                 >
@@ -470,7 +470,7 @@ export function AdminPage() {
                       className={[
                         "h-4 w-4 rounded-full border-2",
                         resetScope === option.scope
-                          ? "border-tg-button bg-tg-button"
+                          ? "app-brand-border app-brand-tint"
                           : "border-tg-hint",
                       ].join(" ")}
                     />
@@ -493,7 +493,7 @@ export function AdminPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => setResetTarget(null)}
-                className="flex-1 rounded-xl bg-tg-secondary px-4 py-3 text-sm disabled:opacity-50"
+                className="app-button app-secondary-action flex-1 disabled:opacity-50"
               >
                 Отмена
               </button>
@@ -502,8 +502,8 @@ export function AdminPage() {
                 disabled={busy}
                 onClick={() => void confirmResetUser()}
                 className={[
-                  "flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50",
-                  resetScope === "all" ? "bg-red-500" : "bg-tg-button",
+                  "app-button flex-1 disabled:opacity-50",
+                  resetScope === "all" ? "app-danger-action" : "app-gradient-action",
                 ].join(" ")}
               >
                 {busy

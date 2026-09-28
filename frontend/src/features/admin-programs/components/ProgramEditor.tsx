@@ -51,7 +51,7 @@ export function ProgramEditor({ draft, busy, onChange, onSave, onCancel }: Props
   }
 
   return (
-    <div className="space-y-4 rounded-2xl bg-tg-secondary p-4">
+    <div className="space-y-4 app-card app-card-inset p-4">
       <div className="flex items-start justify-between gap-3">
         <div><h2 className="font-semibold">Редактор черновика</h2><p className="mt-1 text-xs text-tg-hint">Изменения станут видны пользователям только после проверки и публикации.</p></div>
         <button type="button" disabled={busy} onClick={onCancel} className="min-h-11 text-sm text-tg-link disabled:opacity-50">Закрыть</button>
@@ -87,8 +87,8 @@ export function ProgramEditor({ draft, busy, onChange, onSave, onCancel }: Props
       <label className="grid gap-1 text-xs text-tg-hint">Описание
         <textarea value={draft.description} onChange={(event) => onChange({ ...draft, description: event.target.value })} className={`${inputClass} min-h-24 resize-y`} maxLength={3000} />
       </label>
-      <fieldset><legend className="text-xs text-tg-hint">Инвентарь</legend><div className="mt-2 flex flex-wrap gap-2">{equipmentOptions.map((item) => <button key={item} type="button" aria-pressed={draft.equipment.includes(item)} onClick={() => onChange({ ...draft, equipment: toggle(draft.equipment, item) })} className={`min-h-11 rounded-xl px-3 text-sm ${draft.equipment.includes(item) ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>{equipmentLabels[item]}</button>)}</div></fieldset>
-      <fieldset><legend className="text-xs text-tg-hint">Ограничения</legend><div className="mt-2 flex flex-wrap gap-2">{limitationOptions.map((item) => <button key={item} type="button" aria-pressed={draft.limitations.includes(item)} onClick={() => onChange({ ...draft, limitations: toggle(draft.limitations, item) })} className={`min-h-11 rounded-xl px-3 text-sm ${draft.limitations.includes(item) ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>{limitationLabels[item]}</button>)}</div></fieldset>
+      <fieldset><legend className="text-xs text-tg-hint">Инвентарь</legend><div className="mt-2 flex flex-wrap gap-2">{equipmentOptions.map((item) => <button key={item} type="button" aria-pressed={draft.equipment.includes(item)} onClick={() => onChange({ ...draft, equipment: toggle(draft.equipment, item) })} className={`min-h-11 rounded-xl px-3 text-sm ${draft.equipment.includes(item) ? "app-gradient-action" : "bg-tg-bg text-tg-hint"}`}>{equipmentLabels[item]}</button>)}</div></fieldset>
+      <fieldset><legend className="text-xs text-tg-hint">Ограничения</legend><div className="mt-2 flex flex-wrap gap-2">{limitationOptions.map((item) => <button key={item} type="button" aria-pressed={draft.limitations.includes(item)} onClick={() => onChange({ ...draft, limitations: toggle(draft.limitations, item) })} className={`min-h-11 rounded-xl px-3 text-sm ${draft.limitations.includes(item) ? "app-gradient-action" : "bg-tg-bg text-tg-hint"}`}>{limitationLabels[item]}</button>)}</div></fieldset>
 
       <div className="space-y-4">
         {draft.days.map((day, index) => (
@@ -107,7 +107,7 @@ export function ProgramEditor({ draft, busy, onChange, onSave, onCancel }: Props
       <button type="button" onClick={addDay} className="min-h-11 w-full rounded-xl border border-dashed border-tg-button px-4 text-sm font-medium text-tg-link">Добавить тренировочный день</button>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" disabled={busy} onClick={onCancel} className="min-h-11 rounded-xl bg-tg-bg px-4 text-sm disabled:opacity-50">Отмена</button>
-        <button type="button" disabled={busy || !draft.name.trim()} onClick={onSave} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">{busy ? "Сохраняем…" : "Сохранить черновик"}</button>
+        <button type="button" disabled={busy || !draft.name.trim()} onClick={onSave} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">{busy ? "Сохраняем…" : "Сохранить черновик"}</button>
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ function LoadBlock({ title, loaded, loading, error, onLoad, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl bg-tg-secondary p-4">
+    <section className="app-card app-card-inset p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold">{title}</h2>
         <button type="button" disabled={loading} onClick={onLoad} className="min-h-11 px-2 text-sm text-tg-link disabled:opacity-40">
@@ -116,14 +116,14 @@ export function AdminUserPage() {
   if (!allowed) return (
     <section>
       <Header title="Карточка пользователя" subtitle="Доступ ограничен" fallbackTo="/admin" />
-      <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Раздел доступен только администраторам.<Link to="/" className="mt-3 block text-tg-link">На главную</Link></div>
+      <div className="app-card app-card-inset p-4 text-sm text-tg-hint">Раздел доступен только администраторам.<Link to="/" className="mt-3 block text-tg-link">На главную</Link></div>
     </section>
   );
   if (!summary && summaryLoading) return <section><Header title="Карточка пользователя" fallbackTo="/admin" /><PageSkeleton cards={4} /></section>;
   if (!summary) return (
     <section>
       <Header title="Карточка пользователя" fallbackTo="/admin" />
-      <div role="alert" className="rounded-2xl bg-tg-secondary p-4 text-sm"><p>{summaryError || "Карточка не найдена."}</p><button type="button" onClick={() => void loadSummary()} className="mt-3 min-h-11 w-full rounded-xl bg-tg-button text-tg-button-text">Повторить</button></div>
+      <div role="alert" className="app-status app-status-danger"><p>{summaryError || "Карточка не найдена."}</p><button type="button" onClick={() => void loadSummary()} className="mt-3 min-h-11 w-full rounded-xl app-gradient-action">Повторить</button></div>
     </section>
   );
 
@@ -132,7 +132,7 @@ export function AdminUserPage() {
     <section className="space-y-4">
       <Header title={summary.display_name} subtitle="Карточка пользователя" fallbackTo="/admin" />
 
-      <section className="rounded-2xl bg-tg-secondary p-4">
+      <section className="app-card app-card-inset p-4">
         <h2 className="font-semibold">Профиль и вход</h2>
         <dl className="mt-3 space-y-2 text-sm">
           <Info label="Способы входа" value={summary.login_methods.map((item) => item === "telegram" ? "Telegram" : "Email").join(" + ") || "Нет"} />
@@ -146,7 +146,7 @@ export function AdminUserPage() {
         </dl>
       </section>
 
-      <section className="rounded-2xl bg-tg-secondary p-4">
+      <section className="app-card app-card-inset p-4">
         <h2 className="font-semibold">Анкета и программа</h2>
         <dl className="mt-3 space-y-2 text-sm">
           <Info label="Анкета" value={summary.onboarding_completed ? "Заполнена" : "Не завершена"} />

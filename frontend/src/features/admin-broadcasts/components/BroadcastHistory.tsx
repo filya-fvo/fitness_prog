@@ -65,18 +65,18 @@ export function BroadcastHistory({ items, loading, onCopy, onRetry, onResume, on
         <div><h2 className="font-semibold">История рассылок</h2><p className="text-xs text-tg-hint">Прогресс обновляется автоматически</p></div>
         {loading ? <span className="text-xs text-tg-hint">Обновляем…</span> : null}
       </div>
-      {!loading && items.length === 0 ? <p className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Рассылок пока нет.</p> : null}
+      {!loading && items.length === 0 ? <p className="app-card app-card-inset p-4 text-sm text-tg-hint">Рассылок пока нет.</p> : null}
       {items.map((item) => {
         const processed = item.counts.sent + item.counts.failed + item.counts.skipped + item.counts.cancelled;
         const progress = item.counts.expected ? Math.round((processed / item.counts.expected) * 100) : 0;
         const retryText = `ПОВТОРИТЬ ${item.counts.failed}`;
         return (
-          <article key={item.id} className="rounded-2xl bg-tg-secondary p-4">
+          <article key={item.id} className="app-card app-card-inset p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0"><h3 className="truncate text-sm font-semibold">{item.title}</h3><p className="mt-1 text-xs text-tg-hint">{dateFormatter.format(new Date(item.created_at))} · {STATUS_LABELS[item.status]}</p></div>
               <span className="shrink-0 rounded-full bg-tg-bg px-2.5 py-1 text-[11px] font-semibold">{progress}%</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-tg-bg"><div className="h-full rounded-full bg-tg-button transition-[width]" style={{ width: `${progress}%` }} /></div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-tg-bg"><div className="app-brand-progress h-full rounded-full transition-[width]" style={{ width: `${progress}%` }} /></div>
             <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-[11px]">
               <div className="rounded-lg bg-tg-bg p-2"><dt className="text-tg-hint">Ожидает</dt><dd className="font-semibold">{item.counts.pending + item.counts.sending}</dd></div>
               <div className="rounded-lg bg-tg-bg p-2"><dt className="text-tg-hint">Доставлено</dt><dd className="font-semibold text-emerald-600">{item.counts.sent}</dd></div>

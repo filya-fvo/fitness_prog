@@ -21,27 +21,27 @@ const AUTO_REFRESH_MS = 30_000;
 
 const STATUS_PRESENTATION: Record<
   AdminSystemStatus,
-  { label: string; badge: string; border: string }
+  { label: string; badge: string; card: string }
 > = {
   normal: {
     label: "Норма",
-    badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    border: "border-emerald-500/30",
+    badge: "app-chip-success",
+    card: "app-card-success",
   },
   attention: {
     label: "Требует внимания",
-    badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-    border: "border-amber-500/40",
+    badge: "app-chip-warning",
+    card: "app-card-warning",
   },
   error: {
     label: "Ошибка",
-    badge: "bg-red-500/15 text-red-700 dark:text-red-300",
-    border: "border-red-500/40",
+    badge: "app-chip-danger",
+    card: "app-card-danger",
   },
   no_data: {
     label: "Нет данных",
-    badge: "bg-slate-500/15 text-tg-hint",
-    border: "border-black/10",
+    badge: "app-chip-neutral",
+    card: "app-card-neutral",
   },
 };
 
@@ -62,10 +62,10 @@ function formatFact(fact: AdminSystemFact): string {
 function SystemStatusCard({ item }: { item: AdminSystemCheck }) {
   const presentation = STATUS_PRESENTATION[item.status];
   return (
-    <article className={`rounded-2xl border bg-tg-secondary p-4 ${presentation.border}`}>
+    <article className={`app-card p-4 ${presentation.card}`}>
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-semibold text-tg-text">{item.title}</h2>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${presentation.badge}`}>
+        <span className={`app-chip shrink-0 ${presentation.badge}`}>
           {presentation.label}
         </span>
       </div>
@@ -155,7 +155,7 @@ export function AdminSystemPage() {
     return (
       <section>
         <Header title="Состояние системы" subtitle="Доступ ограничен" fallbackTo="/admin" />
-        <div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">
+        <div className="app-card app-card-inset p-4 text-sm text-tg-hint">
           Системные данные доступны только настроенным администраторам.
           <Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link>
         </div>
@@ -174,12 +174,12 @@ export function AdminSystemPage() {
       {state.phase === "loading" ? <PageSkeleton cards={6} /> : null}
 
       {state.phase === "error" ? (
-        <div role="alert" className="rounded-2xl bg-tg-secondary p-4">
+        <div role="alert" className="app-status app-status-danger">
           <p className="text-sm text-tg-text">{state.error}</p>
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-4 min-h-11 w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text"
+            className="mt-4 min-h-11 w-full rounded-xl app-gradient-action px-4 py-3 text-sm font-semibold"
           >
             Повторить проверку
           </button>
@@ -188,8 +188,8 @@ export function AdminSystemPage() {
 
       {state.phase === "ready" ? (
         <>
-          {refreshError ? <p role="alert" className="mb-3 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">{refreshError}</p> : null}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-tg-secondary p-4">
+          {refreshError ? <p role="alert" className="app-status app-status-warning mb-3">{refreshError}</p> : null}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 app-card app-card-inset p-4">
             <div>
               <p className="text-sm font-semibold text-tg-text">
                 Общий статус: {STATUS_PRESENTATION[state.data.overall_status].label}
@@ -211,7 +211,7 @@ export function AdminSystemPage() {
                 type="button"
                 disabled={refreshing}
                 onClick={() => void load()}
-                className="min-h-11 rounded-xl bg-tg-button px-4 py-2 text-sm font-semibold text-tg-button-text disabled:opacity-50"
+                className="min-h-11 rounded-xl app-gradient-action px-4 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 {refreshing ? "Обновляем…" : "Проверить снова"}
               </button>

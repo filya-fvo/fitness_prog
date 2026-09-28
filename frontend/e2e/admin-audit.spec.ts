@@ -123,6 +123,7 @@ test("admin audit retries, filters and paginates", async ({ page }) => {
   });
 
   await page.goto("/admin/audit");
+  await expect(page.getByRole("button", { name: "Применить" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
   allowInitialResponse();
   await expect(page.getByRole("alert")).toContainText("Сервис временно недоступен");

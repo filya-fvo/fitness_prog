@@ -95,7 +95,7 @@ export function AdminUserSubscription({
   }
 
   return (
-    <section className="rounded-2xl border border-tg-link/20 bg-tg-secondary p-4">
+    <section className="app-card app-card-ocean p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold">Тариф и QA-доступ</h2>
@@ -104,10 +104,10 @@ export function AdminUserSubscription({
           </p>
         </div>
         <span className={[
-          "rounded-full px-3 py-1 text-xs font-semibold",
+          "app-chip",
           summary.subscription.active
-            ? "bg-tg-button text-tg-button-text"
-            : "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+            ? "app-chip-info"
+            : "app-chip-neutral",
         ].join(" ")}>
           {summary.subscription.active ? "PLUS" : "FREE"}
         </span>
@@ -147,7 +147,7 @@ export function AdminUserSubscription({
           </div>
         ))}
         {!summary.active_entitlements.length ? (
-          <p className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+          <p className="app-status app-status-warning">
             Аккаунт работает в режиме FREE и готов для проверки ограничений.
           </p>
         ) : null}
@@ -184,12 +184,12 @@ export function AdminUserSubscription({
         type="button"
         disabled={busy !== null}
         onClick={() => void grantPlus()}
-        className="mt-3 min-h-11 w-full rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-40"
+        className="mt-3 min-h-11 w-full rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-40"
       >
         {busy === "grant" ? "Выдаём…" : "Выдать тестовый PLUS"}
       </button>
-      {notice ? <p className="mt-3 rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">{notice}</p> : null}
-      {error ? <p role="alert" className="mt-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
+      {notice ? <p className="mt-3 app-status app-status-success">{notice}</p> : null}
+      {error ? <p role="alert" className="mt-3 app-status app-status-danger">{error}</p> : null}
     </section>
   );
 }

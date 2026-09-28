@@ -88,6 +88,7 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
   await page.goto("/admin/system");
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Сервис временно недоступен");
+  await expect(page.getByRole("button", { name: "Повторить проверку" })).toHaveClass(/app-gradient-action/);
 
   await page.getByRole("button", { name: "Повторить проверку" }).click();
 

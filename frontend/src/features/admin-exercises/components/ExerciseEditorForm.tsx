@@ -52,7 +52,7 @@ export function ExerciseEditorForm({
   };
 
   return (
-    <div className="space-y-4 rounded-2xl bg-tg-secondary p-4">
+    <div className="space-y-4 app-card app-card-inset p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold">{editing ? "Редактирование" : "Новое упражнение"}</h2>
@@ -171,7 +171,7 @@ export function ExerciseEditorForm({
 
       <div className="grid gap-2 sm:grid-cols-2">
         <button type="button" disabled={busy || !draft.name.trim() || !draft.muscleGroup.trim()} onClick={onCheck} className="min-h-11 rounded-xl bg-tg-bg px-4 text-sm font-semibold text-tg-link disabled:opacity-50">Проверить</button>
-        <button type="button" disabled={busy || !draft.name.trim() || !draft.muscleGroup.trim()} onClick={onSave} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text disabled:opacity-50">{busy ? "Проверяем…" : editing ? "Проверить и сохранить" : "Проверить и добавить"}</button>
+        <button type="button" disabled={busy || !draft.name.trim() || !draft.muscleGroup.trim()} onClick={onSave} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">{busy ? "Проверяем…" : editing ? "Проверить и сохранить" : "Проверить и добавить"}</button>
       </div>
     </div>
   );

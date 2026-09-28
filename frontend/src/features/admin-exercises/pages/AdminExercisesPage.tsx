@@ -318,25 +318,25 @@ export function AdminExercisesPage() {
   }
 
   if (isAuthLoading) return <section><Header title="Редактор упражнений" subtitle="Проверка доступа…" fallbackTo="/admin" /><PageSkeleton cards={6} /></section>;
-  if (!allowed) return <section><Header title="Редактор упражнений" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="rounded-2xl bg-tg-secondary p-4 text-sm text-tg-hint">Каталог доступен только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
+  if (!allowed) return <section><Header title="Редактор упражнений" subtitle="Доступ ограничен" fallbackTo="/admin" /><div className="app-card app-card-inset p-4 text-sm text-tg-hint">Каталог доступен только настроенным администраторам.<Link to="/" className="mt-3 block text-center text-tg-link">На главную</Link></div></section>;
 
   return (
     <section>
       <Header title="Редактор упражнений" subtitle="Каталог, медиа и безопасная архивация" fallbackTo="/admin" beforeBack={confirmDiscard} />
-      {error ? <div role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">{error}</div> : null}
-      {notice ? <div role="status" className="mb-4 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
+      {error ? <div role="alert" className="app-status app-status-danger mb-4">{error}</div> : null}
+      {notice ? <div role="status" className="app-status app-status-success mb-4">{notice}</div> : null}
 
       {!filters.archived ? <ExerciseEditorForm draft={draft} options={options} editing={Boolean(editing)} busy={busy} preflight={preflight} onChange={(next) => { setDraft(next); setPreflight(null); }} onCheck={() => void check()} onSave={() => void save()} onUploadMedia={uploadMedia} onCancel={() => void cancelEdit()} /> : null}
 
-      <div className="my-5 space-y-3 rounded-2xl bg-tg-secondary p-4">
+      <div className="my-5 space-y-3 app-card app-card-inset p-4">
         <div className="flex items-center justify-between gap-2"><h2 className="font-semibold">Каталог</h2><span className="text-xs text-tg-hint">{total} упражнений</span></div>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Состояние каталога">
-          <button type="button" aria-pressed={!filters.archived} onClick={() => void switchCatalog(false)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${!filters.archived ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>Активные</button>
-          <button type="button" aria-pressed={Boolean(filters.archived)} onClick={() => void switchCatalog(true)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${filters.archived ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}>Архив</button>
+          <button type="button" aria-pressed={!filters.archived} onClick={() => void switchCatalog(false)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${!filters.archived ? "app-gradient-action" : "bg-tg-bg text-tg-hint"}`}>Активные</button>
+          <button type="button" aria-pressed={Boolean(filters.archived)} onClick={() => void switchCatalog(true)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${filters.archived ? "app-gradient-action" : "bg-tg-bg text-tg-hint"}`}>Архив</button>
         </div>
         <div className="flex gap-2">
           <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") applyFilters({ ...filters, q: query.trim() || undefined }); }} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base" placeholder="Название или тег" />
-          <button type="button" onClick={() => applyFilters({ ...filters, q: query.trim() || undefined })} className="min-h-11 rounded-xl bg-tg-button px-4 text-sm font-semibold text-tg-button-text">Найти</button>
+          <button type="button" onClick={() => applyFilters({ ...filters, q: query.trim() || undefined })} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold">Найти</button>
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           <select aria-label="Группа мышц" value={filters.muscleGroup || ""} onChange={(event) => applyFilters({ ...filters, muscleGroup: event.target.value || undefined })} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"><option value="">Все мышцы</option>{options.muscle_groups.map((item) => <option key={item} value={item}>{item}</option>)}</select>
@@ -351,7 +351,7 @@ export function AdminExercisesPage() {
       {loading ? <PageSkeleton cards={6} /> : items.length ? (
         <ul className="space-y-3">
           {items.map((item) => (
-            <li key={item.id} className={`rounded-2xl bg-tg-secondary p-4 ${item.id === focusedExerciseId ? "ring-2 ring-tg-button" : ""}`}>
+            <li key={item.id} className={`app-card app-card-inset p-4 ${item.id === focusedExerciseId ? "app-brand-ring" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <button type="button" disabled={item.is_archived} onClick={() => void edit(item)} className="min-w-0 flex-1 text-left disabled:cursor-default">
                   <span className="block font-medium">{item.name_ru}</span>
@@ -379,7 +379,7 @@ export function AdminExercisesPage() {
             </li>
           ))}
         </ul>
-      ) : <div className="rounded-2xl bg-tg-secondary p-5 text-center text-sm text-tg-hint">По выбранным фильтрам ничего не найдено.</div>}
+      ) : <div className="app-card app-card-inset p-5 text-center text-sm text-tg-hint">По выбранным фильтрам ничего не найдено.</div>}
 
       <div className="my-4 flex items-center justify-between gap-3"><button type="button" disabled={page <= 1 || loading} onClick={() => move(page - 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Назад</button><span className="text-xs text-tg-hint">Страница {page} из {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span><button type="button" disabled={page * PAGE_SIZE >= total || loading} onClick={() => move(page + 1)} className="min-h-11 rounded-xl bg-tg-secondary px-4 text-sm disabled:opacity-40">Дальше</button></div>
 

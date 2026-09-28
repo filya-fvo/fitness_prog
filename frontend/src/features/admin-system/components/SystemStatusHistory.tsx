@@ -17,10 +17,10 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
 });
 
 const STATUS_BADGES: Record<AdminSystemStatus, string> = {
-  normal: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  attention: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  error: "bg-red-500/15 text-red-700 dark:text-red-300",
-  no_data: "bg-slate-500/15 text-tg-hint",
+  normal: "app-chip-success",
+  attention: "app-chip-warning",
+  error: "app-chip-danger",
+  no_data: "app-chip-neutral",
 };
 
 type HistoryState =
@@ -56,7 +56,7 @@ export function SystemStatusHistory() {
   }, [load]);
 
   return (
-    <section className="mt-6 rounded-2xl bg-tg-secondary p-4" aria-labelledby="system-history-title">
+    <section className="mt-6 app-card app-card-inset p-4" aria-labelledby="system-history-title">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 id="system-history-title" className="font-semibold text-tg-text">
@@ -82,7 +82,7 @@ export function SystemStatusHistory() {
       ) : null}
 
       {state.phase === "error" ? (
-        <div className="mt-4 rounded-xl border border-red-500/30 p-3" role="alert">
+        <div className="app-status app-status-danger mt-4" role="alert">
           <p className="text-sm text-tg-text">{state.message}</p>
           <button type="button" onClick={() => void load()} className="mt-2 min-h-11 text-sm text-tg-link">
             Повторить
@@ -105,7 +105,7 @@ export function SystemStatusHistory() {
                   <time dateTime={snapshot.captured_at} className="text-xs font-medium text-tg-text">
                     {formatDate(snapshot.captured_at)}
                   </time>
-                  <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${STATUS_BADGES[snapshot.overall_status]}`}>
+                  <span className={`app-chip ${STATUS_BADGES[snapshot.overall_status]}`}>
                     {SYSTEM_STATUS_LABELS[snapshot.overall_status]}
                   </span>
                 </div>

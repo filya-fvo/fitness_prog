@@ -94,6 +94,7 @@ test("admin edits exercise only after server preflight", async ({ page }) => {
   });
 
   await page.goto("/admin/exercises");
+  await expect(page.getByRole("button", { name: "Найти" })).toHaveClass(/app-gradient-action/);
   await expect(page.getByRole("heading", { name: "Каталог" })).toBeVisible();
   await expect(page.getByText("Используется: тренировки 2, программы 1")).toBeVisible();
   for (const name of ["Группа мышц", "Оборудование", "Качество медиа", "Сложность упражнения", "Правило учёта веса", "Тег упражнения"]) {

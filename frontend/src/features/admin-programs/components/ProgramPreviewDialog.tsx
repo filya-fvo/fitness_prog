@@ -24,13 +24,13 @@ export function ProgramPreviewDialog({ program, dayIndex, plan, loading, error, 
         </div>
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="День программы">
           {Array.from({ length: dayCount }, (_, index) => index + 1).map((item) => (
-            <button key={item} type="button" aria-pressed={dayIndex === item} onClick={() => onDay(item)} className={`min-h-11 min-w-11 rounded-xl px-3 text-sm ${dayIndex === item ? "bg-tg-button text-tg-button-text" : "bg-tg-secondary text-tg-hint"}`}>{item}</button>
+            <button key={item} type="button" aria-pressed={dayIndex === item} onClick={() => onDay(item)} className={`min-h-11 min-w-11 rounded-xl px-3 text-sm ${dayIndex === item ? "app-gradient-action" : "bg-tg-secondary text-tg-hint"}`}>{item}</button>
           ))}
         </div>
         {loading ? <p role="status" className="mt-4 text-sm text-tg-hint">Готовим пользовательский вид…</p> : null}
-        {error ? <p role="alert" className="mt-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-500">{error}</p> : null}
+        {error ? <p role="alert" className="mt-4 app-status app-status-danger">{error}</p> : null}
         {plan && !loading ? (
-          <div className="mt-4 rounded-2xl bg-tg-secondary p-4">
+          <div className="mt-4 app-card app-card-inset p-4">
             <h3 className="font-semibold">{plan.title || `День ${dayIndex}`}</h3>
             <p className="mt-1 text-xs text-tg-hint">{plan.week_label}{plan.week_rir ? ` · ${plan.week_rir}` : ""}</p>
             <ol className="mt-3 space-y-2">

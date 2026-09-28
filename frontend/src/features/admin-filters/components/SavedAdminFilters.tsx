@@ -73,7 +73,7 @@ export function SavedAdminFilters({
           placeholder="Название текущего набора"
           className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
         />
-        <button type="button" disabled={!name.trim()} onClick={saveCurrent} className="min-h-11 shrink-0 rounded-xl bg-tg-button px-3 text-sm font-semibold text-tg-button-text disabled:opacity-40">Сохранить</button>
+        <button type="button" disabled={!name.trim()} onClick={saveCurrent} className="min-h-11 shrink-0 rounded-xl app-gradient-action px-3 text-sm font-semibold disabled:opacity-40">Сохранить</button>
       </div>
       <p className="mt-1 text-[11px] text-tg-hint">До 8 наборов, только на этом устройстве.</p>
     </div>

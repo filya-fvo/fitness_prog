@@ -52,7 +52,7 @@ export function AdminAuditExport({
   }
 
   return (
-    <section className="mb-4 rounded-2xl bg-tg-secondary p-4" aria-labelledby="audit-export-title">
+    <section className="mb-4 app-card app-card-inset p-4" aria-labelledby="audit-export-title">
       <h2 id="audit-export-title" className="text-sm font-semibold text-tg-text">
         Экспорт текущей выборки
       </h2>
