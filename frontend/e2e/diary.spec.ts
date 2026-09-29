@@ -74,6 +74,9 @@ test("diary modes show distinct modules and measurements keep diary navigation",
   await expect(page.getByRole("heading", { name: "Календарь тренировок" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toHaveCount(0);
   await expect(page.getByText("За этот период замеров нет.", { exact: false })).toBeVisible();
+  await page.setViewportSize({ width: 393, height: 1100 });
+  await expect(page.getByLabel("Показатели дневника")).toHaveScreenshot("diary-overview-mobile.png", { animations: "disabled" });
+  await page.setViewportSize({ width: 393, height: 852 });
   await expect(page.locator('[data-diary-mode="basic"]')).toHaveScreenshot("diary-basic-mobile.png", { animations: "disabled" });
 
   await page.setViewportSize({ width: 320, height: 700 });
