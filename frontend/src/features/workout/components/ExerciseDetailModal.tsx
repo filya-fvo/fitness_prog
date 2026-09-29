@@ -1,4 +1,3 @@
-import { useState } from "react";
 
 import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTabs";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
@@ -28,7 +27,7 @@ export function ExerciseDetailModal({
   const description = exerciseDescription(exercise);
   const steps = exerciseSteps(exercise.technique);
   const muscles = exerciseMuscles(exercise);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const difficultyLabel = exercise.difficulty <= 2 ? "Лёгкая" : exercise.difficulty <= 3 ? "Средняя" : "Сложная";
 
   return (
     <div
@@ -71,15 +70,15 @@ export function ExerciseDetailModal({
         <div className="app-card app-card-indigo mt-3 space-y-3 p-3">
           <div className="flex items-center justify-between gap-2 text-xs">
             <span className="text-tg-hint">Сложность техники</span>
-            <span className="font-semibold">{exercise.difficulty}/5</span>
+            <span className="font-semibold">{difficultyLabel} · {exercise.difficulty}/5</span>
           </div>
-          <div className="flex gap-1" aria-hidden="true">{[1, 2, 3, 4, 5].map((level) => <span key={level} className={`h-1.5 flex-1 rounded-full ${level <= exercise.difficulty ? "app-gradient-action" : "bg-tg-secondary"}`} />)}</div>
+          <div className="flex gap-1" aria-hidden="true">{[1, 2, 3, 4, 5].map((level) => <span key={level} className={`h-2 flex-1 rounded-full ${level <= exercise.difficulty ? "bg-gradient-to-r from-amber-500 to-orange-400" : "bg-tg-secondary"}`} />)}</div>
           {muscles.length ? <div>
             <p className="mb-2 text-xs text-tg-hint">Целевые мышцы</p>
-            <div className="flex flex-wrap gap-2">
-              {muscles.slice(0, 4).map(({ group, label }) => <div key={group} className="flex items-center gap-1.5 rounded-lg bg-tg-secondary px-2 py-1.5 text-xs">
-                <MuscleGroupIcon group={group} className="h-8 w-6 text-[var(--app-brand-mid)]" />
-                <span>{label}</span>
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {muscles.slice(0, 4).map(({ group, label }) => <div key={group} className="flex min-w-fit items-center gap-1 rounded-lg bg-tg-secondary px-2 py-1.5 text-[11px]">
+                <MuscleGroupIcon group={group} className="h-7 w-5 text-[#ff6b46]" />
+                <span className="whitespace-nowrap">{label}</span>
               </div>)}
             </div>
           </div> : null}
@@ -107,14 +106,11 @@ export function ExerciseDetailModal({
             {selected ? "Убрать из тренировки" : "Добавить в тренировку"}
           </button>
         ) : null}
-        <button type="button" aria-expanded={historyOpen} onClick={() => setHistoryOpen((open) => !open)} className="app-button app-secondary-action mt-3 w-full justify-between text-sm">
-          Дневник тренировок <span aria-hidden="true">{historyOpen ? "⌃" : "⌄"}</span>
-        </button>
-        {historyOpen ? <ExerciseProgressSection
+        <ExerciseProgressSection
           exerciseId={exercise.id}
           exerciseName={exercise.name_ru}
           showExplorerLink={showExplorerLink}
-        /> : null}
+        />
       </div>
     </div>
   );

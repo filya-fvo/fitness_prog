@@ -31,9 +31,9 @@ export function ExerciseHubDiscovery({ catalog, history }: { catalog: Exercise[]
             <h2 id="hub-muscles-title" className="text-sm font-semibold">Фильтр по группам мышц</h2>
             <Link to="/workouts" className="text-xs text-tg-link">Все →</Link>
           </div>
-          <div className="grid grid-cols-6 gap-1.5">
-            {availableGroups.map((group) => (
-              <Link key={group.key} to={`/workouts?muscle=${encodeURIComponent(group.raw)}`} className="app-card app-card-ocean flex min-h-[76px] min-w-0 flex-col items-center justify-center gap-1 p-1 text-center text-[10px] sm:text-xs">
+          <div className="grid grid-cols-4 gap-1.5 min-[390px]:grid-cols-6">
+            {availableGroups.map((group, index) => (
+              <Link key={group.key} to={`/workouts?muscle=${encodeURIComponent(group.raw)}`} className={`app-card app-card-ocean min-h-[76px] min-w-0 flex-col items-center justify-center gap-1 p-1 text-center text-[10px] sm:text-xs ${index >= 4 ? "hidden min-[390px]:flex" : "flex"}`}>
                 <MuscleGroupIcon group={group.raw} className="h-9 w-7 text-[var(--app-brand-mid)]" />
                 <span>{group.label}</span>
               </Link>
@@ -50,7 +50,12 @@ export function ExerciseHubDiscovery({ catalog, history }: { catalog: Exercise[]
           <div className="grid grid-cols-2 gap-2">
             {popular.map((exercise) => (
               <Link key={exercise.id} to={`/workouts?exercise=${exercise.id}`} className="app-card app-card-ocean overflow-hidden p-0">
-                <ExerciseThumbnail exercise={exercise} size="cover" />
+                <span className="relative block">
+                  <ExerciseThumbnail exercise={exercise} size="cover" />
+                  <span aria-label={`Целевая мышца: ${enumLabel(exercise.muscle_group)}`} className="absolute right-2 top-2 grid h-12 w-10 place-items-center rounded-lg border border-white/20 bg-[#071527]/85 text-[#ff6b46] shadow-lg">
+                    <MuscleGroupIcon group={exercise.muscle_group} className="h-10 w-7" />
+                  </span>
+                </span>
                 <span className="block min-h-11 px-3 pt-2 text-sm font-semibold leading-tight">{exercise.name_ru}</span>
                 <span className="flex flex-wrap gap-1 px-3 pb-3 pt-1 text-[11px] text-tg-hint">
                   <span className="app-chip">{enumLabel(exercise.muscle_group)}</span>

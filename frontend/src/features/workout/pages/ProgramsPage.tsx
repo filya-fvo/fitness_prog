@@ -16,6 +16,7 @@ import {
 import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { ProgramWeekPreview } from "@/features/workout/components/ProgramWeekPreview";
 import { ProgramOverviewCard } from "@/features/workout/components/ProgramOverviewCard";
 import { ProgramFilters } from "@/features/workout/components/ProgramFilters";
 import { PreWorkoutReadinessDialog } from "@/features/workout/components/PreWorkoutReadinessDialog";
@@ -29,9 +30,8 @@ import {
   resolveWeekPhase,
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
-import { exercisesCount, programDayLabel } from "@/utils/localization";
+import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
-import { programDurationLabel } from "@/utils/programDuration";
 import { normalizeExerciseName as normalizeName } from "@/utils/programMuscles";
 import { toUserMessage } from "@/utils/errors";
 import { programHeroImage } from "@/utils/programVisuals";
@@ -494,7 +494,6 @@ export function ProgramsPage() {
     const todayIdx = pickTodayDayIndex(program);
     const reasons = why?.length ? why : reasonsById.get(program.id) || [];
     const mismatches = compareProgramToProfile(program, recommendInput);
-    const duration = programDurationLabel(program);
 
     return (
       <article key={`${badge || "all"}-${program.id}`} className="program-card program-card-photo relative" style={{ backgroundImage: `linear-gradient(90deg, rgba(9, 18, 38, .97), rgba(13, 22, 49, .91) 56%, rgba(13, 22, 49, .42)), url(${programHeroImage(program)})` }}>
@@ -526,15 +525,7 @@ export function ProgramsPage() {
         {open ? (
           <div className="mt-3 space-y-2 rounded-xl bg-[#0b1930]/90 p-3">
             {schedule.length ? (
-              <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="mb-2 text-xs font-semibold text-white">План на неделю · пример ритма</p>
-                <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-white/70">
-                  {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day, index) => {
-                    const training = Array.from({ length: Math.min(schedule.length, 7) }, (_, slot) => Math.floor(slot * 7 / Math.min(schedule.length, 7))).includes(index);
-                    return <span key={day} className={training ? "rounded-lg bg-gradient-to-br from-orange-500 to-violet-600 py-2 font-semibold text-white" : "rounded-lg bg-white/5 py-2"}>{day}</span>;
-                  })}
-                </div>
-              </div>
+              <ProgramWeekPreview trainingDays={schedule.length} />
             ) : null}
             {schedule.length === 0 ? (
               <p className="text-xs text-tg-hint">В программе пока нет дней.</p>
@@ -544,51 +535,27 @@ export function ProgramsPage() {
                 const name = programDayLabel(String(day.name || day.title || ""), dayIndex);
                 const rows = dayExerciseRows(day);
                 const exCount = rows.length;
+                const muscleLabels = Array.from(new Set(rows.flatMap((row) => {
+                  const exercise = resolveExerciseFromCatalog(row, exerciseById, exerciseByName);
+                  return exercise?.muscle_group ? [enumLabel(exercise.muscle_group)] : [];
+                }))).slice(0, 4);
                 const isToday = dayIndex === todayIdx;
                 const dayKey = `${program.id}:${dayIndex}`;
                 const listOpen = Boolean(dayExercisesOpen[dayKey]);
                 return (
-                  <div key={dayKey} className="rounded-lg bg-tg-secondary px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">
-                          {name}
-                          {isToday ? (
-                            <span className="ml-2 text-[10px] text-tg-link">сегодня</span>
-                          ) : null}
-                        </p>
-                        <p className="text-[11px] text-tg-hint">
-                          {exCount ? exercisesCount(exCount) : "упражнения по шаблону"}
-                          {duration ? ` · ${duration}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {exCount > 0 ? (
-                          <button
-                            type="button"
-                            className="text-xs text-tg-link"
-                            onClick={() =>
-                              setDayExercisesOpen((prev) => ({
-                                ...prev,
-                                [dayKey]: !prev[dayKey],
-                              }))
-                            }
-                          >
-                            {listOpen ? "Скрыть список" : "Упражнения"}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          disabled={startingKey === dayKey}
-                          onClick={() => void startProgram(program, dayIndex)}
-                          className="rounded-lg bg-tg-button px-3 py-1.5 text-xs font-semibold text-tg-button-text disabled:opacity-60"
-                        >
-                          Старт
-                        </button>
-                      </div>
-                    </div>
+                  <div key={dayKey} className="overflow-hidden rounded-xl border border-sky-300/10 bg-[#102846]/90 text-white">
+                    <button type="button" aria-expanded={listOpen}
+                      onClick={() => setDayExercisesOpen((prev) => ({ ...prev, [dayKey]: !prev[dayKey] }))}
+                      className="flex min-h-14 w-full items-center gap-3 px-2.5 py-2 text-left">
+                      <span aria-hidden="true" className="grid h-10 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-orange-500 to-pink-600 text-lg">⌁</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{/^День\s*\d/i.test(name) ? name : `День ${dayIndex} · ${name}`}{isToday ? " · сегодня" : ""}</span>
+                        <span className="block truncate text-[11px] text-white/65">{muscleLabels.length ? muscleLabels.join(" · ") : exCount ? exercisesCount(exCount) : "Упражнения по шаблону"}</span>
+                      </span>
+                      <span aria-hidden="true" className="shrink-0 text-xl text-white/75">{listOpen ? "⌄" : "›"}</span>
+                    </button>
                     {listOpen && exCount > 0 ? (
-                      <ol className="mt-2 space-y-1 border-t border-black/5 pt-2">
+                      <ol className="space-y-1 border-t border-white/10 p-2">
                         {rows.map((row, exIdx) => {
                           const resolved = resolveExerciseFromCatalog(
                             row,
@@ -628,6 +595,11 @@ export function ProgramsPage() {
                         })}
                       </ol>
                     ) : null}
+                    {listOpen ? <button type="button" disabled={startingKey === dayKey}
+                      onClick={() => void startProgram(program, dayIndex)}
+                      className="mx-2 mb-2 min-h-11 rounded-lg bg-gradient-to-r from-orange-500 via-pink-600 to-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-60">
+                      Начать день {dayIndex}
+                    </button> : null}
                   </div>
                 );
               })

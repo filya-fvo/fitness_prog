@@ -4,12 +4,12 @@ import { expect, it } from "vitest";
 
 import { ProgramMuscleMap } from "./ProgramMuscleMap";
 
-it("uses the shared inset surface and readable group chips", () => {
+it("highlights front and rear muscles with readable group chips", () => {
   const markup = renderToStaticMarkup(createElement(ProgramMuscleMap, {
     muscles: [{ group: "legs", exerciseCount: 4 }, { group: "back", exerciseCount: 2 }],
   }));
-  expect(markup).toContain("app-card-inset");
-  expect(markup).toContain("app-chip");
+  expect(markup).toContain("bg-[#102441]/90");
+  expect(markup).toContain("bg-gradient-to-r");
   expect(markup).toContain("Ноги");
   expect(markup).toContain("Спереди");
   expect(markup).toContain("Сзади");

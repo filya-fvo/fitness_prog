@@ -19,14 +19,20 @@ const muscleRegions: Record<MuscleGroupKey, readonly string[]> = {
   neutral: [],
 };
 
+const rearLegRegions = [
+  "M22 57c3 1 6 1 9 0l-2 15-5 3-4-4z",
+  "M33 57c3 1 6 1 9 0l2 14-4 4-5-3z",
+];
+
 export function MuscleGroupIcon({ group, groups, side, className = "" }: Props) {
   const muscle = normalizeMuscleGroup(group);
   const view = side ?? (rearGroups.has(muscle) ? "back" : "front");
   const selected = groups ?? [muscle];
+  const highlights = selected.flatMap((key) => key === "legs" && view === "back" ? rearLegRegions : muscleRegions[key]);
 
   return (
     <svg viewBox="0 0 64 96" className={className} data-view={view} aria-hidden="true">
-      <g fill="#8196b5" stroke="#adc1dc" strokeWidth="0.8" strokeLinejoin="round">
+      <g fill="#627a9a" stroke="#b4c8e0" strokeWidth="0.8" strokeLinejoin="round">
         <path d="M26 3c4-3 8-3 12 0 3 3 4 8 2 13-2 4-5 6-8 6s-6-2-8-6c-2-5-1-10 2-13z" />
         <path d="M25 20c-5 1-9 3-11 7l5 12 2 16c3 2 7 3 11 3s8-1 11-3l2-16 5-12c-2-4-6-6-11-7l-3 5h-8z" />
         <path d="M14 27c-3 1-4 4-5 8L5 52c-1 4 0 8 3 9l5-1 7-21-1-9z" />
@@ -34,10 +40,16 @@ export function MuscleGroupIcon({ group, groups, side, className = "" }: Props) 
         <path d="M22 55c-2 5-2 10-2 15l-3 20c2 3 7 4 11 2l4-24V57z" />
         <path d="M42 55c2 5 2 10 2 15l3 20c-2 3-7 4-11 2l-4-24V57z" />
       </g>
-      <g fill="none" stroke="#c8d7e9" strokeWidth="0.8" opacity=".75">
-        <path d="M32 26v29M22 38c4 3 7 3 10 1 3 2 6 2 10-1M24 47c3 2 5 2 8 1 3 1 5 1 8-1" />
+      <g fill="none" stroke="#d9e6f5" strokeWidth=".75" strokeLinecap="round" opacity=".8">
+        {view === "front" ? <>
+          <path d="M32 24v31M20 30c4-3 8-4 12-3 4-1 8 0 12 3M21 36c3 3 7 4 11 3 4 1 8 0 11-3M25 41h14M24 46h16M24 51h16" />
+          <path d="M17 31c-3 5-3 10-5 15m35-15c3 5 3 10 5 15M23 59c2 3 4 5 7 6m11-6c-2 3-4 5-7 6M23 72l5 2m8 0 5-2" />
+        </> : <>
+          <path d="M32 23v33M21 29l11 6 11-6M20 36l12 9 12-9M23 43l9 8 9-8M24 53c3 2 5 2 8 1 3 1 5 1 8-1" />
+          <path d="M18 31l-5 16m33-16 5 16M22 63l7 5m13-5-7 5M21 75l7 4m15-4-7 4" />
+        </>}
       </g>
-      <g opacity=".96">{selected.flatMap((key) => muscleRegions[key]).map((d) => <path key={d} d={d} fill="currentColor" />)}</g>
+      <g opacity=".96">{highlights.map((d) => <path key={d} d={d} fill="currentColor" stroke="rgba(255,255,255,.45)" strokeWidth=".5" />)}</g>
       {selected.includes("cardio") ? <path d="m23 47 5 1 3-5 3 9 3-5h4" fill="none" stroke="#fff" strokeWidth="1.6" /> : null}
     </svg>
   );
