@@ -100,9 +100,10 @@ const limits = {
   // Allow up to 7.3 KB growth in lazy product routes, with vendor isolation intact.
   // The approved exercise hub, private-program builder, nutrition guidance and
   // illustrated help cards grow existing lazy routes by 7.6 KB gzip product.
+  // The reference Diary overview adds 1.4 KB gzip to the lazy Progress route.
   // No new eager vendor dependency appears; retain <2 KB product headroom.
-  totalJsGzip: 548_000,
-  productJsGzip: 492_000,
+  totalJsGzip: 551_000,
+  productJsGzip: 495_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

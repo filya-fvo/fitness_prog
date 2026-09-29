@@ -247,6 +247,7 @@ export function ProgramsPage() {
 
   const [items, setItems] = useState<Program[]>([]);
   const [myItems, setMyItems] = useState<Program[]>([]);
+  const [myProgramsError, setMyProgramsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"recommended" | "all" | "mine">(searchParams.get("view") === "mine" ? "mine" : initialUi.viewMode || "recommended");
   const [searchQuery, setSearchQuery] = useState(initialUi.searchQuery || "");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") || initialUi.typeFilter || "");
@@ -283,6 +284,7 @@ export function ProgramsPage() {
     async function load() {
       setLoading(true);
       setError(null);
+      setMyProgramsError(null);
       try {
         const cached = await readCachedExercises();
         if (!cancelled && cached.length) {
@@ -299,13 +301,16 @@ export function ProgramsPage() {
         }
         const [result, mine, profile, exercises] = await Promise.all([
           fetchPrograms({ templatesOnly: true }),
-          fetchMyPrograms(),
+          fetchMyPrograms().catch((err: unknown) => {
+            if (!cancelled) setMyProgramsError(toUserMessage(err, "Не удалось загрузить свои программы"));
+            return null;
+          }),
           fetchMyProfile().catch(() => null),
           fetchExercises({ pageSize: 200 }).catch(() => null),
         ]);
         if (!cancelled) {
           setItems(result.items);
-          setMyItems(mine.items);
+          setMyItems(mine?.items ?? []);
           const goals = (profile?.goals as Record<string, unknown>) || {};
           const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
           setProfileGoals(goals);
@@ -702,7 +707,9 @@ export function ProgramsPage() {
       </Link>
 
       {!loading && viewMode === "mine" ? <div className="program-grid">
-        {myItems.length ? myItems.map((program) => renderCard(program, "моя")) : <p className="app-card p-4 text-sm text-tg-hint">Пока нет своих программ. Выберите дни и упражнения, чтобы создать первую.</p>}
+        {myProgramsError ? <p role="status" className="app-card p-4 text-sm text-tg-hint">{myProgramsError}</p>
+          : myItems.length ? myItems.map((program) => renderCard(program, "моя"))
+            : <p className="app-card p-4 text-sm text-tg-hint">Пока нет своих программ. Выберите дни и упражнения, чтобы создать первую.</p>}
       </div> : null}
 
       {!loading && showRecommendations && topRecommended.length > 0 ? (
