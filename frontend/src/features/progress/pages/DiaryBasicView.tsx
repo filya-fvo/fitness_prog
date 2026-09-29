@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import type { BodyMeasurementPeriod } from "@/api/bodyMeasurements";
 import type { DailyMetric } from "@/api/dailyMetrics";
 import type { PersonalRegularity } from "@/api/workouts";
 import { PlanRegularityCard } from "@/components/PlanRegularityCard";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
 import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
+import { DiarySnapshotCards } from "@/features/progress/pages/DiarySnapshotCards";
+import { useBodyMeasurementAnalytics } from "@/features/progress/hooks/useBodyMeasurementAnalytics";
 import { Calendar } from "@/features/progress/pages/Calendar";
 import { WeeklyOverview } from "@/features/progress/pages/WeeklyOverview";
 import { WellnessSummary } from "@/features/progress/pages/WellnessSummary";
 import type { Badge } from "@/utils/achievements";
 import type { CalendarDay } from "@/utils/progress";
+import type { DashboardGuidance } from "@/utils/personalDashboard";
 import type { WeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 
 type Props = {
   regularity: PersonalRegularity | null;
+  goal: string;
+  guidance: DashboardGuidance;
   completedCount: number;
   dailyMetrics: DailyMetric[];
   dailyMetricsError: string | null;
@@ -35,8 +41,15 @@ type Props = {
 
 export function DiaryBasicView(props: Props) {
   const [showBadges, setShowBadges] = useState(false);
+  const [measurementMonths, setMeasurementMonths] = useState<BodyMeasurementPeriod>(3);
+  const measurement = useBodyMeasurementAnalytics(measurementMonths);
   return (
     <div className="grid gap-3 md:grid-cols-2" data-diary-mode="basic">
+      <div className="md:col-span-2">
+        <DiarySnapshotCards regularity={props.regularity} week={props.weekOverview} dailyMetrics={props.dailyMetrics}
+          measurements={measurement.data} measurementMonths={measurementMonths} goal={props.goal} guidance={props.guidance} />
+      </div>
+      <h2 className="pt-2 text-sm font-semibold md:col-span-2">Подробные данные</h2>
       <div className="grid grid-cols-2 gap-3 md:col-span-2">
         <PlanRegularityCard summary={props.regularity} valueSize="large" />
         <div className="app-card app-card-base p-4">
@@ -46,7 +59,8 @@ export function DiaryBasicView(props: Props) {
         </div>
       </div>
       <WellnessSummary days={props.dailyMetrics} error={props.dailyMetricsError} />
-      <BodyMeasurementsSummary />
+      <BodyMeasurementsSummary months={measurementMonths} onMonthsChange={setMeasurementMonths}
+        data={measurement.data} loading={measurement.loading} error={measurement.error} />
       <WeeklyOverview overview={props.weekOverview} onAskAi={props.onAskWeekAi} aiBusy={props.weekAiBusy} />
       {props.weekAiError ? <p role="status" className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{props.weekAiError}</p> : null}
       {props.weekAiText ? (
@@ -59,7 +73,7 @@ export function DiaryBasicView(props: Props) {
           <Link to="/ai" className="mt-2 inline-block min-h-11 py-3 text-xs text-tg-link">Открыть чат с тренером →</Link>
         </div>
       ) : null}
-      <div className="md:col-span-2">
+      <div id="diary-calendar" className="md:col-span-2">
         <h2 className="mb-2 text-sm font-semibold">Календарь тренировок</h2>
         <Calendar
           year={props.year}

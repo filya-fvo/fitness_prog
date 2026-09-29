@@ -67,7 +67,9 @@ test("diary modes show distinct modules and measurements keep diary navigation",
   await page.goto("/progress");
   await expect(page.getByRole("heading", { name: "Дневник", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Основное" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("heading", { name: "Активность и восстановление" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Выполнение плана", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Активность и восстановление" }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Вес и замеры" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Замеры тела" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Календарь тренировок" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toHaveCount(0);
@@ -87,7 +89,8 @@ test("diary modes show distinct modules and measurements keep diary navigation",
   await expect(page.getByRole("heading", { name: "Сводка по питанию" })).toBeVisible();
   await expect(page.getByText("Сегодня", { exact: true }).locator("..")).toContainText("Нет записей");
   await expect(page.getByText("Сегодня", { exact: true }).locator("..")).not.toContainText("недобор");
-  await expect(page.getByRole("heading", { name: "Замеры тела" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Замеры тела" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toBeVisible();
   await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-mobile.png", { animations: "disabled" });
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-dark-mobile.png", { animations: "disabled" });

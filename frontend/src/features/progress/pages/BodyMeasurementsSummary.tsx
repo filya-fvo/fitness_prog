@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import type {
+  BodyMeasurementAnalytics,
   BodyMeasurementAnalyticsItem,
   BodyMeasurementPeriod,
 } from "@/api/bodyMeasurements";
-import { useBodyMeasurementAnalytics } from "@/features/progress/hooks/useBodyMeasurementAnalytics";
 import { BODY_MEASURE_FIELDS } from "@/utils/energyTargets";
 
 const PERIODS: BodyMeasurementPeriod[] = [1, 3, 6, 12];
@@ -60,9 +59,13 @@ function MeasurementAnalyticsCard({ item }: { item: BodyMeasurementAnalyticsItem
   );
 }
 
-export function BodyMeasurementsSummary() {
-  const [months, setMonths] = useState<BodyMeasurementPeriod>(3);
-  const { data, loading, error } = useBodyMeasurementAnalytics(months);
+export function BodyMeasurementsSummary({ months, onMonthsChange, data, loading, error }: {
+  months: BodyMeasurementPeriod;
+  onMonthsChange: (value: BodyMeasurementPeriod) => void;
+  data: BodyMeasurementAnalytics | null;
+  loading: boolean;
+  error: string | null;
+}) {
   const items = (data?.items ?? []).filter((item) => FEATURED_FIELDS.has(item.field));
   const hasData = items.some((item) => item.latest_value != null);
   const goalLabel = data?.primary_goal ? GOAL_LABELS[data.primary_goal] : null;
@@ -81,7 +84,7 @@ export function BodyMeasurementsSummary() {
           <button
             key={period}
             type="button"
-            onClick={() => setMonths(period)}
+            onClick={() => onMonthsChange(period)}
             aria-pressed={months === period}
             className={`min-h-11 rounded-lg px-2 text-xs ${months === period ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}
           >

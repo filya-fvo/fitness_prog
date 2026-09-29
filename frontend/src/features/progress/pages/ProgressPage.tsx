@@ -333,16 +333,19 @@ export function ProgressPage() {
 
   return (
     <section className="mx-auto max-w-4xl">
-      <Header title="Дневник" subtitle="Регулярность, восстановление и замеры" />
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-tg-text">Дневник</h1>
+        <a href="#diary-calendar" aria-label="Перейти к календарю тренировок" className="grid h-11 w-11 place-items-center rounded-xl border border-sky-300/15 bg-[#102846] text-sky-200">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3" /></svg>
+        </a>
+      </div>
 
       {loading ? <PageSkeleton cards={2} /> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
       {!loading ? <PersonalDashboardCard
-        goal={goal}
         level={level}
         depth={depth}
-        guidance={guidance}
         saving={analyticsSaving}
         error={analyticsError || (depth === "basic" ? dashboardError : null)}
         onExpandedChange={(expanded) => void setAdvancedAnalytics(expanded)}
@@ -359,6 +362,8 @@ export function ProgressPage() {
         showAnalytics={depth === "advanced"}
         overview={<DiaryBasicView
           regularity={regularity}
+          goal={goal}
+          guidance={guidance}
           completedCount={completedCount}
           dailyMetrics={dailyMetrics}
           dailyMetricsError={dailyMetricsError}

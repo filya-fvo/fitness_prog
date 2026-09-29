@@ -77,8 +77,8 @@ test("personal dashboard follows goal and saves manually enabled advanced analyt
   }));
 
   await page.goto("/progress");
-  await expect(page.getByRole("heading", { name: "Набор мышц" })).toBeVisible();
-  await expect(page.getByText("Новичок", { exact: true })).toBeVisible();
+  await expect(page.getByText("Набор мышц", { exact: true })).toBeVisible();
+  await expect(page.getByText("Текущая цель")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Расширенно" }).click();

@@ -7,14 +7,8 @@ type Props = {
 
 export function DiaryModeTabs({ expanded, saving, level, onChange }: Props) {
   return (
-    <div className="mb-3 flex flex-col items-stretch gap-2 border-b border-[var(--border-subtle)] pb-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="text-xs font-medium">Режим Дневника</p>
-        <p className="mt-0.5 text-[10px] text-tg-hint">
-          {level === "advanced" ? "Расширенный режим выбран по анкете" : "В Расширенном обзор остаётся сверху, подробная аналитика — ниже"}
-        </p>
-      </div>
-      <div className="grid min-w-0 grid-cols-2 rounded-xl bg-[var(--app-surface-inset)] p-1 text-[11px] sm:shrink-0" aria-label="Режим Дневника">
+    <div>
+      <div className="grid min-w-0 grid-cols-2 rounded-xl bg-[#081a32] p-1 text-xs" aria-label="Режим Дневника">
         {([{ label: "Основное", value: false }, { label: "Расширенно", value: true }] as const).map(({ label, value }) => (
           <button
             key={label}
@@ -22,12 +16,13 @@ export function DiaryModeTabs({ expanded, saving, level, onChange }: Props) {
             aria-pressed={expanded === value}
             disabled={saving}
             onClick={() => onChange(value)}
-            className={`min-h-11 rounded-lg px-3 ${expanded === value ? "app-gradient-action font-semibold" : "text-tg-hint"}`}
+            className={`min-h-11 rounded-lg px-3 ${expanded === value ? "bg-gradient-to-r from-[#ff6b42] via-[#ee3f88] to-[#853eff] font-semibold text-white shadow-[0_2px_12px_rgba(232,61,129,.3)]" : "text-sky-100/70"}`}
           >
             {label}
           </button>
         ))}
       </div>
+      {level === "advanced" ? <p className="mt-1.5 text-[10px] text-sky-100/60">Расширенный режим выбран по анкете</p> : null}
     </div>
   );
 }
