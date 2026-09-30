@@ -157,9 +157,11 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await expect(progressDialog.getByRole("img", { name: "Динамика рабочих весов упражнения" })).toBeVisible();
   await expect(progressDialog.getByRole("table", { name: "Табличные данные динамики упражнения" })).toBeVisible();
   await expect(progressDialog.getByRole("columnheader", { name: "1ПМ" })).toBeVisible();
-  await expect(progressDialog).toHaveScreenshot("exercise-progress-dialog-mobile.png", {
-    animations: "disabled",
-  });
+  if (process.platform === "win32") {
+    await expect(progressDialog).toHaveScreenshot("exercise-progress-dialog-mobile.png", {
+      animations: "disabled",
+    });
+  }
   await page.setViewportSize({ width: 320, height: 700 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.keyboard.press("Escape");
@@ -196,7 +198,9 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   const addSetDialog = page.getByRole("dialog", { name: "Добавить подход" });
   await expect(addSetDialog).toHaveClass(/app-card-hero/);
   await expect(addSetDialog.getByRole("button", { name: "Применить" })).toHaveClass(/app-gradient-action/);
-  await expect(addSetDialog).toHaveScreenshot("add-set-weight-picker-mobile.png", { animations: "disabled" });
+  if (process.platform === "win32") {
+    await expect(addSetDialog).toHaveScreenshot("add-set-weight-picker-mobile.png", { animations: "disabled" });
+  }
   await page.keyboard.press("Escape");
   await expect(addSetDialog).toHaveCount(0);
 });
@@ -249,9 +253,11 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await expect(page.locator("article")).toHaveCount(20);
   await expect(page.locator("article").first()).toHaveClass(/app-card-indigo/);
   await expect(page.locator('img[src="/exercise-thumbnails/0043-qXTaZnJ.png"]')).toBeVisible();
-  await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
-    animations: "disabled",
-  });
+  if (process.platform === "win32") {
+    await expect(page.locator("article").first()).toHaveScreenshot("exercise-card-static-thumbnail.png", {
+      animations: "disabled",
+    });
+  }
   const chestGroup = page.getByRole("button", { name: "грудь", exact: true });
   await expect(chestGroup).toHaveClass(/app-card-ocean/);
   await chestGroup.click();

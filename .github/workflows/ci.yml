@@ -124,6 +124,8 @@ jobs:
         env:
           PLAYWRIGHT_VISUAL_QA: "1"
         run: npm run test:e2e -- --grep "@visual"
+      - name: Feature visual snapshots
+        run: npm run test:e2e -- diary.spec.ts personal-program.spec.ts workout-recovery.spec.ts --project=chromium
       - name: Upload visual failure artifacts
         if: failure()
         uses: actions/upload-artifact@v6

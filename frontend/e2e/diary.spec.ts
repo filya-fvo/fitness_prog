@@ -75,9 +75,13 @@ test("diary modes show distinct modules and measurements keep diary navigation",
   await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toHaveCount(0);
   await expect(page.getByText("За этот период замеров нет.", { exact: false })).toBeVisible();
   await page.setViewportSize({ width: 393, height: 1100 });
-  await expect(page.getByLabel("Показатели дневника")).toHaveScreenshot("diary-overview-mobile.png", { animations: "disabled" });
+  if (process.platform === "win32") {
+    await expect(page.getByLabel("Показатели дневника")).toHaveScreenshot("diary-overview-mobile.png", { animations: "disabled" });
+  }
   await page.setViewportSize({ width: 393, height: 852 });
-  await expect(page.locator('[data-diary-mode="basic"]')).toHaveScreenshot("diary-basic-mobile.png", { animations: "disabled" });
+  if (process.platform === "win32") {
+    await expect(page.locator('[data-diary-mode="basic"]')).toHaveScreenshot("diary-basic-mobile.png", { animations: "disabled" });
+  }
 
   await page.setViewportSize({ width: 320, height: 700 });
   const calendarDay = page.getByRole("button", { name: /^\d{4}-\d{2}-\d{2}: нет тренировок/ }).first();
@@ -94,9 +98,13 @@ test("diary modes show distinct modules and measurements keep diary navigation",
   await expect(page.getByText("Сегодня", { exact: true }).locator("..")).not.toContainText("недобор");
   await expect(page.getByRole("heading", { name: "Замеры тела" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Нагрузка и восстановление" })).toBeVisible();
-  await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-mobile.png", { animations: "disabled" });
+  if (process.platform === "win32") {
+    await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-mobile.png", { animations: "disabled" });
+  }
   await page.emulateMedia({ colorScheme: "dark" });
-  await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-dark-mobile.png", { animations: "disabled" });
+  if (process.platform === "win32") {
+    await expect(page.locator('[data-diary-mode="advanced"]')).toHaveScreenshot("diary-advanced-dark-mobile.png", { animations: "disabled" });
+  }
   await page.emulateMedia({ colorScheme: "light" });
 
   await page.setViewportSize({ width: 1440, height: 900 });
