@@ -13,7 +13,7 @@ const groups = [
   { key: "legs", label: "Ноги" },
   { key: "shoulders", label: "Плечи" },
   { key: "biceps", label: "Руки" },
-  { key: "core", label: "Пресс" },
+  { key: "abs", label: "Пресс" },
 ] as const;
 
 export function ExerciseHubDiscovery({ catalog, history }: { catalog: Exercise[]; history: Workout[] }) {
@@ -31,10 +31,10 @@ export function ExerciseHubDiscovery({ catalog, history }: { catalog: Exercise[]
             <h2 id="hub-muscles-title" className="text-sm font-semibold">Фильтр по группам мышц</h2>
             <Link to="/workouts" className="text-xs text-tg-link">Все →</Link>
           </div>
-          <div className="grid grid-cols-4 gap-1.5 min-[390px]:grid-cols-6">
-            {availableGroups.map((group, index) => (
-              <Link key={group.key} to={`/workouts?muscle=${encodeURIComponent(group.raw)}`} className={`app-card app-card-ocean min-h-[76px] min-w-0 flex-col items-center justify-center gap-1 p-1 text-center text-[10px] sm:text-xs ${index >= 4 ? "hidden min-[390px]:flex" : "flex"}`}>
-                <MuscleGroupIcon group={group.raw} className="h-9 w-7 text-[var(--app-brand-mid)]" />
+          <div className="grid grid-cols-3 gap-2 min-[390px]:grid-cols-6">
+            {availableGroups.map((group) => (
+              <Link key={group.key} to={`/workouts?muscle=${encodeURIComponent(group.raw)}`} className="app-card app-card-ocean flex min-h-[84px] min-w-0 flex-col items-center justify-center gap-1 p-1.5 text-center text-xs">
+                <MuscleGroupIcon group={group.raw} className="h-10 w-8 text-[var(--app-brand-mid)]" />
                 <span>{group.label}</span>
               </Link>
             ))}
@@ -47,19 +47,18 @@ export function ExerciseHubDiscovery({ catalog, history }: { catalog: Exercise[]
             <h2 id="hub-popular-title" className="text-sm font-semibold">Популярные упражнения</h2>
             <Link to="/workouts" className="text-xs text-tg-link">Все →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {popular.map((exercise) => (
-              <Link key={exercise.id} to={`/workouts?exercise=${exercise.id}`} className="app-card app-card-ocean overflow-hidden p-0">
-                <span className="relative block">
-                  <ExerciseThumbnail exercise={exercise} size="cover" />
-                  <span aria-label={`Целевая мышца: ${enumLabel(exercise.muscle_group)}`} className="absolute right-2 top-2 grid h-12 w-10 place-items-center rounded-lg border border-white/20 bg-[#071527]/85 text-[#ff6b46] shadow-lg">
-                    <MuscleGroupIcon group={exercise.muscle_group} className="h-10 w-7" />
-                  </span>
+              <Link key={exercise.id} to={`/workouts?exercise=${exercise.id}`} className="app-card app-card-ocean exercise-hub-popular-card flex min-h-[112px] min-w-0 items-center gap-3 overflow-hidden p-2.5">
+                <span className="block shrink-0">
+                  <ExerciseThumbnail exercise={exercise} size="tile" />
                 </span>
-                <span className="block min-h-11 px-3 pt-2 text-sm font-semibold leading-tight">{exercise.name_ru}</span>
-                <span className="flex flex-wrap gap-1 px-3 pb-3 pt-1 text-[11px] text-tg-hint">
-                  <span className="app-chip">{enumLabel(exercise.muscle_group)}</span>
-                  {exercise.equipment ? <span className="app-chip">{enumLabel(exercise.equipment)}</span> : null}
+                <span className="flex min-w-0 flex-1 flex-col gap-2">
+                  <span className="break-words text-sm font-semibold leading-snug">{exercise.name_ru}</span>
+                  <span className="flex flex-wrap gap-1 text-[11px] text-tg-hint">
+                    <span className="app-chip">{enumLabel(exercise.muscle_group)}</span>
+                    {exercise.equipment ? <span className="app-chip">{enumLabel(exercise.equipment)}</span> : null}
+                  </span>
                 </span>
               </Link>
             ))}

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 220">
+<defs>
+<linearGradient id="skin" x1="0" y1="0" x2="1" y2=".3"><stop stop-color="#7690ad"/><stop offset=".24" stop-color="#b5a39c"/><stop offset=".53" stop-color="#d7b5a4"/><stop offset=".78" stop-color="#a88f8a"/><stop offset="1" stop-color="#6a83a2"/></linearGradient>
+<linearGradient id="shadow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#405773" stop-opacity="0"/><stop offset="1" stop-color="#31415f" stop-opacity=".58"/></linearGradient>
+</defs>
+<g fill="url(#skin)" stroke="#d1b7ad" stroke-width=".9" stroke-linejoin="round">
+        <path d="M36 110Q32 117 33 133L36 168L34 201Q33 211 36 215L44 215Q47 208 47 198L49 171L49 128L50 116Z" />
+        <path d="M64 110Q68 117 67 133L64 168L66 201Q67 211 64 215L56 215Q53 208 53 198L51 171L51 128L50 116Z" />
+        <path d="M17 45Q12 48 12 56L8 76Q5 83 8 87L14 89Q20 82 22 72L27 55Z" />
+        <path d="M83 45Q88 48 88 56L92 76Q95 83 92 87L86 89Q80 82 78 72L73 55Z" />
+        <path d="M8 84Q4 96 4 108Q3 115 8 120L13 118Q16 108 17 96L18 86Z" />
+        <path d="M92 84Q96 96 96 108Q97 115 92 120L87 118Q84 108 83 96L82 86Z" />
+        <path d="M7 116Q4 119 5 125L7 130Q10 132 12 128L14 119Z" />
+        <path d="M93 116Q96 119 95 125L93 130Q90 132 88 128L86 119Z" />
+        <path d="M42 31L42 37Q35 37 28 40L26 54L31 76Q34 88 35 102L33 115Q38 124 50 126Q62 124 67 115L65 102Q66 88 69 76L74 54L72 40Q65 37 58 37L58 31Z" />
+        <path d="M40 8Q43 1 50 2Q57 1 60 8Q63 16 61 24Q58 33 50 34Q42 33 39 24Q37 16 40 8Z" />
+        <path d="M38 16Q36 19 39 24L40 17ZM62 16Q64 19 61 24L60 17Z" />
+        <path d="M36 212Q41 214 45 212L47 219L34 219Q32 217 36 212Z" />
+        <path d="M64 212Q59 214 55 212L53 219L66 219Q68 217 64 212Z" />
+      </g>
+<g fill="url(#shadow)" opacity=".7">
+        <path d="M27 43L32 74Q37 83 35 102L34 113Q40 122 50 126L49 37Q36 36 27 43Z" />
+        <path d="M36 126L39 171L35 206Q36 213 39 215L44 215Q47 204 47 196L49 127Z" />
+        <path d="M14 52L8 84L7 114Q9 119 12 118L17 91L19 72Z" />
+      </g>
+<g fill="none" stroke="#fff0e6" stroke-width="1.1" opacity=".62" stroke-linecap="round">
+        <path d="M43 34Q50 38 57 34M42 9Q50 5 57 9M42 16Q45 15 47 16M53 16Q55 15 58 16" />
+        <path d="M37 128Q40 146 39 164M63 128Q60 146 61 164M38 179Q39 192 37 202M62 179Q61 192 63 202" />
+        <path d="M17 50Q13 64 11 78M83 50Q87 64 89 78" />
+      </g>
+<g fill="none" stroke="#514758" stroke-width=".7" stroke-linecap="round" opacity=".52">
+          <path d="M50 34L50 116M31 44Q40 46 49 52M69 44Q60 46 51 52M30 56Q39 57 49 69M70 56Q61 57 51 69M33 71Q41 72 49 84M67 71Q59 72 51 84" />
+          <path d="M36 94Q42 93 49 99M64 94Q58 93 51 99M35 110Q42 107 49 115M65 110Q58 107 51 115M36 122Q43 126 49 122M64 122Q57 126 51 122" />
+          <path d="M20 54Q25 60 27 65M80 54Q75 60 73 65M38 141Q42 147 44 160M62 141Q58 147 56 160M37 174Q42 178 46 174M63 174Q58 178 54 174" />
+        </g>
+</svg>

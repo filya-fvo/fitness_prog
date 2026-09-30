@@ -69,6 +69,7 @@ import { compareProgramToProfile, programMismatchSummary } from "@/utils/program
 import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
+import { HomeProgramBanner } from "@/features/home/components/HomeProgramBanner";
 import { homeTrainingImage } from "@/features/home/homeTrainingImage";
 import { DailyActivityCards } from "@/features/home/components/DailyActivityCards";
 import { HomeNutritionSummary } from "@/features/home/components/HomeNutritionSummary";
@@ -799,7 +800,8 @@ export function HomePage() {
                 </Link>
               )}
             </HomeMediaCard>
-            <div className="app-card app-card-neutral space-y-3 p-4">
+            <div className="app-card home-program-card space-y-3 p-4">
+              <HomeProgramBanner program={todayProgram} />
               <p className="text-sm font-semibold">{todayProgram.name}</p>
               <p className="break-words text-xs text-tg-hint [overflow-wrap:anywhere]">
                 {todayDayTitle} · {phaseMetaFromName(effectiveTodayPhase).label} неделя
