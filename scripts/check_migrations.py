@@ -53,6 +53,13 @@ REQUIRED_FILES = [
     "20260908000043_user_entitlements.sql",
     "20260908000044_grant_beta_plus.sql",
     "20260909000045_user_exercise_pins.sql",
+    "20260921000046_exercise_media_review.sql",
+    "20260928000047_nutrition_corrections.sql",
+    "20260928000048_nutrition_correction_lifecycle.sql",
+    "20260928000049_nutrition_personal_values.sql",
+    "20260928000050_user_programs.sql",
+    "20261001000051_rename_cable_crunch_molitva.sql",
+    "20261001000052_approved_exercise_images.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -147,6 +154,16 @@ REQUIRED_SNIPPETS = [
     "active_access.revoked_at IS NULL",
     "PRIMARY KEY (user_id, exercise_id)",
     "idx_user_exercise_pins_exercise",
+    "SET name_ru = 'Молитва'",
+    "WHERE name_ru = 'Скручивания на верхнем блоке'",
+    "'\"exercise_name\": \"Молитва\"'",
+    "exercises_media_review_status_check",
+    "nutrition_corrections",
+    "nutrition_corrections_source_log_id_fkey",
+    "nutrition_personal_values",
+    "programs_personal_not_template_check",
+    "ADD COLUMN IF NOT EXISTS image_url TEXT",
+    "image:owner-approved:2026-10-01",
 ]
 
 

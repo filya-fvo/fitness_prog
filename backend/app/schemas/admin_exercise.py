@@ -11,7 +11,7 @@ from app.schemas.exercise import ExerciseCreate, ExerciseResponse
 
 MediaQuality = Literal["ready", "unverified", "missing", "rejected"]
 MediaReviewStatus = Literal["pending", "verified", "rejected"]
-MediaField = Literal["video_url", "animation_url", "thumbnail_url"]
+MediaField = Literal["video_url", "animation_url", "image_url", "thumbnail_url"]
 UploadMediaField = Literal["animation_url", "thumbnail_url"]
 
 

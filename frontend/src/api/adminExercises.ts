@@ -38,7 +38,7 @@ const duplicateSchema = z.object({
 });
 
 const mediaCheckSchema = z.object({
-  field: z.enum(["video_url", "animation_url", "thumbnail_url"]),
+  field: z.enum(["video_url", "animation_url", "image_url", "thumbnail_url"]),
   url: z.string(),
   preview_url: z.string().nullable(),
   available: z.boolean(),
@@ -103,6 +103,7 @@ export type AdminExercisePayload = {
   difficulty: number;
   video_url: string | null;
   animation_url: string | null;
+  image_url?: string | null;
   thumbnail_url: string | null;
   media_duration_sec: number | null;
   media_source: "youtube" | "external" | "none";

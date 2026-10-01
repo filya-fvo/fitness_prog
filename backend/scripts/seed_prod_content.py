@@ -93,7 +93,7 @@ async def upsert_exercises(session) -> tuple[int, int]:
             and "media:rejected-by-admin" in {str(tag) for tag in current.tags or []}
         )
         for key, value in row.items():
-            if rejected_by_admin and key in {"animation_url", "thumbnail_url", "tags"}:
+            if rejected_by_admin and key in {"animation_url", "image_url", "thumbnail_url", "tags"}:
                 continue
             setattr(current, key, value)
         if not rejected_by_admin:

@@ -12,6 +12,18 @@ Media comes from **[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldr
 
 ## How the app shows media
 
+С 1 октября 2026 принятые иллюстрации 134 упражнений используют отдельное
+поле `image_url` и папку `frontend/public/exercise-images/`. В карточке и
+тренировке показывается полный файл с сохранением пропорций. Явный
+`thumbnail_url` указывает на WebP только исходной фазы; PNG первого кадра GIF
+остаётся совместимым fallback для старых каталогов.
+
+Manifest `exercise-images/manifest.json` фиксирует выбранный исходник, SHA-256,
+число фаз, границы обрезки и принятие владельцем. Новые иллюстрации созданы
+генератором изображений; атрибуция Gym Visual относится к прежним GIF.
+Во вкладке «Анимация» эти GIF сохранены. Аудит ниже проверяет оба набора.
+`approved_exercise_images.py` сохраняет ссылки при пересборке seed.
+
 Field `animation_url` on exercise (e.g. `/exercise-gifs/0025-EIeI8Vf.gif`).  
 Player: `frontend/src/features/workout/components/ExerciseMediaPlayer.tsx`.
 

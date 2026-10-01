@@ -31,7 +31,7 @@ export function ExerciseThumbnail({ exercise, size = "md" }: Props) {
         <img
           src={url}
           alt=""
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}

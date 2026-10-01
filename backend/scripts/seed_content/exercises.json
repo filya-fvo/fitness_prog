@@ -9,7 +9,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0043-qXTaZnJ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/001-0043-fc0d780ba18d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -25,8 +25,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/001-0043-fc0d780ba18d.webp"
   },
   {
     "name_ru": "Фронтальные приседания",
@@ -38,7 +40,7 @@
     "difficulty": 4,
     "video_url": null,
     "animation_url": "/exercise-gifs/0042-zG0zs85.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/002-0042-cd0c8e0f2e3d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -54,8 +56,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/002-0042-cd0c8e0f2e3d.webp"
   },
   {
     "name_ru": "Сумо-приседания",
@@ -67,7 +71,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0124-s7HX1BY.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/003-0124-da0208044616-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -83,8 +87,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/003-0124-da0208044616.webp"
   },
   {
     "name_ru": "Приседания со своим весом",
@@ -96,7 +102,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3119-75Bgtjy.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/004-3119-d6907cbe7db7-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -114,8 +120,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/004-3119-d6907cbe7db7.webp"
   },
   {
     "name_ru": "Приседания с гантелью у груди",
@@ -128,7 +136,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1760-yn8yg1r.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/005-1760-fdfda3c750a4-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -144,8 +152,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/005-1760-fdfda3c750a4.webp"
   },
   {
     "name_ru": "Жим ногами",
@@ -157,7 +167,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1463-2Qh2J1e.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/006-1463-07cb88c4f130-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -173,8 +183,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/006-1463-07cb88c4f130.webp"
   },
   {
     "name_ru": "Разгибания ног",
@@ -186,7 +198,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0585-my33uHU.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/007-0585-eeacc31fe866-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -200,8 +212,10 @@
       "secondary:glutes",
       "pattern:knee_extension",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/007-0585-eeacc31fe866.webp"
   },
   {
     "name_ru": "Сгибания ног лёжа",
@@ -213,7 +227,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0586-17lJ1kr.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/008-0586-446ff39b46df-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -227,8 +241,10 @@
       "secondary:calves",
       "pattern:knee_flexion",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/008-0586-446ff39b46df.webp"
   },
   {
     "name_ru": "Румынская тяга",
@@ -240,7 +256,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0085-wQ2c4XD.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/009-0085-2edb61f0c54a-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -256,8 +272,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/009-0085-2edb61f0c54a.webp"
   },
   {
     "name_ru": "Румынская тяга с гантелями",
@@ -270,7 +288,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1459-rR0LJzx.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/010-1459-e5806c35f8d9-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -286,8 +304,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/010-1459-e5806c35f8d9.webp"
   },
   {
     "name_ru": "Становая тяга классическая",
@@ -299,7 +319,7 @@
     "difficulty": 4,
     "video_url": null,
     "animation_url": "/exercise-gifs/0032-ila4NZS.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/011-0032-030f0bf9ce25-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -315,8 +335,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/011-0032-030f0bf9ce25.webp"
   },
   {
     "name_ru": "Болгарские выпады",
@@ -329,7 +351,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0410-qx4fgX7.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/012-0410-09e28dfed288-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -345,8 +367,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/012-0410-09e28dfed288.webp"
   },
   {
     "name_ru": "Выпады вперёд",
@@ -359,7 +383,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0336-RRWFUcw.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/013-0336-9fef28c7127d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -375,8 +399,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/013-0336-9fef28c7127d.webp"
   },
   {
     "name_ru": "Выпады назад с гантелями",
@@ -389,7 +415,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0381-SSsBDwB.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/014-0381-ebea2d40318f-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -405,8 +431,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/014-0381-ebea2d40318f.webp"
   },
   {
     "name_ru": "Боковые выпады",
@@ -418,7 +446,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1410-py1HSzx.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/015-1410-5844e4dd69a4-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -434,8 +462,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/015-1410-5844e4dd69a4.webp"
   },
   {
     "name_ru": "Зашагивания на тумбу",
@@ -448,7 +478,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0431-aXtJhlg.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/016-0431-45b16092cf47-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -464,8 +494,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/016-0431-45b16092cf47.webp"
   },
   {
     "name_ru": "Ягодичный мост",
@@ -477,7 +509,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3013-u0cNiij.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/017-3013-c9a1fcde15ea-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -493,8 +525,10 @@
       "secondary:core",
       "pattern:hip_extension",
       "role:accessory",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/017-3013-c9a1fcde15ea.webp"
   },
   {
     "name_ru": "Ягодичный мост со штангой",
@@ -506,7 +540,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1409-qKBpF7I.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/018-1409-9f2c782f2d83-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -523,8 +557,10 @@
       "secondary:core",
       "pattern:hip_extension",
       "role:accessory",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/018-1409-9f2c782f2d83.webp"
   },
   {
     "name_ru": "Подъёмы на носки стоя",
@@ -536,7 +572,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/1372-8ozhUIZ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/019-1372-eb62a03f6686-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -549,8 +585,10 @@
       "primary:calves",
       "pattern:calf_raise",
       "role:accessory",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/019-1372-eb62a03f6686.webp"
   },
   {
     "name_ru": "Подъёмы на носки сидя",
@@ -562,7 +600,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0594-bOOdeyc.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/020-0594-756eecffead7-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -575,8 +613,10 @@
       "primary:calves",
       "pattern:calf_raise",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/020-0594-756eecffead7.webp"
   },
   {
     "name_ru": "Жим штанги лёжа",
@@ -588,7 +628,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0025-EIeI8Vf.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/021-0025-a3b6b46d5f3b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -603,8 +643,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/021-0025-a3b6b46d5f3b.webp"
   },
   {
     "name_ru": "Жим гантелей лёжа",
@@ -617,7 +659,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0289-SpYC0Kp.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/022-0289-eb8653cca822-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -632,8 +674,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/022-0289-eb8653cca822.webp"
   },
   {
     "name_ru": "Жим гантелей на наклонной",
@@ -646,7 +690,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0314-ns0SIbU.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/023-0314-520892c66818-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -661,8 +705,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/023-0314-520892c66818.webp"
   },
   {
     "name_ru": "Жим лёжа узким хватом",
@@ -674,7 +720,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0030-J6Dx1Mu.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/024-0030-51c1bee18e2d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -688,8 +734,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/024-0030-51c1bee18e2d.webp"
   },
   {
     "name_ru": "Жим в тренажёре",
@@ -701,7 +749,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0576-DOoWcnA.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/025-0576-031d5f883efd-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -716,8 +764,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/025-0576-031d5f883efd.webp"
   },
   {
     "name_ru": "Разведение гантелей лёжа",
@@ -730,7 +780,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0308-yz9nUhF.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/026-0308-66f99719ef99-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -745,8 +795,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/026-0308-66f99719ef99.webp"
   },
   {
     "name_ru": "Сведение рук в кроссовере",
@@ -758,7 +810,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0188-xLYSdtg.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/027-0188-4c396258b6f6-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -773,8 +825,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/027-0188-4c396258b6f6.webp"
   },
   {
     "name_ru": "Отжимания от пола",
@@ -786,7 +840,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0662-I4hDWkc.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/028-0662-fa0c2d36d59f-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -802,8 +856,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/028-0662-fa0c2d36d59f.webp"
   },
   {
     "name_ru": "Отжимания с колен",
@@ -815,7 +871,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3211-ZOuKWir.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/029-3211-36edda89f1e1-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -831,8 +887,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/029-3211-36edda89f1e1.webp"
   },
   {
     "name_ru": "Отжимания с возвышения",
@@ -844,7 +902,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0493-B1EVP9F.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/030-0493-3046b042a7f6-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -860,8 +918,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/030-0493-3046b042a7f6.webp"
   },
   {
     "name_ru": "Отжимания узким хватом",
@@ -873,7 +933,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0283-soIB2rj.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/031-0283-55accc416bcd-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -888,8 +948,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/031-0283-55accc416bcd.webp"
   },
   {
     "name_ru": "Отжимания на брусьях",
@@ -901,7 +963,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0251-9WTm7dq.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/032-0251-8b5ec49a9e2f-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -917,8 +979,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/032-0251-8b5ec49a9e2f.webp"
   },
   {
     "name_ru": "Подтягивания",
@@ -930,7 +994,7 @@
     "difficulty": 4,
     "video_url": null,
     "animation_url": "/exercise-gifs/0652-lBDjFxJ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/033-0652-bc5c0547260b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -946,8 +1010,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/033-0652-bc5c0547260b.webp"
   },
   {
     "name_ru": "Австралийские подтягивания",
@@ -959,7 +1025,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0499-bZGHsAZ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/034-0499-e82eb437161d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -975,8 +1041,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/034-0499-e82eb437161d.webp"
   },
   {
     "name_ru": "Тяга штанги в наклоне",
@@ -988,7 +1056,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0027-eZyBC3j.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/035-0027-b6f14d8a424f-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1006,8 +1074,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/035-0027-b6f14d8a424f.webp"
   },
   {
     "name_ru": "Тяга гантели в наклоне",
@@ -1020,7 +1090,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0292-C0MA9bC.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/036-0292-10f3ba00dea6-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1035,8 +1105,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/036-0292-10f3ba00dea6.webp"
   },
   {
     "name_ru": "Тяга верхнего блока",
@@ -1048,7 +1120,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0150-eYnzaCm.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/037-0150-ea6c856b2205-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1063,8 +1135,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/037-0150-ea6c856b2205.webp"
   },
   {
     "name_ru": "Тяга горизонтального блока",
@@ -1076,7 +1150,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0861-fUBheHs.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/038-0861-51cb0972f63b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1091,8 +1165,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/038-0861-51cb0972f63b.webp"
   },
   {
     "name_ru": "Тяга Т-грифа",
@@ -1104,7 +1180,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1349-BgljGjd.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/039-1349-05ae9d977dc5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1119,8 +1195,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/039-1349-05ae9d977dc5.webp"
   },
   {
     "name_ru": "Тяга резинки к поясу",
@@ -1132,7 +1210,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3144-Nu7jqFE.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/040-3144-616d4a81cc0e-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1147,8 +1225,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:bands"
-    ]
+      "equipment:bands",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/040-3144-616d4a81cc0e.webp"
   },
   {
     "name_ru": "Пуловер с гантелью",
@@ -1161,7 +1241,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0375-9XjtHvS.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/041-0375-9c92f409cd3e-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1174,8 +1254,10 @@
       "primary:chest",
       "pattern:other",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/041-0375-9c92f409cd3e.webp"
   },
   {
     "name_ru": "Гиперэкстензия",
@@ -1187,7 +1269,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0489-zhMwOwE.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/042-0489-70f193d515bb-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1203,8 +1285,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/042-0489-70f193d515bb.webp"
   },
   {
     "name_ru": "Тяга к лицу",
@@ -1216,7 +1300,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0203-wqNPGCg.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/043-0203-59e5b816d91d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1231,8 +1315,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/043-0203-59e5b816d91d.webp"
   },
   {
     "name_ru": "Жим штанги стоя",
@@ -1244,7 +1330,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1457-Kyd9Rz5.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/044-1457-1f65771c71bc-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1259,8 +1345,10 @@
       "secondary:upper_chest",
       "pattern:vertical_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/044-1457-1f65771c71bc.webp"
   },
   {
     "name_ru": "Жим гантелей сидя",
@@ -1273,7 +1361,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0405-znQUdHY.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/045-0405-b10db0955a82-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1288,8 +1376,10 @@
       "secondary:upper_chest",
       "pattern:vertical_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/045-0405-b10db0955a82.webp"
   },
   {
     "name_ru": "Жим Арнольда",
@@ -1302,7 +1392,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/2137-Xy4jlWA.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/046-2137-9f5ae5843d48-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1317,8 +1407,10 @@
       "secondary:upper_chest",
       "pattern:vertical_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/046-2137-9f5ae5843d48.webp"
   },
   {
     "name_ru": "Разводка гантелей в стороны",
@@ -1331,7 +1423,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/047-0334-f6949899ae23-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1345,8 +1437,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/047-0334-f6949899ae23.webp"
   },
   {
     "name_ru": "Разводка в наклоне",
@@ -1359,7 +1453,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/2292-mu5Guxt.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/048-2292-7bc18e78507b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1373,8 +1467,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/048-2292-7bc18e78507b.webp"
   },
   {
     "name_ru": "Подъёмы гантелей перед собой",
@@ -1387,7 +1483,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0310-3eGE2JC.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/049-0310-61f168569481-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1401,8 +1497,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/049-0310-61f168569481.webp"
   },
   {
     "name_ru": "Обратные разведения в тренажёре",
@@ -1414,7 +1512,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0602-myfUsKf.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/050-0602-ca4c315f1af8-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1427,8 +1525,10 @@
       "primary:deltoids",
       "pattern:other",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/050-0602-ca4c315f1af8.webp"
   },
   {
     "name_ru": "Тяга к подбородку",
@@ -1440,7 +1540,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0120-UDlhcO8.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/051-0120-c6296b68e884-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1454,8 +1554,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/051-0120-c6296b68e884.webp"
   },
   {
     "name_ru": "Шраги с гантелями",
@@ -1468,7 +1570,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0406-NJzBsGJ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/052-0406-411de64a95c4-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1482,8 +1584,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/052-0406-411de64a95c4.webp"
   },
   {
     "name_ru": "Сгибания гантелей на бицепс",
@@ -1496,7 +1600,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0294-NbVPDMW.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/053-0294-939552e336f9-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1510,8 +1614,10 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/053-0294-939552e336f9.webp"
   },
   {
     "name_ru": "Сгибания со штангой",
@@ -1523,7 +1629,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0031-25GPyDY.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/054-0031-91bd16498a54-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1537,8 +1643,10 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/054-0031-91bd16498a54.webp"
   },
   {
     "name_ru": "Молотковые сгибания",
@@ -1551,7 +1659,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0313-slDvUAU.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/055-0313-17e23c988bba-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1565,8 +1673,10 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/055-0313-17e23c988bba.webp"
   },
   {
     "name_ru": "Сгибания на скамье Скотта",
@@ -1578,7 +1688,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0070-qOgPVf6.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/056-0070-4088190e7123-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1592,8 +1702,10 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/056-0070-4088190e7123.webp"
   },
   {
     "name_ru": "Сгибания на нижнем блоке",
@@ -1605,7 +1717,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0868-G08RZcQ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/057-0868-66921eabd0ee-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1619,8 +1731,10 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/057-0868-66921eabd0ee.webp"
   },
   {
     "name_ru": "Разгибания на блоке",
@@ -1632,7 +1746,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0201-3ZflifB.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/058-0201-92f3db79b7f9-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1646,8 +1760,10 @@
       "secondary:deltoids",
       "pattern:elbow_extension",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/058-0201-92f3db79b7f9.webp"
   },
   {
     "name_ru": "Разгибания гантели из-за головы",
@@ -1660,7 +1776,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/2188-kont8Ut.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/059-2188-cea16fa9e4db-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1673,8 +1789,10 @@
       "primary:triceps",
       "pattern:other",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/059-2188-cea16fa9e4db.webp"
   },
   {
     "name_ru": "Французский жим гантели",
@@ -1687,7 +1805,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0351-mpKZGWz.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/060-0351-f675aa20367e-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1702,8 +1820,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/060-0351-f675aa20367e.webp"
   },
   {
     "name_ru": "Планка",
@@ -1715,7 +1835,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/2135-VBAWRPG.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/061-2135-591a72c68751-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1732,8 +1852,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/061-2135-591a72c68751.webp"
   },
   {
     "name_ru": "Боковая планка",
@@ -1745,7 +1867,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0705-RKjH6Lt.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/062-0705-e9b5f7a0ab9b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1762,8 +1884,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/062-0705-e9b5f7a0ab9b.webp"
   },
   {
     "name_ru": "Планка с касанием плеч",
@@ -1775,7 +1899,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/3699-yRpV5TC.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/063-3699-8c2b5d1c906f-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1791,8 +1915,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/063-3699-8c2b5d1c906f.webp"
   },
   {
     "name_ru": "Скручивания",
@@ -1804,7 +1930,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0274-TFqbd8t.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/064-0274-5818fba5c230-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1818,8 +1944,10 @@
       "secondary:hip_flexors",
       "pattern:core_flexion",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/064-0274-5818fba5c230.webp"
   },
   {
     "name_ru": "Велосипед",
@@ -1831,7 +1959,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0003-1ZFqTDN.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/065-0003-2fad6bd244a6-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1845,8 +1973,10 @@
       "secondary:hip_flexors",
       "pattern:core_flexion",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/065-0003-2fad6bd244a6.webp"
   },
   {
     "name_ru": "Русские скручивания",
@@ -1858,7 +1988,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0687-XVDdcoj.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/066-0687-a3b4eb97e280-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1872,8 +2002,10 @@
       "secondary:hip_flexors",
       "pattern:core_flexion",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/066-0687-a3b4eb97e280.webp"
   },
   {
     "name_ru": "Подъёмы ног лёжа",
@@ -1885,7 +2017,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0620-WhuFnR7.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/067-0620-b0accac198b7-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1899,8 +2031,10 @@
       "secondary:hip_flexors",
       "pattern:core_flexion",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/067-0620-b0accac198b7.webp"
   },
   {
     "name_ru": "Мёртвый жук",
@@ -1912,7 +2046,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0276-iny3m5y.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/068-0276-8550c54c98c5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1928,8 +2062,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/068-0276-8550c54c98c5.webp"
   },
   {
     "name_ru": "Птица-собака",
@@ -1941,7 +2077,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/069-0464-4f740927d511-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1955,8 +2091,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/069-0464-4f740927d511.webp"
   },
   {
     "name_ru": "Удержание «лодочки»",
@@ -1968,7 +2106,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/070-1014-61dae0843a2e-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -1983,8 +2121,10 @@
       "secondary:glutes",
       "pattern:core_stability",
       "role:core",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/070-1014-61dae0843a2e.webp"
   },
   {
     "name_ru": "Альпинисты",
@@ -1996,7 +2136,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0630-RJgzwny.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/071-0630-821708f139f9-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2010,8 +2150,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/071-0630-821708f139f9.webp"
   },
   {
     "name_ru": "Бёрпи",
@@ -2023,7 +2165,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/1160-dK9394r.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/072-1160-e7cfd45c6fcf-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2038,8 +2180,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/072-1160-e7cfd45c6fcf.webp"
   },
   {
     "name_ru": "Беговая дорожка",
@@ -2051,7 +2195,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3666-rjiM4L3.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/073-3666-ec6cea6ff585-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2069,8 +2213,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/073-3666-ec6cea6ff585.webp"
   },
   {
     "name_ru": "Высокие колени",
@@ -2082,7 +2228,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/074-3636-4c518869a1f5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2096,8 +2242,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/074-3636-4c518869a1f5.webp"
   },
   {
     "name_ru": "Прыжки на скакалке",
@@ -2109,7 +2257,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/2612-e1e76I2.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/075-2612-ae5e1fe13758-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2124,8 +2272,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/075-2612-ae5e1fe13758.webp"
   },
   {
     "name_ru": "Прыжки «звездой»",
@@ -2137,7 +2287,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3223-HtfCpfi.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/076-3223-53221301ad56-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2152,8 +2302,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/076-3223-53221301ad56.webp"
   },
   {
     "name_ru": "Скейтер-прыжки",
@@ -2165,7 +2317,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/3361-zfNHMN9.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/077-3361-0f52ece251f0-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2180,8 +2332,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/077-3361-0f52ece251f0.webp"
   },
   {
     "name_ru": "Эллипс",
@@ -2193,7 +2347,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/2141-rjtuP6X.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/078-2141-e3dbba360539-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2208,8 +2362,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/078-2141-e3dbba360539.webp"
   },
   {
     "name_ru": "Велотренажёр",
@@ -2221,7 +2377,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0798-a8VDgLw.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/079-0798-c6a9ac07b8b1-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2236,8 +2392,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/079-0798-c6a9ac07b8b1.webp"
   },
   {
     "name_ru": "Махи гирей",
@@ -2249,7 +2407,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0549-UHJlbu3.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/080-0549-5f63c7b27969-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2264,8 +2422,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:kettlebell"
-    ]
+      "equipment:kettlebell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/080-0549-5f63c7b27969.webp"
   },
   {
     "name_ru": "Фермерская прогулка",
@@ -2278,7 +2438,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/2133-qPEzJjA.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/081-2133-20af1c9f6199-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2292,8 +2452,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/081-2133-20af1c9f6199.webp"
   },
   {
     "name_ru": "Медвежья походка",
@@ -2305,7 +2467,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/3360-0Yz8WdV.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/082-3360-25b5e18484a8-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2319,8 +2481,10 @@
       "secondary:full_body",
       "pattern:conditioning",
       "role:conditioning",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/082-3360-25b5e18484a8.webp"
   },
   {
     "name_ru": "Присед + жим гантелей",
@@ -2332,7 +2496,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/083-0550-feab1a2c59ce-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2349,8 +2513,10 @@
       "secondary:core",
       "pattern:squat_to_press",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/083-0550-feab1a2c59ce.webp"
   },
   {
     "name_ru": "Присед с жимом над головой",
@@ -2362,7 +2528,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/084-3305-decfa156f010-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2378,8 +2544,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/084-3305-decfa156f010.webp"
   },
   {
     "name_ru": "Комплекс присед + жим",
@@ -2391,7 +2559,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/3305-f7Y9eDZ.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/085-3305-d13fdf029ec6-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2407,8 +2575,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/085-3305-d13fdf029ec6.webp"
   },
   {
     "name_ru": "Выпад + сгибание на бицепс",
@@ -2421,7 +2591,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1658-Mz6lLcW.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/086-1658-e32a9c594b93-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2437,8 +2607,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/086-1658-e32a9c594b93.webp"
   },
   {
     "name_ru": "Обратные выпады с поворотом",
@@ -2450,7 +2622,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1688-K9VL0Jq.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/087-1688-bc219758de94-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2466,8 +2638,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/087-1688-bc219758de94.webp"
   },
   {
     "name_ru": "Кошка-корова",
@@ -2479,7 +2653,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/088-1363-b9dbdbdf1d49-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2492,8 +2666,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/088-1363-b9dbdbdf1d49.webp"
   },
   {
     "name_ru": "Мобилизация голеностопа",
@@ -2505,7 +2681,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/1368-uL9CsKm.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/089-1368-b68d49c198ff-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2519,8 +2695,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/089-1368-b68d49c198ff.webp"
   },
   {
     "name_ru": "Мобилизация плеч с резинкой",
@@ -2532,7 +2710,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/090-1022-51c099f300d3-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2545,8 +2723,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bands"
-    ]
+      "equipment:bands",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/090-1022-51c099f300d3.webp"
   },
   {
     "name_ru": "Поза голубя",
@@ -2558,7 +2738,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/091-2567-a1d48c022bfa-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2571,8 +2751,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/091-2567-a1d48c022bfa.webp"
   },
   {
     "name_ru": "Растяжка грушевидной",
@@ -2584,7 +2766,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/2567-QY39eBr.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/092-2567-1ab963a43f73-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2598,8 +2780,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/092-2567-1ab963a43f73.webp"
   },
   {
     "name_ru": "Растяжка сгибателей бедра",
@@ -2611,7 +2795,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/1564-tFGKm99.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/093-1564-5722369d26ff-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2625,8 +2809,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/093-1564-5722369d26ff.webp"
   },
   {
     "name_ru": "Раскрытие грудного отдела у стены",
@@ -2638,7 +2824,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/094-1167-efe8b5c9d16c-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2651,8 +2837,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/094-1167-efe8b5c9d16c.webp"
   },
   {
     "name_ru": "Растяжка грудных у дверного проёма",
@@ -2664,7 +2852,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/095-1167-97d7fc9f9ee1-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2677,8 +2865,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/095-1167-97d7fc9f9ee1.webp"
   },
   {
     "name_ru": "Наклоны к носкам",
@@ -2690,7 +2880,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3212-BbfB8Gb.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/096-3212-1be8f6718d93-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2704,8 +2894,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/096-3212-1be8f6718d93.webp"
   },
   {
     "name_ru": "Мировая растяжка",
@@ -2717,7 +2909,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/1604-DFGXwZr.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/097-1604-ff7b82744394-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2731,8 +2923,10 @@
       "primary:mobility",
       "pattern:mobility",
       "role:mobility",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/097-1604-ff7b82744394.webp"
   },
   {
     "name_ru": "Пуловер в блоке на спину",
@@ -2744,7 +2938,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0238-x69MAlq.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/098-0238-729ad8345c0d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2761,8 +2955,10 @@
       "primary:back",
       "pattern:other",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/098-0238-729ad8345c0d.webp"
   },
   {
     "name_ru": "Французский жим со штангой",
@@ -2774,7 +2970,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0061-iZop9xO.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/099-0061-5e0ea0233837-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2793,8 +2989,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/099-0061-5e0ea0233837.webp"
   },
   {
     "name_ru": "Французский жим EZ-грифом",
@@ -2806,7 +3004,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1748-6CKUx7o.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/100-1748-3bf99835d9ea-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2824,8 +3022,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/100-1748-3bf99835d9ea.webp"
   },
   {
     "name_ru": "Французский жим стоя со штангой",
@@ -2837,7 +3037,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0109-dZl9Q27.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/101-0109-eed891d9aed5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2855,8 +3055,10 @@
       "secondary:upper_chest",
       "pattern:vertical_push",
       "role:main",
-      "equipment:barbell"
-    ]
+      "equipment:barbell",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/101-0109-eed891d9aed5.webp"
   },
   {
     "name_ru": "Разгибания из-за головы на блоке",
@@ -2868,7 +3070,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0194-2IxROQ1.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/102-0194-3bdfc9ef5164-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2885,8 +3087,10 @@
       "secondary:deltoids",
       "pattern:elbow_extension",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/102-0194-3bdfc9ef5164.webp"
   },
   {
     "name_ru": "Жим вниз на блоке канатом",
@@ -2898,7 +3102,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0200-dU605di.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/103-0200-ecb6680bda38-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2916,8 +3120,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/103-0200-ecb6680bda38.webp"
   },
   {
     "name_ru": "Тяга верхнего блока обратным хватом",
@@ -2929,7 +3135,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0245-xBYcQHj.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/104-0245-64978b738e17-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2947,8 +3153,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/104-0245-64978b738e17.webp"
   },
   {
     "name_ru": "Кроссовер на верхних блоках",
@@ -2960,7 +3168,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0158-7saC5zz.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/105-0158-d97802efc1ae-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -2976,8 +3184,10 @@
       "primary:chest",
       "pattern:other",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/105-0158-d97802efc1ae.webp"
   },
   {
     "name_ru": "Махи гантелями в стороны",
@@ -2990,7 +3200,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0334-DsgkuIt.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/106-0334-373a017f2b56-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3006,8 +3216,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/106-0334-373a017f2b56.webp"
   },
   {
     "name_ru": "Подтягивания обратным хватом",
@@ -3019,7 +3231,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0674-YAk5dIw.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/107-0674-2f113b0cab6c-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3036,8 +3248,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/107-0674-2f113b0cab6c.webp"
   },
   {
     "name_ru": "Пуловер с гантелью лёжа поперёк скамьи",
@@ -3050,7 +3264,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0375-9XjtHvS.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/108-0375-440c101d0f5d-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3066,8 +3280,10 @@
       "primary:back",
       "pattern:other",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/108-0375-440c101d0f5d.webp"
   },
   {
     "name_ru": "Приседания в машине Смита",
@@ -3079,7 +3295,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/3281-NNoHCEA.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/109-3281-0de67ecc5bef-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3097,8 +3313,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/109-3281-0de67ecc5bef.webp"
   },
   {
     "name_ru": "Гакк-приседания",
@@ -3110,7 +3328,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0743-Qa55kX1.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/110-0743-8bbe19f98795-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3128,8 +3346,10 @@
       "secondary:core",
       "pattern:squat",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/110-0743-8bbe19f98795.webp"
   },
   {
     "name_ru": "Болгарские приседания в машине Смита",
@@ -3141,7 +3361,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0768-wWFspEi.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/111-0768-86a396778408-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3160,8 +3380,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/111-0768-86a396778408.webp"
   },
   {
     "name_ru": "Жим лёжа в машине Смита",
@@ -3173,7 +3395,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": "/exercise-gifs/0748-trqKQv2.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/112-0748-9e4814d07332-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3190,8 +3412,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/112-0748-9e4814d07332.webp"
   },
   {
     "name_ru": "Жим на наклонной в тренажёре",
@@ -3203,7 +3427,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1299-jHAnWmT.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/113-1299-19979050c860-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3220,8 +3444,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/113-1299-19979050c860.webp"
   },
   {
     "name_ru": "Сведение рук в тренажёре «бабочка»",
@@ -3233,7 +3459,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0596-v3xmPAR.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/114-0596-7ada59e5c411-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3250,8 +3476,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/114-0596-7ada59e5c411.webp"
   },
   {
     "name_ru": "Жим вверх в тренажёре сидя",
@@ -3263,7 +3491,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0603-67n3r98.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/115-0603-774f319acb92-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3280,8 +3508,10 @@
       "secondary:upper_chest",
       "pattern:vertical_push",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/115-0603-774f319acb92.webp"
   },
   {
     "name_ru": "Отведение руки в сторону на блоке",
@@ -3293,7 +3523,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0178-goJ6ezq.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/116-0178-361b94e28811-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3309,8 +3539,10 @@
       "secondary:trapezius",
       "pattern:shoulder_accessory",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/116-0178-361b94e28811.webp"
   },
   {
     "name_ru": "Тяга с упором грудью в тренажёре",
@@ -3322,7 +3554,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/1350-7I6LNUG.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/117-1350-3672db17979a-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3339,8 +3571,10 @@
       "secondary:rear_deltoids",
       "pattern:horizontal_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/117-1350-3672db17979a.webp"
   },
   {
     "name_ru": "Тяга верхнего блока нейтральным хватом",
@@ -3352,7 +3586,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0818-rkg41Fb.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/118-0818-fa22a87099e5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3369,8 +3603,10 @@
       "secondary:forearms",
       "pattern:vertical_pull",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/118-0818-fa22a87099e5.webp"
   },
   {
     "name_ru": "Сгибания ног сидя",
@@ -3382,7 +3618,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0599-Zg3XY7P.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/119-0599-4a0774f255fd-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3398,8 +3634,10 @@
       "secondary:calves",
       "pattern:knee_flexion",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/119-0599-4a0774f255fd.webp"
   },
   {
     "name_ru": "Ягодичный мост в машине Смита",
@@ -3411,7 +3649,7 @@
     "difficulty": 3,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/120-0756-6b665bab06b9-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3427,8 +3665,10 @@
       "secondary:core",
       "pattern:hip_extension",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/120-0756-6b665bab06b9.webp"
   },
   {
     "name_ru": "Подъёмы на носки стоя в тренажёре",
@@ -3440,7 +3680,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0605-ykUOVze.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/121-0605-86e6092a0bf1-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3455,8 +3695,10 @@
       "primary:calves",
       "pattern:calf_raise",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/121-0605-86e6092a0bf1.webp"
   },
   {
     "name_ru": "Сгибания гантелей на бицепс на наклонной скамье",
@@ -3469,7 +3711,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0315-F3xgbjF.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/122-0315-c4b9f4da9221-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3485,20 +3727,22 @@
       "secondary:forearms",
       "pattern:elbow_flexion",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/122-0315-c4b9f4da9221.webp"
   },
   {
-    "name_ru": "Скручивания на верхнем блоке",
+    "name_ru": "Молитва",
     "muscle_group": "кор",
     "equipment": "блок/кроссовер",
-    "description": "Скручивания на верхнем блоке. © Gym Visual — https://gymvisual.com/",
+    "description": "Молитва. © Gym Visual — https://gymvisual.com/",
     "technique": "1. Встаньте на колени спиной или лицом к верхнему блоку, канат держите у головы.\n2. Зафиксируйте таз.\n3. Скрутите грудную клетку к тазу усилием пресса.\n4. Вернитесь, не разгибая поясницу чрезмерно.",
     "common_mistakes": null,
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0175-WW95auq.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/123-0175-95aa546faeaa-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3514,8 +3758,10 @@
       "secondary:hip_flexors",
       "pattern:core_flexion",
       "role:core",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/123-0175-95aa546faeaa.webp"
   },
   {
     "name_ru": "Жим Паллофа с резинкой",
@@ -3527,7 +3773,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0979-9pa4H5m.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/124-0979-57477f696709-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3544,8 +3790,10 @@
       "secondary:deltoids",
       "pattern:horizontal_push",
       "role:main",
-      "equipment:bands"
-    ]
+      "equipment:bands",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/124-0979-57477f696709.webp"
   },
   {
     "name_ru": "Тяга с канатом между ног",
@@ -3557,7 +3805,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0196-OM46QHm.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/125-0196-2522c765cd41-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3575,8 +3823,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/125-0196-2522c765cd41.webp"
   },
   {
     "name_ru": "Отведение ноги назад в кроссовере",
@@ -3588,7 +3838,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0228-Kpajagk.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/126-0228-096122f7de40-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3605,8 +3855,10 @@
       "secondary:core",
       "pattern:hip_extension",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/126-0228-096122f7de40.webp"
   },
   {
     "name_ru": "Обратная гиперэкстензия в тренажёре",
@@ -3618,7 +3870,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": "/exercise-gifs/0593-Krmb3cB.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/127-0593-d679cc1bab23-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3636,8 +3888,10 @@
       "secondary:core",
       "pattern:hinge",
       "role:main",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/127-0593-d679cc1bab23.webp"
   },
   {
     "name_ru": "Ягодичный мост с гантелью",
@@ -3650,7 +3904,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/128-0339-059edf7a22c5-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3665,8 +3919,10 @@
       "secondary:core",
       "pattern:hip_extension",
       "role:accessory",
-      "equipment:dumbbells"
-    ]
+      "equipment:dumbbells",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/128-0339-059edf7a22c5.webp"
   },
   {
     "name_ru": "Выпады вперёд без веса",
@@ -3678,7 +3934,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/3470-kMzUs9Y.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/129-3470-1d4e5e3d2269-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3696,8 +3952,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/129-3470-1d4e5e3d2269.webp"
   },
   {
     "name_ru": "Болгарские приседания без веса",
@@ -3709,7 +3967,7 @@
     "difficulty": 2,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/130-2368-85fed9f3d8ab-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3726,8 +3984,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/130-2368-85fed9f3d8ab.webp"
   },
   {
     "name_ru": "Подъёмы на носки без веса",
@@ -3739,7 +3999,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/1373-bJYHBIN.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/131-1373-a16ae40de3af-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3753,8 +4013,10 @@
       "primary:calves",
       "pattern:calf_raise",
       "role:accessory",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/131-1373-a16ae40de3af.webp"
   },
   {
     "name_ru": "Боковые выпады без веса",
@@ -3766,7 +4028,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": null,
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/132-1410-65e9ad168c8b-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3783,8 +4045,10 @@
       "secondary:core",
       "pattern:lunge",
       "role:main",
-      "equipment:bodyweight"
-    ]
+      "equipment:bodyweight",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/132-1410-65e9ad168c8b.webp"
   },
   {
     "name_ru": "Сведение ног в тренажёре",
@@ -3796,7 +4060,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0598-oHsrypV.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/133-0598-8c9117de61cd-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3812,8 +4076,10 @@
       "secondary:glutes",
       "pattern:hip_adduction",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/133-0598-8c9117de61cd.webp"
   },
   {
     "name_ru": "Разведение ног в тренажёре",
@@ -3825,7 +4091,7 @@
     "difficulty": 1,
     "video_url": null,
     "animation_url": "/exercise-gifs/0597-CHpahtl.gif",
-    "thumbnail_url": null,
+    "thumbnail_url": "/exercise-thumbnails/134-0597-7bf20012bcb0-start.webp",
     "media_duration_sec": null,
     "media_source": "none",
     "tags": [
@@ -3843,7 +4109,9 @@
       "secondary:core",
       "pattern:hip_abduction",
       "role:accessory",
-      "equipment:machines"
-    ]
+      "equipment:machines",
+      "image:owner-approved:2026-10-01"
+    ],
+    "image_url": "/exercise-images/134-0597-7bf20012bcb0.webp"
   }
 ]

@@ -18,6 +18,7 @@ export type ExerciseDraft = {
   commonMistakes: string;
   videoUrl: string;
   animationUrl: string;
+  imageUrl: string;
   thumbnailUrl: string;
   mediaDuration: string;
   mediaSource: "youtube" | "external" | "none";
@@ -37,6 +38,7 @@ export const EMPTY_EXERCISE_DRAFT: ExerciseDraft = {
   commonMistakes: "",
   videoUrl: "",
   animationUrl: "",
+  imageUrl: "",
   thumbnailUrl: "",
   mediaDuration: "",
   mediaSource: "none",
@@ -65,6 +67,7 @@ export function draftFromExercise(item: AdminExercise): ExerciseDraft {
     commonMistakes: item.common_mistakes ?? "",
     videoUrl: item.video_url ?? "",
     animationUrl: item.animation_url ?? "",
+    imageUrl: item.image_url ?? "",
     thumbnailUrl: item.thumbnail_url ?? "",
     mediaDuration: item.media_duration_sec == null ? "" : String(item.media_duration_sec),
     mediaSource: item.media_source === "youtube" || item.media_source === "external"
@@ -86,6 +89,7 @@ export function payloadFromDraft(draft: ExerciseDraft): AdminExercisePayload {
     difficulty: Number(draft.difficulty),
     video_url: nullable(draft.videoUrl),
     animation_url: nullable(draft.animationUrl),
+    image_url: nullable(draft.imageUrl),
     thumbnail_url: nullable(draft.thumbnailUrl),
     media_duration_sec: draft.mediaDuration.trim() ? Number(draft.mediaDuration) : null,
     media_source: draft.mediaSource,

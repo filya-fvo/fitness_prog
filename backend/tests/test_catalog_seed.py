@@ -46,6 +46,10 @@ def test_runtime_media_contains_only_catalog_assets() -> None:
 
     assert actual_gifs == expected_gifs
     assert actual_thumbnails == expected_thumbnails
+    expected_initial_phases = {
+        Path(row["thumbnail_url"]).name for row in rows if row.get("image_url")
+    }
+    assert {path.name for path in THUMBNAILS.glob("*.webp")} == expected_initial_phases
     assert not list(GIFS.glob("*.gif_bk"))
 
 
@@ -400,7 +404,7 @@ def test_key_compound_lifts_present() -> None:
         "Ягодичный мост в машине Смита",
         "Подъёмы на носки стоя в тренажёре",
         "Сгибания гантелей на бицепс на наклонной скамье",
-        "Скручивания на верхнем блоке",
+        "Молитва",
         "Жим Паллофа с резинкой",
     }
     assert required <= names

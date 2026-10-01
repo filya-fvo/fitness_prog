@@ -1,0 +1,3758 @@
+{
+  "date": "2026-10-01",
+  "count": 134,
+  "images": [
+    {
+      "number": 1,
+      "name_ru": "Приседания со штангой",
+      "mapping_id": "0043",
+      "image_url": "/exercise-images/001-0043-fc0d780ba18d.webp",
+      "thumbnail_url": "/exercise-thumbnails/001-0043-fc0d780ba18d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/001-0043-qXTaZnJ-v1.png",
+      "source_sha256": "fc0d780ba18d1713cd25c67d75280c8b36b43e2197e0090c116c7bb5708826b9",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "459378dac0e994ece23645e3a7c4ed0a15afbf9436deedb206a9c28f0dc38ebb",
+      "thumbnail_sha256": "4a8b42249f08709f8bee0c70850ba7a66790e2cf55db6ce4cf8ef6c33b97bbb7",
+      "image_bytes": 366424,
+      "thumbnail_bytes": 61382,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 2,
+      "name_ru": "Фронтальные приседания",
+      "mapping_id": "0042",
+      "image_url": "/exercise-images/002-0042-cd0c8e0f2e3d.webp",
+      "thumbnail_url": "/exercise-thumbnails/002-0042-cd0c8e0f2e3d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/002-0042-zG0zs85-v2.png",
+      "source_sha256": "cd0c8e0f2e3daaeab1b24ea63cd1e3bbdaf711a5b192ca8afde1fa04da560559",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "dd13005a43c14e8019c04627b55a3fcd3cedb808770b94e2d23d43dd7c553bdb",
+      "thumbnail_sha256": "c0add8533e8ff8e7cb8da72217a2844b5825aedc912c73754dc0cc2299ebaf54",
+      "image_bytes": 369600,
+      "thumbnail_bytes": 61116,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 3,
+      "name_ru": "Сумо-приседания",
+      "mapping_id": "0124",
+      "image_url": "/exercise-images/003-0124-da0208044616.webp",
+      "thumbnail_url": "/exercise-thumbnails/003-0124-da0208044616-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/003-0124-s7HX1BY-v1.png",
+      "source_sha256": "da02080446166f5a68edb806a96960c2600933fc86bff647aef62aaa98fc6f24",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "dd9517e3162dfcc2542b30a03180dcacae4e0f1c906425e78ff1bc0bbd4f6307",
+      "thumbnail_sha256": "2861a69701b8be3b375e20610196854a9a647a4dfe09444bd592383cf901be6e",
+      "image_bytes": 351752,
+      "thumbnail_bytes": 58174,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 4,
+      "name_ru": "Приседания со своим весом",
+      "mapping_id": "3119",
+      "image_url": "/exercise-images/004-3119-d6907cbe7db7.webp",
+      "thumbnail_url": "/exercise-thumbnails/004-3119-d6907cbe7db7-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/004-3119-75Bgtjy-v1.png",
+      "source_sha256": "d6907cbe7db71fac71deec7892a287528a19f2bd0a7fa5da31dc154e7305b2b7",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "976f973034bc2bb8180582f0411094a3416af9e3676c75b4b9ad60422ce2a076",
+      "thumbnail_sha256": "8fbe6b4d8757f8be59a4d494a71ae5551a407159136f9b2d9cda2c37b0e292a8",
+      "image_bytes": 361106,
+      "thumbnail_bytes": 59840,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 5,
+      "name_ru": "Приседания с гантелью у груди",
+      "mapping_id": "1760",
+      "image_url": "/exercise-images/005-1760-fdfda3c750a4.webp",
+      "thumbnail_url": "/exercise-thumbnails/005-1760-fdfda3c750a4-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/005-1760-yn8yg1r-v1.png",
+      "source_sha256": "fdfda3c750a4c5a5d1d43a098e8734f331e53f29b3d017f5640b7b7d82721e10",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "090633de833b09dd71b60d2841780f860254ec3c4c55f28f4908e562351089a3",
+      "thumbnail_sha256": "a983132a10e4d4e3242669817f875d8eab18dbaa4ba0769f74a962e4fe634ac3",
+      "image_bytes": 352576,
+      "thumbnail_bytes": 59626,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 6,
+      "name_ru": "Жим ногами",
+      "mapping_id": "1463",
+      "image_url": "/exercise-images/006-1463-07cb88c4f130.webp",
+      "thumbnail_url": "/exercise-thumbnails/006-1463-07cb88c4f130-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/006-1463-2Qh2J1e-v1.png",
+      "source_sha256": "07cb88c4f130e7cfb1c9232d70c19de26e703f65531571a0af0c2174b4c1a098",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "cf5da7daf177a2fd2e319eb2a209be342b1f35f3c7b79999775974b77f521ce7",
+      "thumbnail_sha256": "0bfddc19681c8d233ad811075df6a69ecfd8291425d1c69872b9899942b5f9be",
+      "image_bytes": 374424,
+      "thumbnail_bytes": 61250,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 7,
+      "name_ru": "Разгибания ног",
+      "mapping_id": "0585",
+      "image_url": "/exercise-images/007-0585-eeacc31fe866.webp",
+      "thumbnail_url": "/exercise-thumbnails/007-0585-eeacc31fe866-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/007-0585-my33uHU-v1.png",
+      "source_sha256": "eeacc31fe86687be88f3128606208cc62dcdd2d63ff5067acc51ec2c856198eb",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "4b2169cc50329aed1ad77ac041a30039ba912d47f36c50cd394d2f0e3aa04f22",
+      "thumbnail_sha256": "a61228869afc8b97d947e84f064de09fe1f2dbc0928deb8c497bd5b8b8ced32b",
+      "image_bytes": 358520,
+      "thumbnail_bytes": 58866,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 8,
+      "name_ru": "Сгибания ног лёжа",
+      "mapping_id": "0586",
+      "image_url": "/exercise-images/008-0586-446ff39b46df.webp",
+      "thumbnail_url": "/exercise-thumbnails/008-0586-446ff39b46df-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/008-0586-17lJ1kr-v2.png",
+      "source_sha256": "446ff39b46df4e21a57cfbc5342c79e149c2bdbd5a5144270cea813772ea9687",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "009e47eb8af188713af670e3cec7b8262e5a1ee4c29aa03820807777fa1accb3",
+      "thumbnail_sha256": "678347ac6a60bf4c756c299c737ef36f5a9d3449ccc978928944d0daba39bd57",
+      "image_bytes": 334132,
+      "thumbnail_bytes": 53624,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 9,
+      "name_ru": "Румынская тяга",
+      "mapping_id": "0085",
+      "image_url": "/exercise-images/009-0085-2edb61f0c54a.webp",
+      "thumbnail_url": "/exercise-thumbnails/009-0085-2edb61f0c54a-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/009-0085-wQ2c4XD-v1.png",
+      "source_sha256": "2edb61f0c54aaf67542934df294a6a81e5ca9d797fd1e70e37590afa7e3ecde9",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c6a248b32241505e5f34ef0b2e6728946688b5d8ae8765c2a637bc79ec4afb1e",
+      "thumbnail_sha256": "16361add44a3b9796dd59954e0c9eb8510b22993235cc901fd0fab78e507cd16",
+      "image_bytes": 352744,
+      "thumbnail_bytes": 57312,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 10,
+      "name_ru": "Румынская тяга с гантелями",
+      "mapping_id": "1459",
+      "image_url": "/exercise-images/010-1459-e5806c35f8d9.webp",
+      "thumbnail_url": "/exercise-thumbnails/010-1459-e5806c35f8d9-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/010-1459-rR0LJzx-v3.png",
+      "source_sha256": "e5806c35f8d999b62744fac860dc9d38c00a9d5a827a5564981499ef48ace15f",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "b43f776d51f3e512aa8ae3b6c2b7627ee423c5bb1f0531a376a8cb5a27326da8",
+      "thumbnail_sha256": "8b03c85a71980dc743a06e36785672c81f106f57da4bb1bd9600586de65d7b44",
+      "image_bytes": 333218,
+      "thumbnail_bytes": 56376,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 11,
+      "name_ru": "Становая тяга классическая",
+      "mapping_id": "0032",
+      "image_url": "/exercise-images/011-0032-030f0bf9ce25.webp",
+      "thumbnail_url": "/exercise-thumbnails/011-0032-030f0bf9ce25-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/011-0032-ila4NZS-v1.png",
+      "source_sha256": "030f0bf9ce25f457f60349bdfa1b371661b3038482438737e71b8ce3eada4a4c",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "91acd16430642a0294fbb99a91fbc5ecdc5063ef3eb1226140d739d02d9a44a6",
+      "thumbnail_sha256": "87530b1e1912f514cdab8d3991f43ca57f9c479179a134d353aec413786bd94a",
+      "image_bytes": 346062,
+      "thumbnail_bytes": 55940,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 12,
+      "name_ru": "Болгарские выпады",
+      "mapping_id": "0410",
+      "image_url": "/exercise-images/012-0410-09e28dfed288.webp",
+      "thumbnail_url": "/exercise-thumbnails/012-0410-09e28dfed288-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/012-0410-qx4fgX7-v1.png",
+      "source_sha256": "09e28dfed28884e236fc3332639017da87a295f61d2eb4fd23a30260724935e1",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "88b5a8ad5e97dec336552882c5b4958e57fe8a2b83045d58fb9af3a8440f5e30",
+      "thumbnail_sha256": "be5e3eb2d6493bb1a09e6e509c766dd06013bfb6c3456f31fb825a8be08747ea",
+      "image_bytes": 356762,
+      "thumbnail_bytes": 59514,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 13,
+      "name_ru": "Выпады вперёд",
+      "mapping_id": "0336",
+      "image_url": "/exercise-images/013-0336-9fef28c7127d.webp",
+      "thumbnail_url": "/exercise-thumbnails/013-0336-9fef28c7127d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/013-0336-RRWFUcw-v1.png",
+      "source_sha256": "9fef28c7127d6de20c56996f82c085487cdb485f64562000fcc4fa65649e53aa",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "561525e152fc74e2f134d878f4e0b467f5f4984bccb961d35deb284e9466fafb",
+      "thumbnail_sha256": "648f59caf82e66009ac21c058fe09c297d1224ab21325a8b034e97d06fc17570",
+      "image_bytes": 357194,
+      "thumbnail_bytes": 60286,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 14,
+      "name_ru": "Выпады назад с гантелями",
+      "mapping_id": "0381",
+      "image_url": "/exercise-images/014-0381-ebea2d40318f.webp",
+      "thumbnail_url": "/exercise-thumbnails/014-0381-ebea2d40318f-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/014-0381-SSsBDwB-v1.png",
+      "source_sha256": "ebea2d40318ffb039fdb8eabd0a2ab5c53ada7eb71f5f809d8f577aa57d65d85",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "6d5177c6e84fbbeee5ca067bdb569c0b78ae29cd997b762ef8cbd85398892406",
+      "thumbnail_sha256": "07b20ad34c1acd85d47db5bc7412c29e71905295ae31cde00b2f745746f768a4",
+      "image_bytes": 347538,
+      "thumbnail_bytes": 58422,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 15,
+      "name_ru": "Боковые выпады",
+      "mapping_id": "1410",
+      "image_url": "/exercise-images/015-1410-5844e4dd69a4.webp",
+      "thumbnail_url": "/exercise-thumbnails/015-1410-5844e4dd69a4-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/015-1410-py1HSzx-v1.png",
+      "source_sha256": "5844e4dd69a42fb11b9c912d261b21184ac735b180e5c49f543c8ff730230d5d",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "9ff1689a929eba134079f6468ebe4142ee9b9d6cd9d0de8dd959291f5252ff37",
+      "thumbnail_sha256": "4a3ed0d04f07fc021119f422b06bbf080b448e5df3ebf2493d78cd3baf532d70",
+      "image_bytes": 372608,
+      "thumbnail_bytes": 60246,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 16,
+      "name_ru": "Зашагивания на тумбу",
+      "mapping_id": "0431",
+      "image_url": "/exercise-images/016-0431-45b16092cf47.webp",
+      "thumbnail_url": "/exercise-thumbnails/016-0431-45b16092cf47-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/016-0431-aXtJhlg-v1.png",
+      "source_sha256": "45b16092cf470ce0d40a2cac91ab1c1dc06610c89fb2564088b45916d999c453",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "6d5a1acdd9d0da82643733a3ae725ae9dad3cabc5871905e5ef854a1f7e5745d",
+      "thumbnail_sha256": "9e41f5ed7eb20374130445c8c4b08155db90a9775de5b08484cd507112c08e92",
+      "image_bytes": 332490,
+      "thumbnail_bytes": 55970,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 17,
+      "name_ru": "Ягодичный мост",
+      "mapping_id": "3013",
+      "image_url": "/exercise-images/017-3013-c9a1fcde15ea.webp",
+      "thumbnail_url": "/exercise-thumbnails/017-3013-c9a1fcde15ea-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/017-3013-u0cNiij-v1.png",
+      "source_sha256": "c9a1fcde15ea2ffadf5661eb272f5705584ec0d2bd6aef0155e6924aab203d31",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "6efaabef27d75a83864ecc5ab26947c77788f9dc88e33d172b750b1854407976",
+      "thumbnail_sha256": "872210f2efc5d327032e0ade7f9d8e21eae9bf7f028b72d4544fcea602de4f8e",
+      "image_bytes": 332246,
+      "thumbnail_bytes": 53312,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 18,
+      "name_ru": "Ягодичный мост со штангой",
+      "mapping_id": "1409",
+      "image_url": "/exercise-images/018-1409-9f2c782f2d83.webp",
+      "thumbnail_url": "/exercise-thumbnails/018-1409-9f2c782f2d83-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/018-1409-qKBpF7I-v3.png",
+      "source_sha256": "9f2c782f2d83b64b98c1aa4215462abd15d08acd08105c863f8680379e7948a8",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "10572d23193f44b9f3dd305c384c04b1cccb01f85190dbdfeead602d397f85c4",
+      "thumbnail_sha256": "a866c2ef30e5aca50eaf4695c41443fe421933642e15875d220f07e58c96135b",
+      "image_bytes": 326850,
+      "thumbnail_bytes": 54772,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 19,
+      "name_ru": "Подъёмы на носки стоя",
+      "mapping_id": "1372",
+      "image_url": "/exercise-images/019-1372-eb62a03f6686.webp",
+      "thumbnail_url": "/exercise-thumbnails/019-1372-eb62a03f6686-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/019-1372-8ozhUIZ-v1.png",
+      "source_sha256": "eb62a03f6686481c770857810bdd1d8d79be3b2dc0fdf79f1378b28450c7bbb1",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c5b550caa910ebe6495facb7b065ee8cfb86f33573491cadc73000cd44762bb5",
+      "thumbnail_sha256": "a8363607a1f0cd2d00867947e93c2dcc334288d333fffa9b2b2a3964c2024c56",
+      "image_bytes": 328228,
+      "thumbnail_bytes": 55604,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 20,
+      "name_ru": "Подъёмы на носки сидя",
+      "mapping_id": "0594",
+      "image_url": "/exercise-images/020-0594-756eecffead7.webp",
+      "thumbnail_url": "/exercise-thumbnails/020-0594-756eecffead7-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/020-0594-bOOdeyc-v2.png",
+      "source_sha256": "756eecffead75b668f9792983498b27702b288f66df54cd237787b46ca7a63a7",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "df55dc0573c31781a3ddc913d47307de403a79d06d5378585d2c5e1396bcf7e7",
+      "thumbnail_sha256": "1e9d3a884dd75c1f28a112a1872c94e8ccf34818f4f09b90a0421f3377500880",
+      "image_bytes": 322696,
+      "thumbnail_bytes": 53746,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 21,
+      "name_ru": "Жим штанги лёжа",
+      "mapping_id": "0025",
+      "image_url": "/exercise-images/021-0025-a3b6b46d5f3b.webp",
+      "thumbnail_url": "/exercise-thumbnails/021-0025-a3b6b46d5f3b-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/021-0025-EIeI8Vf-v2.png",
+      "source_sha256": "a3b6b46d5f3b9d768f1f7628b597c79ad1c49b06b8c86acce29c06e6dc82c12d",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "2dc252a89ec404df3f62a30aadac861a7af24914162c4ba9f07e1799bef9f8e4",
+      "thumbnail_sha256": "cb5c0f6a4b23045e4341c0de61f93576c7e90e02cfc3784915878efe437ffeb5",
+      "image_bytes": 331890,
+      "thumbnail_bytes": 55310,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 22,
+      "name_ru": "Жим гантелей лёжа",
+      "mapping_id": "0289",
+      "image_url": "/exercise-images/022-0289-eb8653cca822.webp",
+      "thumbnail_url": "/exercise-thumbnails/022-0289-eb8653cca822-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/022-0289-SpYC0Kp-v1.png",
+      "source_sha256": "eb8653cca8220bd422b807c4b759fd9fa2933a1b60d9f6f11d386954df54eac7",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "617be1dd3a9b5003c2e728472c78f05a64c7d678d7d6613abbabaf9b4c95e0d6",
+      "thumbnail_sha256": "af3b687c0afa37d3f020a7ff2e7826f33ce9f0bbfeb5573a49a335e08da87c9c",
+      "image_bytes": 353530,
+      "thumbnail_bytes": 57718,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 23,
+      "name_ru": "Жим гантелей на наклонной",
+      "mapping_id": "0314",
+      "image_url": "/exercise-images/023-0314-520892c66818.webp",
+      "thumbnail_url": "/exercise-thumbnails/023-0314-520892c66818-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/023-0314-ns0SIbU-v2.png",
+      "source_sha256": "520892c6681828a21a5044d94186fbc14a30924c5e2af0b9ba9b5e86221ce61c",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "79dc9db25efea097727ce1bc17a5d5e213c03f639856b61967ea11ce6e2fa021",
+      "thumbnail_sha256": "60281edd73d8ee8945b3a95a9c57ce2492fb88649b702864d38d7fe9025503de",
+      "image_bytes": 362222,
+      "thumbnail_bytes": 58970,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 24,
+      "name_ru": "Жим лёжа узким хватом",
+      "mapping_id": "0030",
+      "image_url": "/exercise-images/024-0030-51c1bee18e2d.webp",
+      "thumbnail_url": "/exercise-thumbnails/024-0030-51c1bee18e2d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/024-0030-J6Dx1Mu-v2.png",
+      "source_sha256": "51c1bee18e2d57eac154da4f8aca48523dbe4a0ebb511f1f4c098585085b5fad",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "f9170469790200d94bed579968df105bbbf4b485d0bd3f56f70d304015078baa",
+      "thumbnail_sha256": "9df275b52d89f6abc0496b152c402bed0a3836db6c83787ed5ab8de14f36fb38",
+      "image_bytes": 364596,
+      "thumbnail_bytes": 60342,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 25,
+      "name_ru": "Жим в тренажёре",
+      "mapping_id": "0576",
+      "image_url": "/exercise-images/025-0576-031d5f883efd.webp",
+      "thumbnail_url": "/exercise-thumbnails/025-0576-031d5f883efd-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/025-0576-DOoWcnA-v1.png",
+      "source_sha256": "031d5f883efde042ce69eda874203621386b2acb6de27fb0843afacd7a7735d1",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "00dfcc956ccf48449eba0cd121484d4f251a027d8bb3177a26b27b88337c6f7c",
+      "thumbnail_sha256": "8bd6b27aa430e8f908fa9eb7af234f7e7fb5ee24f0be6388235ce205a4c8b7e7",
+      "image_bytes": 370698,
+      "thumbnail_bytes": 60262,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 26,
+      "name_ru": "Разведение гантелей лёжа",
+      "mapping_id": "0308",
+      "image_url": "/exercise-images/026-0308-66f99719ef99.webp",
+      "thumbnail_url": "/exercise-thumbnails/026-0308-66f99719ef99-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        779
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/026-0308-yz9nUhF-v2.png",
+      "source_sha256": "66f99719ef99d6b1346e80cb1056d85c5d4ecd4cb16079b96df990208afc0f82",
+      "source_size": [
+        2020,
+        779
+      ],
+      "image_sha256": "99445c943a97fb4f887fcf1dbae23d567a70c805a559287c85d59bb199af87e6",
+      "thumbnail_sha256": "b077843b443bcfc13b6ded87896593b1636f2879cc06b49fc98303e245ede8c9",
+      "image_bytes": 357174,
+      "thumbnail_bytes": 58466,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 27,
+      "name_ru": "Сведение рук в кроссовере",
+      "mapping_id": "0188",
+      "image_url": "/exercise-images/027-0188-4c396258b6f6.webp",
+      "thumbnail_url": "/exercise-thumbnails/027-0188-4c396258b6f6-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/027-0188-xLYSdtg-v1.png",
+      "source_sha256": "4c396258b6f67d66bf983583731cad2979c5b49d74922abff88a9641d64596cc",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "031b111c5f0d2703f813520b00ed5aeb2445b57feb3ab80e8fe7992939bb3c4c",
+      "thumbnail_sha256": "be94e064ce0d138af8c6051728db0814a69cbf5c7f7896b517481aa0b39617ad",
+      "image_bytes": 386664,
+      "thumbnail_bytes": 60292,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 28,
+      "name_ru": "Отжимания от пола",
+      "mapping_id": "0662",
+      "image_url": "/exercise-images/028-0662-fa0c2d36d59f.webp",
+      "thumbnail_url": "/exercise-thumbnails/028-0662-fa0c2d36d59f-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/028-0662-I4hDWkc-v1.png",
+      "source_sha256": "fa0c2d36d59fec02c5e89b78a9ad2edf6540673a4b0985aa30478bf067a21706",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "5175c6105548933e83a955910b1796843660fdd197412d22117f4f80f8b45ace",
+      "thumbnail_sha256": "b695a60735d694d6cd5de291b26971146948f56fecb9c2fd8320218cf7b0903e",
+      "image_bytes": 354068,
+      "thumbnail_bytes": 56982,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 29,
+      "name_ru": "Отжимания с колен",
+      "mapping_id": "3211",
+      "image_url": "/exercise-images/029-3211-36edda89f1e1.webp",
+      "thumbnail_url": "/exercise-thumbnails/029-3211-36edda89f1e1-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/029-3211-ZOuKWir-v1.png",
+      "source_sha256": "36edda89f1e1c4645ad7d7ee297fc8ecf310203464d6310209f0d7fdc6450608",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "926ea1782b52d42f9b770e0fee52e75e8efbeff0648140f453aeaf06667cba23",
+      "thumbnail_sha256": "d85aad4ea29a3380d86ec25c079d6775123477f3a9d62905fc1f163a6cd89cc3",
+      "image_bytes": 323966,
+      "thumbnail_bytes": 55396,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 30,
+      "name_ru": "Отжимания с возвышения",
+      "mapping_id": "0493",
+      "image_url": "/exercise-images/030-0493-3046b042a7f6.webp",
+      "thumbnail_url": "/exercise-thumbnails/030-0493-3046b042a7f6-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/030-0493-B1EVP9F-v1.png",
+      "source_sha256": "3046b042a7f61aeb3094f8c8d6881fab5fa6d751cacd112860b9f93d5977af0a",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "7b0164a7137f9f62f778b72e5f4dbdf15e1d9163538eda0ffa98fcbba7f61be1",
+      "thumbnail_sha256": "24af55163594c10a76644672b97a2ac693f2a529626c3093c39f6cc957a77d6a",
+      "image_bytes": 358488,
+      "thumbnail_bytes": 58256,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 31,
+      "name_ru": "Отжимания узким хватом",
+      "mapping_id": "0283",
+      "image_url": "/exercise-images/031-0283-55accc416bcd.webp",
+      "thumbnail_url": "/exercise-thumbnails/031-0283-55accc416bcd-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/031-0283-soIB2rj-v1.png",
+      "source_sha256": "55accc416bcd68fabdcab71f36b20c28f4339ff17a3f5704b33b2092eabca1d3",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0a77acbe49b002239a98ee98a0221844cce2bf70af67c25cb6b66546c28dbe03",
+      "thumbnail_sha256": "a13f26c2ef5cef71df3340bae12dcb202a5a610c17ed7e02cb7c0d4bdf09452d",
+      "image_bytes": 355132,
+      "thumbnail_bytes": 60162,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 32,
+      "name_ru": "Отжимания на брусьях",
+      "mapping_id": "0251",
+      "image_url": "/exercise-images/032-0251-8b5ec49a9e2f.webp",
+      "thumbnail_url": "/exercise-thumbnails/032-0251-8b5ec49a9e2f-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/032-0251-9WTm7dq-v1.png",
+      "source_sha256": "8b5ec49a9e2f60baac53b79501c2f7e8654f8f9b968c3e3525d0971999c14c63",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c84fed11bbb4e7c4b736bc8fc38d47cfc8ad8d439bd20a44e39d74a2bcf444b2",
+      "thumbnail_sha256": "d53dbeb03a217078e659f38aff8a816b0eba0e4ce4ef3c74e0a10beb2070065a",
+      "image_bytes": 354694,
+      "thumbnail_bytes": 59186,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 33,
+      "name_ru": "Подтягивания",
+      "mapping_id": "0652",
+      "image_url": "/exercise-images/033-0652-bc5c0547260b.webp",
+      "thumbnail_url": "/exercise-thumbnails/033-0652-bc5c0547260b-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/033-0652-lBDjFxJ-v1.png",
+      "source_sha256": "bc5c0547260bb4393026b2f62ae03191738ae55b202eae2fe78c02c83223deea",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0a7f2f873c2bd250a8718cb309384ca818c80a663ff2907f7b210b07d8033b98",
+      "thumbnail_sha256": "d4e772640e4b73c1ae4fc75a4514965221d6adfb247f4e758d4b60fc9158921b",
+      "image_bytes": 301504,
+      "thumbnail_bytes": 51494,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 34,
+      "name_ru": "Австралийские подтягивания",
+      "mapping_id": "0499",
+      "image_url": "/exercise-images/034-0499-e82eb437161d.webp",
+      "thumbnail_url": "/exercise-thumbnails/034-0499-e82eb437161d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/034-0499-bZGHsAZ-v2.png",
+      "source_sha256": "e82eb437161d9b900886d8e167f0cbc7c7c8a3351b26f04566d474492e734c3b",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "b7a81f544f86074d7f079156e5c0412150d9f92db75cdc99f7aa5e22a0924213",
+      "thumbnail_sha256": "ffb740cacff137c981e7f50a27641600775916afec8ae46698823aa56fcc1073",
+      "image_bytes": 367364,
+      "thumbnail_bytes": 54064,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 35,
+      "name_ru": "Тяга штанги в наклоне",
+      "mapping_id": "0027",
+      "image_url": "/exercise-images/035-0027-b6f14d8a424f.webp",
+      "thumbnail_url": "/exercise-thumbnails/035-0027-b6f14d8a424f-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/035-0027-eZyBC3j-v1.png",
+      "source_sha256": "b6f14d8a424ffa67eb500ab377f526743b2bc6435c62beefeae293826ec1a1cb",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "14e7f633770ac78c27ce4c67dfe9d6449c15a7619015ecd028234ca0a326dea6",
+      "thumbnail_sha256": "d711606245d14d704b640131fb4c9d1beb6ca6b10f789a8850d5c75dd522133d",
+      "image_bytes": 342022,
+      "thumbnail_bytes": 56608,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 36,
+      "name_ru": "Тяга гантели в наклоне",
+      "mapping_id": "0292",
+      "image_url": "/exercise-images/036-0292-10f3ba00dea6.webp",
+      "thumbnail_url": "/exercise-thumbnails/036-0292-10f3ba00dea6-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/036-0292-C0MA9bC-v1.png",
+      "source_sha256": "10f3ba00dea629a1645a2607d5770fea9a0cd538a2b49bbc0cf59e2b8ec95292",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "ce60d158dd481d3d760c250bcc56d823936e43f263121e06eb56511556d3aea9",
+      "thumbnail_sha256": "97bbaed225af79289701a8fb218db09ddd0637931e1cab42e8ae9039497771fc",
+      "image_bytes": 407252,
+      "thumbnail_bytes": 64648,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 37,
+      "name_ru": "Тяга верхнего блока",
+      "mapping_id": "0150",
+      "image_url": "/exercise-images/037-0150-ea6c856b2205.webp",
+      "thumbnail_url": "/exercise-thumbnails/037-0150-ea6c856b2205-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/037-0150-eYnzaCm-v1.png",
+      "source_sha256": "ea6c856b2205f0a8a94983938d40739f1716f26fe97e949edfb9f61b7ad728e1",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e69f3e1fd6fb867d86a9ad410f7580bae6fbccfd83fa6c5c7eecbe895834eb0a",
+      "thumbnail_sha256": "9caab3cbcefbadda5b677174c4bf2cde6222d1da46e83e0757f5b388118ae58b",
+      "image_bytes": 362502,
+      "thumbnail_bytes": 58672,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 38,
+      "name_ru": "Тяга горизонтального блока",
+      "mapping_id": "0861",
+      "image_url": "/exercise-images/038-0861-51cb0972f63b.webp",
+      "thumbnail_url": "/exercise-thumbnails/038-0861-51cb0972f63b-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/038-0861-fUBheHs-v3.png",
+      "source_sha256": "51cb0972f63b4771902207432a2d3aac10aaea23fc88af76a28efb6434b0e303",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "930403875cb29bc2a1dd2e38fd928e76bea5e69033a9f8b426479d0a5bbd6c80",
+      "thumbnail_sha256": "ba9cf2400da4f10910d54fad74e3eb586a272143a120f2e729af4b78e1262c06",
+      "image_bytes": 361498,
+      "thumbnail_bytes": 58508,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 39,
+      "name_ru": "Тяга Т-грифа",
+      "mapping_id": "1349",
+      "image_url": "/exercise-images/039-1349-05ae9d977dc5.webp",
+      "thumbnail_url": "/exercise-thumbnails/039-1349-05ae9d977dc5-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1004,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/039-1349-BgljGjd-v3.png",
+      "source_sha256": "05ae9d977dc534c668183d747f2b35293d11f5120386c22979c0528efbbce824",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "65cf6a7ab8dfe99dad255eb07abb088b23b6875276f7a1be1344245cc34137bc",
+      "thumbnail_sha256": "4fcf766d5a49d5120ac0d4e712f883d858b69181dbebf3f695d6322dc9737c12",
+      "image_bytes": 342334,
+      "thumbnail_bytes": 58226,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 40,
+      "name_ru": "Тяга резинки к поясу",
+      "mapping_id": "3144",
+      "image_url": "/exercise-images/040-3144-616d4a81cc0e.webp",
+      "thumbnail_url": "/exercise-thumbnails/040-3144-616d4a81cc0e-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/040-3144-Nu7jqFE-v1.png",
+      "source_sha256": "616d4a81cc0e93fa62a1f6ee246400ea70becd8cf731655371aabb4dc1d08698",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c5926f4da430f8d3a5fc427252d30c7b064721f5ee652d487a9410f508c14c1d",
+      "thumbnail_sha256": "719a94fc386c171ff9924004ce97e3e68b925535384a54a764f910288226ea43",
+      "image_bytes": 338998,
+      "thumbnail_bytes": 54528,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 41,
+      "name_ru": "Пуловер с гантелью",
+      "mapping_id": "0375",
+      "image_url": "/exercise-images/041-0375-9c92f409cd3e.webp",
+      "thumbnail_url": "/exercise-thumbnails/041-0375-9c92f409cd3e-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/041-0375-9XjtHvS-v1.png",
+      "source_sha256": "9c92f409cd3e4565d5de6e67aa1ff52d7aa6ba0ab58c00c3b4e0728b3ed6684b",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "3a890655ed3628bef6ae97031643e8a9d970f52c54c6e8d61cdee2d54982ffbc",
+      "thumbnail_sha256": "1b73f2c9ff473a067284d253b1e0858a1624e33203374de1c2cf71e4fad6de19",
+      "image_bytes": 327156,
+      "thumbnail_bytes": 57834,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 42,
+      "name_ru": "Гиперэкстензия",
+      "mapping_id": "0489",
+      "image_url": "/exercise-images/042-0489-70f193d515bb.webp",
+      "thumbnail_url": "/exercise-thumbnails/042-0489-70f193d515bb-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/042-0489-zhMwOwE-v2.png",
+      "source_sha256": "70f193d515bba7816cab488e7d872a4bac1287659f86170f13a9ef8ccb9b0f9a",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "9ac10d8784fc1ce70d022795764ca81f4216585b7b84c8c1244afdd7f7cbd4cd",
+      "thumbnail_sha256": "9aa3ef1f0df72e3011473f24213306a0b45954ae38bc537168ffe12f5f0609f3",
+      "image_bytes": 324900,
+      "thumbnail_bytes": 54664,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 43,
+      "name_ru": "Тяга к лицу",
+      "mapping_id": "0203",
+      "image_url": "/exercise-images/043-0203-59e5b816d91d.webp",
+      "thumbnail_url": "/exercise-thumbnails/043-0203-59e5b816d91d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/043-0203-wqNPGCg-v1.png",
+      "source_sha256": "59e5b816d91de0c95d66f228645fed24ec9f37417dad727516493d02c8d4cd11",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "ecf0cbd4f76d5ecdacbbe28eb8708edc8a2231e13e2178bebe6636589cc493cd",
+      "thumbnail_sha256": "553d56865e391ef5c444f2b7d88d0fc29b3d977ae45419f07c8cd8bec8e759ba",
+      "image_bytes": 351512,
+      "thumbnail_bytes": 56390,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 44,
+      "name_ru": "Жим штанги стоя",
+      "mapping_id": "1457",
+      "image_url": "/exercise-images/044-1457-1f65771c71bc.webp",
+      "thumbnail_url": "/exercise-thumbnails/044-1457-1f65771c71bc-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/044-1457-Kyd9Rz5-v2.png",
+      "source_sha256": "1f65771c71bc2bfacfa284236d8cf606bc3cd7120c78b7237bc71fb318d323e1",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "67bcbbe044e72f4693c964472a3f5b745860409eb13b105172fb81be29ee3758",
+      "thumbnail_sha256": "de17b9110cdaaf82829ebe53f3874e941d363fad38f8f07023fd889f92f13306",
+      "image_bytes": 397260,
+      "thumbnail_bytes": 63510,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 45,
+      "name_ru": "Жим гантелей сидя",
+      "mapping_id": "0405",
+      "image_url": "/exercise-images/045-0405-b10db0955a82.webp",
+      "thumbnail_url": "/exercise-thumbnails/045-0405-b10db0955a82-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/045-0405-znQUdHY-v1.png",
+      "source_sha256": "b10db0955a82aa8629cb9158f1120c24a1a46542f4a8b16a995bedb1c71cc061",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e82e7ee2dff6be9d3248235d6b1a6698168746ca2a42ea2564b4ad7219212ac7",
+      "thumbnail_sha256": "b2ae2faebe35f48b1ecf8a236ceadbd7f34fec7a1b3ffc6642821e247fbfce3e",
+      "image_bytes": 354490,
+      "thumbnail_bytes": 58834,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 46,
+      "name_ru": "Жим Арнольда",
+      "mapping_id": "2137",
+      "image_url": "/exercise-images/046-2137-9f5ae5843d48.webp",
+      "thumbnail_url": "/exercise-thumbnails/046-2137-9f5ae5843d48-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/046-2137-Xy4jlWA-v1.png",
+      "source_sha256": "9f5ae5843d4841f06f0d2cdbbdca7e27102fa295f4ee583ed81fe287e4878ed5",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0103a03d7b17295fa1e45c6cce341ed9bab9d7d2f079dab51cdb529c7f8fee0a",
+      "thumbnail_sha256": "34633e302d869aefabed76ae3f8763b17ad3437bc4ee7ebc3bce1837627486fa",
+      "image_bytes": 363482,
+      "thumbnail_bytes": 58992,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 47,
+      "name_ru": "Разводка гантелей в стороны",
+      "mapping_id": "0334",
+      "image_url": "/exercise-images/047-0334-f6949899ae23.webp",
+      "thumbnail_url": "/exercise-thumbnails/047-0334-f6949899ae23-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/047-0334-DsgkuIt-v2.png",
+      "source_sha256": "f6949899ae2346547c58435fa5e3eba73978105b4818f1ae4781e0ae0e199009",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "861b9ca0ef96171e14a06ba2616f05bab426b1573a67cc2066da52b327526763",
+      "thumbnail_sha256": "310a4ecdf06dfb099bc2e7dc0f376bebccb91139ed8d53dfe28f992b41e38380",
+      "image_bytes": 338276,
+      "thumbnail_bytes": 57334,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 48,
+      "name_ru": "Разводка в наклоне",
+      "mapping_id": "2292",
+      "image_url": "/exercise-images/048-2292-7bc18e78507b.webp",
+      "thumbnail_url": "/exercise-thumbnails/048-2292-7bc18e78507b-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/048-2292-mu5Guxt-v2.png",
+      "source_sha256": "7bc18e78507ba2356ce3ce606294c86dab627faf32c78a9a33c8659014dc0133",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "090cc5e326c367dbd29a10b1d6d9e1a345204b74bc7cafdc74557458c400be67",
+      "thumbnail_sha256": "d9b6dfb1ae8784883fb569643823210e63311f7a81330acc4ac0787b40a4cb6f",
+      "image_bytes": 343742,
+      "thumbnail_bytes": 57170,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 49,
+      "name_ru": "Подъёмы гантелей перед собой",
+      "mapping_id": "0310",
+      "image_url": "/exercise-images/049-0310-61f168569481.webp",
+      "thumbnail_url": "/exercise-thumbnails/049-0310-61f168569481-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/049-0310-3eGE2JC-v3.png",
+      "source_sha256": "61f1685694817c3d90aa5d72d2b40def4bd8eca74b797ca4e2f08b55508c937e",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "6387c9f0dda0be9283f861402637449e8cd0743f03fe21570b4064902ef90be0",
+      "thumbnail_sha256": "420039339d4d70eb62de909210c122f0e7afbacce16636855fb9a1f43be7699c",
+      "image_bytes": 330170,
+      "thumbnail_bytes": 56352,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 50,
+      "name_ru": "Обратные разведения в тренажёре",
+      "mapping_id": "0602",
+      "image_url": "/exercise-images/050-0602-ca4c315f1af8.webp",
+      "thumbnail_url": "/exercise-thumbnails/050-0602-ca4c315f1af8-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/050-0602-myfUsKf-v2.png",
+      "source_sha256": "ca4c315f1af843526cbe2e1cd60e4297046dd9e8a70198c958862333a13e2044",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "a04030e1986cf252cdd4a6d36da48beca5f651c0f7f19bfbc38a46c847c5f78b",
+      "thumbnail_sha256": "0940e11cd4343fbda239a4d2de3a977195ccc4d585982ebb29f3b0f58035999b",
+      "image_bytes": 335350,
+      "thumbnail_bytes": 57104,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 51,
+      "name_ru": "Тяга к подбородку",
+      "mapping_id": "0120",
+      "image_url": "/exercise-images/051-0120-c6296b68e884.webp",
+      "thumbnail_url": "/exercise-thumbnails/051-0120-c6296b68e884-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/051-0120-UDlhcO8-v1.png",
+      "source_sha256": "c6296b68e88460d49abe6e6c09cff5364f91a67a73dbd60fb3e6cdc8341d597f",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "965ef4a130d2c739774ca4133a5cc2d2c6625ad2d66c19d0c6ae5265feb44c34",
+      "thumbnail_sha256": "82ef9c5055d39dad4255de6531297390d9dfe6981d214ec3c4f35e576b489687",
+      "image_bytes": 358762,
+      "thumbnail_bytes": 58860,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 52,
+      "name_ru": "Шраги с гантелями",
+      "mapping_id": "0406",
+      "image_url": "/exercise-images/052-0406-411de64a95c4.webp",
+      "thumbnail_url": "/exercise-thumbnails/052-0406-411de64a95c4-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/052-0406-NJzBsGJ-v2.png",
+      "source_sha256": "411de64a95c4856de375c8bd938ef2b0504eaec65be08f41a202e64acf1f1265",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "39069e8c550b952d0fad80a48b6494ce76e4ebdffe0d034c91c893ae70810e02",
+      "thumbnail_sha256": "65487c9f5653e12da3958eb846c5cf2bca8e0b9d260fe123138f266aa02eb26e",
+      "image_bytes": 323836,
+      "thumbnail_bytes": 56518,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 53,
+      "name_ru": "Сгибания гантелей на бицепс",
+      "mapping_id": "0294",
+      "image_url": "/exercise-images/053-0294-939552e336f9.webp",
+      "thumbnail_url": "/exercise-thumbnails/053-0294-939552e336f9-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/053-0294-NbVPDMW-v1.png",
+      "source_sha256": "939552e336f93b73393cbe8ace68d4a8ca51dc4489826054c4cd5d052b65f625",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0061b4f92ddc7b494bf6f27e31c6b0155f0a6403a3e9002538cc15e47bf9da3f",
+      "thumbnail_sha256": "b54079fbd5ad7b3eb1c0b405925744e54dfb3dea52f7ace6ebaad16781552c9f",
+      "image_bytes": 354448,
+      "thumbnail_bytes": 58424,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 54,
+      "name_ru": "Сгибания со штангой",
+      "mapping_id": "0031",
+      "image_url": "/exercise-images/054-0031-91bd16498a54.webp",
+      "thumbnail_url": "/exercise-thumbnails/054-0031-91bd16498a54-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/054-0031-25GPyDY-v1.png",
+      "source_sha256": "91bd16498a548381d5e6625db3d98c595d345adce80268b83a06a5f5627a2b9a",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "0210b96be1e9a9f9c045fcbd8059d8e0d0687941b2662a680ad5de939cae0c08",
+      "thumbnail_sha256": "f76e2a2ede90a4ba27ee78bcd0a38b5189d16d4ac5cd48296cf2a4c274d74b8e",
+      "image_bytes": 373176,
+      "thumbnail_bytes": 60636,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 55,
+      "name_ru": "Молотковые сгибания",
+      "mapping_id": "0313",
+      "image_url": "/exercise-images/055-0313-17e23c988bba.webp",
+      "thumbnail_url": "/exercise-thumbnails/055-0313-17e23c988bba-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/055-0313-slDvUAU-v1.png",
+      "source_sha256": "17e23c988bba08e8141d785f8f51159e4d68e29aeb0ba874dcb46e871f5ff951",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e20f19a7e76ff9af1d02fec83ffefb5d2ab6d3d332b85ffb0d1612ca0854d4a1",
+      "thumbnail_sha256": "078cb290a0c31fb84010eb4270940d4169f3c42efb409a1953236d981d14f649",
+      "image_bytes": 354212,
+      "thumbnail_bytes": 59656,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 56,
+      "name_ru": "Сгибания на скамье Скотта",
+      "mapping_id": "0070",
+      "image_url": "/exercise-images/056-0070-4088190e7123.webp",
+      "thumbnail_url": "/exercise-thumbnails/056-0070-4088190e7123-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/056-0070-qOgPVf6-v1.png",
+      "source_sha256": "4088190e712384673dfde035b5e64a0076fb272953bd047b9c1461de166bb235",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e610a736484c29d6ae14987dca23cc07b3b8334531b0d19b563031f9a65caf90",
+      "thumbnail_sha256": "39f3f1823f7aa1b62c92891a4b7d999f57c19371020699268a6033ede1ad0930",
+      "image_bytes": 364960,
+      "thumbnail_bytes": 61580,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 57,
+      "name_ru": "Сгибания на нижнем блоке",
+      "mapping_id": "0868",
+      "image_url": "/exercise-images/057-0868-66921eabd0ee.webp",
+      "thumbnail_url": "/exercise-thumbnails/057-0868-66921eabd0ee-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/057-0868-G08RZcQ-v2.png",
+      "source_sha256": "66921eabd0eec6f2e7d1ac449f9851d4294afdcb530780788a1357b8cc8a6494",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e0db517842c42f7b7389fc8ab95b2158dd9dfb4823df09a5f1f35c802c600204",
+      "thumbnail_sha256": "9aa7b53b6f1bff55dc3ff86e4e378fe33cc0a7d4e1b224318db2f8c6938bc6e1",
+      "image_bytes": 289266,
+      "thumbnail_bytes": 49158,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 58,
+      "name_ru": "Разгибания на блоке",
+      "mapping_id": "0201",
+      "image_url": "/exercise-images/058-0201-92f3db79b7f9.webp",
+      "thumbnail_url": "/exercise-thumbnails/058-0201-92f3db79b7f9-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/058-0201-3ZflifB-v1.png",
+      "source_sha256": "92f3db79b7f97f8ddde5d2f909107f9b719d1c474fa69142ed6ff9bc2c6ef8d2",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e4863eb2db6105ba6f5459c94411ece52d81ad378c6ee682eefb6dc9ed7dca59",
+      "thumbnail_sha256": "c79762d71ba8cb8523dde18f6767d96e25767b0fe52c8b1263117ff0bc94e844",
+      "image_bytes": 327816,
+      "thumbnail_bytes": 53692,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 59,
+      "name_ru": "Разгибания гантели из-за головы",
+      "mapping_id": "2188",
+      "image_url": "/exercise-images/059-2188-cea16fa9e4db.webp",
+      "thumbnail_url": "/exercise-thumbnails/059-2188-cea16fa9e4db-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/059-2188-kont8Ut-v2.png",
+      "source_sha256": "cea16fa9e4db8daf24fd65ded254f6fa2772d2f1cba580c0863baab6dd2da99b",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "1e8b03c45630a20a3159035adbea8c5d38f7f043b972ce759c3710b9f6bef832",
+      "thumbnail_sha256": "fe6e8128b7f82d15b202561bbb2a66627f44bb70e1af267943931d3d2fefec1f",
+      "image_bytes": 336020,
+      "thumbnail_bytes": 58014,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 60,
+      "name_ru": "Французский жим гантели",
+      "mapping_id": "0351",
+      "image_url": "/exercise-images/060-0351-f675aa20367e.webp",
+      "thumbnail_url": "/exercise-thumbnails/060-0351-f675aa20367e-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round3/images/060-0351-mpKZGWz-v5.png",
+      "source_sha256": "f675aa20367e77e54ed4d34aba8df5ff5cec50a62388dadf52de948ea662079b",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "aed06d1ae53eea952b218471417bfdaa10b508c9ec2a423c04b8bec7fa41ba1e",
+      "thumbnail_sha256": "4d55fce92c1c301cf7ea40a0b7241b686ecb4f2679c90ff9257b210269aeac6c",
+      "image_bytes": 312254,
+      "thumbnail_bytes": 56286,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 61,
+      "name_ru": "Планка",
+      "mapping_id": "2135",
+      "image_url": "/exercise-images/061-2135-591a72c68751.webp",
+      "thumbnail_url": "/exercise-thumbnails/061-2135-591a72c68751-start.webp",
+      "phase_count": 1,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        2021,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/061-2135-VBAWRPG-v2.png",
+      "source_sha256": "591a72c687515c461c924e0897ecb250e2df8c41a22ebcf3930781033678ba8f",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "88f1795f50dae180b15781a38f6893411c2802804502cb178fe0dfe607b241cb",
+      "thumbnail_sha256": "69d6eb99731358b4f7a21773a1b3e4a88d7217eff02d1aa10ab368aaf619a56f",
+      "image_bytes": 376096,
+      "thumbnail_bytes": 37086,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 62,
+      "name_ru": "Боковая планка",
+      "mapping_id": "0705",
+      "image_url": "/exercise-images/062-0705-e9b5f7a0ab9b.webp",
+      "thumbnail_url": "/exercise-thumbnails/062-0705-e9b5f7a0ab9b-start.webp",
+      "phase_count": 1,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        2020,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/062-0705-RKjH6Lt-v2.png",
+      "source_sha256": "e9b5f7a0ab9b919e7350e26354a8ade23d5071525c606cf53e6a2075238de3af",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "dc7eca7ab65fc362aace4fdf7ab2b16548df2169bac9e264f8c363851c907681",
+      "thumbnail_sha256": "94cb17aa824c76fad6197977a0238d9eca6e2a107aef2711e7a619734fded1a8",
+      "image_bytes": 361846,
+      "thumbnail_bytes": 36484,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 63,
+      "name_ru": "Планка с касанием плеч",
+      "mapping_id": "3699",
+      "image_url": "/exercise-images/063-3699-8c2b5d1c906f.webp",
+      "thumbnail_url": "/exercise-thumbnails/063-3699-8c2b5d1c906f-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/063-3699-yRpV5TC-v1.png",
+      "source_sha256": "8c2b5d1c906f0f6b2d794af3fb96025f42d6c503495653433ea8481d843dbc53",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "eadc8d51fb87a4991d8677bbaf000c144ba6e7e75046d267f336d9c5ea629df5",
+      "thumbnail_sha256": "d489409b148b090ab74cd0c737dc997cb0912dfa587f4f92f98271233fa7763d",
+      "image_bytes": 326358,
+      "thumbnail_bytes": 52472,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 64,
+      "name_ru": "Скручивания",
+      "mapping_id": "0274",
+      "image_url": "/exercise-images/064-0274-5818fba5c230.webp",
+      "thumbnail_url": "/exercise-thumbnails/064-0274-5818fba5c230-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/064-0274-TFqbd8t-v1.png",
+      "source_sha256": "5818fba5c230c91af7e36ac7ac6b2e4bd6d1331f67aff0f3abc35069a102e6bd",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "3a0dabd38d418a9e5664d8a712fd5b8a8d8071cd12a6289caea2f71080786ee3",
+      "thumbnail_sha256": "6209e36fd3a87ad8009c30e4695bbc04b02638ede06c0e4412310852621c08ac",
+      "image_bytes": 345056,
+      "thumbnail_bytes": 55974,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 65,
+      "name_ru": "Велосипед",
+      "mapping_id": "0003",
+      "image_url": "/exercise-images/065-0003-2fad6bd244a6.webp",
+      "thumbnail_url": "/exercise-thumbnails/065-0003-2fad6bd244a6-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/065-0003-1ZFqTDN-v2.png",
+      "source_sha256": "2fad6bd244a690ecac808bcb9168a94c8a710349d1d45322e61da529b8fd051a",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "40578dccc8b1ad00c42397c8fd946e71e50133f3c5e44c7506d6b68bf7c87934",
+      "thumbnail_sha256": "e6d375abc020d4202a9af5a3cb456b30ede1a9591c06ac1e7289ce74ae30dac2",
+      "image_bytes": 341936,
+      "thumbnail_bytes": 58296,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 66,
+      "name_ru": "Русские скручивания",
+      "mapping_id": "0687",
+      "image_url": "/exercise-images/066-0687-a3b4eb97e280.webp",
+      "thumbnail_url": "/exercise-thumbnails/066-0687-a3b4eb97e280-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/066-0687-XVDdcoj-v3.png",
+      "source_sha256": "a3b4eb97e2803e43a395071797ca03ad5d3a2a4dc5c28e3d948af56b3c7dab01",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "124a06c8b21561c2e47d3a5a562795a706740bac974636d33361da8c5ccba1eb",
+      "thumbnail_sha256": "d370a53a59d393d74de817acef050fa2737f132f1a284b43f8722e9f5d02765d",
+      "image_bytes": 330396,
+      "thumbnail_bytes": 55800,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 67,
+      "name_ru": "Подъёмы ног лёжа",
+      "mapping_id": "0620",
+      "image_url": "/exercise-images/067-0620-b0accac198b7.webp",
+      "thumbnail_url": "/exercise-thumbnails/067-0620-b0accac198b7-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/067-0620-WhuFnR7-v2.png",
+      "source_sha256": "b0accac198b7fb8c16f769b6db83054c8f814cbb3a247e08481551e9aa93b4d7",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "bc32edbc5d9228c3c188753f4f4778c36833cd75b7c4677d5dcbfd73eb0541ed",
+      "thumbnail_sha256": "ccd4ee25344687819f31e386e7e1c0655d37a3846f6807abc38289b010912d3a",
+      "image_bytes": 380758,
+      "thumbnail_bytes": 60306,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 68,
+      "name_ru": "Мёртвый жук",
+      "mapping_id": "0276",
+      "image_url": "/exercise-images/068-0276-8550c54c98c5.webp",
+      "thumbnail_url": "/exercise-thumbnails/068-0276-8550c54c98c5-start.webp",
+      "phase_count": 3,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        649,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round4/images/068-0276-iny3m5y-v6.png",
+      "source_sha256": "8550c54c98c530ffee1c5eef7119f3632bc59fcaaeb9216b58e4e080cd64a02e",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "359b261641b6d46f3e750d44893fcdfa0518a020654c3b4854ce3d5412374018",
+      "thumbnail_sha256": "5c5b82068c6cfbd60af1f569cc22486d6d8d6687653404d886e0b15b0b3e8b49",
+      "image_bytes": 355242,
+      "thumbnail_bytes": 54418,
+      "status": "owner-approved",
+      "approval_evidence": "отлично.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 69,
+      "name_ru": "Птица-собака",
+      "mapping_id": "0464",
+      "image_url": "/exercise-images/069-0464-4f740927d511.webp",
+      "thumbnail_url": "/exercise-thumbnails/069-0464-4f740927d511-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/069-0464-v1.png",
+      "source_sha256": "4f740927d511a6147f4ee65d4d5f2f63e9dacf39f0d0d5d6a654f7f89c87e487",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "a64fd5c6c7a8822dec10f0f9471b512b1a620f7a7c0456b6f550d9ced77a9f83",
+      "thumbnail_sha256": "2e8c72b59f4268a7ae0219033cd746d45d14d2004b938d34f885286ee0527776",
+      "image_bytes": 356690,
+      "thumbnail_bytes": 57146,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 70,
+      "name_ru": "Удержание «лодочки»",
+      "mapping_id": "1014",
+      "image_url": "/exercise-images/070-1014-61dae0843a2e.webp",
+      "thumbnail_url": "/exercise-thumbnails/070-1014-61dae0843a2e-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/070-1014-v1.png",
+      "source_sha256": "61dae0843a2e60e749beaf8404b9a05c0612aa066b8057eb1b8bce985cafd76d",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "82611588d898945f98794b2696ca72d57eee0c9c6a601b6b8450d7b2e5dc30c5",
+      "thumbnail_sha256": "631485ef7f1a6afb1b67d03b8a599eba39f2f794a1fe3176db6878fda2cf566b",
+      "image_bytes": 370148,
+      "thumbnail_bytes": 60462,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 71,
+      "name_ru": "Альпинисты",
+      "mapping_id": "0630",
+      "image_url": "/exercise-images/071-0630-821708f139f9.webp",
+      "thumbnail_url": "/exercise-thumbnails/071-0630-821708f139f9-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/071-0630-RJgzwny-v2.png",
+      "source_sha256": "821708f139f9f123f5ba72cdabefd407ed221991cdd4c36ef97f5557a285225e",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "ad6e5ffdd578bc2074954eabd58f1883b04ca90e4ef63f0e68ad333b2aac86d4",
+      "thumbnail_sha256": "492c4a5918d83f0b4682358a3dec0b8444e8ed507ecae06af15b9a74a75ea665",
+      "image_bytes": 335892,
+      "thumbnail_bytes": 55470,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 72,
+      "name_ru": "Бёрпи",
+      "mapping_id": "1160",
+      "image_url": "/exercise-images/072-1160-e7cfd45c6fcf.webp",
+      "thumbnail_url": "/exercise-thumbnails/072-1160-e7cfd45c6fcf-start.webp",
+      "phase_count": 3,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        671,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/072-1160-dK9394r-v2.png",
+      "source_sha256": "e7cfd45c6fcf5b5da1778436a62cd6a211c9da81684d13f65019d05656a84498",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "68fd614be31666baf58e1a12eb3981aa6a2f0dfbf8770c53284e399c10a0104b",
+      "thumbnail_sha256": "1c762d4d57a018dc486e6ddf8e680096d99ca162415ca1953b165baccd1a7bfa",
+      "image_bytes": 357876,
+      "thumbnail_bytes": 57320,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 73,
+      "name_ru": "Беговая дорожка",
+      "mapping_id": "3666",
+      "image_url": "/exercise-images/073-3666-ec6cea6ff585.webp",
+      "thumbnail_url": "/exercise-thumbnails/073-3666-ec6cea6ff585-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/073-3666-rjiM4L3-v2.png",
+      "source_sha256": "ec6cea6ff5854c5f04d3c77c575e0a29b7faa61fc0b222e756933d6e3850e724",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "1cf79082bba6c0ff938c8215a3e837558637b3b806f9c08722d6d26fd22caed2",
+      "thumbnail_sha256": "9e5eb0379725560c98b74c68d42a86e5ab4d02b206a4346c87aa61e31c4e9604",
+      "image_bytes": 315372,
+      "thumbnail_bytes": 53252,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 74,
+      "name_ru": "Высокие колени",
+      "mapping_id": "3636",
+      "image_url": "/exercise-images/074-3636-4c518869a1f5.webp",
+      "thumbnail_url": "/exercise-thumbnails/074-3636-4c518869a1f5-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/074-3636-v2.png",
+      "source_sha256": "4c518869a1f574421ef4f63d2dd119bcb064bdb5420edd149899e6bd49fbb8f6",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "4cf47b00290f395fd41628c0f88fe7e57c43806d0065a7e5799186324910c4b2",
+      "thumbnail_sha256": "f0531af0129efe36eb2f24905d3100f6cfa5754fcd4d0c41d0b2a8f9bba6c90a",
+      "image_bytes": 330300,
+      "thumbnail_bytes": 57372,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 75,
+      "name_ru": "Прыжки на скакалке",
+      "mapping_id": "2612",
+      "image_url": "/exercise-images/075-2612-ae5e1fe13758.webp",
+      "thumbnail_url": "/exercise-thumbnails/075-2612-ae5e1fe13758-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/075-2612-e1e76I2-v1.png",
+      "source_sha256": "ae5e1fe1375884d90c5d2b63a67d1f2dea773f2707468ca9606d2ad4408e806a",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0ee155cd1c6def099460f9f35632773c1ce892b124d80906e56bb87e20063935",
+      "thumbnail_sha256": "cce856219fd1490c8edb90f435f65a1fb29ac4d49e3440b18f905ee89abafcaa",
+      "image_bytes": 341834,
+      "thumbnail_bytes": 57788,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 76,
+      "name_ru": "Прыжки «звездой»",
+      "mapping_id": "3223",
+      "image_url": "/exercise-images/076-3223-53221301ad56.webp",
+      "thumbnail_url": "/exercise-thumbnails/076-3223-53221301ad56-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/076-3223-HtfCpfi-v1.png",
+      "source_sha256": "53221301ad5671aa13e08840be9920bfad8af3c42148374c32f37e4a21dce0a3",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0f6a85832e4bc59f91062eb9f154d55addc0cc57443d5abf500955fbd61a3493",
+      "thumbnail_sha256": "decb3573624f162a6bf620dd73450709bdfeee24b5aa849938197c70e63b0940",
+      "image_bytes": 336818,
+      "thumbnail_bytes": 54068,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 77,
+      "name_ru": "Скейтер-прыжки",
+      "mapping_id": "3361",
+      "image_url": "/exercise-images/077-3361-0f52ece251f0.webp",
+      "thumbnail_url": "/exercise-thumbnails/077-3361-0f52ece251f0-start.webp",
+      "phase_count": 3,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        662,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/077-3361-zfNHMN9-v3.png",
+      "source_sha256": "0f52ece251f00b155ae99a8be25cd9aead1ff8c94c174c3e67cb5e7a4a288863",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "82d0e3d731c4860b5a8137a9c2450115d751c5742016af059bcc2918d414067e",
+      "thumbnail_sha256": "937421205bfe1b7fe64e0a63d9edf8d33af0deb338774b56fe675ee18a000e72",
+      "image_bytes": 417098,
+      "thumbnail_bytes": 64660,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 78,
+      "name_ru": "Эллипс",
+      "mapping_id": "2141",
+      "image_url": "/exercise-images/078-2141-e3dbba360539.webp",
+      "thumbnail_url": "/exercise-thumbnails/078-2141-e3dbba360539-start.webp",
+      "phase_count": 1,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        2021,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/078-2141-rjtuP6X-v4.png",
+      "source_sha256": "e3dbba36053968f3543b0d55ba10dc7336c3a6c83f7de943ed48a0c3656070be",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "8f53b6bc51e1bbe7ea1ff26a69a75203838623f14f2e875f12f8a2c08be32c64",
+      "thumbnail_sha256": "82e9f5676721da8f169bedd567f5d5d4d6a219b5beaa652a19e1e04423646f8c",
+      "image_bytes": 378540,
+      "thumbnail_bytes": 39628,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 79,
+      "name_ru": "Велотренажёр",
+      "mapping_id": "0798",
+      "image_url": "/exercise-images/079-0798-c6a9ac07b8b1.webp",
+      "thumbnail_url": "/exercise-thumbnails/079-0798-c6a9ac07b8b1-start.webp",
+      "phase_count": 1,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        2020,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/079-0798-a8VDgLw-v3.png",
+      "source_sha256": "c6a9ac07b8b12ed489a9793984cbc4c620cc322f325fc8d5f2cb32584e1b1ce4",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "07a4d1d07fa688c4f297eef800375bf770688b81140b879010448b713581fad4",
+      "thumbnail_sha256": "c36164a1b510e5d75a5c32a9874b7a2095c6a6a99e24df4987aef17c9d4c34ae",
+      "image_bytes": 423364,
+      "thumbnail_bytes": 40314,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 80,
+      "name_ru": "Махи гирей",
+      "mapping_id": "0549",
+      "image_url": "/exercise-images/080-0549-5f63c7b27969.webp",
+      "thumbnail_url": "/exercise-thumbnails/080-0549-5f63c7b27969-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/080-0549-UHJlbu3-v1.png",
+      "source_sha256": "5f63c7b279697ab85c11f2fe7c77f07b15619b0a8484295475872856c24dedba",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "609d4f77964ee330b7bdc3338621a9f44d5fb3d5964ba11fc4840a18fdd58be1",
+      "thumbnail_sha256": "9706209391151328d283efb746099fffae46aa7a7b09f0f769985de6c6b894bf",
+      "image_bytes": 344500,
+      "thumbnail_bytes": 57900,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 81,
+      "name_ru": "Фермерская прогулка",
+      "mapping_id": "2133",
+      "image_url": "/exercise-images/081-2133-20af1c9f6199.webp",
+      "thumbnail_url": "/exercise-thumbnails/081-2133-20af1c9f6199-start.webp",
+      "phase_count": 3,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        645,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/081-2133-qPEzJjA-v3.png",
+      "source_sha256": "20af1c9f619962cd9dd0b160ecf7da2854e866f16c1ebf943189649cd64e1313",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "3e53965162bedae57ae1a5b7e2790f18de3a3b1145568fb0fc81f5ae4a4b68c4",
+      "thumbnail_sha256": "85ba1e36cf4c18b24e85d6e4f403cd59644e0dccaba8c4e3bc5d9fcf014b7b3c",
+      "image_bytes": 375982,
+      "thumbnail_bytes": 60698,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 82,
+      "name_ru": "Медвежья походка",
+      "mapping_id": "3360",
+      "image_url": "/exercise-images/082-3360-25b5e18484a8.webp",
+      "thumbnail_url": "/exercise-thumbnails/082-3360-25b5e18484a8-start.webp",
+      "phase_count": 3,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        672,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round3/images/082-3360-0Yz8WdV-v5.png",
+      "source_sha256": "25b5e18484a8bcce77cda952d09038730002c20d7bcfa7128e8ee2275645b7e5",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "e861a8f459709645f9ea230742398c8d0ff71def82763d70a66f195539514f3d",
+      "thumbnail_sha256": "26f7f55a4c3001c06dd657ca8ec854d91f07102b8da1d6a0ab2af96533ec1346",
+      "image_bytes": 308912,
+      "thumbnail_bytes": 51018,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 83,
+      "name_ru": "Присед + жим гантелей",
+      "mapping_id": "0550",
+      "image_url": "/exercise-images/083-0550-feab1a2c59ce.webp",
+      "thumbnail_url": "/exercise-thumbnails/083-0550-feab1a2c59ce-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/083-0550-v1.png",
+      "source_sha256": "feab1a2c59ce9f676f780b313ebcc36c4bda012092ecd952fa7f5d74ed60a4db",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "a1ba94d622d7fd627ad0d744b325a8420424f3ae5dac0d94914856b60ca1a48b",
+      "thumbnail_sha256": "4b04b4eb63ff6a530033154dd043a7d6cd08e2e39551f46df9e23bc4bec98d54",
+      "image_bytes": 335132,
+      "thumbnail_bytes": 55430,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 84,
+      "name_ru": "Присед с жимом над головой",
+      "mapping_id": "3305",
+      "image_url": "/exercise-images/084-3305-decfa156f010.webp",
+      "thumbnail_url": "/exercise-thumbnails/084-3305-decfa156f010-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/084-3305-f7Y9eDZ-v2.png",
+      "source_sha256": "decfa156f0102f29fb8fc9c0b2f89f95f72b09816d624085948287fe87e8dab9",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "6eddc433f4f9c1226c95c69c98bb6474a921c5661d90097eb1669c6ffd7b4d97",
+      "thumbnail_sha256": "1e6024d246ad77bd743a340c7b1545260851ba519d0cb9716c671f30c4dc5cac",
+      "image_bytes": 363276,
+      "thumbnail_bytes": 60720,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 85,
+      "name_ru": "Комплекс присед + жим",
+      "mapping_id": "3305",
+      "image_url": "/exercise-images/085-3305-d13fdf029ec6.webp",
+      "thumbnail_url": "/exercise-thumbnails/085-3305-d13fdf029ec6-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/085-3305-f7Y9eDZ-v2.png",
+      "source_sha256": "d13fdf029ec6fa58fe8001fb5e07ea00899c35bb44390763e6eca31dbf4ec3b3",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0b24e17bdcf228c9c8fa66662dde92220eeb6baa9e4cf5bebf97aa76804a7837",
+      "thumbnail_sha256": "d3fd8199ff7df77df267514cbe55bf5235a6b5fbe9f385db81b0896ae3218a6e",
+      "image_bytes": 377154,
+      "thumbnail_bytes": 61858,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 86,
+      "name_ru": "Выпад + сгибание на бицепс",
+      "mapping_id": "1658",
+      "image_url": "/exercise-images/086-1658-e32a9c594b93.webp",
+      "thumbnail_url": "/exercise-thumbnails/086-1658-e32a9c594b93-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/086-1658-Mz6lLcW-v2.png",
+      "source_sha256": "e32a9c594b9370317dbe86b72149bb98e9d3f9cc283237d79ebfb3e923b527df",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "e3b282b7b38b36e44da599113f0e01883a24224b5affeb84dd31bee40dbc1d70",
+      "thumbnail_sha256": "4b774f19fb64f7f7519f5585a877127c6a8126c623a4ca5dc9fa4c5c370c30e1",
+      "image_bytes": 314174,
+      "thumbnail_bytes": 54510,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 87,
+      "name_ru": "Обратные выпады с поворотом",
+      "mapping_id": "1688",
+      "image_url": "/exercise-images/087-1688-bc219758de94.webp",
+      "thumbnail_url": "/exercise-thumbnails/087-1688-bc219758de94-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/087-1688-K9VL0Jq-v1.png",
+      "source_sha256": "bc219758de94662ad90d04192bcfdbdc16663e468038e31ad07b66e7ec2ddc40",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c45e10891cf819bf7df367af860a9d44cdb6ac001126a1f3354d6c0913ffbb2d",
+      "thumbnail_sha256": "d9665d4d34a9612f4720c65b61e224faa2fa53b29d04674432da7c12c9d597b4",
+      "image_bytes": 344464,
+      "thumbnail_bytes": 59132,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 88,
+      "name_ru": "Кошка-корова",
+      "mapping_id": "1363",
+      "image_url": "/exercise-images/088-1363-b9dbdbdf1d49.webp",
+      "thumbnail_url": "/exercise-thumbnails/088-1363-b9dbdbdf1d49-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/088-1363-v1.png",
+      "source_sha256": "b9dbdbdf1d49ef4efc50d1f6d024c3b549d6daf0c54beba6fc0f7cd7313f6873",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "749e3b30870cf6b32fb7252d2d75e37b0ec03fbabdcd4f17f20ec5b64e7faa1b",
+      "thumbnail_sha256": "7da44014768c99112631a691d5f888312c94c4232d4bdcc4234828e26cc85aef",
+      "image_bytes": 326660,
+      "thumbnail_bytes": 52736,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 89,
+      "name_ru": "Мобилизация голеностопа",
+      "mapping_id": "1368",
+      "image_url": "/exercise-images/089-1368-b68d49c198ff.webp",
+      "thumbnail_url": "/exercise-thumbnails/089-1368-b68d49c198ff-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/089-1368-uL9CsKm-v1.png",
+      "source_sha256": "b68d49c198ffc7a57dd7ae3707e82292e7badbbfd83bf35102ee9dc645c8bf6c",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "04554856e8bb75ec536dbefc5e08b9b8d4d87a396b0f6b80fa9b1b0265841d70",
+      "thumbnail_sha256": "fa2132190fbe1289b188559922111527cf02f5e539da7c04c2f5d585bec1503e",
+      "image_bytes": 372718,
+      "thumbnail_bytes": 58706,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 90,
+      "name_ru": "Мобилизация плеч с резинкой",
+      "mapping_id": "1022",
+      "image_url": "/exercise-images/090-1022-51c099f300d3.webp",
+      "thumbnail_url": "/exercise-thumbnails/090-1022-51c099f300d3-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/090-1022-v1.png",
+      "source_sha256": "51c099f300d3122fdb88f9976ecf9e2c37c4e83b2d90926fea0e8b8f0672430c",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "2752d8b0eec4b9e1ed013e31c1052c66a567cbba10d043feffda19d6d15de064",
+      "thumbnail_sha256": "9686dcd27e8e852a77b86519387e678103ea3111efc313912d73c2a4ad260693",
+      "image_bytes": 353606,
+      "thumbnail_bytes": 58146,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 91,
+      "name_ru": "Поза голубя",
+      "mapping_id": "2567",
+      "image_url": "/exercise-images/091-2567-a1d48c022bfa.webp",
+      "thumbnail_url": "/exercise-thumbnails/091-2567-a1d48c022bfa-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round3/images/091-2567-v4.png",
+      "source_sha256": "a1d48c022bfa005aea3f070348f60bec0ac8ba28904e1ec9f68501ddbb2c4831",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "34a0dfc2a7be57c15435a5937beaa80e3ee3e9e5c0368a802b44e964f1f07dd2",
+      "thumbnail_sha256": "8d4c5e3229cbaec8fb059f7f1e1e78cd0648aa4177b7c43d730a3bad3217b66d",
+      "image_bytes": 353600,
+      "thumbnail_bytes": 58902,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 92,
+      "name_ru": "Растяжка грушевидной",
+      "mapping_id": "2567",
+      "image_url": "/exercise-images/092-2567-1ab963a43f73.webp",
+      "thumbnail_url": "/exercise-thumbnails/092-2567-1ab963a43f73-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/092-2567-QY39eBr-v3.png",
+      "source_sha256": "1ab963a43f735500ffa7547ce43d5c7d1e18c12d8c6f494223ead7b7c466dbf3",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "5581c4ea2293eaca6dc1dd717accf0666bd4a02a1790168054b6e4b98c87c863",
+      "thumbnail_sha256": "56250d21c9969e53105c84e39cef40e9cb4f34d7f064a873347e030306329995",
+      "image_bytes": 349700,
+      "thumbnail_bytes": 59104,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 93,
+      "name_ru": "Растяжка сгибателей бедра",
+      "mapping_id": "1564",
+      "image_url": "/exercise-images/093-1564-5722369d26ff.webp",
+      "thumbnail_url": "/exercise-thumbnails/093-1564-5722369d26ff-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/093-1564-tFGKm99-v2.png",
+      "source_sha256": "5722369d26ff56773d2513b781b255c4d3d2cb4e6679bb9f5067d5dc8870b5db",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "2dd5799501360e65939f328ca47e972d5461e49ee49445e4bc3b15dcd394fdd1",
+      "thumbnail_sha256": "69c1e7aa7e7fdcc8476a345fa9c3ac6e6f6fd1925057ba975a55fdef195b3c54",
+      "image_bytes": 314378,
+      "thumbnail_bytes": 54952,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 94,
+      "name_ru": "Раскрытие грудного отдела у стены",
+      "mapping_id": "1167",
+      "image_url": "/exercise-images/094-1167-efe8b5c9d16c.webp",
+      "thumbnail_url": "/exercise-thumbnails/094-1167-efe8b5c9d16c-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/094-1167-v1.png",
+      "source_sha256": "efe8b5c9d16ce0010992d6b907554096b33ac8602e225316cdede25314c8e897",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "a8783eaa2287b4a41fed4437ecc833cdee00bbf52a93f190b337ee0794402fc6",
+      "thumbnail_sha256": "804a8900f33cc14c61521304abedb6c7d62c6dec9086865fec599fc919394861",
+      "image_bytes": 364562,
+      "thumbnail_bytes": 55294,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 95,
+      "name_ru": "Растяжка грудных у дверного проёма",
+      "mapping_id": "1167",
+      "image_url": "/exercise-images/095-1167-97d7fc9f9ee1.webp",
+      "thumbnail_url": "/exercise-thumbnails/095-1167-97d7fc9f9ee1-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/095-1167-v1.png",
+      "source_sha256": "97d7fc9f9ee111835b8eee3f7aa82c4207ba6e4881e2983c0a9e9463f638002b",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "187303f466b6c84132c2db8c00ba1fd2814314d933b5b4654214d4ab53797dd8",
+      "thumbnail_sha256": "21ae26da077ae11f8aa136fc0d95805cd6ed507bb9d5d22741a376dafc2f4326",
+      "image_bytes": 315432,
+      "thumbnail_bytes": 51966,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 96,
+      "name_ru": "Наклоны к носкам",
+      "mapping_id": "3212",
+      "image_url": "/exercise-images/096-3212-1be8f6718d93.webp",
+      "thumbnail_url": "/exercise-thumbnails/096-3212-1be8f6718d93-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/096-3212-BbfB8Gb-v1.png",
+      "source_sha256": "1be8f6718d939fde7d267477d0dbfdfb1c27df51891cda58a26f72a196c4d799",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "4f83b57cd7d10493d3b0d27bbbc32fb2010279a04aa2e4c775bce77e4d782fe7",
+      "thumbnail_sha256": "06eaf22b6fe85fbb3840624078608a22957cd0650a705411bdaa79f998b705a7",
+      "image_bytes": 351446,
+      "thumbnail_bytes": 58544,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 97,
+      "name_ru": "Мировая растяжка",
+      "mapping_id": "1604",
+      "image_url": "/exercise-images/097-1604-ff7b82744394.webp",
+      "thumbnail_url": "/exercise-thumbnails/097-1604-ff7b82744394-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/097-1604-DFGXwZr-v1.png",
+      "source_sha256": "ff7b8274439460f5cdca78898394b89a99d274b914d513661cc290279e088fef",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c2ff35a389b63ff538978073b888955248d91b62332a1e5766f75e83b6565161",
+      "thumbnail_sha256": "4ee2a49c034f461f76e06ba92cb206cc4dfd2f1ce78434eb8cc9ec24c8fc54b1",
+      "image_bytes": 340844,
+      "thumbnail_bytes": 56000,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 98,
+      "name_ru": "Пуловер в блоке на спину",
+      "mapping_id": "0238",
+      "image_url": "/exercise-images/098-0238-729ad8345c0d.webp",
+      "thumbnail_url": "/exercise-thumbnails/098-0238-729ad8345c0d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/098-0238-x69MAlq-v1.png",
+      "source_sha256": "729ad8345c0d2d96dbaa0d1ea69ea64590742d438085b9c4b4df3ac1319e47ee",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "c8b77984679d7d14c07bfef95c756c260256b4e1bd33534429fb772021be6938",
+      "thumbnail_sha256": "5b015d5bb4b32e4b0ddec7674e4b036a0651d099e3203af19debd2bd53df5932",
+      "image_bytes": 354336,
+      "thumbnail_bytes": 54928,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 99,
+      "name_ru": "Французский жим со штангой",
+      "mapping_id": "0061",
+      "image_url": "/exercise-images/099-0061-5e0ea0233837.webp",
+      "thumbnail_url": "/exercise-thumbnails/099-0061-5e0ea0233837-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/099-0061-iZop9xO-v2.png",
+      "source_sha256": "5e0ea02338376acab0977dfc79226730f4e583f3de69215fde726625431859eb",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "f457bd7e1940700b554614bad71fda6bebe76bece8c47f593937aebd0439058a",
+      "thumbnail_sha256": "92e8bd0067f82633e716f817d9faeca92148b0ecb19e675f93953a2fd8c54c04",
+      "image_bytes": 350556,
+      "thumbnail_bytes": 58002,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 100,
+      "name_ru": "Французский жим EZ-грифом",
+      "mapping_id": "1748",
+      "image_url": "/exercise-images/100-1748-3bf99835d9ea.webp",
+      "thumbnail_url": "/exercise-thumbnails/100-1748-3bf99835d9ea-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/100-1748-6CKUx7o-v2.png",
+      "source_sha256": "3bf99835d9eafff3e2a970de2cc1bacf435d468d383e6ad4864144888febc86d",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "e2cec1be208b033d142eef23ae8bb88e13682ad28be4a522656d98772e7c62f5",
+      "thumbnail_sha256": "2aa2348ccd15c4c4a68b5e197ce8229ffbd46b348651a9382ec1405e8a7db3a3",
+      "image_bytes": 326262,
+      "thumbnail_bytes": 54836,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 101,
+      "name_ru": "Французский жим стоя со штангой",
+      "mapping_id": "0109",
+      "image_url": "/exercise-images/101-0109-eed891d9aed5.webp",
+      "thumbnail_url": "/exercise-thumbnails/101-0109-eed891d9aed5-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1005,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/101-0109-dZl9Q27-v3.png",
+      "source_sha256": "eed891d9aed594e24c02d18dd63e5f7e2af02abd58f62e9c1ff5201f477d4710",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "d8122954d7f511953084600a95b9688377082dc8124b6dbddb4b88ccb69912b1",
+      "thumbnail_sha256": "026fb987274ae44b420e6343c6cece314bada0baf9cf776d331ffb7bfa541196",
+      "image_bytes": 304320,
+      "thumbnail_bytes": 54772,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 102,
+      "name_ru": "Разгибания из-за головы на блоке",
+      "mapping_id": "0194",
+      "image_url": "/exercise-images/102-0194-3bdfc9ef5164.webp",
+      "thumbnail_url": "/exercise-thumbnails/102-0194-3bdfc9ef5164-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/102-0194-2IxROQ1-v3.png",
+      "source_sha256": "3bdfc9ef516441cdfd96b87abb0e113c01bd41ccf4abc38753a0416a8da0394e",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "9965eefbb873741c53d57579b0ed8b2ab4d2c4f53acc8de1f3aa16bac90fdade",
+      "thumbnail_sha256": "26353ed015ee0ac9340a5d24c9bdb578ead8a35127d2101afb1167595728e74a",
+      "image_bytes": 297546,
+      "thumbnail_bytes": 50212,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 103,
+      "name_ru": "Жим вниз на блоке канатом",
+      "mapping_id": "0200",
+      "image_url": "/exercise-images/103-0200-ecb6680bda38.webp",
+      "thumbnail_url": "/exercise-thumbnails/103-0200-ecb6680bda38-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/103-0200-dU605di-v1.png",
+      "source_sha256": "ecb6680bda38f9c842e0eaf64fd7ea24b938727511e4794f938632c5fd283f59",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "7a504000845a254ed9a325f339169ed9a102f670599dcd7caca40717c3209b26",
+      "thumbnail_sha256": "bbbe04d24c4abd500ca5b7543dd03bb7fce1481ec688099ac51035545305cc9a",
+      "image_bytes": 306116,
+      "thumbnail_bytes": 52060,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 104,
+      "name_ru": "Тяга верхнего блока обратным хватом",
+      "mapping_id": "0245",
+      "image_url": "/exercise-images/104-0245-64978b738e17.webp",
+      "thumbnail_url": "/exercise-thumbnails/104-0245-64978b738e17-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1012,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round3/images/104-0245-xBYcQHj-v4.png",
+      "source_sha256": "64978b738e1787e67f9f4a6fd34bd25e3d476ffad0320bcffb8607aaf1c7b3af",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "b213d9dd0fffdd506977ebd51e6af8ef355aa3781d45329e7fc751d501ccf6c9",
+      "thumbnail_sha256": "0d61f4e3d115fd15b54660560df6b4e9d75e65159249278d68367e308219954f",
+      "image_bytes": 335932,
+      "thumbnail_bytes": 56360,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 105,
+      "name_ru": "Кроссовер на верхних блоках",
+      "mapping_id": "0158",
+      "image_url": "/exercise-images/105-0158-d97802efc1ae.webp",
+      "thumbnail_url": "/exercise-thumbnails/105-0158-d97802efc1ae-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/105-0158-7saC5zz-v1.png",
+      "source_sha256": "d97802efc1aebc065f2ef1c88e425b52e773cfa0bfa31de97e397282d08da374",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "e3e26282afeefa50e0e64db2bde5e8b6c119e98dcac15bd0738e8e787bffb87f",
+      "thumbnail_sha256": "30fbc0b77fdc2bb97056d48ee2fe65a5f65da6f2aa99a128b1ecf3844107ac66",
+      "image_bytes": 368538,
+      "thumbnail_bytes": 59696,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 106,
+      "name_ru": "Махи гантелями в стороны",
+      "mapping_id": "0334",
+      "image_url": "/exercise-images/106-0334-373a017f2b56.webp",
+      "thumbnail_url": "/exercise-thumbnails/106-0334-373a017f2b56-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/106-0334-DsgkuIt-v1.png",
+      "source_sha256": "373a017f2b56b04a4a7d0de45e5b8bc365fd098a337fcd8f9db7e78a5d112625",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "98bf1605a28cc0af1ba9c2c68fb8fd2ab3f8e0fa655e2981680e02d000659975",
+      "thumbnail_sha256": "c49cbbdb2a77f11d5c97440cadfc5e9c6d97478d416887290915f4ccfdd4c330",
+      "image_bytes": 363838,
+      "thumbnail_bytes": 60438,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 107,
+      "name_ru": "Подтягивания обратным хватом",
+      "mapping_id": "0674",
+      "image_url": "/exercise-images/107-0674-2f113b0cab6c.webp",
+      "thumbnail_url": "/exercise-thumbnails/107-0674-2f113b0cab6c-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1010,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/107-0674-YAk5dIw-v2.png",
+      "source_sha256": "2f113b0cab6c9fab9384b22235ddb121459eaced085c0e296f81f85de056608c",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "26f36072fa89cf1f491410e025f65b059adf299cb8e6f3298575bb860f246d4a",
+      "thumbnail_sha256": "ee0aaa98b2ce0cd81d5ef0e7cecf30265455d59847998ff38f403234f021ed2b",
+      "image_bytes": 329466,
+      "thumbnail_bytes": 57486,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 108,
+      "name_ru": "Пуловер с гантелью лёжа поперёк скамьи",
+      "mapping_id": "0375",
+      "image_url": "/exercise-images/108-0375-440c101d0f5d.webp",
+      "thumbnail_url": "/exercise-thumbnails/108-0375-440c101d0f5d-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round3/images/108-0375-9XjtHvS-v4.png",
+      "source_sha256": "440c101d0f5d5a76e1a27e0068ebd750d0732a5454c94db160660f0fb638e9ff",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "bef10227b982a3b3f3db209cf62df57218d7c833c2bb7a2b4dd04b6c1c0ce5c8",
+      "thumbnail_sha256": "c6cc6b555a2b68c6e4aab8ef349c18119bbaa6973ac892324c1c6dd7f19acd28",
+      "image_bytes": 301814,
+      "thumbnail_bytes": 45032,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 109,
+      "name_ru": "Приседания в машине Смита",
+      "mapping_id": "3281",
+      "image_url": "/exercise-images/109-3281-0de67ecc5bef.webp",
+      "thumbnail_url": "/exercise-thumbnails/109-3281-0de67ecc5bef-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/109-3281-NNoHCEA-v1.png",
+      "source_sha256": "0de67ecc5bef6db4829d9290770bd231393f7a71b7d868d0ca887615793bc1ab",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "1721103e850039ffd698478ea4192606451774e24455b8266570ac1a2a31e5a6",
+      "thumbnail_sha256": "bff6f703f99a8e0dba9d444a23e2ce664cf00d8838ce4609ca6740587491e85d",
+      "image_bytes": 382682,
+      "thumbnail_bytes": 61746,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 110,
+      "name_ru": "Гакк-приседания",
+      "mapping_id": "0743",
+      "image_url": "/exercise-images/110-0743-8bbe19f98795.webp",
+      "thumbnail_url": "/exercise-thumbnails/110-0743-8bbe19f98795-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/110-0743-Qa55kX1-v2.png",
+      "source_sha256": "8bbe19f98795b9e03d4947c5adc499409bbefd8ebbc16615287508b7d1633d11",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "4eb4b20911784886542e97fa244bfbdd09d3b86bf71c24580a487a60c55b7b3a",
+      "thumbnail_sha256": "f86d4404086ba7cd149c10b5b16f395ff30d90ddff95c22a603ced41b3647c5e",
+      "image_bytes": 369230,
+      "thumbnail_bytes": 61442,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 111,
+      "name_ru": "Болгарские приседания в машине Смита",
+      "mapping_id": "0768",
+      "image_url": "/exercise-images/111-0768-86a396778408.webp",
+      "thumbnail_url": "/exercise-thumbnails/111-0768-86a396778408-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/111-0768-wWFspEi-v1.png",
+      "source_sha256": "86a396778408e21e2976f8586c8c3f97053a890a64770235bdbfc038bf5ceac4",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "071f10b6d530431a673fc2ff4ddd9a5e77684266602b4d1816e10ab9d2fa3efe",
+      "thumbnail_sha256": "11a64d9a560551a58659fe52cf7a2e345e688da7cbd163e21aec742f494e7fd3",
+      "image_bytes": 403340,
+      "thumbnail_bytes": 64406,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 112,
+      "name_ru": "Жим лёжа в машине Смита",
+      "mapping_id": "0748",
+      "image_url": "/exercise-images/112-0748-9e4814d07332.webp",
+      "thumbnail_url": "/exercise-thumbnails/112-0748-9e4814d07332-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/112-0748-trqKQv2-v2.png",
+      "source_sha256": "9e4814d0733250676dac0c719cf885b32108104f12c851742af9425133cbb0dc",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "0285ab9f7755ad6623d363f596f16a75dd53314b7f9c70a90b9796f3959e8e92",
+      "thumbnail_sha256": "122eceb42281af0fa13bd42b964de82702ddadbe5904880a33cb11f0df973ff9",
+      "image_bytes": 377844,
+      "thumbnail_bytes": 59648,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 113,
+      "name_ru": "Жим на наклонной в тренажёре",
+      "mapping_id": "1299",
+      "image_url": "/exercise-images/113-1299-19979050c860.webp",
+      "thumbnail_url": "/exercise-thumbnails/113-1299-19979050c860-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/113-1299-jHAnWmT-v2.png",
+      "source_sha256": "19979050c860f699ec2cae900ba874b8c1a5ea6f2404098ba94160beb1d12844",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "95449fd21105f48ce280f4d054f894b06706b53bc3411287d6a0bdac5619e1e7",
+      "thumbnail_sha256": "15f8cc4345ea1c733ee4bc09d47d8b5bbc8c961423a2ec297cc3007234e681f3",
+      "image_bytes": 365282,
+      "thumbnail_bytes": 61060,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 114,
+      "name_ru": "Сведение рук в тренажёре «бабочка»",
+      "mapping_id": "0596",
+      "image_url": "/exercise-images/114-0596-7ada59e5c411.webp",
+      "thumbnail_url": "/exercise-thumbnails/114-0596-7ada59e5c411-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/114-0596-v3xmPAR-v2.png",
+      "source_sha256": "7ada59e5c411d84b28f60fddcf9ee52c1c4e801009543368a0f7cb053b34c488",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "ca09ca972a35af524138132a8e03b9b2817ad4f7e67b7119d159b97418bd531f",
+      "thumbnail_sha256": "57d0ed0ab10722a5321d8989de8d48dc27a27b340ab2ccb749a7a497c4f91fb1",
+      "image_bytes": 348940,
+      "thumbnail_bytes": 58252,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 115,
+      "name_ru": "Жим вверх в тренажёре сидя",
+      "mapping_id": "0603",
+      "image_url": "/exercise-images/115-0603-774f319acb92.webp",
+      "thumbnail_url": "/exercise-thumbnails/115-0603-774f319acb92-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/115-0603-67n3r98-v2.png",
+      "source_sha256": "774f319acb92daf396eef43de694750e8f8366f72eb81d3f0231500240bca34f",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "19ffc10d2a2dcc2aae917db7ed2caeabb8d7266cb991ba5900cfa0c89b77be7e",
+      "thumbnail_sha256": "6faabbf7af032f745c5886f131e34efa39c3738b8c3811a5adf29dbb66f0caf6",
+      "image_bytes": 359442,
+      "thumbnail_bytes": 59498,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 116,
+      "name_ru": "Отведение руки в сторону на блоке",
+      "mapping_id": "0178",
+      "image_url": "/exercise-images/116-0178-361b94e28811.webp",
+      "thumbnail_url": "/exercise-thumbnails/116-0178-361b94e28811-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/116-0178-goJ6ezq-v1.png",
+      "source_sha256": "361b94e288117eca3a859086531cead934e7a0e06f2f7af58b807ad7993d6769",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "5cbcc3bffc41f5eb297eba47584c8f15f967040cb3d89a111477bd4a1e62c409",
+      "thumbnail_sha256": "a624dbed53c559a00c9046f94e8b3943477e356f437e5b31140ddceff7d56558",
+      "image_bytes": 359124,
+      "thumbnail_bytes": 56236,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 117,
+      "name_ru": "Тяга с упором грудью в тренажёре",
+      "mapping_id": "1350",
+      "image_url": "/exercise-images/117-1350-3672db17979a.webp",
+      "thumbnail_url": "/exercise-thumbnails/117-1350-3672db17979a-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/117-1350-7I6LNUG-v2.png",
+      "source_sha256": "3672db17979a82e101e2bf506fe2b870d084d3d6f55634dc8fbf5e9ada8a67db",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "a875619e8ce9f1e37fa7696ee2c4f6b583d608ecdd7317c585549d2c35d7fb89",
+      "thumbnail_sha256": "100b7b56ce2242d5f07ad7bcc866c414eb1664faccdd478b74afce662b8785fc",
+      "image_bytes": 361228,
+      "thumbnail_bytes": 60612,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 118,
+      "name_ru": "Тяга верхнего блока нейтральным хватом",
+      "mapping_id": "0818",
+      "image_url": "/exercise-images/118-0818-fa22a87099e5.webp",
+      "thumbnail_url": "/exercise-thumbnails/118-0818-fa22a87099e5-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        779
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/118-0818-rkg41Fb-v2.png",
+      "source_sha256": "fa22a87099e520d9c080c207acb0e2c3e0e06a24e6e46f7b150da007ee319969",
+      "source_size": [
+        2020,
+        779
+      ],
+      "image_sha256": "2370514a6b1dcaf5b0a536bdbecf94c5a443d21f9a61c517fedf463dfb23866b",
+      "thumbnail_sha256": "a19b5e55f238b4235609a8c8fd4981b31272ec113b82169f01dd08b2c6ca13f9",
+      "image_bytes": 325970,
+      "thumbnail_bytes": 55270,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 119,
+      "name_ru": "Сгибания ног сидя",
+      "mapping_id": "0599",
+      "image_url": "/exercise-images/119-0599-4a0774f255fd.webp",
+      "thumbnail_url": "/exercise-thumbnails/119-0599-4a0774f255fd-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/119-0599-Zg3XY7P-v3.png",
+      "source_sha256": "4a0774f255fd1f81aeaeff62d0b946b9885f3596f6cac0a885174ee52fe0f307",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "0a1d5e545c5956a4add3a3174fa73fe7f2b1190098043c777ce8c0be8e0f29dd",
+      "thumbnail_sha256": "91c73cc025a72e83086e1364c58f8b8d63a1ad7392329015c654acd9c1511c96",
+      "image_bytes": 298194,
+      "thumbnail_bytes": 53530,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 120,
+      "name_ru": "Ягодичный мост в машине Смита",
+      "mapping_id": "0756",
+      "image_url": "/exercise-images/120-0756-6b665bab06b9.webp",
+      "thumbnail_url": "/exercise-thumbnails/120-0756-6b665bab06b9-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/120-0756-v4.png",
+      "source_sha256": "6b665bab06b9e18d193fcb5f2271d797768cdcec9a820a93a12605ae638052f9",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "52e758f9f14c841945e59eb11d419c2126c16312b47fe80fad39e35928383b40",
+      "thumbnail_sha256": "6589fd6b784e460f1bed5b3a4b7f87813039d0d63e7c3732cc9ba06d6030088b",
+      "image_bytes": 345636,
+      "thumbnail_bytes": 58028,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 121,
+      "name_ru": "Подъёмы на носки стоя в тренажёре",
+      "mapping_id": "0605",
+      "image_url": "/exercise-images/121-0605-86e6092a0bf1.webp",
+      "thumbnail_url": "/exercise-thumbnails/121-0605-86e6092a0bf1-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/121-0605-ykUOVze-v2.png",
+      "source_sha256": "86e6092a0bf1b979ea60bb52c5a85eeb142c2b1d2dd69be0300cdb05a10b053c",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "9adb4cdb485dbc35dbfac7df91c1e8a107d251ca8c03d6cd19881a748368b81e",
+      "thumbnail_sha256": "added7206bed8392bdc917b6a7710a0518f781a30379e9600aa59c7cc55a81d3",
+      "image_bytes": 313040,
+      "thumbnail_bytes": 52450,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 122,
+      "name_ru": "Сгибания гантелей на бицепс на наклонной скамье",
+      "mapping_id": "0315",
+      "image_url": "/exercise-images/122-0315-c4b9f4da9221.webp",
+      "thumbnail_url": "/exercise-thumbnails/122-0315-c4b9f4da9221-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/122-0315-F3xgbjF-v2.png",
+      "source_sha256": "c4b9f4da92214c330644f82ccf070288b29327ab846d665030962b40106db33e",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "618ed1780c2f0256182e298b953d9f8d54bb991c3a848e07363b8a29c7a318bf",
+      "thumbnail_sha256": "a0b1f619188504bba501e13c9bc72946289fe3db5cd6fdd80ba0047d811bbff5",
+      "image_bytes": 356380,
+      "thumbnail_bytes": 58784,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 123,
+      "name_ru": "Молитва",
+      "mapping_id": "0175",
+      "image_url": "/exercise-images/123-0175-95aa546faeaa.webp",
+      "thumbnail_url": "/exercise-thumbnails/123-0175-95aa546faeaa-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/123-0175-WW95auq-v2.png",
+      "source_sha256": "95aa546faeaaf40548495879c311b1dc18b2d7cb218547d7334ec5316120ad0d",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "a77ed92496a94845023a6398ca89da14100b0ebb9d8717471d1c40c3cd8b5374",
+      "thumbnail_sha256": "1a3f7b072a7605e3ffe59917dd769c1629f507d723ec4ff62134c4601a2483d8",
+      "image_bytes": 328788,
+      "thumbnail_bytes": 55508,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 124,
+      "name_ru": "Жим Паллофа с резинкой",
+      "mapping_id": "0979",
+      "image_url": "/exercise-images/124-0979-57477f696709.webp",
+      "thumbnail_url": "/exercise-thumbnails/124-0979-57477f696709-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1009,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/124-0979-9pa4H5m-v2.png",
+      "source_sha256": "57477f69670962819beae3df95602170a16586a6f46494110d22a5cb843bae96",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "80e7f590a4d966f701d55d53bf29f3dadff20398159557e06bdc5de94acf1b73",
+      "thumbnail_sha256": "fb1e05be6ad6050c4f756eafe52bfc863ed83176f49d12a26bccf549ad887da3",
+      "image_bytes": 337280,
+      "thumbnail_bytes": 57138,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 125,
+      "name_ru": "Тяга с канатом между ног",
+      "mapping_id": "0196",
+      "image_url": "/exercise-images/125-0196-2522c765cd41.webp",
+      "thumbnail_url": "/exercise-thumbnails/125-0196-2522c765cd41-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/125-0196-OM46QHm-v3.png",
+      "source_sha256": "2522c765cd414e124769f5bcd682f79e24ace9bee9862c1f30f5052adefa93f6",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "02bc7fa2030f89f80901b639ffa0310b69130b0d1e85e4c995a8b1288ba864c1",
+      "thumbnail_sha256": "648d03b6f9863d66e0110b0f432e26bc4bac31a51d7bf0f13802c43089583a2b",
+      "image_bytes": 318238,
+      "thumbnail_bytes": 52452,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 126,
+      "name_ru": "Отведение ноги назад в кроссовере",
+      "mapping_id": "0228",
+      "image_url": "/exercise-images/126-0228-096122f7de40.webp",
+      "thumbnail_url": "/exercise-thumbnails/126-0228-096122f7de40-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/126-0228-Kpajagk-v1.png",
+      "source_sha256": "096122f7de402ed3290ca1545cfe49ba74eb3d37d27f9a086261dfd1e502353d",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "d7c197bfe330f1f5a049346dafac5ed79fe62a7180ed4994c2d0aac156be49b3",
+      "thumbnail_sha256": "41dce056920283136e1255ec209225b174c897a6ce4ff9c37dcc6e108f7a3ac8",
+      "image_bytes": 378176,
+      "thumbnail_bytes": 60030,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 127,
+      "name_ru": "Обратная гиперэкстензия в тренажёре",
+      "mapping_id": "0593",
+      "image_url": "/exercise-images/127-0593-d679cc1bab23.webp",
+      "thumbnail_url": "/exercise-thumbnails/127-0593-d679cc1bab23-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/127-0593-Krmb3cB-v2.png",
+      "source_sha256": "d679cc1bab2322a1ae5267987b88300707284d49040bccc346de1ee3038859b5",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "933a0a00f79698186c4a7f0a66bc30f0471ff6e9ae89a9f5df4d091d518f4863",
+      "thumbnail_sha256": "976b9ec257831e5c14f7fe84601f149da87f8f8c0412fb3ed656757b56347427",
+      "image_bytes": 302252,
+      "thumbnail_bytes": 53282,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 128,
+      "name_ru": "Ягодичный мост с гантелью",
+      "mapping_id": "0339",
+      "image_url": "/exercise-images/128-0339-059edf7a22c5.webp",
+      "thumbnail_url": "/exercise-thumbnails/128-0339-059edf7a22c5-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1010,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01-round2/images/128-0339-v4.png",
+      "source_sha256": "059edf7a22c56fbcbf6b2d0487d1d02966f8c2072107af7ea9b23871f9d74358",
+      "source_size": [
+        2021,
+        778
+      ],
+      "image_sha256": "c165ce3d759f8127b6520d33066fec31cd1542dbae80670f476c1be9b8a2642a",
+      "thumbnail_sha256": "08cf637f381a4338fdd481621c58b9571f4c573c194d845b72887330ee610221",
+      "image_bytes": 328144,
+      "thumbnail_bytes": 57892,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 129,
+      "name_ru": "Выпады вперёд без веса",
+      "mapping_id": "3470",
+      "image_url": "/exercise-images/129-3470-1d4e5e3d2269.webp",
+      "thumbnail_url": "/exercise-thumbnails/129-3470-1d4e5e3d2269-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/129-3470-kMzUs9Y-v1.png",
+      "source_sha256": "1d4e5e3d226913b764b33ecd669c6baae7884d5e8520926cb21ce08bb6436140",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "68b262d813288537a5c2e5056177cb05565d5ff08259b250a070db4a61563874",
+      "thumbnail_sha256": "2775d9a56a03f2c60be19197ae1de2be8b51b7bfb14a26d2e84fe07e37d12044",
+      "image_bytes": 350438,
+      "thumbnail_bytes": 59544,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 130,
+      "name_ru": "Болгарские приседания без веса",
+      "mapping_id": "2368",
+      "image_url": "/exercise-images/130-2368-85fed9f3d8ab.webp",
+      "thumbnail_url": "/exercise-thumbnails/130-2368-85fed9f3d8ab-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1006,
+        778
+      ],
+      "source_file": "artifacts/exercise-corrections-review-2026-10-01/images/130-2368-v2.png",
+      "source_sha256": "85fed9f3d8ab74f80bc21a59bbc9cf833eafd9ecf1a05da91c1d388509cc7214",
+      "source_size": [
+        2020,
+        778
+      ],
+      "image_sha256": "2e5c37be1a93390fd014b246e1c14fada6989c5a3d20b2d1e2e10c925210e637",
+      "thumbnail_sha256": "fa32af5e3fcd2b7fd4f7cd4d1ab2c6cba69c6b44a80fc7e8278b3866d6348d30",
+      "image_bytes": 331814,
+      "thumbnail_bytes": 57244,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 131,
+      "name_ru": "Подъёмы на носки без веса",
+      "mapping_id": "1373",
+      "image_url": "/exercise-images/131-1373-a16ae40de3af.webp",
+      "thumbnail_url": "/exercise-thumbnails/131-1373-a16ae40de3af-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/131-1373-bJYHBIN-v1.png",
+      "source_sha256": "a16ae40de3af9f61f812cb2875150fc001edc5f781ea5b4cb98dcabb6084e4c5",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "4233d1a71dc87d9ebd03cc8e15d796b102831af5e6678780bdb63cdde1ffb677",
+      "thumbnail_sha256": "95d7e7e3cce56fec3972edb8e0774874955f3e2f319b631990f788c5bd224881",
+      "image_bytes": 339118,
+      "thumbnail_bytes": 52026,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 132,
+      "name_ru": "Боковые выпады без веса",
+      "mapping_id": "1410",
+      "image_url": "/exercise-images/132-1410-65e9ad168c8b.webp",
+      "thumbnail_url": "/exercise-thumbnails/132-1410-65e9ad168c8b-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1007,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/132-1410-v1.png",
+      "source_sha256": "65e9ad168c8b153ae50b30bbf022432aa46e81f285534bdaa259c90ee79233a9",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "aba5e7c906f5976cd33e04b209acdd9bb64ec8676c66064a55b305a6e9e5d6ba",
+      "thumbnail_sha256": "719717478b4dd87de049f7add71669d8110a165d55f36926e42bc78c93e5afaf",
+      "image_bytes": 351736,
+      "thumbnail_bytes": 59380,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 133,
+      "name_ru": "Сведение ног в тренажёре",
+      "mapping_id": "0598",
+      "image_url": "/exercise-images/133-0598-8c9117de61cd.webp",
+      "thumbnail_url": "/exercise-thumbnails/133-0598-8c9117de61cd-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/133-0598-oHsrypV-v2.png",
+      "source_sha256": "8c9117de61cdccef34159d80df750a29994d144c65857326b22d8cd9446da80d",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "ba92fc49643b84a6e4061b45283b97bfa18a2fd4a3048def2a550933b4912619",
+      "thumbnail_sha256": "c2b4c9344f31864d05dcb68203ef640a7defede83d12d00cd2fe2040a7b430e6",
+      "image_bytes": 324814,
+      "thumbnail_bytes": 56882,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    },
+    {
+      "number": 134,
+      "name_ru": "Разведение ног в тренажёре",
+      "mapping_id": "0597",
+      "image_url": "/exercise-images/134-0597-7bf20012bcb0.webp",
+      "thumbnail_url": "/exercise-thumbnails/134-0597-7bf20012bcb0-start.webp",
+      "phase_count": 2,
+      "thumbnail_phase": "initial",
+      "crop_box": [
+        0,
+        0,
+        1008,
+        778
+      ],
+      "source_file": "artifacts/exercise-catalog-review-2026-09-30/images/134-0597-CHpahtl-v2.png",
+      "source_sha256": "7bf20012bcb072575620058a5afdef380302497e54a2c867425d9205f777f0e9",
+      "source_size": [
+        2022,
+        778
+      ],
+      "image_sha256": "88d2367dceb26557bfe9ac90cea9a4492460247e5cacfb40ea6b65ca224cf71f",
+      "thumbnail_sha256": "c5dd450d03dbecdafd96bef705779d7d7c91b74648da44a53f121e3f4c3d5945",
+      "image_bytes": 345922,
+      "thumbnail_bytes": 55250,
+      "status": "owner-approved",
+      "approval_evidence": "отлично, все принял.",
+      "provenance": "AI-generated illustration; owner-reviewed, not Gym visual media"
+    }
+  ]
+}

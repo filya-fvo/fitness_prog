@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { resolveApiAssetUrl } from "@/api/client";
 import { trackEvent } from "@/lib/analytics";
@@ -52,6 +52,7 @@ type Props = {
     | "description"
     | "video_url"
     | "animation_url"
+    | "image_url"
     | "thumbnail_url"
     | "media_source"
     | "technique"
@@ -61,6 +62,7 @@ type Props = {
   >;
   compact?: boolean;
   preferVideo?: boolean;
+  preferAnimation?: boolean;
   /** Render only the GIF/image area, without technique text and video controls. */
   mediaOnly?: boolean;
   /** Short media preview for the compact active-workout layout. */
@@ -80,21 +82,26 @@ export function ExerciseMediaPlayer({
   exercise,
   compact = false,
   preferVideo = false,
+  preferAnimation = false,
   mediaOnly = false,
   preview = false,
 }: Props) {
-  const mediaUrl = useMemo(
-    () => resolveLocalMedia(exercise.animation_url),
-    [exercise.animation_url],
-  );
+  const illustration = resolveLocalMedia(exercise.image_url);
+  const mediaUrl = preview && illustration
+    ? resolveLocalMedia(exercise.thumbnail_url) ?? illustration
+    : !preferAnimation && illustration
+      ? illustration
+      : resolveLocalMedia(exercise.animation_url);
   const [mediaFailed, setMediaFailed] = useState(false);
+  useEffect(() => setMediaFailed(false), [mediaUrl]);
   const [showVideo, setShowVideo] = useState(preferVideo);
   const [videoFailed, setVideoFailed] = useState(false);
 
   const ytId = useMemo(() => extractYouTubeId(exercise.video_url), [exercise.video_url]);
   const hasVideo = Boolean(exercise.video_url) && !videoFailed;
   const heightClass = preview ? "h-24" : compact ? "h-40" : "h-52";
-  const showGymVisual = hasGymVisualCredit(exercise);
+  const showGymVisual = Boolean(mediaUrl) && !showVideo
+    && mediaUrl === resolveLocalMedia(exercise.animation_url) && hasGymVisualCredit(exercise);
 
   const techniqueText =
     exercise.technique ||
@@ -148,7 +155,7 @@ export function ExerciseMediaPlayer({
               <img
                 src={resolveApiAssetUrl(exercise.thumbnail_url) ?? undefined}
                 alt={exercise.name_ru}
-                className={`w-full object-cover ${heightClass}`}
+                className={`w-full object-contain ${heightClass}`}
               />
             ) : (
               <div

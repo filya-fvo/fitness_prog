@@ -22,6 +22,19 @@ const exercise: Exercise = {
 };
 
 describe("ExerciseMediaTabs", () => {
+  it("shows the complete approved image instead of the first-phase thumbnail", () => {
+    const markup = renderToStaticMarkup(<ExerciseMediaTabs exercise={{
+      ...exercise,
+      image_url: "/exercise-images/deadbug-full.webp",
+      thumbnail_url: "/exercise-thumbnails/deadbug-start.webp",
+    }} />);
+
+    expect(markup).toContain('/exercise-images/deadbug-full.webp');
+    expect(markup).not.toContain('/exercise-thumbnails/deadbug-start.webp');
+    expect(markup).toContain("object-contain");
+    expect(markup).toContain("Анимация");
+  });
+
   it("shows the exercise's static GIF frame in the Photo tab", () => {
     const markup = renderToStaticMarkup(<ExerciseMediaTabs exercise={exercise} />);
 

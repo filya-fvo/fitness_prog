@@ -40,7 +40,7 @@ export function ExerciseEditorForm({
   const set = <K extends keyof ExerciseDraft>(key: K, value: ExerciseDraft[K]) => {
     onChange({ ...draft, [key]: value });
   };
-  const rawPreview = draft.animationUrl.trim() || draft.thumbnailUrl.trim();
+  const rawPreview = draft.imageUrl.trim() || draft.animationUrl.trim() || draft.thumbnailUrl.trim();
   const preview = resolveApiAssetUrl(rawPreview) ?? rawPreview;
   const upload = async (
     field: ExerciseMediaUploadField,
@@ -121,6 +121,9 @@ export function ExerciseEditorForm({
       </div>
       <label className={labelClass}>GIF / анимация
         <input value={draft.animationUrl} onChange={(event) => set("animationUrl", event.target.value)} className={inputClass} placeholder="/exercise-gifs/…gif" maxLength={2000} />
+      </label>
+      <label className={labelClass}>Полное изображение
+        <input value={draft.imageUrl} onChange={(event) => set("imageUrl", event.target.value)} className={inputClass} placeholder="/exercise-images/…webp" maxLength={2000} />
       </label>
       <label className={labelClass}>Thumbnail
         <input value={draft.thumbnailUrl} onChange={(event) => set("thumbnailUrl", event.target.value)} className={inputClass} placeholder="/exercise-thumbnails/…png" maxLength={2000} />

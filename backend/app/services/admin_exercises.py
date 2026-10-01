@@ -32,6 +32,7 @@ from app.schemas.admin_exercise import (
 _MEDIA_LIMITS = {
     "video_url": 25 * 1024 * 1024,
     "animation_url": 25 * 1024 * 1024,
+    "image_url": 5 * 1024 * 1024,
     "thumbnail_url": 5 * 1024 * 1024,
 }
 _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"}
@@ -40,9 +41,13 @@ _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"}
 def media_quality(exercise: Exercise) -> MediaQuality:
     tags = {str(item) for item in (exercise.tags or [])}
     review_status = str(getattr(exercise, "media_review_status", "") or "")
+    if getattr(exercise, "image_url", None) and any(
+        tag.startswith("image:owner-approved:") for tag in tags
+    ):
+        return "ready"
     if review_status == "rejected" or "media:no-exact-gif" in tags:
         return "rejected"
-    urls = [exercise.animation_url, exercise.video_url, exercise.thumbnail_url]
+    urls = [exercise.animation_url, exercise.video_url, exercise.thumbnail_url, exercise.image_url]
     if not any(value and value.strip() for value in urls):
         return "missing"
     if review_status == "pending":
@@ -61,23 +66,29 @@ def media_quality(exercise: Exercise) -> MediaQuality:
 
 
 def _quality_filter(value: MediaQuality):
+    approved_image = and_(
+        func.coalesce(Exercise.image_url, "") != "",
+        Exercise.tags.contains(["image:owner-approved:2026-10-01"]),
+    )
     rejected = or_(
         Exercise.media_review_status == "rejected",
         Exercise.tags.contains(["media:no-exact-gif"]),
     )
+    rejected = and_(rejected, ~approved_image)
     has_media = or_(
         func.coalesce(Exercise.video_url, "") != "",
         func.coalesce(Exercise.animation_url, "") != "",
         func.coalesce(Exercise.thumbnail_url, "") != "",
+        func.coalesce(Exercise.image_url, "") != "",
     )
-    verified = Exercise.media_review_status == "verified"
+    verified = or_(Exercise.media_review_status == "verified", approved_image)
     if value == "rejected":
         return rejected
     if value == "missing":
         return and_(~rejected, ~has_media)
     if value == "ready":
         return and_(~rejected, has_media, verified)
-    return and_(~rejected, has_media, Exercise.media_review_status == "pending")
+    return and_(~rejected, has_media, ~verified, Exercise.media_review_status == "pending")
 
 
 def _program_references(structure: object, exercise_id: uuid.UUID) -> bool:
@@ -280,7 +291,7 @@ async def _host_is_public(host: str) -> bool:
 def _mime_allowed(field: str, mime: str | None, url: str) -> bool:
     if not mime:
         return False
-    if field == "thumbnail_url":
+    if field in {"thumbnail_url", "image_url"}:
         return mime.startswith("image/")
     if field == "animation_url":
         return mime.startswith("image/") or mime.startswith("video/")
@@ -418,7 +429,7 @@ async def preflight(
 ) -> ExercisePreflightResponse:
     media_requests = [
         ExerciseMediaCheckRequest(field=field, url=value)
-        for field in ("video_url", "animation_url", "thumbnail_url")
+        for field in ("video_url", "animation_url", "image_url", "thumbnail_url")
         if (value := getattr(body, field))
     ]
     media_by_field: dict[str, ExerciseMediaCheckResponse] = {}

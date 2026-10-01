@@ -7,6 +7,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from audit_exercise_images import audit_images
+
 
 REPO = Path(__file__).resolve().parents[2]
 SEED = REPO / "backend" / "scripts" / "seed_content" / "exercises.json"
@@ -40,7 +42,7 @@ def audit() -> tuple[list[dict[str, str]], list[str]]:
     seed = load_json(SEED)
     manifest_rows = load_json(MANIFEST)
     manifest = {str(row["name_ru"]): row for row in manifest_rows}
-    errors: list[str] = []
+    errors: list[str] = audit_images(seed)
     rows: list[dict[str, str]] = []
 
     seed_names = [str(row["name_ru"]) for row in seed]

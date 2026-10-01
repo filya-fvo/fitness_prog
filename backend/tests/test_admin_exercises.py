@@ -73,6 +73,27 @@ def test_extended_exercise_contract_is_backward_compatible() -> None:
     assert response.weight_rule == "per_hand"
 
 
+def test_complete_image_and_thumbnail_are_independent_in_the_api() -> None:
+    item = exercise(
+        image_url="/exercise-images/approved.webp",
+        thumbnail_url="/exercise-thumbnails/approved-start.webp",
+    )
+    response = ExerciseResponse.model_validate(item)
+    assert response.image_url == "/exercise-images/approved.webp"
+    assert response.thumbnail_url == "/exercise-thumbnails/approved-start.webp"
+    assert response.animation_url == "/exercise-gifs/test.gif"
+
+
+def test_approved_illustration_is_ready_even_without_an_exact_gif() -> None:
+    item = exercise(
+        image_url="/exercise-images/approved.webp",
+        animation_url=None,
+        media_review_status="rejected",
+        tags=["media:no-exact-gif", "image:owner-approved:2026-10-01"],
+    )
+    assert admin_exercises.media_quality(item) == "ready"
+
+
 def test_media_quality_covers_all_editor_states() -> None:
     assert admin_exercises.media_quality(exercise()) == "ready"
     assert admin_exercises.media_quality(exercise(tags=[], animation_url=None)) == "missing"

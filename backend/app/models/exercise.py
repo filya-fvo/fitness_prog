@@ -30,6 +30,7 @@ class Exercise(Base, TimestampSoftDeleteMixin):
     difficulty: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
     video_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     animation_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     media_duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     media_source: Mapped[str] = mapped_column(Text, nullable=False, default="none", server_default="none")

@@ -40,6 +40,7 @@ from app.core.database import AsyncSessionLocal  # noqa: E402
 from app.models.exercise import Exercise  # noqa: E402
 from app.services.exercise_classification import enrich_seed_metadata  # noqa: E402
 from app.services import seed_programs  # noqa: E402
+from scripts.approved_exercise_images import apply_approved_images  # noqa: E402
 
 DS_PATH = REPO / "backups" / "exercises-dataset-src" / "data" / "exercises.json"
 GIFS_DIR = REPO / "frontend" / "public" / "exercise-gifs"
@@ -148,7 +149,7 @@ CATALOG: list[tuple[str, list[str], str, int]] = [
     ("Боковая планка", ["side bridge v. 2"], "кор", 2),
     ("Планка с касанием плеч", ["shoulder tap", "kneeling plank tap shoulder (male)"], "кор", 2),
     ("Скручивания", ["crunch floor"], "кор", 1),
-    ("Скручивания на верхнем блоке", ["cable kneeling crunch"], "кор", 2),
+    ("Молитва", ["cable kneeling crunch"], "кор", 2),
     ("Велосипед", ["air bike", "band bicycle crunch"], "кор", 2),
     ("Русские скручивания", ["russian twist"], "кор", 2),
     ("Жим Паллофа с резинкой", ["band horizontal pallof press"], "кор", 2),
@@ -505,6 +506,7 @@ def build_seed_rows(
         rows.append(enrich_seed_metadata(row))
         print(f"OK {name_ru} <- {ds.get('name')} gif={gif_ok}")
 
+    apply_approved_images(rows)
     return rows, report
 
 

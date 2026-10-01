@@ -10,6 +10,7 @@ export type Exercise = {
   difficulty: number;
   video_url: string | null;
   animation_url: string | null;
+  image_url?: string | null;
   thumbnail_url: string | null;
   media_duration_sec: number | null;
   media_source: "youtube" | "external" | "none" | string;

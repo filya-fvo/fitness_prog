@@ -599,7 +599,7 @@ NEW_ITEMS.extend(
             tags=["gymvisual", "ds:0315", "curated", "replacement", "dumbbells", "бицепс"],
         ),
         ex(
-            "Скручивания на верхнем блоке", "кор", "блок/кроссовер", 2,
+            "Молитва", "кор", "блок/кроссовер", 2,
             "1. Встаньте на колени спиной или лицом к верхнему блоку, канат держите у головы.\n"
             "2. Зафиксируйте таз.\n3. Скрутите грудную клетку к тазу усилием пресса.\n"
             "4. Вернитесь, не разгибая поясницу чрезмерно.",
@@ -749,6 +749,9 @@ def patch_seed() -> list[str]:
             tags.extend(["media:verified", "media:reviewed:2026-09-21"])
         row["tags"] = tags
         enrich_seed_metadata(row)
+    from scripts.approved_exercise_images import apply_approved_images
+
+    apply_approved_images(rows)
     SEED_PATH.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     manifest = [
         {

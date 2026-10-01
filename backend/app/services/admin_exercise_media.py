@@ -192,7 +192,8 @@ async def reject_animation(
         raise ValueError("Media rejection reason must contain at least 5 characters")
     before = admin_audit.exercise_snapshot(exercise)
     exercise.animation_url = None
-    exercise.thumbnail_url = None
+    if not exercise.image_url:
+        exercise.thumbnail_url = None
     exercise.media_review_status = "rejected"
     exercise.media_review_reason = cleaned_reason
     preserved_tags = [

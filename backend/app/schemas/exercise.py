@@ -28,6 +28,7 @@ class ExerciseCreate(BaseModel):
     difficulty: int = Field(default=1, ge=1, le=5)
     video_url: str | None = Field(default=None, max_length=2000)
     animation_url: str | None = Field(default=None, max_length=2000)
+    image_url: str | None = Field(default=None, max_length=2000)
     thumbnail_url: str | None = Field(default=None, max_length=2000)
     media_duration_sec: int | None = Field(default=None, ge=0, le=86400)
     media_source: Literal["youtube", "external", "none"] = "none"
@@ -60,6 +61,7 @@ class ExerciseUpdate(BaseModel):
     difficulty: int | None = Field(default=None, ge=1, le=5)
     video_url: str | None = Field(default=None, max_length=2000)
     animation_url: str | None = Field(default=None, max_length=2000)
+    image_url: str | None = Field(default=None, max_length=2000)
     thumbnail_url: str | None = Field(default=None, max_length=2000)
     media_duration_sec: int | None = Field(default=None, ge=0, le=86400)
     media_source: Literal["youtube", "external", "none"] | None = None
@@ -97,6 +99,7 @@ class ExerciseResponse(BaseModel):
     difficulty: int
     video_url: str | None = None
     animation_url: str | None = None
+    image_url: str | None = None
     thumbnail_url: str | None = None
     media_duration_sec: int | None = None
     media_source: str = "none"

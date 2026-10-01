@@ -10,6 +10,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from audit_exercise_media import audit  # noqa: E402
+from audit_exercise_images import audit_images  # noqa: E402
 
 
 def test_every_seed_exercise_has_audited_media_status() -> None:
@@ -34,3 +35,9 @@ def test_verified_core_media_and_rejected_split_squat_are_explicit() -> None:
     assert by_name["Боковая планка"]["status"] == "точное"
     assert by_name["Болгарские приседания без веса"]["file"] == "—"
     assert by_name["Болгарские приседания без веса"]["status"] == "отклонено: нет точного GIF"
+
+
+def test_complete_picture_cannot_be_replaced_with_initial_phase() -> None:
+    seed = json.loads((SCRIPTS / "seed_content/exercises.json").read_text(encoding="utf-8"))
+    seed[0]["image_url"] = seed[0]["thumbnail_url"]
+    assert any("image_url" in error for error in audit_images(seed))
