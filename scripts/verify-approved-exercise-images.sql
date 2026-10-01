@@ -1,12 +1,12 @@
 -- Dry-run only: exercise/program copies shadow public tables until rollback.
--- Run with psql -v ON_ERROR_STOP=1 from the repository root before deployment.
+-- Feed to psql in the Compose migrate service, which mounts SQL at /migrations.
 BEGIN;
 CREATE TEMP TABLE exercises AS SELECT * FROM public.exercises;
 CREATE TEMP TABLE programs AS SELECT * FROM public.programs;
 CREATE TEMP TABLE exercise_images_before AS SELECT * FROM exercises;
 
-\i supabase/migrations/20261001000051_rename_cable_crunch_molitva.sql
-\i supabase/migrations/20261001000052_approved_exercise_images.sql
+\i /migrations/20261001000051_rename_cable_crunch_molitva.sql
+\i /migrations/20261001000052_approved_exercise_images.sql
 
 DO $$
 BEGIN
