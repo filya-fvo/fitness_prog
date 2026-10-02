@@ -551,30 +551,27 @@ body {
   color: var(--app-brand-start);
 }
 
-.knowledge-page #faq-results details {
-  min-height: 7rem;
-  border-color: color-mix(in srgb, var(--app-brand-start) 18%, var(--border-subtle));
-  border-radius: 1.5rem;
-  padding: 1.25rem;
+.faq-article-card {
+  --faq-tint: var(--app-violet);
+  position: relative;
+  scroll-margin-top: 1rem;
+  border-color: color-mix(in srgb, var(--faq-tint) 22%, var(--border-subtle));
+  padding: 1rem;
   background:
-    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--app-brand-start) 9%, transparent), transparent 38%),
-    var(--app-surface-raised);
+    radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--faq-tint) 12%, transparent), transparent 65%),
+    var(--app-surface);
 }
 
-.faq-article-card {
-  scroll-margin-top: 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  padding: 1rem;
-  background: var(--app-surface-raised);
-}
+.faq-tone-ocean { --faq-tint: var(--app-info); }
+.faq-tone-plum { --faq-tint: var(--app-brand-mid); }
+.faq-tone-ember { --faq-tint: var(--app-brand-start); }
 
 .faq-search {
   display: block;
   border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
+  border-radius: var(--radius-card);
   padding: 0.75rem;
-  background: var(--app-surface-raised);
+  background: var(--app-surface);
   color: color-mix(in srgb, var(--app-hint) 72%, var(--app-text));
   font-size: 0.75rem;
   font-weight: 500;
@@ -585,9 +582,15 @@ body {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.5rem;
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
   padding: 0 0.75rem;
-  background: var(--app-surface);
+  background: var(--app-surface-inset);
+}
+
+.faq-search-control:focus-within {
+  border-color: var(--app-violet);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-violet) 24%, transparent);
 }
 
 .faq-search-icon {
@@ -597,6 +600,7 @@ body {
 }
 
 .faq-search-input {
+  min-width: 0;
   min-height: 48px;
   width: 100%;
   border: 0 !important;
@@ -629,17 +633,20 @@ body {
 .faq-topic {
   min-height: 44px;
   flex: 0 0 8.5rem;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-control);
   padding: 0 0.75rem;
-  background: var(--app-surface-raised);
+  background: var(--app-surface);
   color: var(--app-text);
   font-size: 0.75rem;
   font-weight: 500;
 }
 
 .faq-topic-active {
-  background: var(--app-accent-strong);
-  color: var(--app-button-text);
+  border-color: color-mix(in srgb, var(--app-violet) 55%, var(--border-subtle));
+  background: color-mix(in srgb, var(--app-violet) 16%, var(--app-surface));
+  color: var(--app-text);
+  font-weight: 700;
 }
 
 .faq-article-highlighted {
@@ -647,25 +654,53 @@ body {
 }
 
 .faq-article-summary {
-  padding-right: 0.5rem;
+  position: relative;
+  padding-bottom: 1.125rem;
   list-style: none;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
+  line-height: 1.4;
+  color: var(--app-text);
+}
+
+.faq-article-summary::-webkit-details-marker { display: none; }
+.faq-article-summary::marker { content: ""; }
+.faq-article-summary:focus-visible {
+  outline: 2px solid var(--app-violet);
+  outline-offset: 6px;
+  border-radius: 0.25rem;
 }
 
 .faq-article-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
+.faq-article-heading > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.faq-article-art { width: 72px; height: 72px; flex: 0 0 72px; }
+.faq-illustration { display: block; width: 100%; height: 100%; color: var(--faq-tint); }
+.faq-illustration-halo { fill: color-mix(in srgb, var(--faq-tint) 8%, transparent); }
+.faq-illustration-shadow { fill: color-mix(in srgb, var(--faq-tint) 12%, transparent); }
+.faq-article-disclosure {
+  position: absolute;
+  right: 0;
+  bottom: -0.25rem;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  color: var(--app-hint);
+}
+.faq-article-card[open] .faq-article-disclosure { transform: rotate(180deg); }
+
 .faq-article-description {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
   color: color-mix(in srgb, var(--app-hint) 72%, var(--app-text));
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.625;
 }
@@ -677,22 +712,17 @@ body {
   color: color-mix(in srgb, var(--app-hint) 72%, var(--app-text));
   font-size: 0.875rem;
   line-height: 1.625;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.875rem;
 }
 
 .faq-article-points > * + * {
   margin-top: 0.5rem;
 }
 
-.knowledge-page #faq-results summary > span:first-child::after {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--app-brand-start) 54%, transparent);
-  border-radius: 999px;
-  color: var(--app-brand-start);
-  content: "↗";
+@media (max-width: 359px) {
+  .faq-article-art { width: 60px; height: 60px; flex-basis: 60px; }
+  .faq-article-heading { gap: 0.5rem; }
 }
 
 .nutrition-summary-card {

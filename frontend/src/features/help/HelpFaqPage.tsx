@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Header } from "@/components/layout/Header";
+import { FaqArticleCard } from "./FaqArticleCard";
 import {
   FAQ_ARTICLES,
   FAQ_SOURCES,
-  type FaqArticle,
   type FaqTab,
   type FaqTopic,
 } from "@/features/help/faqContent";
@@ -28,41 +28,6 @@ function safeReturnTo(state: NavigationState): string {
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
     ? value
     : "/help-center";
-}
-
-function ArticleCard({ article, highlighted }: {
-  article: FaqArticle;
-  highlighted: boolean;
-}) {
-  const detailsRef = useRef<HTMLDetailsElement>(null);
-
-  useEffect(() => {
-    if (!highlighted || !detailsRef.current) return;
-    detailsRef.current.open = true;
-    const summary = detailsRef.current.querySelector("summary");
-    summary?.focus({ preventScroll: true });
-    detailsRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlighted]);
-
-  return (
-    <details
-      id={`faq-${article.id}`}
-      ref={detailsRef}
-      className={`faq-article-card${highlighted ? " faq-article-highlighted" : ""}`}
-    >
-      <summary className="faq-article-summary">
-        <span className="faq-article-heading">
-          <span>{article.title}</span>
-        </span>
-        <span className="faq-article-description">
-          {article.summary}
-        </span>
-      </summary>
-      <ul className="faq-article-points">
-        {article.points.map((point) => <li key={point}>{point}</li>)}
-      </ul>
-    </details>
-  );
 }
 
 export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
@@ -98,7 +63,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
   }
 
   return (
-    <section className={["mx-auto max-w-3xl", defaultTab === "knowledge" ? "knowledge-page" : ""].join(" ")}>
+    <section className={["faq-page mx-auto max-w-3xl", defaultTab === "knowledge" ? "knowledge-page" : ""].join(" ")}>
       <Header
         title={defaultTab === "knowledge" ? "Питание без лишних правил" : "Помощь и FAQ"}
         subtitle={defaultTab === "knowledge" ? "Практический гид по рациону и прогрессу" : "Действия в приложении, тренировки и питание"}
@@ -164,7 +129,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
             </div>
             <div className="space-y-3">
               {group.articles.map((article) => (
-                <ArticleCard
+                <FaqArticleCard
                   key={article.id}
                   article={article}
                   highlighted={requestedArticle?.id === article.id}
