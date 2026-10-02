@@ -67,10 +67,15 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
   }));
 
   let attempts = 0;
+  let allowInitialResponse!: () => void;
+  const initialResponseGate = new Promise<void>((resolve) => {
+    allowInitialResponse = resolve;
+  });
   await page.route("**/admin/system/status/check", async (route) => {
     attempts += 1;
     if (attempts === 1) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      // Observe loading before returning the error, regardless of navigation speed.
+      await initialResponseGate;
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -87,6 +92,7 @@ test("admin system shows loading, error and successful retry", async ({ page }) 
 
   await page.goto("/admin/system");
   await expect(page.getByRole("status", { name: "Загрузка" })).toBeVisible();
+  allowInitialResponse();
   await expect(page.getByRole("alert")).toContainText("Сервис временно недоступен");
   await expect(page.getByRole("button", { name: "Повторить проверку" })).toHaveClass(/app-gradient-action/);
 
