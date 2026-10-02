@@ -75,6 +75,14 @@
 
 #diary-calendar { scroll-margin-top: 1rem; }
 
+.diary-day-idle {
+  background: color-mix(in srgb, var(--app-hint) 40%, transparent);
+}
+
+.diary-missing-marker {
+  background: color-mix(in srgb, var(--app-hint) 30%, transparent);
+}
+
 .help-feature-copy { gap: 0.5rem; }
 .help-feature-glow {
   background: radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.15), transparent 60%);

@@ -59,7 +59,7 @@ export function DiarySnapshotCards({ regularity, week, dailyMetrics, measurement
           <p className="text-[11px] text-tg-hint">{regularity?.has_schedule ? "тренировок по плану" : "Выберите программу и дни"}</p>
           <div className="mt-2 flex justify-between gap-1" aria-label="Тренировки на этой неделе">
             {week.days.map((day) => <span key={day.date} className="flex flex-col items-center gap-1 text-xs text-tg-hint">
-              <span className={`h-2.5 w-2.5 rounded-full ${day.completed ? "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.7)]" : day.isToday ? "ring-2 ring-cyan-300 bg-[var(--app-hint)]/40" : "bg-[var(--app-hint)]/40"}`} aria-label={`${day.weekdayShort}: ${day.completed ? `${day.completed} ${day.completed === 1 ? "тренировка" : "тренировки"}` : "без тренировки"}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${day.completed ? "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.7)]" : day.isToday ? "diary-day-idle ring-2 ring-cyan-300" : "diary-day-idle"}`} aria-label={`${day.weekdayShort}: ${day.completed ? `${day.completed} ${day.completed === 1 ? "тренировка" : "тренировки"}` : "без тренировки"}`} />
               {day.weekdayShort}
             </span>)}
           </div>

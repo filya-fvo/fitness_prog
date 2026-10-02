@@ -126,7 +126,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                           style={{ height: `${height}%` }}
                         >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-tg-link">{Math.round(delta)}</span> : null}</div>
                       ) : !day.hasLogs ? (
-                        <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-[var(--app-hint)]/30" />
+                        <div className="diary-missing-marker mt-1 h-1 w-full max-w-[18px] rounded" />
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
@@ -146,7 +146,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
               <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-cyan-500/75" />
               недобор
             </span>
-            <span><span className="mr-1 inline-block h-1 w-2 rounded bg-[var(--app-hint)]/30" />нет записи</span>
+            <span><span className="diary-missing-marker mr-1 inline-block h-1 w-2 rounded" />нет записи</span>
             <span>линия — цель (0)</span>
           </div>
         </div>

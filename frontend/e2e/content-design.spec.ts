@@ -105,6 +105,12 @@ for (const width of [320, 375, 393, 1440]) {
 
       await page.goto("/progress");
       await expect(page.getByRole("progressbar", { name: "Выполнение плана" })).toHaveAttribute("aria-valuenow", "75");
+      const dayColors = await page.getByLabel("Тренировки на этой неделе", { exact: true }).locator("span[aria-label]").evaluateAll((dots) => dots.map((dot) => getComputedStyle(dot).backgroundColor));
+      expect(dayColors).toHaveLength(7);
+      for (const color of dayColors) {
+        expect(color).not.toBe("transparent");
+        expect(color).not.toBe("rgba(0, 0, 0, 0)");
+      }
       const title = (await page.getByRole("heading", { name: "Дневник", exact: true }).boundingBox())!;
       const calendar = page.getByRole("link", { name: "Перейти к календарю тренировок" });
       const button = (await calendar.boundingBox())!;
@@ -126,6 +132,12 @@ for (const width of [320, 375, 393, 1440]) {
       await page.getByRole("button", { name: "Расширенно" }).click();
       await expect(page.getByRole("heading", { name: "Нагрузка и восстановление", exact: true })).toBeVisible();
       await expect(page.getByText("103,7 т", { exact: true })).toBeVisible();
+      const missingColors = await page.locator(".diary-missing-marker").evaluateAll((markers) => markers.map((marker) => getComputedStyle(marker).backgroundColor));
+      expect(missingColors.length).toBeGreaterThan(0);
+      for (const color of missingColors) {
+        expect(color).not.toBe("transparent");
+        expect(color).not.toBe("rgba(0, 0, 0, 0)");
+      }
       await contained(page);
       await shot("diary-full", true);
 
