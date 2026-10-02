@@ -18,7 +18,7 @@ export function PersonalDashboardCard({
 }: Props) {
   const expanded = depth === "advanced";
   return (
-    <section className="mb-3 rounded-2xl border border-sky-300/20 bg-[#102846] px-3 py-2.5 text-white" aria-label="Режим дневника">
+    <section className="app-card app-card-neutral mb-4 p-3" aria-label="Режим дневника">
       <DiaryModeTabs expanded={expanded} saving={saving} level={level} onChange={onExpandedChange} />
       {error ? <p role="status" className="mt-2 text-xs text-amber-500">{error}</p> : null}
     </section>

@@ -72,7 +72,7 @@ function TrendRow({
       : `${formatNumber(latest.totalWeight)} кг × ${latest.reps}`
     : "Пока нет результатов с весом";
   return (
-    <li className="rounded-xl bg-tg-bg px-3 py-2">
+    <li className="app-metric px-3 py-2">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
@@ -146,7 +146,7 @@ export function StrengthTrendSetsCard({
   }, [active, data, hiddenPinned]);
 
   return (
-    <section className="rounded-2xl bg-tg-secondary p-3" aria-labelledby="strength-trends-title">
+    <section className="app-card app-card-neutral p-3" aria-labelledby="strength-trends-title">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 id="strength-trends-title" className="text-sm font-semibold">Силовые тренды</h2>
@@ -159,7 +159,7 @@ export function StrengthTrendSetsCard({
         </Link>
       </div>
 
-      <div role="tablist" aria-label="Наборы силовых трендов" className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-tg-bg p-1">
+      <div role="tablist" aria-label="Наборы силовых трендов" className="app-segmented mt-3 grid grid-cols-3">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -167,7 +167,7 @@ export function StrengthTrendSetsCard({
             role="tab"
             aria-selected={active === tab.key}
             onClick={() => setActive(tab.key)}
-            className={`min-h-11 rounded-lg px-2 text-xs font-semibold ${active === tab.key ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}
+            className="app-segment px-2 text-xs"
           >
             {tab.label}
           </button>
@@ -184,8 +184,8 @@ export function StrengthTrendSetsCard({
         <p className="mt-3 text-xs text-tg-hint">Вы сами определяете этот список.</p>
       ) : null}
 
-      {error ? <p role="status" className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-amber-500">{error}</p> : null}
-      {!data && !error ? <div className="mt-3 h-28 animate-pulse rounded-xl bg-tg-bg" /> : null}
+      {error ? <p role="status" className="mt-3 app-metric p-3 text-xs text-amber-500">{error}</p> : null}
+      {!data && !error ? <div className="mt-3 h-28 animate-pulse app-metric" /> : null}
       {data ? (
         items.length ? (
           <ul role="tabpanel" className="mt-2 space-y-2">
@@ -200,7 +200,7 @@ export function StrengthTrendSetsCard({
             ))}
           </ul>
         ) : (
-          <p role="tabpanel" className="mt-2 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
+          <p role="tabpanel" className="mt-2 app-metric p-3 text-xs text-tg-hint">
             {emptyMessage(active, data)}
           </p>
         )

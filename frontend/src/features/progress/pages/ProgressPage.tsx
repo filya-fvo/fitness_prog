@@ -332,13 +332,13 @@ export function ProgressPage() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-tg-text">Дневник</h1>
-        <a href="#diary-calendar" aria-label="Перейти к календарю тренировок" className="grid h-11 w-11 place-items-center rounded-xl border border-sky-300/15 bg-[#102846] text-sky-200">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3" /></svg>
+    <section className="diary-page mx-auto max-w-4xl">
+      <header className="diary-header app-page-header mb-6">
+        <h1 className="app-page-title text-tg-text">Дневник</h1>
+        <a href="#diary-calendar" aria-label="Перейти к календарю тренировок" className="diary-calendar-action app-button app-secondary-action">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3" /></svg>
         </a>
-      </div>
+      </header>
 
       {loading ? <PageSkeleton cards={2} /> : null}
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}

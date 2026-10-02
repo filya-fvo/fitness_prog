@@ -628,8 +628,8 @@ body {
 
 .faq-topic {
   min-height: 44px;
-  flex: 0 0 auto;
-  border-radius: 999px;
+  flex: 0 0 8.5rem;
+  border-radius: var(--radius-control);
   padding: 0 0.75rem;
   background: var(--app-surface-raised);
   color: var(--app-text);
@@ -1192,23 +1192,7 @@ body {
 
 /* Common cards inherit one calm visual language without rewriting every page. */
 .diary-sections {
-  --app-bg: #091c35;
-  --app-surface: #102a4a;
-  --app-surface-inset: #07182e;
-  --app-text: #f6f8ff;
-  --app-hint: #adc2dc;
-  --app-accent: #54d5f2;
-  --border-subtle: rgba(104, 175, 231, 0.2);
   color: var(--app-text);
-  background: linear-gradient(155deg, #0b213c, #08172c 70%);
-  border: 1px solid rgba(104, 175, 231, 0.14);
-  border-radius: 1.25rem;
-  padding: 0.5rem;
-}
-
-.diary-sections .rounded-2xl.bg-tg-secondary {
-  background-image: radial-gradient(circle at 100% 0, rgba(44, 190, 234, 0.08), transparent 46%);
-  box-shadow: 0 10px 28px rgba(1, 9, 25, 0.26);
 }
 
 .rounded-2xl.bg-tg-secondary {

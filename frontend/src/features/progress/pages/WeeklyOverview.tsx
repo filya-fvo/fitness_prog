@@ -13,31 +13,31 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
   const maxVol = Math.max(1, ...overview.days.map((d) => d.volume));
 
   return (
-    <div className="rounded-2xl bg-tg-secondary p-4">
+    <div className="app-card app-card-neutral p-4">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold">Недельный обзор</p>
           <p className="text-[11px] text-tg-hint">{overview.rangeLabel} · пн–вс</p>
         </div>
-        <Link to="/" className="shrink-0 text-[11px] text-tg-link">
+        <Link to="/" className="flex min-h-11 shrink-0 items-center text-xs text-tg-link">
           К тренировке
         </Link>
       </div>
 
-      <div className="mb-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-tg-bg px-2 py-2">
+      <div className="weekly-metrics mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">{overview.completedWorkouts}</p>
           <p className="text-[10px] text-tg-hint">{workoutsCount(overview.completedWorkouts).replace(/^\d+\s/, "")}</p>
           <p className="text-[10px] text-tg-hint">
             {formatWeekDelta(overview.vsPrevWeek.workoutsDelta, "workouts")}
           </p>
         </div>
-        <div className="rounded-xl bg-tg-bg px-2 py-2">
+        <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">{overview.activeDays}</p>
           <p className="text-[10px] text-tg-hint">{daysCount(overview.activeDays).replace(/^\d+\s/, "")} активности</p>
           <p className="text-[10px] text-tg-hint">{setsCount(overview.totalSets)}</p>
         </div>
-        <div className="rounded-xl bg-tg-bg px-2 py-2">
+        <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">
             {overview.totalVolume >= 1000
               ? `${(overview.totalVolume / 1000).toFixed(1)}т`
@@ -94,7 +94,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
           type="button"
           disabled={aiBusy}
           onClick={onAskAi}
-          className="mt-3 w-full rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link disabled:opacity-60"
+          className="mt-3 w-full app-metric px-3 py-2.5 text-xs font-medium text-tg-link disabled:opacity-60"
         >
           {aiBusy ? "ИИ анализирует…" : "ИИ-разбор этой недели"}
         </button>

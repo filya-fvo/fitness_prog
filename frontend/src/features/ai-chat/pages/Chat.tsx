@@ -141,7 +141,7 @@ export function Chat() {
   }, [historyReady, searchParams, setSearchParams, send]);
 
   return (
-    <section className="flex min-h-[70vh] flex-col">
+    <section className="coach-page mx-auto flex max-w-3xl flex-col">
       <Header
         title="ИИ-тренер"
         subtitle={!historyReady ? "Загрузка истории…" : "Локально · без дневного лимита"}
@@ -149,7 +149,7 @@ export function Chat() {
       {error ? <div role="alert" className="app-card app-card-danger mb-3 p-3 text-sm">{error}</div> : null}
       {showPlusGate ? <div className="mb-3"><PlusAccessSummary feature="ai_progress_analysis" title="Разбор истории доступен в PLUS" compact /></div> : null}
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="coach-prompts mb-4 grid grid-cols-2 gap-2">
         {QUICK.map((item) => (
           <button
             key={item.text}
@@ -163,14 +163,14 @@ export function Chat() {
               setShowPlusGate(false);
               void send(item.text);
             }}
-            className="app-chip app-chip-info min-h-11 px-3 text-xs disabled:opacity-50"
+            className="coach-prompt app-chip app-chip-info px-3 text-xs disabled:opacity-50"
           >
             {item.text}{item.premium ? " · PLUS" : ""}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto pb-3">
+      <div className="coach-messages flex-1 space-y-3 pb-4">
         {messages.map((m) => {
           const isLong = m.role === "assistant" && previewAiMessage(m.content) !== m.content;
           const isExpanded = expandedMessages.has(m.id);
@@ -178,7 +178,7 @@ export function Chat() {
             <div
               key={m.id}
               className={[
-                "app-card max-w-[90%] whitespace-pre-wrap px-3 py-2 text-sm",
+                "app-card max-w-[94%] whitespace-pre-wrap px-4 py-3 text-sm leading-relaxed sm:max-w-[85%]",
                 m.role === "user"
                   ? "app-card-plum ml-auto"
                   : "app-card-ocean mr-auto",
@@ -201,7 +201,7 @@ export function Chat() {
                 </button>
               ) : null}
               {m.role === "assistant" && m.source ? (
-                <span className="mt-1 block text-[10px] opacity-60">
+                <span className="mt-2 block text-xs text-tg-hint">
                   {m.source === "rule" ? "Локальный резервный ответ" : "Ответ ИИ-тренера"}
                 </span>
               ) : null}
@@ -212,7 +212,7 @@ export function Chat() {
       </div>
 
       <form
-        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex gap-2 bg-tg-bg pt-2"
+        className="coach-composer sticky flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           void send(text);

@@ -29,12 +29,12 @@ function PeriodCard({ item }: { item: NutritionPeriodTotals }) {
     item.daysWithLogs === 0 || item.delta == null
       ? ""
       : item.delta > 0
-        ? "text-orange-600"
+        ? "text-[var(--color-warning)]"
         : item.delta < 0
-          ? "text-emerald-700"
+          ? "text-[var(--color-success)]"
           : "";
   return (
-    <div className="rounded-xl bg-tg-bg p-2.5">
+    <div className="app-metric p-3">
       <p className="text-[11px] font-medium text-tg-text">{item.label}</p>
       <p className="text-[10px] text-tg-hint">{item.rangeLabel}</p>
       <p className="mt-1.5 text-lg font-semibold tabular-nums leading-none">
@@ -65,7 +65,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
   const lastLoggedDate = [...series].reverse().find((day) => day.hasLogs)?.date ?? null;
 
   return (
-    <section className="rounded-2xl bg-tg-secondary p-4">
+    <section className="nutrition-balance pt-2">
       <h2 className="text-sm font-semibold">Питание: калории</h2>
       <p className="mt-1 text-xs text-tg-hint">
         Три окна: сегодня, текущая неделя (с понедельника) и текущий месяц (с 1-го числа).
@@ -90,7 +90,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
               : "График по неделям: суммарный перебор/недобор за неделю."}
           </p>
           <div className="relative flex h-40 items-stretch gap-1">
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-black/20" />
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-[var(--border-subtle)]" />
             {series.map((day) => {
               const delta = day.delta ?? 0;
               const height = Math.max(4, Math.round((Math.abs(delta) / maxAbs) * 48));
@@ -114,7 +114,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                         <div
                           className="relative w-full max-w-[18px] rounded-t bg-orange-400/85"
                           style={{ height: `${height}%` }}
-                        >{showValue ? <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-orange-300">+{Math.round(delta)}</span> : null}</div>
+                        >{showValue ? <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[var(--color-warning)]">+{Math.round(delta)}</span> : null}</div>
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
@@ -126,7 +126,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                           style={{ height: `${height}%` }}
                         >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-tg-link">{Math.round(delta)}</span> : null}</div>
                       ) : !day.hasLogs ? (
-                        <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-white/15" />
+                        <div className="mt-1 h-1 w-full max-w-[18px] rounded bg-[var(--app-hint)]/30" />
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
@@ -146,7 +146,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
               <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-cyan-500/75" />
               недобор
             </span>
-            <span><span className="mr-1 inline-block h-1 w-2 rounded bg-white/15" />нет записи</span>
+            <span><span className="mr-1 inline-block h-1 w-2 rounded bg-[var(--app-hint)]/30" />нет записи</span>
             <span>линия — цель (0)</span>
           </div>
         </div>

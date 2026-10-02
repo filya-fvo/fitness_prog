@@ -102,7 +102,7 @@ function MeasurementChart({
     })
     .join(" ");
   return (
-    <div className="mt-3 rounded-xl bg-tg-bg p-3">
+    <div className="app-metric mt-3 p-3">
       <svg viewBox="0 0 320 120" className="h-32 w-full" role="img" aria-label="Динамика замеров">
         <line x1="12" y1="105" x2="308" y2="105" stroke="currentColor" opacity="0.15" />
         <line x1="12" y1="62" x2="308" y2="62" stroke="currentColor" opacity="0.1" strokeDasharray="4 4" />
@@ -114,9 +114,9 @@ function MeasurementChart({
         })}
       </svg>
       <div className="flex justify-between text-[10px] text-tg-hint">
-        <span>{points[0].date.slice(5)}</span>
+        <span>{shortMeasurementDate(points[0].date)}</span>
         <span>{min.toFixed(1).replace(".", ",")}–{max.toFixed(1).replace(".", ",")} {config.unit}</span>
-        <span>{points[points.length - 1].date.slice(5)}</span>
+        <span>{shortMeasurementDate(points[points.length - 1].date)}</span>
       </div>
     </div>
   );
@@ -286,30 +286,30 @@ export function MeasurementsPage() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="measurements-page mx-auto max-w-4xl">
       <Header title="Замеры тела" subtitle="История обхватов и динамика" />
 
-      <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-tg-secondary p-2">
-        {plusAccess ? <button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg">‹</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
+      <div className="mb-3 flex items-center justify-between gap-2 app-card app-card-neutral p-2">
+        {plusAccess ? <button type="button" aria-label="Предыдущий день" onClick={() => setDate((value) => shiftDate(value, -1))} className="app-button app-secondary-action h-11 w-11 shrink-0 p-0 text-lg">‹</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
         <div className="text-center">
           <p className="text-sm font-semibold">{date === todayISO() ? "Сегодня" : displayDate(date)}</p>
           {currentHistory ? <p className="text-[10px] text-tg-hint">{pendingDates.has(date) ? "ждёт синхронизации" : "замер сохранён"}</p> : <p className="text-[10px] text-tg-hint">новый замер</p>}
         </div>
-        {plusAccess ? <button type="button" disabled={date >= todayISO()} onClick={() => setDate((value) => shiftDate(value, 1))} className="tap-target min-h-[44px] min-w-[44px] rounded-xl bg-tg-bg text-lg disabled:opacity-40">›</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
+        {plusAccess ? <button type="button" disabled={date >= todayISO()} aria-label="Следующий день" onClick={() => setDate((value) => shiftDate(value, 1))} className="app-button app-secondary-action h-11 w-11 shrink-0 p-0 text-lg disabled:opacity-40">›</button> : <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />}
       </div>
 
       {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
       {notice ? <div role="status" className="mb-3 rounded-xl bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">{notice}</div> : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <section className="rounded-2xl bg-tg-secondary p-4">
+        <section className="app-card app-card-neutral p-4">
           <h2 className="text-sm font-semibold">Замеры на {date === todayISO() ? "сегодня" : displayDate(date)}</h2>
           <p className="mt-1 text-xs text-tg-hint">Заполняйте только те области, которые измерили.</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4">
             {BODY_MEASURE_FIELDS.map((field) => {
               const previousPoint = previousByField[field.key];
               return (
-                <label key={field.key} className="text-xs text-tg-hint">
+                <label key={field.key} className="min-w-0 text-xs font-medium text-tg-hint">
                   {field.label}
                   <DecimalInput
                     min={field.min}
@@ -317,18 +317,18 @@ export function MeasurementsPage() {
                     value={values[field.key] ?? ""}
                     onValueChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
                     placeholder="—"
-                    className="mt-1 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm"
+                    className="app-field mt-1.5"
                   />
-                  {plusAccess && previousPoint ? <span className="mt-0.5 block text-[10px]">{shortMeasurementDate(previousPoint.date)} → {shortMeasurementDate(date)} · {measurementDaysBetween(previousPoint.date, date)} дн.: {deltaText(Number(values[field.key]) || null, previousPoint.value, field.unit)}</span> : null}
+                  {plusAccess && previousPoint ? <span className="mt-1.5 block text-xs font-normal leading-relaxed">{shortMeasurementDate(previousPoint.date)} → {shortMeasurementDate(date)} · {measurementDaysBetween(previousPoint.date, date)} дн.: {deltaText(Number(values[field.key]) || null, previousPoint.value, field.unit)}</span> : null}
                 </label>
               );
             })}
           </div>
           <label className="mt-3 block text-xs text-tg-hint">
             Заметка
-            <textarea value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="Например: утром, до завтрака" className="mt-1 min-h-20 w-full resize-y rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-sm" />
+            <textarea value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="Например: утром, до завтрака" className="app-field mt-1.5 min-h-24 resize-y" />
           </label>
-          <button type="button" disabled={saving || loading || Boolean(error)} onClick={() => void save()} className="mt-3 min-h-[44px] w-full rounded-xl bg-tg-button px-4 py-3 text-sm font-semibold text-tg-button-text disabled:opacity-50">
+          <button type="button" disabled={saving || loading || Boolean(error)} onClick={() => void save()} className="app-button app-gradient-action mt-4 w-full">
             {saving ? "Сохраняем…" : currentHistory ? "Обновить замер" : "Сохранить замер"}
           </button>
           {currentHistory ? (
@@ -343,13 +343,13 @@ export function MeasurementsPage() {
           ) : null}
         </section>
 
-        {plusAccess ? <section className="rounded-2xl bg-tg-secondary p-4">
+        {plusAccess ? <section className="app-card app-card-neutral p-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold">Динамика</h2>
               <p className="text-[11px] text-tg-hint">До 12 последних точек</p>
             </div>
-            <select aria-label="Показатель на графике" value={chartField} onChange={(event) => setChartField(event.target.value as BodyMeasurementField)} className="rounded-lg bg-tg-bg px-2 py-1.5 text-xs">
+            <select aria-label="Показатель на графике" value={chartField} onChange={(event) => setChartField(event.target.value as BodyMeasurementField)} className="app-field w-auto max-w-[55%]">
               {BODY_MEASURE_FIELDS.map((field) => <option key={field.key} value={field.key}>{field.label.split(",")[0]}</option>)}
             </select>
           </div>
@@ -359,7 +359,7 @@ export function MeasurementsPage() {
           {history.length ? (
             <div className="mt-2 space-y-2">
               {[...history].reverse().slice(0, 8).map((item) => (
-                <button key={item.date} type="button" onClick={() => setDate(item.date)} className="w-full rounded-xl bg-tg-bg p-3 text-left">
+                <button key={item.date} type="button" onClick={() => setDate(item.date)} className="app-metric measurement-history-row w-full p-3 text-left">
                   <p className="text-xs font-medium">{displayDate(item.date)}{pendingDates.has(item.date) ? " · ждёт отправки" : ""}</p>
                   <p className="mt-1 text-[11px] text-tg-hint">
                     {BODY_MEASURE_FIELDS.filter((field) => item[field.key as BodyMeasurementField] != null).slice(0, 3).map((field) => `${field.label.split(",")[0]} ${item[field.key as BodyMeasurementField]} ${field.unit}`).join(" · ") || "Только заметка"}

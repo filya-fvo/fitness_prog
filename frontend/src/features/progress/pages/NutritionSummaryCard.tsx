@@ -21,12 +21,12 @@ export function NutritionSummaryCard({
   periods: { day: NutritionPeriodTotals; week: NutritionPeriodTotals; month: NutritionPeriodTotals } | null;
 }) {
   return (
-    <section className="rounded-2xl bg-tg-secondary p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <section className="app-card app-card-neutral p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="text-sm font-semibold">Сводка по питанию</h2><p className="mt-0.5 text-[11px] text-tg-hint">Учитываются только заполненные дни</p></div>
-        <div className="flex rounded-full bg-tg-bg p-0.5 text-xs">
+        <div className="app-segmented grid grid-cols-2 text-xs">
           {(["day", "week"] as const).map((value) => (
-            <button key={value} type="button" onClick={() => onModeChange(value)} className={`min-h-11 rounded-full px-3 ${mode === value ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>
+            <button key={value} type="button" onClick={() => onModeChange(value)} aria-pressed={mode === value} className="app-segment px-3">
               {value === "day" ? "День" : "Неделя"}
             </button>
           ))}

@@ -32,7 +32,7 @@ function MeasurementAnalyticsCard({ item }: { item: BodyMeasurementAnalyticsItem
   const config = BODY_MEASURE_FIELDS.find((field) => field.key === item.field);
   if (!config || item.latest_value == null) return null;
   return (
-    <div className="rounded-xl bg-tg-bg p-2.5">
+    <div className="app-metric p-2.5">
       <p className="text-[10px] text-tg-hint">{config.label.split(",")[0]}</p>
       <p className="mt-1 text-base font-semibold tabular-nums">
         {numberText(item.latest_value)} {config.unit}
@@ -71,22 +71,22 @@ export function BodyMeasurementsSummary({ months, onMonthsChange, data, loading,
   const goalLabel = data?.primary_goal ? GOAL_LABELS[data.primary_goal] : null;
 
   return (
-    <section className="rounded-2xl bg-tg-secondary p-4">
-      <div className="flex items-start justify-between gap-2">
+    <section className="app-card app-card-neutral p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold">Замеры тела</h2>
           <p className="mt-0.5 text-[11px] text-tg-hint">База и изменение за период</p>
         </div>
         <Link to="/measurements" className="flex min-h-11 items-center text-xs font-medium text-tg-link">Журнал замеров →</Link>
       </div>
-      <div className="mt-3 grid grid-cols-4 gap-1" aria-label="Период аналитики замеров">
+      <div className="app-segmented mt-3 grid grid-cols-4" aria-label="Период аналитики замеров">
         {PERIODS.map((period) => (
           <button
             key={period}
             type="button"
             onClick={() => onMonthsChange(period)}
             aria-pressed={months === period}
-            className={`min-h-11 rounded-lg px-2 text-xs ${months === period ? "bg-tg-button text-tg-button-text" : "bg-tg-bg text-tg-hint"}`}
+            className="app-segment px-1 text-xs"
           >
             {period} мес.
           </button>

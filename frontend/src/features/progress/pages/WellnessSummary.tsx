@@ -134,15 +134,15 @@ export function WellnessSummary({ days, error }: Props) {
   const goalDays = config.goal == null ? null : values.filter((row) => row.value >= config.goal!).length;
 
   return (
-    <section className="rounded-2xl bg-tg-secondary p-4 md:col-span-2">
+    <section className="app-card app-card-neutral p-4 md:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div><h2 className="text-sm font-semibold">Активность и восстановление</h2><p className="mt-0.5 text-[11px] text-tg-hint">Один показатель — одна понятная шкала</p></div>
-        <div className="flex rounded-full bg-tg-bg p-0.5 text-[11px]" aria-label="Период графика">
-          {([7, 14, 30] as const).map((value) => <button key={value} type="button" onClick={() => setPeriod(value)} className={`rounded-full px-2.5 py-1 ${period === value ? "bg-tg-button text-tg-button-text" : "text-tg-hint"}`}>{value} дн.</button>)}
+        <div className="app-segmented grid grid-cols-3 text-xs" aria-label="Период графика">
+          {([7, 14, 30] as const).map((value) => <button key={value} type="button" onClick={() => setPeriod(value)} aria-pressed={period === value} className="app-segment px-3">{value} дн.</button>)}
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-tg-bg p-1" role="tablist" aria-label="Показатель">
-        {(Object.keys(METRICS) as MetricId[]).map((id) => <button key={id} type="button" role="tab" aria-selected={metric === id} onClick={() => setMetric(id)} className={`min-w-0 rounded-lg px-1 py-2 text-[11px] ${metric === id ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}>{METRICS[id].shortLabel}</button>)}
+      <div className="app-segmented mt-3 grid grid-cols-3 text-xs" role="tablist" aria-label="Показатель">
+        {(Object.keys(METRICS) as MetricId[]).map((id) => <button key={id} type="button" role="tab" aria-selected={metric === id} onClick={() => setMetric(id)} className="app-segment px-2">{METRICS[id].shortLabel}</button>)}
       </div>
       {error ? <p className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{error}</p> : <>
         <div className="my-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

@@ -28,20 +28,20 @@ export function TrainingLoadAnalytics({
 }) {
   const maxSets = Math.max(1, ...(data?.muscle_groups.map((item) => item.completed_sets) ?? [1]));
   return (
-    <section className="rounded-2xl bg-tg-secondary p-4 md:col-span-2" aria-labelledby="training-load-title">
+    <section className="app-card app-card-neutral p-4 md:col-span-2" aria-labelledby="training-load-title">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 id="training-load-title" className="text-sm font-semibold">Нагрузка и восстановление</h2>
           <p className="mt-0.5 text-[11px] text-tg-hint">Только завершённые подходы · пустые дни не считаются нулём</p>
         </div>
-        <div className="grid grid-cols-3 rounded-xl bg-tg-bg p-1 text-[11px]" aria-label="Период нагрузки">
+        <div className="app-segmented grid grid-cols-3 text-xs" aria-label="Период нагрузки">
           {PERIODS.map((period) => (
             <button
               key={period}
               type="button"
               aria-pressed={data?.period_days === period}
               onClick={() => onPeriodChange(period)}
-              className={`min-h-11 rounded-lg px-2 ${data?.period_days === period ? "bg-tg-button font-semibold text-tg-button-text" : "text-tg-hint"}`}
+              className="app-segment px-3"
             >
               {period / 7} нед.
             </button>
@@ -49,7 +49,7 @@ export function TrainingLoadAnalytics({
         </div>
       </div>
 
-      {loading ? <div className="mt-3 h-36 animate-pulse rounded-xl bg-tg-bg" /> : null}
+      {loading ? <div className="mt-3 h-36 animate-pulse app-metric" /> : null}
       {error ? <StatusNotice role="status" tone="danger" className="mt-3">{error}</StatusNotice> : null}
       {!data && !loading && !error ? <StatusNotice className="mt-3">Данные о нагрузке пока недоступны.</StatusNotice> : null}
       {data && !loading && data.current.completed_workouts === 0 ? (
@@ -60,24 +60,24 @@ export function TrainingLoadAnalytics({
           <p className="mt-3 text-[11px] text-tg-hint">
             {data.period_start.split("-").reverse().join(".")}–{data.period_end.split("-").reverse().join(".")} · {data.current.completed_workouts} тренировок
           </p>
-          <div className={`mt-2 grid gap-2 ${advanced ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
-            <div className="rounded-xl bg-tg-bg p-2.5">
+          <div className={`mt-2 grid gap-2 ${advanced ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3"}`}>
+            <div className="app-metric p-2.5">
               <p className="text-[10px] text-tg-hint">Подходы факт / план</p>
               <p className="mt-1 text-base font-semibold">{data.current.completed_sets} / {data.current.planned_sets || "—"}</p>
               <p className="text-[10px] text-tg-hint">факт: {signedDelta(data.current.completed_sets, data.previous.completed_sets)}</p>
             </div>
-            <div className="rounded-xl bg-tg-bg p-2.5">
+            <div className="app-metric p-2.5">
               <p className="text-[10px] text-tg-hint">Средний RPE</p>
               <p className="mt-1 text-base font-semibold">{data.current.average_rpe == null ? "—" : formatNumber(data.current.average_rpe)}</p>
               <p className="text-[10px] text-tg-hint">заполнено {data.current.rpe_workouts} из {data.current.completed_workouts}</p>
             </div>
-            <div className="rounded-xl bg-tg-bg p-2.5">
+            <div className="app-metric p-2.5">
               <p className="text-[10px] text-tg-hint">Активные дни</p>
               <p className="mt-1 text-base font-semibold">{data.current.active_days}</p>
               <p className="text-[10px] text-tg-hint">за выбранный период</p>
             </div>
             {advanced ? (
-              <div className="rounded-xl bg-tg-bg p-2.5">
+              <div className="app-metric p-2.5">
                 <p className="text-[10px] text-tg-hint">Тоннаж</p>
                 <p className="mt-1 text-base font-semibold">{formatNumber(data.current.volume_kg / 1000)} т</p>
                 <p className="text-[10px] text-tg-hint">{signedDelta(data.current.volume_kg, data.previous.volume_kg, " кг")}</p>
@@ -109,7 +109,7 @@ export function TrainingLoadAnalytics({
           {advanced && data.weeks.length ? (
             <div className="mt-4">
               <p className="text-xs font-semibold">Объём по неделям</p>
-              <div className="mt-2 flex h-24 items-end gap-1 rounded-xl bg-tg-bg p-3" role="img" aria-label="Тоннаж по неделям">
+              <div className="mt-2 flex h-24 items-end gap-1 app-metric p-3" role="img" aria-label="Тоннаж по неделям">
                 {data.weeks.map((week) => {
                   const max = Math.max(1, ...data.weeks.map((item) => item.volume_kg));
                   const height = week.volume_kg ? Math.max(6, week.volume_kg / max * 64) : 3;

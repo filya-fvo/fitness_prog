@@ -33,8 +33,13 @@ export default defineConfig({
       ],
     },
     {
+      name: "android-chrome",
+      testMatch: /content-design\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
+    {
       name: "iphone-webkit",
-      testMatch: /iphone-(layout|telegram-entry)\.spec\.ts/,
+      testMatch: /(?:iphone-(layout|telegram-entry)|content-design)\.spec\.ts/,
       use: { ...devices["iPhone 13"] },
     },
     {

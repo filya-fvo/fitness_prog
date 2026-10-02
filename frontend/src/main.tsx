@@ -5,6 +5,7 @@ import { startAppUpdateMonitor } from "./lib/appUpdate";
 import { initSentry } from "./lib/sentry";
 import { initializeTheme } from "./theme/theme";
 import "./index.css";
+import "./theme/contentScreens.css";
 
 const rootElement = document.getElementById("root");
 document.documentElement.dataset.fitnessBuild = __FITNESS_BUILD_ID__;

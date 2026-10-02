@@ -37,14 +37,14 @@ function Illustration({ feature }: { feature: Feature }) {
 
 export function HelpFeatureCard({ to, title, description, action, feature, badge }: Props) {
   return (
-    <Link to={to} data-help-feature={feature} className={`group relative flex min-h-[186px] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-r ${tone[feature]} p-4 text-white shadow-[0_14px_30px_rgba(1,9,29,.25)] active:scale-[.99]`}>
-      <span className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-sky-400/15 blur-2xl" aria-hidden="true" />
-      <span className="relative z-10 flex min-w-0 flex-1 flex-col items-start">
+    <Link to={to} data-help-feature={feature} className={`group relative flex min-h-[186px] w-full min-w-0 overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-r ${tone[feature]} p-4 text-white shadow-[0_14px_30px_rgba(1,9,29,.25)] active:scale-[.99]`}>
+      <span className="help-feature-glow pointer-events-none absolute inset-0" aria-hidden="true" />
+      <span className="help-feature-copy relative z-10 flex min-w-0 flex-1 flex-col items-start">
         <span className="flex items-center gap-2 text-lg font-bold leading-tight">{title}{badge ? <span className="rounded-full bg-pink-500/80 px-2 py-0.5 text-[10px] font-semibold">{badge}</span> : null}</span>
         <span className="mt-2 max-w-[18rem] text-xs leading-relaxed text-sky-100/85">{description}</span>
-        <span className="mt-auto inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-[#ff6b46] via-[#ef438c] to-[#7c4dff] px-4 text-xs font-bold shadow-[0_6px_16px_rgba(207,55,120,.3)]">{action}<span className="ml-2 text-base group-hover:translate-x-0.5" aria-hidden="true">→</span></span>
+        <span className="help-feature-action app-button app-gradient-action mt-auto text-xs">{action}<span className="text-base group-hover:translate-x-0.5" aria-hidden="true">→</span></span>
       </span>
-      <span className="relative -mr-4 -mb-4 mt-auto w-28 shrink-0"><Illustration feature={feature} /></span>
+      <span className="help-feature-art relative -mr-4 -mb-4 mt-auto w-28 shrink-0"><Illustration feature={feature} /></span>
     </Link>
   );
 }
