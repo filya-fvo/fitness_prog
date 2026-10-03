@@ -140,6 +140,11 @@ export type PersonalProgramInput = {
   }>;
 };
 
+export async function fetchProgram(programId: string): Promise<Program> {
+  const { data } = await apiClient.get(`/programs/${encodeURIComponent(programId)}`);
+  return mapProgram(programSchema.parse(data));
+}
+
 export async function fetchMyPrograms(): Promise<{ items: Program[]; total: number }> {
   const { data } = await apiClient.get("/programs/mine");
   const parsed = listSchema.parse(data);

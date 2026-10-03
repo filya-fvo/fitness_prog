@@ -16,6 +16,9 @@ describe("extractTelegramInitDataFromUrl", () => {
 });
 
 describe("pathFromStartParam", () => {
+  it("opens supplement settings instead of the profile hub", () => {
+    expect(pathFromStartParam("supplements")).toBe("/profile/settings?section=supplements");
+  });
   it("opens the separate measurements screen", () => {
     expect(pathFromStartParam("measurements")).toBe("/measurements");
   });

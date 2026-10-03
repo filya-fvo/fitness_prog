@@ -16,9 +16,9 @@ export function ExerciseMediaTabs({ exercise }: { exercise: Exercise }) {
   const photo = exerciseImageUrl(exercise);
   return (
     <section aria-label="Материалы упражнения">
-      <div className="app-card-inset mb-3 grid grid-cols-3 gap-1 p-1" role="tablist" aria-label="Материалы">
+      <div className="app-card-inset mb-3 grid grid-cols-3 gap-1 p-1" role="group" aria-label="Материалы">
         {tabs.map((item) => (
-          <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}
+          <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => setTab(item.id)}
             className={`min-h-11 rounded-lg px-2 text-xs font-semibold ${tab === item.id ? "app-gradient-action text-white" : "text-tg-hint"}`}>
             {item.label}
           </button>

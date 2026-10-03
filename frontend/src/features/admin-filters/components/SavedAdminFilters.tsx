@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import {
   parseSavedAdminFilters,
@@ -17,6 +17,7 @@ export function SavedAdminFilters({
   value: Record<string, string>;
   onApply: (value: Record<string, string>) => void;
 }) {
+  const nameId = useId();
   const [items, setItems] = useState<SavedAdminFilterSet[]>([]);
   const [name, setName] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -65,14 +66,18 @@ export function SavedAdminFilters({
         <button type="button" disabled={!selectedId} onClick={applySelected} className="min-h-11 rounded-xl bg-tg-secondary px-3 text-sm text-tg-link disabled:opacity-40">Загрузить набор</button>
         <button type="button" disabled={!selectedId} onClick={removeSelected} className="min-h-11 rounded-xl bg-red-500/10 px-3 text-sm text-red-600 disabled:opacity-40">Удалить набор</button>
       </div>
-      <div className="mt-2 flex gap-2">
-        <input
-          value={name}
-          maxLength={40}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Название текущего набора"
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
-        />
+      <div className="mt-2 flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <label htmlFor={nameId} className="block text-xs text-tg-hint">Название набора фильтров</label>
+          <input
+            id={nameId}
+            value={name}
+            maxLength={40}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Название текущего набора"
+            className="mt-1 min-h-11 w-full rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
+          />
+        </div>
         <button type="button" disabled={!name.trim()} onClick={saveCurrent} className="min-h-11 shrink-0 rounded-xl app-gradient-action px-3 text-sm font-semibold disabled:opacity-40">Сохранить</button>
       </div>
       <p className="mt-1 text-[11px] text-tg-hint">До 8 наборов, только на этом устройстве.</p>

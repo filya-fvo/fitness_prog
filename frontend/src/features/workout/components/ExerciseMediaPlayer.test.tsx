@@ -31,4 +31,17 @@ describe("ExerciseMediaPlayer approved illustrations", () => {
     expect(markup).toContain('/exercise-thumbnails/deadbug-start.webp');
     expect(markup).not.toContain('/exercise-images/deadbug.webp');
   });
+
+  it("treats an uploaded illustration without a filename extension as a static image", () => {
+    const markup = renderToStaticMarkup(<ExerciseMediaPlayer exercise={{ ...exercise, image_url: "/exercise-media/11111111-1111-4111-8111-111111111111" }} />);
+    expect(markup).toContain("/exercise-media/11111111-1111-4111-8111-111111111111");
+    expect(markup).not.toContain("Остановить анимацию");
+    expect(markup).not.toContain("Воспроизвести анимацию");
+  });
+
+  it("keeps an uploaded thumbnail static in a compact preview", () => {
+    const markup = renderToStaticMarkup(<ExerciseMediaPlayer exercise={{ ...exercise, thumbnail_url: "/exercise-media/22222222-2222-4222-8222-222222222222" }} preview />);
+    expect(markup).toContain("/exercise-media/22222222-2222-4222-8222-222222222222");
+    expect(markup).not.toContain("Остановить анимацию");
+  });
 });

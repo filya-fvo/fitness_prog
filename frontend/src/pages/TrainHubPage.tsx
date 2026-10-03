@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
+import { preferredScrollBehavior } from "@/utils/motion";
 import { fetchExercises } from "@/api/exercises";
 import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
@@ -224,7 +225,7 @@ export function TrainHubPage() {
     if (location.hash !== "#schedule" || !scheduleSettings) return;
     const frame = requestAnimationFrame(() => {
       document.getElementById("schedule")?.focus({ preventScroll: true });
-      document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("schedule")?.scrollIntoView({ behavior: preferredScrollBehavior(), block: "start" });
     });
     return () => cancelAnimationFrame(frame);
   }, [location.hash, scheduleSettings]);

@@ -13,6 +13,7 @@ import { useUserStore } from "@/store/userStore";
 import { toUserMessage } from "@/utils/errors";
 import { trackEvent } from "@/lib/analytics";
 import { previewAiMessage } from "@/utils/aiMessage";
+import { preferredScrollBehavior } from "@/utils/motion";
 
 type Msg = {
   id: string;
@@ -88,7 +89,7 @@ export function Chat() {
         kind: "chat",
         chars: trimmed.length,
       });
-      window.setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      window.setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: preferredScrollBehavior() }), 50);
     } catch (err) {
       setError(toUserMessage(err, "ИИ-тренер временно недоступен"));
     } finally {

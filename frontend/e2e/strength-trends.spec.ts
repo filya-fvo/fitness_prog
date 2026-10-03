@@ -78,12 +78,12 @@ test("PLUS progress explains next, best and user-selected strength trends", asyn
   await expect(card.getByText("Жим гантелей лёжа")).toBeVisible();
   await expect(card.getByText(/10 сент.*Тренировка A/)).toBeVisible();
 
-  await card.getByRole("tab", { name: "Лучшие" }).click();
+  await card.getByRole("button", { name: "Лучшие", exact: true }).click();
   await expect(card.getByText("Тяга верхнего блока")).toBeVisible();
   await expect(card.getByText("+18,4%")).toBeVisible();
   await expect(card.getByText(/Устойчивый рост/)).toBeVisible();
 
-  await card.getByRole("tab", { name: "Мои" }).click();
+  await card.getByRole("button", { name: "Мои", exact: true }).click();
   await expect(card.getByText("Приседание со штангой")).toBeVisible();
   await expect(card.getByText("Вы сами определяете этот список.")).toBeVisible();
   await expect(card.getByRole("button", { name: "Открепить упражнение" })).toBeVisible();

@@ -4,14 +4,31 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from app.core.config import Settings
 from app.models.admin_system_snapshot import AdminSystemSnapshot
 from app.schemas.admin_system import AdminSystemCheck, AdminSystemStatusResponse
 from app.services import admin_system_history
+
+
+def test_scheduled_snapshot_worker_can_read_the_same_host_status_as_api() -> None:
+    """Scheduled snapshots must see host files through the same read-only mount."""
+    root = Path(__file__).resolve().parents[2]
+    services = yaml.safe_load((root / "docker-compose.yml").read_text(encoding="utf-8"))["services"]
+    api = services["api"]
+    worker = services["worker"]
+    api_path = api["environment"]["ADMIN_SYSTEM_STATUS_DIR"]
+    worker_path = worker["environment"].get("ADMIN_SYSTEM_STATUS_DIR")
+    assert worker_path == api_path
+    api_mount = next(mount for mount in api["volumes"] if mount.split(":")[1] == api_path)
+    worker_mount = next(mount for mount in worker["volumes"] if mount.split(":")[1] == worker_path)
+    assert worker_mount.split(":")[0] == api_mount.split(":")[0]
+    assert worker_mount.split(":")[2] == "ro"
 
 
 def _status(*, database: str = "normal") -> AdminSystemStatusResponse:

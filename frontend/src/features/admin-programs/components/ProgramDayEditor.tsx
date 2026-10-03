@@ -84,7 +84,7 @@ export function ProgramDayEditor({ day, index, count, onChange, onMove, onCopy, 
                 <div className="flex gap-1">
                   <button type="button" disabled={exerciseIndex === 0} onClick={() => onChange({ ...day, exercises: moveItem(day.exercises, exerciseIndex, exerciseIndex - 1) })} className="min-h-11 min-w-11 rounded-lg bg-tg-secondary disabled:opacity-30" aria-label={`Поднять ${exercise.exerciseName}`}>↑</button>
                   <button type="button" disabled={exerciseIndex === day.exercises.length - 1} onClick={() => onChange({ ...day, exercises: moveItem(day.exercises, exerciseIndex, exerciseIndex + 1) })} className="min-h-11 min-w-11 rounded-lg bg-tg-secondary disabled:opacity-30" aria-label={`Опустить ${exercise.exerciseName}`}>↓</button>
-                  <button type="button" onClick={() => removeExercise(exerciseIndex)} className="min-h-11 rounded-lg px-2 text-red-500" aria-label={`Удалить ${exercise.exerciseName}`}>×</button>
+                  <button type="button" onClick={() => removeExercise(exerciseIndex)} className="min-h-11 min-w-11 rounded-lg px-2 text-red-500" aria-label={`Удалить ${exercise.exerciseName}`}>×</button>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

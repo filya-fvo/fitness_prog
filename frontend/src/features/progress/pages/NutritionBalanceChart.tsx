@@ -1,3 +1,4 @@
+import { ChartDataTable } from "@/components/ui/ChartDataTable";
 import type { NutritionBalanceDay, NutritionPeriodTotals } from "@/utils/progress";
 import { StatusNotice } from "@/components/ui/StatusNotice";
 
@@ -35,12 +36,12 @@ function PeriodCard({ item }: { item: NutritionPeriodTotals }) {
           : "";
   return (
     <div className="app-metric p-3">
-      <p className="text-[11px] font-medium text-tg-text">{item.label}</p>
-      <p className="text-[10px] text-tg-hint">{item.rangeLabel}</p>
+      <p className="text-xs font-medium text-tg-text">{item.label}</p>
+      <p className="text-xs text-tg-hint">{item.rangeLabel}</p>
       <p className="mt-1.5 text-lg font-semibold tabular-nums leading-none">
-        {item.daysWithLogs ? <>{fmtKcal(item.eaten)}<span className="ml-0.5 text-[11px] font-normal text-tg-hint">ккал</span></> : "Нет записей"}
+        {item.daysWithLogs ? <>{fmtKcal(item.eaten)}<span className="ml-0.5 text-xs font-normal text-tg-hint">ккал</span></> : "Нет записей"}
       </p>
-      <p className="mt-1 text-[10px] text-tg-hint">
+      <p className="mt-1 text-xs text-tg-hint">
         цель {fmtKcal(item.target)}
         {item.daysCount > 1 ? ` · ${item.daysCount} дн.` : ""}
       </p>
@@ -62,7 +63,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
     1,
     ...series.filter((day) => day.hasLogs).map((day) => Math.abs(day.delta ?? 0)),
   );
-  const lastLoggedDate = [...series].reverse().find((day) => day.hasLogs)?.date ?? null;
+  const dateIndices = [0, Math.floor((series.length - 1) / 2), series.length - 1].filter((index, position, all) => index >= 0 && all.indexOf(index) === position);
 
   return (
     <section className="nutrition-balance pt-2">
@@ -89,19 +90,17 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
               ? "График по дням: выше линии — перебор, ниже — недобор относительно дневной цели."
               : "График по неделям: суммарный перебор/недобор за неделю."}
           </p>
-          <div className="relative flex h-40 items-stretch gap-1">
+          <p className="mb-2 text-xs text-tg-hint">Шкала баланса: −{Math.round(maxAbs)}…+{Math.round(maxAbs)} ккал</p>
+          <div role="img" aria-label="Баланс калорий за период" className="relative flex h-40 items-stretch gap-1">
             <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-[var(--border-subtle)]" />
             {series.map((day) => {
               const delta = day.delta ?? 0;
               const height = Math.max(4, Math.round((Math.abs(delta) / maxAbs) * 48));
-              const label =
-                mode === "week" ? `нед. ${day.date.slice(5)}` : day.date.slice(8);
               const title = !day.hasLogs
                 ? `${day.date}: нет записей`
                 : day.target != null
                   ? `${day.date}: съедено ${Math.round(day.calories)} ккал, цель ${Math.round(day.target)} ккал, разница ${fmtDelta(day.delta)} ккал`
                   : `${day.date}: съедено ${Math.round(day.calories)} ккал`;
-              const showValue = day.hasLogs && (mode === "week" || day.date === lastLoggedDate);
               return (
                 <div
                   key={day.date}
@@ -114,7 +113,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                         <div
                           className="relative w-full max-w-[18px] rounded-t bg-orange-400/85"
                           style={{ height: `${height}%` }}
-                        >{showValue ? <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[var(--color-warning)]">+{Math.round(delta)}</span> : null}</div>
+                         />
                       ) : (
                         <div className="w-full max-w-[18px]" />
                       )}
@@ -124,7 +123,7 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                         <div
                           className="relative w-full max-w-[18px] rounded-b bg-cyan-500/75"
                           style={{ height: `${height}%` }}
-                        >{showValue ? <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-tg-link">{Math.round(delta)}</span> : null}</div>
+                         />
                       ) : !day.hasLogs ? (
                         <div className="diary-missing-marker mt-1 h-1 w-full max-w-[18px] rounded" />
                       ) : (
@@ -132,12 +131,12 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
                       )}
                     </div>
                   </div>
-                  <span className="mt-1 text-[9px] text-tg-hint">{label}</span>
                 </div>
               );
             })}
           </div>
-          <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-tg-hint">
+          <div className="mt-1 flex justify-between gap-2 text-xs text-tg-hint">{dateIndices.map((index) => <span key={index}>{series[index].date.slice(5).split("-").reverse().join(".")}</span>)}</div>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-tg-hint">
             <span>
               <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-orange-400/85" />
               перебор
@@ -151,6 +150,8 @@ export function NutritionBalanceChart({ mode, series, dailyTarget, periods }: Pr
           </div>
         </div>
       )}
+      <ChartDataTable caption="Калории за период" columns={["Дата", "Съедено, ккал", "Цель, ккал", "Баланс, ккал"]}
+        rows={series.map((day) => ({ key: day.date, cells: [day.date, day.hasLogs ? day.calories : "Нет записей", day.target ?? "—", day.hasLogs ? day.delta ?? "—" : "—"] }))} />
     </section>
   );
 }

@@ -5,6 +5,7 @@ import type { BodyMeasurementPeriod } from "@/api/bodyMeasurements";
 import type { DailyMetric } from "@/api/dailyMetrics";
 import type { PersonalRegularity } from "@/api/workouts";
 import { PlanRegularityCard } from "@/components/PlanRegularityCard";
+import { AiMessagePreview } from "@/components/ui/AiMessagePreview";
 import { BadgesPanel } from "@/features/progress/pages/BadgesPanel";
 import { BodyMeasurementsSummary } from "@/features/progress/pages/BodyMeasurementsSummary";
 import { DiarySnapshotCards } from "@/features/progress/pages/DiarySnapshotCards";
@@ -64,14 +65,14 @@ export function DiaryBasicView(props: Props) {
       <WeeklyOverview overview={props.weekOverview} onAskAi={props.onAskWeekAi} aiBusy={props.weekAiBusy} />
       {props.weekAiError ? <p role="status" className="rounded-xl bg-tg-secondary px-3 py-2 text-xs text-amber-800">{props.weekAiError}</p> : null}
       {props.weekAiText ? (
-        <div className="rounded-2xl bg-tg-secondary p-4">
+        <section aria-label="ИИ: разбор недели" className="rounded-2xl bg-tg-secondary p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold">ИИ · разбор недели</p>
             <button type="button" className="min-h-11 px-2 text-xs text-tg-hint" onClick={props.onClearWeekAi}>Скрыть</button>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-tg-hint">{props.weekAiText}</p>
+          <AiMessagePreview text={props.weekAiText} />
           <Link to="/ai" className="mt-2 inline-block min-h-11 py-3 text-xs text-tg-link">Открыть чат с тренером →</Link>
-        </div>
+        </section>
       ) : null}
       <div id="diary-calendar" className="md:col-span-2">
         <h2 className="mb-2 text-sm font-semibold">Календарь тренировок</h2>

@@ -67,7 +67,7 @@ test("browser user signs in through the Telegram OIDC popup SDK", async ({ page 
   });
   await expect.poll(() => popupUrl).not.toBeNull();
   expect(new URL(popupUrl ?? "https://invalid").searchParams.get("origin")).toBe(
-    "http://127.0.0.1:5173",
+    new URL(page.url()).origin,
   );
   await expect.poll(() => page.evaluate(() => localStorage.getItem("fitness_jwt"))).toBe(
     "browser-telegram-session",

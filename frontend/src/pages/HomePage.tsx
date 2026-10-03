@@ -2,10 +2,11 @@
 import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
+import { preferredScrollBehavior } from "@/utils/motion";
 import { fetchExercises } from "@/api/exercises";
 import { fetchDailyNutrition, type DailyNutrition } from "@/api/nutrition";
 import { fetchWaterLog } from "@/api/notifications";
-import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchMyPrograms, fetchProgram, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchIllnessPause,
@@ -70,6 +71,7 @@ import { toUserMessage } from "@/utils/errors";
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { HomeMediaCard } from "@/features/home/components/HomeMediaCard";
 import { HomeProgramBanner } from "@/features/home/components/HomeProgramBanner";
+import { HomeRecommendedProgram } from "@/features/home/components/HomeRecommendedProgram";
 import { homeTrainingImage } from "@/features/home/homeTrainingImage";
 import { DailyActivityCards } from "@/features/home/components/DailyActivityCards";
 import { HomeNutritionSummary } from "@/features/home/components/HomeNutritionSummary";
@@ -135,6 +137,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [profileGoals, setProfileGoals] = useState<Record<string, unknown>>({});
   const [profileReady, setProfileReady] = useState(false);
+  const [programLoading, setProgramLoading] = useState(true);
   /** True when today's in-progress session has user exercise swaps. */
   const [sessionHasReplacements, setSessionHasReplacements] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -174,7 +177,8 @@ export function HomePage() {
     return sessionHasReplacements;
   }, [activeWorkout, sessionHasReplacements]);
 
-  const todayProgram = recommended[0] ?? null;
+  const todayProgram = recommended.find((program) => program.id === profileGoals.active_program_id) ?? null;
+  const suggestedProgram = profileReady && !profileGoals.active_program_id ? recommended[0] ?? null : null;
   const todayProgramCompleted = Boolean(
     workoutSchedule?.current?.status === "completed" ||
       (todayProgram && completedProgramIdsToday.includes(todayProgram.id)),
@@ -275,6 +279,7 @@ export function HomePage() {
   useEffect(() => {
     let cancelled = false;
     setProfileReady(false);
+    setProgramLoading(true);
     async function load() {
       try {
         const queue = await getPendingCount();
@@ -327,7 +332,8 @@ export function HomePage() {
             const goals = (profile?.goals as Record<string, unknown>) || {};
             const activeId = String(goals.active_program_id || "");
             const active = activeId
-              ? [...programs.items, ...myPrograms.items].find((p) => p.id === activeId) || null
+              ? [...programs.items, ...myPrograms.items].find((p) => p.id === activeId)
+                ?? await fetchProgram(activeId).catch(() => null)
               : null;
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
@@ -416,6 +422,8 @@ export function HomePage() {
         }
       } catch {
         // ignore dashboard soft failures
+      } finally {
+        if (!cancelled) setProgramLoading(false);
       }
     }
     void load();
@@ -911,9 +919,13 @@ export function HomePage() {
         ) : (
           <HomeMediaCard imageUrl={homeHeroImage}>
             <p className="section-kicker">С чего начать</p>
-            <p className="home-hero-title">Выберите свою первую программу</p>
+            <p className="home-hero-title">{programLoading ? "Загружаем ваш план" : !profileReady && getStoredToken() ? "Не удалось загрузить ваш план" : profileGoals.active_program_id ? "Не удалось открыть выбранную программу" : "Выберите свою первую программу"}</p>
             <p className="max-w-[20rem] text-sm text-tg-hint">
-              Готовый план тренировочных дней для зала или дома — либо соберите день из каталога.
+              {!profileReady && getStoredToken()
+                ? "После восстановления сети откройте список программ. Ваш сохранённый выбор не меняется."
+                : profileGoals.active_program_id
+                ? "Выбор сохранён. Попробуйте открыть программу снова через список программ."
+                : "Готовый план тренировочных дней для зала или дома — либо соберите день из каталога."}
               {!online ? " Сейчас нет сети — сессия сохранится на устройстве." : ""}
             </p>
             <button
@@ -921,11 +933,12 @@ export function HomePage() {
               onClick={() => navigate("/programs")}
               className="signal-action home-primary-action"
             >
-              Выбрать программу
+              {profileGoals.active_program_id || !profileReady ? "Открыть программы" : "Выбрать программу"}
             </button>
           </HomeMediaCard>
         )}
 
+        {suggestedProgram ? <HomeRecommendedProgram program={suggestedProgram} /> : null}
         <HomeNutritionSummary nutrition={todayNutrition} />
 
         <DailyActivityCards
@@ -944,7 +957,7 @@ export function HomePage() {
             setTodayPlanOpen(true);
             window.requestAnimationFrame(() => {
               document.getElementById("today-workout-plan")?.scrollIntoView({
-                behavior: "smooth",
+                behavior: preferredScrollBehavior(),
                 block: "center",
               });
             });

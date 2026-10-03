@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { preferredScrollBehavior } from "@/utils/motion";
 
 import {
   cancelAdminBroadcast,
@@ -17,6 +18,7 @@ import { useUserStore } from "@/store/userStore";
 import type { Program } from "@/types/workout";
 import { isAdminUsername } from "@/utils/adminAccess";
 import { toUserMessage } from "@/utils/errors";
+import { confirmAction } from "@/lib/telegram";
 
 import { BroadcastEditor } from "../components/BroadcastEditor";
 import { BroadcastHistory } from "../components/BroadcastHistory";
@@ -24,7 +26,7 @@ import { BroadcastHistory } from "../components/BroadcastHistory";
 const PAGE_SIZE = 10;
 
 export function AdminBroadcastsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const focusedBroadcastId = searchParams.get("focus");
   const user = useUserStore((state) => state.user);
   const isAuthLoading = useUserStore((state) => state.isAuthLoading);
@@ -32,6 +34,7 @@ export function AdminBroadcastsPage() {
   const [items, setItems] = useState<AdminBroadcast[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selected, setSelected] = useState<AdminBroadcast | null>(null);
+  const [editorDirty, setEditorDirty] = useState(false);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,6 +55,21 @@ export function AdminBroadcastsPage() {
     }
   }, []);
 
+  const mergeCampaign = useCallback((campaign: AdminBroadcast) => {
+    setItems((current) => {
+      const exists = current.some((item) => item.id === campaign.id);
+      return exists
+        ? current.map((item) => item.id === campaign.id ? campaign : item)
+        : [campaign, ...current].slice(0, PAGE_SIZE);
+    });
+    setSelected(campaign);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("focus", campaign.id);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   useEffect(() => {
     if (isAuthLoading || !allowed || loaded.current) return;
     loaded.current = true;
@@ -62,7 +80,7 @@ export function AdminBroadcastsPage() {
         .catch((reason) => setError(toUserMessage(reason, "Не удалось открыть рассылку из журнала.")));
     }
     void fetchPrograms({ templatesOnly: true }).then((response) => setPrograms(response.items)).catch(() => setPrograms([]));
-  }, [allowed, focusedBroadcastId, isAuthLoading, load]);
+  }, [allowed, focusedBroadcastId, isAuthLoading, load, mergeCampaign]);
 
   useEffect(() => {
     const active = items.some((item) => ["scheduled", "sending"].includes(item.status));
@@ -71,17 +89,8 @@ export function AdminBroadcastsPage() {
     return () => window.clearInterval(timer);
   }, [allowed, items, load, offset]);
 
-  function mergeCampaign(campaign: AdminBroadcast) {
-    setItems((current) => {
-      const exists = current.some((item) => item.id === campaign.id);
-      return exists
-        ? current.map((item) => item.id === campaign.id ? campaign : item)
-        : [campaign, ...current].slice(0, PAGE_SIZE);
-    });
-    setSelected(campaign);
-  }
-
   async function action(run: () => Promise<AdminBroadcast>) {
+    if (editorDirty && !await confirmAction("Есть несохранённые изменения. Открыть другую рассылку?")) return;
     setError(null);
     try {
       mergeCampaign(await run());
@@ -104,7 +113,7 @@ export function AdminBroadcastsPage() {
     <section>
       <Header title="Центр рассылок" subtitle="Безопасные Telegram-сообщения выбранной аудитории" fallbackTo="/admin" />
       {error ? <div role="alert" className="app-status app-status-danger mb-4">{error}<button type="button" onClick={() => void load(offset)} className="mt-2 block min-h-11 w-full rounded-xl app-gradient-action px-3 font-semibold">Повторить загрузку</button></div> : null}
-      <BroadcastEditor selected={selected} programs={programs} onChanged={mergeCampaign} />
+      <BroadcastEditor selected={selected} programs={programs} onChanged={mergeCampaign} onDirtyChange={setEditorDirty} />
       <div className="my-5 border-t border-black/10" />
       {loading && !items.length ? <PageSkeleton cards={4} /> : (
         <BroadcastHistory
@@ -112,7 +121,7 @@ export function AdminBroadcastsPage() {
           loading={loading}
           onCopy={(item) => action(async () => {
             const copied = await copyAdminBroadcast(item.id);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: preferredScrollBehavior() });
             return copied;
           })}
           onRetry={(item) => action(() => retryAdminBroadcast(item.id, item.counts.failed))}

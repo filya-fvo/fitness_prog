@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useId, type Dispatch, type SetStateAction } from "react";
 
 import type { AdminUser } from "@/api/admin";
 import { SavedAdminFilters } from "@/features/admin-filters/components/SavedAdminFilters";
@@ -34,11 +34,13 @@ export function AdminUserListControls({
   onApplySaved: (values: Record<string, string>) => void;
   onExport: () => void;
 }) {
+  const searchId = useId();
   return (
     <>
       <SavedAdminFilters storageKey={adminFilterStorageKey(adminId, "users")} allowedKeys={USER_FILTER_KEYS} value={{ ...filters }} onApply={onApplySaved} />
       <div className="flex gap-2">
-        <input value={filters.q} onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") onApply(filters); }} placeholder="Поиск: фамилия, @логин, почта, Telegram ID" className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base" />
+        <label htmlFor={searchId} className="sr-only">Поиск пользователя</label>
+        <input id={searchId} value={filters.q} onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") onApply(filters); }} placeholder="Поиск: фамилия, @логин, почта, Telegram ID" className="min-w-0 flex-1 rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base" />
         <button type="button" disabled={loading} onClick={() => onApply(filters)} className="shrink-0 rounded-xl app-gradient-action px-3 py-2 text-xs font-semibold disabled:opacity-50">Найти</button>
       </div>
       <div className="grid grid-cols-2 gap-2">

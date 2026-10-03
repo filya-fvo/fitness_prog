@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { addWorkoutSet, deleteWorkout, fetchWorkout, updateWorkout } from "@/api/workouts";
 import { DecimalInput } from "@/components/DecimalInput";
@@ -73,15 +73,29 @@ function WorkoutCard({ workout, catalog, onChanged }: {
   const [rpe, setRpe] = useState<number | null>(workout.rpe);
   const [notes, setNotes] = useState(workout.ai_notes ?? "");
   const [sets, setSets] = useState(workout.sets);
+  useEffect(() => {
+    setRpe(workout.rpe);
+    setNotes(workout.ai_notes ?? "");
+    setSets(workout.sets);
+  }, [workout]);
   const plan = (workout.plan || {}) as WorkoutPlan;
   const nameById = useMemo(() => {
     const map = new Map(catalog.map((item) => [item.id, item.name_ru]));
     for (const item of plan.exercises || []) if (item.name_ru) map.set(item.exercise_id, item.name_ru);
     return map;
   }, [catalog, plan.exercises]);
-  const completedSets = sets.filter((row) => row.is_completed);
-  const volume = computeWorkoutVolume({ ...workout, sets });
+  const completedSets = workout.sets.filter((row) => row.is_completed);
+  const volume = computeWorkoutVolume(workout);
   const exerciseCount = new Set(completedSets.map((row) => row.exercise_id)).size;
+
+  function toggleEditing() {
+    if (busy) return;
+    setRpe(workout.rpe);
+    setNotes(workout.ai_notes ?? "");
+    setSets(workout.sets);
+    setError(null);
+    setEditing((current) => !current);
+  }
 
   async function save() {
     setBusy(true); setError(null);
@@ -120,12 +134,12 @@ function WorkoutCard({ workout, catalog, onChanged }: {
       <div className="flex items-start justify-between gap-3">
         <div><h3 className="font-semibold">{programDayLabel(workout.title || plan.title, plan.day_index ?? undefined)}</h3>
           <p className="mt-1 text-xs text-tg-hint">{workout.status === "completed" ? "Завершена" : workout.status === "skipped" ? "Пропущена" : "Начата"}{plan.week_label ? ` · ${plan.week_label}` : ""}</p></div>
-        <button type="button" onClick={() => setEditing((v) => !v)} className="text-xs text-tg-link">{editing ? "Отмена" : "Изменить"}</button>
+        <button type="button" disabled={busy} onClick={toggleEditing} className="text-xs text-tg-link disabled:opacity-50">{editing ? "Отмена" : "Изменить"}</button>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-2 text-center">
         <div><p className="text-[10px] text-tg-hint">Время</p><p className="text-xs font-medium">{formatDuration(workout.duration_sec)}</p></div>
-        <div><p className="text-[10px] text-tg-hint">Тяжесть</p><p className="text-xs font-medium">{rpe != null ? `${rpe}/10` : "—"}</p></div>
-        <div><p className="text-[10px] text-tg-hint">Подходы</p><p className="text-xs font-medium">{completedSets.length}/{sets.length}</p></div>
+        <div><p className="text-[10px] text-tg-hint">Тяжесть</p><p className="text-xs font-medium">{workout.rpe != null ? `${workout.rpe}/10` : "—"}</p></div>
+        <div><p className="text-[10px] text-tg-hint">Подходы</p><p className="text-xs font-medium">{completedSets.length}/{workout.sets.length}</p></div>
         <div><p className="text-[10px] text-tg-hint">Объём</p><p className="text-xs font-medium">{Math.round(volume)} кг</p></div>
       </div>
       <p className="mt-2 text-[11px] text-tg-hint">Упражнений выполнено: {exerciseCount}{plan.location ? ` · ${enumLabel(plan.location)}` : ""}. Тяжесть — субъективная оценка нагрузки (RPE).</p>
@@ -143,7 +157,7 @@ function WorkoutCard({ workout, catalog, onChanged }: {
           <button type="button" disabled={busy} onClick={() => void remove()} className="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-700 disabled:opacity-50">Удалить</button></div>
       </div> : <div className="mt-4 space-y-3">
         {completedSets.length ? completedSets.map((row) => <div key={row.id} className="flex items-center justify-between gap-3 border-t border-black/5 pt-2 text-sm"><span>{nameById.get(row.exercise_id) || "Упражнение"} · {row.set_number}</span><span className="whitespace-nowrap text-tg-hint">{row.weight != null ? `${row.weight} кг × ` : ""}{row.reps ?? (row.duration_sec ? `${row.duration_sec} сек` : "—")}{row.weight_mode === "per_hand" ? " / рука" : ""}</span></div>) : <p className="text-sm text-tg-hint">Выполненных подходов не записано.</p>}
-        {notes ? <p className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{notes}</p> : null}
+        {workout.ai_notes ? <p className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{workout.ai_notes}</p> : null}
       </div>}
     </article>
   );

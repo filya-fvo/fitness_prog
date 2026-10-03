@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { preferredScrollBehavior } from "@/utils/motion";
 
 import {
   createAdminProgram,
@@ -122,7 +123,7 @@ export function AdminProgramsPage() {
     setDraft(nextDraft);
     setBaseline(nextDraft);
     setNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: preferredScrollBehavior() });
   }
 
   async function editProgram(program: Program) {
@@ -265,7 +266,9 @@ export function AdminProgramsPage() {
         <div className="app-card app-card-inset p-4">
           <h2 className="font-semibold">Новая программа</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <input value={createName} onChange={(event) => setCreateName(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base sm:col-span-3" placeholder="Название программы" maxLength={200} />
+            <label className="grid gap-1 text-xs text-tg-hint sm:col-span-3">Название новой программы
+              <input value={createName} onChange={(event) => setCreateName(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base" placeholder="Название программы" maxLength={200} />
+            </label>
             <select aria-label="Тип программы" value={createType} onChange={(event) => setCreateType(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"><option value="full_body">Всё тело</option><option value="upper_lower">Верх/низ</option><option value="strength">Сила</option><option value="hypertrophy">Масса</option><option value="conditioning">Выносливость</option><option value="custom">Своя</option></select>
             <select aria-label="Уровень программы" value={createLevel} onChange={(event) => setCreateLevel(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-tg-bg px-3 text-base"><option value="beginner">Новичок</option><option value="intermediate">Средний</option><option value="advanced">Продвинутый</option></select>
             <button type="button" disabled={busy || !createName.trim()} onClick={() => void createProgram()} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">Создать черновик</button>

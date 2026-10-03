@@ -1,7 +1,7 @@
 /**
  * Daily nutrition diary — TZ §5 tracker.
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -126,6 +126,7 @@ function categoryLabel(cat: string | null | undefined): string {
 }
 
 export function DailyLog() {
+  const productSearchId = useId();
   useEffect(() => {
     trackEvent("nutrition_opened", { source: "navigation" });
   }, []);
@@ -962,7 +963,9 @@ export function DailyLog() {
             </button>
           ))}
         </div>
+        <label htmlFor={productSearchId} className="sr-only">Поиск продукта</label>
         <input
+          id={productSearchId}
           ref={productSearchRef}
           value={query}
           onChange={(e) => {

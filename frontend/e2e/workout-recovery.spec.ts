@@ -269,9 +269,9 @@ test("exercise catalog renders progressively", async ({ page }) => {
   await page.getByRole("button", { name: /Упражнение 1/ }).first().click();
   const detail = page.getByRole("dialog", { name: "Упражнение 1" });
   await expect(detail).toBeVisible();
-  await detail.getByRole("tab", { name: "Анимация" }).click();
+  await detail.getByRole("button", { name: "Анимация", exact: true }).click();
   await expect(detail.getByRole("img", { name: "Упражнение 1" })).toBeVisible();
-  await detail.getByRole("tab", { name: "Видео" }).click();
+  await detail.getByRole("button", { name: "Видео", exact: true }).click();
   await expect(detail.getByText("Видео-инструкция для этого упражнения пока не добавлена.")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(detail).toBeHidden();

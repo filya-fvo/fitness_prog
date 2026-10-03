@@ -1,3 +1,4 @@
+import { ChartDataTable } from "@/components/ui/ChartDataTable";
 import { Link } from "react-router-dom";
 
 import { formatWeekDelta, type WeeklyWorkoutOverview } from "@/utils/weeklyOverview";
@@ -17,7 +18,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold">Недельный обзор</p>
-          <p className="text-[11px] text-tg-hint">{overview.rangeLabel} · пн–вс</p>
+          <p className="text-xs text-tg-hint">{overview.rangeLabel} · пн–вс</p>
         </div>
         <Link to="/" className="flex min-h-11 shrink-0 items-center text-xs text-tg-link">
           К тренировке
@@ -27,15 +28,15 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
       <div className="weekly-metrics mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
         <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">{overview.completedWorkouts}</p>
-          <p className="text-[10px] text-tg-hint">{workoutsCount(overview.completedWorkouts).replace(/^\d+\s/, "")}</p>
-          <p className="text-[10px] text-tg-hint">
+          <p className="text-xs text-tg-hint">{workoutsCount(overview.completedWorkouts).replace(/^\d+\s/, "")}</p>
+          <p className="text-xs text-tg-hint">
             {formatWeekDelta(overview.vsPrevWeek.workoutsDelta, "workouts")}
           </p>
         </div>
         <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">{overview.activeDays}</p>
-          <p className="text-[10px] text-tg-hint">{daysCount(overview.activeDays).replace(/^\d+\s/, "")} активности</p>
-          <p className="text-[10px] text-tg-hint">{setsCount(overview.totalSets)}</p>
+          <p className="text-xs text-tg-hint">{daysCount(overview.activeDays).replace(/^\d+\s/, "")} активности</p>
+          <p className="text-xs text-tg-hint">{setsCount(overview.totalSets)}</p>
         </div>
         <div className="app-metric px-3 py-3">
           <p className="text-lg font-semibold">
@@ -43,8 +44,8 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
               ? `${(overview.totalVolume / 1000).toFixed(1)}т`
               : overview.totalVolume}
           </p>
-          <p className="text-[10px] text-tg-hint">объём, кг</p>
-          <p className="text-[10px] text-tg-hint">
+          <p className="text-xs text-tg-hint">объём, кг</p>
+          <p className="text-xs text-tg-hint">
             {formatWeekDelta(overview.vsPrevWeek.volumeDelta, "volume")}
           </p>
         </div>
@@ -57,7 +58,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
           return (
             <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
               <div className="relative flex h-11 w-full items-end justify-center" role="img" aria-label={`${d.date}: ${d.completed} тренировок, объём ${Math.round(d.volume)} килограммов`}>
-                {d.completed > 0 ? <span className="absolute -top-3 text-[9px] font-semibold text-tg-text">{d.completed}</span> : null}
+                {d.completed > 0 ? <span className="absolute -top-3 text-xs font-semibold text-tg-text">{d.completed}</span> : null}
                 <span
                 className={[
                   "w-full max-w-[28px] rounded-t-md",
@@ -70,7 +71,7 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
               </div>
               <span
                 className={[
-                  "text-[10px]",
+                  "text-xs",
                   d.isToday ? "font-semibold text-tg-text" : "text-tg-hint",
                 ].join(" ")}
               >
@@ -81,8 +82,10 @@ export function WeeklyOverview({ overview, onAskAi, aiBusy }: Props) {
         })}
       </div>
 
+      <ChartDataTable caption="Тренировки за неделю" columns={["Дата", "Тренировки", "Объём, кг"]}
+        rows={overview.days.map((day) => ({ key: day.date, cells: [day.date, day.completed, day.volume] }))} />
       {overview.avgRpe != null ? (
-        <p className="mb-2 text-[11px] text-tg-hint">
+        <p className="mb-2 text-xs text-tg-hint">
           Средняя субъективная тяжесть недели: {overview.avgRpe}/10 (RPE)
         </p>
       ) : null}

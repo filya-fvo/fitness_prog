@@ -102,7 +102,7 @@ for (const [width, theme] of [[320, "light"], [393, "light"], [393, "dark"]] as 
     await expect(muscleMap.locator("svg")).toHaveCount(2);
     await expect(muscleMap.locator("svg image")).toHaveCount(2);
     for (const side of ["front", "back"]) {
-      const image = page.context().request.get(`http://127.0.0.1:5173/app-media/program-anatomy-${side}.svg`);
+      const image = page.context().request.get(new URL(`/app-media/program-anatomy-${side}.svg`, page.url()).href);
       expect((await image).ok()).toBeTruthy();
     }
   });

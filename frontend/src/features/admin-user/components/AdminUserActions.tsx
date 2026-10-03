@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { clearAdminUser, deleteAdminUser, type AdminResetScope } from "@/api/admin";
@@ -43,6 +43,7 @@ export function AdminUserActions({
   onCommunicationsChanged,
   onDataChanged,
 }: Props) {
+  const messageId = useId();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [messageChannel, setMessageChannel] = useState<AdminMessageChannel>("telegram");
@@ -189,14 +190,16 @@ export function AdminUserActions({
             Сообщение отправить нельзя: пользователь не подключил Telegram или Web Push и не разрешил служебные письма.
           </p>
         ) : null}
+        <label htmlFor={messageId} className="mt-3 block text-xs text-tg-hint">Текст служебного сообщения</label>
         <textarea
+          id={messageId}
           value={message}
           maxLength={1000}
           rows={3}
           disabled={!channelAvailable[messageChannel] || disabled}
           onChange={(event) => setMessage(event.target.value)}
           placeholder={channelAvailable[messageChannel] ? "Служебное сообщение пользователю" : "Нет доступного канала"}
-          className="mt-3 w-full rounded-xl border border-black/10 bg-tg-bg p-3 text-base"
+          className="mt-1 w-full rounded-xl border border-black/10 bg-tg-bg p-3 text-base"
         />
         <button type="button" disabled={!channelAvailable[messageChannel] || disabled || !message.trim()} onClick={() => void sendMessage()} className="mt-2 min-h-11 w-full rounded-xl app-gradient-action px-4 font-semibold disabled:opacity-40">
           {busy === "message" ? "Отправка…" : "Отправить сообщение"}

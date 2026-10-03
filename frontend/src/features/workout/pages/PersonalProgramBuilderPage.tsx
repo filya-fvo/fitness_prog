@@ -7,6 +7,9 @@ import { Header } from "@/components/layout/Header";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import type { Exercise } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
+import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
+import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
+import { useUserStore } from "@/store/userStore";
 
 type DayDraft = PersonalProgramInput["days"][number];
 type ExerciseDraft = DayDraft["exercises"][number];
@@ -29,12 +32,27 @@ export function PersonalProgramBuilderPage() {
   const [progression, setProgression] = useState<PersonalProgramInput["progression"]>("phased");
   const [durationWeeks, setDurationWeeks] = useState(8);
   const [days, setDays] = useState<DayDraft[]>([newDay(0), newDay(1), newDay(2)]);
+  const [dayCount, setDayCount] = useState(3);
   const [activeDay, setActiveDay] = useState(0);
   const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const owner = useUserStore((state) => state.user?.id);
+  const recovery = useRecoverableDraft({
+    owner, context: "personal-program", ready: !loading,
+    value: { name, location, progression, durationWeeks, days, dayCount, activeDay, step },
+    validate: (draft) => Number.isInteger(draft.dayCount) && draft.days.length >= draft.dayCount && draft.dayCount >= 1 && draft.dayCount <= 7
+      && Number.isInteger(draft.activeDay) && draft.activeDay >= 0 && draft.activeDay < draft.dayCount
+      && draft.days.every((day) => day.exercises.every((item) => typeof item.exercise_id === "string"
+        && typeof item.reps === "string" && typeof item.sets === "number" && typeof item.rest_sec === "number")),
+    restore: (draft) => {
+      setName(draft.name); setLocation(draft.location); setProgression(draft.progression);
+      setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(draft.dayCount);
+      setActiveDay(draft.activeDay); setStep(draft.step); setQuery("");
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +67,7 @@ export function PersonalProgramBuilderPage() {
   }, []);
 
   const byId = useMemo(() => new Map(catalog.map((exercise) => [exercise.id, exercise])), [catalog]);
+  const visibleDays = days.slice(0, dayCount);
   const selected = days[activeDay];
   const matches = useMemo(() => {
     const term = query.trim().toLocaleLowerCase("ru-RU");
@@ -56,10 +75,11 @@ export function PersonalProgramBuilderPage() {
     const used = new Set(selected.exercises.map((item) => item.exercise_id));
     return catalog.filter((item) => !used.has(item.id) && item.name_ru.toLocaleLowerCase("ru-RU").includes(term)).slice(0, 8);
   }, [catalog, query, selected.exercises]);
-  const allDaysReady = days.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
+  const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
 
   function changeDayCount(count: number) {
-    setDays((current) => Array.from({ length: count }, (_, index) => current[index] ?? newDay(index)));
+    setDayCount(count);
+    setDays((current) => Array.from({ length: Math.max(current.length, count) }, (_, index) => current[index] ?? newDay(index)));
     setActiveDay((current) => Math.min(current, count - 1));
   }
 
@@ -84,7 +104,8 @@ export function PersonalProgramBuilderPage() {
     setSaving(true);
     setError(null);
     try {
-      const program = await createMyProgram({ name: name.trim(), location, progression, duration_weeks: durationWeeks, days });
+      const program = await createMyProgram({ name: name.trim(), location, progression, duration_weeks: durationWeeks, days: visibleDays });
+      recovery.clear();
       navigate(`/programs?view=mine&id=${program.id}`, { replace: true });
     } catch (cause) {
       setError(toUserMessage(cause, "Не удалось сохранить программу"));
@@ -97,11 +118,13 @@ export function PersonalProgramBuilderPage() {
 
   return <section className="pb-28">
     <Header title="Своя программа" subtitle="Выберите дни и упражнения под свой ритм" />
+    <fieldset disabled={loading || saving} className="min-w-0">
+    <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} onDiscard={recovery.discard} disabled={saving} />
     <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cover bg-center p-5 text-white"
       style={{ backgroundImage: `linear-gradient(90deg, rgba(7, 18, 37, .96), rgba(7, 18, 37, .7)), url(${hero.image})` }}>
       <p className="text-xs font-semibold uppercase tracking-[.14em] text-cyan-300">Ваш план</p>
       <h2 className="mt-2 text-xl font-bold">{name.trim() || "Новая программа"}</h2>
-      <p className="mt-1 text-sm text-white/75">{days.length} дн./нед. · {hero.label} · {progression === "linear" ? "Линейная" : "С уровнем сложности"}</p>
+      <p className="mt-1 text-sm text-white/75">{dayCount} дн./нед. · {hero.label} · {progression === "linear" ? "Линейная" : "С уровнем сложности"}</p>
     </div>
 
     <div className="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="Шаг создания программы">
@@ -121,7 +144,7 @@ export function PersonalProgramBuilderPage() {
         </div>
       </div>
       <label className="block text-sm font-semibold">Тренировочных дней в неделю
-        <select value={days.length} onChange={(event) => changeDayCount(Number(event.target.value))} className="app-field mt-2 w-full text-base">
+        <select value={dayCount} onChange={(event) => changeDayCount(Number(event.target.value))} className="app-field mt-2 w-full text-base">
           {Array.from({ length: 7 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
         </select>
       </label>
@@ -144,7 +167,7 @@ export function PersonalProgramBuilderPage() {
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {days.map((day, index) => <button key={index} type="button" aria-pressed={activeDay === index} onClick={() => { setActiveDay(index); setQuery(""); }}
+        {visibleDays.map((day, index) => <button key={index} type="button" aria-pressed={activeDay === index} onClick={() => { setActiveDay(index); setQuery(""); }}
           className={activeDay === index ? "app-button app-gradient-action min-h-11 shrink-0 rounded-full px-3 text-white" : "app-chip app-card-inset min-h-11 shrink-0 px-3 text-tg-text"}>
           День {index + 1}{day.exercises.length ? ` · ${day.exercises.length}` : ""}
         </button>)}
@@ -184,5 +207,6 @@ export function PersonalProgramBuilderPage() {
     </div>}
     {error ? <p role="alert" className="mt-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-3 text-sm">{error}</p> : null}
     <Link to="/programs" className="mt-4 inline-flex min-h-11 items-center text-sm text-tg-link">← К программам</Link>
+    </fieldset>
   </section>;
 }

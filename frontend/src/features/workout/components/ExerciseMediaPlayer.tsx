@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { resolveApiAssetUrl } from "@/api/client";
 import { trackEvent } from "@/lib/analytics";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { Exercise } from "@/types/workout";
+import { exerciseThumbnailUrl } from "@/utils/exerciseMedia";
 
 function extractYouTubeId(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -92,8 +94,19 @@ export function ExerciseMediaPlayer({
     : !preferAnimation && illustration
       ? illustration
       : resolveLocalMedia(exercise.animation_url);
+  const reducedMotion = useReducedMotion();
+  const [animationChoice, setAnimationChoice] = useState<{
+    url: string | null; reduced: boolean; playing: boolean;
+  } | null>(null);
+  const canAnimate = Boolean(mediaUrl) && mediaUrl === resolveLocalMedia(exercise.animation_url)
+    && (!illustration || preferAnimation) && !(preview && illustration) && !isLikelyStaticImage(mediaUrl);
+  const animationPlaying = animationChoice?.url === mediaUrl && animationChoice.reduced === reducedMotion
+    ? animationChoice.playing : !reducedMotion;
+  const displayMediaUrl = canAnimate && !animationPlaying
+    ? illustration ?? exerciseThumbnailUrl(exercise)
+    : mediaUrl;
   const [mediaFailed, setMediaFailed] = useState(false);
-  useEffect(() => setMediaFailed(false), [mediaUrl]);
+  useEffect(() => setMediaFailed(false), [displayMediaUrl]);
   const [showVideo, setShowVideo] = useState(preferVideo);
   const [videoFailed, setVideoFailed] = useState(false);
 
@@ -108,8 +121,7 @@ export function ExerciseMediaPlayer({
     exercise.description ||
     "Описание техники пока не заполнено.";
 
-  const showMedia = Boolean(mediaUrl) && !mediaFailed;
-  const mediaIsStatic = isLikelyStaticImage(mediaUrl);
+  const showMedia = Boolean(displayMediaUrl) && !mediaFailed;
 
   return (
     <div className="space-y-2">
@@ -118,7 +130,7 @@ export function ExerciseMediaPlayer({
           {showMedia ? (
             <div className="relative">
               <img
-                src={mediaUrl ?? undefined}
+                src={displayMediaUrl ?? undefined}
                 alt={exercise.name_ru}
                 className={`w-full bg-black/10 object-contain ${heightClass}`}
                 // Isolate animated GIF decode/paint from parent layout thrash.
@@ -134,7 +146,7 @@ export function ExerciseMediaPlayer({
                 onLoad={() =>
                   trackEvent("exercise_media_played", {
                     exercise_id: exercise.id,
-                    source: mediaIsStatic ? "image" : "animation",
+                    source: canAnimate && animationPlaying ? "animation" : "image",
                   })
                 }
               />
@@ -161,7 +173,7 @@ export function ExerciseMediaPlayer({
               <div
                 className={`flex items-center justify-center bg-tg-secondary text-xs text-tg-hint ${heightClass}`}
               >
-                Анимация или изображение пока не добавлены
+                {canAnimate && !animationPlaying ? "Анимация остановлена" : "Анимация или изображение пока не добавлены"}
               </div>
             )
           ) : null}
@@ -191,6 +203,13 @@ export function ExerciseMediaPlayer({
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {!showVideo && canAnimate ? (
+        <button type="button" onClick={() => setAnimationChoice({ url: mediaUrl, reduced: reducedMotion, playing: !animationPlaying })}
+          aria-pressed={animationPlaying} className="min-h-11 rounded-xl bg-tg-secondary px-3 text-sm text-tg-link">
+          {animationPlaying ? "Остановить анимацию" : "Воспроизвести анимацию"}
+        </button>
       ) : null}
 
       {showVideo && hasVideo ? (

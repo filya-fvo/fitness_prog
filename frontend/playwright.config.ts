@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const visualRegressionEnabled =
   process.platform === "win32" || process.env.PLAYWRIGHT_VISUAL_QA === "1";
+const auditRegressionTests =
+  /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|measurement-chart-values|wheel-picker-accessibility)\.spec\.ts/;
 
 /**
  * E2E critical path (TZ §11).
@@ -34,18 +36,20 @@ export default defineConfig({
     },
     {
       name: "android-chrome",
-      testMatch: /(?:content-design|faq-design)\.spec\.ts/,
+      testMatch: [/(?:content-design|faq-design)\.spec\.ts/, auditRegressionTests],
       use: { ...devices["Pixel 7"] },
     },
     {
       name: "iphone-webkit",
-      testMatch: /(?:iphone-(layout|telegram-entry)|content-design|faq-design)\.spec\.ts/,
+      testMatch: [/(?:iphone-(layout|telegram-entry)|content-design|faq-design)\.spec\.ts/, auditRegressionTests],
       use: { ...devices["iPhone 13"] },
     },
     {
       name: "firefox",
-      testMatch:
+      testMatch: [
         /(?:browser-session|critical-path|nutrition-label|onboarding|stale-release-update|support|telegram-browser-login|workout-recovery)\.spec\.ts/,
+        auditRegressionTests,
+      ],
       use: { ...devices["Desktop Firefox"] },
     },
   ],

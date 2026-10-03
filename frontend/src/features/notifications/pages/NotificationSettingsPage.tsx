@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   fetchNotificationSettings,
@@ -39,9 +39,17 @@ export function NotificationSettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [quietHoursSubmitted, setQuietHoursSubmitted] = useState(false);
+  const quietHoursEndRef = useRef<HTMLInputElement>(null);
+  const browserStateVersion = useRef(0);
+  const quietHoursInvalid = Boolean(settings?.quiet_hours.enabled
+    && settings.quiet_hours.start_time === settings.quiet_hours.end_time);
 
   useEffect(() => {
     let cancelled = false;
+    const browserVersion = ++browserStateVersion.current;
+    setError(null);
     async function load() {
       try {
         const [payload, profile, push, supplements] = await Promise.all([
@@ -50,10 +58,10 @@ export function NotificationSettingsPage() {
           fetchPushConfig().catch(() => null),
           fetchSupplementStack().catch(() => ({ items: [], catalog: [] })),
         ]);
-        if (cancelled) return;
         const canUseTelegram = profile.telegram_id != null;
         const browserSupported = webPushSupported();
         const canUseBrowser = Boolean(push?.enabled && browserSupported);
+        if (cancelled) return;
         const currentSettings = payload.timezone_configured
           ? payload.settings
           : { ...payload.settings, timezone: detectedTimezone() };
@@ -72,20 +80,20 @@ export function NotificationSettingsPage() {
               ? "Браузерные уведомления временно недоступны."
               : null,
         );
-        setBrowserEnabled(
-          canUseBrowser && push
-            ? await reconcileWebPush(push).catch(() => false)
-            : false,
-        );
+        setBrowserEnabled(false);
         setSupplementCount(supplements.items.length);
         setLastDelivery(payload.last_delivery ?? null);
+        if (canUseBrowser && push) {
+          const enabled = await reconcileWebPush(push).catch(() => false);
+          if (!cancelled && browserStateVersion.current === browserVersion) setBrowserEnabled(enabled);
+        }
       } catch (caught) {
         if (!cancelled) setError(toUserMessage(caught, "Не удалось загрузить уведомления"));
       }
     }
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   async function saveCategory(category: Category) {
     if (!settings) return;
@@ -115,11 +123,11 @@ export function NotificationSettingsPage() {
       setError("Сначала включите уведомления в этом браузере.");
       return false;
     }
-    if (
-      settings.quiet_hours.enabled
-      && settings.quiet_hours.start_time === settings.quiet_hours.end_time
-    ) {
-      setError("Начало и конец тихих часов должны отличаться.");
+    if (quietHoursInvalid) {
+      setQuietHoursSubmitted(true);
+      setError(null);
+      quietHoursEndRef.current?.focus();
+      quietHoursEndRef.current?.scrollIntoView({ block: "center" });
       return false;
     }
     setBusy(true);
@@ -152,6 +160,7 @@ export function NotificationSettingsPage() {
   }
 
   async function toggleBrowser() {
+    browserStateVersion.current += 1;
     setBusy(true);
     setError(null);
     setOk(null);
@@ -188,7 +197,11 @@ export function NotificationSettingsPage() {
       {error ? <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{error}</p> : null}
       {ok ? <p role="status" className="app-card app-card-success mb-3 p-3 text-sm">{ok}</p> : null}
       {!settings ? (
-        error ? null : <PageSkeleton />
+        error ? (
+          <button type="button" className="app-secondary-action min-h-11 px-4 text-sm" onClick={() => setReloadKey((key) => key + 1)}>
+            Повторить загрузку
+          </button>
+        ) : <PageSkeleton />
       ) : (
         <div className="space-y-5">
           <NotificationDeliveryCard
@@ -204,6 +217,8 @@ export function NotificationSettingsPage() {
             onSave={() => void saveDelivery()}
             onToggleBrowser={() => void toggleBrowser()}
             onTest={() => void testDelivery()}
+            quietHoursError={quietHoursSubmitted && quietHoursInvalid ? "Начало и конец тихих часов должны отличаться." : null}
+            quietHoursEndRef={quietHoursEndRef}
           />
           <NotificationCategories
             settings={settings}

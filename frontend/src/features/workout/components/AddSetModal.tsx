@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { WheelPicker } from "@/components/WheelPicker";
 import { SetWeightSelector } from "@/features/workout/components/SetWeightSelector";
@@ -60,6 +60,7 @@ export function AddSetModal({
   defaultRestSec = 60,
 }: Props) {
   const dialogRef = useModalAccessibility(open, onClose);
+  const fieldId = useId();
   const loadType: ExerciseLoadType = useMemo(() => inferLoadType(exercise), [exercise]);
   const machineKind: CardioMachineKind = useMemo(
     () => inferCardioMachineKind(exercise),
@@ -117,20 +118,20 @@ export function AddSetModal({
         aria-modal="true"
         aria-labelledby="add-set-title"
         tabIndex={-1}
-        className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto border-white/10 bg-[#101f32] p-4 text-white"
+        className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto p-4 text-tg-text"
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 id="add-set-title" className="text-base font-semibold">Добавить подход</h3>
-          <button type="button" aria-label="Закрыть" className="text-sm text-white/70" onClick={onClose}>
+          <button type="button" aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center text-sm text-tg-hint" onClick={onClose}>
             ✕
           </button>
         </div>
-        <p className="mb-3 text-xs text-white/60">{exercise.name_ru}</p>
+        <p className="mb-3 text-xs text-tg-hint">{exercise.name_ru}</p>
 
         {loadType === "weight_reps" ? (
           <div>
           <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 p-2">
+            <div className="app-card app-card-inset min-w-0 flex-1 p-2">
               <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
               <p className="mt-2 text-center text-lg font-semibold tabular-nums">{reps} повт.</p>
             </div>
@@ -149,31 +150,31 @@ export function AddSetModal({
         {loadType === "timed" || loadType === "cardio_machine" ? (
           <div className="space-y-3">
             <div className="flex gap-2">
-              <WheelPicker label="Мин." value={min} options={rangeInts(0, 90)} onChange={setMin} />
-              <WheelPicker label="Сек." value={sec} options={rangeInts(0, 59)} onChange={setSec} />
+              <WheelPicker label="Минуты" value={min} options={rangeInts(0, 90)} onChange={setMin} />
+              <WheelPicker label="Секунды" value={sec} options={rangeInts(0, 59)} onChange={setSec} />
             </div>
-            <p className="text-center text-xs text-white/50">
+            <p className="text-center text-xs text-tg-hint">
               {formatDurationLabel(durationSec)}
             </p>
             {loadType === "cardio_machine" ? (
               <div
-                className={`grid gap-2 rounded-xl bg-black/25 p-3 text-xs ${
+                className={`grid gap-2 rounded-xl bg-tg-secondary p-3 text-xs ${
                   machineFields.length === 1 ? "grid-cols-1" : "grid-cols-2"
                 }`}
               >
                 {machineFields.map((field) => (
-                  <label key={field.key} className="text-white/60">
+                  <label key={field.key} className="text-tg-hint">
                     {field.label}
                     <DecimalInput
                       step={field.step}
                       value={machineValues[field.key]}
                       onValueChange={(value) => setMachineValue(field.key, value)}
-                      className="app-field mt-1 w-full bg-black/30 text-white"
+                      className="app-field mt-1 w-full"
                     />
                   </label>
                 ))}
                 {machineKind === "bike" ? (
-                  <p className="col-span-2 text-[11px] text-white/50">
+                  <p className="col-span-2 text-[11px] text-tg-hint">
                     Укажите скорость и/или сопротивление по экрану тренажёра.
                   </p>
                 ) : null}
@@ -186,27 +187,32 @@ export function AddSetModal({
           {!noteOpen ? (
             <button
               type="button"
-              className="text-xs text-white/70 underline"
+              className="min-h-11 text-xs text-tg-hint underline"
               onClick={() => setNoteOpen(true)}
             >
               Добавить примечание
             </button>
           ) : (
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Добавить примечание (по желанию)"
-              rows={2}
-              className="app-field w-full bg-black/30 text-white placeholder:text-white/40"
-            />
+            <label className="block text-xs text-tg-hint" htmlFor={`${fieldId}-note`}>
+              Примечание (по желанию)
+              <textarea
+                id={`${fieldId}-note`}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Добавить примечание (по желанию)"
+                rows={2}
+                className="app-field mt-1 w-full"
+              />
+            </label>
           )}
 
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-black/25 px-3 py-2 text-xs">
-            <span className="text-white/70">Отдых после подхода</span>
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-xs">
+            <label htmlFor={`${fieldId}-rest`} className="text-tg-hint">Отдых после подхода</label>
             <select
+              id={`${fieldId}-rest`}
               value={restSec}
               onChange={(e) => setRestSec(Number(e.target.value))}
-              className="app-field bg-black/40 text-white"
+              className="app-field min-h-11 min-w-11 text-base"
             >
               {[30, 45, 60, 75, 90, 120, 150, 180].map((s) => (
                 <option key={s} value={s}>
@@ -216,7 +222,7 @@ export function AddSetModal({
             </select>
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-white/70">
+          <label className="flex min-h-11 items-center gap-2 text-xs text-tg-hint">
             <input
               type="checkbox"
               checked={startTimer}
@@ -228,7 +234,7 @@ export function AddSetModal({
           {onStartTimerOnly ? (
             <button
               type="button"
-              className="w-full rounded-xl bg-white/10 px-3 py-2 text-sm"
+              className="min-h-11 w-full rounded-xl bg-white/10 px-3 py-2 text-sm"
               onClick={() =>
                 onStartTimerOnly(
                   loadType === "timed" || loadType === "cardio_machine" ? durationSec || restSec : restSec,

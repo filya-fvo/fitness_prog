@@ -104,13 +104,18 @@ const limits = {
   // The Home banner and detailed program muscle overlays add about 1.5 KB gzip
   // to lazy product routes; the anatomy base stays in static SVG assets.
   // No new eager vendor dependency appears; retain about 2 KB headroom.
-  totalJsGzip: 553_000,
-  productJsGzip: 497_000,
+  // Audit fixes add 6.9 KB gzip net: durable form recovery, accessible chart
+  // tables, field errors, motion controls and explicit Home program states.
+  // Measured totals: 558.2 KB all / 501.8 KB product / 56.4 KB admin.
+  // Existing vendors and the 108.7 KB largest chunk remain unchanged;
+  // keep roughly the previous 1.7 KB aggregate headroom, not an open-ended cap.
+  totalJsGzip: 560_000,
+  productJsGzip: 503_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
   // The separate admin nutrition/catalog screens account for ~2.2 KB gzip.
-  adminJsGzip: 56_000,
+  adminJsGzip: 57_000,
   largestJsGzip: 140_000,
 };
 const failures = [];

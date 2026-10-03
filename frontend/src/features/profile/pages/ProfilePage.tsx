@@ -1,7 +1,7 @@
 /**
  * Profile: body metrics, active program, supplements, notification schedule.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -15,6 +15,7 @@ import {
   addSupplementFromCatalog,
   fetchSupplementStack,
   fetchTodaySupplementIntakes,
+  entrySchema as supplementEntrySchema,
   markSupplementIntake,
   markSupplementIntakeGroup,
   removeSupplement,
@@ -59,6 +60,10 @@ import { compareProgramToProfile, programMismatchSummary } from "@/utils/program
 import { confirmAction } from "@/lib/telegram";
 import { resolveAutoAdvanceSetting } from "@/utils/workoutSession";
 import { programSelectionGoalsPatch } from "@/utils/programProgress";
+import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
+import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
+import { useProfileValidation } from "@/features/profile/hooks/useProfileValidation";
+import { ProfileFieldError } from "@/features/profile/components/ProfileFieldError";
 
 const SEX_OPTIONS = [
   { id: "male", label: "Мужской" },
@@ -300,6 +305,7 @@ function programMetaLine(program: Program): string {
 
 
 export function ProfilePage() {
+  const supplementCatalogLabelId = useId();
   const [searchParams, setSearchParams] = useSearchParams();
   const setUser = useUserStore((s) => s.setUser);
   const storeUser = useUserStore((s) => s.user);
@@ -352,6 +358,34 @@ export function ProfilePage() {
   const [bodyAdvanced, setBodyAdvanced] = useState(false);
   const [autoAdvanceExercises, setAutoAdvanceExercises] = useState(true);
   const [autoAdvanceSaving, setAutoAdvanceSaving] = useState(false);
+  const bodyDraft = useRecoverableDraft({
+    owner: storeUser?.id, context: "profile:body", ready: !loading,
+    value: { sex, manualCalorieTarget, targetWeight, height, age, birthDate, activity, primaryGoal, adjPct,
+      limitations: profileGoalsKeep.limitations, cycleEnabled: profileGoalsKeep.cycle_training_enabled === true },
+    restore: (draft) => {
+      setSex(draft.sex); setManualCalorieTarget(draft.manualCalorieTarget); setTargetWeight(draft.targetWeight);
+      setHeight(draft.height); setAge(draft.age); setBirthDate(draft.birthDate); setActivity(draft.activity);
+      setPrimaryGoal(draft.primaryGoal); setAdjPct(draft.adjPct);
+      setProfileGoalsKeep((current) => ({ ...current, limitations: draft.limitations, cycle_training_enabled: draft.cycleEnabled }));
+      markDirty("body");
+    },
+  });
+  const programDraft = useRecoverableDraft({
+    owner: storeUser?.id, context: "profile:program", ready: !loading,
+    value: { activeProgramId, daysPerWeek },
+    restore: (draft) => { setActiveProgramId(draft.activeProgramId); setDaysPerWeek(draft.daysPerWeek); markDirty("program"); },
+  });
+  const supplementDraft = useRecoverableDraft({
+    owner: storeUser?.id, context: "profile:supplements", ready: !loading,
+    value: { stack, pickerKey, customName, customDose },
+    validate: (draft) => draft.stack.every((entry) => supplementEntrySchema.safeParse(entry).success),
+    restore: (draft) => {
+      setStack(draft.stack.map((entry) => supplementEntrySchema.parse(entry)));
+      setPickerKey(draft.pickerKey); setCustomName(draft.customName); setCustomDose(draft.customDose); markDirty("supplements");
+    },
+  });
+  const validation = useProfileValidation({ height, age, birthDate, targetWeight, manualCalorieTarget, sex });
+  const currentDraft = tab === "body" ? bodyDraft : tab === "program" ? programDraft : tab === "supplements" ? supplementDraft : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -610,25 +644,10 @@ setAuthEmail(p.auth_email ?? null);
     setError(null);
     setOk(null);
     try {
-      const heightNum = Number(height);
-      const resolvedAge = ageFromBirthDate(birthDate) ?? Number(age);
       const targetWeightNum = targetWeight ? Number(targetWeight) : null;
       const manualTargetNum = Number(manualCalorieTarget);
-      if (
-        heightNum < 80 ||
-        heightNum > 250 ||
-        resolvedAge < 10 ||
-        resolvedAge > 100 ||
-        (targetWeightNum != null && (targetWeightNum < 20 || targetWeightNum > 500))
-      ) {
-        throw new Error("Проверьте рост и возраст: значения вне допустимого диапазона");
-      }
-      if (
-        sex === "unspecified" &&
-        (manualTargetNum < MANUAL_CALORIE_TARGET_MIN || manualTargetNum > MANUAL_CALORIE_TARGET_MAX)
-      ) {
-        throw new Error("Укажите ручную цель калорий от 800 до 10 000 ккал");
-      }
+      const issue = validation.validate();
+      if (issue) throw new Error(issue);
       const ageFromBirth = ageFromBirthDate(birthDate);
       const ageNum = ageFromBirth ?? (Number(age) || null);
       const anthropometry = {
@@ -670,6 +689,8 @@ setAuthEmail(p.auth_email ?? null);
         // The queued/server profile remains authoritative when storage is unavailable.
       }
       setProfileGoalsKeep(goals);
+      bodyDraft.clear();
+      programDraft.clear();
       setOk("Профиль сохранён.");
       setDirtyTabs((current) => {
         const next = new Set(current);
@@ -715,6 +736,7 @@ setAuthEmail(p.auth_email ?? null);
         next.delete("program");
         return next;
       });
+      programDraft.clear();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось сохранить программу"));
     } finally {
@@ -723,11 +745,21 @@ setAuthEmail(p.auth_email ?? null);
   }
 
   async function persistStack(next: SupplementEntry[]) {
-    setStack(next);
-    const res = await saveSupplementStack(next);
-    setStack(res.items);
-    setCatalog(res.catalog);
-    setIntakes(await fetchTodaySupplementIntakes());
+    if (saving) return;
+    setSaving(true);
+    try {
+      setStack(next);
+      const res = await saveSupplementStack(next);
+      supplementDraft.clear(
+        { stack: res.items, pickerKey: "", customName: "", customDose: "" },
+        { stack: res.items, pickerKey, customName, customDose },
+      );
+      setStack(res.items);
+      setCatalog(res.catalog);
+      setIntakes(await fetchTodaySupplementIntakes());
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleAutoAdvance() {
@@ -876,10 +908,15 @@ setAuthEmail(p.auth_email ?? null);
   return (
     <section className="profile-page mx-auto max-w-4xl" onChangeCapture={() => setDirtyTabs((current) => new Set(current).add(tab))}>
       <Header title="Профиль" subtitle="Тело и цели, программа, питание, уведомления и аккаунт" />
+      <fieldset disabled={loading || saving} className="min-w-0">
+      {currentDraft ? <DraftRecoveryNotice dirty={currentDraft.dirty} available={currentDraft.available} disabled={saving} onDiscard={() => {
+        currentDraft.discard();
+        setDirtyTabs((current) => { const next = new Set(current); next.delete(tab); return next; });
+      }} /> : null}
       {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}
       {error ? <div role="alert" className="app-card app-card-danger mb-3 p-3 text-sm">{error}</div> : null}
       {ok ? <div role="status" className="app-card app-card-success mb-3 p-3 text-sm">{ok}</div> : null}
-      {dirtyTabs.has(tab) ? (
+      {(currentDraft ? currentDraft.dirty : dirtyTabs.has(tab)) ? (
         <div role="status" className="app-card app-card-warning mb-3 px-3 py-2 text-xs">
           Есть несохранённые изменения в этом разделе.
         </div>
@@ -966,6 +1003,7 @@ setAuthEmail(p.auth_email ?? null);
                   max={MANUAL_CALORIE_TARGET_MAX}
                   step={50}
                   value={manualCalorieTarget}
+                  {...validation.fieldProps("manualCalorieTarget")}
                   onChange={(event) => {
                     setManualCalorieTarget(event.target.value);
                     markDirty("body");
@@ -973,6 +1011,7 @@ setAuthEmail(p.auth_email ?? null);
                   placeholder="Например, 2100"
                   className="app-field mt-1 w-full"
                 />
+                <ProfileFieldError {...validation.feedbackProps("manualCalorieTarget")} />
                 <span className="mt-1 block text-[11px] leading-snug">
                   Формула по полу не применяется.
                 </span>
@@ -1012,15 +1051,18 @@ setAuthEmail(p.auth_email ?? null);
                 min={80}
                 max={250}
                 value={height}
+                {...validation.fieldProps("height")}
                 onValueChange={setHeight}
                 className="app-field mt-1 w-full"
               />
+              <ProfileFieldError {...validation.feedbackProps("height")} />
             </label>
             <label className="block text-xs text-tg-hint">
               Дата рождения
               <input
                 type="date"
                 value={birthDate}
+                {...validation.fieldProps("birthDate")}
                 max={new Date().toISOString().slice(0, 10)}
                 min="1920-01-01"
                 onChange={(e) => {
@@ -1031,6 +1073,7 @@ setAuthEmail(p.auth_email ?? null);
                 }}
                 className="app-field mt-1 w-full"
               />
+              <ProfileFieldError {...validation.feedbackProps("birthDate")} />
             </label>
             {birthYearFromDate(birthDate) != null ? (
               <p className="text-[11px] text-tg-hint">
@@ -1050,9 +1093,11 @@ setAuthEmail(p.auth_email ?? null);
                   min={10}
                   max={100}
                   value={age}
+                  {...validation.fieldProps("age")}
                   onChange={(e) => setAge(e.target.value)}
                   className="app-field mt-1 w-full"
                 />
+                <ProfileFieldError {...validation.feedbackProps("age")} />
               </label>
             ) : (
               <button
@@ -1134,12 +1179,14 @@ setAuthEmail(p.auth_email ?? null);
                 min={20}
                 max={500}
                 value={targetWeight}
+                {...validation.fieldProps("targetWeight")}
                 onValueChange={(value) => {
                   setTargetWeight(value);
                   markDirty("body");
                 }}
                 className="app-field mt-1 w-full"
               />
+              <ProfileFieldError {...validation.feedbackProps("targetWeight")} />
               <span className="mt-1 block text-[11px] leading-snug">
                 Используется ИИ-тренером как ориентир вместе с калорийной целью и историей занятий.
               </span>
@@ -1838,15 +1885,21 @@ setAuthEmail(p.auth_email ?? null);
                           type="button"
                           className="text-xs text-red-500"
                           onClick={() => {
+                            if (saving) return;
+                            setSaving(true);
                             void removeSupplement(item.id)
                               .then(async (r) => {
                                 setStack(r.items);
+                                supplementDraft.clear(
+                                  { stack: r.items, pickerKey: "", customName: "", customDose: "" },
+                                  { stack: r.items, pickerKey, customName, customDose },
+                                );
                                 setIntakes(await fetchTodaySupplementIntakes());
                                 setOk(`Удалено: ${item.name_ru}`);
                               })
                               .catch((e) =>
                                 setError(toUserMessage(e, "Не удалось удалить добавку")),
-                              );
+                              ).finally(() => setSaving(false));
                           }}
                         >
                           Удалить
@@ -2057,8 +2110,9 @@ setAuthEmail(p.auth_email ?? null);
           </button>
 
           <div className="app-card app-card-indigo space-y-2 p-4">
-            <p className="text-sm font-medium">Добавить из каталога</p>
+            <p id={supplementCatalogLabelId} className="text-sm font-medium">Добавить из каталога</p>
             <select
+              aria-labelledby={supplementCatalogLabelId}
               value={pickerKey}
               onChange={(e) => setPickerKey(e.target.value)}
               className="app-field w-full"
@@ -2088,15 +2142,22 @@ setAuthEmail(p.auth_email ?? null);
               disabled={!pickerKey || unusedCatalog.length === 0}
               className="app-button app-gradient-action w-full disabled:opacity-50"
               onClick={() => {
+                if (saving) return;
+                setSaving(true);
                 void addSupplementFromCatalog(pickerKey)
                   .then(async (r) => {
                     setStack(r.items);
                     setCatalog(r.catalog);
                     setIntakes(await fetchTodaySupplementIntakes());
                     setPickerKey("");
+                    supplementDraft.clear(
+                      { stack: r.items, pickerKey: "", customName: "", customDose: "" },
+                      { stack: r.items, pickerKey: "", customName, customDose },
+                    );
                     setOk("Добавка добавлена");
                   })
-                  .catch((e) => setError(toUserMessage(e, "Не удалось добавить добавку")));
+                  .catch((e) => setError(toUserMessage(e, "Не удалось добавить добавку")))
+                  .finally(() => setSaving(false));
               }}
             >
               Добавить выбранную
@@ -2105,23 +2166,29 @@ setAuthEmail(p.auth_email ?? null);
 
           <div className="app-card app-card-plum space-y-2 p-4">
             <p className="text-sm font-medium">Своя добавка</p>
-            <input
-              placeholder="Название"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              className="app-field w-full"
-            />
-            <input
-              placeholder="Доза, напр. 5 г"
-              value={customDose}
-              onChange={(e) => setCustomDose(e.target.value)}
-              className="app-field w-full"
-            />
+            <label className="block text-xs text-tg-hint">Название своей добавки
+              <input
+                placeholder="Название"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                className="app-field w-full"
+              />
+            </label>
+            <label className="block text-xs text-tg-hint">Доза своей добавки
+              <input
+                placeholder="Доза, напр. 5 г"
+                value={customDose}
+                onChange={(e) => setCustomDose(e.target.value)}
+                className="app-field w-full"
+              />
+            </label>
             <button
               type="button"
               disabled={!customName.trim()}
               className="app-button app-gradient-action w-full disabled:opacity-50"
               onClick={() => {
+                if (saving) return;
+                setSaving(true);
                 void addCustomSupplement({
                   name_ru: customName.trim(),
                   dose: customDose,
@@ -2132,9 +2199,14 @@ setAuthEmail(p.auth_email ?? null);
                     setIntakes(await fetchTodaySupplementIntakes());
                     setCustomName("");
                     setCustomDose("");
+                    supplementDraft.clear(
+                      { stack: r.items, pickerKey: "", customName: "", customDose: "" },
+                      { stack: r.items, pickerKey, customName: "", customDose: "" },
+                    );
                     setOk("Своя добавка добавлена");
                   })
-                  .catch((e) => setError(toUserMessage(e, "Не удалось создать добавку")));
+                  .catch((e) => setError(toUserMessage(e, "Не удалось создать добавку")))
+                  .finally(() => setSaving(false));
               }}
             >
               Добавить свою
@@ -2196,6 +2268,7 @@ setAuthEmail(p.auth_email ?? null);
           onClose={() => setDetailExercise(null)}
         />
       ) : null}
+      </fieldset>
     </section>
   );
 }

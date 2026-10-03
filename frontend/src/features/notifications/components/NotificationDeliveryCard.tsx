@@ -1,3 +1,4 @@
+import { useId, type Ref } from "react";
 import type { NotificationSettings } from "@/api/notifications";
 import { AppButton } from "@/components/ui/AppButton";
 import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
@@ -34,9 +35,12 @@ type Props = {
   onSave: () => void;
   onToggleBrowser: () => void;
   onTest: () => void;
+  quietHoursError?: string | null;
+  quietHoursEndRef?: Ref<HTMLInputElement>;
 };
 
 export function NotificationDeliveryCard(props: Props) {
+  const errorId = useId();
   const { settings } = props;
   const detected = detectedTimezone();
   const timezones = Array.from(new Set([settings.timezone, detected, ...COMMON_TIMEZONES]));
@@ -142,6 +146,8 @@ export function NotificationDeliveryCard(props: Props) {
             <label className="text-xs text-tg-hint">С
               <input
                 type="time"
+                aria-invalid={Boolean(props.quietHoursError)}
+                aria-describedby={props.quietHoursError ? errorId : undefined}
                 value={settings.quiet_hours.start_time}
                 onChange={(event) => props.onChange({
                   ...settings,
@@ -153,6 +159,9 @@ export function NotificationDeliveryCard(props: Props) {
             <label className="text-xs text-tg-hint">До
               <input
                 type="time"
+                ref={props.quietHoursEndRef}
+                aria-invalid={Boolean(props.quietHoursError)}
+                aria-describedby={props.quietHoursError ? errorId : undefined}
                 value={settings.quiet_hours.end_time}
                 onChange={(event) => props.onChange({
                   ...settings,
@@ -163,6 +172,7 @@ export function NotificationDeliveryCard(props: Props) {
             </label>
           </div>
         ) : null}
+        {props.quietHoursError ? <p id={errorId} role="alert" className="app-field-error">{props.quietHoursError}</p> : null}
         <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
           <span>
             Доставить позже

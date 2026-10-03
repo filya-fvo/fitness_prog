@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { preferredScrollBehavior } from "@/utils/motion";
 
 import {
   archiveAdminExercise,
@@ -54,6 +55,7 @@ const weightLabels: Record<WeightRule, string> = {
 };
 
 export function AdminExercisesPage() {
+  const searchId = useId();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const focusedExerciseId = searchParams.get("focus");
@@ -172,7 +174,7 @@ export function AdminExercisesPage() {
     setDraft(draftFromExercise(item));
     setPreflight(null);
     setNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: preferredScrollBehavior() });
   }
 
   async function cancelEdit() {
@@ -335,7 +337,8 @@ export function AdminExercisesPage() {
           <button type="button" aria-pressed={Boolean(filters.archived)} onClick={() => void switchCatalog(true)} className={`min-h-11 rounded-xl px-3 text-sm font-medium ${filters.archived ? "app-gradient-action" : "bg-tg-bg text-tg-hint"}`}>Архив</button>
         </div>
         <div className="flex gap-2">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") applyFilters({ ...filters, q: query.trim() || undefined }); }} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base" placeholder="Название или тег" />
+          <label htmlFor={searchId} className="sr-only">Поиск упражнения в каталоге</label>
+          <input id={searchId} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") applyFilters({ ...filters, q: query.trim() || undefined }); }} className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-bg px-3 text-base" placeholder="Название или тег" />
           <button type="button" onClick={() => applyFilters({ ...filters, q: query.trim() || undefined })} className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold">Найти</button>
         </div>
         <div className="grid gap-2 sm:grid-cols-3">

@@ -16,7 +16,7 @@ export function ExerciseHubCards({ exerciseCount }: { exerciseCount?: number }) 
     <div className="grid gap-3 sm:grid-cols-2">
       <AppCard tone="plum" className="exercise-hub-banner exercise-hub-programs p-4">
         <Link to="/programs" className="block max-w-[73%] text-white">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#ff6b24]/25 text-[#ff8a63]"><MuscleGroupIcon group="shoulders" className="h-7 w-7" /></span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--app-brand-start)_25%,transparent)] text-[#ff8a63]"><MuscleGroupIcon group="shoulders" className="h-7 w-7" /></span>
           <h2 className="mt-3 text-base font-bold">Программы тренировок</h2>
           <p className="mt-1 text-xs text-white/75">Готовые планы под твою цель и тренировочные мышцы.</p>
           <span className="app-button app-gradient-action mt-3 inline-flex min-h-11 items-center px-3 text-xs">Выбрать программу →</span>
@@ -29,7 +29,7 @@ export function ExerciseHubCards({ exerciseCount }: { exerciseCount?: number }) 
       </AppCard>
       <AppCard tone="ocean" className="exercise-hub-banner exercise-hub-catalog p-4">
         <Link to="/workouts" className="block max-w-[70%] text-white">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e83d81]/25 text-[#ff74b0]"><MuscleGroupIcon group="chest" className="h-7 w-7" /></span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--app-brand-mid)_25%,transparent)] text-[#ff74b0]"><MuscleGroupIcon group="chest" className="h-7 w-7" /></span>
           <h2 className="mt-3 text-base font-bold">База упражнений</h2>
           <p className="mt-1 text-xs text-white/75">{exerciseCount != null ? `${exercisesCount(exerciseCount)} с техникой и медиа.` : "Упражнения с техникой и медиа."}</p>
           <span className="app-button app-gradient-action mt-3 inline-flex min-h-11 items-center px-3 text-xs">Открыть базу →</span>

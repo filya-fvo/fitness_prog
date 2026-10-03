@@ -82,7 +82,7 @@ export function DailyActivityPage() {
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-700/70">
                 <div className={`h-full rounded-full ${meta.bar}`} style={{ width: `${row.percent}%` }} />
               </div>
-              <p className="mt-1.5 text-right text-xs text-cyan-400">{row.percent}%</p>
+              <p className="mt-1.5 text-right text-xs text-[var(--app-info)]">{row.percent}%</p>
               {kind === "water" ? (
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {[250, 500].map((ml) => <button key={ml} type="button" onClick={() => activity.addWater(ml)}

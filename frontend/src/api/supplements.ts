@@ -7,7 +7,7 @@ const scheduleItemSchema = z.object({
   days: z.enum(["every", "workout", "rest"]).or(z.string()).default("every"),
 });
 
-const entrySchema = z.object({
+export const entrySchema = z.object({
   id: z.string(),
   key: z.string(),
   name_ru: z.string(),

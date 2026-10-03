@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import type { Exercise } from "@/types/workout";
@@ -35,6 +35,7 @@ export function PlannedExercisePicker({
   onChoose,
   onOpenDetail,
 }: Props) {
+  const searchId = useId();
   const [mode, setMode] = useState<Mode>("recommended");
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("");
@@ -124,7 +125,9 @@ export function PlannedExercisePicker({
         </button>
       </div>
 
+      <label htmlFor={searchId} className="sr-only">Поиск замены упражнения</label>
       <input
+        id={searchId}
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}

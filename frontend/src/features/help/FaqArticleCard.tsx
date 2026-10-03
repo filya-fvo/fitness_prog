@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { preferredScrollBehavior } from "@/utils/motion";
 
 import type { FaqArticle } from "./faqContent";
 import { FaqIllustration } from "./FaqIllustration";
@@ -14,7 +15,7 @@ export function FaqArticleCard({ article, highlighted }: {
     if (!highlighted || !detailsRef.current) return;
     detailsRef.current.open = true;
     detailsRef.current.querySelector("summary")?.focus({ preventScroll: true });
-    detailsRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    detailsRef.current.scrollIntoView({ behavior: preferredScrollBehavior(), block: "center" });
   }, [highlighted]);
 
   return (

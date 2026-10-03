@@ -495,9 +495,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-button,
-  .app-card-interactive {
-    transition: none;
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 

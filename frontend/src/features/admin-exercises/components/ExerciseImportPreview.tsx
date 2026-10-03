@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import {
   applyExerciseImport,
@@ -17,6 +17,7 @@ type Props = {
 };
 
 export function ExerciseImportPreviewPanel({ onImported }: Props) {
+  const sourceId = useId();
   const [source, setSource] = useState("");
   const [result, setResult] = useState<ExerciseImportPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +67,8 @@ export function ExerciseImportPreviewPanel({ onImported }: Props) {
     <details className="app-card app-card-inset p-4">
       <summary className="min-h-11 cursor-pointer py-2 font-semibold">Предварительная проверка импорта</summary>
       <p className="mb-3 text-xs text-tg-hint">Вставьте JSON-массив до 500 упражнений. Сначала выполняется проверка без записи. Медиа задаются только ссылками; файлы через эту форму не загружаются.</p>
-      <textarea value={source} onChange={(event) => { setSource(event.target.value); setResult(null); }} className="min-h-40 w-full resize-y rounded-xl border border-black/10 bg-tg-bg p-3 font-mono text-base" placeholder={'[{"name_ru":"…","muscle_group":"…"}]'} />
+      <label htmlFor={sourceId} className="block text-xs text-tg-hint">JSON упражнений</label>
+      <textarea id={sourceId} value={source} onChange={(event) => { setSource(event.target.value); setResult(null); }} className="mt-1 min-h-40 w-full resize-y rounded-xl border border-black/10 bg-tg-bg p-3 font-mono text-base" placeholder={'[{"name_ru":"…","muscle_group":"…"}]'} />
       <button type="button" disabled={busy || !source.trim()} onClick={() => void preview()} className="mt-2 min-h-11 w-full rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50">{busy ? "Проверяем…" : "Проверить без импорта"}</button>
       {error ? <p role="alert" className="mt-3 app-status app-status-danger">{error}</p> : null}
       {result ? (

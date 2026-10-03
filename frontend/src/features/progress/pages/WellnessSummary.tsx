@@ -1,3 +1,4 @@
+import { ChartDataTable } from "@/components/ui/ChartDataTable";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -76,46 +77,48 @@ function MetricChart({ series, config }: { series: DailyMetric[]; config: Metric
 
   return (
     <div className="rounded-xl bg-tg-bg p-2">
-      <svg
-        viewBox="0 0 600 174"
-        className="h-44 w-full"
-        role="img"
-        aria-label={`${config.label} по дням. Нет данных за ${missingCount} дн.`}
-      >
-        <line x1={left} x2={right} y1={bottom} y2={bottom} className="stroke-black/10 dark:stroke-white/15" />
-        <line x1={left} x2={right} y1={top} y2={top} className="stroke-black/10 dark:stroke-white/15" />
-        <line x1={left} x2={right} y1={(top + bottom) / 2} y2={(top + bottom) / 2} className="stroke-black/10 dark:stroke-white/10" strokeDasharray="4 5" />
-        <text x="2" y={top + 4} className="fill-tg-hint text-[10px]">{config.axisFormat(max)}</text>
-        <text x="2" y={bottom + 4} className="fill-tg-hint text-[10px]">{config.axisFormat(min)}</text>
-        {config.goal != null ? <>
-          <line x1={left} x2={right} y1={y(config.goal)} y2={y(config.goal)} strokeDasharray="6 5" className="stroke-emerald-500/70" />
-          <text x={right - 2} y={Math.max(12, y(config.goal) - 5)} textAnchor="end" className="fill-emerald-600 text-[10px]">цель {config.format(config.goal)}</text>
-        </> : null}
-        {chart.connections.map((connection) => (
-          <line
-            key={`${connection.from.index}-${connection.to.index}`}
-            x1={connection.from.x}
-            y1={connection.from.y}
-            x2={connection.to.x}
-            y2={connection.to.y}
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeDasharray={connection.crossesMissingDays ? "7 7" : undefined}
-            className="stroke-tg-button"
-          />
-        ))}
-        {chart.points.map((point, index) => (
-          <g key={`${point.x}-${point.y}`}>
-            <circle cx={point.x} cy={point.y} r="5" className="fill-tg-button">
-              <title>{shortDate(series[point.index].date)}: {config.format(point.value)}</title>
-            </circle>
-            {index === chart.points.length - 1 ? <text x={point.x} y={Math.max(11, point.y - 9)} textAnchor="end" className="fill-tg-text text-[10px] font-semibold">{config.axisFormat(point.value)}</text> : null}
-          </g>
-        ))}
-        {values.map((value, index) => value == null ? <circle key={`missing-${series[index].date}`} cx={x(index)} cy={bottom} r="2.5" className="fill-black/20 dark:fill-white/20"><title>{shortDate(series[index].date)}: нет данных</title></circle> : null)}
-        {[0, Math.floor((series.length - 1) / 2), series.length - 1].map((index) => <text key={index} x={x(index)} y="164" textAnchor={index === 0 ? "start" : index === series.length - 1 ? "end" : "middle"} className="fill-tg-hint text-[10px]">{shortDate(series[index].date)}</text>)}
-      </svg>
-      <p className="px-1 text-[10px] text-tg-hint">
+      <p className="mb-1 text-xs text-tg-hint">{config.goal == null ? "" : `Цель: ${config.format(config.goal)}`}</p>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
+        <div className="flex h-44 flex-col justify-between py-4 text-xs text-tg-hint"><span>{config.axisFormat(max)}</span><span>{config.axisFormat(min)}</span></div>
+        <svg
+          viewBox="35 0 565 154" preserveAspectRatio="none"
+          className="h-44 w-full"
+          role="img"
+          aria-label={`${config.label} по дням. Нет данных за ${missingCount} дн.`}
+        >
+          <line x1={left} x2={right} y1={bottom} y2={bottom} className="stroke-black/10 dark:stroke-white/15" />
+          <line x1={left} x2={right} y1={top} y2={top} className="stroke-black/10 dark:stroke-white/15" />
+          <line x1={left} x2={right} y1={(top + bottom) / 2} y2={(top + bottom) / 2} className="stroke-black/10 dark:stroke-white/10" strokeDasharray="4 5" />
+          {config.goal != null ? <>
+            <line x1={left} x2={right} y1={y(config.goal)} y2={y(config.goal)} strokeDasharray="6 5" className="stroke-emerald-500/70" />
+          </> : null}
+          {chart.connections.map((connection) => (
+            <line
+              key={`${connection.from.index}-${connection.to.index}`}
+              x1={connection.from.x}
+              y1={connection.from.y}
+              x2={connection.to.x}
+              y2={connection.to.y}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={connection.crossesMissingDays ? "7 7" : undefined}
+              className="stroke-tg-button"
+            />
+          ))}
+          {chart.points.map((point) => (
+            <g key={`${point.x}-${point.y}`}>
+              <circle cx={point.x} cy={point.y} r="5" className="fill-tg-button">
+                <title>{shortDate(series[point.index].date)}: {config.format(point.value)}</title>
+              </circle>
+            </g>
+          ))}
+          {values.map((value, index) => value == null ? <circle key={`missing-${series[index].date}`} cx={x(index)} cy={bottom} r="2.5" className="fill-black/20 dark:fill-white/20"><title>{shortDate(series[index].date)}: нет данных</title></circle> : null)}
+        </svg>
+      </div>
+      <div className="mt-1 flex justify-between gap-2 text-xs text-tg-hint">{[0, Math.floor((series.length - 1) / 2), series.length - 1].filter((index, position, all) => all.indexOf(index) === position).map((index) => <span key={index}>{shortDate(series[index].date)}</span>)}</div>
+      <ChartDataTable caption={`${config.label} по дням`} columns={["Дата", config.label]}
+        rows={series.map((day) => { const value = config.value(day); return { key: day.date, cells: [day.date, value != null && Number.isFinite(value) ? (config.label === "Шаги" ? value : config.format(value)) : "Нет данных"] }; })} />
+      <p className="px-1 text-xs text-tg-hint">
         Пунктир соединяет значения через пропущенные дни; точки у нижней оси — даты без данных.
       </p>
     </div>
@@ -136,20 +139,20 @@ export function WellnessSummary({ days, error }: Props) {
   return (
     <section className="app-card app-card-neutral p-4 md:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div><h2 className="text-sm font-semibold">Активность и восстановление</h2><p className="mt-0.5 text-[11px] text-tg-hint">Один показатель — одна понятная шкала</p></div>
+        <div><h2 className="text-sm font-semibold">Активность и восстановление</h2><p className="mt-0.5 text-xs text-tg-hint">Один показатель — одна понятная шкала</p></div>
         <div className="app-segmented grid grid-cols-3 text-xs" aria-label="Период графика">
           {([7, 14, 30] as const).map((value) => <button key={value} type="button" onClick={() => setPeriod(value)} aria-pressed={period === value} className="app-segment px-3">{value} дн.</button>)}
         </div>
       </div>
-      <div className="app-segmented mt-3 grid grid-cols-3 text-xs" role="tablist" aria-label="Показатель">
-        {(Object.keys(METRICS) as MetricId[]).map((id) => <button key={id} type="button" role="tab" aria-selected={metric === id} onClick={() => setMetric(id)} className="app-segment px-2">{METRICS[id].shortLabel}</button>)}
+      <div className="app-segmented mt-3 grid grid-cols-3 text-xs" role="group" aria-label="Показатель">
+        {(Object.keys(METRICS) as MetricId[]).map((id) => <button key={id} type="button" aria-pressed={metric === id} onClick={() => setMetric(id)} className="app-segment px-2">{METRICS[id].shortLabel}</button>)}
       </div>
       {error ? <p className="mt-3 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{error}</p> : <>
         <div className="my-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Последнее</p><p className="mt-1 text-sm font-semibold tabular-nums">{current == null ? "—" : config.format(current)}</p></div>
-          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Среднее</p><p className="mt-1 text-sm font-semibold tabular-nums">{avg == null ? "—" : config.format(avg)}</p></div>
-          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">{goalDays == null ? "Изменение" : "Дней в цели"}</p><p className="mt-1 text-sm font-semibold tabular-nums">{goalDays == null ? (change == null ? "—" : `${change > 0 ? "+" : change < 0 ? "−" : ""}${config.format(Math.abs(change))}`) : `${goalDays} из ${values.length}`}</p></div>
-          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-[10px] text-tg-hint">Заполнено</p><p className="mt-1 text-sm font-semibold tabular-nums">{values.length} из {period}</p></div>
+          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-xs text-tg-hint">Последнее</p><p className="mt-1 text-sm font-semibold tabular-nums">{current == null ? "—" : config.format(current)}</p></div>
+          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-xs text-tg-hint">Среднее</p><p className="mt-1 text-sm font-semibold tabular-nums">{avg == null ? "—" : config.format(avg)}</p></div>
+          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-xs text-tg-hint">{goalDays == null ? "Изменение" : "Дней в цели"}</p><p className="mt-1 text-sm font-semibold tabular-nums">{goalDays == null ? (change == null ? "—" : `${change > 0 ? "+" : change < 0 ? "−" : ""}${config.format(Math.abs(change))}`) : `${goalDays} из ${values.length}`}</p></div>
+          <div className="rounded-xl bg-tg-bg p-2.5"><p className="text-xs text-tg-hint">Заполнено</p><p className="mt-1 text-sm font-semibold tabular-nums">{values.length} из {period}</p></div>
         </div>
         <MetricChart series={series} config={config} />
       </>}

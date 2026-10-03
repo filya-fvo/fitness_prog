@@ -12,11 +12,15 @@ import {
 } from "@/api/adminBroadcasts";
 import type { Program } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
+import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
+import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
+import { useUserStore } from "@/store/userStore";
 
 type Props = {
   selected: AdminBroadcast | null;
   programs: Program[];
   onChanged: (campaign: AdminBroadcast) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 const DEFAULT_AUDIENCE: AdminBroadcastAudience = { kind: "all_telegram" };
@@ -29,7 +33,7 @@ function audienceValid(audience: AdminBroadcastAudience): boolean {
   return true;
 }
 
-export function BroadcastEditor({ selected, programs, onChanged }: Props) {
+export function BroadcastEditor({ selected, programs, onChanged, onDirtyChange }: Props) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [audience, setAudience] = useState<AdminBroadcastAudience>(DEFAULT_AUDIENCE);
@@ -46,6 +50,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledLocal, setScheduledLocal] = useState("");
   const previewSequence = useRef(0);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   useEffect(() => {
     if (!selected) return;
@@ -66,6 +71,17 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
             : null,
     );
   }, [selected]);
+
+  const owner = useUserStore((state) => state.user?.id);
+  const recovery = useRecoverableDraft({
+    owner, context: `broadcast:${campaign?.id ?? "new"}`,
+    ready: (selected?.id ?? null) === (campaign?.id ?? null),
+    value: { title, message, audience },
+    restore: (draft) => {
+      setTitle(draft.title); setMessage(draft.message); setAudience(draft.audience);
+      setDirty(true); setConfirming(false);
+    },
+  });
 
   useEffect(() => {
     const sequence = ++previewSequence.current;
@@ -115,6 +131,7 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
       const saved = campaign
         ? await updateAdminBroadcast(campaign.id, draft)
         : await createAdminBroadcast(draft);
+      recovery.clear();
       setCampaign(saved);
       setExpected(saved.counts.expected);
       setDirty(false);
@@ -177,11 +194,12 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
   }
 
   return (
-    <div className="space-y-4 app-card app-card-inset p-4">
+    <fieldset disabled={Boolean(busy)} className="min-w-0 space-y-4 app-card app-card-inset p-4">
       <div>
         <h2 className="font-semibold text-tg-text">Редактор сообщения</h2>
         <p className="mt-1 text-xs text-tg-hint">Сначала сохраните и отправьте тест только себе.</p>
       </div>
+      <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} disabled={Boolean(busy)} onDiscard={() => { recovery.discard(); setDirty(false); }} />
       {error ? <p role="alert" className="app-status app-status-danger">{error}</p> : null}
       {previewError ? <p role="alert" className="app-status app-status-warning">{previewError}</p> : null}
       {note ? <p className="rounded-xl bg-tg-bg p-3 text-sm text-tg-hint">{note}</p> : null}
@@ -281,6 +299,6 @@ export function BroadcastEditor({ selected, programs, onChanged }: Props) {
           )}
         </div>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

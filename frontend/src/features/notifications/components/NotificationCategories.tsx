@@ -242,7 +242,7 @@ export function NotificationCategories(props: Props) {
           />
         </label>
         <p className="mt-2 text-xs text-tg-hint">Время каждой добавки задаётся в её единственном расписании.</p>
-        <Link to="/profile?section=supplements" className="inline-flex min-h-11 items-center text-sm font-medium text-tg-link">
+        <Link to="/profile/settings?section=supplements" className="inline-flex min-h-11 items-center text-sm font-medium text-tg-link">
           Настроить добавки →
         </Link>
         <SaveSectionButton busy={props.busy} onClick={() => props.onSave("supplements")} />

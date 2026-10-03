@@ -75,37 +75,37 @@ export function ExerciseProgressSection({
   }
 
   return (
-    <section className="mt-3 rounded-2xl border border-cyan-300/15 bg-gradient-to-br from-[#142644] to-[#101b32] p-3 text-white">
+    <section className="app-card app-card-ocean mt-3 p-3 text-tg-text">
       <div className="flex items-center justify-between gap-3">
-        <div><p className="text-sm font-semibold">Дневник</p><p className="mt-0.5 text-[11px] text-white/65">Последнее выполнение</p></div>
+        <div><p className="text-sm font-semibold">Дневник</p><p className="mt-0.5 text-[11px] text-tg-hint">Последнее выполнение</p></div>
         <div className="flex flex-wrap justify-end gap-1">
           <ExercisePinButton exerciseId={exerciseId} compact />
-          <button type="button" onClick={() => setChartOpen(true)} disabled={!points.length} className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-cyan-300/15 bg-[#071527] px-3 text-xs font-semibold text-cyan-300 disabled:opacity-45">
+          <button type="button" onClick={() => setChartOpen(true)} disabled={!points.length} className="app-secondary-action flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-xs font-semibold disabled:opacity-45">
             Динамика веса <ChartIcon />
           </button>
         </div>
       </div>
-      {loading && !progress ? <div className="mt-3 h-20 animate-pulse rounded-xl bg-[#081426]" /> : null}
-      {!loading && !latest ? <p className="mt-3 rounded-xl bg-[#081426] p-3 text-xs text-white/65">История появится после завершённого подхода с весом.</p> : null}
+      {loading && !progress ? <div className="mt-3 h-20 animate-pulse rounded-xl bg-tg-secondary" /> : null}
+      {!loading && !latest ? <p className="mt-3 rounded-xl bg-tg-secondary p-3 text-xs text-tg-hint">История появится после завершённого подхода с весом.</p> : null}
       {latest ? <div className="mt-3">
         <div className="mb-2 flex items-center justify-between gap-2 text-xs">
           <span className="font-medium">{displayDate(latest.date)}</span>
-          <span className="rounded-full bg-[#081426] px-2 py-1 text-white/65">{PHASE_LABELS[latest.phase]}</span>
+          <span className="rounded-full bg-tg-secondary px-2 py-1 text-tg-hint">{PHASE_LABELS[latest.phase]}</span>
         </div>
         <div className="space-y-1.5">
-          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-[#071527] px-3 py-2.5 text-sm"><span className="w-4 text-cyan-300">{set.setNumber}</span><span className="font-semibold tabular-nums">{set.weight} кг{set.weightMode === "per_hand" ? "/руку" : ""} × {set.reps} повт.</span></div>)}
+          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-tg-secondary px-3 py-2.5 text-sm"><span className="w-4 text-tg-link">{set.setNumber}</span><span className="font-semibold tabular-nums">{set.weight} кг{set.weightMode === "per_hand" ? "/руку" : ""} × {set.reps} повт.</span></div>)}
         </div>
       </div> : null}
-      {error ? <p className="mt-2 text-[11px] text-amber-300">{error}</p> : null}
-      {showExplorerLink ? <Link to={`/progress/exercises?exercise=${exerciseId}`} className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-cyan-300">
+      {error ? <p className="mt-2 text-[11px] text-[var(--app-warning)]">{error}</p> : null}
+      {showExplorerLink ? <Link to={`/progress/exercises?exercise=${exerciseId}`} className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-tg-link">
         Открыть в разделе «Упражнения» →
       </Link> : null}
 
       {chartOpen ? <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="exercise-progress-title" onClick={() => setChartOpen(false)}>
-        <div ref={chartDialogRef} tabIndex={-1} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-cyan-300/15 bg-[#121e34] p-4 text-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div ref={chartDialogRef} tabIndex={-1} className="app-card max-h-[92vh] w-full max-w-2xl overflow-y-auto p-4 text-tg-text shadow-2xl" onClick={(event) => event.stopPropagation()}>
           <div className="mb-4 flex items-start justify-between gap-3">
-            <div><h2 id="exercise-progress-title" className="text-xl font-semibold">Динамика веса</h2><p className="mt-1 text-xs text-white/65">{exerciseName}</p></div>
-            <button type="button" onClick={() => setChartOpen(false)} className="tap-target rounded-xl bg-[#081426] px-3 text-sm text-cyan-300">Закрыть</button>
+            <div><h2 id="exercise-progress-title" className="text-xl font-semibold">Динамика веса</h2><p className="mt-1 text-xs text-tg-hint">{exerciseName}</p></div>
+            <button type="button" onClick={() => setChartOpen(false)} className="app-secondary-action tap-target rounded-xl px-3 text-sm">Закрыть</button>
           </div>
           <ExerciseProgressChart allPoints={points} />
         </div>

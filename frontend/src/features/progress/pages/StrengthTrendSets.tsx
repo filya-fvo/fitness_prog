@@ -117,7 +117,7 @@ function emptyMessage(key: TrendSetKey, data: StrengthTrendSets): string {
   if (key === "next") {
     return data.nextWorkout
       ? "По упражнениям ближайшего занятия ещё нет истории с весом."
-      : "Настройте программу и расписание — здесь появится ближайшая тренировка.";
+      : "Ближайшая тренировка пока не назначена. Проверьте расписание или дождитесь окончания паузы.";
   }
   if (key === "best") {
     return "Для устойчивого тренда нужно выполнить упражнение минимум трижды за 8 недель.";
@@ -159,13 +159,12 @@ export function StrengthTrendSetsCard({
         </Link>
       </div>
 
-      <div role="tablist" aria-label="Наборы силовых трендов" className="app-segmented mt-3 grid grid-cols-3">
+      <div role="group" aria-label="Наборы силовых трендов" className="app-segmented mt-3 grid grid-cols-3">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
-            role="tab"
-            aria-selected={active === tab.key}
+            aria-pressed={active === tab.key}
             onClick={() => setActive(tab.key)}
             className="app-segment px-2 text-xs"
           >
@@ -188,7 +187,7 @@ export function StrengthTrendSetsCard({
       {!data && !error ? <div className="mt-3 h-28 animate-pulse app-metric" /> : null}
       {data ? (
         items.length ? (
-          <ul role="tabpanel" className="mt-2 space-y-2">
+          <ul className="mt-2 space-y-2">
             {items.map((item) => (
               <TrendRow
                 key={item.exerciseId}
@@ -200,7 +199,7 @@ export function StrengthTrendSetsCard({
             ))}
           </ul>
         ) : (
-          <p role="tabpanel" className="mt-2 app-metric p-3 text-xs text-tg-hint">
+          <p className="mt-2 app-metric p-3 text-xs text-tg-hint">
             {emptyMessage(active, data)}
           </p>
         )

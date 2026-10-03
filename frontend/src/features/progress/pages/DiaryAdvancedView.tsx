@@ -52,7 +52,7 @@ export function DiaryAdvancedView(props: Props) {
       <div className="md:col-span-2">
         {props.volumeSeries.some((day) => day.workouts > 0)
           ? <Charts series={props.volumeSeries} />
-          : <StatusNotice>Нужна завершённая тренировка для графика объёма.</StatusNotice>}
+          : <StatusNotice>За последние 14 дней нет завершённых тренировок. Более ранние результаты доступны в сводке.</StatusNotice>}
       </div>
     </div>
   );

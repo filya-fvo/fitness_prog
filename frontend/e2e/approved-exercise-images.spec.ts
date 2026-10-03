@@ -41,7 +41,7 @@ for (const [width, height, colorScheme] of [
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.screenshot({ path: `../artifacts/exercise-images-release-2026-10-01/card-${width}-${colorScheme}.png` });
-    await dialog.getByRole("tab", { name: "Анимация" }).click();
+    await dialog.getByRole("button", { name: "Анимация", exact: true }).click();
     await expect(dialog.getByRole("img", { name: "Мёртвый жук", exact: true })).toHaveAttribute("src", deadbug.animation_url);
   });
 }

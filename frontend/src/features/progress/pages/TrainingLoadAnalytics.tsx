@@ -1,3 +1,4 @@
+import { ChartDataTable } from "@/components/ui/ChartDataTable";
 import type { ProgressDashboard, ProgressDashboardPeriod } from "@/api/progressDashboard";
 import { StatusNotice } from "@/components/ui/StatusNotice";
 
@@ -32,7 +33,7 @@ export function TrainingLoadAnalytics({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 id="training-load-title" className="text-sm font-semibold">Нагрузка и восстановление</h2>
-          <p className="mt-0.5 text-[11px] text-tg-hint">Только завершённые подходы · пустые дни не считаются нулём</p>
+          <p className="mt-0.5 text-xs text-tg-hint">Только завершённые подходы · пустые дни не считаются нулём</p>
         </div>
         <div className="app-segmented grid grid-cols-3 text-xs" aria-label="Период нагрузки">
           {PERIODS.map((period) => (
@@ -57,30 +58,30 @@ export function TrainingLoadAnalytics({
       ) : null}
       {data && !loading && data.current.completed_workouts > 0 ? (
         <>
-          <p className="mt-3 text-[11px] text-tg-hint">
+          <p className="mt-3 text-xs text-tg-hint">
             {data.period_start.split("-").reverse().join(".")}–{data.period_end.split("-").reverse().join(".")} · {data.current.completed_workouts} тренировок
           </p>
           <div className={`mt-2 grid gap-2 ${advanced ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3"}`}>
             <div className="app-metric p-2.5">
-              <p className="text-[10px] text-tg-hint">Подходы факт / план</p>
+              <p className="text-xs text-tg-hint">Подходы факт / план</p>
               <p className="mt-1 text-base font-semibold">{data.current.completed_sets} / {data.current.planned_sets || "—"}</p>
-              <p className="text-[10px] text-tg-hint">факт: {signedDelta(data.current.completed_sets, data.previous.completed_sets)}</p>
+              <p className="text-xs text-tg-hint">факт: {signedDelta(data.current.completed_sets, data.previous.completed_sets)}</p>
             </div>
             <div className="app-metric p-2.5">
-              <p className="text-[10px] text-tg-hint">Средний RPE</p>
+              <p className="text-xs text-tg-hint">Средний RPE</p>
               <p className="mt-1 text-base font-semibold">{data.current.average_rpe == null ? "—" : formatNumber(data.current.average_rpe)}</p>
-              <p className="text-[10px] text-tg-hint">заполнено {data.current.rpe_workouts} из {data.current.completed_workouts}</p>
+              <p className="text-xs text-tg-hint">заполнено {data.current.rpe_workouts} из {data.current.completed_workouts}</p>
             </div>
             <div className="app-metric p-2.5">
-              <p className="text-[10px] text-tg-hint">Активные дни</p>
+              <p className="text-xs text-tg-hint">Активные дни</p>
               <p className="mt-1 text-base font-semibold">{data.current.active_days}</p>
-              <p className="text-[10px] text-tg-hint">за выбранный период</p>
+              <p className="text-xs text-tg-hint">за выбранный период</p>
             </div>
             {advanced ? (
               <div className="app-metric p-2.5">
-                <p className="text-[10px] text-tg-hint">Тоннаж</p>
+                <p className="text-xs text-tg-hint">Тоннаж</p>
                 <p className="mt-1 text-base font-semibold">{formatNumber(data.current.volume_kg / 1000)} т</p>
-                <p className="text-[10px] text-tg-hint">{signedDelta(data.current.volume_kg, data.previous.volume_kg, " кг")}</p>
+                <p className="text-xs text-tg-hint">{signedDelta(data.current.volume_kg, data.previous.volume_kg, " кг")}</p>
               </div>
             ) : null}
           </div>
@@ -91,7 +92,7 @@ export function TrainingLoadAnalytics({
               <ul className="mt-2 space-y-2">
                 {data.muscle_groups.slice(0, advanced ? 8 : 5).map((item) => (
                   <li key={item.muscle_group}>
-                    <div className="flex justify-between gap-3 text-[11px]">
+                    <div className="flex justify-between gap-3 text-xs">
                       <span className="truncate">{item.muscle_group}</span>
                       <span className="shrink-0 text-tg-hint">{item.completed_sets} подх. · {item.exercises} упр.</span>
                     </div>
@@ -113,10 +114,13 @@ export function TrainingLoadAnalytics({
                 {data.weeks.map((week) => {
                   const max = Math.max(1, ...data.weeks.map((item) => item.volume_kg));
                   const height = week.volume_kg ? Math.max(6, week.volume_kg / max * 64) : 3;
-                  return <div key={week.week_start} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><span className="w-full max-w-8 rounded-t bg-tg-button" style={{ height }} title={`${formatNumber(week.volume_kg)} кг`} /><span className="text-[9px] text-tg-hint">{week.week_start.slice(8, 10)}.{week.week_start.slice(5, 7)}</span></div>;
+                  return <div key={week.week_start} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1"><span className="w-full max-w-8 rounded-t bg-tg-button" style={{ height }} title={`${formatNumber(week.volume_kg)} кг`} /></div>;
                 })}
               </div>
-              <p className="mt-1 text-[10px] text-tg-hint">Тоннаж — сумма веса × повторения; он не сравнивает разные упражнения по качеству.</p>
+              <div className="mt-1 flex justify-between gap-2 text-xs text-tg-hint">{[0, Math.floor((data.weeks.length - 1) / 2), data.weeks.length - 1].filter((index, position, all) => all.indexOf(index) === position).map((index) => <span key={index}>{data.weeks[index].week_start.slice(5).split("-").reverse().join(".")}</span>)}</div>
+              <ChartDataTable caption="Нагрузка по неделям" columns={["Период", "Тренировки", "Объём, кг"]}
+                rows={data.weeks.map((week) => ({ key: week.week_start, cells: [`${week.week_start}–${week.week_end}`, week.completed_workouts, week.volume_kg] }))} />
+              <p className="mt-1 text-xs text-tg-hint">Тоннаж — сумма веса × повторения; он не сравнивает разные упражнения по качеству.</p>
             </div>
           ) : null}
         </>

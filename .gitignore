@@ -83,3 +83,10 @@ backups/
 backend/data/
 
 /models/
+
+# Local verification evidence; never include caches, logs or test databases in a release.
+/artifacts/audit-fixes-20261003/
+/artifacts/design-review-2026-10-02/
+/artifacts/exercise-images-release-2026-10-01/
+/artifacts/faq-design-2026-10-02/
+/frontend/test-results/
