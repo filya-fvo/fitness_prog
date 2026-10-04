@@ -1,86 +1,62 @@
-# Production upgrade — final checklist
+# Проверка выпуска Fitness Mini App
 
-Use after P0–P3 code is in place and before inviting real users.
+Основной production — Timeweb VPS, Docker Compose в `/opt/fitness/source`.
+Репозиторий: `filya-fvo/fitness_prog`, ветка `timeweb-production-20260825`.
+Команды обновления и rollback: [TIMEWEB_DOMAIN_CUTOVER.md](./TIMEWEB_DOMAIN_CUTOVER.md).
+Повседневная эксплуатация: [VPS_ADMIN_GUIDE.md](./VPS_ADMIN_GUIDE.md).
 
-## Content & product
+## До публикации
 
-- [ ] DB has **100** exercises (`seed_prod_content.py`)
-- [ ] ≥8 template programs with schedule days
-- [ ] Program start creates workout with **≥4** exercises in `plan`
-- [ ] Active workout queue next/prev works
-- [ ] YouTube/external media player does not crash without URL
-- [ ] Onboarding saves `days_per_week`
-- [ ] Home recommends / starts today’s session
-- [ ] Catalog set templates (3×8–12 / 5×5 / 4×10 / 3×15)
-- [ ] Offline start/finish still works
+- [ ] В выпуске только согласованные изменения; `.env`, ключи, пароли, дампы и результаты проверок не попадают в Git.
+- [ ] Сохранены пользовательские данные и совместимость API; новые SQL-миграции добавлены отдельными файлами.
+- [ ] Выполнены релевантные pytest/Ruff, Vitest/ESLint, TypeScript/build и bundle budget.
+- [ ] Проверены изменённые пользовательские сценарии, пустые состояния, ошибки и повторное сохранение.
+- [ ] Проверены узкие экраны, светлая/тёмная тема и доступность затронутых форм.
+- [ ] Изменения поведения отражены в `CHANGELOG` и соответствующем руководстве.
+- [ ] При обновлении зависимостей проверены advisories, совместимость и размер сборки; оставшиеся предупреждения объяснены.
 
-## Security
+Проверочная сборка `npm run build` пишет в `frontend/.dist-check`.
+Рабочий локальный `frontend/dist` обновляет только `npm run build:publish`.
+Проверки используют тестовые настройки и отдельный каталог результатов;
+они не должны обращаться к production-базе или отправлять реальные уведомления.
 
-- [ ] No `.env` / secrets in git
-- [ ] `JWT_SECRET` unique prod value (≥32 chars)
-- [ ] `EMAIL_OTP_DEV_RETURN_CODE=false`; production OTP never appears in API response
-- [ ] `CORS_ORIGINS` = Telegram + **only** prod front domain(s)
-- [ ] `ENVIRONMENT=production` (docs disabled, JSON logs)
-- [ ] initData HMAC path only for Telegram auth
-- [ ] BotFather → Login Widget: Allowed URL `https://app.filfitclub.ru`, подпись `RS256`
-- [ ] Browser Telegram Login verifies JWKS, issuer, audience and nonce; phone scope is not requested
-- [ ] AI rate limit uses Redis in prod (`REDIS_URL`)
-- [ ] Dependency audit periodically (`pip` / `npm audit`)
+## GitHub и VPS
 
-## Deploy / ops
+- [ ] Commit отправлен в `origin/timeweb-production-20260825`.
+- [ ] Для этого commit успешны все пять проверок GitHub: Backend, Frontend, Docker API image, browser QA и visual QA.
+- [ ] VPS находится на той же ветке, checkout чистый, известен исходный commit.
+- [ ] Перед обновлением создан backup PostgreSQL; восстановление проверено изолированно.
+- [ ] Сохранены предыдущие образы и исходный commit для rollback.
+- [ ] Выполнен `git pull --ff-only`; commit VPS совпадает с проверенным commit GitHub.
+- [ ] Compose проверен, образы собраны, миграции завершились успешно, сервисы обновлены.
+- [ ] PostgreSQL доступен на хосте только через `127.0.0.1:15432`; внутренние сервисы Redis/LLM/OCR не опубликованы наружу.
+- [ ] Автоматический backup и снимки состояния системы продолжают работать.
 
-- [ ] Timeweb App Platform follows [TIMEWEB_DOMAIN_CUTOVER.md](./TIMEWEB_DOMAIN_CUTOVER.md)
-- [ ] One replica uses the root `Dockerfile`, port 8000 and health path `/health`
-- [ ] `https://app.filfitclub.ru` and `/health` return 200
-- [ ] PostgreSQL 18 and Valkey use protected public connections (TLS)
-- [ ] Timeweb extensions `pgvector`, `pg_trgm`, `pgcrypto`, `uuid-ossp` are enabled
-- [ ] Logs show validation and migrations completed before API/worker
-- [ ] Versioned exercise/program/nutrition seed completed
-- [ ] ARQ worker is running
-- [ ] Timeweb PostgreSQL backup is enabled; local dump is retained
-- [ ] Domain NS point only to Timeweb; Cloudflare zone/tunnel no longer serves traffic
-- [ ] Telegram Menu Button has type `web_app` and opens `https://app.filfitclub.ru`
-- [ ] Local Supervisor/Tailscale remains available for the first 24 hours
-- [ ] Scheduled workflow `Public health monitor` успешно проверяет публичный `/health`
-- [ ] Sentry DSN set (optional but recommended)
-- [ ] Backup note/job exists ([LOCAL_ADMIN_GUIDE.md](./LOCAL_ADMIN_GUIDE.md))
+GitHub не обновляет VPS автоматически. Публикация закончена только после
+обновления серверных контейнеров и проверок ниже. Локальный Supervisor/Tailscale
+остаётся отдельным контуром и не управляет production Compose.
 
-## Automated
+## После обновления
 
-```powershell
-cd backend
-.\.venv\Scripts\python.exe -m pytest -q
+- [ ] `docker compose ... ps -a`: сервисы работают; сервисы с healthcheck имеют `healthy`, одноразовая миграция завершилась с кодом 0.
+- [ ] [API health](https://api.filfitclub.ru/health) отвечает `{"status":"ok"}`.
+- [ ] [Приложение](https://app.filfitclub.ru) открывается; `version.json` содержит новую сборку.
+- [ ] Открыты затронутые экраны в авторизованной сессии; нет новых ошибок в журналах.
+- [ ] Worker и Telegram poller имеют свежие heartbeat; очередь не застряла.
+- [ ] Старые frontend chunks доступны для уже открытых Telegram/PWA сессий.
+- [ ] Source на VPS чистый, версия и commit в host-status актуальны.
 
-cd ..\frontend
-npm.cmd test
-npm.cmd run build
-# optional e2e
-npx.cmd playwright install chromium
-npm.cmd run test:e2e
-```
+## Проверки на настоящем устройстве
 
-`npm.cmd run build` создаёт изолированную проверочную сборку `.dist-check`.
-Публикация выполняется только через `npm.cmd run build:publish`; не копируйте
-проверочную сборку в `dist` вручную.
+Для изменений входа, камеры, Telegram-жестов, push, установки/обновления PWA
+и поведения при реальном обрыве сети нужны отдельные проверки на iOS/Android.
+Browser mocks и автоматическая эмуляция не подтверждают эти интеграции.
+Не запускайте массовый seed/reset каталога или очистку volumes как часть выпуска.
 
-После отправки production-изменения в GitHub дождитесь успешной сборки и
-healthcheck в Timeweb. Локальный Supervisor не управляет production и остаётся
-отдельным резервным контуром.
+## Запись о выпуске
 
-## Manual Telegram QA
-
-| Check | iOS | Android |
-|-------|-----|---------|
-| Login without 500 | ☐ | ☐ |
-| Programs → start multi-ex | ☐ | ☐ |
-| Complete workout → progress | ☐ | ☐ |
-| Video embed / technique fallback | ☐ | ☐ |
-| Offline mid-session | ☐ | ☐ |
-| Theme / safe-area / bottom nav | ☐ | ☐ |
-
-## Sign-off
-
-- Date:
-- Prod front URL:
-- Prod health URL:
-- Notes:
+- Дата и commit:
+- URL проверок GitHub:
+- Backup и результат восстановления:
+- Версия и build ID:
+- Выполненные проверки и оставшиеся ограничения:

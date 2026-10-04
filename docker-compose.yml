@@ -12,8 +12,15 @@ name: fitness
 #   docker compose --env-file backend/.env.production run --rm api \
 #     python scripts/seed_nutrition.py
 
+x-service-logging: &service-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   db:
+    logging: *service-logging
     # The SQL schema requires CREATE EXTENSION vector; plain postgres is insufficient.
     # Keep PostgreSQL at the same major version as the current Windows install,
     # so a pg_dump/pg_restore cutover never attempts a major-version downgrade.
@@ -42,6 +49,7 @@ services:
       start_period: 10s
 
   redis:
+    logging: *service-logging
     image: redis:7.4-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
@@ -56,6 +64,7 @@ services:
       retries: 12
 
   migrate:
+    logging: *service-logging
     image: pgvector/pgvector:0.8.6-pg18-bookworm
     restart: "no"
     depends_on:
@@ -76,6 +85,7 @@ services:
         /bin/sh /apply-migrations.sh
 
   api:
+    logging: *service-logging
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -110,6 +120,7 @@ services:
       - ipv6_egress
 
   llm:
+    logging: *service-logging
     image: ghcr.io/ggml-org/llama.cpp:server@sha256:db8e923e6edc9241ad788979af79543a1e1ba55dbb7d41e62490ef0d0ad3c8e7
     restart: unless-stopped
     command:
@@ -144,6 +155,7 @@ services:
       - ai_internal
 
   ocr:
+    logging: *service-logging
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -169,6 +181,7 @@ services:
       - ai_internal
 
   worker:
+    logging: *service-logging
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -202,6 +215,7 @@ services:
       - ipv6_egress
 
   telegram-poller:
+    logging: *service-logging
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -229,6 +243,7 @@ services:
       - ipv6_egress
 
   web:
+    logging: *service-logging
     build:
       context: ./frontend
       args:
@@ -250,6 +265,7 @@ services:
       start_period: 10s
 
   caddy:
+    logging: *service-logging
     image: caddy:2-alpine
     restart: unless-stopped
     environment:

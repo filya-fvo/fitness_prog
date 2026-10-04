@@ -22,7 +22,7 @@ COPY backend/scripts ./scripts
 # Keep them in /docs because telegram_bot resolves that path inside the image.
 COPY docs/USER_GUIDE.md docs/ADMIN_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/
 
-RUN pip install --upgrade pip \
+RUN pip install --upgrade "pip>=26.2.0" \
     && pip install .
 
 # Non-root

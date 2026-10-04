@@ -76,12 +76,12 @@ async function contained(page: Page) {
 
 for (const width of [320, 375, 393, 1440]) {
   for (const theme of ["light", "dark"] as const) {
-    test(`content screens at ${width}px ${theme}`, async ({ page }) => {
+    test(`content screens at ${width}px ${theme}`, async ({ page }, testInfo) => {
       test.skip(test.info().project.use.isMobile === true && width === 1440, "Desktop layout uses the desktop browser project");
       await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
       await populatedScreens(page, theme);
       const shot = async (name: string, fullPage = false) => page.screenshot({
-        path: `../artifacts/design-review-2026-10-02/${name}-${width}-${theme}-${test.info().project.name}.png`, fullPage,
+        path: testInfo.outputPath(`${name}-${width}-${theme}-${testInfo.project.name}.png`), fullPage,
       });
 
       await page.goto("/help-center");

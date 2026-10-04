@@ -38,6 +38,8 @@ const productJsGzip = totalJsGzip - adminJsGzip;
 // Admin stages are route-isolated and never downloaded by regular users. Keep
 // their aggregate visible and bounded without consuming the product-route budget.
 const limits = {
+  // Axios 1.18.1 -> 1.20.0 security fixes increase measured JS gzip from
+  // 558147 to 559939 bytes (product: 501753 -> 503540); retain a narrow margin.
   // Durable measurement sync adds about 2.7 KB gzip to the already lazy storage
   // route. Keep a narrow measured margin without relaxing chunk isolation.
   // The shared pre-workout readiness dialog across three lazy routes adds a
@@ -109,8 +111,8 @@ const limits = {
   // Measured totals: 558.2 KB all / 501.8 KB product / 56.4 KB admin.
   // Existing vendors and the 108.7 KB largest chunk remain unchanged;
   // keep roughly the previous 1.7 KB aggregate headroom, not an open-ended cap.
-  totalJsGzip: 560_000,
-  productJsGzip: 503_000,
+  totalJsGzip: 562_000,
+  productJsGzip: 505_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

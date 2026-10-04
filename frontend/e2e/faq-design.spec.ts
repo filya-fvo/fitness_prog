@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 for (const width of [320, 375, 393, 1440]) {
   for (const theme of ["light", "dark"] as const) {
-    test(`illustrated FAQ at ${width}px ${theme}`, async ({ page }) => {
+    test(`illustrated FAQ at ${width}px ${theme}`, async ({ page }, testInfo) => {
       test.skip(test.info().project.use.isMobile === true && width === 1440, "Desktop uses the desktop project");
       await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
       await page.emulateMedia({ colorScheme: theme });
@@ -45,7 +45,7 @@ for (const width of [320, 375, 393, 1440]) {
       expect(Math.max(...topicWidths) - Math.min(...topicWidths)).toBeLessThan(1);
 
       const shot = (name: string, fullPage = false) => page.screenshot({
-        path: `../artifacts/faq-design-2026-10-02/${name}-${width}-${theme}-${test.info().project.name}.png`, fullPage,
+        path: testInfo.outputPath(`${name}-${width}-${theme}-${testInfo.project.name}.png`), fullPage,
       });
       await shot("faq");
       if (width === 393 && test.info().project.name === "chromium") {

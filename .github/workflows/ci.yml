@@ -21,7 +21,7 @@ jobs:
           cache-dependency-path: backend/pyproject.toml
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
+          python -m pip install -U "pip>=26.2.0"
           pip install -e ".[dev]"
       - name: Run pytest
         env:

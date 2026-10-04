@@ -41,7 +41,7 @@ COPY deploy/timeweb/run_api_and_worker.py ./run_api_and_worker.py
 COPY deploy/timeweb/start.sh ./start.sh
 COPY --from=frontend-build /build/frontend/dist ./frontend/dist
 
-RUN pip install --upgrade pip \
+RUN pip install --upgrade "pip>=26.2.0" \
     && pip install . \
     && chmod 755 /app/start.sh \
     && useradd -m -u 10001 appuser \
