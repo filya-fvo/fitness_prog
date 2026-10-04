@@ -1,5 +1,10 @@
 # Fitness Mini App: простая инструкция владельца VPS
 
+Проверено **2 октября 2026 года** по production-серверу и текущим Compose/скриптам.
+Все команды `bash` ниже выполняются после SSH-входа на VPS; команды `powershell`
+— на Windows-компьютере владельца. Если действие завершается ошибкой, сначала
+разберите её, а не продолжайте следующие шаги обновления или восстановления.
+
 Эта инструкция описывает уже работающий production-сервер Fitness Mini App в Timeweb.
 Она нужна для повседневного контроля, просмотра базы, обновления приложения и
 первичной диагностики. Для первоначальной установки сервера используйте
@@ -15,7 +20,7 @@
 - интерфейс: <https://app.filfitclub.ru>;
 - API и проверка состояния: <https://api.filfitclub.ru/health>.
 
-На сервере Docker Compose запускает шесть частей:
+На сервере Docker Compose запускает девять постоянных частей:
 
 | Сервис | Для чего нужен |
 |---|---|
@@ -25,6 +30,18 @@
 | `db` | PostgreSQL 18 с данными пользователей |
 | `redis` | очередь фоновых задач и временные блокировки |
 | `caddy` | HTTPS и направление запросов к `web`/`api` |
+| `llm` | локальный llama.cpp с Qwen2.5-3B-Instruct Q4_K_M |
+| `ocr` | закрытый Tesseract `rus+eng` для фото этикеток |
+| `telegram-poller` | исходящий Telegram long polling, внутренняя доставка API |
+
+Отдельный `migrate` применяет SQL и завершается. При проверке 02.10.2026 все
+девять сервисов работали, `migrate` завершился с кодом `0`; исходный каталог был
+чистым, commit — `497e92ff3c67bfd0629ac575928dd183378bf932`. Это датированный
+срез, а не значение, которое нужно вручную возвращать после каждого обновления.
+
+Hostname: `fitness-prod-vps`. PostgreSQL `fitness` занимала примерно 21 MB.
+PostgreSQL доступна на VPS только через `127.0.0.1:15432`, Redis и внутренние
+API/ИИ/OCR не публикуются в интернет. Внешние домены обслуживает Caddy на 80/443.
 
 Исходный код находится в `/opt/fitness/source`. База хранится в Docker volume,
 а не внутри Git-репозитория. Production-ветка GitHub —
@@ -39,7 +56,8 @@
 ssh -i "$env:USERPROFILE\.ssh\fitness_timeweb" root@201.24.48.145
 ```
 
-Если появится вопрос о доверии серверу, один раз введите `yes`. После входа строка
+При первом подключении сверьте fingerprint SSH-сервера с данными сервера в
+Timeweb/его консоли, затем подтвердите доверие. После входа строка
 начнётся примерно с `root@fitness-prod-vps` — теперь команды выполняются на VPS.
 
 Перейдите в каталог приложения:
@@ -56,19 +74,44 @@ exit
 
 Не отправляйте никому файл `fitness_timeweb` из папки `.ssh`: это ключ доступа к серверу.
 
+Пароль `root` для этого способа входа не нужен: проверенный ключ расположен в
+`C:\Users\broadview\.ssh\fitness_timeweb`. Passphrase ключа, если она задана,
+отличается от пароля `root`. Текущий пароль `root` и пароль аккаунта Timeweb
+в рамках аудита не были доступны. Их нельзя восстановить из SSH-ключа или
+хэша `/etc/shadow`; при необходимости задайте новый пароль средствами Timeweb
+или восстановите доступ к самому аккаунту Timeweb. Работающий ключ сохраняйте.
+
+### Пароль PostgreSQL для владельца
+
+Пользователь и база: `fitness`. По запросу владельца пароль сохранён локально
+как зашифрованный Windows DPAPI `PSCredential`, а не открытый текст:
+`C:\fitness_prog\.env.vps-access.local`. Файл игнорируется Git. На том же
+Windows-компьютере и под той же учётной записью владельца посмотреть пароль
+можно самостоятельно:
+
+```powershell
+(Import-Clixml -LiteralPath C:\fitness_prog\.env.vps-access.local).GetNetworkCredential().Password
+```
+
+Команда выводит пароль на экран: выполняйте её только в личном окне PowerShell,
+без записи экрана или transcript; результат не отправляйте в чат и не коммитьте.
+DPAPI-файл не является переносимой резервной копией: другая Windows-учётная
+запись обычно не сможет его расшифровать. Пароль `fitness` — пароль БД, он не
+заменяет пароли SSH или Timeweb. После смены пароля БД локальная копия устареет.
+
 ## 3. Самая быстрая проверка состояния
 
 На VPS выполните:
 
 ```bash
 cd /opt/fitness/source
-docker compose --env-file backend/.env.production ps
+docker compose --env-file backend/.env.production ps -a
 ```
 
 Нормальное состояние:
 
-- `api`, `db`, `redis`, `web` — `Up` и `healthy`;
-- `worker`, `caddy` — `Up`;
+- `api`, `db`, `redis`, `web`, `llm`, `ocr` — `Up` и `healthy` в проверенном срезе;
+- `worker`, `caddy`, `telegram-poller` — `Up`; у сервисов без Docker healthcheck его отсутствие само по себе не является ошибкой;
 - `migrate` может быть `Exited (0)` — это нормально: он выполняет миграции и завершает работу.
 
 Затем проверьте публичные адреса:
@@ -81,18 +124,18 @@ curl --fail --silent --output /dev/null --write-out '%{http_code}\n' https://app
 Ожидается `{"status":"ok"}` и код `200`.
 
 Без SSH тот же срез доступен настроенному администратору в приложении:
-**Ещё → Админ → Состояние системы**. Экран работает только на чтение и не
+**Профиль → Админ → Состояние системы**. Экран работает только на чтение и не
 перезапускает сервисы. Ниже текущего среза находится история: worker сохраняет
 безопасные статусы каждые 15 минут, ручная кнопка также создаёт снимок. В интерфейсе
 видны примерно последние семь дней, в PostgreSQL записи хранятся 30 дней; полные
 тексты диагностики, адреса и секреты в историю не записываются.
-
-API и worker должны получать один и тот же каталог `/opt/fitness/status`
-в `/app/host-status` только для чтения и переменную
-`ADMIN_SYSTEM_STATUS_DIR=/app/host-status`. Без этого ручная проверка API
-видит backup/HTTPS, а автоматическая история worker показывает «Нет данных».
+В пакете 0.21.44 исправлен обнаруженный 02.10.2026 дефект D21: API и worker
+получают один каталог `/opt/fitness/status` в `/app/host-status` только для чтения
+и переменную `ADMIN_SYSTEM_STATUS_DIR=/app/host-status`. Без этого ручная проверка
+API видит backup/версию/HTTPS, а автоматическая история worker показывает «Нет данных».
 После обновления Compose дождитесь следующего снимка (до 15 минут) и сравните
 его с текущей проверкой в админке. Старые снимки не переписываются.
+Подробности — в [отчёте исправлений](audits/2026-10-03-fixes.md).
 Рядом находится **Журнал действий**: он показывает административные изменения,
 их результат и correlation ID. Журнал также работает только на чтение; записи
 защищены от `UPDATE` и `DELETE` на уровне PostgreSQL.
@@ -105,7 +148,7 @@ API и worker должны получать один и тот же катало
 Последние 100 строк основных сервисов:
 
 ```bash
-docker compose --env-file backend/.env.production logs --tail=100 api worker caddy
+docker compose --env-file backend/.env.production logs --since=30m --tail=100 api worker telegram-poller caddy
 ```
 
 Смотреть новые строки в реальном времени:
@@ -123,12 +166,48 @@ docker compose --env-file backend/.env.production logs --tail=100 api
 docker compose --env-file backend/.env.production logs --tail=100 worker
 docker compose --env-file backend/.env.production logs --tail=100 caddy
 docker compose --env-file backend/.env.production logs --tail=100 db
+docker compose --env-file backend/.env.production logs --tail=100 llm ocr telegram-poller
 ```
 
 В отчёты и сообщения нельзя копировать токены, OTP-коды, пароли, полные HTTP-заголовки
 и персональные данные пользователей.
 
 ## 5. Как зайти в PostgreSQL
+
+### DBeaver через встроенный SSH-туннель
+
+Создайте соединение PostgreSQL со следующими параметрами:
+
+| Настройка | Значение |
+|---|---|
+| PostgreSQL Host / Port | `127.0.0.1` / `15432` — адрес на VPS |
+| Database / Username | `fitness` / `fitness` |
+| Password | локально просмотренный пароль БД из раздела 2 |
+| SSH: Use SSH Tunnel | включено |
+| SSH Host / Port / User | `201.24.48.145` / `22` / `root` |
+| Authentication / Private key | Public Key / `C:\Users\broadview\.ssh\fitness_timeweb` |
+| Key passphrase | только если задана для ключа |
+
+Проверьте **Test tunnel configuration**, затем **Test Connection**. Отдельный
+PostgreSQL SSL не требуется для этого маршрута: внешний канал шифруется SSH.
+Не открывайте 5432/15432 в firewall и не меняйте Compose binding на `0.0.0.0`.
+Роль `fitness` имеет права изменения данных: для повседневного просмотра
+включайте read-only режим DBeaver. Дополнительные варианты и отдельная роль —
+в [инструкции DBeaver](DBEAVER_VPS_CONNECTION.md); создание роли с правами записи
+не является обязательным шагом подключения.
+
+Альтернатива — собственный туннель из Windows PowerShell:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\fitness_timeweb" -N -o ExitOnForwardFailure=yes `
+  -L 127.0.0.1:15433:127.0.0.1:15432 root@201.24.48.145
+```
+
+Окно оставьте открытым. В этом варианте DBeaver подключается к **локальным**
+`127.0.0.1:15433`, база/пользователь `fitness`, а встроенный SSH-туннель DBeaver
+выключен. `Ctrl+C` закрывает только туннель.
+
+### psql внутри контейнера
 
 Находясь в `/opt/fitness/source`, выполните:
 
@@ -251,11 +330,16 @@ LIMIT 20;
 
 ## 8. Резервные копии
 
-Ежедневная копия PostgreSQL создаётся автоматически примерно в 03:15 UTC:
+Ежедневная копия PostgreSQL запускается в **03:15 UTC (06:15 МСК)** с случайной
+задержкой до 10 минут: обычно **06:15–06:25 МСК**. Live-конфигурация проверена
+02.10.2026: `OnCalendar=*-*-* 03:15:00 UTC`, `RandomizedDelaySec=10m`,
+`Persistent=true`. После простоя пропущенный запуск может выполниться при
+включении сервера. Проверить реальное расписание:
 
 ```bash
 systemctl is-active fitness-backup.timer
 systemctl list-timers fitness-backup.timer
+systemctl cat fitness-backup.timer
 ```
 
 Последний результат:
@@ -276,17 +360,73 @@ BACKUP_DIR=/opt/fitness/backups/manual sh scripts/backup_vps.sh
 Он также атомарно обновит `/opt/fitness/status/backup.json`; в файл попадают
 только результат и UTC-время, без пути к dump и параметров базы.
 
+Проверка архива и реального восстановления, без замены production-БД:
+
+```bash
+cd /opt/fitness/source
+DUMP=/opt/fitness/backups/daily/fitness-YYYYMMDDTHHMMSSZ.dump
+sha256sum --check "$DUMP.sha256"
+bash scripts/verify-postgres-backup.sh "$DUMP"
+```
+
+Подставьте точное существующее имя вместо `YYYYMMDDTHHMMSSZ`. Ожидаются `OK` от
+checksum и `RESTORE_VERIFY_OK`, `audit_trigger=verified` от скрипта. Он запускает
+временный PostgreSQL 18 без сети и опубликованных портов, восстанавливает dump,
+дважды проверяет миграции и append-only audit trigger, затем удаляет только свои
+временные контейнер и volume. Проверка требует свободного места и работающего
+Docker. Аудит 02.10.2026 успешно восстановил свежий backup: 36 public-таблиц,
+защита журнала подтверждена. Это проверка конкретного dump, а не гарантия любого
+будущего backup.
+
 Скачать копию с VPS на Windows, выполняя команду уже в локальном PowerShell:
 
 ```powershell
 scp -i "$env:USERPROFILE\.ssh\fitness_timeweb" `
   root@201.24.48.145:/opt/fitness/backups/daily/ИМЯ_ФАЙЛА.dump `
   "$env:USERPROFILE\Downloads\"
+scp -i "$env:USERPROFILE\.ssh\fitness_timeweb" `
+  root@201.24.48.145:/opt/fitness/backups/daily/ИМЯ_ФАЙЛА.dump.sha256 `
+  "$env:USERPROFILE\Downloads\"
 ```
+
+На Windows сравните хэш скачанного файла с первым 64-значным полем `.sha256`
+через `Get-FileHash -Algorithm SHA256`. Сохраните пару dump/checksum на другом
+устройстве или в личном защищённом backup-хранилище. Полный dump содержит
+персональные данные; не публикуйте его как обычный QA-артефакт.
 
 Копии на том же VPS не защищают от потери всего диска. Хотя бы раз в неделю храните
 свежий dump на другом устройстве. Восстановление production-базы заменяет данные;
 не запускайте его без отдельной свежей копии и проверки SHA-256.
+
+### Замена production-БД из проверенного backup
+
+Это действие удаляет текущую базу `fitness`. Выполняйте его только при принятом
+владельцем решении о восстановлении и согласованном окне обслуживания. Сначала
+проверьте dump изолированным скриптом выше, сохраните свежий dump текущей БД на
+другом устройстве и запишите ожидаемую SHA-256 из доверенной копии checksum.
+
+```bash
+cd /opt/fitness/source
+DUMP=/opt/fitness/backups/daily/fitness-YYYYMMDDTHHMMSSZ.dump
+EXPECTED_SHA256='ВСТАВЬТЕ_64_СИМВОЛА_ИЗ_ПРОВЕРЕННОЙ_КОПИИ_SHA256'
+docker compose --env-file backend/.env.production stop worker telegram-poller
+bash scripts/replace-timeweb-postgres.sh /opt/fitness/source "$DUMP" "$EXPECTED_SHA256"
+docker compose --env-file backend/.env.production up -d
+sh scripts/write-admin-system-status.sh
+docker compose --env-file backend/.env.production ps -a
+curl --fail --silent https://api.filfitclub.ru/health
+curl --fail --silent --output /dev/null --write-out '%{http_code}\n' https://app.filfitclub.ru/
+```
+
+Ожидаемая SHA-256 — обязательные 64 шестнадцатеричных символа: заглушку запускать
+нельзя. `replace-timeweb-postgres.sh` проверяет SHA до изменения БД, сам создаёт
+дополнительный backup, останавливает API/web/Caddy/worker, пересоздаёт только
+базу `fitness`, вызывает `restore-timeweb-postgres.sh` и миграции. Poller надо
+остановить явно, как в примере: старый скрипт сам его не останавливает. При
+любой ошибке оставьте worker/poller остановленными до разбора проблемы;
+последующие команды не выполняйте автоматически. Прямой `pg_restore` в
+работающую production-БД не заменяет эту процедуру. После успешного запуска
+сверьте количество таблиц, основные записи, вход и историю тренировок.
 
 ## 9. Как обновляется приложение
 
@@ -297,7 +437,20 @@ scp -i "$env:USERPROFILE\.ssh\fitness_timeweb" `
 ```
 
 После того как проверенный commit уже отправлен в ветку
-`timeweb-production-20260825`, на VPS выполните:
+`timeweb-production-20260825`, на VPS сначала выполните:
+
+```bash
+cd /opt/fitness/source
+git branch --show-current
+git status --short
+git rev-parse HEAD
+```
+
+Ветка должна быть `timeweb-production-20260825`, status — пустым. Запишите
+предыдущий commit для возможного отката. Проверенный код публикуется из
+локального рабочего каталога командами `git commit` и
+`git push origin timeweb-production-20260825`; сам по себе локальный commit
+ничего не меняет на VPS. После зелёных проверок и push:
 
 ```bash
 cd /opt/fitness/source
@@ -305,12 +458,13 @@ BACKUP_DIR=/opt/fitness/backups sh scripts/backup_vps.sh
 git status --short
 git pull --ff-only origin timeweb-production-20260825
 docker compose --env-file backend/.env.production config --quiet
-docker compose --env-file backend/.env.production build api worker telegram-poller web
+docker compose --env-file backend/.env.production build --pull api worker telegram-poller ocr web
 docker compose --env-file backend/.env.production run --rm migrate
 docker compose --env-file backend/.env.production up -d
 sh scripts/write-admin-system-status.sh
-docker compose --env-file backend/.env.production ps
+docker compose --env-file backend/.env.production ps -a
 curl --fail --silent https://api.filfitclub.ru/health
+curl --fail --silent --output /dev/null --write-out '%{http_code}\n' https://app.filfitclub.ru/
 ```
 
 `git status --short` перед обновлением должен быть пустым. Если там появились файлы,
@@ -320,8 +474,54 @@ curl --fail --silent https://api.filfitclub.ru/health
 если сертификат доступен, срок его действия в `/opt/fitness/status`. API видит этот
 каталог через read-only mount; скрипт не читает и не печатает секреты из env.
 
-Секреты находятся только в `backend/.env.production`. Этот файл не коммитится и не
-должен заменяться примером `.env.production.example`.
+Production-конфигурация приложения с секретами находится в
+`backend/.env.production`. Этот файл не коммитится и не должен заменяться
+примером `.env.production.example`; SSH-ключи и локальный DPAPI-файл пароля
+также остаются вне Git.
+
+Порядок основан на [фактическом runbook Timeweb](TIMEWEB_DOMAIN_CUTOVER.md#обновление-приложения),
+с отдельным явным запуском `migrate`. `scripts/apply_migrations_vps.sh` применяет
+SQL по порядку имён, каждый файл в отдельной транзакции, и ведёт
+`fitness_schema_migrations`; уже отмеченные миграции пропускаются. Ожидаемый
+итог — `MIGRATIONS_OK`. Старые SQL не переписываются. Seed/reset/rebuild каталога
+не являются обычными шагами обновления.
+
+Проверить журнал миграций можно без изменений:
+
+```bash
+docker compose --env-file backend/.env.production exec -T db psql -U fitness -d fitness \
+  -c 'SELECT filename, applied_at FROM fitness_schema_migrations ORDER BY filename DESC LIMIT 10;'
+```
+
+После выпуска проверьте browser/Telegram-вход, одну существующую тренировку,
+каталог, worker/poller и свежий backup. Если сборка упала, не запускайте
+обновлённые контейнеры; если миграция упала, не продолжайте `up -d` до выяснения
+причины. Backend собирается из корня: инструкции должны попасть в `/docs`
+внутри API-образа. `frontend_releases` сохраняет старые chunks для открытых
+Telegram/PWA клиентов, его нельзя очищать при выпуске.
+
+### Откат кода и данных
+
+Откат кода выполняйте проверенным `git revert` в чистом локальном каталоге на
+production-ветке: это создаёт новый commit и сохраняет историю и ту же ветку
+на VPS. Для одного обычного ошибочного commit, после проверки изменений:
+
+```powershell
+git switch timeweb-production-20260825
+git status --short
+git revert SHA_ОШИБОЧНОГО_COMMIT
+```
+
+После этого пройдите тесты, отправьте новый commit в GitHub и примените обычную
+процедуру обновления выше. Для нескольких commits или merge сначала подготовьте
+отдельный план revert; не подставляйте диапазон вслепую. Не переключайте
+production в detached HEAD и не выполняйте `git reset --hard` на VPS.
+
+Откат приложения не отменяет SQL-миграции. Если старая версия несовместима с
+новой схемой, предпочтителен исправляющий выпуск; автоматического rollback SQL
+нет. Восстановление данных из dump — отдельное решение по разделу 8: оно
+возвращает состояние на время backup и теряет последующие изменения. Перед
+ним обязательно сохраните текущую БД и согласуйте допустимую потерю данных.
 
 ## 10. Перезапуск без обновления кода
 
@@ -345,6 +545,11 @@ docker compose --env-file backend/.env.production restart
 
 После этого обязательно выполните `docker compose ... ps` и проверку `/health`.
 
+`restart` перезапускает существующие контейнеры, но не подхватывает новую сборку
+или изменения env/Compose. Для применения этих изменений используйте процедуру
+обновления и `up -d`. Если весь стек ранее был остановлен, его запускает
+`docker compose --env-file backend/.env.production up -d`, а не `restart`.
+
 Не используйте `docker compose down -v`: ключ `-v` удаляет volumes, включая базу данных.
 
 ## 11. Диск, память и нагрузка
@@ -355,6 +560,8 @@ docker compose --env-file backend/.env.production restart
 df -h
 du -sh /opt/fitness/backups/*
 docker system df
+journalctl --disk-usage
+docker system df -v
 ```
 
 Если строка `Build Cache` заняла несколько гигабайт, после успешной проверки
@@ -362,6 +569,28 @@ docker system df
 
 ```bash
 docker builder prune --all --force --filter until=72h
+```
+
+В аудите 02.10.2026 так удалено **4,526 GB** неиспользуемого builder cache;
+занятость системного диска уменьшилась с **56% до 48%**. Работающие контейнеры,
+образы runtime, volumes, backups и модель остались на месте. Кэш повторно
+растёт при сборках. Это результат конкретной очистки, не текущая постоянная
+занятость диска.
+
+| Что занимает место | Как поступать |
+|---|---|
+| Docker build cache | После успешного выпуска допустима команда выше; следующий build может идти дольше. |
+| PostgreSQL `pgdata`, Redis `redisdata` | Рабочие данные. Не удалять и не очищать Docker volume. |
+| `/opt/fitness/models` | Рабочий GGUF модели, сохранён. |
+| `/opt/fitness/backups` | Backup. Сначала проверить восстановление и внешнюю копию; возраст сам по себе не доказывает ненужность. |
+| `frontend_releases`, Caddy data/config | Рабочие старые chunks и HTTPS-состояние. Сохранить. |
+| Docker images | Работающие и предыдущие версии могут быть нужны для эксплуатации; не запускать общий prune. |
+| systemd journal | При аудите 3,9 GiB, записи только 23.09–02.10.2026. Свежая диагностика сохранена; автоматическое удаление не проводилось. |
+
+Для поиска крупного каталога, без чтения содержимого файлов:
+
+```bash
+du -xhd1 /opt/fitness /var/lib/docker /var/log 2>/dev/null
 ```
 
 Каталог `/opt/fitness/models` содержит рабочую локальную ИИ-модель. Его нельзя
@@ -409,8 +638,9 @@ docker compose --env-file backend/.env.production logs --tail=100 caddy
 http://api:8000/telegram/webhook
 ```
 
-Команда `getChatMenuButton` должна возвращать тип `commands`. Приложение открывается
-кнопкой **Открыть приложение** в ответе `/start` по адресу:
+Команда `getChatMenuButton` должна возвращать тип `web_app` с текстом **Открыть**.
+Это настраивает `telegram-poller` при запуске. Команды `/start` и `/help` также
+доступны под полем ввода; ответ `/start` содержит кнопку открытия по адресу:
 
 ```text
 https://app.filfitclub.ru/
@@ -419,7 +649,79 @@ https://app.filfitclub.ru/
 После изменения адресов используйте `scripts/setup_telegram_bot.ps1` с локального
 Windows-компьютера. Не вставляйте BOT_TOKEN в командную строку или переписку.
 
+### Telegram IPv6 и локальный ИИ/OCR
+
+API, worker и poller имеют отдельную сеть `ipv6_egress`: в текущей сети Timeweb
+Telegram Bot API недоступен по IPv4, исходящий канал работает через IPv6.
+При сбое проверяйте маршрут и сохранённые параметры, без изменения токенов:
+
+```bash
+ip -6 route show default
+networkctl status eth0 --no-pager
+sysctl net.ipv6.conf.all.forwarding net.ipv6.conf.eth0.accept_ra
+docker compose --env-file backend/.env.production exec -T api \
+  curl -6 -fsS --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}\n' https://api.telegram.org/
+```
+
+В сохранённой политике `deploy/timeweb/99-fitness-docker-ipv6.conf` и
+`/etc/sysctl.d/99-fitness-docker-ipv6.conf` указаны `forwarding=1`,
+`eth0.accept_ra=2`. Однако runtime-срез 02.10.2026 показывал `accept_ra=0`,
+при этом интерфейс был `routable/configured`, default IPv6 route — `proto ra`,
+а запрос Telegram из API возвращал `302`, то есть соединение работало.
+`systemd-networkd` обслуживал `eth0` через
+`/run/systemd/network/10-netplan-eth0.network` (`DHCP=yes`). Networkd принимает
+Router Advertisement своей реализацией и отключает kernel RA, поэтому одно
+значение sysctl `0` не доказывает отказ сети. Это объяснено в
+[официальной документации systemd.network](https://github.com/systemd/systemd/blob/main/man/systemd.network.xml).
+Проверяйте вместе маршрут, `networkctl` и реальный запрос; сохранённую политику
+не меняйте ради совпадения одной цифры и не перезапускайте сеть вслепую.
+Не возвращайте
+публичный Telegram webhook для обхода этой диагностики: он был отключён из-за
+подтверждённых входящих timeout.
+
+Текстовые запросы обрабатывает локальный Qwen через `llm:8080/v1`, этикетки —
+Tesseract через `ocr:8090`. Сервисы доступны только внутри Docker; отправка
+данных внешним AI API и внешний fallback в production отсутствуют. Проверки:
+
+```bash
+docker compose --env-file backend/.env.production ps llm ocr
+docker compose --env-file backend/.env.production logs --tail=100 llm ocr
+docker compose --env-file backend/.env.production exec -T api \
+  curl -fsS --max-time 15 http://llm:8080/health
+docker compose --env-file backend/.env.production exec -T api \
+  curl -fsS --max-time 10 http://ocr:8090/health
+```
+
+Ответ OCR ожидается `{"status":"ok"}`. При недоступной модели API может дать
+безопасный ответ по правилам, поэтому успешный общий `/health` не доказывает
+работу ИИ. Подробности — [руководство Qwen/Tesseract](ADMIN_AI_MODEL_RUNBOOK.md).
+
 ## 13. Частые проблемы
+
+Если приложение недоступно, сначала определите слой сбоя:
+
+1. Проверьте сайт и `/health` с Windows; если оба недоступны, проверьте SSH,
+   DNS и Caddy. Если `/health` отвечает, начните с `web` и frontend.
+2. На VPS проверьте `ps -a`, последние 100 строк затронутого сервиса, `df -h`
+   и `free -h`. Не очищайте БД или очередь ради освобождения места.
+3. Проверьте PostgreSQL и Redis командами ниже. Для Telegram — poller/IPv6,
+   для этикетки/ИИ — OCR/LLM, для входа по email — API/SMTP.
+4. Запишите время сбоя, commit, сервис и безопасный текст ошибки. Сохраните
+   диагностику до перезапуска.
+5. Исправляйте или перезапускайте конкретный сервис; после действия повторите
+   публичные проверки. При изменении данных сначала создайте backup.
+
+```bash
+cd /opt/fitness/source
+docker compose --env-file backend/.env.production exec -T db pg_isready -U fitness -d fitness
+docker compose --env-file backend/.env.production exec -T redis redis-cli ping
+ss -lnt '( sport = :15432 )'
+```
+
+Ожидаются PostgreSQL accepting connections, Redis `PONG` и только loopback
+`127.0.0.1:15432`. При проблеме DBeaver сначала проверьте обычный SSH-вход;
+затем loopback-порт, параметры туннеля и пароль БД. При проблеме backup
+проверьте `fitness-backup.service`, свободное место и состояние `db`.
 
 ### Сайт показывает 502
 
@@ -525,6 +827,37 @@ docker compose --env-file backend/.env.production logs --tail=100 api
 5. Проверить последний ежедневный backup.
 6. Скачать свежий dump на другое устройство.
 7. Проверить свободное место командой `df -h`.
+
+Раз в месяц дополнительно:
+
+1. Изолированно восстановить последний dump через `verify-postgres-backup.sh`
+   и проверить SHA-256 внешней копии.
+2. Проверить расписание backup, HTTPS-сертификаты, место, память, Docker cache
+   и накопление журналов. Сначала измерить, затем решать вопрос очистки.
+3. Сверить ветку/commit VPS с последним согласованным выпуском и проверить
+   отсутствие локальных изменений. Проверить актуальность доступа SSH и
+   локально сохранённого пароля БД после возможной смены.
+4. Проверить browser/Telegram-вход, `/start`, `/help`, уведомления на своём
+   аккаунте, фото этикетки и короткий запрос ИИ. Внешние сообщения запускать
+   осознанно только на выделенный тестовый аккаунт.
+5. Сверить доступные обновления ОС/зависимостей с процессом тестов и выпуска;
+   не выполнять обновление схемы или массовый seed в рамках уборки диска.
+
+## 16. Откуда взяты команды
+
+Рабочий источник — `docker-compose.yml`, `scripts/backup_vps.sh`,
+`install-vps-backup-timer.sh`, `verify-postgres-backup.sh`,
+`apply_migrations_vps.sh`, `replace-timeweb-postgres.sh`,
+`restore-timeweb-postgres.sh` и фактические проверки VPS 02.10.2026. Срезы
+серверного состояния не заменяют повторную проверку перед изменением данных.
+
+- [Первоначальная установка VPS](VPS_DEPLOYMENT_GUIDE.md).
+- [Timeweb: схема переключения и обновление](TIMEWEB_DOMAIN_CUTOVER.md).
+- [Встроенная админка](ADMIN_GUIDE.md).
+- [DBeaver и SSH-туннель](DBEAVER_VPS_CONNECTION.md).
+- [Qwen/Tesseract](ADMIN_AI_MODEL_RUNBOOK.md).
+- [Локальные файлы и очистка 02.10.2026](audits/2026-10-02-local-storage.md).
+- [Общий аудит 02.10.2026](audits/2026-10-02-full-audit.md).
 
 Если действие может удалить или заменить данные, сначала остановитесь, создайте backup
 и отдельно подтвердите точную команду и её цель.
