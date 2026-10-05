@@ -44,9 +44,12 @@ function Fixture() {
   } : saved);
   const currentCatalog: Exercise[] = legacy ? [{ ...base, weight_rule: "per_hand" }, ...catalog.slice(1)] : catalog;
   const [open, setOpen] = useState(true);
+  const previous: Workout = { ...saved, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", scheduled_date: "2026-09-28",
+    started_at: "2026-09-28T04:00:00Z", completed_at: "2026-09-28T05:00:00Z",
+    sets: saved.sets.map(row => ({ ...row, reps: row.exercise_id === weightId ? 12 : row.reps })) };
   return <main className="mx-auto max-w-xl p-4">
     <button onClick={() => setOpen(true)}>Открыть день</button>
-    {open && <WorkoutDayDetails date={saved.scheduled_date} workouts={[workout]} catalog={currentCatalog}
+    {open && <WorkoutDayDetails date={saved.scheduled_date} workouts={[workout]} history={[previous, workout]} catalog={currentCatalog}
       onClose={() => setOpen(false)} onChanged={next => { if (next) setWorkout(next); }} />}
     <output className="block break-all" aria-label="Сохранённая тренировка">{JSON.stringify(workout)}</output>
   </main>;

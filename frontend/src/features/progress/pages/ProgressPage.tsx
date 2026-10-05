@@ -402,6 +402,7 @@ export function ProgressPage() {
       {selectedDate ? <WorkoutDayDetails
         date={selectedDate}
         workouts={workouts.filter((workout) => workoutDateKey(workout) === selectedDate)}
+        history={workouts}
         catalog={catalog}
         onClose={() => setSelectedDate(null)}
         onChanged={(changed, deletedId) => setWorkouts((current) => deletedId

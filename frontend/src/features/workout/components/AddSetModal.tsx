@@ -46,6 +46,8 @@ type Props = {
   editing?: boolean;
   preserveWeightMode?: boolean;
   showTimerControls?: boolean;
+  busy?: boolean;
+  error?: string | null;
 };
 
 function splitWeight(w: number): { whole: number; tenth: number } {
@@ -66,8 +68,10 @@ export function AddSetModal({
   editing = false,
   preserveWeightMode = editing,
   showTimerControls = true,
+  busy = false,
+  error = null,
 }: Props) {
-  const dialogRef = useModalAccessibility(open, onClose);
+  const dialogRef = useModalAccessibility(open, () => { if (!busy) onClose(); });
   const fieldId = useId();
   const loadType: ExerciseLoadType = useMemo(() => inferLoadType(exercise), [exercise]);
   const machineKind: CardioMachineKind = useMemo(
@@ -131,17 +135,20 @@ export function AddSetModal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-busy={busy}
         aria-labelledby="add-set-title"
         tabIndex={-1}
         className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto p-4 text-tg-text"
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 id="add-set-title" className="text-base font-semibold">{editing ? "Изменить подход" : "Добавить подход"}</h3>
-          <button type="button" aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center text-sm text-tg-hint" onClick={onClose}>
+          <button type="button" disabled={busy} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center text-sm text-tg-hint" onClick={onClose}>
             ✕
           </button>
         </div>
         <p className="mb-3 text-xs text-tg-hint">{exercise.name_ru}</p>
+
+        <fieldset disabled={busy} {...(busy ? { inert: "" } : {})}>
 
         {loadType === "weight_reps" ? (
           <div>
@@ -223,7 +230,7 @@ export function AddSetModal({
             </label>
           )}
 
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-xs">
+          {showTimerControls ? <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-xs">
             <label htmlFor={`${fieldId}-rest`} className="text-tg-hint">Отдых после подхода</label>
             <select
               id={`${fieldId}-rest`}
@@ -237,7 +244,7 @@ export function AddSetModal({
                 </option>
               ))}
             </select>
-          </div>
+          </div> : null}
 
           {editing ? <label className="flex min-h-11 items-center gap-2 text-sm text-tg-hint">
             <input type="checkbox" checked={isCompleted} onChange={(e) => { setIsCompleted(e.target.checked); markChanged("isCompleted"); }} />
@@ -268,8 +275,12 @@ export function AddSetModal({
           ) : null}
         </div>
 
+        </fieldset>
+        {error ? <p role="alert" className="mt-3 text-sm text-[var(--app-danger)]">{error}</p> : null}
+
         <button
           type="button"
+          disabled={busy}
           className="app-button app-gradient-action mt-4 w-full rounded-full"
           onClick={() =>
             onApply({
@@ -287,7 +298,7 @@ export function AddSetModal({
             })
           }
         >
-          Применить
+          {busy ? "Сохраняем…" : "Применить"}
         </button>
       </div>
     </div>
