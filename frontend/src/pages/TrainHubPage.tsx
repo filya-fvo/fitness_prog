@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { preferredScrollBehavior } from "@/utils/motion";
 import { fetchExercises } from "@/api/exercises";
-import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchMyPrograms, fetchProgram, fetchPrograms, startProgramWorkout } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPlannedWorkoutPlan,
@@ -195,8 +195,10 @@ export function TrainHubPage() {
           const anthropometry = (profile?.anthropometry as Record<string, unknown>) || {};
           const goalsWithSex = { ...g, sex: anthropometry.sex || g.sex || "" };
           const activeId = String(g.active_program_id || "");
-          const active =
-            (activeId && [...programs.items, ...myPrograms.items].find((p) => p.id === activeId)) || null;
+          const active = activeId
+            ? [...programs.items, ...myPrograms.items].find((p) => p.id === activeId)
+              ?? await fetchProgram(activeId)
+            : null;
           if (!cancelled) {
             setGoals(goalsWithSex);
             setProgram(active);
@@ -437,7 +439,7 @@ export function TrainHubPage() {
               Выбрать день / неделю на главной
             </Link>
           </AppCard>
-        ) : !loading ? (
+        ) : !loading && !error ? (
           <AppCard tone="indigo" className="p-4">
             <p className="text-sm font-semibold">Нет активной программы</p>
             <p className="mt-1 text-xs text-tg-hint">
