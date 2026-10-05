@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
-import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { DecimalInput } from "@/components/DecimalInput";
 import type { Exercise } from "@/types/workout";
 import {
@@ -40,12 +41,12 @@ export function WarmupPanel({
   onCompleteAll,
 }: Props) {
   const machines = useMemo(() => listCardioMachineOptions(catalog), [catalog]);
-  const [steps, setSteps] = useState(() =>
-    plan.steps.map((s) => ({ ...s, done: false as boolean, skipped: false as boolean })),
-  );
-  const [cardioId, setCardioId] = useState<string | null>(
-    plan.steps.find((s) => s.kind === "cardio")?.exerciseId ?? null,
-  );
+  const [progress, setProgress] = useState<Partial<Record<string, { done: boolean; skipped: boolean }>>>({});
+  const steps = plan.steps.map((step) => ({ ...step, ...(progress[step.id] ?? { done: false, skipped: false }) }));
+  const [chosenCardioId, setCardioId] = useState<string | null | undefined>(undefined);
+  const cardioId = chosenCardioId === undefined
+    ? plan.steps.find((step) => step.kind === "cardio")?.exerciseId ?? null
+    : chosenCardioId;
   const [cardioMin, setCardioMin] = useState(() => {
     const c = plan.steps.find((s) => s.kind === "cardio");
     return Math.max(1, Math.round((c?.durationSec || 300) / 60));
@@ -53,7 +54,7 @@ export function WarmupPanel({
   const [machineValues, setMachineValues] = useState(() =>
     initialCardioParamValues(lastCardioParams),
   );
-  const [mediaOpenId, setMediaOpenId] = useState<string | null>(null);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const selectedMachine = useMemo(
     () => machines.find((machine) => machine.id === cardioId) ?? null,
     [cardioId, machines],
@@ -65,9 +66,7 @@ export function WarmupPanel({
   const allDone = remaining.length === 0;
 
   function mark(id: string, skipped: boolean) {
-    setSteps((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, done: !skipped, skipped } : s)),
-    );
+    setProgress((current) => ({ ...current, [id]: { done: !skipped, skipped } }));
   }
 
   function setMachineValue(key: CardioParamKey, value: string) {
@@ -187,24 +186,19 @@ export function WarmupPanel({
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-1 flex items-center gap-3">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <p className="text-[11px] text-tg-hint">
                       ~{formatDurationLabel(step.durationSec)}
                     </p>
-                    {mediaExercise?.animation_url || mediaExercise?.thumbnail_url ? (
-                      <button
-                        type="button"
-                        className="app-button app-ghost-action px-2 text-xs"
-                        aria-expanded={mediaOpenId === step.id}
-                        onClick={() =>
-                          setMediaOpenId((current) => (current === step.id ? null : step.id))
-                        }
-                      >
-                        {mediaOpenId === step.id ? "Скрыть анимацию" : "Показать анимацию"}
-                      </button>
-                    ) : null}
                   </div>
                 )}
+                {mediaExercise ? (
+                  <button type="button" className="app-secondary-action mt-2 flex min-h-11 items-center gap-2 rounded-xl p-2 text-left text-xs"
+                    aria-label={`Техника: ${mediaExercise.name_ru}`} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDetailExercise(mediaExercise); }}>
+                    <ExerciseThumbnail exercise={{ ...mediaExercise, thumbnail_url: mediaExercise.thumbnail_url || mediaExercise.image_url || null }} />
+                    <span>{mediaExercise.image_url || mediaExercise.thumbnail_url || mediaExercise.animation_url ? "Техника и фото →" : "Техника →"}</span>
+                  </button>
+                ) : <p className="mt-2 text-xs text-tg-hint">Карточка упражнения пока недоступна.</p>}
               </div>
               <div className="flex shrink-0 flex-col gap-1">
                 {!step.done && !step.skipped ? (
@@ -233,11 +227,6 @@ export function WarmupPanel({
                 )}
               </div>
             </div>
-            {mediaExercise && mediaOpenId === step.id ? (
-              <div className="mt-2">
-                <ExerciseMediaPlayer exercise={mediaExercise} mediaOnly preview />
-              </div>
-            ) : null}
           </li>
           );
         })}
@@ -251,6 +240,7 @@ export function WarmupPanel({
       >
         {allDone ? "К основной тренировке" : "Отметьте или пропустите шаги"}
       </button>
+      {detailExercise ? <ExerciseDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} showExplorerLink={false} showProgress={false} /> : null}
     </div>
   );
 }

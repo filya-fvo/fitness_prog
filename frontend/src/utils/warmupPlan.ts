@@ -14,7 +14,7 @@ export type WarmupStep = {
   detail: string;
   /** Suggested duration seconds */
   durationSec: number;
-  /** Optional catalog exercise id used for cardio settings or a matching GIF preview. */
+  /** Optional catalog exercise id used for cardio settings or technique details. */
   exerciseId?: string | null;
   /** Muscle focus labels */
   focus?: string[];
@@ -33,72 +33,56 @@ const MOBILITY_POOL: Array<{
   detail: string;
   focus: string[];
   durationSec: number;
-  catalogNames?: string[];
+  gymOnly?: boolean;
 }> = [
   {
-    title: "Круги плечами и руками",
-    detail: "20–30 с в каждую сторону, без боли, полная амплитуда.",
+    title: "Раскрытие грудного отдела у стены",
+    detail: "6–8 плавных разворотов на сторону, таз неподвижен, без боли.",
     focus: ["плечи", "грудь", "спина"],
     durationSec: 45,
   },
   {
-    title: "Вращения кистей и локтей",
-    detail: "Разминка суставов перед жимами и тягами.",
-    focus: ["руки", "плечи", "грудь"],
-    durationSec: 30,
+    title: "Мобилизация голеностопа",
+    detail: "Держитесь за опору, выполните плавные круги стопой в обе стороны, затем смените ногу.",
+    focus: ["ноги"],
+    durationSec: 50,
   },
   {
-    title: "Кошка-корова / мобилизация груди",
+    title: "Кошка-корова",
     detail: "8–10 медленных циклов, дышите ровно.",
     focus: ["спина", "грудь", "кор"],
     durationSec: 45,
-    catalogNames: ["Кошка-корова"],
   },
   {
-    title: "Приседания без веса (медленно)",
-    detail: "10–12 повторений, пятки на полу, колени по носкам.",
-    focus: ["ноги", "ягодиц", "кор"],
-    durationSec: 60,
-  },
-  {
-    title: "Выпады на месте без веса",
-    detail: "6–8 на сторону, лёгкая амплитуда.",
+    title: "Выпады вперёд без веса",
+    detail: "6–8 шагов вперёд на сторону, комфортная глубина, возвращайтесь в исходную стойку.",
     focus: ["ноги", "ягодиц"],
     durationSec: 60,
   },
   {
-    title: "Наклоны к носкам / hinge без веса",
+    title: "Наклоны к носкам",
     detail: "8–10 мягких наклонов, спина нейтральна.",
     focus: ["ноги", "спина", "ягодиц"],
     durationSec: 45,
-    catalogNames: ["Наклоны к носкам"],
   },
   {
-    title: "Вращения таза и корпуса",
-    detail: "20–30 с, готовьте кор к нагрузке.",
-    focus: ["кор", "спина"],
-    durationSec: 40,
+    title: "Мировая растяжка",
+    detail: "Из выпада поставьте руки у стопы и плавно раскройте корпус. Чередуйте стороны без долгого удержания.",
+    focus: ["ноги", "ягодиц", "спина", "кор"],
+    durationSec: 60,
   },
   {
-    title: "Растяжка сгибателей бедра",
-    detail: "20–30 с на сторону, без пружины.",
-    focus: ["ноги", "ягодиц"],
-    durationSec: 50,
-    catalogNames: ["Растяжка сгибателей бедра"],
-  },
-  {
-    title: "Отведения рук с лёгкой резинкой / без веса",
-    detail: "12–15 лёгких повторений, разогрев плеч.",
+    title: "Мобилизация плеч с резинкой",
+    detail: "Широким хватом плавно проведите лёгкую резинку над головой и обратно, без прогиба в пояснице.",
     focus: ["плечи", "спина"],
     durationSec: 45,
-    catalogNames: ["Мобилизация плеч с резинкой"],
+    gymOnly: true,
   },
   {
-    title: "Планка на коленях или короткая планка",
+    title: "Планка",
     detail: "20–30 с, только активация кора.",
     focus: ["кор", "грудь", "плечи"],
     durationSec: 30,
-    catalogNames: ["Планка"],
   },
 ];
 
@@ -187,33 +171,30 @@ export function buildWarmupPlan(input: {
   }
 
   const targetMobilitySec = includeCardio ? 5 * 60 : 4 * 60; // gym ~5m mobility +5m cardio; home 3–5m
-  const ranked = MOBILITY_POOL.map((item) => ({
+  const ranked = MOBILITY_POOL.map((item, index) => ({
     item,
+    index,
     score: scoreMobility(item, muscles),
-  })).sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title, "ru"));
+  })).filter(({ item }) => !item.gymOnly || (isGym && input.catalog.some((exercise) => exercise.name_ru === item.title)))
+    .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title, "ru"));
 
   let acc = 0;
-  let i = 0;
   for (const row of ranked) {
     if (acc >= targetMobilitySec && steps.filter((s) => s.kind === "mobility").length >= (includeCardio ? 3 : 2)) {
       break;
     }
     if (steps.filter((s) => s.kind === "mobility").length >= 5) break;
     steps.push({
-      id: `mob-${i}`,
+      id: `mob-${row.index}`,
       kind: "mobility",
       title: row.item.title,
       detail: row.item.detail,
       durationSec: row.item.durationSec,
-      exerciseId:
-        row.item.catalogNames
-          ?.map((name) => input.catalog.find((exercise) => exercise.name_ru === name))
-          .find(Boolean)?.id ?? null,
+      exerciseId: input.catalog.find((exercise) => exercise.name_ru === row.item.title)?.id ?? null,
       focus: row.item.focus,
       skippable: true,
     });
     acc += row.item.durationSec;
-    i += 1;
   }
 
   const total = steps.reduce((s, x) => s + x.durationSec, 0);

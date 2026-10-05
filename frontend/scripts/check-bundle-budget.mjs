@@ -111,8 +111,12 @@ const limits = {
   // Measured totals: 558.2 KB all / 501.8 KB product / 56.4 KB admin.
   // Existing vendors and the 108.7 KB largest chunk remain unchanged;
   // keep roughly the previous 1.7 KB aggregate headroom, not an open-ended cap.
-  totalJsGzip: 562_000,
-  productJsGzip: 505_000,
+  // Workout follow-up: the calendar editor reuses the set picker and media tabs;
+  // warmup technique cards share the existing detail modal. Net growth is 2.2 KB
+  // gzip in existing lazy product routes (562.1 KB all / 505.7 KB product).
+  // No vendor dependency was added; preserve bounded release headroom.
+  totalJsGzip: 564_000,
+  productJsGzip: 507_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

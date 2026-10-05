@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import type { Exercise, Program } from "@/types/workout";
@@ -24,6 +25,40 @@ function exercise(id: string, name_ru: string, muscle_group = "мобильно�
 }
 
 describe("warmup and today's plan previews", () => {
+  it("uses matching illustrated catalog movements for every warmup focus", () => {
+    const seed = JSON.parse(readFileSync("../backend/scripts/seed_content/exercises.json", "utf8")) as Array<Omit<Exercise, "id">>;
+    const catalog = seed.map((item, index) => ({ ...item, id: `seed-${index}` }));
+    for (const location of ["home", "gym", "outdoor"]) {
+      for (const muscle of ["", "грудь", "спина", "ноги", "плечи", "кор"]) {
+        const main = exercise("main", "Рабочее упражнение", muscle);
+        const plan = buildWarmupPlan({
+          location,
+          catalog: [...catalog, main],
+          plan: { exercises: [{ exercise_id: main.id, order: 1, target_sets: 3 }] },
+        });
+        for (const step of plan.steps.filter((item) => item.kind === "mobility")) {
+          const linked = catalog.find((item) => item.id === step.exerciseId);
+          expect(linked, `${location}/${muscle}: ${step.title}`).toBeDefined();
+          expect(linked?.name_ru).toBe(step.title);
+          expect(Boolean(linked?.image_url || linked?.thumbnail_url || linked?.animation_url)).toBe(true);
+          expect(["свой вес", "резинка"]).toContain(linked?.equipment);
+          if (location !== "gym") expect(linked?.equipment).toBe("свой вес");
+        }
+      }
+    }
+  });
+
+  it("keeps step identities when catalog loading changes the muscle ranking", () => {
+    const catCow = exercise("cat-cow", "Кошка-корова", "спина");
+    const input = { location: "gym", plan: { exercises: [{ exercise_id: catCow.id, order: 1, target_sets: 3 }] } };
+    const before = buildWarmupPlan({ ...input, catalog: [] });
+    const after = buildWarmupPlan({ ...input, catalog: [catCow] });
+    for (const step of after.steps) {
+      const previous = before.steps.find((item) => item.title === step.title);
+      if (previous) expect(step.id).toBe(previous.id);
+    }
+  });
+
   it("links matching warmup steps to catalog media", () => {
     const catCow = exercise("cat-cow", "Кошка-корова", "спина");
     const hipFlexor = exercise("hip-flexor", "Растяжка сгибателей бедра", "ноги");

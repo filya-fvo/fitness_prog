@@ -12,8 +12,11 @@ export type ExerciseWeightInput = {
  * Turn catalog semantics into one unambiguous value stored for a workout set.
  * The user should never have to decide how analytics will interpret the load.
  */
-export function exerciseWeightInput(exercise: Exercise): ExerciseWeightInput {
-  if (exercise.weight_rule === "per_hand") {
+export function exerciseWeightInput(exercise: Exercise, savedMode?: WorkoutWeightMode | null): ExerciseWeightInput {
+  if (savedMode === "total" || savedMode === null) {
+    return { mode: "total", label: "Рабочий вес, кг", hint: "Укажите полный вес, как в записанном подходе." };
+  }
+  if (savedMode === "per_hand" || exercise.weight_rule === "per_hand") {
     return {
       mode: "per_hand",
       label: "Вес одной гантели, кг",

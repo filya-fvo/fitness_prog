@@ -148,6 +148,13 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
+  const mediaChoices = page.getByRole("group", { name: "Материалы", exact: true });
+  await expect(mediaChoices.getByRole("button", { name: "Фото", exact: true })).toBeVisible();
+  await mediaChoices.getByRole("button", { name: "Анимация", exact: true }).click();
+  await expect(page.getByRole("img", { name: "Тестовый жим", exact: true })).toHaveAttribute("src", /0158-7saC5zz\.gif/);
+  await mediaChoices.getByRole("button", { name: "Видео", exact: true }).click();
+  await expect(page.getByText("Видео-инструкция для этого упражнения пока не добавлена.")).toBeVisible();
+  await mediaChoices.getByRole("button", { name: "Фото", exact: true }).click();
   await expect(page.getByText("Дневник", { exact: true })).toBeVisible();
   await expect(page.getByText("87.5 кг × 6 повт.")).toBeVisible();
   await page.getByRole("button", { name: /Динамика веса/ }).click();

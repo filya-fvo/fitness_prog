@@ -20,6 +20,7 @@ import {
 import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHints";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
+import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTabs";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscriptionAccess";
@@ -1737,7 +1738,7 @@ export function ActiveWorkout() {
           ) : null}
 
           {!simpleMode || moreOpen ? (
-            <ExerciseMediaPlayer exercise={currentExercise} compact />
+            <ExerciseMediaTabs key={currentExercise.id} exercise={currentExercise} compact showTechnique />
           ) : null}
 
           {!simpleMode || moreOpen ? (
@@ -2543,7 +2544,7 @@ export function ActiveWorkout() {
             {currentExercise ? (
               <div className="mb-3 space-y-2">
                 <p className="text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
-                <ExerciseMediaPlayer exercise={currentExercise} compact mediaOnly />
+                <ExerciseMediaTabs key={currentExercise.id} exercise={currentExercise} compact />
               </div>
             ) : null}
             {aiAssistError ? (

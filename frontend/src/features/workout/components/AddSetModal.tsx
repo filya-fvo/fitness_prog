@@ -37,10 +37,15 @@ type Props = {
     machineParams: Record<string, string | number> | null;
     restTimeSec: number;
     startTimer: boolean;
+    isCompleted?: boolean;
+    changedFields?: Array<"reps" | "weight" | "durationSec" | "restTimeSec" | "note" | "machineParams" | "isCompleted">;
   }) => void;
   /** Manual timer without completing a set */
   onStartTimerOnly?: (seconds: number) => void;
   defaultRestSec?: number;
+  editing?: boolean;
+  preserveWeightMode?: boolean;
+  showTimerControls?: boolean;
 };
 
 function splitWeight(w: number): { whole: number; tenth: number } {
@@ -58,6 +63,9 @@ export function AddSetModal({
   onApply,
   onStartTimerOnly,
   defaultRestSec = 60,
+  editing = false,
+  preserveWeightMode = editing,
+  showTimerControls = true,
 }: Props) {
   const dialogRef = useModalAccessibility(open, onClose);
   const fieldId = useId();
@@ -70,9 +78,9 @@ export function AddSetModal({
 
   const initWeight = Number(initial?.weight) || 0;
   const { whole: w0, tenth: t0 } = splitWeight(initWeight);
-  const initReps = Math.max(0, Math.round(Number(initial?.reps) || 10));
+  const initReps = Math.max(0, Math.round(initial?.reps ? Number(initial.reps) : 10));
   const initDur =
-    Number(initial?.durationSec) ||
+    initial?.durationSec ??
     defaultTimedSeconds(exercise);
 
   const [reps, setReps] = useState(initReps);
@@ -82,9 +90,14 @@ export function AddSetModal({
   const [sec, setSec] = useState(initDur % 60);
   const [noteOpen, setNoteOpen] = useState(Boolean(initial?.note));
   const [note, setNote] = useState(String(initial?.note || ""));
-  const [restSec, setRestSec] = useState(initial?.restTimeSec || defaultRestSec);
+  const [restSec, setRestSec] = useState(initial?.restTimeSec ?? defaultRestSec);
   const [startTimer, setStartTimer] = useState(true);
-  const weightInput = useMemo(() => exerciseWeightInput(exercise), [exercise]);
+  const [isCompleted, setIsCompleted] = useState(initial?.isCompleted ?? true);
+  const [changedFields, setChangedFields] = useState<NonNullable<Parameters<Props["onApply"]>[0]["changedFields"]>>([]);
+  function markChanged(field: (typeof changedFields)[number]) {
+    setChangedFields(current => current.includes(field) ? current : [...current, field]);
+  }
+  const weightInput = useMemo(() => exerciseWeightInput(exercise, preserveWeightMode ? initial?.weightMode ?? null : undefined), [exercise, preserveWeightMode, initial?.weightMode]);
 
   const [machineValues, setMachineValues] = useState(() =>
     initialCardioParamValues(initial?.machineParams),
@@ -95,7 +108,8 @@ export function AddSetModal({
   const durationSec = Math.max(0, min * 60 + sec);
   const weightStr =
     loadType === "weight_reps"
-      ? (Math.round((kgWhole + kgTenth / 10) * 10) / 10).toFixed(kgTenth ? 1 : 0).replace(/\.0$/, "")
+      ? preserveWeightMode && initial?.weight && !changedFields.includes("weight") ? initial.weight
+        : (Math.round((kgWhole + kgTenth / 10) * 10) / 10).toFixed(kgTenth ? 1 : 0).replace(/\.0$/, "")
       : "";
 
   function machineParams(): Record<string, string | number> | null {
@@ -104,6 +118,7 @@ export function AddSetModal({
   }
 
   function setMachineValue(key: CardioParamKey, value: string) {
+    markChanged("machineParams");
     setMachineValues((current) => ({
       ...current,
       [key]: Number(value) || 0,
@@ -121,7 +136,7 @@ export function AddSetModal({
         className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto p-4 text-tg-text"
       >
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 id="add-set-title" className="text-base font-semibold">Добавить подход</h3>
+          <h3 id="add-set-title" className="text-base font-semibold">{editing ? "Изменить подход" : "Добавить подход"}</h3>
           <button type="button" aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center text-sm text-tg-hint" onClick={onClose}>
             ✕
           </button>
@@ -130,28 +145,30 @@ export function AddSetModal({
 
         {loadType === "weight_reps" ? (
           <div>
-          <div className="flex items-start gap-2">
+          <div className="flex items-stretch gap-2">
             <div className="app-card app-card-inset min-w-0 flex-1 p-2">
-              <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={setReps} />
+              <div aria-hidden="true" className="mb-1 h-4" />
+              <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 40)} onChange={value => { setReps(value); markChanged("reps"); }} />
               <p className="mt-2 text-center text-lg font-semibold tabular-nums">{reps} повт.</p>
             </div>
             <SetWeightSelector label={weightInput.label} hint={weightInput.hint} whole={kgWhole} tenth={kgTenth}
-              onChange={(whole, tenth) => { setKgWhole(whole); setKgTenth(tenth); }} previousWeight={initWeight} />
+              displayWeight={preserveWeightMode && initial?.weight && !changedFields.includes("weight") ? Number(initial.weight) : undefined}
+              onChange={(whole, tenth) => { setKgWhole(whole); setKgTenth(tenth); markChanged("weight"); }} previousWeight={initWeight} />
           </div>
           </div>
         ) : null}
 
         {loadType === "reps_only" ? (
           <div className="flex justify-center">
-            <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 50)} onChange={setReps} />
+            <WheelPicker label="Повторения" value={reps} options={rangeInts(1, 50)} onChange={value => { setReps(value); markChanged("reps"); }} />
           </div>
         ) : null}
 
         {loadType === "timed" || loadType === "cardio_machine" ? (
           <div className="space-y-3">
             <div className="flex gap-2">
-              <WheelPicker label="Минуты" value={min} options={rangeInts(0, 90)} onChange={setMin} />
-              <WheelPicker label="Секунды" value={sec} options={rangeInts(0, 59)} onChange={setSec} />
+              <WheelPicker label="Минуты" value={min} options={rangeInts(0, 90)} onChange={value => { setMin(value); markChanged("durationSec"); }} />
+              <WheelPicker label="Секунды" value={sec} options={rangeInts(0, 59)} onChange={value => { setSec(value); markChanged("durationSec"); }} />
             </div>
             <p className="text-center text-xs text-tg-hint">
               {formatDurationLabel(durationSec)}
@@ -198,7 +215,7 @@ export function AddSetModal({
               <textarea
                 id={`${fieldId}-note`}
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={(e) => { setNote(e.target.value); markChanged("note"); }}
                 placeholder="Добавить примечание (по желанию)"
                 rows={2}
                 className="app-field mt-1 w-full"
@@ -211,27 +228,32 @@ export function AddSetModal({
             <select
               id={`${fieldId}-rest`}
               value={restSec}
-              onChange={(e) => setRestSec(Number(e.target.value))}
+              onChange={(e) => { setRestSec(Number(e.target.value)); markChanged("restTimeSec"); }}
               className="app-field min-h-11 min-w-11 text-base"
             >
-              {[30, 45, 60, 75, 90, 120, 150, 180].map((s) => (
+              {[...new Set([0, 30, 45, 60, 75, 90, 120, 150, 180, restSec])].sort((a, b) => a - b).map((s) => (
                 <option key={s} value={s}>
-                  {s < 60 ? `${s}с` : `${s / 60}м`}
+                  {formatDurationLabel(s)}
                 </option>
               ))}
             </select>
           </div>
 
-          <label className="flex min-h-11 items-center gap-2 text-xs text-tg-hint">
+          {editing ? <label className="flex min-h-11 items-center gap-2 text-sm text-tg-hint">
+            <input type="checkbox" checked={isCompleted} onChange={(e) => { setIsCompleted(e.target.checked); markChanged("isCompleted"); }} />
+            Подход выполнен
+          </label> : null}
+
+          {showTimerControls ? <label className="flex min-h-11 items-center gap-2 text-xs text-tg-hint">
             <input
               type="checkbox"
               checked={startTimer}
               onChange={(e) => setStartTimer(e.target.checked)}
             />
             Запустить таймер после «Применить»
-          </label>
+          </label> : null}
 
-          {onStartTimerOnly ? (
+          {showTimerControls && onStartTimerOnly ? (
             <button
               type="button"
               className="min-h-11 w-full rounded-xl bg-white/10 px-3 py-2 text-sm"
@@ -260,7 +282,8 @@ export function AddSetModal({
               note: note.trim() || null,
               machineParams: machineParams(),
               restTimeSec: restSec,
-              startTimer,
+              startTimer: showTimerControls && startTimer,
+              ...(editing ? { isCompleted, changedFields } : {}),
             })
           }
         >

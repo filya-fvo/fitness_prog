@@ -8,11 +8,12 @@ type Props = {
   tenth: number;
   onChange: (whole: number, tenth: number) => void;
   previousWeight?: number | null;
+  displayWeight?: number;
 };
 
-export function SetWeightSelector({ label, hint, whole, tenth, onChange, previousWeight }: Props) {
+export function SetWeightSelector({ label, hint, whole, tenth, onChange, previousWeight, displayWeight }: Props) {
   const weight = whole + tenth / 10;
-  const display = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(weight);
+  const display = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: displayWeight == null ? 1 : 6 }).format(displayWeight ?? weight);
 
   function adjust(delta: number) {
     const next = Math.max(0, Math.min(300, Math.round((weight + delta) * 10) / 10));

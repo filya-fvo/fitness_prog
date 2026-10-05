@@ -118,10 +118,12 @@ async function openWorkout(page: Page) {
 test("cancel discards all workout edits and keeps the saved summary", async ({ page }) => {
   const dialog = await openWorkout(page);
   await dialog.getByRole("button", { name: "Изменить" }).click();
-  await dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10").fill("9");
-  await dialog.getByLabel("Вес, кг").fill("35");
-  await dialog.getByLabel("Повторы", { exact: true }).fill("12");
-  await dialog.getByLabel("Комментарий к подходу").fill("Несохранённый подход");
+  await dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10").selectOption("9");
+  await dialog.getByRole("button", { name: "Изменить подход 1: Жим гантелей лёжа", exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Кг: выбрать значение", exact: true }).selectOption("35");
+  await dialog.getByRole("combobox", { name: "Повторения: выбрать значение" }).selectOption("12");
+  await dialog.getByLabel("Примечание (по желанию)").fill("Несохранённый подход");
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await dialog.getByRole("textbox", { name: "Заметки", exact: true }).fill("Несохранённая заметка");
   await dialog.getByRole("button", { name: "Отмена" }).click();
   await expect(dialog.getByText("6/10", { exact: true })).toBeVisible();
@@ -130,10 +132,11 @@ test("cancel discards all workout edits and keeps the saved summary", async ({ p
   await expect(dialog.getByText("Сохранённая заметка", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Изменить" }).click();
   await expect(dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10")).toHaveValue("6");
-  await expect(dialog.getByLabel("Вес, кг")).toHaveValue("20");
-  await expect(dialog.getByLabel("Повторы", { exact: true })).toHaveValue("10");
-  await expect(dialog.getByLabel("Комментарий к подходу")).toHaveValue("Сохранённый подход");
   await expect(dialog.getByRole("textbox", { name: "Заметки", exact: true })).toHaveValue("Сохранённая заметка");
+  await dialog.getByRole("button", { name: "Изменить подход 1: Жим гантелей лёжа", exact: true }).click();
+  await expect(dialog.getByRole("combobox", { name: "Кг: выбрать значение", exact: true })).toHaveValue("20");
+  await expect(dialog.getByRole("combobox", { name: "Повторения: выбрать значение" })).toHaveValue("10");
+  await expect(dialog.getByLabel("Примечание (по желанию)")).toHaveValue("Сохранённый подход");
 });
 
 test("prevents cancel during saving and resets the next edit to fresh server data", async ({ page }) => {
@@ -147,8 +150,10 @@ test("prevents cancel during saving and resets the next edit to fresh server dat
   });
   await page.route(`**/workouts/${WORKOUT_ID}`, (route) => route.fulfill({ json: fresh }));
   await dialog.getByRole("button", { name: "Изменить" }).click();
-  await dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10").fill("9");
-  await dialog.getByLabel("Вес, кг").fill("35");
+  await dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10").selectOption("9");
+  await dialog.getByRole("button", { name: "Изменить подход 1: Жим гантелей лёжа", exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Кг: выбрать значение", exact: true }).selectOption("35");
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await dialog.getByRole("textbox", { name: "Заметки", exact: true }).fill("Новая заметка");
   await dialog.getByRole("button", { name: "Сохранить", exact: true }).click();
   try {
@@ -162,6 +167,7 @@ test("prevents cancel during saving and resets the next edit to fresh server dat
   await expect(dialog.getByText("Серверная заметка", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Изменить" }).click();
   await expect(dialog.getByLabel("Субъективная тяжесть (RPE), от 1 до 10")).toHaveValue("7");
-  await expect(dialog.getByLabel("Вес, кг")).toHaveValue("25");
   await expect(dialog.getByRole("textbox", { name: "Заметки", exact: true })).toHaveValue("Серверная заметка");
+  await dialog.getByRole("button", { name: "Изменить подход 1: Жим гантелей лёжа", exact: true }).click();
+  await expect(dialog.getByRole("combobox", { name: "Кг: выбрать значение", exact: true })).toHaveValue("25");
 });

@@ -8,7 +8,13 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.models.user import User
-from app.services.supplement_intakes import _scheduled_rows, due_groups, local_day_for_user
+from app.models.supplement_intake import SupplementIntake
+from app.services.supplement_intakes import (
+    _scheduled_rows,
+    day_items,
+    due_groups,
+    local_day_for_user,
+)
 
 
 def _user(goals: dict) -> User:
@@ -112,3 +118,79 @@ async def test_illness_filters_previously_materialized_workout_intakes() -> None
     )
 
     assert groups == []
+
+
+@pytest.mark.asyncio
+async def test_ending_illness_does_not_notify_materialized_rest_intakes() -> None:
+    user = _user(
+        {
+            "notification_settings": {"timezone": "Europe/Moscow"},
+            "workout_illness_periods": [{"started_on": "2026-09-29", "ended_on": None}],
+            "supplements": [
+                {
+                    "id": "creatine",
+                    "schedule": [
+                        {"slot": "05:00", "days": "workout"},
+                        {"slot": "08:00", "days": "rest"},
+                    ],
+                },
+            ],
+        }
+    )
+    day = date(2026, 10, 5)
+    rest_rows = _scheduled_rows(user, day)
+    user.goals["workout_illness_periods"][0]["ended_on"] = "2026-10-04"
+    workout_rows = _scheduled_rows(user, day)
+    session = AsyncMock()
+    session.scalars = AsyncMock(
+        return_value=[
+            SupplementIntake(**row, status="pending") for row in rest_rows + workout_rows
+        ]
+    )
+
+    groups = await due_groups(session, user, now=datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
+
+    assert [[(row.slot, row.days_mode) for row in group] for group in groups] == [
+        [("05:00", "workout")]
+    ]
+
+
+@pytest.mark.asyncio
+async def test_rest_day_does_not_notify_materialized_workout_intakes() -> None:
+    user = _user({"workout_schedule": {"days": [2], "start_time": "06:15"}})
+    session = AsyncMock()
+    session.scalars = AsyncMock(
+        return_value=[
+            SupplementIntake(
+                slot="08:00",
+                days_mode=mode,
+                scheduled_at=datetime(2026, 10, 5, 5, 0, tzinfo=UTC),
+            )
+            for mode in ("workout", "rest", "every")
+        ]
+    )
+
+    groups = await due_groups(session, user, now=datetime(2026, 10, 5, 5, 0, tzinfo=UTC))
+
+    assert [[row.days_mode for row in group] for group in groups] == [["rest", "every"]]
+
+
+@pytest.mark.asyncio
+async def test_day_items_hide_stale_pending_rest_rows_and_preserve_completed_history() -> None:
+    user = _user({"workout_schedule": {"days": [0], "start_time": "06:15"}})
+    session = AsyncMock()
+    session.scalars = AsyncMock(
+        return_value=[
+            SupplementIntake(slot="08:00", days_mode="rest", status=status)
+            for status in ("pending", "taken", "skipped")
+        ]
+        + [SupplementIntake(slot="05:00", days_mode="workout", status="pending")]
+    )
+
+    _, items = await day_items(session, user, date(2026, 10, 5))
+
+    assert [(item.days_mode, item.status) for item in items] == [
+        ("rest", "taken"),
+        ("rest", "skipped"),
+        ("workout", "pending"),
+    ]

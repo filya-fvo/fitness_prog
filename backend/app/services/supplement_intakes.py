@@ -26,17 +26,23 @@ VALID_STATUSES = {"pending", "taken", "skipped"}
 VALID_SOURCES = {"telegram", "web", "app"}
 
 
-def _schedule_allowed_during_illness(
+def _schedule_allowed_on_day(
     goals: dict[str, Any],
     day: date,
     *,
     slot: str,
     days_mode: str,
 ) -> bool:
-    """Keep daily/rest supplements while suppressing anything tied to a workout."""
-    if not is_illness_day(goals, day):
-        return True
-    return days_mode != "workout" and slot not in SPECIAL_TIMES
+    """Revalidate stored slots after illness or the workout schedule changes."""
+    illness_today = is_illness_day(goals, day)
+    if illness_today and (days_mode == "workout" or slot in SPECIAL_TIMES):
+        return False
+    workout_day = bool(effective_workout_context(goals, day)["is_workout_day"]) and not illness_today
+    if days_mode == "workout":
+        return workout_day
+    if days_mode == "rest":
+        return not workout_day
+    return True
 
 
 def local_day_for_user(user: User, now: datetime | None = None) -> date:
@@ -66,7 +72,6 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
     tz = _resolve_tz(str(settings.get("timezone") or "Europe/Moscow"))
     workout_context = effective_workout_context(goals, day)
     workout_t = workout_context["start_time"]
-    workout_day = bool(workout_context["is_workout_day"]) and not is_illness_day(goals, day)
     rows: list[dict[str, Any]] = []
     supplements = goals.get("supplements")
     if not isinstance(supplements, list):
@@ -78,16 +83,12 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
         for schedule in normalize_supplement_schedule(item):
             mode = schedule.get("days") or "every"
             slot = schedule["slot"]
-            if not _schedule_allowed_during_illness(
+            if not _schedule_allowed_on_day(
                 goals,
                 day,
                 slot=slot,
                 days_mode=mode,
             ):
-                continue
-            if mode == "workout" and not workout_day:
-                continue
-            if mode == "rest" and workout_day:
                 continue
             target = _resolve_slot_time(slot, workout_t)
             if target is None:
@@ -111,9 +112,24 @@ async def ensure_day(session: AsyncSession, user: User, day: date) -> None:
     rows = _scheduled_rows(user, day)
     if not rows:
         return
-    statement = insert(SupplementIntake).values(rows)
-    statement = statement.on_conflict_do_nothing(
-        constraint="uq_supplement_intake_slot"
+    # A PostgreSQL upsert cannot update the same unique slot twice in one batch.
+    unique_rows = {}
+    for row in rows:
+        unique_rows.setdefault((row["supplement_entry_id"], row["scheduled_at"]), row)
+    statement = insert(SupplementIntake).values(list(unique_rows.values()))
+    statement = statement.on_conflict_do_update(
+        constraint="uq_supplement_intake_slot",
+        set_={
+            "slot": statement.excluded.slot,
+            "days_mode": statement.excluded.days_mode,
+            "updated_at": func.now(),
+        },
+        where=(SupplementIntake.status == "pending")
+        & SupplementIntake.is_deleted.is_(False)
+        & (
+            SupplementIntake.slot.is_distinct_from(statement.excluded.slot)
+            | SupplementIntake.days_mode.is_distinct_from(statement.excluded.days_mode)
+        ),
     )
     await session.execute(statement)
     await session.commit()
@@ -194,7 +210,7 @@ async def day_items(
     items = [
         item
         for item in items
-        if _schedule_allowed_during_illness(
+        if item.status != "pending" or _schedule_allowed_on_day(
             user.goals or {},
             day,
             slot=item.slot,
@@ -383,7 +399,7 @@ async def due_groups(
     rows = [
         row
         for row in rows
-        if _schedule_allowed_during_illness(
+        if _schedule_allowed_on_day(
             user.goals or {},
             local_day,
             slot=row.slot,

@@ -36,4 +36,17 @@ describe("exerciseWeightInput", () => {
       exerciseWeightInput(exercise("Разгибания гантели из-за головы", "total")),
     ).toEqual({ mode: "total", label: "Вес гантели, кг", hint: null });
   });
+
+  it("uses saved total-weight semantics even if the current catalog uses per-hand weights", () => {
+    expect(exerciseWeightInput(exercise("Жим гантелей лёжа", "per_hand"), "total")).toEqual({
+      mode: "total", label: "Рабочий вес, кг", hint: "Укажите полный вес, как в записанном подходе.",
+    });
+    expect(exerciseWeightInput(exercise("Жим гантелей лёжа", "per_hand"), null).mode).toBe("total");
+  });
+
+  it("keeps saved per-hand semantics after a catalog rule change", () => {
+    expect(exerciseWeightInput(exercise("Жим гантелей лёжа", "total"), "per_hand")).toMatchObject({
+      mode: "per_hand", label: "Вес одной гантели, кг",
+    });
+  });
 });

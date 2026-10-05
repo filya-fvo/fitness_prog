@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const visualRegressionEnabled =
   process.platform === "win32" || process.env.PLAYWRIGHT_VISUAL_QA === "1";
 const auditRegressionTests =
-  /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|measurement-chart-values|wheel-picker-accessibility)\.spec\.ts/;
+  /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|measurement-chart-values|wheel-picker-accessibility|workout-ux-followup|warmup-media)\.spec\.ts/;
 
 /**
  * E2E critical path (TZ §11).

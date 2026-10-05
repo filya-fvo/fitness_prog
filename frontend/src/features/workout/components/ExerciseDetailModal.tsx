@@ -13,6 +13,7 @@ type Props = {
   onClose: () => void;
   onToggleSelect?: (exercise: Exercise) => void;
   showExplorerLink?: boolean;
+  showProgress?: boolean;
 };
 
 export function ExerciseDetailModal({
@@ -21,6 +22,7 @@ export function ExerciseDetailModal({
   onClose,
   onToggleSelect,
   showExplorerLink = true,
+  showProgress = true,
 }: Props) {
   const dialogRef = useModalAccessibility(true, onClose);
   const visibleTags = visibleExerciseTags(exercise.tags);
@@ -106,11 +108,11 @@ export function ExerciseDetailModal({
             {selected ? "Убрать из тренировки" : "Добавить в тренировку"}
           </button>
         ) : null}
-        <ExerciseProgressSection
+        {showProgress ? <ExerciseProgressSection
           exerciseId={exercise.id}
           exerciseName={exercise.name_ru}
           showExplorerLink={showExplorerLink}
-        />
+        /> : null}
       </div>
     </div>
   );
