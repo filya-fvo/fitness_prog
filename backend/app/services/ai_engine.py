@@ -31,6 +31,8 @@ _REASONING_LEAK_MARKERS = (
     "identify key requirements",
     "system prompt",
     "developer message",
+    "полезного ответа на этот вопрос",
+    "не пересказывай контекст",
 )
 _FOREIGN_SCRIPT_RE = re.compile(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]")
 _LONG_LATIN_WORD_RE = re.compile(r"[a-z]{4,}", re.IGNORECASE)
@@ -268,8 +270,7 @@ def _build_chat_prompt(
         "<conversation_history>\n"
         f"{_bounded_context(history_block, max_chars=1200)}\n"
         "</conversation_history>\n\n"
-        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1800)}\n"
-        "Начни сразу с полезного ответа на этот вопрос. Не пересказывай контекст."
+        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1800)}"
     )
 
 

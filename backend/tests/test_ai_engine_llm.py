@@ -224,7 +224,7 @@ def test_chat_prompt_keeps_latest_question_last_and_drops_echo_history() -> None
 
     assert prompt.count(context) == 1
     assert prompt.rfind(question) > prompt.rfind("</conversation_history>")
-    assert prompt.endswith("Не пересказывай контекст.")
+    assert prompt.endswith(question)
 
 
 def test_chat_prompt_bounds_large_runtime_context() -> None:
@@ -246,6 +246,7 @@ def test_chat_prompt_bounds_large_runtime_context() -> None:
         ("Полезный итог.\n<think>unfinished secret", "Полезный итог."),
         ("<think>unfinished secret", None),
         ("Here's a thinking process: analyze user input", None),
+        ("Начни с полезного ответа на этот вопрос. Не пересказывай контекст.", None),
         ("```markdown\nКороткий итог.\n```", "Короткий итог."),
     ],
 )
