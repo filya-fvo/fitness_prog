@@ -26,7 +26,13 @@ from app.services.workout_metrics import aggregate_workout_load, normalized_set_
         ("Как изменилась талия?", AIQueryDomain.MEASUREMENTS),
         ("Как было питание за неделю?", AIQueryDomain.NUTRITION),
         ("Что есть после тренировки?", AIQueryDomain.GENERAL),
-        ("Разбор недели: объём и восстановление", AIQueryDomain.RECOVERY),
+        ("Разбор недели: объём и восстановление", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Тренировки", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Проанализируй мою предыдущую тренировку", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Разбери последнюю завершённую тренировку", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Оцени предыдущую тренировку", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Оцени прошлую тренировку", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Как прошла последняя тренировка?", AIQueryDomain.WORKOUT_PROGRESS),
         ("Как тренироваться во время менструального цикла?", AIQueryDomain.GENERAL),
         ("Что делать, если болит плечо?", AIQueryDomain.SAFETY),
         ("Как настроиться на тренировку?", AIQueryDomain.GENERAL),
@@ -63,6 +69,8 @@ def test_ai_query_routes_to_expected_domain(
         "Сколько я должен пить воды сегодня?",
         "Как улучшить мой сон сегодня?",
         "Чем отличаются средний вес и рабочий вес?",
+        "Как подготовиться к последней тренировке программы?",
+        "Что есть перед последней тренировкой программы?",
     ],
 )
 def test_general_coaching_does_not_require_diary_history(message: str) -> None:

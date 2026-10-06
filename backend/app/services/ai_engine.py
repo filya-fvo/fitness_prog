@@ -16,6 +16,7 @@ from app.ai.analytics import (
 from app.ai.context import build_application_context, conversation_history
 from app.ai.prompts import SYSTEM_TRAINER
 from app.ai.rag import format_rag_block, retrieve_exercise_context
+from app.ai.workout_reports import build_workout_report
 from app.core.config import Settings
 from app.models.ai_conversation import AIConversation
 from app.models.user import User
@@ -285,8 +286,6 @@ async def chat(
 ) -> tuple[uuid.UUID, str, str]:
     sid = session_id or uuid.uuid4()
     domain = classify_ai_query(message)
-    rag_items = await retrieve_exercise_context(session, message, limit=2)
-    rag_block = format_rag_block(rag_items)
     days = extract_period_days(message)
     analytical_domains = {
         AIQueryDomain.WORKOUT_PROGRESS,
@@ -311,6 +310,15 @@ async def chat(
             assistant_content=reply,
         )
         return sid, reply, "rule"
+    if domain == AIQueryDomain.WORKOUT_PROGRESS and not rule_only:
+        reply = await build_workout_report(session, user, message=message, days=days)
+        await store_exchange(
+            session, user_id=user.id, session_id=sid,
+            user_content=message, assistant_content=reply,
+        )
+        return sid, reply, "data"
+    rag_items = await retrieve_exercise_context(session, message, limit=2)
+    rag_block = format_rag_block(rag_items)
     app_context = await build_application_context(
         session,
         user,
@@ -429,10 +437,23 @@ async def analyze_progress(
     message: str | None = None,
 ) -> tuple[str, str]:
     question = (message or "Проанализируй мой тренировочный прогресс").strip()
+    if _requires_rule_only(question):
+        return _rule_based_reply(question, ""), "rule"
     domain = classify_ai_query(question, require_history=False)
-    if domain in {AIQueryDomain.GENERAL, AIQueryDomain.SAFETY}:
+    if domain == AIQueryDomain.SAFETY:
+        return (
+            "Разбор дневника не позволяет оценить травму или состояние здоровья. "
+            "Обсудите допустимую нагрузку с врачом.",
+            "rule",
+        )
+    if domain == AIQueryDomain.GENERAL:
         domain = AIQueryDomain.WORKOUT_PROGRESS
     requested_days = extract_period_days(question, default=days) if message else days
+    if domain == AIQueryDomain.WORKOUT_PROGRESS:
+        report = await build_workout_report(
+            session, user, message=question, days=requested_days,
+        )
+        return report, "data"
     evidence = await build_analysis_evidence(
         session,
         user,

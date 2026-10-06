@@ -203,7 +203,7 @@ export function Chat() {
               ) : null}
               {m.role === "assistant" && m.source ? (
                 <span className="mt-2 block text-xs text-tg-hint">
-                  {m.source === "rule" ? "Локальный резервный ответ" : "Ответ ИИ-тренера"}
+                  {m.source === "data" ? "Разбор записей дневника" : m.source === "rule" ? "Локальный резервный ответ" : "Ответ ИИ-тренера"}
                 </span>
               ) : null}
             </div>

@@ -58,7 +58,7 @@ _DOMAIN_PATTERNS: tuple[tuple[AIQueryDomain, re.Pattern[str]], ...] = (
 
 
 _HISTORY_REQUEST = re.compile(
-    r"анализ|разбор|\b(?:оцени|сравни)\w*\s+мо\w*|\bпрогресс(?:а|у|е|ом)?\b|динамик|"
+    r"анализ|разб(?:ор|ер)|\b(?:оцени|сравни)\w*\s+мо\w*|\bпрогресс(?:а|у|е|ом)?\b|динамик|"
     r"изменил|измени(?:лся|лась|лось|лись)|дневник|запис|истори|"
     r"\bя\s+(?:съел|съела|ел|ела|спал|спала|тренировал|выпил|прош[её]л|прошла|сделал)\w*|"
     r"\b(?:вчера|позавчера)\b|"
@@ -70,10 +70,28 @@ _GENERAL_EXPLANATION = re.compile(r"\b(?:что\s+такое|как\s+работ
 _PERSONAL_REFERENCE = re.compile(r"\b(?:у\s+меня|мо(?:й|я|[её]|и|их|его|ей|ему|им|ими))\b", re.I)
 _AGGREGATION_REQUEST = re.compile(r"\b(?:средн|суммар|сумм|итог|максимальн|минимальн)\w*", re.I)
 _COMPARISON_REQUEST = re.compile(r"\bчем\s+отлича", re.I)
+_LATEST_WORKOUT_REQUEST = re.compile(
+    r"\b(?:предыдущ|последн|прошл|заверш[её]нн)\w*\s+(?:заверш[её]нн\w*\s+)?трениров", re.I,
+)
+_WORKOUT_TOPIC = re.compile(r"(?:мои\s+)?тренировки[.!?]?", re.I)
+_WORKOUT_VOLUME = re.compile(r"трениров|объ[её]м|подход|нагрузк", re.I)
+_LATEST_WORKOUT_ANALYSIS = re.compile(
+    r"анализ|разб(?:ор|ер)|оцени|сравни|покажи|прошл|заверш[её]нн", re.I,
+)
+_LATEST_WORKOUT_TOPIC = re.compile(
+    r"(?:моя\s+)?(?:предыдущая|последняя|прошлая)\s+тренировка[.!?]?", re.I,
+)
 
 
 def classify_ai_query(message: str, *, require_history: bool = True) -> AIQueryDomain:
     """Route chat to diary analysis only when the question requests recorded data."""
+    if _DOMAIN_PATTERNS[0][1].search(message):
+        return AIQueryDomain.SAFETY
+    latest_analysis = _LATEST_WORKOUT_REQUEST.search(message) and (
+        _LATEST_WORKOUT_ANALYSIS.search(message) or _LATEST_WORKOUT_TOPIC.fullmatch(message.strip())
+    )
+    if _WORKOUT_TOPIC.fullmatch(message.strip()) or latest_analysis:
+        return AIQueryDomain.WORKOUT_PROGRESS
     for domain, pattern in _DOMAIN_PATTERNS:
         if pattern.search(message):
             if domain != AIQueryDomain.SAFETY and require_history:
@@ -84,6 +102,8 @@ def classify_ai_query(message: str, *, require_history: bool = True) -> AIQueryD
                 ) or personal_comparison
                 if (_GENERAL_EXPLANATION.search(message) and not personal_comparison) or not history:
                     return AIQueryDomain.GENERAL
+            if domain == AIQueryDomain.RECOVERY and _WORKOUT_VOLUME.search(message):
+                return AIQueryDomain.WORKOUT_PROGRESS
             return domain
     return AIQueryDomain.GENERAL
 
