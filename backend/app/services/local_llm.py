@@ -49,6 +49,8 @@ async def call_local_chat(
         "temperature": temperature,
         "max_tokens": max_tokens or settings.llm_max_output_tokens,
     }
+    if settings.llm_model.casefold().startswith("qwen3"):
+        body["chat_template_kwargs"] = {"enable_thinking": False}
     if json_schema:
         body["response_format"] = {
             "type": "json_schema",
@@ -90,7 +92,18 @@ async def call_local_chat(
         finally:
             _request_lock.release()
             acquired = False
-        content = response.json()["choices"][0]["message"]["content"]
+        payload = response.json()
+        choices = payload.get("choices") if isinstance(payload, dict) else None
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise ValueError("invalid_choices")
+        choice = choices[0]
+        if choice.get("finish_reason") in {"length", "content_filter"}:
+            logger.warning("local_ai_incomplete_generation reason={}", choice["finish_reason"])
+            return None
+        message = choice.get("message")
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, str):
+            raise ValueError("invalid_content")
         logger.info(
             "local_ai_request_completed elapsed_ms={} prompt_chars={} output_chars={}",
             round((loop.time() - started_at) * 1000),

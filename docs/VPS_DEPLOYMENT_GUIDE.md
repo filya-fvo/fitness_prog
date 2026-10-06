@@ -59,12 +59,12 @@ Internet :80/:443
                                       ├── PostgreSQL 18 + pgvector
                                       └── Redis 7.4 ← ARQ worker
                                       └── закрытая AI-сеть
-                                          ├── llama.cpp + Qwen2.5 3B
-                                          └── Tesseract rus+eng
+                                          ├── llama.cpp + Qwen3 1.7B (текст)
+                                          └── PP-OCRv5 mobile / Cyrillic mobile
 ```
 
 Наружу опубликованы только 80/443. PostgreSQL, Redis, API, Nginx, Qwen и
-Tesseract не имеют host-портов. Caddy получает и продлевает TLS-сертификаты автоматически. Миграции
+OCR не имеют host-портов. Caddy получает и продлевает TLS-сертификаты автоматически. Миграции
 запускаются до API и worker; неуспешная миграция не пропускается.
 
 PostgreSQL хранит пользователей, тренировки, питание, настройки и подписки.
@@ -362,7 +362,9 @@ EMAIL_OTP_DEV_RETURN_CODE=false
 DEFAULT_NEW_USER_PLUS_SOURCE=beta_grant
 LLM_PROVIDER=local
 LLM_BASE_URL=http://llm:8080/v1
-LLM_MODEL=qwen2.5-3b-instruct
+LLM_MODEL=qwen3-1.7b
+LLM_TIMEOUT_SECONDS=75
+LLM_MAX_OUTPUT_TOKENS=256
 OCR_BASE_URL=http://ocr:8090
 LOCAL_AI_MODELS_DIR=/opt/fitness/models
 ```
@@ -488,16 +490,22 @@ docker compose --env-file backend/.env.production exec -T db psql \
 
 ## 11. Первый запуск
 
-Один раз загрузите официальную локальную модель и проверьте её контрольную сумму:
+Один раз загрузите закреплённый GGUF Qwen3-1.7B Q4_K_M и проверьте
+его контрольную сумму:
 
 ```bash
 cd /opt/fitness
 sudo sh scripts/install-local-ai-model.sh /opt/fitness/models
+sha256sum /opt/fitness/models/qwen3-1.7b-q4_k_m.gguf
 ```
 
 Интернет нужен только для этой загрузки и обновления Docker-образов. Runtime
 ИИ не обращается к внешним AI API. Подробности — в
-`docs/ADMIN_AI_MODEL_RUNBOOK.md`.
+`docs/ADMIN_AI_MODEL_RUNBOOK.md`: источник, неизменяемая ревизия, SHA-256,
+ограничения CPU/RAM, проверка живого ответа и откат. Модель запущена только
+для текста с thinking выключенным; этикетки обрабатывает отдельный PP-OCRv5
+и детерминированный парсер без вызова LLM. При обновлении старые GGUF сохраняют
+до проверки новой модели, затем удаляют только перечисленные в runbook файлы.
 
 ```bash
 cd /opt/fitness

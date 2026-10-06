@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import os
 import subprocess
 from collections import defaultdict
 
@@ -90,7 +91,11 @@ async def recognize(request: Request) -> dict[str, str | float]:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
     try:
         async with _ocr_lock:
-            text, confidence = await asyncio.to_thread(_run_tesseract, data)
-    except (UnidentifiedImageError, OSError, subprocess.SubprocessError) as exc:
+            if os.environ.get("OCR_ENGINE", "tesseract") == "ppocr":
+                from app.ocr_ppocr import run_ppocr
+                text, confidence = await asyncio.to_thread(run_ppocr, data)
+            else:
+                text, confidence = await asyncio.to_thread(_run_tesseract, data)
+    except (UnidentifiedImageError, OSError, ValueError, subprocess.SubprocessError) as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY) from exc
     return {"text": text, "confidence": confidence}

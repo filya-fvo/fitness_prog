@@ -43,19 +43,47 @@ class AnalysisEvidence:
 
 
 _DOMAIN_PATTERNS: tuple[tuple[AIQueryDomain, re.Pattern[str]], ...] = (
-    (AIQueryDomain.SAFETY, re.compile(r"бол|травм|от[её]к|дыш|сознани|кровотеч", re.I)),
+    (AIQueryDomain.SAFETY, re.compile(
+        r"\b(?:бол(?:ь|и|ью|ям|ями|ях)\b|болев\w*|болезн\w*|больн\w*|"
+        r"(?:за)?бол(?:ит|ят|ел|ела|ело|ели|еть)\b)|травм|от[её]к|дыш|сознани|кровотеч",
+        re.I,
+    )),
     (AIQueryDomain.MEASUREMENTS, re.compile(r"тали|бед[её]р|груд|бицеп|икр|ше[ия]|обхват|замер", re.I)),
     (AIQueryDomain.STRENGTH, re.compile(r"жим|присед|тяг|подтяг|сил[аыу]|рабоч.*вес|1пм|повторн.*макс", re.I)),
     (AIQueryDomain.WEIGHT, re.compile(r"вес|похуд|сброс|набрал[аи]?\s+кг|килограмм", re.I)),
     (AIQueryDomain.NUTRITION, re.compile(r"питан|калори|белк|жир|углевод|бжу|рацион|\b(?:ел|ела|ели)\b|что\s+(?:мне\s+)?(?:есть|поесть)", re.I)),
-    (AIQueryDomain.RECOVERY, re.compile(r"восстанов|сон|спал|спала|шаг|активн|вод[аыу]|устал|менстру|месячн|женск.*цикл|фаз.*цикл", re.I)),
+    (AIQueryDomain.RECOVERY, re.compile(r"восстанов|сон|\bс(?:на|ну|не|ном)\b|спал|спала|шаг|активн|вод[аыу]|устал|менстру|месячн|женск.*цикл|фаз.*цикл", re.I)),
     (AIQueryDomain.WORKOUT_PROGRESS, re.compile(r"трениров|прогресс|объ[её]м|подход|rpe|разбор", re.I)),
 )
 
 
-def classify_ai_query(message: str) -> AIQueryDomain:
+_HISTORY_REQUEST = re.compile(
+    r"анализ|разбор|\b(?:оцени|сравни)\w*\s+мо\w*|\bпрогресс(?:а|у|е|ом)?\b|динамик|"
+    r"изменил|измени(?:лся|лась|лось|лись)|дневник|запис|истори|"
+    r"\bя\s+(?:съел|съела|ел|ела|спал|спала|тренировал|выпил|прош[её]л|прошла|сделал)\w*|"
+    r"\b(?:вчера|позавчера)\b|"
+    r"\b(?:за|прошл\w*|последн\w*)\s+(?:(?:\d+|две|два|три|последн\w*)\s+)?"
+    r"(?:дн|день|дня|дней|недел|месяц|год)",
+    re.I,
+)
+_GENERAL_EXPLANATION = re.compile(r"\b(?:что\s+такое|как\s+работает|чем\s+отлича)", re.I)
+_PERSONAL_REFERENCE = re.compile(r"\b(?:у\s+меня|мо(?:й|я|[её]|и|их|его|ей|ему|им|ими))\b", re.I)
+_AGGREGATION_REQUEST = re.compile(r"\b(?:средн|суммар|сумм|итог|максимальн|минимальн)\w*", re.I)
+_COMPARISON_REQUEST = re.compile(r"\bчем\s+отлича", re.I)
+
+
+def classify_ai_query(message: str, *, require_history: bool = True) -> AIQueryDomain:
+    """Route chat to diary analysis only when the question requests recorded data."""
     for domain, pattern in _DOMAIN_PATTERNS:
         if pattern.search(message):
+            if domain != AIQueryDomain.SAFETY and require_history:
+                personal = bool(_PERSONAL_REFERENCE.search(message))
+                personal_comparison = personal and bool(_COMPARISON_REQUEST.search(message))
+                history = bool(_HISTORY_REQUEST.search(message)) or (
+                    personal and bool(_AGGREGATION_REQUEST.search(message))
+                ) or personal_comparison
+                if (_GENERAL_EXPLANATION.search(message) and not personal_comparison) or not history:
+                    return AIQueryDomain.GENERAL
             return domain
     return AIQueryDomain.GENERAL
 

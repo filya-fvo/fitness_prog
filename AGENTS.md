@@ -49,8 +49,8 @@ HealthKit и Health Connect не интегрированы. Эти показа
 - Redis + ARQ worker для фоновых уведомлений.
 - HTTPX для внешних API; Loguru; Sentry опционально.
 - JWT для сессии приложения; Telegram `initData`, Telegram OIDC и email OTP для входа.
-- Локальный `llama.cpp` + Qwen2.5-3B-Instruct Q4_K_M для текста; отдельный
-  Tesseract `rus+eng` для фото этикетки.
+- Локальный `llama.cpp` + Qwen3-1.7B Q4_K_M для текста; отдельный
+  PP-OCRv5 mobile (ONNX, кириллица/латиница) для фото этикетки; Tesseract — резерв.
 
 Production не отправляет данные во внешние AI API и не имеет Groq/OpenAI
 fallback. `llm_base_url` указывает только на внутренний Docker-сервис `llm`;
@@ -116,7 +116,7 @@ FastAPI routers (backend/app/routers)
         ↓
 services → SQLAlchemy models → PostgreSQL
         ├→ Redis / ARQ → Telegram + Web Push notifications
-        ├→ internal llama.cpp/Qwen (text) + Tesseract OCR (label image)
+        ├→ internal llama.cpp/Qwen (text) + PP-OCRv5 OCR (label image)
         ├→ SMTP email OTP / consented service email
         └→ Open Food Facts barcode lookup
 ```
@@ -465,7 +465,7 @@ backup и dry-run, если он предусмотрен.
 - `docs/VPS_DEPLOYMENT_GUIDE.md` — выбор VPS, Ubuntu/Docker, GitHub deploy key,
   перенос PostgreSQL, HTTPS, backup, обновление и диагностика production.
 - `docs/ADMIN_SUPPLEMENT_NOTIFICATIONS.md` — уведомления и добавки.
-- `docs/ADMIN_AI_MODEL_RUNBOOK.md` — локальные Qwen/Tesseract и диагностика ИИ.
+- `docs/ADMIN_AI_MODEL_RUNBOOK.md` — локальные Qwen/PP-OCRv5 и диагностика ИИ.
 - `docs/PROD_CHECKLIST.md` — выпуск.
 - `docs/DESIGN_SYSTEM.md` — UI-токены и паттерны.
 - `docs/exercise-gifs.md`, `docs/EXERCISE_MEDIA_AUDIT_2026-08-20.md` — media pipeline/status.

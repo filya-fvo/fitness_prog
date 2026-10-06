@@ -40,3 +40,15 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # Default: API. Override command for worker:
 # arq app.tasks.notifications.WorkerSettings
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+
+# Only the OCR image includes ONNX inference; API/worker keep the original base.
+FROM base AS ocr
+USER root
+COPY backend/requirements-ocr.txt /app/requirements-ocr.txt
+RUN pip install --no-cache-dir -r /app/requirements-ocr.txt \
+    && pip install --no-cache-dir --no-deps rapidocr==3.9.2 \
+    && python /app/scripts/install_ocr_models.py \
+    && chmod -R a+rX /app/ocr_models
+USER appuser
+
+FROM base AS runtime

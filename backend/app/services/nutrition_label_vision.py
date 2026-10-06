@@ -13,14 +13,32 @@ from app.schemas.nutrition import NutritionLabelRecognitionResponse
 MAX_LABEL_IMAGE_BYTES = 8 * 1024 * 1024
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _NUMBER_RE = r"(\d{1,4}(?:[.,]\d{1,3})?)"
-_NUTRIENT_ALIASES = {
-    "proteins_g": ("белк", "белок", "protein"),
-    "fats_g": ("жир", "fat"),
-    "carbs_g": ("углевод", "carbohydrate", "carbs"),
-    "fiber_g": ("клетчат", "пищев волок", "fiber", "fibre"),
-    "sugars_g": ("сахар", "sugars"),
-    "salt_g": ("соль", "salt"),
+_NUTRIENT_PATTERNS = {
+    "proteins_g": r"белк\w*|белок\w*|proteins?",
+    "fats_g": r"жир\w*|fats?",
+    "carbs_g": r"углевод\w*|carbohydrates?|carbs",
+    "fiber_g": r"клетчат\w*|пищев\w*\s+волок\w*|fib(?:er|re)",
+    # Sucrose is a subcomponent, not the total amount of sugars.
+    "sugars_g": r"сахар(?:а|ы|ов)?|sugars?",
+    "salt_g": r"соль|соли|salt",
 }
+_NUTRIENT_LABEL_RE = re.compile(
+    "|".join(rf"(?P<{field}>\b(?:{pattern})\b)" for field, pattern in _NUTRIENT_PATTERNS.items()),
+    re.IGNORECASE,
+)
+_NUTRITION_HEADER_RE = re.compile(
+    r"\b(?:пищев\w*\s+цен(?:н)?ос\w*|"
+    r"цен(?:н)?ос\w*\s*(?:(?:на|в)\s*)?\d{1,4}\s*(?:г|g|мл|ml)\b|"
+    r"nutrition(?:al)?\s+(?:facts|information|value))\b",
+    re.IGNORECASE,
+)
+_SECTION_END_RE = re.compile(
+    r"\b(?:состав|ингредиент\w*|ingredients?|способ\s+приготов\w*|"
+    r"условия\s+хран\w*|хранить|изготовител\w*|производител\w*|"
+    r"срок\s+годност\w*|масса\s+нетто|net\s+weight|best\s+before)\b",
+    re.IGNORECASE,
+)
+_VALUE_AFTER_LABEL_RE = re.compile(r"^[\s:;=–—-]*(?:\([гg]\)\s*)?" + _NUMBER_RE)
 _LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
 
 
@@ -71,25 +89,55 @@ def _decimal(raw: str) -> float:
     return float(raw.replace(",", "."))
 
 
-def _line_value(lines: list[str], aliases: tuple[str, ...]) -> float | None:
-    all_aliases = tuple(alias for values in _NUTRIENT_ALIASES.values() for alias in values)
+def _nutrition_lines(text: str) -> list[str]:
+    """Keep nutrition rows, excluding ingredient percentages and package metadata."""
+    header = _NUTRITION_HEADER_RE.search(text)
+    block = text[header.start() :] if header else text
+    if header:
+        preceding = text[: header.start()].strip().splitlines()
+        if preceding and re.match(
+            r"^\s*(?:порц\w*|serving|(?:на|в|per)\s*100)\b", preceding[-1], re.IGNORECASE
+        ):
+            block = preceding[-1] + "\n" + block
+    end = _SECTION_END_RE.search(block)
+    if end:
+        block = block[: end.start()]
+    lines = [line.strip() for line in block.splitlines() if line.strip()]
+    if header:
+        return lines
+    # A tight OCR crop may contain only standalone rows without a heading.
     for index, line in enumerate(lines):
-        lowered = line.casefold()
-        positions = [lowered.find(alias) for alias in aliases if alias in lowered]
-        if not positions:
-            continue
-        match = re.search(_NUMBER_RE, line[min(positions) :])
-        if match:
-            return _decimal(match.group(1))
-        # Tesseract often puts a row label and its value on adjacent lines.
-        # Stop before the next nutrient label so one value is never assigned twice.
-        for following in lines[index + 1 : index + 3]:
-            following_lowered = following.casefold()
-            if any(alias in following_lowered for alias in all_aliases):
-                break
-            match = re.search(_NUMBER_RE, following)
+        if _NUTRIENT_LABEL_RE.match(line) or re.match(
+            r"(?:total\s+fat|энерг\w*|energy|ккал|kcal|порц\w*|serving|"
+            r"(?:на|в|per)\s*100\s*(?:г|g|мл|ml))\b", line, re.IGNORECASE
+        ):
+            return lines[index:]
+    return []
+
+
+def _line_value(lines: list[str], field: str) -> float | None:
+    for index, line in enumerate(lines):
+        labels = list(_NUTRIENT_LABEL_RE.finditer(line))
+        for position, label in enumerate(labels):
+            if label.lastgroup != field:
+                continue
+            next_label = labels[position + 1] if position + 1 < len(labels) else None
+            segment = line[label.end() : next_label.start() if next_label else len(line)]
+            match = _VALUE_AFTER_LABEL_RE.match(segment)
             if match:
                 return _decimal(match.group(1))
+            if next_label:
+                continue
+            # Tesseract can put a row label and value on adjacent lines. Never
+            # borrow a number from the next nutrient or the energy row.
+            for following in lines[index + 1 : index + 3]:
+                match = _VALUE_AFTER_LABEL_RE.match(following)
+                if match:
+                    return _decimal(match.group(1))
+                if _NUTRIENT_LABEL_RE.search(following) or re.search(
+                    r"энерг|energy|ккал|kcal|кдж|kj", following, re.IGNORECASE
+                ):
+                    break
     return None
 
 
@@ -115,12 +163,16 @@ def _energy_kcal(lines: list[str]) -> float | None:
 def parse_ocr_text(text: str, *, ocr_confidence: float = 0.0) -> NutritionLabelRecognitionResponse:
     """Extract only explicit values; never infer a missing nutrient."""
     normalized = re.sub(r"[ \t]+", " ", text.replace("\u00a0", " ")).strip()
-    lines = [line.strip() for line in normalized.splitlines() if line.strip()]
+    lines = _nutrition_lines(normalized)
     joined = "\n".join(lines).casefold()
-    values = {field: _line_value(lines, aliases) for field, aliases in _NUTRIENT_ALIASES.items()}
+    values = {field: _line_value(lines, field) for field in _NUTRIENT_PATTERNS}
     calories = _energy_kcal(lines)
 
     basis_100 = re.search(r"(?:на|в|per)\s*100\s*(?:г(?:р)?|g|мл|ml)\b", joined)
+    if not basis_100:
+        basis_100 = re.search(
+            r"пищев\w*\s+ценност\w*\s*100\s*(?:г(?:р)?|мл)\b", joined
+        )
     serving_match = re.search(
         r"(?:порц\w*|serving)[^\d]{0,20}" + _NUMBER_RE + r"\s*(?:г|g|мл|ml)\b",
         joined,

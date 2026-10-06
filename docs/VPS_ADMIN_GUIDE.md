@@ -30,8 +30,8 @@
 | `db` | PostgreSQL 18 с данными пользователей |
 | `redis` | очередь фоновых задач и временные блокировки |
 | `caddy` | HTTPS и направление запросов к `web`/`api` |
-| `llm` | локальный llama.cpp с Qwen2.5-3B-Instruct Q4_K_M |
-| `ocr` | закрытый Tesseract `rus+eng` для фото этикеток |
+| `llm` | локальный llama.cpp с Qwen3-1.7B Q4_K_M, только текст, thinking отключён |
+| `ocr` | закрытый PP-OCRv5 mobile / Cyrillic mobile для этикеток, Tesseract для отката |
 | `telegram-poller` | исходящий Telegram long polling, внутренняя доставка API |
 
 Отдельный `migrate` применяет SQL и завершается. При проверке 02.10.2026 все
@@ -624,8 +624,13 @@ journalctl --disk-usage
 du -xhd1 /opt/fitness /var/lib/docker /var/log 2>/dev/null
 ```
 
-Каталог `/opt/fitness/models` содержит рабочую локальную ИИ-модель. Его нельзя
-включать в очистку. Перед удалением других крупных файлов сначала проверьте
+Каталог `/opt/fitness/models` содержит рабочую локальную ИИ-модель
+`qwen3-1.7b-q4_k_m.gguf`. Его нельзя включать в общую очистку.
+При замене модели старые 3B/1.5B GGUF сохраняют до успешной проверки новой модели
+в приложении; затем удаляют только два точных старых файла по
+[runbook ИИ](ADMIN_AI_MODEL_RUNBOOK.md#откат-без-потери-данных).
+После удаления откат требует повторной загрузки прежних весов с проверкой SHA-256.
+Перед удалением других крупных файлов сначала проверьте
 mounts контейнеров, открытые файлы и ссылки из Compose/systemd/cron.
 
 Память и текущая нагрузка:
@@ -710,8 +715,10 @@ Router Advertisement своей реализацией и отключает ker
 публичный Telegram webhook для обхода этой диагностики: он был отключён из-за
 подтверждённых входящих timeout.
 
-Текстовые запросы обрабатывает локальный Qwen через `llm:8080/v1`, этикетки —
-Tesseract через `ocr:8090`. Сервисы доступны только внутри Docker; отправка
+Текстовые запросы обрабатывает локальный Qwen3-1.7B через `llm:8080/v1`
+с alias `qwen3-1.7b`, без thinking и `mmproj`. Этикетки обрабатывает
+PP-OCRv5 через `ocr:8090` и детерминированный парсер: фото и OCR-текст в LLM
+не отправляются. Сервисы доступны только внутри Docker; отправка
 данных внешним AI API и внешний fallback в production отсутствуют. Проверки:
 
 ```bash
@@ -725,7 +732,7 @@ docker compose --env-file backend/.env.production exec -T api \
 
 Ответ OCR ожидается `{"status":"ok"}`. При недоступной модели API может дать
 безопасный ответ по правилам, поэтому успешный общий `/health` не доказывает
-работу ИИ. Подробности — [руководство Qwen/Tesseract](ADMIN_AI_MODEL_RUNBOOK.md).
+работу ИИ. Подробности — [руководство Qwen/OCR](ADMIN_AI_MODEL_RUNBOOK.md).
 
 ## 13. Частые проблемы
 
@@ -886,7 +893,7 @@ docker compose --env-file backend/.env.production logs --tail=100 api
 - [Timeweb: схема переключения и обновление](TIMEWEB_DOMAIN_CUTOVER.md).
 - [Встроенная админка](ADMIN_GUIDE.md).
 - [DBeaver и SSH-туннель](DBEAVER_VPS_CONNECTION.md).
-- [Qwen/Tesseract](ADMIN_AI_MODEL_RUNBOOK.md).
+- [Qwen/OCR](ADMIN_AI_MODEL_RUNBOOK.md).
 - [Локальные файлы и очистка 02.10.2026](audits/2026-10-02-local-storage.md).
 - [Общий аудит 02.10.2026](audits/2026-10-02-full-audit.md).
 

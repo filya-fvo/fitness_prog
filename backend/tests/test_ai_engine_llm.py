@@ -51,7 +51,7 @@ def local_settings() -> Settings:
         llm_provider="local",
         llm_api_key="internal-test-key",
         llm_base_url="http://llm:8080/v1",
-        llm_model="qwen2.5-3b-instruct",
+        llm_model="qwen3-1.7b",
     )
 
 
@@ -83,13 +83,14 @@ async def test_local_ai_uses_internal_chat_completions() -> None:
     assert request["url"] == "http://llm:8080/v1/chat/completions"
     assert request["headers"]["Authorization"] == "Bearer internal-test-key"
     assert request["json"] == {
-        "model": "qwen2.5-3b-instruct",
+        "model": "qwen3-1.7b",
         "messages": [
             {"role": "system", "content": "system"},
             {"role": "user", "content": "question"},
         ],
         "temperature": 0.2,
-        "max_tokens": 320,
+        "max_tokens": 256,
+        "chat_template_kwargs": {"enable_thinking": False},
     }
 
 
@@ -132,8 +133,8 @@ async def test_configured_ai_reports_local_source() -> None:
     assert reply == "Короткий локальный ответ"
     assert source == "local"
     request = FakeAsyncClient.requests[0]
-    assert request["json"]["max_tokens"] == 64
-    assert float(FakeAsyncClient.init_kwargs[0]["timeout"]) <= 35
+    assert request["json"]["max_tokens"] == 256
+    assert float(FakeAsyncClient.init_kwargs[0]["timeout"]) <= 60
 
 
 def test_urgent_health_question_never_reaches_model() -> None:
@@ -234,7 +235,7 @@ def test_chat_prompt_bounds_large_runtime_context() -> None:
         history=[{"role": "user", "content": "история " * 1_000}],
     )
 
-    assert len(prompt) < 2_500
+    assert len(prompt) < 6_000
     assert "…" in prompt
 
 

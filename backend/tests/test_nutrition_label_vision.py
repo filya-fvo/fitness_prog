@@ -110,6 +110,53 @@ def test_parser_reads_values_split_onto_the_next_ocr_line():
     assert parsed.basis_label == "На 100 г/мл"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Состав: сахар, какао 12%, соль 3 г.",
+        "Пищевая ценность 100 г: белки 4 г. Состав: сахар, какао 12%.",
+        "Пищевая ценность 100 г: белки 4 г.\nСостав:\nсахар 12 г, соль 3 г.",
+    ],
+)
+def test_parser_does_not_extract_nutrients_from_ingredients(text: str):
+    parsed = parse_ocr_text(text)
+
+    assert parsed.sugars_g is None
+    assert parsed.salt_g is None
+
+
+def test_parser_keeps_total_sugars_separate_from_sucrose():
+    parsed = parse_ocr_text(
+        "Пищевая ценность 100 г: углеводы 63 г, сахароза 53,5 г, сахара 60 г."
+    )
+
+    assert parsed.sugars_g == 60
+
+
+def test_parser_does_not_take_the_next_nutrient_value_on_the_same_line():
+    parsed = parse_ocr_text("Пищевая ценность 100 г: белки —, жиры 12 г, углеводы 21 г.")
+
+    assert parsed.proteins_g is None
+    assert parsed.fats_g == 12
+
+
+def test_parser_keeps_english_label_and_unknown_basis_compatibility():
+    parsed = parse_ocr_text("Nutrition facts per 100 g\nProtein 7.5 g\nTotal Fat 12 g\nSugars 3 g")
+
+    assert parsed.basis_label == "На 100 г/мл"
+    assert parsed.proteins_g == 7.5
+    assert parsed.fats_g == 12
+    assert parsed.sugars_g == 3
+
+
+def test_parser_preserves_serving_basis_before_the_nutrition_heading():
+    parsed = parse_ocr_text("Порция 40 г\nПищевая ценность\nБелки 4 г\nЖиры 2 г")
+
+    assert parsed.serving_grams == 40
+    assert parsed.proteins_g == 10
+    assert parsed.fats_g == 5
+
+
 @pytest.mark.asyncio
 async def test_recognition_sends_image_only_to_local_ocr(
     monkeypatch: pytest.MonkeyPatch,
@@ -147,3 +194,21 @@ async def test_external_ocr_host_is_rejected_before_sending_image(
         )
 
     assert FakeOcrClient.requests == []
+def test_split_nutrition_heading_and_energy_on_the_value_line() -> None:
+    result = parse_ocr_text(
+        "Состав: сахар, какао 12%.\nПищевая\n"
+        "ценнос на 100 г: белки 11 г, жиры 13,1 г. Энергетическая\n"
+        "ценность на 100 г: 407 ккал."
+    )
+    assert result.proteins_g == 11
+    assert result.fats_g == 13.1
+    assert result.calories_kcal == 407
+
+
+def test_numeric_continuation_before_an_energy_label_is_not_lost() -> None:
+    result = parse_ocr_text(
+        "Пищевая ценность 100 г: жир -\n"
+        "99,9 г, витамин Е 40 мг. Энергетическая\n"
+        "ценность: 899 ккал."
+    )
+    assert result.fats_g == 99.9

@@ -25,11 +25,11 @@ from app.services.workout_metrics import aggregate_workout_load, normalized_set_
         ("Проанализируй снижение веса", AIQueryDomain.WEIGHT),
         ("Как изменилась талия?", AIQueryDomain.MEASUREMENTS),
         ("Как было питание за неделю?", AIQueryDomain.NUTRITION),
-        ("Что есть после тренировки?", AIQueryDomain.NUTRITION),
+        ("Что есть после тренировки?", AIQueryDomain.GENERAL),
         ("Разбор недели: объём и восстановление", AIQueryDomain.RECOVERY),
-        ("Как тренироваться во время менструального цикла?", AIQueryDomain.RECOVERY),
+        ("Как тренироваться во время менструального цикла?", AIQueryDomain.GENERAL),
         ("Что делать, если болит плечо?", AIQueryDomain.SAFETY),
-        ("Как настроиться на тренировку?", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Как настроиться на тренировку?", AIQueryDomain.GENERAL),
         ("Привет, как дела?", AIQueryDomain.GENERAL),
     ],
 )
@@ -38,6 +38,93 @@ def test_ai_query_routes_to_expected_domain(
     expected: AIQueryDomain,
 ) -> None:
     assert classify_ai_query(message) == expected
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Как выполнять приседания более безопасно?",
+        "Как сделать больше повторений?",
+        "Что такое более сложная прогрессия нагрузки?",
+        "Как правильно делать жим лёжа?",
+        "Как мне заменить тягу гантели?",
+        "Какие упражнения подходят для груди и бицепса?",
+        "Сколько белка нужно после тренировки?",
+        "Как похудеть без жёсткой диеты?",
+        "Сколько воды пить в день?",
+        "Как улучшить сон и восстановление?",
+        "Что такое тренировочный объём?",
+        "Что такое прогресс в тренировках?",
+        "Как работает анализ питания?",
+        "Сравни приседания и становую тягу",
+        "Оцени технику жима лёжа",
+        "Какой средний вес гантелей подходит новичкам?",
+        "Какой средний объём тренировки рекомендуется?",
+        "Сколько я должен пить воды сегодня?",
+        "Как улучшить мой сон сегодня?",
+        "Чем отличаются средний вес и рабочий вес?",
+    ],
+)
+def test_general_coaching_does_not_require_diary_history(message: str) -> None:
+    assert classify_ai_query(message) == AIQueryDomain.GENERAL
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Сравни мой жим за последние две недели", AIQueryDomain.STRENGTH),
+        ("Почему мой вес не изменился за месяц?", AIQueryDomain.WEIGHT),
+        ("Сколько белка я съел вчера?", AIQueryDomain.NUTRITION),
+        ("Проверь записи сна за неделю", AIQueryDomain.RECOVERY),
+        ("Покажи динамику моих замеров", AIQueryDomain.MEASUREMENTS),
+        ("Оцени мои тренировки", AIQueryDomain.WORKOUT_PROGRESS),
+        ("Какой у меня средний вес?", AIQueryDomain.WEIGHT),
+        ("Какой средний вес у меня?", AIQueryDomain.WEIGHT),
+        ("Сколько я выпил воды сегодня?", AIQueryDomain.RECOVERY),
+        ("Сколько воды я выпила сегодня?", AIQueryDomain.RECOVERY),
+        ("Сколько я прошёл шагов сегодня?", AIQueryDomain.RECOVERY),
+        ("Какой мой средний сон?", AIQueryDomain.RECOVERY),
+        ("Какая суммарная калорийность моего питания?", AIQueryDomain.NUTRITION),
+        ("Чем отличается мой рацион на этой неделе от прошлой?", AIQueryDomain.NUTRITION),
+        ("Чем отличаются мои тренировки за неделю?", AIQueryDomain.WORKOUT_PROGRESS),
+    ],
+)
+def test_personal_history_keeps_the_requested_domain(
+    message: str, expected: AIQueryDomain,
+) -> None:
+    assert classify_ai_query(message) == expected
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Боль в колене после приседаний",
+        "Боли в пояснице",
+        "Можно тренироваться при болях в колене?",
+        "Может ли болеть спина после тяги?",
+        "Болят плечи после жима",
+        "Болело плечо, как тренироваться?",
+        "Что делать при травме?",
+    ],
+)
+def test_actual_pain_and_injury_keep_safety_priority(message: str) -> None:
+    assert classify_ai_query(message) == AIQueryDomain.SAFETY
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Питание", AIQueryDomain.NUTRITION),
+        ("Сон", AIQueryDomain.RECOVERY),
+        ("Жим лёжа", AIQueryDomain.STRENGTH),
+        ("Вес", AIQueryDomain.WEIGHT),
+        ("Замеры", AIQueryDomain.MEASUREMENTS),
+    ],
+)
+def test_explicit_analysis_keeps_domain_without_history_wording(
+    message: str, expected: AIQueryDomain,
+) -> None:
+    assert classify_ai_query(message, require_history=False) == expected
 
 
 @pytest.mark.parametrize(

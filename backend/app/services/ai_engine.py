@@ -34,7 +34,10 @@ _REASONING_LEAK_MARKERS = (
 )
 _FOREIGN_SCRIPT_RE = re.compile(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]")
 _LONG_LATIN_WORD_RE = re.compile(r"[a-z]{4,}", re.IGNORECASE)
-_ALLOWED_LATIN_WORDS = {"crossfit", "fitness", "hiit"}
+_ALLOWED_LATIN_WORDS = {
+    "crossfit", "fitness", "hiit", "deadlift", "squat", "bench", "press",
+    "pull", "push", "lunges", "plank", "glute", "bridge", "barbell", "dumbbell",
+}
 
 
 def sanitize_ai_output(reply: str | None) -> str | None:
@@ -71,14 +74,10 @@ _URGENT_HEALTH_MARKERS = (
     "сильный отёк",
     "сильный отек",
 )
-_PAIN_MARKERS = (
-    "боль",
-    "боле",
-    "болит",
-    "болят",
-    "забол",
-    "ноет",
-    "дискомфорт",
+_PAIN_RE = re.compile(
+    r"\b(?:боль(?!ш)\w*|бол(?:и\b|я(?:м|ми|х)\b|ит|ят|е(?:ть|л|ет|ют|зн))\w*|"
+    r"забол(?:ел|ит|е)\w*|ноет|дискомфорт\w*)",
+    re.IGNORECASE,
 )
 _REST_TIMING_MARKERS = (
     "сколько отдых",
@@ -108,12 +107,11 @@ def _requires_rule_only(message: str) -> bool:
     lowered = message.casefold()
     direct_markers = (
         *_URGENT_HEALTH_MARKERS,
-        *_PAIN_MARKERS,
         *_REST_TIMING_MARKERS,
         *_POST_WORKOUT_FOOD_MARKERS,
         *_CYCLE_TRAINING_MARKERS,
     )
-    return any(marker in lowered for marker in direct_markers)
+    return bool(_PAIN_RE.search(message)) or any(marker in lowered for marker in direct_markers)
 
 
 def _rule_based_reply(message: str, rag_block: str) -> str:
@@ -133,17 +131,7 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
             "При сильной или необычной боли, головокружении либо очень обильном кровотечении "
             "отложите тренировку и обратитесь к врачу."
         )
-    if "колен" in lower:
-        return (
-            "⚠️ Боль в коленях — не игнорьте.\n"
-            "Рекомендации:\n"
-            "• снизьте ударную нагрузку на 3–7 дней\n"
-            "• замените выпады/прыжки на leg press / glute bridge\n"
-            "• следите за коленом над стопой\n\n"
-            f"Из базы упражнений:\n{rag_block}\n\n"
-            "Если боль острая/отёчная — к врачу, я не ставлю диагнозы."
-        )
-    if any(marker in lower for marker in _PAIN_MARKERS):
+    if _PAIN_RE.search(message):
         return (
             "⚠️ Остановите упражнение или движение, которое вызывает боль, и не пытайтесь "
             "доработать подход через неё. Уберите болезненную нагрузку, оцените самочувствие "
@@ -202,9 +190,9 @@ async def _call_configured_ai(
         settings,
         instructions,
         user_prompt,
-        max_tokens=64,
-        timeout_seconds=35,
-        queue_timeout_seconds=1,
+        max_tokens=max(128, min(settings.llm_max_output_tokens, 384)),
+        timeout_seconds=60,
+        queue_timeout_seconds=5,
     )
     checked = _russian_only(sanitize_ai_output(reply))
     if checked and echo_source and _looks_like_context_echo(checked, echo_source):
@@ -263,24 +251,24 @@ def _build_chat_prompt(
     history: list[dict[str, str]],
 ) -> str:
     history_lines = []
-    for item in history:
+    for item in history[-6:]:
         content = item["content"].strip()
         if item["role"] == "assistant" and _looks_like_context_echo(content, app_context):
             continue
-        history_lines.append(f"{item['role']}: {content[:200]}")
+        history_lines.append(f"{item['role']}: {content[:400]}")
     history_block = "\n".join(history_lines) or "История этого диалога пуста."
     return (
         "ЗАДАЧА: ответь на последний вопрос пользователя.\n\n"
         "<application_context>\n"
-        f"{_bounded_context(app_context, max_chars=700)}\n"
+        f"{_bounded_context(app_context, max_chars=1500)}\n"
         "</application_context>\n\n"
         "<catalog_context>\n"
-        f"{_bounded_context(catalog_context, max_chars=250)}\n"
+        f"{_bounded_context(catalog_context, max_chars=900)}\n"
         "</catalog_context>\n\n"
         "<conversation_history>\n"
-        f"{_bounded_context(history_block, max_chars=250)}\n"
+        f"{_bounded_context(history_block, max_chars=1200)}\n"
         "</conversation_history>\n\n"
-        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=600)}\n"
+        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1800)}\n"
         "Начни сразу с полезного ответа на этот вопрос. Не пересказывай контекст."
     )
 
@@ -357,7 +345,7 @@ async def chat(
         session,
         user_id=user.id,
         session_id=sid,
-        limit=2,
+        limit=6,
     )
     system = SYSTEM_TRAINER
     if rag_items:
@@ -440,7 +428,7 @@ async def analyze_progress(
     message: str | None = None,
 ) -> tuple[str, str]:
     question = (message or "Проанализируй мой тренировочный прогресс").strip()
-    domain = classify_ai_query(question)
+    domain = classify_ai_query(question, require_history=False)
     if domain in {AIQueryDomain.GENERAL, AIQueryDomain.SAFETY}:
         domain = AIQueryDomain.WORKOUT_PROGRESS
     requested_days = extract_period_days(question, default=days) if message else days
@@ -461,12 +449,13 @@ async def analyze_progress(
             AIQueryDomain.STRENGTH,
         },
     )
-    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=700)}"
+    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=1500)}"
     prompt = (
         "Ответь именно на исходный вопрос по проверяемым данным. "
         "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
         "конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: "
-        f"{_bounded_context(question, max_chars=600)}\n\n{evidence.text}"
+        f"{_bounded_context(question, max_chars=1800)}\n\n"
+        f"{_bounded_context(evidence.text, max_chars=2400)}"
     )
     llm_reply, llm_source = await _call_configured_ai(
         settings,

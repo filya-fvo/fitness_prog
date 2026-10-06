@@ -100,7 +100,8 @@ services:
       ADMIN_SYSTEM_STATUS_DIR: /app/host-status
       LLM_PROVIDER: local
       LLM_BASE_URL: http://llm:8080/v1
-      LLM_MODEL: qwen2.5-3b-instruct
+      LLM_MODEL: qwen3-1.7b
+      LLM_MAX_OUTPUT_TOKENS: "256"
       OCR_BASE_URL: http://ocr:8090
       TELEGRAM_UPDATE_MODE: polling
     volumes:
@@ -125,9 +126,9 @@ services:
     restart: unless-stopped
     command:
       - --model
-      - /models/qwen2.5-3b-instruct-q4_k_m.gguf
+      - /models/qwen3-1.7b-q4_k_m.gguf
       - --alias
-      - qwen2.5-3b-instruct
+      - qwen3-1.7b
       - --host
       - 0.0.0.0
       - --port
@@ -138,7 +139,24 @@ services:
       - "1"
       - --threads
       - "2"
-      - --no-warmup
+      - --threads-batch
+      - "2"
+      - --batch-size
+      - "256"
+      - --ubatch-size
+      - "64"
+      - --n-gpu-layers
+      - "0"
+      - --jinja
+      - --reasoning
+      - "off"
+      - --chat-template-kwargs
+      - '{"enable_thinking":false}'
+      - --no-mmproj
+      - --cache-ram
+      - "0"
+      - --ctx-checkpoints
+      - "0"
     volumes:
       - ${LOCAL_AI_MODELS_DIR:-./models}:/models:ro
     expose:
@@ -159,8 +177,15 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: ocr
     restart: unless-stopped
     command: ["uvicorn", "app.ocr_main:app", "--host", "0.0.0.0", "--port", "8090"]
+    environment:
+      OMP_THREAD_LIMIT: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OCR_ENGINE: ppocr
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/health"]
       interval: 30s
@@ -169,7 +194,7 @@ services:
       start_period: 20s
     expose:
       - "8090"
-    mem_limit: 384m
+    mem_limit: 512m
     cpus: 1.0
     pids_limit: 96
     read_only: true

@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "created_on": "2026-10-06",
+  "source": "Six original household label photos supplied by the project owner",
+  "annotation_method": "Visual transcription independently reviewed by two agents; not OCR output",
+  "scope": "Russian labels only; no English-only, serving-based or two-column examples",
+  "samples": [
+    {
+      "id": "photo_01",
+      "image": "photo_01.jpg",
+      "source_filename": "photo_1_2026-10-06_13-43-50.jpg",
+      "description_ru": "Растительное масло",
+      "manual_nutrition_excerpt": "Пищевая ценность 100 г продукта (средние значения): жир — 99,9 г, витамин Е — 40 мг, омега-9 — 22 г. Энергетическая ценность 100 г продукта (калорийность): 3764 кДж/899 ккал.",
+      "expected": {
+        "calories_kcal": 899,
+        "proteins_g": null,
+        "fats_g": 99.9,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "challenge_fields": [],
+      "notes_ru": "Белки и углеводы не напечатаны: не заменять нулями. Омега-9 — часть жиров, витамин Е указан в мг.",
+      "sha256": "23b9853d043008cdef4a8fda658656d428adf3af441f3b50d2e2de1dd755465e",
+      "width": 1280,
+      "height": 576
+    },
+    {
+      "id": "photo_02",
+      "image": "photo_02.jpg",
+      "source_filename": "photo_2_2026-10-06_13-43-50.jpg",
+      "description_ru": "Молочный продукт; название вне кадра",
+      "manual_nutrition_excerpt": "Пищевая ценность в 100 г продукта (средние значения): белки — 2,5 г,\nжиры — 1,0 г, углеводы — 63,0 г (в том числе сахарозы — 53,5 г).\nЭнергетическая ценность (калорийность): 1150 кДж (270 ккал).",
+      "expected": {
+        "calories_kcal": 270,
+        "proteins_g": 2.5,
+        "fats_g": 1.0,
+        "carbs_g": 63.0,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "printed_subcomponents": {
+        "sucrose_g_per_100g": 53.5
+      },
+      "challenge_fields": [],
+      "notes_ru": "Сахароза 53,5 г не обозначает все сахара: это отдельный подкомпонент. Низкий контраст и складка упаковки.",
+      "sha256": "0a690ed30951efced63a5c310671d9c514f34f2d8593ae7e2955db4a59014c77",
+      "width": 1280,
+      "height": 576
+    },
+    {
+      "id": "photo_03",
+      "image": "photo_03.jpg",
+      "source_filename": "photo_3_2026-10-06_13-43-50.jpg",
+      "description_ru": "Филе цыплёнка-бройлера",
+      "manual_nutrition_excerpt": "Пищевая ценность (средние значения) в 100 г продукта: белки — 22,5 г, жиры — 2,8 г.\nЭнергетическая ценность 100 г продукта (калорийность) — 487,8 кДж (116,5 ккал).",
+      "expected": {
+        "calories_kcal": 116.5,
+        "proteins_g": 22.5,
+        "fats_g": 2.8,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "challenge_fields": [],
+      "notes_ru": "Углеводы не напечатаны. Масса нетто 832 г и даты не являются пищевой ценностью. Использовать явно напечатанные ккал, не вычисленное значение из кДж.",
+      "sha256": "93c0956a37ae451f4ec53f26ec355862897c14551b16b480db6f8b2af6f0ef0d",
+      "width": 1280,
+      "height": 576
+    },
+    {
+      "id": "photo_04",
+      "image": "photo_04.jpg",
+      "source_filename": "photo_4_2026-10-06_13-43-50.jpg",
+      "description_ru": "Фруктовый десерт с чиа и куркумой",
+      "manual_nutrition_excerpt": "Пищевая ценность 100 г продукта (средние значения): белки — 0,5 г,\nуглеводы — 13 г. Энергетическая ценность (калорийность) — 230 кДж / 55 ккал.",
+      "expected": {
+        "calories_kcal": 55,
+        "proteins_g": 0.5,
+        "fats_g": null,
+        "carbs_g": 13.0,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "challenge_fields": [
+        "carbs_g"
+      ],
+      "notes_ru": "Блик и кривизна искажают начало слова «углеводы». Число 13 читается; привязка к полю средней уверенности и исключена из строгой оценки. В ручном фрагменте слово восстановлено по визуальному чтению, поэтому этот режим не измеряет OCR. Жиры не напечатаны. «Без добавления сахара» не означает нулевое содержание сахаров.",
+      "sha256": "8985915d5886a47dfddd53ed7402931014890c00da48d141fc4cdc7026107662",
+      "width": 1280,
+      "height": 576
+    },
+    {
+      "id": "photo_05",
+      "image": "photo_05.jpg",
+      "source_filename": "photo_5_2026-10-06_13-43-50.jpg",
+      "description_ru": "Samyang Quattro Cheese Hot Chicken Flavor Ramen",
+      "manual_nutrition_excerpt": "Пищевая ценность на 100 г: белки 11 г, жиры 13,1 г, углеводы 60,7 г, из них сахар 7,6 г, соль 3,4 г. Энергетическая\nценность на 100 г: 407 ккал (1702кДж).",
+      "expected": {
+        "calories_kcal": 407,
+        "proteins_g": 11.0,
+        "fats_g": 13.1,
+        "carbs_g": 60.7,
+        "fiber_g": null,
+        "sugars_g": 7.6,
+        "salt_g": 3.4,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "challenge_fields": [],
+      "notes_ru": "На фото пищевая ценность по-русски; английское название не превращает образец в полноценный EN-тест. Масса упаковки 145 г и вода для приготовления не являются порцией для пересчёта.",
+      "sha256": "4422d4698182f229790ccc6904c1a5b288f1118041b3cc2c170f18be4d006705",
+      "width": 1280,
+      "height": 576
+    },
+    {
+      "id": "photo_06",
+      "image": "photo_06.jpg",
+      "source_filename": "photo_6_2026-10-06_13-43-50.jpg",
+      "description_ru": "Dream Pie Melon",
+      "manual_nutrition_excerpt": "Пищевая ценность на 100г: Энергетическая ценность: 449 ккал/1879 кДж, белки 4,7 г, жиры 24,0 г, углеводы 53,6 г.",
+      "expected": {
+        "calories_kcal": 449,
+        "proteins_g": 4.7,
+        "fats_g": 24.0,
+        "carbs_g": 53.6,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null
+      },
+      "challenge_fields": [],
+      "notes_ru": "Многоязычный текст и мелкий шрифт. Количество сахаров не напечатано отдельно; наличие сахара в составе не даёт числового значения.",
+      "sha256": "8cf922eb648cfb8afc68c719e6ccba5a40182d97aa87092ee5d8640102978197",
+      "width": 1280,
+      "height": 576
+    }
+  ]
+}

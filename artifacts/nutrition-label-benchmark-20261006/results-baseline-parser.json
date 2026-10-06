@@ -1,0 +1,258 @@
+{
+  "base_commit": "8fee1faca55b64d69a80a655ab3bf0095b395dac",
+  "note": "Original photos through production Tesseract with OMP_THREAD_LIMIT=1; baseline parser",
+  "summary": {
+    "matched": 31,
+    "total": 53,
+    "numeric_matched": 6,
+    "numeric_total": 21
+  },
+  "results": [
+    {
+      "id": "photo_01",
+      "actual": {
+        "recognized": true,
+        "name_ru": null,
+        "basis_label": "Основа не распознана",
+        "serving_grams": null,
+        "calories_kcal": 99.0,
+        "proteins_g": null,
+        "fats_g": 99.9,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "confidence": 0.45,
+        "warnings": [
+          "Проверьте, указаны ли значения на 100 г или на порцию"
+        ],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "calories_kcal",
+          "expected": 899,
+          "actual": 99.0
+        },
+        {
+          "field": "basis_label",
+          "expected": "На 100 г/мл",
+          "actual": "Основа не распознана"
+        }
+      ]
+    },
+    {
+      "id": "photo_02",
+      "actual": {
+        "recognized": false,
+        "name_ru": null,
+        "basis_label": null,
+        "serving_grams": null,
+        "calories_kcal": null,
+        "proteins_g": null,
+        "fats_g": null,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "confidence": 0.0,
+        "warnings": [
+          "Пищевая ценность не распознана; попробуйте снять этикетку крупнее"
+        ],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "calories_kcal",
+          "expected": 270,
+          "actual": null
+        },
+        {
+          "field": "proteins_g",
+          "expected": 2.5,
+          "actual": null
+        },
+        {
+          "field": "fats_g",
+          "expected": 1.0,
+          "actual": null
+        },
+        {
+          "field": "carbs_g",
+          "expected": 63.0,
+          "actual": null
+        },
+        {
+          "field": "basis_label",
+          "expected": "На 100 г/мл",
+          "actual": null
+        }
+      ]
+    },
+    {
+      "id": "photo_03",
+      "actual": {
+        "recognized": false,
+        "name_ru": null,
+        "basis_label": null,
+        "serving_grams": null,
+        "calories_kcal": null,
+        "proteins_g": null,
+        "fats_g": null,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "confidence": 0.0,
+        "warnings": [
+          "Пищевая ценность не распознана; попробуйте снять этикетку крупнее"
+        ],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "calories_kcal",
+          "expected": 116.5,
+          "actual": null
+        },
+        {
+          "field": "proteins_g",
+          "expected": 22.5,
+          "actual": null
+        },
+        {
+          "field": "fats_g",
+          "expected": 2.8,
+          "actual": null
+        },
+        {
+          "field": "basis_label",
+          "expected": "На 100 г/мл",
+          "actual": null
+        }
+      ]
+    },
+    {
+      "id": "photo_04",
+      "actual": {
+        "recognized": false,
+        "name_ru": null,
+        "basis_label": null,
+        "serving_grams": null,
+        "calories_kcal": null,
+        "proteins_g": null,
+        "fats_g": null,
+        "carbs_g": null,
+        "fiber_g": null,
+        "sugars_g": null,
+        "salt_g": null,
+        "confidence": 0.0,
+        "warnings": [
+          "Пищевая ценность не распознана; попробуйте снять этикетку крупнее"
+        ],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "calories_kcal",
+          "expected": 55,
+          "actual": null
+        },
+        {
+          "field": "proteins_g",
+          "expected": 0.5,
+          "actual": null
+        },
+        {
+          "field": "basis_label",
+          "expected": "На 100 г/мл",
+          "actual": null
+        }
+      ]
+    },
+    {
+      "id": "photo_05",
+      "actual": {
+        "recognized": true,
+        "name_ru": null,
+        "basis_label": "Основа не распознана",
+        "serving_grams": null,
+        "calories_kcal": null,
+        "proteins_g": null,
+        "fats_g": 13.1,
+        "carbs_g": 60.7,
+        "fiber_g": null,
+        "sugars_g": 7.6,
+        "salt_g": 22.0,
+        "confidence": 0.45,
+        "warnings": [
+          "Проверьте, указаны ли значения на 100 г или на порцию"
+        ],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "calories_kcal",
+          "expected": 407,
+          "actual": null
+        },
+        {
+          "field": "proteins_g",
+          "expected": 11.0,
+          "actual": null
+        },
+        {
+          "field": "salt_g",
+          "expected": 3.4,
+          "actual": 22.0
+        },
+        {
+          "field": "basis_label",
+          "expected": "На 100 г/мл",
+          "actual": "Основа не распознана"
+        }
+      ]
+    },
+    {
+      "id": "photo_06",
+      "actual": {
+        "recognized": true,
+        "name_ru": null,
+        "basis_label": "На 100 г/мл",
+        "serving_grams": null,
+        "calories_kcal": 449.0,
+        "proteins_g": 2.0,
+        "fats_g": 3.0,
+        "carbs_g": 53.6,
+        "fiber_g": null,
+        "sugars_g": 3.0,
+        "salt_g": 3.0,
+        "confidence": 0.45,
+        "warnings": [],
+        "remaining_requests": null
+      },
+      "differences": [
+        {
+          "field": "proteins_g",
+          "expected": 4.7,
+          "actual": 2.0
+        },
+        {
+          "field": "fats_g",
+          "expected": 24.0,
+          "actual": 3.0
+        },
+        {
+          "field": "sugars_g",
+          "expected": null,
+          "actual": 3.0
+        },
+        {
+          "field": "salt_g",
+          "expected": null,
+          "actual": 3.0
+        }
+      ]
+    }
+  ]
+}
