@@ -359,7 +359,7 @@ export function DailyLog() {
     }
   }
 
-  async function submit() {
+  async function submit(closeAfterSave = false) {
     if (!selected || saving) return;
     const g = parseDecimalInput(grams);
     if (g == null || g <= 0 || g > 100_000) {
@@ -413,9 +413,10 @@ export function DailyLog() {
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
       setOkNote(needsCatalogReview
         ? `${selected.name_ru} добавлен в «${mealLabel}». БЖУ сохранены для вас и будущих добавлений; общий продукт отправлен на проверку.`
-        : `${selected.name_ru} добавлен в «${mealLabel}». Можно сразу выбрать следующий продукт.`);
+        : `${selected.name_ru} добавлен в «${mealLabel}».${closeAfterSave ? "" : " Можно сразу выбрать следующий продукт."}`);
       toast(`Добавлено · ${selected.name_ru} · ${g} г · ${mealLabel}`);
-      window.requestAnimationFrame(() => productSearchRef.current?.focus());
+      if (closeAfterSave) setAddPanelOpen(false);
+      else window.requestAnimationFrame(() => productSearchRef.current?.focus());
     } catch (err) {
       setAddError(toUserMessage(err, "Не удалось добавить продукт"));
     } finally {
@@ -767,15 +768,16 @@ export function DailyLog() {
         onNext={() => setDay((current) => shiftISODate(current, 1))}
       />
 
-      {!addPanelOpen ? (
-        <AppButton
-          onClick={() => setAddPanelOpen(true)}
-          aria-expanded={false}
-          className="nutrition-add-button"
-        >
-          + Добавить продукт
-        </AppButton>
-      ) : null}
+      <AppButton
+        onClick={(event) => {
+          event.currentTarget.focus();
+          setAddPanelOpen(true);
+        }}
+        aria-expanded={addPanelOpen}
+        className="nutrition-add-button"
+      >
+        + Добавить продукт
+      </AppButton>
 
       {addPanelOpen ? <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-3 sm:items-center">
         <div
@@ -1192,7 +1194,7 @@ export function DailyLog() {
             ≈ {preview.calories} ккал · Б {preview.proteins} · Ж {preview.fats} · У {preview.carbs}
           </p>
         ) : null}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <button
             type="button"
             disabled={saving}
@@ -1201,6 +1203,14 @@ export function DailyLog() {
           >
             {saving ? "Сохраняем…" : "Добавить и продолжить"}
           </button>
+          <AppButton
+            tone="secondary"
+            disabled={saving}
+            onClick={() => void submit(true)}
+            className="w-full"
+          >
+            {saving ? "Сохраняем…" : "Добавить и закрыть"}
+          </AppButton>
         </div>
         </> : null}
         <button
