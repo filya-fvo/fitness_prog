@@ -440,9 +440,47 @@ def test_working_weight_history_is_not_stolen_by_basic_selection_rule(message):
     assert ai_engine._requires_rule_only(message) is False
 
 
-def test_working_weight_rule_never_overrides_pain_priority():
-    message = "Как выбрать рабочий вес, если болит плечо?"
+@pytest.mark.parametrize("message", [
+    "Как выбрать рабочий вес, если болит плечо?",
+    "How do I choose a working weight if my shoulder hurts?",
+    "How should I select working weight when I feel shoulder pain?",
+    "How can I pick a working weight if my knees ache?",
+    "My elbow is aching after training; how should I choose the weight?",
+    "How do I choose a working weight with no pain in my knees but my shoulder hurts?",
+])
+def test_working_weight_rule_never_overrides_pain_priority(message):
     assert ai_engine._requires_rule_only(message)
     reply = ai_engine._rule_based_reply(message, "")
     assert "Остановите" in reply and "через неё" in reply
     assert "Какое упражнение и число повторов?" not in reply
+
+
+@pytest.mark.parametrize("message", [
+    "How do I choose a working weight for pain-free training?",
+    "How do I choose a working weight when I have no pain?",
+    "How do I choose a working weight without any pain?",
+])
+def test_english_absence_of_pain_keeps_basic_weight_guidance(message):
+    reply = ai_engine._rule_based_reply(message, "")
+    assert "запланированное число повторов" in reply
+    assert "Остановите" not in reply
+
+
+async def test_english_pain_in_chat_stops_the_exercise_without_model_advice(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    model = AsyncMock(return_value="Подберите вес и продолжайте упражнение.")
+    monkeypatch.setattr(ai_engine, "call_local_chat", model)
+    monkeypatch.setattr(ai_engine, "retrieve_exercise_context", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ai_engine, "build_application_context", AsyncMock(return_value="Профиль: ограничения=нет."))
+    monkeypatch.setattr(ai_engine, "conversation_history", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ai_engine, "store_exchange", AsyncMock())
+    _, reply, source = await ai_engine.chat(
+        object(), SimpleNamespace(id=uuid.uuid4()),
+        message="How do I choose a working weight if my shoulder hurts?",
+        session_id=None, settings=four_b_settings(), include_historical_context=False,
+    )
+    assert source == "rule"
+    assert "Остановите" in reply and "через неё" in reply
+    assert "Какое упражнение и число повторов?" not in reply
+    model.assert_not_awaited()

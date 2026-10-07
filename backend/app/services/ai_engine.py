@@ -83,6 +83,10 @@ _PAIN_RE = re.compile(
     r"забол(?:ел|ит|е)\w*|ноет|дискомфорт\w*)",
     re.IGNORECASE,
 )
+_EN_PAIN_RE = re.compile(r"\b(?:pain|hurts?|aching|aches?)\b", re.IGNORECASE)
+_EN_ABSENT_PAIN_RE = re.compile(
+    r"\bpain[-\s]+free\b|\b(?:no|without)\s+(?:any\s+)?pain\b", re.IGNORECASE,
+)
 _REST_TIMING_MARKERS = (
     "сколько отдых",
     "отдыхать между",
@@ -116,6 +120,11 @@ def _has_urgent_health_marker(message: str) -> bool:
     return any(marker in lowered for marker in _URGENT_HEALTH_MARKERS)
 
 
+def _has_pain_marker(message: str) -> bool:
+    english_symptoms = _EN_ABSENT_PAIN_RE.sub("", message)
+    return bool(_PAIN_RE.search(message) or _EN_PAIN_RE.search(english_symptoms))
+
+
 def _requires_rule_only(message: str) -> bool:
     lowered = message.casefold()
     direct_markers = (
@@ -125,7 +134,7 @@ def _requires_rule_only(message: str) -> bool:
         *_CYCLE_TRAINING_MARKERS,
     )
     return (
-        bool(_PAIN_RE.search(message)) or bool(_RULE_WORKING_WEIGHT.search(message))
+        _has_pain_marker(message) or bool(_RULE_WORKING_WEIGHT.search(message))
         or any(marker in lowered for marker in direct_markers)
     )
 
@@ -147,7 +156,7 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
             "При сильной или необычной боли, головокружении либо очень обильном кровотечении "
             "отложите тренировку и обратитесь к врачу."
         )
-    if _PAIN_RE.search(message):
+    if _has_pain_marker(message):
         return (
             "⚠️ Остановите упражнение или движение, которое вызывает боль, и не пытайтесь "
             "доработать подход через неё. Уберите болезненную нагрузку, оцените самочувствие "
