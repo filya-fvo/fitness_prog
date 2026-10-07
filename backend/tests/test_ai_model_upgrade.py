@@ -60,7 +60,13 @@ def test_conversation_keeps_more_than_a_single_short_exchange() -> None:
     assert all(item["content"].strip() in prompt for item in history)
 
 
-async def test_trainer_receives_a_useful_configured_output_budget(monkeypatch) -> None:
+@pytest.mark.parametrize("model, expected_tokens", [
+    ("qwen3-1.7b", 256),
+    ("qwen3-4b-instruct-2507", 192),
+])
+async def test_trainer_receives_a_useful_configured_output_budget(
+    monkeypatch, model: str, expected_tokens: int,
+) -> None:
     observed = {}
 
     async def fake_call(*_args, **kwargs):
@@ -68,8 +74,9 @@ async def test_trainer_receives_a_useful_configured_output_budget(monkeypatch) -
         return "Полезный завершённый ответ на русском языке."
 
     monkeypatch.setattr(ai_engine, "call_local_chat", fake_call)
-    await ai_engine._call_configured_ai(Settings(llm_max_output_tokens=256), "system", "question")
-    assert observed["max_tokens"] == 256
+    settings = Settings(_env_file=None, llm_model=model, llm_max_output_tokens=256)
+    await ai_engine._call_configured_ai(settings, "system", "question")
+    assert observed["max_tokens"] == expected_tokens
     assert observed["queue_timeout_seconds"] >= 5
 
 
