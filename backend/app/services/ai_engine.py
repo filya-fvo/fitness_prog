@@ -100,6 +100,15 @@ _CYCLE_TRAINING_MARKERS = (
     "женский цикл",
     "фаза цикла",
 )
+_RULE_WORKING_WEIGHT = re.compile(
+    r"^\s*(?!.*\b(?:анализ\w*|проанализ\w*|прогресс\w*|измен\w*|месяц\w*|недел\w*|"
+    r"предыдущ\w*|последн\w*|прошл\w*|истори\w*|дневник\w*|"
+    r"month\w*|week\w*|progress\w*|chang\w*|previous|last|history)\b)"
+    r"(?:как\s+(?:выбрать|подобрать)\s+(?:рабочий\s+вес\b|вес\s+для\b)|"
+    r"how\s+(?:do|should|can)\s+i\s+(?:choose|select|pick)\s+(?:(?:a|the)\s+)?"
+    r"working\s+weight\b)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _has_urgent_health_marker(message: str) -> bool:
@@ -115,7 +124,10 @@ def _requires_rule_only(message: str) -> bool:
         *_POST_WORKOUT_FOOD_MARKERS,
         *_CYCLE_TRAINING_MARKERS,
     )
-    return bool(_PAIN_RE.search(message)) or any(marker in lowered for marker in direct_markers)
+    return (
+        bool(_PAIN_RE.search(message)) or bool(_RULE_WORKING_WEIGHT.search(message))
+        or any(marker in lowered for marker in direct_markers)
+    )
 
 
 def _rule_based_reply(message: str, rag_block: str) -> str:
@@ -161,6 +173,13 @@ def _rule_based_reply(message: str, rag_block: str) -> str:
             "например, птица, рыба, яйца или творог плюс крупа, картофель или фрукты. "
             "Специальное короткое «окно» не требуется. Точную порцию выбирайте по дневной "
             "калорийной цели и уже записанному рациону; также восполните жидкость."
+        )
+    if _RULE_WORKING_WEIGHT.search(message):
+        return (
+            "Подбирайте вес под запланированное число повторов: сохраняйте устойчивую "
+            "технику и оставляйте 2–3 повтора в запасе. Если теряется контроль движения "
+            "или не получается выполнить запланированные повторы, уменьшите вес. "
+            "Какое упражнение и число повторов?"
         )
     if "замен" in lower or "вместо" in lower:
         return (

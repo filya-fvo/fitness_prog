@@ -398,3 +398,51 @@ async def test_four_b_nonworkout_analysis_bounds_profile_question_and_evidence(m
     assert "Проанализируй мой вес за месяц." in prompt
     assert "Замеры веса за период:" in prompt
     assert request["max_tokens"] == 192
+
+
+@pytest.mark.parametrize("message", [
+    "Как выбрать рабочий вес для упражнения?",
+    "Как подобрать вес для жима гантелей?",
+    "How do I choose a working weight?",
+])
+async def test_working_weight_choice_is_explicit_rule_without_model_call(monkeypatch, message):
+    from unittest.mock import AsyncMock
+
+    model = AsyncMock(return_value="Модель не должна выбирать нагрузку в этом сценарии.")
+    monkeypatch.setattr(ai_engine, "call_local_chat", model)
+    monkeypatch.setattr(ai_engine, "retrieve_exercise_context", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ai_engine, "build_application_context", AsyncMock(return_value="Профиль: ограничения=нет."))
+    monkeypatch.setattr(ai_engine, "conversation_history", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ai_engine, "store_exchange", AsyncMock())
+    _, reply, source = await ai_engine.chat(
+        object(), SimpleNamespace(id=uuid.uuid4()), message=message, session_id=None,
+        settings=four_b_settings(), include_historical_context=False,
+    )
+    assert source == "rule"
+    assert "запланированное число повторов" in reply
+    assert "2–3 повтора в запасе" in reply
+    assert "уменьшите вес" in reply
+    assert "Какое упражнение и число повторов?" in reply
+    assert reply.count("?") == 1
+    assert "%" not in reply and "кг" not in reply.casefold() and "шраг" not in reply.casefold()
+    model.assert_not_awaited()
+
+
+@pytest.mark.parametrize("message", [
+    "Проанализируй изменение рабочего веса за месяц",
+    "Как изменился рабочий вес за месяц?",
+    "Как выбрать рабочий вес по сравнению с предыдущей тренировкой?",
+    "Как подобрать вес для упражнения по истории за месяц?",
+    "How did my working weight change last month?",
+    "How do I choose a working weight based on my previous workout?",
+])
+def test_working_weight_history_is_not_stolen_by_basic_selection_rule(message):
+    assert ai_engine._requires_rule_only(message) is False
+
+
+def test_working_weight_rule_never_overrides_pain_priority():
+    message = "Как выбрать рабочий вес, если болит плечо?"
+    assert ai_engine._requires_rule_only(message)
+    reply = ai_engine._rule_based_reply(message, "")
+    assert "Остановите" in reply and "через неё" in reply
+    assert "Какое упражнение и число повторов?" not in reply
