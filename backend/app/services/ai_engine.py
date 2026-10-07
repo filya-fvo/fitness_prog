@@ -14,9 +14,10 @@ from app.ai.analytics import (
     missing_data_question,
 )
 from app.ai.context import build_application_context, conversation_history
-from app.ai.prompts import SYSTEM_TRAINER
+from app.ai.prompts import SYSTEM_TRAINER, SYSTEM_TRAINER_COMPACT
 from app.ai.rag import format_rag_block, retrieve_exercise_context
-from app.ai.workout_reports import build_workout_report
+from app.ai.workout_reports import build_workout_evidence
+from app.ai.workout_interpretation import interpret_workout_evidence
 from app.core.config import Settings
 from app.models.ai_conversation import AIConversation
 from app.models.user import User
@@ -189,12 +190,13 @@ async def _call_configured_ai(
     *,
     echo_source: str | None = None,
 ) -> tuple[str | None, str]:
+    compact = _is_compact_model(settings)
     reply = await call_local_chat(
         settings,
         instructions,
         user_prompt,
-        max_tokens=max(128, min(settings.llm_max_output_tokens, 384)),
-        timeout_seconds=60,
+        max_tokens=192 if compact else max(128, min(settings.llm_max_output_tokens, 384)),
+        timeout_seconds=75 if compact else 60,
         queue_timeout_seconds=5,
     )
     checked = _russian_only(sanitize_ai_output(reply))
@@ -246,12 +248,42 @@ def _bounded_context(text: str, *, max_chars: int) -> str:
     return f"{text[:head_size]}\n…\n{text[-tail_size:]}"
 
 
+def _is_compact_model(settings: Settings) -> bool:
+    return settings.llm_model.strip().casefold().startswith("qwen3-4b")
+
+
+def _compact_application_context(text: str, *, max_chars: int) -> str:
+    """Keep a complete profile or its restrictions ahead of program/history text."""
+    lines = text.splitlines()
+    profile = next((line for line in lines if line.startswith("Профиль:")), None)
+    if profile is None:
+        return _bounded_context(text, max_chars=max_chars - 3)
+    if len(profile) > max_chars:
+        head, separator, restrictions = profile.partition(", ограничения=")
+        if separator:
+            restrictions = "ограничения=" + restrictions
+            remaining = max_chars - len(restrictions) - 1
+            if remaining >= 30:
+                return _bounded_context(head, max_chars=remaining - 3) + "\n" + restrictions
+        notice = "Ограничения не помещаются в контекст: уточни их перед подбором нагрузки."
+        remaining = max_chars - len(notice) - 1
+        return notice + "\n" + _bounded_context(
+            profile.split(", ограничения=")[0], max_chars=remaining - 3,
+        )
+    remainder = "\n".join(line for line in lines if line != profile)
+    remaining = max_chars - len(profile) - 1
+    if remaining < 4 or not remainder:
+        return profile
+    return profile + "\n" + _bounded_context(remainder, max_chars=remaining - 3)
+
+
 def _build_chat_prompt(
     *,
     message: str,
     app_context: str,
     catalog_context: str,
     history: list[dict[str, str]],
+    compact: bool = False,
 ) -> str:
     history_lines = []
     for item in history[-6:]:
@@ -260,18 +292,22 @@ def _build_chat_prompt(
             continue
         history_lines.append(f"{item['role']}: {content[:400]}")
     history_block = "\n".join(history_lines) or "История этого диалога пуста."
+    context_block = (
+        _compact_application_context(app_context, max_chars=600)
+        if compact else _bounded_context(app_context, max_chars=1500)
+    )
     return (
         "ЗАДАЧА: ответь на последний вопрос пользователя.\n\n"
         "<application_context>\n"
-        f"{_bounded_context(app_context, max_chars=1500)}\n"
+        f"{context_block}\n"
         "</application_context>\n\n"
         "<catalog_context>\n"
-        f"{_bounded_context(catalog_context, max_chars=900)}\n"
+        f"{_bounded_context(catalog_context, max_chars=347 if compact else 900)}\n"
         "</catalog_context>\n\n"
         "<conversation_history>\n"
-        f"{_bounded_context(history_block, max_chars=1200)}\n"
+        f"{_bounded_context(history_block, max_chars=247 if compact else 1200)}\n"
         "</conversation_history>\n\n"
-        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=1800)}"
+        f"ПОСЛЕДНИЙ ВОПРОС: {_bounded_context(message, max_chars=697 if compact else 1800)}"
     )
 
 
@@ -311,12 +347,14 @@ async def chat(
         )
         return sid, reply, "rule"
     if domain == AIQueryDomain.WORKOUT_PROGRESS and not rule_only:
-        reply = await build_workout_report(session, user, message=message, days=days)
+        reply, source = await _workout_analysis_reply(
+            session, user, settings=settings, question=message, days=days,
+        )
         await store_exchange(
             session, user_id=user.id, session_id=sid,
             user_content=message, assistant_content=reply,
         )
-        return sid, reply, "data"
+        return sid, reply, source
     rag_items = await retrieve_exercise_context(session, message, limit=2)
     rag_block = format_rag_block(rag_items)
     app_context = await build_application_context(
@@ -356,7 +394,8 @@ async def chat(
         session_id=sid,
         limit=6,
     )
-    system = SYSTEM_TRAINER
+    compact = _is_compact_model(settings)
+    system = SYSTEM_TRAINER_COMPACT if compact else SYSTEM_TRAINER
     if rag_items:
         catalog_context = f"Совпадения в каталоге упражнений:\n{rag_block}"
     else:
@@ -369,6 +408,7 @@ async def chat(
         app_context=app_context,
         catalog_context=catalog_context,
         history=history,
+        compact=compact,
     )
     # Medical red flags are handled by deterministic rules. A small language
     # model must never be allowed to improvise whether exercise is safe.
@@ -428,6 +468,26 @@ async def store_exchange(
     await session.commit()
 
 
+async def _workout_analysis_reply(
+    session: AsyncSession, user: User, *, settings: Settings, question: str, days: int,
+) -> tuple[str, str]:
+    evidence = await build_workout_evidence(session, user, message=question, days=days)
+    if not evidence.has_data:
+        return evidence.report, "data"
+    interpretation = await interpret_workout_evidence(
+        settings, question=question, evidence=evidence,
+    )
+    checked = _russian_only(sanitize_ai_output(interpretation))
+    if checked:
+        brief_facts = "\n".join(evidence.report.splitlines()[:4])
+        return f"{checked}\n\nПроверенные факты:\n{brief_facts}", "local"
+    return (
+        "ИИ-разбор сейчас получить не удалось. Ниже — проверенная сводка дневника.\n\n"
+        + evidence.report,
+        "data",
+    )
+
+
 async def analyze_progress(
     session: AsyncSession,
     user: User,
@@ -450,10 +510,9 @@ async def analyze_progress(
         domain = AIQueryDomain.WORKOUT_PROGRESS
     requested_days = extract_period_days(question, default=days) if message else days
     if domain == AIQueryDomain.WORKOUT_PROGRESS:
-        report = await build_workout_report(
-            session, user, message=question, days=requested_days,
+        return await _workout_analysis_reply(
+            session, user, settings=settings, question=question, days=requested_days,
         )
-        return report, "data"
     evidence = await build_analysis_evidence(
         session,
         user,
@@ -471,14 +530,23 @@ async def analyze_progress(
             AIQueryDomain.STRENGTH,
         },
     )
-    system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=1500)}"
-    prompt = (
-        "Ответь именно на исходный вопрос по проверяемым данным. "
-        "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
-        "конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: "
-        f"{_bounded_context(question, max_chars=1800)}\n\n"
-        f"{_bounded_context(evidence.text, max_chars=2400)}"
-    )
+    if _is_compact_model(settings):
+        system = SYSTEM_TRAINER_COMPACT
+        prompt = (
+            "Ответь на исходный вопрос по проверенным данным: вывод и одна рекомендация.\n"
+            "ПРОФИЛЬ:\n" + _compact_application_context(app_context, max_chars=400)
+            + "\nАНАЛИТИКА:\n" + _bounded_context(evidence.text, max_chars=797)
+            + "\nИСХОДНЫЙ ВОПРОС: " + _bounded_context(question, max_chars=697)
+        )
+    else:
+        system = f"{SYSTEM_TRAINER}\n\n{_bounded_context(app_context, max_chars=1500)}"
+        prompt = (
+            "Ответь именно на исходный вопрос по проверяемым данным. "
+            "Не подменяй домен тренировочным отчётом. Сделай короткий вывод и РОВНО одну "
+            "конкретную рекомендацию.\n\nИСХОДНЫЙ ВОПРОС: "
+            f"{_bounded_context(question, max_chars=1800)}\n\n"
+            f"{_bounded_context(evidence.text, max_chars=2400)}"
+        )
     llm_reply, llm_source = await _call_configured_ai(
         settings,
         system,

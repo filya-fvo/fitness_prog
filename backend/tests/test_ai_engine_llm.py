@@ -94,6 +94,31 @@ async def test_local_ai_uses_internal_chat_completions() -> None:
     }
 
 
+async def test_structured_output_uses_llama_cpp_flat_schema_http_contract() -> None:
+    schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["fact_id", "text"],
+        "properties": {
+            "fact_id": {"type": "string", "enum": ["F1", "F2"]},
+            "text": {"type": "string", "maxLength": 140},
+        },
+    }
+
+    result = await local_llm.call_local_chat(
+        local_settings(), "Верни JSON по проверенным фактам.", "ФАКТЫ: F1, F2",
+        json_schema=schema,
+    )
+
+    assert result == "Короткий локальный ответ"
+    assert len(FakeAsyncClient.requests) == 1
+    request = FakeAsyncClient.requests[0]
+    assert request["url"] == "http://llm:8080/v1/chat/completions"
+    # The pinned llama.cpp parser accepts flat schema with json_object.
+    # A flat schema with type=json_schema is ignored in build b10630.
+    assert request["json"]["response_format"] == {"type": "json_object", "schema": schema}
+
+
 async def test_external_ai_host_is_rejected_without_http_request() -> None:
     configured = local_settings().model_copy(
         update={"llm_base_url": "https://api.groq.com/openai/v1"}
@@ -252,3 +277,124 @@ def test_chat_prompt_bounds_large_runtime_context() -> None:
 )
 def test_ai_output_sanitizer_never_exposes_reasoning(raw: str, expected: str | None) -> None:
     assert ai_engine.sanitize_ai_output(raw) == expected
+
+
+def four_b_settings() -> Settings:
+    return local_settings().model_copy(update={"llm_model": "qwen3-4b-instruct-2507"})
+
+
+async def runtime_chat_request(monkeypatch, *, settings, app_context, message, history=None):
+    from unittest.mock import AsyncMock
+
+    monkeypatch.setattr(ai_engine, "retrieve_exercise_context", AsyncMock(return_value=[]))
+    monkeypatch.setattr(ai_engine, "build_application_context", AsyncMock(return_value=app_context))
+    monkeypatch.setattr(ai_engine, "conversation_history", AsyncMock(return_value=history or []))
+    monkeypatch.setattr(ai_engine, "store_exchange", AsyncMock())
+    _, reply, source = await ai_engine.chat(
+        object(), SimpleNamespace(id=uuid.uuid4()), message=message, session_id=None,
+        settings=settings,
+    )
+    assert reply == "Короткий локальный ответ" and source == "local"
+    return FakeAsyncClient.requests[-1]["json"]
+
+
+async def test_four_b_chat_has_smaller_input_and_preserves_whole_profile_before_history(monkeypatch):
+    profile = "Профиль: цель=поддержание формы, оборудование=гантели, ограничения=исключить прыжки."
+    message = "Как выбрать подходящее упражнение с учётом доступного оборудования?"
+    request = await runtime_chat_request(
+        monkeypatch, settings=four_b_settings(), message=message,
+        app_context="Данные приложения:\n" + profile + "\nПлан следующего дня: " + "упражнение " * 1000,
+        history=[{"role": "user", "content": "старый разговор " * 1000}],
+    )
+    instructions, prompt = [item["content"] for item in request["messages"]]
+    assert len(instructions) <= 550
+    assert len(prompt) <= 2300
+    assert profile in prompt and message in prompt
+    assert prompt.index(profile) < prompt.index("<conversation_history>")
+    assert prompt.endswith(message)
+    assert request["max_tokens"] == 192
+    assert float(FakeAsyncClient.init_kwargs[-1]["timeout"]) <= 75
+
+
+async def test_four_b_chat_preserves_complete_limitations_in_an_overlong_profile(monkeypatch):
+    restriction = "ограничения=исключить прыжки и глубокое сгибание колена."
+    profile = "Профиль: цель=поддержание формы, оборудование=" + "гантели " * 200 + ", " + restriction
+    request = await runtime_chat_request(
+        monkeypatch, settings=four_b_settings(), message="Как выбрать упражнение?",
+        app_context=profile + "\nДальнейшая история: " + "занятие " * 1000,
+    )
+    prompt = request["messages"][1]["content"]
+    context = prompt.split("<application_context>\n", 1)[1].split("\n</application_context>", 1)[0]
+    assert len(context) <= 600
+    assert restriction in context
+
+
+async def test_four_b_cycle_question_keeps_symptom_based_guidance(monkeypatch):
+    request = await runtime_chat_request(
+        monkeypatch, settings=four_b_settings(),
+        message="Как тренироваться во второй половине цикла?",
+        app_context="Профиль: ограничения=не указаны.",
+    )
+    instructions = request["messages"][0]["content"]
+    assert "симптом" in instructions and "не предполагаемую фазу" in instructions
+
+
+async def test_four_b_compact_chat_keeps_current_question_when_old_history_is_large(monkeypatch):
+    question = "Почему новый выбор упражнения нужно согласовать с доступным оборудованием?"
+    request = await runtime_chat_request(
+        monkeypatch, settings=four_b_settings(), message=question,
+        app_context="Профиль: ограничения=исключить прыжки.\n" + "план " * 1000,
+        history=[{"role": "assistant", "content": "Прошлый совет " * 1000}] * 6,
+    )
+    prompt = request["messages"][1]["content"]
+    assert prompt.endswith(question)
+    history = prompt.split("<conversation_history>\n", 1)[1].split("\n</conversation_history>", 1)[0]
+    assert len(history) <= 250
+
+
+async def test_four_b_runtime_latency_budget_is_seventy_five_seconds(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    call = AsyncMock(return_value="Короткий локальный ответ")
+    monkeypatch.setattr(ai_engine, "call_local_chat", call)
+    reply, source = await ai_engine._call_configured_ai(four_b_settings(), "system", "question")
+    assert reply == "Короткий локальный ответ" and source == "local"
+    assert call.await_args.kwargs["max_tokens"] == 192
+    assert call.await_args.kwargs["timeout_seconds"] == 75
+    assert call.await_args.kwargs["queue_timeout_seconds"] == 5
+
+
+async def test_other_model_keeps_existing_chat_and_latency_profile(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    call = AsyncMock(return_value="Короткий локальный ответ")
+    monkeypatch.setattr(ai_engine, "call_local_chat", call)
+    reply, source = await ai_engine._call_configured_ai(local_settings(), "system", "question")
+    assert reply == "Короткий локальный ответ" and source == "local"
+    assert call.await_args.kwargs["max_tokens"] == 256
+    assert call.await_args.kwargs["timeout_seconds"] == 60
+    assert call.await_args.kwargs["queue_timeout_seconds"] == 5
+
+
+async def test_four_b_nonworkout_analysis_bounds_profile_question_and_evidence(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    question = "Проанализируй мой вес за месяц. " + "Изменения и причины мне важны. " * 100
+    profile = "Профиль: цель=поддержание веса, ограничения=исключить прыжки."
+    evidence_text = "Замеры веса за период:\n" + "Вес записан, причина изменения не установлена. " * 100
+    monkeypatch.setattr(ai_engine, "build_analysis_evidence", AsyncMock(return_value=SimpleNamespace(
+        text=evidence_text, has_data=True)))
+    monkeypatch.setattr(ai_engine, "build_application_context", AsyncMock(return_value=(
+        profile + "\n" + "План программы и история " * 1000)))
+    reply, source = await ai_engine.analyze_progress(
+        object(), SimpleNamespace(id=uuid.uuid4()), days=30, settings=four_b_settings(), message=question,
+    )
+    assert reply == "Короткий локальный ответ" and source == "local"
+    request = FakeAsyncClient.requests[-1]["json"]
+    instructions, prompt = [item["content"] for item in request["messages"]]
+    assert len(instructions) <= 550
+    assert len(prompt) <= 2100
+    assert profile in prompt
+    assert "Проанализируй мой вес за месяц." in prompt
+    assert "Замеры веса за период:" in prompt
+    assert request["max_tokens"] == 192

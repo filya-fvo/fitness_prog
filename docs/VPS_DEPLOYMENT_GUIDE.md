@@ -59,7 +59,7 @@ Internet :80/:443
                                       ├── PostgreSQL 18 + pgvector
                                       └── Redis 7.4 ← ARQ worker
                                       └── закрытая AI-сеть
-                                          ├── llama.cpp + Qwen3 1.7B (текст)
+                                          ├── llama.cpp + Qwen3 4B Instruct 2507 (кандидат, текст)
                                           └── PP-OCRv5 mobile / Cyrillic mobile
 ```
 
@@ -362,7 +362,7 @@ EMAIL_OTP_DEV_RETURN_CODE=false
 DEFAULT_NEW_USER_PLUS_SOURCE=beta_grant
 LLM_PROVIDER=local
 LLM_BASE_URL=http://llm:8080/v1
-LLM_MODEL=qwen3-1.7b
+LLM_MODEL=qwen3-4b-instruct-2507
 LLM_TIMEOUT_SECONDS=75
 LLM_MAX_OUTPUT_TOKENS=256
 OCR_BASE_URL=http://ocr:8090
@@ -490,13 +490,14 @@ docker compose --env-file backend/.env.production exec -T db psql \
 
 ## 11. Первый запуск
 
-Один раз загрузите закреплённый GGUF Qwen3-1.7B Q4_K_M и проверьте
-его контрольную сумму:
+Для подготовленного кандидата один раз загрузите закреплённый GGUF
+Qwen3-4B-Instruct-2507 Q4_K_S и проверьте его контрольную сумму. Это инструкция
+установки, а не подтверждение production-выпуска:
 
 ```bash
 cd /opt/fitness
 sudo sh scripts/install-local-ai-model.sh /opt/fitness/models
-sha256sum /opt/fitness/models/qwen3-1.7b-q4_k_m.gguf
+sha256sum /opt/fitness/models/qwen3-4b-instruct-2507-q4_k_s.gguf
 ```
 
 Интернет нужен только для этой загрузки и обновления Docker-образов. Runtime
@@ -504,8 +505,17 @@ sha256sum /opt/fitness/models/qwen3-1.7b-q4_k_m.gguf
 `docs/ADMIN_AI_MODEL_RUNBOOK.md`: источник, неизменяемая ревизия, SHA-256,
 ограничения CPU/RAM, проверка живого ответа и откат. Модель запущена только
 для текста с thinking выключенным; этикетки обрабатывает отдельный PP-OCRv5
-и детерминированный парсер без вызова LLM. При обновлении старые GGUF сохраняют
-до проверки новой модели, затем удаляют только перечисленные в runbook файлы.
+и детерминированный парсер без вызова LLM. Кандидат использует контекст 2048,
+2 CPU, RAM `2800m`, RAM + swap `3072m` и компактный prompt. Проверки перед
+выпуском пройдены: 817 backend-тестов, Ruff, импорт приложения и три настоящих
+ответа `local`, принятых по содержанию. Токенизатор кандидата измерил 872 входных
+токена для компактного чата и 823 для анализа; резерв 192 помещается в 2048.
+В тренировочном разборе вывод и оговорка формируются моделью; числовое
+назначение следующего шага заменяется проверенным серверным действием.
+Ошибка наблюдений, обрыв или отказ дают явную сводку `data`. Файл 1.7B сохраняют
+для отката до повторной проверки выпущенного кода; production-выпуск ещё
+не завершён. Ограниченные замеры памяти и времени не гарантируют устойчивость
+или правильность каждого будущего ответа.
 
 ```bash
 cd /opt/fitness

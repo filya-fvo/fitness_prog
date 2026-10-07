@@ -61,11 +61,11 @@ class Settings(BaseSettings):
     llm_provider: str = "local"
     llm_api_key: str = ""
     llm_base_url: str = "http://llm:8080/v1"
-    llm_model: str = "qwen3-1.7b"
+    llm_model: str = "qwen3-4b-instruct-2507"
     llm_timeout_seconds: float = 75.0
     llm_max_output_tokens: int = 256
-    # Tesseract is a separate internal-only container. The API sends it the
-    # image, then gives only extracted text to the local language model.
+    # OCR is a separate internal-only container. A deterministic parser handles
+    # the extracted label text without calling the language model.
     ocr_base_url: str = "http://ocr:8090"
     ocr_timeout_seconds: float = 35.0
     redis_url: str = "redis://localhost:6379/0"

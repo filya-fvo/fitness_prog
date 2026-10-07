@@ -53,8 +53,8 @@ async def call_local_chat(
         body["chat_template_kwargs"] = {"enable_thinking": False}
     if json_schema:
         body["response_format"] = {
-            "type": "json_schema",
-            "json_schema": {"name": "local_result", "strict": True, "schema": json_schema},
+            "type": "json_object",
+            "schema": json_schema,
         }
     headers = {"Content-Type": "application/json"}
     if settings.llm_api_key.strip():

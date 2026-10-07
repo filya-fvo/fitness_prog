@@ -100,7 +100,7 @@ services:
       ADMIN_SYSTEM_STATUS_DIR: /app/host-status
       LLM_PROVIDER: local
       LLM_BASE_URL: http://llm:8080/v1
-      LLM_MODEL: qwen3-1.7b
+      LLM_MODEL: qwen3-4b-instruct-2507
       LLM_MAX_OUTPUT_TOKENS: "256"
       OCR_BASE_URL: http://ocr:8090
       TELEGRAM_UPDATE_MODE: polling
@@ -126,15 +126,15 @@ services:
     restart: unless-stopped
     command:
       - --model
-      - /models/qwen3-1.7b-q4_k_m.gguf
+      - /models/qwen3-4b-instruct-2507-q4_k_s.gguf
       - --alias
-      - qwen3-1.7b
+      - qwen3-4b-instruct-2507
       - --host
       - 0.0.0.0
       - --port
       - "8080"
       - --ctx-size
-      - "4096"
+      - "2048"
       - --parallel
       - "1"
       - --threads
@@ -162,6 +162,7 @@ services:
     expose:
       - "8080"
     mem_limit: 2800m
+    memswap_limit: 3072m
     cpus: 2.0
     pids_limit: 128
     read_only: true

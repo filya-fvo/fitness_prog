@@ -2,9 +2,9 @@
 set -eu
 
 model_dir="${1:-/opt/fitness/models}"
-model_name="qwen3-1.7b-q4_k_m.gguf"
-model_url="https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/d7f544eead698dbd1f15126ef60b45a1e1933222/Qwen3-1.7B-Q4_K_M.gguf"
-expected_sha256="b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897"
+model_name="qwen3-4b-instruct-2507-q4_k_s.gguf"
+model_url="https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_S.gguf"
+expected_sha256="952af947c6aabf7b72f7d8e279e76f7bf4b0d12431eb3abb588ef312865622d8"
 
 mkdir -p "$model_dir"
 partial_path="$model_dir/${model_name}.part"
