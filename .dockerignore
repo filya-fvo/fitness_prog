@@ -28,3 +28,12 @@ backups/
 fordeleted/
 tools/
 *.log
+
+# Local native/testing scratch and signing material never enter image contexts.
+.superpowers/
+frontend/android/
+frontend/.dist-android/
+**/*.apk
+**/*.jks
+**/*.keystore
+**/local.properties

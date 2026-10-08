@@ -281,6 +281,8 @@ services:
     volumes:
       # Previous hashed chunks survive container replacement for open Telegram/PWA clients.
       - frontend_releases:/usr/share/nginx/html
+      # APK current/archive survives frontend release cleanup. Publisher writes on host only.
+      - /opt/fitness/apk-releases:/usr/share/nginx/html/android:ro
     expose:
       - "80"
     healthcheck:

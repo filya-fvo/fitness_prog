@@ -313,3 +313,11 @@ docker compose --env-file backend/.env.production exec -T redis redis-cli ping
 
 Логи не должны содержать токены, OTP и пароли. Telegram-токен в HTTP-логах
 редактируется как `[REDACTED]`.
+
+## Автоматическая публикация Android APK (08.10.2026)
+
+Перед новым web-контейнером создать `/opt/fitness/apk-releases` на VPS. Compose монтирует каталог read-only в Nginx независимо от volume с frontend-релизами. `/android/latest.apk` и `/android/latest.json` следуют одному `current` symlink; отсутствующий APK возвращает 404, без SPA fallback. Latest не кэшируется; архивы версий неизменяемы.
+
+В Android checkout выполнить `npm run android:publish` с process env `FITNESS_APK_SSH_TARGET` и `FITNESS_APK_SSH_KEY` (путь к существующему локальному SSH-ключу). Команда собирает production API APK, проверяет прежнюю подпись владельца, package/config/JS, архивирует вне Git, отправляет только APK/публичный manifest в приватный `/opt/fitness/apk-upload`, проверяет bytes на VPS и атомарно переключает `current`. Signing key остаётся локальным. При отказе проверки или обрыве до переключения прежняя ссылка продолжает работать. Другому APK нужен больший versionCode; одинаковая повторная публикация не меняет current. CI placeholder APK не публикуется.
+
+После выпуска сверить latest.json, SHA256 скачанного APK, Content-Type/Content-Length/Range и 404 для неизвестного файла, затем проверить `/app` в личном чате. Только после этого выполнять согласованную рассылку через штатный центр рассылок. Ручное изменение current допускается лишь для согласованного rollback к сохранённому проверенному релизу.

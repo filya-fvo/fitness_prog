@@ -137,3 +137,16 @@ def test_compose_uses_outbound_telegram_poller() -> None:
     assert "handle_path /api/*" in caddy
     assert 'header Alt-Svc "clear"' in caddy
     assert "VITE_API_URL=/api" in production_env
+
+def test_compose_apk_distribution_is_separate_and_missing_files_are_not_spa() -> None:
+    compose = (ROOT / 'docker-compose.yml').read_text(encoding='utf-8')
+    nginx = (ROOT / 'frontend/nginx.conf').read_text(encoding='utf-8')
+    assert '/opt/fitness/apk-releases:/usr/share/nginx/html/android:ro' in compose
+    latest = nginx.split('location = /android/latest.apk {', 1)[1].split('}', 1)[0]
+    assert 'try_files $uri =404;' in latest
+    assert 'application/vnd.android.package-archive' in latest
+    assert 'Content-Disposition' in latest
+    assert 'no-store' in latest
+    assert '/index.html' not in latest
+    generic = nginx.split('location ^~ /android/ {', 1)[1].split('}', 1)[0]
+    assert 'try_files $uri =404;' in generic
