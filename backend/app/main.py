@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -145,7 +146,7 @@ async def validation_exception_handler(
         request.url.path,
         exc.errors(),
     )
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    return JSONResponse(status_code=422, content=jsonable_encoder({"detail": exc.errors()}, custom_encoder={Exception: str}))
 
 
 @app.exception_handler(Exception)
