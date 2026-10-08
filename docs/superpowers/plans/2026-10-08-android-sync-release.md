@@ -21,3 +21,4 @@ Final review: independent auth_sync_review found one P2 (32768 product UUID bind
 Final fixed: product + personal value queries batch1000; test_large_product_snapshot RED (32768args) → GREEN.
 Final suite841/841 PASS; Ruff PASS; real isolated PostgreSQL/HTTP PASS after fix.
 No remaining P1/P2; no personal data or existing artifacts staged.
+Task4 complete: verified backup restore/migrations twice, build+migrate/API healthy, live QA push/web pull, exact nativeSQLite471records and owner phone confirmation. Task5 complete: Android handoff/contracts/decisions updated; runtime code80b3ac6 full CI37730949531 SUCCESS.

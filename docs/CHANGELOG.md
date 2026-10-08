@@ -14,8 +14,10 @@
   публичные web/Telegram API, данные и действующие права PLUS.
 - Проверено: 841 backend tests, Ruff, static migrations53, real isolated PostgreSQL
   и HTTP JWT (repeat/rollback/conflict/account isolation/web pull/access/pagination).
-  Документированный контракт: `docs/ANDROID_SYNC_V1.md`. Выпуск на VPS разрешён
-  владельцем отдельно; результаты backup/deploy/native smoke фиксируются после выполнения.
+  Документированный контракт: `docs/ANDROID_SYNC_V1.md`. Выпуск на VPS завершён
+  по отдельному разрешению: backup/restore, миграция53, liveQA всех видов дневника,
+  installed APK471records/SQLite match, сохранённый вход/offline PASS. Владелец
+  подтвердил на телефоне: баннер исчез, дневник появился. Полный CI37730949531 SUCCESS.
 
 ## 0.21.52 — 2026-10-07 — ИИ-анализ поверх проверенного дневника
 
