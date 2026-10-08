@@ -22,7 +22,7 @@ Interfaces: beginTelegramLogin -> waiting/ready public name; inspect/complete/ca
 Files: Java update manifest/downloader/installer plugin + root native update panel, Android permissions/callback, tests and CI device fixture.
 Interfaces: check -> current/available; start/status/cancel -> download/verify/ready/failed; install -> permission/pending/user-action/failure. Exact manifest fields from public latest.json. Root panel protects active workout/form/dialog state before installation.
 1. RED manifest and progress tests, including 100%-running, wrong path/hash/package/cert, current/offline.
-2. Implement fixed-origin public fetch, persistent own DownloadManager ID/file, actual completion validation and user-triggered PackageInstaller callback. No native credentials. Expected tests green.
+2. Implement fixed-origin public fetch, persistent own bounded HTTPS stream/file, actual completion validation and user-triggered PackageInstaller callback. No native credentials. Expected tests green.
 3. Verify actual Android upgrade preserving diary/session and restart where system permits. Run whole native/shared/shell checks. Expected green; unresolved OEM limits documented; commit.
 
 ### Task 4: Review, release and handoff
@@ -32,4 +32,4 @@ Interfaces: check -> current/available; start/status/cancel -> download/verify/r
 4. Update guides/NEXT-CHAT and primary owned artifact report including previous APK7 release and campaign, all rulings and limitations. No primary dirty source edits. Expected report links resolve.
 
 ## Review Focus
-Link leakage cannot exchange without native verifier; bot approval cannot switch actor; native stale requests/logout cannot save another account; race exchange exactly one consumer; updater success requires terminal DownloadManager status and verified bytes; callback cannot be spoofed; installed data retained; user confirmation required; no unchecked download origin or JWT exposure. Dedicated device only.
+Link leakage cannot exchange without native verifier; bot approval cannot switch actor; native stale requests/logout cannot save another account; race exchange exactly one consumer; updater success requires complete stream EOF and verified bytes; callback cannot be spoofed; installed data retained; user confirmation required; no unchecked download origin or JWT exposure. Dedicated device only.
