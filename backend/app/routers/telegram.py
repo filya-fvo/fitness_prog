@@ -232,6 +232,10 @@ async def telegram_webhook(
     if not isinstance(update, dict):
         return {"ok": True}
 
+    from app.services.telegram_android_login import handle_login_update
+    if await handle_login_update(settings, update):
+        return {"ok": True}
+
     callback = extract_callback_query(update)
     if callback and callback["data"].startswith("si:"):
         if settings.telegram_update_mode == "polling":

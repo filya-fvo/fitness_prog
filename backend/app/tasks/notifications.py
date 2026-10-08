@@ -14,6 +14,7 @@ from loguru import logger
 from sqlalchemy import select
 
 from app.core.config import Settings, get_settings
+from app.tasks.android_login import cleanup_android_login_task
 from app.core.database import AsyncSessionLocal
 from app.core.logging import setup_logging
 from app.models.user import User
@@ -353,6 +354,7 @@ class WorkerSettings:
         send_support_reply_task,
     ]
     cron_jobs = [
+        cron(cleanup_android_login_task, minute={7}, second={0}),
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),
         cron(snapshot_admin_system_task, minute={0, 15, 30, 45}, second={30}),
         cron(repair_telegram_webhook_task, minute=set(range(0, 60, 2)), second={20}),

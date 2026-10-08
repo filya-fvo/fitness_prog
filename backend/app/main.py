@@ -26,6 +26,7 @@ from app.routers import admin_support as admin_support_router
 from app.routers import admin_user_detail as admin_user_detail_router
 from app.routers import ai as ai_router
 from app.routers import android_sync as android_sync_router
+from app.routers import android_auth as android_auth_router
 from app.routers import auth as auth_router
 from app.routers import body_measurements as body_measurements_router
 from app.routers import daily_metrics as daily_metrics_router
@@ -87,6 +88,7 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 app.include_router(auth_router.router)
+app.include_router(android_auth_router.router)
 app.include_router(legal_router.router)
 app.include_router(android_sync_router.router)
 app.include_router(body_measurements_router.router)
@@ -141,6 +143,10 @@ async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
+    if request.url.path.startswith("/auth/android/telegram/"):
+        # Pydantic errors include raw inputs, including the private PKCE verifier.
+        logger.warning("native_login_validation_error path={}", request.url.path)
+        return JSONResponse(status_code=422, content={"detail": "Не удалось подтвердить вход"})
     logger.warning(
         "validation_error path={} errors={}",
         request.url.path,

@@ -354,6 +354,8 @@ async def main():
         assert denied.status_code == 403
     print("PASS: HTTP signed JWT, push/pull/receipt, foreign owner denial, API before SPA fallback")
 
+    from check_android_login_postgres import check_login
+    await check_login(engine)
     await engine.dispose()
 
 
