@@ -2,7 +2,7 @@
  * Auth API: Telegram initData or email OTP → JWT in localStorage (TZ §8).
  */
 import { z } from "zod";
-import { legalStatusSchema } from "./legal";
+import { legalStatusSchema } from "./legalSchemas";
 
 import { apiClient, clearStoredToken, getStoredToken, setStoredToken } from "./client";
 import { subscriptionStateSchema } from "./subscription";

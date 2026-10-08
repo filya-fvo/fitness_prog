@@ -1,5 +1,5 @@
 import type { AuthUser } from "@/api/auth";
-import { legalStatusSchema } from "@/api/legal";
+import { legalStatusSchema } from "@/api/legalSchemas";
 
 const PROFILE_CACHE_KEY = "fitness_cached_user_v1";
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { legalStatusSchema } from "./legal";
+import { legalStatusSchema } from "./legalSchemas";
 
 import { apiClient } from "@/api/client";
 import { subscriptionStateSchema } from "@/api/subscription";
