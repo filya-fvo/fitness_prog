@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -10,6 +11,7 @@ test("admin reviews a proposed food correction before changing the shared catalo
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "admin-e2e-token"));
   await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, username: "Filatov_Slava", telegram_id: null, auth_email: null,
     anthropometry: {}, goals: { onboarding_completed: true }, subscription_status: "free",
     stars_balance: 0, onboarding_completed: true,

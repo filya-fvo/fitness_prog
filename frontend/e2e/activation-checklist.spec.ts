@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "89999999-9999-4999-8999-999999999999";
@@ -16,6 +17,7 @@ function checklistState(signals: string[] = []) {
 async function mockHome(page: Page, withChecklist = true, signals: string[] = []) {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "checklist-e2e-token"));
   const profile = {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "new-user",

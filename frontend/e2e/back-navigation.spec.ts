@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "44444444-4444-4444-8444-444444444444";
@@ -44,6 +45,7 @@ async function openAsTelegramUser(page: Page, path: string): Promise<void> {
         token_type: "bearer",
         expires_in_days: 30,
         user: {
+legal_status: acceptedLegalStatus(USER_ID),
           id: USER_ID,
           telegram_id: 44,
           username: "back-e2e-user",

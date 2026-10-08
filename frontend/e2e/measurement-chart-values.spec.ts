@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER = "42424242-4242-4424-8424-424242424242";
@@ -14,6 +15,7 @@ for (const width of [320, 393, 1440]) {
     await page.clock.install({ time: new Date("2026-10-03T10:00:00+03:00") });
     await page.addInitScript(() => localStorage.setItem("fitness_jwt", "measurement-chart-e2e"));
     await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER),
       id: USER, telegram_id: 42, username: "Filatov_Slava", anthropometry: {}, goals: { onboarding_completed: true },
       subscription_status: "plus", subscription: { tier: "plus", active: true, sources: ["qa"], valid_until: null },
       stars_balance: 0, onboarding_completed: true,

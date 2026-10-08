@@ -4,7 +4,7 @@ import { authUserFromProfile } from "@/lib/browserSession";
 import { legalDocuments } from "@/features/legal/documents";
 
 const owner = "f92a718b-af2b-4ad1-904a-524b1694b257";
-const status = { user_id: owner, accepted: true, documents: legalDocuments.map(({ text: _text, ...doc }) => ({ ...doc, accepted_at: "2026-10-08T10:00:00Z" })) };
+const status = { user_id: owner, accepted: true, documents: legalDocuments.map((doc) => ({ document_id: doc.document_id, title: doc.title, revision: doc.revision, text_sha256: doc.text_sha256, accepted_at: "2026-10-08T10:00:00Z" })) };
 const base = { id: owner, subscription_status: "free", onboarding_completed: true };
 
 beforeEach(() => {

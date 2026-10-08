@@ -1,9 +1,11 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "91919191-9191-4191-8191-919191919191";
 
 function profile(tier: "free" | "plus") {
   return {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "plus-boundary-qa",

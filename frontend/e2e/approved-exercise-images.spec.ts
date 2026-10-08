@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
@@ -16,6 +17,7 @@ for (const [width, height, colorScheme] of [
     await page.emulateMedia({ colorScheme });
     await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
     await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus("22222222-2222-4222-8222-222222222222"),
       id: "22222222-2222-4222-8222-222222222222", telegram_id: null,
       username: "qa", auth_email: null, anthropometry: {},
       goals: { onboarding_completed: true }, onboarding_completed: true,

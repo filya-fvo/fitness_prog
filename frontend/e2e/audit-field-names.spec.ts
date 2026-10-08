@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 
 const USER_ID = "42424242-4242-4424-8424-424242424242";
@@ -5,6 +6,7 @@ async function installProfile(page: Page) {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "field-names-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, telegram_id: 42, username: "Filatov_Slava", auth_email: null,
     anthropometry: {}, goals: { onboarding_completed: true }, subscription_status: "free",
     stars_balance: 0, onboarding_completed: true,

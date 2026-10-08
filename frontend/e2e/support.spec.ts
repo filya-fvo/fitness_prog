@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const adminId = "42424242-4242-4424-8424-424242424242";
@@ -7,6 +8,7 @@ const attachmentId = "55555555-5555-4555-8555-555555555555";
 const createdAt = "2026-08-29T12:00:00Z";
 
 const adminProfile = {
+legal_status: acceptedLegalStatus(adminId),
   id: adminId, telegram_id: 42, username: "Filatov_Slava", auth_email: null,
   anthropometry: {}, goals: { onboarding_completed: true }, subscription_status: "free",
   stars_balance: 0, onboarding_completed: true,

@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "89999999-9999-4999-8999-999999999999";
@@ -11,6 +12,7 @@ test("home activity cards open the dated activity page with direct controls", as
     localStorage.setItem("fitness_theme_preference", "dark");
   });
   await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, username: "new-user", telegram_id: null, auth_email: null,
     anthropometry: { sex: "unspecified" }, goals: { onboarding_completed: true },
     subscription_status: "free", stars_balance: 0, onboarding_completed: true,
@@ -70,6 +72,7 @@ test("home activity cards open the dated activity page with direct controls", as
 
   await expect(page.locator(".home-media-card")).toHaveCSS("background-image", /home-training-male.webp/);
   await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, username: "new-user", telegram_id: null, auth_email: null,
     anthropometry: { sex: "female" }, goals: { onboarding_completed: true },
     subscription_status: "free", stars_balance: 0, onboarding_completed: true,

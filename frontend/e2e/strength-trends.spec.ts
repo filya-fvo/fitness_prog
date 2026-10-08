@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "70707070-7070-4070-8070-707070707070";
@@ -30,6 +31,7 @@ test("PLUS progress explains next, best and user-selected strength trends", asyn
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "strength-trends-qa",

@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { HubLinkCard } from "@/components/ui/HubLinkCard";
 import { StatusNotice } from "@/components/ui/StatusNotice";
 import { ProfileHeroCard } from "@/features/profile/components/ProfileHeroCard";
+import { LegalLinks } from "@/features/legal/components/LegalLinks";
 import { ThemeSelector } from "@/features/theme/ThemeSelector";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUser } from "@/utils/adminAccess";
@@ -39,6 +40,7 @@ export function ProfileHubPage() {
         {isAdminUser(user) ? <HubLinkCard to="/admin" title="Админ" description="Пользователи, каталог и состояние системы" icon="admin" tone="ember" /> : null}
       </div>
       <div className="mt-3"><ThemeSelector /></div>
+      <div className="mt-4"><LegalLinks /></div>
     </section>
   );
 }

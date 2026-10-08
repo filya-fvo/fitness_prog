@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -10,6 +11,7 @@ async function installProfileAndCatalog(page: Page) {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "draft-retention-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, telegram_id: null, username: "draft-qa", auth_email: null,
     anthropometry: {}, goals: { onboarding_completed: true, level: "beginner", primary_goal: "maintain" },
     subscription_status: "plus", subscription: { tier: "plus", active: true, sources: ["qa"], valid_until: null },

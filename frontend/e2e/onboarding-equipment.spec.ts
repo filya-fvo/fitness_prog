@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "85555555-5555-4555-8555-555555555555";
@@ -32,6 +33,7 @@ test("onboarding does not assign missing equipment and keeps a warned manual cho
   await page.addInitScript(({ userId }) => {
     localStorage.setItem("fitness_jwt", "e2e-token");
     localStorage.setItem("fitness_cached_user_v1", JSON.stringify({
+legal_status: acceptedLegalStatus(userId),
       id: userId,
       telegram_id: null,
       username: "cached-equipment-user",
@@ -50,6 +52,7 @@ test("onboarding does not assign missing equipment and keeps a warned manual cho
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "equipment-user",

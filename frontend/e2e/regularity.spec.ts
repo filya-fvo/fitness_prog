@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "85555555-5555-4555-8555-555555555555";
@@ -9,6 +10,7 @@ test("progress shows adherence to the personal plan instead of calendar-day stre
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "regularity-user",

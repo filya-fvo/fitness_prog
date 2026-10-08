@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER = "42424242-4242-4424-8424-424242424242";
@@ -23,6 +24,7 @@ async function setup(page: Page) {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "draft-recovery-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER),
     id: USER, telegram_id: 42, username: "Filatov_Slava", auth_email: null,
     anthropometry: { sex: "male", height_cm: 180, age: 30 },
     goals: { onboarding_completed: true, primary_goal: "maintain" },
@@ -91,6 +93,7 @@ test("personal program draft is isolated by account", async ({ page }) => {
   await page.goto("/programs/new");
   await page.getByRole("textbox", { name: "Название программы" }).fill("Личный черновик");
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(OTHER_USER),
     id: OTHER_USER, telegram_id: null, username: "other", anthropometry: {}, goals: { onboarding_completed: true },
     subscription_status: "free", stars_balance: 0, onboarding_completed: true,
   } }));
@@ -145,7 +148,8 @@ test("profile fields cannot change while a slow save is pending", async ({ page 
   const gate = new Promise<void>((resolve) => { release = resolve; });
   await page.route("**/users/me", async (route) => {
     if (route.request().method() === "PUT") await gate;
-    return route.fulfill({ json: { id: USER, telegram_id: 42, username: "Filatov_Slava", anthropometry: { sex: "male", height_cm: 180, age: 30 },
+    return route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER), id: USER, telegram_id: 42, username: "Filatov_Slava", anthropometry: { sex: "male", height_cm: 180, age: 30 },
       goals: { onboarding_completed: true }, subscription_status: "free", stars_balance: 0, onboarding_completed: true } });
   });
   await page.goto("/profile/settings");
@@ -301,7 +305,8 @@ test("profile failed save preserves the draft, successful save clears it", async
       if (failing) return route.fulfill({ status: 503, json: { detail: "Unavailable" } });
       savedHeight = route.request().postDataJSON().anthropometry.height_cm;
     }
-    return route.fulfill({ json: { id: USER, telegram_id: 42, username: "Filatov_Slava", anthropometry: { sex: "male", height_cm: savedHeight, age: 30 },
+    return route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER), id: USER, telegram_id: 42, username: "Filatov_Slava", anthropometry: { sex: "male", height_cm: savedHeight, age: 30 },
       goals: { onboarding_completed: true }, subscription_status: "free", stars_balance: 0, onboarding_completed: true } });
   });
   await page.goto("/profile/settings");
@@ -466,7 +471,8 @@ test("late save from an exited profile cannot clear edits in the reopened form",
       await gate;
       savedHeight = submittedHeight;
     }
-    return route.fulfill({ json: { id: USER, telegram_id: 42, username: "Filatov_Slava",
+    return route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER), id: USER, telegram_id: 42, username: "Filatov_Slava",
       anthropometry: { sex: "male", height_cm: savedHeight, age: 30 }, goals: { onboarding_completed: true },
       subscription_status: "free", stars_balance: 0, onboarding_completed: true } });
   });

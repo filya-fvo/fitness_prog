@@ -1,9 +1,11 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const adminId = "42424242-4242-4424-8424-424242424242";
 const campaignId = "33333333-3333-4333-8333-333333333333";
 
 const adminProfile = {
+legal_status: acceptedLegalStatus(adminId),
   id: adminId,
   telegram_id: 42,
   username: "Filatov_Slava",

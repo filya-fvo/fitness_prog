@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 import { expectMinimumTouchTarget } from "./touch-targets";
@@ -34,6 +35,7 @@ test("PLUS exercise explorer supports recent, groups, pins and deep links", asyn
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "explorer-user",

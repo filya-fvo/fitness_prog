@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 import { expectMinimumTouchTarget } from "./touch-targets";
@@ -6,7 +7,15 @@ const WORKOUT_ID = "11111111-1111-4111-8111-111111111111";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 const EXERCISE_ID = "33333333-3333-4333-8333-333333333333";
 
-test("server-only active workout deep link is restored and cached", async ({ page }) => {
+for (const needsConsent of [false, true]) {
+test(`server-only active workout deep link is restored and cached${needsConsent ? " after legal confirmation" : ""}`, async ({ page }) => {
+  let legalAccepted = !needsConsent;
+  const legalStatus = () => {
+    const status = acceptedLegalStatus(USER_ID);
+    return { ...status, accepted: legalAccepted, documents: status.documents.map((doc) => ({ ...doc, accepted_at: legalAccepted ? doc.accepted_at : null })) };
+  };
+  await page.route("**/legal/status", (route) => route.fulfill({ json: legalStatus() }));
+  await page.route("**/legal/accept", (route) => { legalAccepted = true; return route.fulfill({ json: legalStatus() }); });
   let workoutRequests = 0;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.setFixedTime(new Date("2026-08-20T12:00:00Z"));
@@ -18,6 +27,7 @@ test("server-only active workout deep link is restored and cached", async ({ pag
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: legalStatus(),
         id: USER_ID,
         telegram_id: null,
         username: "e2e-user",
@@ -130,6 +140,13 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   });
 
   await page.goto(`/?startapp=workout_${WORKOUT_ID}`);
+  if (needsConsent) {
+    const gate = page.getByRole("dialog", { name: "Документы FilFit" });
+    await expect(gate).toBeVisible();
+    for (const checkbox of await gate.getByRole("checkbox").all()) await checkbox.check();
+    await gate.getByRole("button", { name: "Подтвердить и продолжить" }).click();
+    await expect(gate).toBeHidden();
+  }
   await expect(page.getByRole("heading", { name: "Восстановленная тренировка" })).toBeVisible();
   await expect(page.getByText("Тестовый жим", { exact: true })).toBeVisible();
   await expect(page.getByText("Таймер тренировки").locator("../..")).toHaveClass(/app-card/);
@@ -211,6 +228,7 @@ test("server-only active workout deep link is restored and cached", async ({ pag
   await page.keyboard.press("Escape");
   await expect(addSetDialog).toHaveCount(0);
 });
+}
 
 test("exercise catalog renders progressively", async ({ page }) => {
   await page.addInitScript(() => {
@@ -220,6 +238,7 @@ test("exercise catalog renders progressively", async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "e2e-user",
@@ -326,6 +345,7 @@ test("workout completion is instant and AI coach runs only on request", async ({
     route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "e2e-user",

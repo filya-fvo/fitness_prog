@@ -1,9 +1,11 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "60606060-6060-4060-8060-606060606060";
 
 function profile(advancedAnalytics = false) {
   return {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "personal-dashboard-qa",

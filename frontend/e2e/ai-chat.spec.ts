@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 test("AI trainer shows unauthenticated feedback in a unified error card", async ({ page }) => {
@@ -20,6 +21,7 @@ test("AI conversation uses one card language for both speakers", async ({ page }
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus("11111111-1111-4111-8111-111111111111"),
       id: "11111111-1111-4111-8111-111111111111", telegram_id: null,
       username: "ai-visual", auth_email: "qa@example.test", anthropometry: {},
       goals: { onboarding_completed: true }, subscription_status: "free",

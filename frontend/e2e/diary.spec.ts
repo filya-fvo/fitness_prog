@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const userId = "81818181-8181-4181-8181-818181818181";
@@ -13,6 +14,7 @@ test("diary modes show distinct modules and measurements keep diary navigation",
       advanced = body.goals?.advanced_analytics_enabled === true;
     }
     await route.fulfill({ contentType: "application/json", body: JSON.stringify({
+legal_status: acceptedLegalStatus(userId),
       id: userId,
       telegram_id: null,
       username: "diary-qa",

@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -5,6 +6,7 @@ const adminId = "42424242-4242-4424-8424-424242424242";
 const userId = "11111111-1111-4111-8111-111111111111";
 
 const adminProfile = {
+legal_status: acceptedLegalStatus(adminId),
   id: adminId,
   telegram_id: 42,
   username: "Filatov_Slava",
@@ -25,6 +27,7 @@ test("admin user card loads detail blocks automatically and confirms notificatio
   await page.route(`**/admin/users/${userId}/summary`, (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(userId),
       id: userId,
       display_name: "Иван Тестовый",
       telegram_id: 77,
@@ -164,6 +167,7 @@ test("admin filters users and exports only selected rows", async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({
         items: [{
+legal_status: acceptedLegalStatus(userId),
           id: userId,
           telegram_id: 77,
           username: "athlete",

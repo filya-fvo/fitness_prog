@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -10,6 +11,7 @@ async function setup(page: Page, entries: Entry[]) {
   await page.setViewportSize({ width: 320, height: 667 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "nutrition-add-close-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, telegram_id: null, username: "nutrition-user", anthropometry: {},
     goals: { onboarding_completed: true }, subscription_status: "free", stars_balance: 0,
     onboarding_completed: true,

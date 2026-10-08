@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "84444444-4444-4444-8444-444444444444";
@@ -14,6 +15,7 @@ test("onboarding requires explicit choices, supports unspecified sex and allows 
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
           id: USER_ID,
           telegram_id: null,
           username: "new-user",
@@ -30,6 +32,7 @@ test("onboarding requires explicit choices, supports unspecified sex and allows 
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "new-user",
@@ -142,6 +145,7 @@ test("onboarding never auto-assigns a program that covers only one selected limi
   await page.addInitScript(({ userId }) => {
     localStorage.setItem("fitness_jwt", "e2e-token");
     localStorage.setItem("fitness_cached_user_v1", JSON.stringify({
+legal_status: acceptedLegalStatus(userId),
       id: userId,
       telegram_id: null,
       username: "cached-multi-limit-user",
@@ -160,6 +164,7 @@ test("onboarding never auto-assigns a program that covers only one selected limi
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "multi-limit-user",

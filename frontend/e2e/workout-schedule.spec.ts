@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -14,6 +15,7 @@ test("recurring schedule is edited in Training, independently from reminders", a
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "schedule-editor",
@@ -89,6 +91,7 @@ test("one workout can be moved without changing the recurring schedule", async (
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "schedule-user",
@@ -227,6 +230,7 @@ test("workout day can be replaced permanently after an explicit preview", async 
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "permanent-schedule-user",
@@ -348,6 +352,7 @@ test("cancelled workout becomes the same program day on the next schedule date",
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "cancel-user",
@@ -507,6 +512,7 @@ test("home lets program exercises be replaced and saved before workout start", a
   const freeChoiceId = "44444444-4444-4444-8444-444444444443";
   let savedPayload: Record<string, unknown> | null = null;
   const profile = {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "prepare-user",
@@ -731,6 +737,7 @@ test("completed scheduled workout is not offered for a second start", async ({ p
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "completed-user",

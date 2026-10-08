@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const token = "abcdefghijklmnopqrstuvwxyzABCDEFGH123456789";
@@ -5,6 +6,7 @@ const inviteId = "11111111-1111-4111-8111-111111111111";
 const expiresAt = "2026-09-14T12:00:00Z";
 
 const profile = {
+legal_status: acceptedLegalStatus("22222222-2222-4222-8222-222222222222"),
   id: "22222222-2222-4222-8222-222222222222",
   telegram_id: 42,
   username: "athlete",
@@ -98,6 +100,7 @@ test("accepted Telegram startapp invite does not reopen after back navigation", 
       token_type: "bearer",
       expires_in_days: 30,
       user: {
+legal_status: acceptedLegalStatus(profile.id),
         id: profile.id,
         telegram_id: 803005715,
         username: "invitee",

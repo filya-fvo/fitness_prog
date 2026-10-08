@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 test("browser user signs in through the Telegram OIDC popup SDK", async ({ page }) => {
@@ -47,6 +48,7 @@ test("browser user signs in through the Telegram OIDC popup SDK", async ({ page 
         token_type: "bearer",
         expires_in_days: 30,
         user: {
+legal_status: acceptedLegalStatus("00000000-0000-4000-8000-000000000777"),
           id: "00000000-0000-4000-8000-000000000777",
           telegram_id: 987654321,
           username: "athlete",

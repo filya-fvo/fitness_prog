@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -48,6 +49,7 @@ test("Telegram authorization retries when Funnel returns without an online event
         token_type: "bearer",
         expires_in_days: 30,
         user: {
+legal_status: acceptedLegalStatus(USER_ID),
           id: USER_ID,
           telegram_id: 1,
           username: "e2e-user",
@@ -110,6 +112,7 @@ test("Telegram authorization retries when a VPN route recovers while the page st
         token_type: "bearer",
         expires_in_days: 30,
         user: {
+legal_status: acceptedLegalStatus(USER_ID),
           id: USER_ID,
           telegram_id: 1,
           username: "vpn-user",

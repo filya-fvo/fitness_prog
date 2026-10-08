@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -24,6 +25,7 @@ for (const recovering of [true, false]) {
     await page.route("**/users/me", (route) => {
       if (route.request().method() !== "GET") writes.push(route.request().postDataJSON());
       return route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID, telegram_id: null, username: "recovered-user", anthropometry: { sex: "male" },
         goals: { onboarding_completed: true, active_program_id: PROGRAM_ID,
           active_program_next_day: 3, active_program_week_phase: phase,
@@ -86,6 +88,7 @@ for (const recovering of [true, false]) {
 test("a selected program loading failure is not shown as no active program", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "program-preparation-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, telegram_id: null, username: "program-user", anthropometry: {},
     goals: { onboarding_completed: true, active_program_id: PROGRAM_ID },
     subscription_status: "free", stars_balance: 0, onboarding_completed: true,

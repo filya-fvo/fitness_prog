@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -22,6 +23,7 @@ test("notification settings keep one channel and independent category drafts", a
   await page.route("**/users/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: 80808080,
       username: "notifications-qa",

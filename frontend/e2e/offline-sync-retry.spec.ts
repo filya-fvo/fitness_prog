@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -10,6 +11,7 @@ test("opening the app retries an exhausted offline workout without deleting it",
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "sync-user",
@@ -109,6 +111,7 @@ test("temporary API failure keeps a complete custom workout plan locally", async
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "offline-create-user",

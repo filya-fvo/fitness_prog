@@ -147,6 +147,8 @@ const TrainHubPage = lazy(() =>
   import("@/pages/TrainHubPage").then((module) => ({ default: module.TrainHubPage })),
 );
 
+const LegalDocumentPage = lazy(() => import("@/features/legal/pages/LegalDocumentPage").then((module) => ({ default: module.LegalDocumentPage })));
+
 export function App() {
   return (
     <BrowserRouter>
@@ -158,6 +160,7 @@ export function App() {
         }
       >
         <Routes>
+          <Route path="legal/:documentId" element={<LegalDocumentPage />} />
           <Route
             path="help"
             element={(

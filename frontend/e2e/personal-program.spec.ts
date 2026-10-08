@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -8,6 +9,7 @@ test("creates a private linear program with exercises in every day", async ({ pa
   await page.setViewportSize({ width: 393, height: 852 });
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "personal-program-e2e"));
   await page.route("**/users/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID, telegram_id: null, username: "tester", auth_email: "tester@example.test",
     anthropometry: {}, goals: { onboarding_completed: true }, subscription_status: "free", stars_balance: 0,
     onboarding_completed: true,

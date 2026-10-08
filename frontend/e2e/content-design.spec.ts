@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 async function populatedScreens(page: Page, theme: string) {
@@ -12,6 +13,7 @@ async function populatedScreens(page: Page, theme: string) {
       advanced = route.request().postDataJSON().goals?.advanced_analytics_enabled === true;
     }
     await route.fulfill({ json: {
+legal_status: acceptedLegalStatus("81818181-8181-4181-8181-818181818181"),
       id: "81818181-8181-4181-8181-818181818181", telegram_id: null,
       username: "design-qa", auth_email: null, anthropometry: {},
       goals: { onboarding_completed: true, primary_goal: "lose_fat", level: "advanced", advanced_analytics_enabled: advanced },

@@ -1,6 +1,8 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const cachedUser = {
+legal_status: acceptedLegalStatus("00000000-0000-4000-8000-000000000222"),
   id: "00000000-0000-4000-8000-000000000222",
   telegram_id: 42,
   username: "cached-athlete",
@@ -31,9 +33,11 @@ test("cached browser session renders while server verification is still pending"
   });
 
   try {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/profile", { waitUntil: "domcontentloaded" });
     await expect.poll(() => verificationStarted).toBe(true);
-    await expect(page.getByRole("heading", { name: "Привет, cached-athlete" })).toBeVisible({ timeout: 1_000 });
+    await expect(page.getByRole("navigation", { name: "Основная навигация" })).toBeVisible({ timeout: 1_000 });
+    await expect(page.getByRole("link", { name: "Профиль", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("fitness_jwt"))).toBe("cached-browser-token");
     await expect(page.getByText("Авторизация…")).toBeHidden();
   } finally {
     releaseVerification();

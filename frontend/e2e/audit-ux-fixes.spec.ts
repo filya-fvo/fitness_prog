@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const programId = "33333333-3333-4333-8333-333333333333";
@@ -15,6 +16,7 @@ const settings = {
 async function setup(page: Page, active = false) {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "isolated-audit-regression"));
   await page.route("**/users/me", route => route.fulfill({ json: {
+legal_status: acceptedLegalStatus("11111111-1111-4111-8111-111111111111"),
     id: "11111111-1111-4111-8111-111111111111", telegram_id: 123456,
     username: "audit-fixture", auth_email: null, anthropometry: { sex: "male" },
     goals: { onboarding_completed: true, ...(active ? { active_program_id: programId } : {}) },
@@ -191,6 +193,7 @@ test("home distinguishes a profile load failure from an absent program choice", 
   await setup(page);
   let calls = 0;
   await page.route("**/users/me", route => route.fulfill(++calls === 1 ? { json: {
+legal_status: acceptedLegalStatus("11111111-1111-4111-8111-111111111111"),
     id: "11111111-1111-4111-8111-111111111111", telegram_id: 123456,
     username: "audit-fixture", anthropometry: { sex: "male" },
     goals: { onboarding_completed: true }, subscription_status: "free",

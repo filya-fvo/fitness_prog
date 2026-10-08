@@ -1,7 +1,9 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const profile = {
+legal_status: acceptedLegalStatus("22222222-2222-4222-8222-222222222222"),
   id: "22222222-2222-4222-8222-222222222222",
   telegram_id: null,
   username: "theme-user",

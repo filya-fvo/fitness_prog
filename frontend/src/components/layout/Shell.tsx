@@ -8,6 +8,8 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { hasSession, loginWithLocalTestUser, loginWithTelegram, type AuthUser } from "@/api/auth";
 import { clearStoredToken } from "@/api/client";
 import { fetchMyProfile } from "@/api/users";
+import { needsLegalAcceptance } from "@/features/legal/legalState";
+import { LegalLinks } from "@/features/legal/components/LegalLinks";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
 import { TelegramBrowserLogin } from "@/components/TelegramBrowserLogin";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
@@ -35,6 +37,8 @@ import { claimInviteStartParam, rememberPendingInvite } from "@/utils/pendingInv
 const OfflineBanner = lazy(() =>
   import("@/components/OfflineBanner").then((module) => ({ default: module.OfflineBanner })),
 );
+
+const LegalConsentGate = lazy(() => import("@/features/legal/components/LegalConsentGate").then((module) => ({ default: module.LegalConsentGate })));
 
 export function Shell() {
   useTelegramExitGesture();
@@ -211,7 +215,7 @@ export function Shell() {
 
   useEffect(() => {
     if (isAuthLoading || authError || !user) return;
-    if (user.onboarding_completed) return;
+    if (needsLegalAcceptance(user) || user.onboarding_completed) return;
     if (location.pathname.startsWith("/onboarding")) return;
     navigate("/onboarding", { replace: true });
   }, [authError, isAuthLoading, location.pathname, navigate, user]);
@@ -258,6 +262,8 @@ export function Shell() {
     window.addEventListener("fitness:plus-required", refreshSubscription);
     return () => window.removeEventListener("fitness:plus-required", refreshSubscription);
   }, [setUser, user]);
+
+  const requiresLegal = user ? needsLegalAcceptance(user) : false;
 
   const isFocusedFlow =
     location.pathname.startsWith("/onboarding") ||
@@ -327,6 +333,7 @@ export function Shell() {
             ) : null}
             <TelegramBrowserLogin onSuccess={completeBrowserLogin} />
             <EmailLoginForm onSuccess={completeBrowserLogin} />
+            <LegalLinks />
           </>
         ) : null}
 
@@ -336,12 +343,13 @@ export function Shell() {
           </Suspense>
         ) : null}
 
-        {!isAuthLoading && user && !isFocusedFlow ? <BetaPlusNotice user={user} /> : null}
+        {!isAuthLoading && user && !requiresLegal && !isFocusedFlow ? <BetaPlusNotice user={user} /> : null}
 
-        {!isAuthLoading && (user || import.meta.env.DEV) ? <Outlet /> : null}
+        {!isAuthLoading && user && requiresLegal ? <Suspense fallback={<p>Загружаем документы…</p>}><LegalConsentGate key={user.id} user={user} /></Suspense> : null}
+        {!isAuthLoading && !requiresLegal && (user || import.meta.env.DEV) ? <Outlet /> : null}
       </div>
       <ToastHost />
-      {!isFocusedFlow && (user || import.meta.env.DEV) ? <BottomNavigation /> : null}
+      {!requiresLegal && !isFocusedFlow && (user || import.meta.env.DEV) ? <BottomNavigation /> : null}
     </div>
   );
 }

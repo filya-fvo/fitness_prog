@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -8,6 +9,7 @@ const WORKOUT_ID = "84444444-4444-4444-8444-444444444444";
 async function mockHome(page: Page, sex: "female" | "male", today = new Date().toISOString().slice(0, 10)) {
   const startPayloads: Array<Record<string, unknown>> = [];
   const profile = {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "cycle-user",

@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 import { expectMinimumTouchTarget } from "./touch-targets";
@@ -15,6 +16,7 @@ test("label photo is uploaded as multipart and opens an editable review", async 
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
         id: USER_ID,
         telegram_id: null,
         username: "e2e-user",
@@ -170,6 +172,7 @@ test("unknown barcode offers label, rescan and manual product entry", async ({ p
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "e2e-user",
@@ -264,6 +267,7 @@ test("nutrition edit dialog keeps full mobile width", async ({ page }) => {
   await page.route("**/users/me", async (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
+legal_status: acceptedLegalStatus(USER_ID),
       id: USER_ID,
       telegram_id: null,
       username: "nutrition-user",

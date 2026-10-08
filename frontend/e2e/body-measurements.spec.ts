@@ -1,8 +1,10 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const userId = "42424242-4242-4424-8424-424242424242";
 
 const profile = {
+legal_status: acceptedLegalStatus(userId),
   id: userId,
   telegram_id: 42,
   username: "measurement_qa",

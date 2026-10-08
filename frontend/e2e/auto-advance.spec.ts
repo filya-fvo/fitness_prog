@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -8,6 +9,7 @@ const SECOND_EXERCISE_ID = "33333333-3333-4333-8333-333333333332";
 
 function profile(autoAdvance: boolean) {
   return {
+legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
     telegram_id: null,
     username: "e2e-user",

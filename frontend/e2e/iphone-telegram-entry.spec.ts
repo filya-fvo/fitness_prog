@@ -1,3 +1,4 @@
+import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test } from "@playwright/test";
 
 const USER_ID = "33333333-3333-4333-8333-333333333333";
@@ -29,6 +30,7 @@ test("fresh iPhone Telegram launch signs in from URL data when the SDK is unavai
         token_type: "bearer",
         expires_in_days: 30,
         user: {
+legal_status: acceptedLegalStatus(USER_ID),
           id: USER_ID,
           telegram_id: 803005714,
           username: "fresh-ios-user",
