@@ -6,24 +6,26 @@ import { lazy, Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithLocalTestUser, loginWithTelegram, type AuthUser } from "@/api/auth";
-import { clearStoredToken } from "@/api/client";
+import { getStoredToken, clearStoredToken } from "@/api/client";
 import { fetchMyProfile } from "@/api/users";
 import { needsLegalAcceptance } from "@/features/legal/legalState";
 import { LegalLinks } from "@/features/legal/components/LegalLinks";
 import { EmailLoginForm } from "@/components/EmailLoginForm";
 import { TelegramBrowserLogin } from "@/components/TelegramBrowserLogin";
 import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { BetaPlusNotice } from "@/features/subscription/components/BetaPlusNotice";
 import { useTelegramExitGesture } from "@/hooks/useTelegramExitGesture";
 import { trackEvent } from "@/lib/analytics";
-import { authUserFromProfile, isUnauthorizedBrowserSession } from "@/lib/browserSession";
+import { isUnauthorizedBrowserSession } from "@/lib/browserSession";
 import {
   getStartParam,
   initTelegramAppWhenSdkLoads,
   isTelegramEnvironment,
   pathFromStartParam,
 } from "@/lib/telegram";
+import { applyProfileRefresh } from "@/lib/profileRefresh";
 import { useUserStore } from "@/store/userStore";
 import { isOnline } from "@/utils/network";
 import {
@@ -105,16 +107,15 @@ export function Shell() {
             return;
           }
 
+          const requestedToken = getStoredToken();
           try {
             const profile = await fetchMyProfile(8_000);
             if (!cancelled) {
-              const restoredUser = authUserFromProfile(profile);
-              setUser(restoredUser);
-              cacheUserProfile(restoredUser);
+              applyProfileRefresh(profile, requestedToken);
               setAuthLoading(false);
             }
           } catch (error) {
-            if (isUnauthorizedBrowserSession(error)) {
+            if ((getStoredToken() === requestedToken || !getStoredToken()) && isUnauthorizedBrowserSession(error)) {
               clearStoredToken();
               clearCachedUserProfile();
               if (!cancelled) {
@@ -224,13 +225,12 @@ export function Shell() {
     if (isTelegramEnvironment() || !user || !hasSession()) return;
     const verifyAfterReconnect = async () => {
       if (!isOnline()) return;
+      const requestedToken = getStoredToken();
       try {
         const profile = await fetchMyProfile(8_000);
-        const verifiedUser = authUserFromProfile(profile);
-        setUser(verifiedUser);
-        cacheUserProfile(verifiedUser);
+        applyProfileRefresh(profile, requestedToken);
       } catch (error) {
-        if (isUnauthorizedBrowserSession(error)) {
+        if ((getStoredToken() === requestedToken || !getStoredToken()) && isUnauthorizedBrowserSession(error)) {
           clearStoredToken();
           clearCachedUserProfile();
           setUser(null);
@@ -248,11 +248,10 @@ export function Shell() {
     const refreshSubscription = async () => {
       if (refreshing || !isOnline()) return;
       refreshing = true;
+      const requestedToken = getStoredToken();
       try {
         const profile = await fetchMyProfile(8_000);
-        const verifiedUser = authUserFromProfile(profile);
-        setUser(verifiedUser);
-        cacheUserProfile(verifiedUser);
+        applyProfileRefresh(profile, requestedToken);
       } catch {
         // The original request still shows the feature gate. Keep the session alive.
       } finally {
@@ -346,7 +345,7 @@ export function Shell() {
         {!isAuthLoading && user && !requiresLegal && !isFocusedFlow ? <BetaPlusNotice user={user} /> : null}
 
         {!isAuthLoading && user && requiresLegal ? <Suspense fallback={<p>Загружаем документы…</p>}><LegalConsentGate key={user.id} user={user} /></Suspense> : null}
-        {!isAuthLoading && !requiresLegal && (user || import.meta.env.DEV) ? <Outlet /> : null}
+        {!isAuthLoading && !requiresLegal && (user || import.meta.env.DEV) ? <Suspense fallback={<PageSkeleton />}><Outlet /></Suspense> : null}
       </div>
       <ToastHost />
       {!requiresLegal && !isFocusedFlow && (user || import.meta.env.DEV) ? <BottomNavigation /> : null}

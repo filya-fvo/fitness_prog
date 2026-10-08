@@ -10,7 +10,7 @@ async function setup(page: Page, initialAccepted = false, failFirst = false) {
   const profile = () => ({ id: owner, username: "legal-tester", subscription_status: "free", onboarding_completed: true, goals: {}, anthropometry: {}, stars_balance: 0, legal_status: receipt(accepted) });
   await page.addInitScript((user) => {
     localStorage.setItem("fitness_jwt", "legal-test-session");
-    localStorage.setItem("fitness_cached_user_v1", JSON.stringify(user));
+    if (!localStorage.getItem("fitness_cached_user_v1")) localStorage.setItem("fitness_cached_user_v1", JSON.stringify(user));
     localStorage.setItem("legal-diary-sentinel", "must-stay");
   }, profile());
   await page.route("**/users/me", (route) => route.fulfill({ json: profile() }));
@@ -187,3 +187,42 @@ test("legal late response after owner changes cannot accept the new account", as
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).legal_status.accepted)).toBe(false);
   } finally { release(); }
 });
+
+for (const refresh of ["bootstrap", "reconnect", "subscription"]) {
+  test(`legal accepted receipt survives late ${refresh} profile and offline reload`, async ({ page }) => {
+    await setup(page);
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => { release = resolve; });
+    let requested = false;
+    const delayProfile = async () => {
+      await page.route("**/users/me", async (route) => {
+        requested = true;
+        await wait;
+        await route.fulfill({ json: { id: owner, username: "updated-profile", subscription_status: "free", onboarding_completed: true, anthropometry: {}, goals: {}, stars_balance: 0, legal_status: receipt(false) } });
+      });
+    };
+    if (refresh === "bootstrap") await delayProfile();
+    await page.goto("/profile");
+    const dialog = page.getByRole("dialog", { name: "Документы FilFit" });
+    await expect(dialog).toBeVisible();
+    if (refresh !== "bootstrap") {
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).username)).toBe("legal-tester");
+      await delayProfile();
+      await page.evaluate((event) => window.dispatchEvent(new Event(event)), refresh === "reconnect" ? "online" : "fitness:plus-required");
+    }
+    try {
+      await expect.poll(() => requested).toBe(true);
+      for (const checkbox of await dialog.getByRole("checkbox").all()) await checkbox.check();
+      await dialog.getByRole("button", { name: "Подтвердить и продолжить" }).click();
+      await expect(dialog).toBeHidden();
+      release();
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).username)).toBe("updated-profile");
+      expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).legal_status.accepted)).toBe(true);
+      await page.addInitScript(() => Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false }));
+      await page.reload();
+      await expect(page.getByRole("heading", { name: "Профиль", exact: true })).toBeVisible();
+      await expect(dialog).toBeHidden();
+      expect(await page.evaluate(() => localStorage.getItem("legal-diary-sentinel"))).toBe("must-stay");
+    } finally { release(); }
+  });
+}

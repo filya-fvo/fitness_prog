@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { legalDocuments } from "./documents";
-import { needsLegalAcceptance, mergeAcceptedLegalStatus } from "./legalState";
+import { needsLegalAcceptance, mergeAcceptedLegalStatus, preserveAcceptedLegalStatus } from "./legalState";
 import type { AuthUser } from "@/api/auth";
 
 const owner = "a428ecbd-e607-4a75-ab5e-a02394815c8f";
@@ -21,5 +21,20 @@ describe("legal entry gate", () => {
   it("does not apply a completed request to the next account", () => {
     expect(mergeAcceptedLegalStatus({ ...user, id: "a428ecbd-e607-4a75-ab5e-a02394815c89" }, accepted)).toBeNull();
     expect(mergeAcceptedLegalStatus(user, accepted)?.legal_status).toEqual(accepted);
+  });
+});
+
+describe("legal profile response ordering", () => {
+  const confirmed = { ...user, legal_status: accepted };
+  const stale = { ...user, username: "updated", legal_status: { ...accepted, accepted: false, documents: accepted.documents.map((doc) => ({ ...doc, accepted_at: null })) } };
+  it("keeps verified receipts when a late same-revision profile refresh arrives", () => {
+    expect(preserveAcceptedLegalStatus(confirmed, stale)).toEqual({ ...stale, legal_status: accepted });
+  });
+  it("requires acceptance for changed documents and never transfers it between owners", () => {
+    const revised = { ...stale, legal_status: { ...stale.legal_status, documents: stale.legal_status.documents.map((doc, i) => i === 0 ? { ...doc, revision: "new" } : doc) } };
+    expect(preserveAcceptedLegalStatus(confirmed, revised)).toEqual(revised);
+    const nextOwner = { ...stale, id: "22222222-2222-4222-8222-222222222222" };
+    expect(preserveAcceptedLegalStatus(confirmed, nextOwner)).toEqual(nextOwner);
+    expect(preserveAcceptedLegalStatus(user, stale)).toEqual(stale);
   });
 });
