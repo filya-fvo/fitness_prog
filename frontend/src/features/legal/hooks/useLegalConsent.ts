@@ -5,7 +5,6 @@ import { getStoredToken } from "@/api/client";
 import { acceptLegalDocuments, fetchLegalStatus, type LegalStatus } from "@/api/legal";
 import { useUserStore } from "@/store/userStore";
 import { cacheUserProfile } from "@/utils/profileCache";
-import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
 import { legalDocuments, type LegalDocumentId } from "../documents";
 import { mergeAcceptedLegalStatus } from "../legalState";
@@ -15,7 +14,6 @@ export function useLegalConsent(user: AuthUser) {
   const [checks, setChecks] = useState<Record<LegalDocumentId, boolean>>({ privacy: false, consent: false, offer: false });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [online, setOnline] = useState(isOnline);
   const active = useRef(false);
   const owner = user.id;
 
@@ -32,8 +30,8 @@ export function useLegalConsent(user: AuthUser) {
     active.current = true;
     let refreshing = false;
     const refresh = async () => {
-      setOnline(isOnline());
-      if (!isOnline() || refreshing) return;
+      // WebViews can report offline while requests still reach the server.
+      if (refreshing) return;
       refreshing = true;
       const token = getStoredToken();
       try {
@@ -47,16 +45,20 @@ export function useLegalConsent(user: AuthUser) {
         // A failed read never creates acceptance; the explicit save reports errors.
       } finally { refreshing = false; }
     };
-    const disconnected = () => setOnline(false);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
     void refresh();
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
-    window.addEventListener("offline", disconnected);
+    window.addEventListener("pageshow", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       active.current = false;
       window.removeEventListener("focus", refresh);
       window.removeEventListener("online", refresh);
-      window.removeEventListener("offline", disconnected);
+      window.removeEventListener("pageshow", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [owner]);
 
@@ -66,7 +68,6 @@ export function useLegalConsent(user: AuthUser) {
 
   async function submit() {
     if (pending || !Object.values(checks).every(Boolean)) return;
-    if (!isOnline()) { setError("Подключитесь к интернету, чтобы сохранить подтверждение."); return; }
     const token = getStoredToken();
     setPending(true); setError(null);
     try {
@@ -86,5 +87,5 @@ export function useLegalConsent(user: AuthUser) {
     navigate("/legal/privacy", { replace: true });
   }, [navigate, pending]);
 
-  return { status: user.legal_status, checks, setCheck, submit, pending, error, decline, online };
+  return { status: user.legal_status, checks, setCheck, submit, pending, error, decline };
 }

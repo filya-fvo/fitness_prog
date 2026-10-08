@@ -57,12 +57,11 @@ export function LegalConsentGate({ user }: { user: AuthUser }) {
             </label>
           </div>)}
           <p className="text-sm text-tg-hint">Сведения о здоровье требуют отдельного согласия. Это базовое подтверждение их не охватывает.</p>
-          {!consent.online ? <p role="status" className="text-sm text-tg-hint">Подключитесь к интернету, чтобы сохранить подтверждение. Ваши записи сохранены.</p> : null}
           {consent.error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{consent.error}</p> : null}
         </div>}
       </div>
       {!document ? <footer className="shrink-0 space-y-2 border-t border-[var(--border-subtle)] px-5 py-3">
-        <button type="button" className="app-button app-gradient-action min-h-11 w-full" disabled={consent.pending || !consent.online || !Object.values(consent.checks).every(Boolean)} onClick={() => void consent.submit()}>{consent.pending ? "Сохраняем…" : "Подтвердить и продолжить"}</button>
+        <button type="button" className="app-button app-gradient-action min-h-11 w-full" disabled={consent.pending || !Object.values(consent.checks).every(Boolean)} onClick={() => void consent.submit()}>{consent.pending ? "Сохраняем…" : "Подтвердить и продолжить"}</button>
         <button type="button" className="app-button app-ghost-action min-h-11 w-full" disabled={consent.pending} onClick={consent.decline}>Выйти без подтверждения</button>
       </footer> : null}
     </section>

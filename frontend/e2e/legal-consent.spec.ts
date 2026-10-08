@@ -97,22 +97,77 @@ test("legal acceptance elsewhere is restored on focus", async ({ page }) => {
   expect(state.attempts()).toBe(0);
 });
 
-test("legal old cached profile offline waits for connection and preserves diary", async ({ page }) => {
-  const state = await setup(page);
+test("legal actual network outage cannot create acceptance and preserves diary", async ({ page }) => {
+  await setup(page);
+  let attempted = 0;
   await page.addInitScript(() => {
     const user = JSON.parse(localStorage.getItem("fitness_cached_user_v1")!);
     delete user.legal_status;
     localStorage.setItem("fitness_cached_user_v1", JSON.stringify(user));
     Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });
   });
+  await page.route("**/legal/status", (route) => route.abort("internetdisconnected"));
+  await page.route("**/legal/accept", (route) => { attempted += 1; return route.abort("internetdisconnected"); });
   await page.goto("/profile");
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("status")).toContainText("Подключитесь к интернету");
-  await expect(dialog.getByRole("button", { name: "Подтвердить и продолжить" })).toBeDisabled();
-  expect(state.attempts()).toBe(0);
+  for (const checkbox of await dialog.getByRole("checkbox").all()) await checkbox.check();
+  const confirm = dialog.getByRole("button", { name: "Подтвердить и продолжить" });
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(dialog.getByRole("alert")).toBeVisible();
+  await expect(dialog).toBeVisible();
+  for (const checkbox of await dialog.getByRole("checkbox").all()) await expect(checkbox).toBeChecked();
+  await expect(confirm).toBeEnabled();
+  expect(attempted).toBe(1);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).legal_status?.accepted ?? false)).toBe(false);
   expect(await page.evaluate(() => localStorage.getItem("legal-diary-sentinel"))).toBe("must-stay");
 });
+
+async function telegramWithOfflineSignal(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });
+    window.Telegram = { WebApp: { initData: "query_id=legal-reachable-server", ready: () => undefined, expand: () => undefined } };
+  });
+  await page.route("https://telegram.org/js/telegram-web-app.js", (route) => route.abort());
+  await page.route("**/auth/telegram", (route) => route.fulfill({ json: { access_token: "legal-test-session", token_type: "bearer", expires_in_days: 30, user: { id: owner, subscription_status: "free", onboarding_completed: true, legal_status: receipt(false) } } }));
+}
+
+test("legal Telegram confirmation reaches server despite false offline signal", async ({ page }) => {
+  const state = await setup(page);
+  await telegramWithOfflineSignal(page);
+  await page.goto("/profile");
+  const dialog = page.getByRole("dialog", { name: "Документы FilFit" });
+  await expect(dialog).toBeVisible();
+  for (const checkbox of await dialog.getByRole("checkbox").all()) await checkbox.check();
+  const confirm = dialog.getByRole("button", { name: "Подтвердить и продолжить" });
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+  expect(state.attempts()).toBe(1);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).legal_status.accepted)).toBe(true);
+});
+
+for (const event of ["focus", "pageshow", "visibilitychange"]) {
+test(`legal Telegram restores acceptance on ${event} despite false offline signal`, async ({ page }) => {
+  const state = await setup(page);
+  await telegramWithOfflineSignal(page);
+  let reads = 0;
+  let acceptedElsewhere = false;
+  await page.route("**/legal/status", (route) => { reads += 1; return route.fulfill({ json: receipt(acceptedElsewhere) }); });
+  await page.goto("/profile");
+  const dialog = page.getByRole("dialog", { name: "Документы FilFit" });
+  await expect(dialog).toBeVisible();
+  await expect.poll(() => reads).toBeGreaterThan(0);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  acceptedElsewhere = true;
+  state.markAcceptedElsewhere();
+  await page.evaluate((name) => (name === "visibilitychange" ? document : window).dispatchEvent(new Event(name)), event);
+  await expect(dialog).toBeHidden();
+  expect(state.attempts()).toBe(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("fitness_cached_user_v1")!).legal_status.accepted)).toBe(true);
+});
+}
 
 test("legal accepted cached profile remains available when server is unreachable", async ({ page }) => {
   await setup(page, true);
