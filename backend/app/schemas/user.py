@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.subscription import SubscriptionState
+from app.schemas.legal import LegalStatus
 
 
 _ANTHROPOMETRY_RANGES: dict[str, tuple[float, float]] = {
@@ -140,6 +141,7 @@ class UserProfileResponse(BaseModel):
     subscription_status: str
     stars_balance: int = 0
     onboarding_completed: bool = False
+    legal_status: LegalStatus | None = None
 
     model_config = {"from_attributes": True}
 

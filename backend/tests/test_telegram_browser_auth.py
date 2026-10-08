@@ -139,6 +139,14 @@ async def test_browser_login_config_and_exchange_api(monkeypatch: pytest.MonkeyP
             return [legacy_entitlement]
 
     class FakeDbSession:
+        async def execute(self, query):
+            from app.models.legal_acceptance import LegalAcceptance
+            assert query.column_descriptions[0]["entity"] is LegalAcceptance
+            class Result:
+                def scalars(self):
+                    return []
+            return Result()
+
         async def scalars(self, *_args, **_kwargs):
             return EntitlementScalars()
 

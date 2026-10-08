@@ -2,6 +2,7 @@
  * Auth API: Telegram initData or email OTP → JWT in localStorage (TZ §8).
  */
 import { z } from "zod";
+import { legalStatusSchema } from "./legal";
 
 import { apiClient, clearStoredToken, getStoredToken, setStoredToken } from "./client";
 import { subscriptionStateSchema } from "./subscription";
@@ -15,6 +16,7 @@ const authUserSchema = z.object({
   subscription: subscriptionStateSchema.optional(),
   subscription_status: z.string(),
   onboarding_completed: z.boolean().optional().default(false),
+  legal_status: legalStatusSchema.nullable().optional(),
   merged_from_user_ids: z.array(z.string().uuid()).optional(),
   last_merge_preference: z.enum(["email", "telegram"]).nullable().optional(),
 });

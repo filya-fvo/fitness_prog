@@ -10,6 +10,7 @@ export function authUserFromProfile(profile: UserProfile): AuthUser {
     subscription: profile.subscription,
     subscription_status: profile.subscription_status,
     onboarding_completed: profile.onboarding_completed,
+    legal_status: profile.legal_status,
   };
 }
 

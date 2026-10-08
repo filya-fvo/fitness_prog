@@ -35,6 +35,7 @@ from app.services.email_auth_service import (
     verify_login_code,
 )
 from app.services.user_service import to_profile
+from app.services.legal_consent import get_legal_status
 from app.services.telegram_browser_auth import (
     TelegramBrowserAuthError,
     TelegramBrowserAuthUnavailable,
@@ -64,6 +65,7 @@ def _user_response(profile) -> AuthUserResponse:
         subscription=profile.subscription,
         subscription_status=profile.subscription_status,
         onboarding_completed=profile.onboarding_completed,
+        legal_status=profile.legal_status,
         merged_from_user_ids=merged_ids,
         last_merge_preference=goals.get("_last_merge_preference"),
     )
@@ -91,6 +93,7 @@ async def auth_local_test_user(
             subscription=SubscriptionState(tier="free", active=False),
             subscription_status="free",
             onboarding_completed=bool(goals.get("onboarding_completed")),
+            legal_status=await get_legal_status(session, user.id),
         ),
     )
 

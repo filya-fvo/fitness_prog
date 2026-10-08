@@ -8,6 +8,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from app.models.user import User
 from app.schemas.user import UserProfileResponse, UserProfileUpdate
 from app.services.scheduler import local_schedule_day
+from app.services.legal_consent import get_legal_status
 from app.services.subscription_service import get_subscription_state, legacy_subscription_status
 
 
@@ -29,6 +30,7 @@ async def to_profile(session: AsyncSession, user: User) -> UserProfileResponse:
         subscription_status=legacy_subscription_status(subscription),
         stars_balance=user.stars_balance,
         onboarding_completed=_onboarding_completed(user),
+        legal_status=await get_legal_status(session, user.id),
     )
 
 

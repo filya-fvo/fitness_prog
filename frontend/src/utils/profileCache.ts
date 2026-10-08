@@ -1,4 +1,5 @@
 import type { AuthUser } from "@/api/auth";
+import { legalStatusSchema } from "@/api/legal";
 
 const PROFILE_CACHE_KEY = "fitness_cached_user_v1";
 
@@ -16,6 +17,8 @@ export function readCachedUserProfile(): AuthUser | null {
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<AuthUser>;
     if (!value.id || !value.subscription_status) return null;
+    const status = legalStatusSchema.safeParse(value.legal_status);
+    const legalStatus = status.success && status.data.user_id === value.id ? status.data : null;
     return {
       id: value.id,
       telegram_id: value.telegram_id ?? null,
@@ -24,6 +27,7 @@ export function readCachedUserProfile(): AuthUser | null {
       subscription: value.subscription,
       subscription_status: value.subscription_status,
       onboarding_completed: Boolean(value.onboarding_completed),
+      legal_status: legalStatus,
     };
   } catch {
     return null;

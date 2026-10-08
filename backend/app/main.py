@@ -31,6 +31,7 @@ from app.routers import daily_metrics as daily_metrics_router
 from app.routers import exercises as exercises_router
 from app.routers import exercise_media as exercise_media_router
 from app.routers import invites as invites_router
+from app.routers import legal as legal_router
 from app.routers import notifications as notifications_router
 from app.routers import nutrition as nutrition_router
 from app.routers import programs as programs_router
@@ -85,6 +86,7 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 app.include_router(auth_router.router)
+app.include_router(legal_router.router)
 app.include_router(android_sync_router.router)
 app.include_router(body_measurements_router.router)
 app.include_router(daily_metrics_router.router)

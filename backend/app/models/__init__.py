@@ -19,6 +19,7 @@ from app.models.program import Program
 from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.support import SupportAttachment, SupportMessage, SupportTicket
+from app.models.legal_acceptance import LegalAcceptance
 from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.models.user_exercise_pin import UserExercisePin
@@ -31,6 +32,7 @@ __all__ = [
     "AndroidSyncEvent",
     "AndroidSyncReceipt",
     "User",
+    "LegalAcceptance",
     "UserEntitlement",
     "UserExercisePin",
     "EmailOtpCode",

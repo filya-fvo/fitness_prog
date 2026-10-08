@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.subscription import SubscriptionState
+from app.schemas.legal import LegalStatus
 
 
 class TelegramAuthRequest(BaseModel):
@@ -41,6 +42,7 @@ class AuthUserResponse(BaseModel):
     subscription: SubscriptionState
     subscription_status: str
     onboarding_completed: bool = False
+    legal_status: LegalStatus | None = None
     merged_from_user_ids: list[uuid.UUID] = Field(default_factory=list)
     last_merge_preference: Literal["email", "telegram"] | None = None
 

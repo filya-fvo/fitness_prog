@@ -45,6 +45,14 @@ async def test_local_test_login_issues_regular_session_only_from_loopback(monkey
     user.id = uuid.UUID("00000000-0000-4000-8000-000000000456")
 
     class FakeDbSession:
+        async def execute(self, query):
+            from app.models.legal_acceptance import LegalAcceptance
+            assert query.column_descriptions[0]["entity"] is LegalAcceptance
+            class Result:
+                def scalars(self):
+                    return []
+            return Result()
+
         async def scalars(self, *_args, **_kwargs):
             class Empty:
                 def all(self): return []

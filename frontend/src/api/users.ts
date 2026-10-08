@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { legalStatusSchema } from "./legal";
 
 import { apiClient } from "@/api/client";
 import { subscriptionStateSchema } from "@/api/subscription";
@@ -14,6 +15,7 @@ const profileSchema = z.object({
   subscription_status: z.string(),
   stars_balance: z.number().default(0),
   onboarding_completed: z.boolean().default(false),
+  legal_status: legalStatusSchema.nullable().optional(),
 });
 
 export type UserProfile = z.infer<typeof profileSchema>;
