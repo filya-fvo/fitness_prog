@@ -24,6 +24,7 @@ from app.routers import admin_system as admin_system_router
 from app.routers import admin_support as admin_support_router
 from app.routers import admin_user_detail as admin_user_detail_router
 from app.routers import ai as ai_router
+from app.routers import android_sync as android_sync_router
 from app.routers import auth as auth_router
 from app.routers import body_measurements as body_measurements_router
 from app.routers import daily_metrics as daily_metrics_router
@@ -84,6 +85,7 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 app.include_router(auth_router.router)
+app.include_router(android_sync_router.router)
 app.include_router(body_measurements_router.router)
 app.include_router(daily_metrics_router.router)
 app.include_router(users_router.router)

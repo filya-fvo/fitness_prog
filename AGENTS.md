@@ -128,6 +128,7 @@ services → SQLAlchemy models → PostgreSQL
 
 ### Backend
 
+- `backend/app/services/android_sync/`, `routers/android_sync.py` и `models/android_sync.py` — versioned account-scoped Android diary feed, atomic receipts и migration53; контракт `docs/ANDROID_SYNC_V1.md`.
 - `backend/app/main.py` — приложение, middleware, exception handlers, routers,
   `/health`, SPA serving.
 - `backend/app/core/` — settings, DB session, auth dependencies, logging, Sentry.

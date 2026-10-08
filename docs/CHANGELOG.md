@@ -5,6 +5,18 @@
 
 ---
 
+## 0.21.53 — 2026-10-08 — Серверная синхронизация дневника Android
+
+- Подключён `/android-sync/v1` к существующему API и аккаунту email/Telegram.
+  SQLite-очередь телефона передаёт тренировки, питание и замеры в PostgreSQL;
+  обычные web-изменения возвращаются в APK. Повторы идемпотентны, конфликты явные.
+- Добавочная миграция53 создаёт owner-scoped feed/receipt tables; сохранены
+  публичные web/Telegram API, данные и действующие права PLUS.
+- Проверено: 841 backend tests, Ruff, static migrations53, real isolated PostgreSQL
+  и HTTP JWT (repeat/rollback/conflict/account isolation/web pull/access/pagination).
+  Документированный контракт: `docs/ANDROID_SYNC_V1.md`. Выпуск на VPS разрешён
+  владельцем отдельно; результаты backup/deploy/native smoke фиксируются после выполнения.
+
 ## 0.21.52 — 2026-10-07 — ИИ-анализ поверх проверенного дневника
 
 Основной выпуск `86c49b3` и дополнительное правило подбора рабочего веса
@@ -2530,7 +2542,7 @@
 - Lighthouse: performance 0,99; accessibility 0,98; best practices 0,96.
 - Изоляция сборки проверена фактически: после `npm run build` hash live-manifest и
   число live-ассетов не изменились, а `.dist-check/index.html` был создан.
-- Атомарно опубликован build `20260820184840-9460`; сохранён полный граф из 101
+- Атомарно опубликован build `20260820184841-9460`; сохранён полный граф из 101
   ассета предыдущей версии. Публичные HTML, JS, CSS, PNG-миниатюра, старый entry
   bundle и `/health` отвечают `200`.
 

@@ -1,6 +1,7 @@
 """SQLAlchemy models."""
 
 from app.models.ai_conversation import AIConversation
+from app.models.android_sync import AndroidSyncCursor, AndroidSyncEntity, AndroidSyncEvent, AndroidSyncReceipt
 from app.models.admin_broadcast import AdminBroadcast, AdminBroadcastDelivery
 from app.models.admin_audit_log import AdminAuditLog
 from app.models.admin_system_snapshot import AdminSystemSnapshot
@@ -25,6 +26,10 @@ from app.models.workout import Workout, WorkoutSet
 from app.models.workout_plan_override import WorkoutPlanOverride
 
 __all__ = [
+    "AndroidSyncCursor",
+    "AndroidSyncEntity",
+    "AndroidSyncEvent",
+    "AndroidSyncReceipt",
     "User",
     "UserEntitlement",
     "UserExercisePin",

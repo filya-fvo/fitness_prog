@@ -39,6 +39,33 @@ jobs:
           JWT_SECRET: "ci-test-jwt-secret-not-for-production"
         run: python -c "from app.main import app; print(app.title)"
 
+  android-sync-postgres:
+    name: Android sync (isolated PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: fitness_android_test
+          POSTGRES_DB: fitness_android_sync_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["55439:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fitness_android_test -d fitness_android_sync_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e "backend[dev]"
+      - name: Test canonical push, web pull, receipts, conflicts and account access
+        env:
+          PYTHONPATH: backend
+          BOT_TOKEN: ci-test-bot-token
+          JWT_SECRET: ci-test-jwt-secret-not-for-production
+          ENVIRONMENT: test
+        run: python backend/scripts/check_android_sync_postgres.py
   frontend:
     name: Frontend (test + build)
     runs-on: ubuntu-latest

@@ -60,9 +60,14 @@ REQUIRED_FILES = [
     "20260928000050_user_programs.sql",
     "20261001000051_rename_cable_crunch_molitva.sql",
     "20261001000052_approved_exercise_images.sql",
+    "20261008000053_android_sync.sql",
 ]
 
 REQUIRED_TABLES = [
+    "android_sync_cursors",
+    "android_sync_entities",
+    "android_sync_events",
+    "android_sync_receipts",
     "users",
     "exercises",
     "programs",
