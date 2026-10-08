@@ -36,6 +36,7 @@ COPY backend/pyproject.toml backend/README.md ./
 COPY backend/app ./app
 COPY backend/scripts ./scripts
 COPY docs/USER_GUIDE.md docs/ADMIN_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/
+COPY frontend/src/features/legal/documents /docs/legal
 COPY supabase/migrations ./supabase/migrations
 COPY deploy/timeweb/run_api_and_worker.py ./run_api_and_worker.py
 COPY deploy/timeweb/start.sh ./start.sh

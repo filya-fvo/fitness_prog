@@ -1,0 +1,23 @@
+[
+  {
+    "document_id": "privacy",
+    "title": "Политика обработки и защиты персональных данных FilFit",
+    "revision": "2026-10-08",
+    "text_sha256": "02bd45d1d72ed1e79dda9415d0be328d508098084ff61b5789d9068743410cca",
+    "file": "privacy.md"
+  },
+  {
+    "document_id": "consent",
+    "title": "Согласие на обработку персональных данных FilFit",
+    "revision": "2026-10-08",
+    "text_sha256": "40166a1e9d69d082e852f9ade0f6c2d43fe80dbd28fcfeee3b0bc428ae047a4e",
+    "file": "consent.md"
+  },
+  {
+    "document_id": "offer",
+    "title": "Оферта бесплатного использования FilFit",
+    "revision": "2026-10-08",
+    "text_sha256": "d1b9e557801e1f25a9f246bf1f9c3d8f34c8d7f3c649fd2ddf41212f95dab0a4",
+    "file": "offer.md"
+  }
+]

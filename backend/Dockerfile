@@ -21,6 +21,7 @@ COPY backend/scripts ./scripts
 # Telegram /help and the admin resend action attach these canonical documents.
 # Keep them in /docs because telegram_bot resolves that path inside the image.
 COPY docs/USER_GUIDE.md docs/ADMIN_GUIDE.md docs/LOCAL_ADMIN_GUIDE.md /docs/
+COPY frontend/src/features/legal/documents /docs/legal
 
 RUN pip install --upgrade "pip>=26.2.0" \
     && pip install .
