@@ -409,7 +409,13 @@ def start_welcome_text(
                 "На сайте можно войти или зарегистрироваться по электронной почте.",
             ]
         )
-    lines.extend(["", "Полная инструкция — команда <b>/help</b>."])
+    lines.extend(
+        [
+            "",
+            "Android-приложение — команда <b>/app</b>.",
+            "Полная инструкция — команда <b>/help</b>.",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -503,12 +509,12 @@ def bot_commands_reply_keyboard(settings: Settings | None = None) -> dict[str, A
     """
     Persistent reply keyboard under the message field.
 
-    Buttons send plain text commands so users can tap /start and /help
+    Buttons send plain text commands so users can tap /start, /help and /app
     instead of typing them. App opening remains in inline messages.
     """
     _ = settings  # kept for backwards-compatible call sites
     return {
-        "keyboard": [[{"text": "/start"}, {"text": "/help"}]],
+        "keyboard": [[{"text": "/start"}, {"text": "/help"}, {"text": "/app"}]],
         "resize_keyboard": True,
         "is_persistent": True,
         "input_field_placeholder": "Команда или сообщение…",
@@ -524,6 +530,7 @@ async def set_bot_commands(settings: Settings) -> dict[str, Any]:
             "commands": [
                 {"command": "start", "description": "Открыть приложение"},
                 {"command": "help", "description": "Помощь и инструкция"},
+                {"command": "app", "description": "Скачать приложение для Android"},
             ]
         },
     )
@@ -536,6 +543,7 @@ def help_overview_text() -> str:
             "❓ <b>Помощь по FilFit</b>",
             "",
             "• <b>/start</b> — открыть приложение.",
+            "• <b>/app</b> — скачать приложение для Android.",
             "• В приложении: <b>Помощь → Помощь и FAQ</b> — короткие инструкции по разделам.",
             "• Если что-то не работает: <b>Помощь → Поддержка</b> — обращение со скриншотами.",
             "",
@@ -627,7 +635,7 @@ async def send_start_welcome(
         mini_app_url=resolve_mini_app_url(settings),
     )
     # An inline web_app button and a reply keyboard cannot share one message.
-    # Send the launch action first, then restore the two persistent commands.
+    # Send the launch action first, then restore the persistent commands.
     inline_open = open_app_markup(settings)
     result = await send_message(
         settings,
@@ -638,7 +646,7 @@ async def send_start_welcome(
     await send_message(
         settings,
         chat_id=chat_id,
-        text="Быстрые команды: /start и /help",
+        text="Быстрые команды: /start, /help и /app",
         reply_markup=bot_commands_reply_keyboard(settings),
     )
     if send_full_guide:
@@ -910,7 +918,7 @@ async def send_open_again(
     await send_message(
         settings,
         chat_id=chat_id,
-        text="Команды: /start и /help",
+        text="Команды: /start, /help и /app",
         reply_markup=bot_commands_reply_keyboard(settings),
     )
     return result

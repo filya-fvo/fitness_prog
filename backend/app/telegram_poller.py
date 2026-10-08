@@ -54,7 +54,7 @@ async def _disable_webhook(settings: Settings) -> None:
 
 
 async def _synchronize_entrypoints(settings: Settings) -> None:
-    """Keep Telegram's native /start and /help menu stable across restarts."""
+    """Keep Telegram's native /start, /help and /app menu stable across restarts."""
     await set_bot_commands(settings)
     await set_default_chat_menu_button(settings)
     logger.info("telegram_poller_entrypoints_synced menu=commands")

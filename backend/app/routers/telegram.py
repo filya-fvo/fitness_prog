@@ -17,6 +17,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import AsyncSessionLocal
 from app.models.user import User
 from app.services import notification_prefs, supplement_intakes
+from app.services.telegram_app_download import extract_app_command, send_app_download
 from app.services.telegram_bot import (
     TelegramBotError,
     answer_callback_query,
@@ -129,7 +130,7 @@ async def _ensure_default_menu_button(settings: Settings, chat_id: int) -> None:
 
 
 async def _ensure_bot_commands(settings: Settings) -> None:
-    """Register /start and /help in Telegram slash menu (best-effort)."""
+    """Register /start, /help and /app in Telegram slash menu (best-effort)."""
     try:
         await set_bot_commands(settings)
     except TelegramBotError as exc:
@@ -149,6 +150,21 @@ async def _send_help_response(
         _mark_guide_sent(command.get("user_id"), chat_id)
     except TelegramBotError as exc:
         logger.error("telegram_help_reply_failed chat={} err={}", chat_id, exc)
+        if raise_on_error:
+            raise
+
+
+async def _send_app_response(
+    settings: Settings,
+    command: dict[str, Any],
+    *,
+    raise_on_error: bool = False,
+) -> None:
+    chat_id = int(command["chat_id"])
+    try:
+        await send_app_download(settings, chat_id=chat_id)
+    except TelegramBotError:
+        logger.error("telegram_app_reply_failed chat={}", chat_id)
         if raise_on_error:
             raise
 
@@ -202,6 +218,7 @@ async def telegram_webhook(
     - /start → short welcome (name from Telegram) + Open button
       On first /start also sends the full guide as a downloadable file
     - /help → concise in-chat help + full user guide as a Markdown file
+    - /app → current Android APK download URL in private chats
     - /admin → unlisted admin runbook, only for configured Telegram admins
     Always returns 200 so Telegram does not retry forever on user errors.
     """
@@ -300,6 +317,15 @@ async def telegram_webhook(
                 admin_cmd["chat_id"],
                 exc,
             )
+        return {"ok": True}
+
+    app_cmd = extract_app_command(update)
+    if app_cmd:
+        logger.info("telegram_app chat_id={} user_id={}", app_cmd["chat_id"], app_cmd.get("user_id"))
+        if settings.telegram_update_mode == "polling":
+            await _send_app_response(settings, app_cmd, raise_on_error=True)
+        else:
+            background_tasks.add_task(_send_app_response, settings, app_cmd)
         return {"ok": True}
 
     help_cmd = extract_help_command(update)

@@ -116,7 +116,9 @@ async def test_repeat_start_restores_open_and_command_buttons(monkeypatch: pytes
     assert calls[0]["reply_markup"]["inline_keyboard"]
     assert calls[0]["reply_markup"]["inline_keyboard"][0][0]["text"] == "Открыть приложение"
     assert calls[1]["reply_markup"]["is_persistent"] is True
-    assert calls[1]["reply_markup"]["keyboard"] == [[{"text": "/start"}, {"text": "/help"}]]
+    assert calls[1]["reply_markup"]["keyboard"] == [
+        [{"text": "/start"}, {"text": "/help"}, {"text": "/app"}]
+    ]
 
 
 @pytest.mark.asyncio

@@ -305,7 +305,7 @@ def test_bot_commands_reply_keyboard_never_duplicates_open_button() -> None:
     settings = Settings(mini_app_url="https://fitness-pc.example.ts.net")
     kb = bot_commands_reply_keyboard(settings)
     flat = [button["text"] for row in kb["keyboard"] for button in row]
-    assert flat == ["/start", "/help"]
+    assert flat == ["/start", "/help", "/app"]
     assert "Open" not in flat
 
 
@@ -481,7 +481,7 @@ async def test_admin_command_is_not_published_in_telegram_menu(
     await telegram_bot.set_bot_commands(Settings(bot_token="test-token"))
     assert captured["method"] == "setMyCommands"
     commands = captured["payload"]["commands"]  # type: ignore[index]
-    assert [item["command"] for item in commands] == ["start", "help"]  # type: ignore[index]
+    assert [item["command"] for item in commands] == ["start", "help", "app"]  # type: ignore[index]
 
 
 def test_hidden_admin_command_authorization() -> None:
