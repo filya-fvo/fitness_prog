@@ -25,12 +25,17 @@ const currentOwner = () => useUserStore.getState().user?.id;
 function checkOwner(owner: string) {
   if (currentOwner() !== owner) throw new Error("Аккаунт изменился. Повторите подготовку");
 }
+let preparationGuard: (owner: string) => Promise<boolean> = async () => true;
+export function installOfflineWorkoutPreparationGuard(guard: typeof preparationGuard): void { preparationGuard = guard; }
+export async function canPrepareOfflineWorkoutContext(owner: string): Promise<boolean> {
+  return currentOwner() === owner && await db.syncQueue.where("ownerUserId").equals(owner).count() === 0 && await preparationGuard(owner);
+}
 function row(key: string, data: unknown): MetaRow {
   const value = JSON.stringify(data);
   if (new TextEncoder().encode(value).length > 1900000) throw new Error("План слишком большой для сохранения");
   return { key, value, updatedAt: Date.now() };
 }
-export async function saveOfflineWorkoutContext(owner: string, input: unknown, rawProfile: unknown, exercises: Exercise[], hints: WorkoutLoadHint[]): Promise<void> {
+export async function saveOfflineWorkoutContext(owner: string, input: unknown, rawProfile: unknown, exercises: Exercise[], hints: WorkoutLoadHint[], requireReady = false): Promise<void> {
   checkOwner(owner);
   const bundle = offlineWorkoutContextSchema.parse(input);
   const profile = profileSchema.parse(rawProfile);
@@ -38,8 +43,9 @@ export async function saveOfflineWorkoutContext(owner: string, input: unknown, r
   const root = prefix(owner);
   const rows = bundle.plans.map((plan, i) => row(`${root}plan:${i}`, plan));
   const header = row(`${root}header`, { bundle: { ...bundle, plans: undefined }, profile, planKeys: rows.map(item => item.key) });
-  await db.transaction("rw", db.meta, db.exercises, db.workoutLoadHints, async () => {
+  await db.transaction("rw", db.tables, async () => {
     checkOwner(owner);
+    if (requireReady && !await canPrepareOfflineWorkoutContext(owner)) throw new Error("Сначала отправьте сохранённые изменения");
     const old = await db.meta.where("key").startsWith(root).primaryKeys();
     await db.meta.bulkDelete(old);
     await db.meta.bulkPut([...rows, header]);
@@ -89,6 +95,7 @@ export function prepareOfflineWorkoutContext(owner: string, start: string): Prom
   if (existing) return existing;
   const task = (async () => {
     checkOwner(owner);
+    if (!await canPrepareOfflineWorkoutContext(owner)) throw new Error("Сначала отправьте сохранённые изменения");
     const [bundle, profile] = await Promise.all([fetchOfflineWorkoutContext(start), fetchMyProfile()]);
     checkOwner(owner);
     const exerciseIds = [...new Set(bundle.plans.flatMap(plan => plan.plan.exercises.map(ex => ex.exercise_id)))];
@@ -107,7 +114,7 @@ export function prepareOfflineWorkoutContext(owner: string, start: string): Prom
       hints.push(...await fetchWorkoutLoadHints(exerciseIds.slice(i, i + 100)));
       checkOwner(owner);
     }
-    await saveOfflineWorkoutContext(owner, bundle, profile, exercises, hints);
+    await saveOfflineWorkoutContext(owner, bundle, profile, exercises, hints, true);
     return { preparedAt: bundle.prepared_at };
   })().finally(() => running.delete(key));
   running.set(key, task);

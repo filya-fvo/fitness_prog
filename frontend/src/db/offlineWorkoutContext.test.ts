@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mapExercise, exerciseSchema } from "@/api/exercises";
 import { db } from "@/db/schema";
 import { useUserStore } from "@/store/userStore";
-import { readOfflineWorkoutContext, saveOfflineWorkoutContext } from "./offlineWorkoutContext";
+import { canPrepareOfflineWorkoutContext, installOfflineWorkoutPreparationGuard, readOfflineWorkoutContext, saveOfflineWorkoutContext } from "./offlineWorkoutContext";
 
 const owner = "00000000-0000-4000-8000-000000000001";
 const other = "00000000-0000-4000-8000-000000000002";
@@ -70,4 +70,21 @@ describe("durable prepared context", () => {
     finally { failing.mockRestore(); }
     expect((await readOfflineWorkoutContext(owner, "2026-10-09"))?.preparedAt).toBe("2026-10-09T08:00:00Z");
   });
+});
+
+it("does not prepare over pending local progress or a closed native sync gate",async()=>{
+ expect(await canPrepareOfflineWorkoutContext(owner)).toBe(true);
+ await db.syncQueue.put({id:crypto.randomUUID(),ownerUserId:owner,type:"complete_workout",clientWorkoutId:crypto.randomUUID(),payload:{},createdAt:1,attempts:0,lastError:null});
+ expect(await canPrepareOfflineWorkoutContext(owner)).toBe(false);
+ await db.syncQueue.clear();
+ installOfflineWorkoutPreparationGuard(async()=>false);
+ try {expect(await canPrepareOfflineWorkoutContext(owner)).toBe(false);}
+ finally {installOfflineWorkoutPreparationGuard(async()=>true);}
+});
+
+it("keeps the old prepared snapshot when local progress appears before commit",async()=>{
+ await saveOfflineWorkoutContext(owner,snapshot(),profile,[],[]);
+ await db.syncQueue.put({id:crypto.randomUUID(),ownerUserId:owner,type:"complete_workout",clientWorkoutId:crypto.randomUUID(),payload:{},createdAt:1,attempts:0,lastError:null});
+ await expect(saveOfflineWorkoutContext(owner,{...snapshot(),prepared_at:"2026-10-09T09:00:00Z"},profile,[],[],true)).rejects.toThrow("Сначала отправьте");
+ expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.preparedAt).toBe("2026-10-09T08:00:00Z");
 });

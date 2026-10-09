@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getStoredToken } from "@/api/client";
-import { prepareOfflineWorkoutContext, readOfflineWorkoutContext, type OfflineWorkoutContext } from "@/db/offlineWorkoutContext";
+import { canPrepareOfflineWorkoutContext, prepareOfflineWorkoutContext, readOfflineWorkoutContext, type OfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
 
@@ -24,7 +24,7 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
       if (!owner) { setLoading(false); return; }
       await read();
       if (!cancelled) setLoading(false);
-      if (!isOnline() || !getStoredToken()) return;
+      if (!isOnline() || !getStoredToken() || !await canPrepareOfflineWorkoutContext(owner)) return;
       try {
         await prepareOfflineWorkoutContext(owner, day);
         if (!cancelled) { setError(null); await read(); }
@@ -36,11 +36,15 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
     const onPrepared = () => { void read(); };
     const onOnline = () => { void refresh(); };
     window.addEventListener("online", onOnline);
+    window.addEventListener("fitness:offline-sync-ready", onOnline);
+    window.addEventListener("fitness:sync-complete", onOnline);
     window.addEventListener("fitness:offline-prepared", onPrepared);
     window.addEventListener("fitness:native-change", onPrepared);
     return () => {
       cancelled = true;
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("fitness:offline-sync-ready", onOnline);
+      window.removeEventListener("fitness:sync-complete", onOnline);
       window.removeEventListener("fitness:offline-prepared", onPrepared);
       window.removeEventListener("fitness:native-change", onPrepared);
     };

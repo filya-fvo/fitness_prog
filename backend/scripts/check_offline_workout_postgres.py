@@ -3,11 +3,12 @@
 import time
 import uuid
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from app.models.user import User
+from app.models.user_entitlement import UserEntitlement
 from app.models.exercise import Exercise
 from app.models.program import Program
 from app.models.workout import Workout, WorkoutSet
@@ -69,6 +70,18 @@ async def check_offline_workout(engine):
                     ]
                 },
             )
+        )
+        await session.commit()
+        session.add_all(
+            [
+                UserEntitlement(
+                    user_id=owner,
+                    code="plus",
+                    source="qa",
+                    starts_at=datetime.now(UTC) - timedelta(days=1),
+                )
+                for owner in owners
+            ]
         )
         await session.commit()
         for owner in owners:

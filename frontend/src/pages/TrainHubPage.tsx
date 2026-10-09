@@ -1,3 +1,4 @@
+import { OfflineWorkoutPreparationStatus } from "@/features/workout/components/OfflineWorkoutPreparationStatus";
 import { useUserStore } from "@/store/userStore";
 import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 /**
@@ -366,6 +367,7 @@ export function TrainHubPage() {
   return (
     <section>
       <Header title="Упражнения" subtitle="Программы тренировок и свой день" />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
       <div className="space-y-3">
         {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}

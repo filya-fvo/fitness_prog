@@ -1,3 +1,4 @@
+import { OfflineWorkoutPreparationStatus } from "@/features/workout/components/OfflineWorkoutPreparationStatus";
 import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -673,6 +674,7 @@ export function HomePage() {
         title={user?.username ? `Привет, ${user.username.replace(/^@/, "")}` : "Ваш день"}
         subtitle="Сегодня — ещё один шаг к сильной версии себя"
       />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
       <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 
