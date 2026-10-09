@@ -348,7 +348,8 @@ export function ProgramsPage() {
   }, [setCatalog]);
 
   useEffect(() => {
-    if (!offline.context) return;
+    // A later cache refresh must not replace the fetched online catalog.
+    if (!offline.context || (isOnline() && !loading)) return;
     const context = offline.context;
     setItems(context.program ? [context.program] : []);
     setMyItems(context.program?.owner_id === owner ? [context.program] : []);
@@ -356,7 +357,7 @@ export function ProgramsPage() {
     setProfileSex(String(context.profile.anthropometry.sex || context.profile.goals.sex || ""));
     setError(null);
     setLoading(false);
-  }, [offline.context, owner]);
+  }, [offline.context, owner, loading]);
 
   const exerciseById = useMemo(() => {
     const map = new Map<string, Exercise>();
@@ -691,7 +692,11 @@ export function ProgramsPage() {
   return (
     <section className="programs-page">
       <Header title="Программы тренировок" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {error || (!offline.context && (!getStoredToken() || !isOnline())) ? (
+        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">
+          {error || "Нужен онлайн и авторизация, чтобы загрузить программы"}
+        </div>
+      ) : null}
       {selectionNoticeText ? (
         <div role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
           {selectionNoticeText}

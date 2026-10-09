@@ -24,8 +24,8 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
       if (!owner) { setLoading(false); return; }
       await read();
       if (!cancelled) setLoading(false);
-      if (!isOnline() || !getStoredToken() || !await canPrepareOfflineWorkoutContext(owner)) return;
       try {
+        if (!isOnline() || !getStoredToken() || !await canPrepareOfflineWorkoutContext(owner)) return;
         await prepareOfflineWorkoutContext(owner, day);
         if (!cancelled) { setError(null); await read(); }
       } catch (err) {

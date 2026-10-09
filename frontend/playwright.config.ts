@@ -31,6 +31,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       testIgnore: [
         /iphone-(layout|telegram-entry)\.spec\.ts/,
+        /offline-program-context\.spec\.ts/, // Dedicated production PWA preview config.
         ...(visualRegressionEnabled ? [] : [/visual-regression\.spec\.ts/]),
       ],
     },

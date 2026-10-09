@@ -297,7 +297,7 @@ export function TrainHubPage() {
       const goalsMerged = { ...goals, ...(startPatch || {}), ...cursorPatch };
       if (isOnline() && getStoredToken()) {
         try {
-          const profile = await updateMyProfile({ goals: goalsMerged });
+          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
           setGoals((profile.goals as Record<string, unknown>) || goalsMerged);
         } catch {
           setGoals(goalsMerged);

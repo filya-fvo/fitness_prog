@@ -586,7 +586,7 @@ export function HomePage() {
       const goalsMerged = { ...profileGoals, ...(startPatch || {}), ...cursorPatch };
       if (isOnline() && getStoredToken()) {
         try {
-          const profile = await updateMyProfile({ goals: goalsMerged });
+          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
           setProfileGoals((profile.goals as Record<string, unknown>) || goalsMerged);
         } catch {
           setProfileGoals(goalsMerged);
