@@ -1,3 +1,5 @@
+import { useUserStore } from "@/store/userStore";
+import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 /**
  * Exercise hub — programs + custom workout (bottom nav «Упражнения»).
  */
@@ -85,6 +87,8 @@ function draftsFromWorkout(workout: {
 }
 
 export function TrainHubPage() {
+  const owner = useUserStore((state) => state.user?.id ?? null);
+  const offline = useOfflineWorkoutContext(owner, localDateKey());
   const navigate = useNavigate();
   const location = useLocation();
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
@@ -139,9 +143,18 @@ export function TrainHubPage() {
   const heroPlace = programPlace === "home" || programPlace === "outdoor" ? programPlace : "gym";
 
   useEffect(() => {
+    if (!offline.context) return;
+    const context = offline.context;
+    setProgram(context.program);
+    setGoals({ ...context.profile.goals, sex: context.profile.anthropometry.sex || context.profile.goals.sex || "" });
+    setSchedule(context.schedule);
+    setLoading(false);
+  }, [offline.context]);
+
+  useEffect(() => {
     let cancelled = false;
     if (!program || !getStoredToken() || !isOnline()) {
-      setPreparedPlan(null);
+      setPreparedPlan(offline.context?.plans.find(row => row.scheduled_date === preparedDate && row.day_index === preparedDayIndex && row.week_phase === weekPhase && row.readiness === "normal")?.plan ?? null);
       return () => {
         cancelled = true;
       };
@@ -159,7 +172,7 @@ export function TrainHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [preparedDate, preparedDayIndex, program, weekPhase]);
+  }, [preparedDate, preparedDayIndex, program, weekPhase, offline.context]);
 
   useEffect(() => {
     let cancelled = false;

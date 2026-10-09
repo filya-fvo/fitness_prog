@@ -1,3 +1,6 @@
+import { localDateKey } from "@/utils/loadProgression";
+import { useUserStore } from "@/store/userStore";
+import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -228,6 +231,8 @@ function placeholderExercise(row: DayExerciseRow): Exercise {
 }
 
 export function ProgramsPage() {
+  const owner = useUserStore((state) => state.user?.id ?? null);
+  const offline = useOfflineWorkoutContext(owner, localDateKey());
   const initialUi = useMemo(readProgramsUi, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -294,7 +299,7 @@ export function ProgramsPage() {
 
         if (!getStoredToken() || !isOnline()) {
           if (!cancelled) {
-            setError("Нужен онлайн и авторизация, чтобы загрузить программы");
+            setError(null);
             setLoading(false);
           }
           return;
@@ -341,6 +346,17 @@ export function ProgramsPage() {
       cancelled = true;
     };
   }, [setCatalog]);
+
+  useEffect(() => {
+    if (!offline.context) return;
+    const context = offline.context;
+    setItems(context.program ? [context.program] : []);
+    setMyItems(context.program?.owner_id === owner ? [context.program] : []);
+    setProfileGoals(context.profile.goals);
+    setProfileSex(String(context.profile.anthropometry.sex || context.profile.goals.sex || ""));
+    setError(null);
+    setLoading(false);
+  }, [offline.context, owner]);
 
   const exerciseById = useMemo(() => {
     const map = new Map<string, Exercise>();
