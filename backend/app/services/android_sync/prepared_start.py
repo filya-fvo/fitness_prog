@@ -2,23 +2,25 @@
 
 from datetime import datetime
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.models.workout import Workout
 from app.schemas.workout import WorkoutCreate, WorkoutPlan
 from app.services import program_service, workout_service
+from app.services.offline_schedule import schedule_fingerprint
 
 
 class PreparationStamp(BaseModel):
     offline_prepared_at: datetime
+    offline_schedule_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 async def canonical_prepared_start(
     session: AsyncSession, user: User, payload: WorkoutCreate, body: dict
 ) -> WorkoutCreate:
-    PreparationStamp.model_validate(body)
+    stamp = PreparationStamp.model_validate(body)
     if (
         not payload.program_id
         or not payload.day_index
@@ -40,6 +42,8 @@ async def canonical_prepared_start(
         raise HTTPException(
             422, "Тренировка на эту дату уже есть на сервере. Проверьте сохранённую запись"
         )
+    if stamp.offline_schedule_fingerprint != schedule_fingerprint(user.goals or {}):
+        raise HTTPException(422, "Расписание изменилось после подготовки. Результат сохранён на устройстве; проверьте дату тренировки.")
     program = await program_service.get_program(
         session,
         payload.program_id,

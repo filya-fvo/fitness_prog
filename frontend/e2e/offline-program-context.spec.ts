@@ -11,6 +11,7 @@ const plan = { title: "Жим", day_index: 1, week_phase: "medium", exercises: [
 const schedule = { requested_date: "2026-10-09", current: { original_date: "2026-10-09", target_date: "2026-10-09", start_time: "06:00:00", title: "Жим", program_id: programId, day_index: 1, status: "scheduled", is_override: false, can_reschedule: false }, next: null };
 let server: Server;
 let requests = 0;
+let failCatalog = false;
 test.beforeAll(async () => {
   server = createServer((req, res) => {
     requests++;
@@ -21,6 +22,7 @@ test.beforeAll(async () => {
     if (req.method === "OPTIONS") { res.end(); return; }
     const url = new URL(req.url || "/", "http://localhost");
     const path = url.pathname;
+    if (failCatalog && path === "/programs") { res.statusCode=503; res.end(JSON.stringify({detail:"Unavailable"})); return; }
     let data: unknown;
     if (path === "/users/me") data = profile;
     else if (path === "/legal/status") data = profile.legal_status;
@@ -28,7 +30,7 @@ test.beforeAll(async () => {
     else if (path === "/programs/mine") data = { items: [], total: 0 };
     else if (path === `/programs/${programId}`) data = program;
     else if (path === "/exercises") data = { items: [exercise], total: 1, page: 1, page_size: 200 };
-    else if (path === "/workouts/offline-context") data = { version: 1, owner, prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09", program, days: [{ requested_date: "2026-10-09", schedule }], plans: [{ scheduled_date: "2026-10-09", day_index: 1, week_phase: "medium", readiness: "normal", plan }] };
+    else if (path === "/workouts/offline-context") data = { version: 1, owner, schedule_fingerprint: "0".repeat(64), prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09", program, days: [{ requested_date: "2026-10-09", schedule }], plans: [{ scheduled_date: "2026-10-09", day_index: 1, week_phase: "medium", readiness: "normal", plan }] };
     else if (path === "/workouts/load-hints") data = { items: [{ exercise_id: exerciseId, weight: 50, reps: 10, duration_sec: null, weight_mode: "total", machine_params: null, rpe: 7, completed_date: "2026-10-08", phase_loads: {} }] };
     else if (path === "/workouts/schedule/overview") data = schedule;
     else if (path === "/workouts/schedule/settings") data = { version: 1, days: [0, 2, 4], start_time: "06:00:00" };
@@ -36,7 +38,8 @@ test.beforeAll(async () => {
     else if (path === "/workouts/illness") data = { active: false, started_on: null, recovery_choice_pending: false, recovery_light_cycle_active: false };
     else if (path === "/workouts/history") data = { items: [], total: 0 };
     else { res.statusCode = 404; data = { detail: "QA endpoint unavailable" }; }
-    res.end(JSON.stringify(data));
+    if (failCatalog && path === "/workouts/offline-context") setTimeout(() => res.end(JSON.stringify(data)), 600);
+    else res.end(JSON.stringify(data));
   });
   await new Promise<void>(resolve => server.listen(19189, "127.0.0.1", resolve));
 });
@@ -65,3 +68,14 @@ for (const width of [320, 393, 1440]) {
     expect(requests).toBe(before);
   });
 }
+
+test("prepared program appears when online catalog fails before context hydration", async ({page}) => {
+  failCatalog=true;
+  try {
+    await page.clock.setFixedTime(new Date("2026-10-09T12:00:00Z"));
+    await page.addInitScript(() => localStorage.setItem("fitness_jwt", "offline-context-qa"));
+    await page.goto("/programs");
+    await expect(page.getByText("Офлайн программа", {exact:true}).first()).toBeVisible({timeout:15000});
+    await expect(page.getByRole("button", {name:/Начать сегодня/}).first()).toBeEnabled();
+  } finally { failCatalog=false; }
+});

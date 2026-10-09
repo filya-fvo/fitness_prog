@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import type { Workout } from "@/types/workout";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mapExercise, exerciseSchema } from "@/api/exercises";
 import { db } from "@/db/schema";
@@ -9,7 +10,7 @@ const owner = "00000000-0000-4000-8000-000000000001";
 const other = "00000000-0000-4000-8000-000000000002";
 const programId = "00000000-0000-4000-8000-000000000003";
 const snapshot = () => ({
-  version: 1 as const, owner, prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09",
+  version: 1 as const, owner, schedule_fingerprint: "0".repeat(64), prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09",
   program: { id: programId, name: "Программа", structure: { days: [{ day: 1 }] } },
   days: [{ requested_date: "2026-10-09", schedule: { requested_date: "2026-10-09", current: null, next: null } }],
   plans: [{ scheduled_date: "2026-10-09", day_index: 1, week_phase: "medium", readiness: "normal", plan: { title: "План", exercises: [] } }],
@@ -87,4 +88,15 @@ it("keeps the old prepared snapshot when local progress appears before commit",a
  await db.syncQueue.put({id:crypto.randomUUID(),ownerUserId:owner,type:"complete_workout",clientWorkoutId:crypto.randomUUID(),payload:{},createdAt:1,attempts:0,lastError:null});
  await expect(saveOfflineWorkoutContext(owner,{...snapshot(),prepared_at:"2026-10-09T09:00:00Z"},profile,[],[],true)).rejects.toThrow("Сначала отправьте");
  expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.preparedAt).toBe("2026-10-09T08:00:00Z");
+});
+
+it("persists completion IDs as the cursor boundary across clock skew and reopen",async()=>{
+ const make=(id:string,date:string,completed:string):Workout=>({id,user_id:owner,program_id:programId,scheduled_date:date,status:"completed",completed_at:completed,started_at:date+"T06:00:00Z",plan:{day_index:1,week_phase:"medium",exercises:[]},sets:[],title:null,workout_type:null,rpe:null,ai_notes:null,duration_sec:1});
+ await db.workouts.put(make("old","2026-10-08","2026-10-09T13:00:00Z"));
+ const bundle=snapshot();bundle.program.structure.days.push({day:2});
+ await saveOfflineWorkoutContext(owner,bundle,{...profile,goals:{...profile.goals,active_program_next_day:1,active_program_week_phase:"medium"}},[],[]);
+ await db.workouts.put(make("new","2026-10-09","2026-10-09T07:50:00Z"));
+ db.close();await db.open();
+ expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.profile.goals.active_program_next_day).toBe(2);
+ expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.profile.goals.active_program_next_day).toBe(2);
 });

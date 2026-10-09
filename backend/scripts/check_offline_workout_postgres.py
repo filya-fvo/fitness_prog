@@ -155,6 +155,7 @@ async def check_offline_workout(engine):
                 "cycle_readiness": "normal",
                 "plan": saved.model_dump(mode="json"),
                 "offline_prepared_at": context.prepared_at.isoformat(),
+                "offline_schedule_fingerprint": context.schedule_fingerprint,
             },
         )
         first = await service.push(engine, owners[0], create)
@@ -247,3 +248,29 @@ async def check_offline_workout(engine):
     print(
         "PASS: two prepared starts equal web starts, replacements consumed, set slots/values/dates/status, cursor once, receipt replay and duplicate occurrence denial"
     )
+
+    # Same exercises, competing canonical schedule change must be detected.
+    from datetime import time as daytime
+    from app.services.workout_reschedule import reschedule_workout_occurrence
+    from zoneinfo import ZoneInfo
+    moved_owner = uuid.uuid4()
+    original = day if day.weekday() < 6 else day + timedelta(days=1)
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        moved_user = User(id=moved_owner, goals=deepcopy(goals), anthropometry={})
+        session.add(moved_user)
+        await session.commit()
+        session.add(UserEntitlement(user_id=moved_owner,code="plus",source="qa",starts_at=datetime.now(UTC)-timedelta(days=1)))
+        await session.commit()
+        prepared = await offline_workouts.prepare_context(session,moved_user,start=original,days=2)
+        saved = next(row.plan for row in prepared.plans if row.scheduled_date==original and row.day_index==1 and row.week_phase=="medium")
+        await reschedule_workout_occurrence(session,moved_user,original_date=original,target_date=original+timedelta(days=1),target_time=daytime(10),conflict_resolution="cancel_existing",now=datetime.combine(original,daytime(9),ZoneInfo("Europe/Moscow")))
+    moved_op = Operation(id=uuid.uuid4(),owner=moved_owner,kind="workout",entityId=str(uuid.uuid4()),action="create",body={"program_id":str(program_id),"scheduled_date":str(original),"day_index":1,"week_phase":"medium","plan":saved.model_dump(mode="json"),"offline_prepared_at":prepared.prepared_at.isoformat(),"offline_schedule_fingerprint":prepared.schedule_fingerprint},baseRevision=None,createdAt=1)
+    try:
+        await service.push(engine,moved_owner,moved_op)
+    except HTTPException as exc:
+        assert exc.status_code==422 and "расписание" in exc.detail.lower()
+    else:
+        raise AssertionError("rescheduled occurrence accepted silently")
+    async with AsyncSession(engine) as session:
+        assert await session.scalar(select(func.count()).select_from(Workout).where(Workout.user_id==moved_owner))==0
+    print("PASS: canonical reschedule detected with unchanged exercises; local operation rejected explicitly")

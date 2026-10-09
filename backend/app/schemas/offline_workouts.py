@@ -29,6 +29,7 @@ class OfflineWorkoutContext(BaseModel):
     version: Literal[1] = 1
     owner: UUID
     prepared_at: datetime
+    schedule_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     start: date
     end: date
     program: ProgramResponse | None = None

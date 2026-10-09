@@ -11,6 +11,7 @@ export const preparedProgramPlanSchema = z.object({
 });
 export const offlineWorkoutContextSchema = z.object({
   version: z.literal(1), owner: z.string().uuid(), prepared_at: z.string().datetime({ offset: true }),
+  schedule_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   start: day, end: day, program: programSchema.transform(mapProgram).nullable(),
   days: z.array(z.object({ requested_date: day, schedule: scheduleOverviewSchema })).min(1).max(14),
   plans: z.array(preparedProgramPlanSchema).max(3528),

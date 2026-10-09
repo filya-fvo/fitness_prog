@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.offline_schedule import schedule_fingerprint
 from app.models.user import User
 from app.schemas.offline_workouts import (
     OfflineWorkoutContext,
@@ -62,6 +63,7 @@ async def prepare_context(
     result = OfflineWorkoutContext(
         owner=user.id,
         prepared_at=datetime.now(UTC),
+        schedule_fingerprint=schedule_fingerprint(user.goals or {}),
         start=start,
         end=end,
         program=ProgramResponse.model_validate(program) if program else None,

@@ -4,9 +4,10 @@ import type { WeekPhase } from "@/utils/loadProgression";
 const phases: WeekPhase[] = ["light", "medium", "heavy"];
 
 /** Display-only projection. Server completion remains authoritative after sync. */
-export function overlayOfflineProgramProgress(goals: Record<string, unknown>, program: Program, workouts: Workout[], preparedAt: string, day: string, owner: string): Record<string, unknown> {
+export function overlayOfflineProgramProgress(goals: Record<string, unknown>, program: Program, workouts: Workout[], includedCompletionIds: readonly string[], day: string, owner: string): Record<string, unknown> {
   const updated = { ...goals };
-  const completed = workouts.filter(workout => workout.user_id === owner && workout.program_id === program.id && workout.status === "completed" && workout.scheduled_date <= day && Date.parse(workout.completed_at || "") > Date.parse(preparedAt))
+  const included = new Set(includedCompletionIds);
+  const completed = workouts.filter(workout => workout.user_id === owner && workout.program_id === program.id && workout.status === "completed" && workout.scheduled_date <= day && !included.has(workout.id))
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date) || String(a.completed_at).localeCompare(String(b.completed_at)) || a.id.localeCompare(b.id));
   const seen = new Set<string>();
   for (const workout of completed) {

@@ -11,7 +11,7 @@ import type { Exercise, WorkoutLoadHint, Workout } from "@/types/workout";
 
 const headerSchema = z.object({
   bundle: offlineWorkoutContextSchema.innerType().omit({ plans: true }),
-  profile: profileSchema, planKeys: z.array(z.string()).max(3528),
+  profile: profileSchema, completedWorkoutIds: z.array(z.string().min(1).max(128)).max(50000), planKeys: z.array(z.string()).max(3528),
 });
 export type OfflineWorkoutContext = {
   program: z.infer<typeof headerSchema>["bundle"]["program"];
@@ -19,6 +19,7 @@ export type OfflineWorkoutContext = {
   schedule: z.infer<typeof headerSchema>["bundle"]["days"][number]["schedule"];
   plans: z.infer<typeof preparedProgramPlanSchema>[];
   preparedAt: string;
+  scheduleFingerprint: string;
 };
 const prefix = (owner: string) => `offline-workout:v1:${owner}:`;
 const currentOwner = () => useUserStore.getState().user?.id;
@@ -42,10 +43,11 @@ export async function saveOfflineWorkoutContext(owner: string, input: unknown, r
   if (bundle.owner !== owner || profile.id !== owner || String(profile.goals.active_program_id || "") !== (bundle.program?.id || "")) throw new Error("Программа изменилась. Повторите подготовку");
   const root = prefix(owner);
   const rows = bundle.plans.map((plan, i) => row(`${root}plan:${i}`, plan));
-  const header = row(`${root}header`, { bundle: { ...bundle, plans: undefined }, profile, planKeys: rows.map(item => item.key) });
   await db.transaction("rw", db.tables, async () => {
     checkOwner(owner);
     if (requireReady && !await canPrepareOfflineWorkoutContext(owner)) throw new Error("Сначала отправьте сохранённые изменения");
+    const completedWorkoutIds = await db.workouts.where("user_id").equals(owner).filter(workout => workout.status === "completed").primaryKeys();
+    const header = row(`${root}header`, { bundle: { ...bundle, plans: undefined }, profile, completedWorkoutIds, planKeys: rows.map(item => item.key) });
     const old = await db.meta.where("key").startsWith(root).primaryKeys();
     await db.meta.bulkDelete(old);
     await db.meta.bulkPut([...rows, header]);
@@ -74,7 +76,7 @@ export async function readOfflineWorkoutContext(owner: string, day: string, sour
     if (currentOwner() !== owner) return null;
     const local = await workouts.where("user_id").equals(owner).toArray();
     const program = header.bundle.program;
-    const goals = program ? overlayOfflineProgramProgress(header.profile.goals, program, local, header.bundle.prepared_at, day, owner) : header.profile.goals;
+    const goals = program ? overlayOfflineProgramProgress(header.profile.goals, program, local, header.completedWorkoutIds, day, owner) : header.profile.goals;
     const schedule = structuredClone(date.schedule);
     if (program) {
       const completedToday = local.some(row => row.program_id === program.id && row.status === "completed" && row.scheduled_date === schedule.current?.target_date);
@@ -85,7 +87,7 @@ export async function readOfflineWorkoutContext(owner: string, day: string, sour
     const recovery = goals.workout_illness_recovery;
     const afterRecovery = plans.some(row => row.after_recovery) && !(recovery && typeof recovery === "object" && (recovery as Record<string, unknown>).light_cycle_active === true);
     const effectivePlans = plans.filter(row => row.after_recovery === afterRecovery);
-    return { program, profile: { ...header.profile, goals }, schedule, plans: effectivePlans, preparedAt: header.bundle.prepared_at };
+    return { program, profile: { ...header.profile, goals }, schedule, plans: effectivePlans, preparedAt: header.bundle.prepared_at, scheduleFingerprint: header.bundle.schedule_fingerprint };
   });
 }
 const running = new Map<string, Promise<{ preparedAt: string }>>();

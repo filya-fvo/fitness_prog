@@ -274,6 +274,7 @@ export function ProgramsPage() {
   const [exerciseCatalog, setExerciseCatalog] = useState<Exercise[]>([]);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onlineCatalogLoaded, setOnlineCatalogLoaded] = useState(false);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const readiness = usePreWorkoutReadiness(
@@ -288,6 +289,7 @@ export function ProgramsPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
+      setOnlineCatalogLoaded(false);
       setError(null);
       setMyProgramsError(null);
       try {
@@ -314,6 +316,7 @@ export function ProgramsPage() {
           fetchExercises({ pageSize: 200 }).catch(() => null),
         ]);
         if (!cancelled) {
+          setOnlineCatalogLoaded(true);
           setItems(result.items);
           setMyItems(mine?.items ?? []);
           const goals = (profile?.goals as Record<string, unknown>) || {};
@@ -349,7 +352,7 @@ export function ProgramsPage() {
 
   useEffect(() => {
     // A later cache refresh must not replace the fetched online catalog.
-    if (!offline.context || (isOnline() && !loading)) return;
+    if (!offline.context || (isOnline() && onlineCatalogLoaded)) return;
     const context = offline.context;
     setItems(context.program ? [context.program] : []);
     setMyItems(context.program?.owner_id === owner ? [context.program] : []);
@@ -357,7 +360,7 @@ export function ProgramsPage() {
     setProfileSex(String(context.profile.anthropometry.sex || context.profile.goals.sex || ""));
     setError(null);
     setLoading(false);
-  }, [offline.context, owner, loading]);
+  }, [offline.context, owner, onlineCatalogLoaded]);
 
   const exerciseById = useMemo(() => {
     const map = new Map<string, Exercise>();
