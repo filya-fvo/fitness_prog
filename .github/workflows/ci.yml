@@ -92,6 +92,8 @@ jobs:
         run: npm run build
       - name: Bundle budget
         run: npm run check:bundle
+      - name: APK download filenames and atomic release switching
+        run: node scripts/check-apk-download.mjs
 
   frontend-e2e:
     name: Frontend (browser QA)
