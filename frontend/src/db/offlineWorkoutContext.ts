@@ -1,3 +1,5 @@
+import type Dexie from "dexie";
+import { overlayOfflineProgramProgress } from "@/utils/offlineProgramProgress";
 import { z } from "zod";
 import { fetchExercises } from "@/api/exercises";
 import { fetchOfflineWorkoutContext, offlineWorkoutContextSchema, preparedProgramPlanSchema } from "@/api/offlineWorkouts";
@@ -5,11 +7,11 @@ import { fetchMyProfile, profileSchema } from "@/api/users";
 import { fetchWorkoutLoadHints } from "@/api/workouts";
 import { db, type MetaRow } from "@/db/schema";
 import { useUserStore } from "@/store/userStore";
-import type { Exercise, WorkoutLoadHint } from "@/types/workout";
+import type { Exercise, WorkoutLoadHint, Workout } from "@/types/workout";
 
 const headerSchema = z.object({
   bundle: offlineWorkoutContextSchema.innerType().omit({ plans: true }),
-  profile: profileSchema, planKeys: z.array(z.string()).max(1764),
+  profile: profileSchema, planKeys: z.array(z.string()).max(3528),
 });
 export type OfflineWorkoutContext = {
   program: z.infer<typeof headerSchema>["bundle"]["program"];
@@ -49,20 +51,35 @@ export async function saveOfflineWorkoutContext(owner: string, input: unknown, r
   checkOwner(owner);
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("fitness:offline-prepared", { detail: owner }));
 }
-export async function readOfflineWorkoutContext(owner: string, day: string): Promise<OfflineWorkoutContext | null> {
+export async function readOfflineWorkoutContext(owner: string, day: string, source: Dexie = db): Promise<OfflineWorkoutContext | null> {
   if (currentOwner() !== owner) return null;
-  return db.transaction("r", db.meta, async () => {
-    const saved = await db.meta.get(`${prefix(owner)}header`);
+  const meta = source.table<MetaRow>("meta");
+  const workouts = source.table<Workout>("workouts");
+  return source.transaction("r", meta, workouts, async () => {
+    const saved = await meta.get(`${prefix(owner)}header`);
     if (!saved) return null;
     const header = headerSchema.parse(JSON.parse(saved.value));
     if (header.bundle.owner !== owner || header.profile.id !== owner) return null;
     const date = header.bundle.days.find(item => item.requested_date === day);
     if (!date) return null;
-    const rows = await db.meta.bulkGet(header.planKeys);
+    const rows = await meta.bulkGet(header.planKeys);
     if (rows.some(item => !item)) return null;
     const plans = rows.map(item => preparedProgramPlanSchema.parse(JSON.parse(item!.value)));
     if (currentOwner() !== owner) return null;
-    return { program: header.bundle.program, profile: header.profile, schedule: date.schedule, plans, preparedAt: header.bundle.prepared_at };
+    const local = await workouts.where("user_id").equals(owner).toArray();
+    const program = header.bundle.program;
+    const goals = program ? overlayOfflineProgramProgress(header.profile.goals, program, local, header.bundle.prepared_at, day, owner) : header.profile.goals;
+    const schedule = structuredClone(date.schedule);
+    if (program) {
+      const completedToday = local.some(row => row.program_id === program.id && row.status === "completed" && row.scheduled_date === schedule.current?.target_date);
+      if (schedule.current && completedToday) schedule.current.status = "completed";
+      if (schedule.current?.status === "scheduled" || schedule.current?.status === "missed") schedule.current.day_index = Number(goals.active_program_next_day) || schedule.current.day_index;
+      if (schedule.next?.status === "scheduled") schedule.next.day_index = Number(goals.active_program_next_day) || schedule.next.day_index;
+    }
+    const recovery = goals.workout_illness_recovery;
+    const afterRecovery = plans.some(row => row.after_recovery) && !(recovery && typeof recovery === "object" && (recovery as Record<string, unknown>).light_cycle_active === true);
+    const effectivePlans = plans.filter(row => row.after_recovery === afterRecovery);
+    return { program, profile: { ...header.profile, goals }, schedule, plans: effectivePlans, preparedAt: header.bundle.prepared_at };
   });
 }
 const running = new Map<string, Promise<{ preparedAt: string }>>();

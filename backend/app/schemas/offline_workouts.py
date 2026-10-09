@@ -21,6 +21,7 @@ class PreparedProgramPlan(BaseModel):
     day_index: int = Field(ge=1, le=7)
     week_phase: Literal["light", "medium", "heavy"]
     readiness: Literal["normal", "caution", "reduce", "rest"]
+    after_recovery: bool = False
     plan: WorkoutPlan
 
 
@@ -32,4 +33,4 @@ class OfflineWorkoutContext(BaseModel):
     end: date
     program: ProgramResponse | None = None
     days: list[OfflineWorkoutDay] = Field(max_length=14)
-    plans: list[PreparedProgramPlan] = Field(default_factory=list, max_length=1764)
+    plans: list[PreparedProgramPlan] = Field(default_factory=list, max_length=3528)

@@ -95,29 +95,40 @@ async def prepare_context(
             if cycle_training.cycle_training_enabled(user.goals, user.anthropometry)
             else ["normal"]
         )
-        for target in sorted(targets):
-            for index in indexes:
-                for phase in ("light", "medium", "heavy"):
-                    for readiness in readiness_values:
-                        plan = await workout_service.build_program_plan_for_user(
-                            session,
-                            user,
-                            program,
-                            day_index=index,
-                            scheduled_date=target,
-                            week_phase=phase,
-                            consume_saved_override=False,
-                            cycle_readiness=readiness,
-                        )
-                        result.plans.append(
-                            PreparedProgramPlan(
-                                scheduled_date=target,
+        planning_users = [(False, user)]
+        if illness_pause.recovery_light_week_active(user.goals or {}):
+            # A transient read-only view; never attach it to the DB session.
+            after = User(
+                id=user.id,
+                goals=illness_pause.finish_recovery_cycle(user.goals or {}),
+                anthropometry=user.anthropometry,
+            )
+            planning_users.append((True, after))
+        for after_recovery, planning_user in planning_users:
+            for target in sorted(targets):
+                for index in indexes:
+                    for phase in ("light", "medium", "heavy"):
+                        for readiness in readiness_values:
+                            plan = await workout_service.build_program_plan_for_user(
+                                session,
+                                planning_user,
+                                program,
                                 day_index=index,
+                                scheduled_date=target,
                                 week_phase=phase,
-                                readiness=readiness,
-                                plan=WorkoutPlan.model_validate(plan),
+                                consume_saved_override=False,
+                                cycle_readiness=readiness,
                             )
-                        )
+                            result.plans.append(
+                                PreparedProgramPlan(
+                                    scheduled_date=target,
+                                    day_index=index,
+                                    week_phase=phase,
+                                    readiness=readiness,
+                                    after_recovery=after_recovery,
+                                    plan=WorkoutPlan.model_validate(plan),
+                                )
+                            )
     # Native transport is bounded to 8MiB. Leave room for encoding and middleware.
     if len(result.model_dump_json().encode("utf-8")) > 6 * 1024 * 1024:
         raise HTTPException(413, "Планы слишком большие. Подготовьте меньше дней")

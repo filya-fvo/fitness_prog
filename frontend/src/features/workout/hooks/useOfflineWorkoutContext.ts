@@ -37,10 +37,12 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
     const onOnline = () => { void refresh(); };
     window.addEventListener("online", onOnline);
     window.addEventListener("fitness:offline-prepared", onPrepared);
+    window.addEventListener("fitness:native-change", onPrepared);
     return () => {
       cancelled = true;
       window.removeEventListener("online", onOnline);
       window.removeEventListener("fitness:offline-prepared", onPrepared);
+      window.removeEventListener("fitness:native-change", onPrepared);
     };
   }, [owner, day]);
   return { context, loading, error, preparedAt: context?.preparedAt ?? null };

@@ -204,3 +204,20 @@ async def test_service_rejects_unbounded_preparation(scenario, days):
         )
     assert failure.value.status_code == 422
     builder.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_recovery_split_also_prepares_plans_after_local_recovery_completion(scenario):
+    user, _, builder = scenario
+    user.goals["workout_illness_recovery"] = {"choice_pending": False, "light_cycle_active": True}
+    original = deepcopy(user.goals)
+    result = await offline_workouts.prepare_context(
+        AsyncMock(), user, start=date(2026, 10, 9), days=1
+    )
+    assert {row.after_recovery for row in result.plans} == {False, True}
+    assert builder.await_count == 2 * 2 * 3
+    assert user.goals == original
+    assert any(
+        not call.args[1].goals["workout_illness_recovery"]["light_cycle_active"]
+        for call in builder.await_args_list
+    )

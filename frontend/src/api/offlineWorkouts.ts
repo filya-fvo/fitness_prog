@@ -7,13 +7,13 @@ const preparedWorkoutPlanSchema = workoutPlanSchema.extend({ exercises: z.array(
 export const preparedProgramPlanSchema = z.object({
   scheduled_date: day, day_index: z.number().int().min(1).max(7),
   week_phase: z.enum(["light", "medium", "heavy"]),
-  readiness: z.enum(["normal", "caution", "reduce", "rest"]), plan: preparedWorkoutPlanSchema,
+  readiness: z.enum(["normal", "caution", "reduce", "rest"]), after_recovery: z.boolean().default(false), plan: preparedWorkoutPlanSchema,
 });
 export const offlineWorkoutContextSchema = z.object({
   version: z.literal(1), owner: z.string().uuid(), prepared_at: z.string().datetime({ offset: true }),
   start: day, end: day, program: programSchema.transform(mapProgram).nullable(),
   days: z.array(z.object({ requested_date: day, schedule: scheduleOverviewSchema })).min(1).max(14),
-  plans: z.array(preparedProgramPlanSchema).max(1764),
+  plans: z.array(preparedProgramPlanSchema).max(3528),
 }).superRefine((value, ctx) => {
   const expected = (Date.parse(value.end) - Date.parse(value.start)) / 86400000 + 1;
   if (expected !== value.days.length || value.days.some((row, i) => row.requested_date !== new Date(Date.parse(value.start) + i * 86400000).toISOString().slice(0, 10) || row.schedule.requested_date !== row.requested_date)) {
