@@ -109,7 +109,43 @@ async def main():
             assert current.goals["notification_settings"]["water"]["enabled"] is True
             assert current.goals["notification_settings"]["calories"]["enabled"] is True
             assert current.goals["notification_settings"]["delivery_channel"] == "telegram"
-        print("ANDROID_NOTIFICATIONS_POSTGRES_OK: CAS race, lost ACK replay, stale category identity")
+        # A skipped Android owner must be unlocked before unrelated slow delivery.
+        from app.core.config import Settings
+        from app.routers import notifications as routes
+        slow_owner = type(owner)(int=owner.int + 1)
+        entered, release = asyncio.Event(), asyncio.Event()
+        dispatch_original = routes._dispatch_user
+        async with AsyncSession(engine) as session:
+            session.add(User(id=slow_owner, goals={}, anthropometry={}))
+            await session.commit()
+        async def isolated_dispatch(session, user, settings):
+            user_id = user.id if isinstance(user, User) else user
+            if user_id == owner:
+                return await dispatch_original(session, user, settings)
+            if user_id == slow_owner:
+                entered.set()
+                await release.wait()
+            return 0  # Never send real notifications in this disposable database.
+        routes._dispatch_user = isolated_dispatch
+        task = None
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as dispatch_session:
+                task = asyncio.create_task(routes.dispatch_all_users(dispatch_session, Settings(jwt_secret="test")))
+                await asyncio.wait_for(entered.wait(), timeout=10)
+                async with AsyncSession(engine) as concurrent:
+                    await concurrent.execute(text("SET LOCAL lock_timeout = '1000ms'"))
+                    assert await concurrent.scalar(select(User).where(User.id == owner).with_for_update()) is not None
+                    await concurrent.rollback()
+                release.set()
+                assert (await task)["errors"] == 0
+        finally:
+            release.set()
+            if task is not None:
+                await task
+            routes._dispatch_user = dispatch_original
+            async with engine.begin() as connection:
+                await connection.execute(delete(User).where(User.id == slow_owner))
+        print("ANDROID_NOTIFICATIONS_POSTGRES_OK: CAS race, lost ACK replay, stale category identity, per-user lock release")
     finally:
         if created:
             async with engine.begin() as connection:

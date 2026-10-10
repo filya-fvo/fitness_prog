@@ -539,15 +539,18 @@ async def dispatch_all_users(session: AsyncSession, settings: Settings) -> dict[
         )
         if not batch:
             break
-        for user in batch:
+        user_ids = [user.id for user in batch]
+        for user_id in user_ids:
             try:
-                n = await _dispatch_user(session, user, settings)
+                n = await _dispatch_user(session, user_id, settings)
+                await session.commit()
                 total_sent += n
             except Exception as exc:
+                await session.rollback()
                 errors += 1
-                logger.warning("dispatch_user_failed user={} err={}", user.id, exc)
+                logger.warning("dispatch_user_failed user={} err={}", user_id, exc)
             processed += 1
-        last_id = batch[-1].id
+        last_id = user_ids[-1]
     return {"ok": True, "users": processed, "sent": total_sent, "errors": errors}
 
 
@@ -589,9 +592,9 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
     return out
 
 
-async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) -> int:
+async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings: Settings) -> int:
     """Dispatch legacy reminders plus idempotent supplement intake groups."""
-    user = await lock_notification_user(session, user.id)
+    user = await lock_notification_user(session, user.id if isinstance(user, User) else user)
     goals = user.goals or {}
     if android_delivery_state(goals).enabled:
         return 0

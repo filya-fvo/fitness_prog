@@ -10,7 +10,7 @@ const input: TimerDeliverySnapshot = {
 function scenario(native: boolean, online = true) {
   const platform = { ...notificationPlatform,
     status: vi.fn().mockResolvedValue({ ...unavailableNotificationStatus,
-      available: native, active: native, owner, permission: "granted" }), setTimer: vi.fn() };
+      available: native, active: native, owner, permission: "granted", restEnabled: native }), setTimer: vi.fn() };
   const deps = { platform, online: () => online, now: () => 1000, owner: () => owner,
     schedule: vi.fn(), cancel: vi.fn(), notify: vi.fn() };
   return { platform, deps, delivery: createTimerNotificationDelivery(deps) };
@@ -65,4 +65,16 @@ it("owner_change_while_status_is_loading_cannot_deliver_old_timer", async () => 
   await pending;
   expect(platform.setTimer).not.toHaveBeenCalled();
   expect(deps.schedule).not.toHaveBeenCalled();
+});
+
+it("rest disabled then enabled restores the current unchanged timer",async()=>{
+ const {delivery,platform}=scenario(true,false);
+ platform.status.mockResolvedValue({...unavailableNotificationStatus,available:true,active:true,owner,permission:"granted",restEnabled:true});
+ await delivery.update(input,"Готово");
+ platform.status.mockResolvedValue({...unavailableNotificationStatus,available:true,active:true,owner,permission:"granted",restEnabled:false});
+ await delivery.update(input,"Готово");
+ platform.status.mockResolvedValue({...unavailableNotificationStatus,available:true,active:true,owner,permission:"granted",restEnabled:true});
+ await delivery.update(input,"Готово");
+ expect(platform.setTimer.mock.calls.filter(call=>call[0]!==null)).toHaveLength(2);
+ expect(platform.setTimer).toHaveBeenLastCalledWith(expect.objectContaining({endsAtMs:input.restEndsAtMs}));
 });

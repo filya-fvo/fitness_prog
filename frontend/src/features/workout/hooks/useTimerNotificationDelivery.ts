@@ -32,6 +32,11 @@ export function createTimerNotificationDelivery(deps: Dependencies) {
       const status = await deps.platform.status();
       if (request !== sequence || (snapshot.restOwner && snapshot.restOwner !== deps.owner())) return;
       if (nativeMode(status)) {
+        if (!status.restEnabled) {
+          nativeKey = null;
+          nativeEnd = null;
+          return;
+        }
         if (snapshot.isResting && snapshot.restEndsAtMs && snapshot.restNotificationId && snapshot.restOwner
           && snapshot.restOwner === status.owner && snapshot.restClientWorkoutId) {
           const key = `${snapshot.restOwner}:${snapshot.restClientWorkoutId}:${snapshot.restNotificationId}:${snapshot.restEndsAtMs}`;

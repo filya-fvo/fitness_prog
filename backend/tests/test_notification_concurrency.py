@@ -70,6 +70,13 @@ class FakeScalarResult:
 class FakePagedSession:
     def __init__(self, batches) -> None:
         self.batches = list(batches)
+        self.locked = False
+
+    async def commit(self):
+        self.locked = False
+
+    async def rollback(self):
+        self.locked = False
 
     async def scalars(self, _statement):
         return FakeScalarResult(self.batches.pop(0))
@@ -82,7 +89,7 @@ async def test_dispatch_all_users_reads_until_empty_page(monkeypatch) -> None:
     dispatched = []
 
     async def fake_dispatch(_session, user, _settings):
-        dispatched.append(user.id)
+        dispatched.append(user.id if hasattr(user, "id") else user)
         return 1
 
     monkeypatch.setattr(notifications, "_dispatch_user", fake_dispatch)
@@ -333,3 +340,25 @@ async def test_android_switch_during_supplement_materialization_stops_delivery(m
     assert await notifications._dispatch_user(session, user, Settings(jwt_secret="test", bot_token="configured")) == 0
     send.assert_not_awaited()
     assert session.commits == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("first_fails", [False, True])
+async def test_dispatch_ends_previous_user_transaction_before_next(monkeypatch, first_fails):
+    users = [SimpleNamespace(id=uuid4()) for _ in range(2)]
+    session = FakePagedSession([users, []])
+    visited = []
+
+    async def fake_dispatch(current, user, _settings):
+        assert not current.locked, "Previous user lock survived into next delivery"
+        current.locked = True
+        visited.append(user.id if hasattr(user, "id") else user)
+        if first_fails and len(visited) == 1:
+            raise RuntimeError("Injected dispatch failure")
+        return 0
+
+    monkeypatch.setattr(notifications, "_dispatch_user", fake_dispatch)
+    result = await notifications.dispatch_all_users(session, Settings(jwt_secret="test"))
+    assert visited == [user.id for user in users]
+    assert result["errors"] == int(first_fails)
+    assert not session.locked
