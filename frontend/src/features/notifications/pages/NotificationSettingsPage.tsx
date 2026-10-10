@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import type { AndroidDeliveryState } from "@/api/androidNotifications";
+import { AndroidDeliveryCard } from "@/features/notifications/components/AndroidDeliveryCard";
+import { deliverySettingsPatch } from "@/features/notifications/androidDelivery";
 
 import {
   fetchNotificationSettings,
@@ -26,6 +29,8 @@ type Category = "workouts" | "water" | "calories" | "measurements" | "supplement
 
 export function NotificationSettingsPage() {
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [androidDelivery, setAndroidDelivery] = useState<AndroidDeliveryState | null>(null);
+  const [explicitLegacySwitch, setExplicitLegacySwitch] = useState(false);
   const [telegramAvailable, setTelegramAvailable] = useState(false);
   const [browserAvailable, setBrowserAvailable] = useState(false);
   const [browserEnabled, setBrowserEnabled] = useState(false);
@@ -83,6 +88,8 @@ export function NotificationSettingsPage() {
         setBrowserEnabled(false);
         setSupplementCount(supplements.items.length);
         setLastDelivery(payload.last_delivery ?? null);
+        setAndroidDelivery(payload.android_delivery ?? null);
+        setExplicitLegacySwitch(false);
         if (canUseBrowser && push) {
           const enabled = await reconcileWebPush(push).catch(() => false);
           if (!cancelled && browserStateVersion.current === browserVersion) setBrowserEnabled(enabled);
@@ -106,6 +113,7 @@ export function NotificationSettingsPage() {
         ? { ...current, [category]: saved.settings[category] }
         : saved.settings);
       setOk("Раздел сохранён");
+      window.dispatchEvent(new Event("fitness:notification-settings-updated"));
     } catch (caught) {
       setError(toUserMessage(caught, "Не удалось сохранить раздел"));
     } finally {
@@ -115,11 +123,11 @@ export function NotificationSettingsPage() {
 
   async function saveDelivery(showMessage = true) {
     if (!settings) return false;
-    if (settings.delivery_channel === "telegram" && !telegramAvailable) {
+    if ((!androidDelivery?.enabled || explicitLegacySwitch) && settings.delivery_channel === "telegram" && !telegramAvailable) {
       setError("Telegram не подключён. Выберите браузер.");
       return false;
     }
-    if (settings.delivery_channel === "browser" && !browserEnabled) {
+    if ((!androidDelivery?.enabled || explicitLegacySwitch) && settings.delivery_channel === "browser" && !browserEnabled) {
       setError("Сначала включите уведомления в этом браузере.");
       return false;
     }
@@ -134,13 +142,15 @@ export function NotificationSettingsPage() {
     setError(null);
     if (showMessage) setOk(null);
     try {
-      const saved = await saveNotificationSettings({
+      const saved = await saveNotificationSettings(deliverySettingsPatch({
         timezone: settings.timezone || detectedTimezone(),
         delivery_channel: settings.delivery_channel,
         catch_up: settings.catch_up,
         quiet_hours: settings.quiet_hours,
         service_messages: settings.service_messages,
-      });
+      }, Boolean(androidDelivery?.enabled), explicitLegacySwitch));
+      setAndroidDelivery(saved.android_delivery ?? null);
+      setExplicitLegacySwitch(false);
       setSettings((current) => current ? {
         ...current,
         timezone: saved.settings.timezone,
@@ -149,6 +159,7 @@ export function NotificationSettingsPage() {
         quiet_hours: saved.settings.quiet_hours,
         service_messages: saved.settings.service_messages,
       } : saved.settings);
+      window.dispatchEvent(new Event("fitness:notification-settings-updated"));
       if (showMessage) setOk("Доставка и тихие часы сохранены");
       return true;
     } catch (caught) {
@@ -177,6 +188,10 @@ export function NotificationSettingsPage() {
   }
 
   async function testDelivery() {
+    if (androidDelivery?.enabled && !explicitLegacySwitch) {
+      setError("Проверьте уведомление в приложении Android");
+      return;
+    }
     if (!await saveDelivery(false)) return;
     setBusy(true);
     setError(null);
@@ -204,6 +219,10 @@ export function NotificationSettingsPage() {
         ) : <PageSkeleton />
       ) : (
         <div className="space-y-5">
+          <AndroidDeliveryCard selected={androidDelivery} onConfirmedChange={async () => {
+            const payload = await fetchNotificationSettings();
+            setAndroidDelivery(payload.android_delivery ?? null);
+          }} />
           <NotificationDeliveryCard
             settings={settings}
             telegramAvailable={telegramAvailable}
@@ -213,6 +232,8 @@ export function NotificationSettingsPage() {
             emailAvailable={emailAvailable}
             lastDelivery={lastDelivery}
             busy={busy}
+            androidSelected={Boolean(androidDelivery?.enabled && !explicitLegacySwitch)}
+            onSelectLegacy={() => setExplicitLegacySwitch(true)}
             onChange={setSettings}
             onSave={() => void saveDelivery()}
             onToggleBrowser={() => void toggleBrowser()}

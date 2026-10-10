@@ -133,3 +133,16 @@ async def test_overlapping_current_slots_preserve_first_slot_and_one_intake(sess
 
     item = session.item()
     assert (item.slot, item.days_mode) == ("08:00", "every")
+
+
+def test_public_schedule_projection_is_pure():
+    from copy import deepcopy
+    from app.services.supplement_intakes import scheduled_rows
+
+    user = user_with_schedule()
+    original = deepcopy(user.goals)
+    first = scheduled_rows(user, date(2026, 10, 5))
+    second = scheduled_rows(user, date(2026, 10, 5))
+    assert first == second
+    assert first[0]["user_id"] == user.id
+    assert user.goals == original

@@ -13,6 +13,7 @@ from arq.connections import RedisSettings
 from loguru import logger
 from sqlalchemy import select
 
+from app.services.android_notification_delivery import android_delivery_state
 from app.core.config import Settings, get_settings
 from app.tasks.android_login import cleanup_android_login_task
 from app.core.database import AsyncSessionLocal
@@ -216,11 +217,14 @@ async def send_timer_finished_task(
     settings = notification_settings()
     async with AsyncSessionLocal() as session:
         user = await session.scalar(
-            select(User).where(User.id == uuid.UUID(user_id), User.is_deleted.is_(False))
+            select(User).where(User.id == uuid.UUID(user_id), User.is_deleted.is_(False)).with_for_update().execution_options(populate_existing=True)
         )
         if user is None:
             await _record_worker_status(redis, task="Завершение таймера", state="failed")
             return {"ok": False, "detail": "user_not_found"}
+        if android_delivery_state(user.goals or {}).enabled:
+            await _record_worker_status(redis, task="Завершение таймера", state="completed")
+            return {"ok": True, "delivered": 0, "detail": "android_delivery"}
         delivered = 0
         retry_telegram = False
         if user.telegram_id is not None:
@@ -241,12 +245,14 @@ async def send_timer_finished_task(
         delivered += await send_user_web_push(
             session,
             settings,
+            commit=False,
             user_id=user.id,
             title=title,
             body=text,
             url=f"/workouts/active/{workout_id}" if workout_id else "/",
             tag=f"rest-timer-{workout_id or 'active'}",
         )
+        await session.commit()
     attempt = max(1, int(ctx.get("job_try", 1)))
     retry_delay = _timer_retry_delay(
         delivered=delivered,

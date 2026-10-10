@@ -134,8 +134,13 @@ async def test_worker_status_contains_only_safe_operational_fields() -> None:
 
 
 class FakeNotificationSession:
-    def __init__(self) -> None:
+    def __init__(self, user) -> None:
         self.commits = 0
+        self.user = user
+
+    async def scalar(self, statement):
+        assert "FOR UPDATE" in str(statement)
+        return self.user
 
     async def commit(self) -> None:
         self.commits += 1
@@ -158,7 +163,7 @@ def reminder_item() -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_failed_delivery_stays_retryable(monkeypatch) -> None:
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
 
     async def fail_telegram(*_args, **_kwargs):
         raise TelegramBotError("network unavailable")
@@ -195,7 +200,7 @@ async def test_failed_delivery_stays_retryable(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_successful_delivery_is_marked(monkeypatch) -> None:
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
 
     async def sent_telegram(*_args, **_kwargs):
         return {"ok": True}
@@ -237,7 +242,7 @@ async def test_browser_channel_does_not_duplicate_to_telegram(monkeypatch) -> No
         telegram_id=1,
         goals={"notification_settings": {"delivery_channel": "browser"}},
     )
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
     telegram_calls = 0
     browser_calls = 0
 
@@ -286,7 +291,7 @@ async def test_explicit_notification_test_uses_selected_channel_and_records_succ
         telegram_id=1,
         goals={"notification_settings": {"delivery_channel": "telegram"}},
     )
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
     calls: list[str] = []
 
     async def sent_telegram(*_args, **_kwargs):
@@ -309,3 +314,22 @@ async def test_explicit_notification_test_uses_selected_channel_and_records_succ
     assert calls == ["telegram"]
     assert session.commits == 1
     assert user.goals["notification_state"]["last_successful_delivery"]["channel"] == "telegram"
+
+
+@pytest.mark.asyncio
+async def test_android_switch_during_supplement_materialization_stops_delivery(monkeypatch):
+    from unittest.mock import AsyncMock
+    user = User(id=uuid4(), telegram_id=1, goals={})
+    session = FakeNotificationSession(user)
+    send = AsyncMock()
+    async def changed_mode(*_args):
+        user.goals = {"android_notifications": {"enabled": True, "device_id": str(uuid4()), "revision": 1}}
+        return [object()]
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda _goals: None)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", changed_mode)
+    monkeypatch.setattr(notifications, "send_message", send)
+    monkeypatch.setattr(notifications, "send_user_web_push", send)
+    assert await notifications._dispatch_user(session, user, Settings(jwt_secret="test", bot_token="configured")) == 0
+    send.assert_not_awaited()
+    assert session.commits == 0
