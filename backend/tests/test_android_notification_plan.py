@@ -93,6 +93,7 @@ async def test_measurement_interval_is_projected_without_writes():
     session = empty_session([], [(date(2026, 10, 9),)], [])
     plan = await prepare(user, session)
     assert [event.local_date.day for event in plan.events if event.category == "measurements"] == [12, 15, 18, 21]
+    assert all(event.context.occurrence_key == "measurement:2026-10-09" for event in plan.events if event.category == "measurements")
     assert user.goals == original
     session.commit.assert_not_awaited()
 

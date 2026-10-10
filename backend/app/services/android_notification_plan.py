@@ -82,6 +82,7 @@ async def build_android_notification_plan(
         _date(state.get("last_measurement_date")),
         measurements[0][0] if measurements else None,
     ]), default=None)
+    measurement_basis = f"measurement:{last_measurement.isoformat() if last_measurement else 'none'}"
     events: dict[str, AndroidReminder] = {}
 
     def add(key, category, due, expiry, route, context=None):
@@ -144,7 +145,7 @@ async def build_android_notification_plan(
             key = f"meas:{day.isoformat()}"
             if state.get("last_measurement_mark") != key:
                 add(key, "measurements", resolve_local_slot(day, parse_hhmm(cfg["time"]), timezone_name),
-                    day_end, "measurements")
+                    day_end, "measurements", {"occurrence_key": measurement_basis})
             last_measurement = day  # Virtual projection only, never user.goals.
     source = {
         "owner": str(user.id), "start": first.isoformat(), "end": end_day.isoformat(),
