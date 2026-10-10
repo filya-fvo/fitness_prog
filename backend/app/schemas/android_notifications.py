@@ -92,3 +92,28 @@ class AndroidNotificationPlan(ReminderModel):
         if len(self.model_dump_json().encode("utf-8")) > MAX_PLAN_BYTES:
             raise ValueError("Reminder plan too large")
         return self
+
+
+class AndroidDeliveryState(ReminderModel):
+    enabled: bool = False
+    device_id: UUID | None = None
+    revision: int = Field(default=0, ge=0)
+    confirmed_at: datetime | None = None
+
+
+class AndroidDeliveryUpdate(ReminderModel):
+    operation_id: UUID
+    device_id: UUID
+    enabled: bool
+    expected_revision: int = Field(ge=0, strict=True)
+    expected_settings_revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def enable_requires_plan(self):
+        if self.enabled and self.expected_settings_revision is None:
+            raise ValueError("Plan fingerprint required")
+        return self
+
+
+class AndroidDeliveryResponse(ReminderModel):
+    android_delivery: AndroidDeliveryState

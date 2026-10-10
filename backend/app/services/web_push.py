@@ -68,6 +68,7 @@ async def send_user_web_push(
     body: str,
     url: str,
     tag: str,
+    commit: bool = True,
 ) -> int:
     if not web_push_configured(
         settings.web_push_vapid_public_key,
@@ -122,5 +123,6 @@ async def send_user_web_push(
             # An unexpected local/configuration failure says nothing about the
             # browser endpoint. Do not permanently disable a valid subscription.
             logger.warning("web_push_failed subscription={} err={}", subscription.id, exc)
-    await session.commit()
+    if commit:
+        await session.commit()
     return sent

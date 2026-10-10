@@ -34,6 +34,10 @@ from app.services import (
     workout_notifications,
     workout_service,
 )
+from app.services.android_notification_delivery import (
+    android_delivery_state, disable_android_for_legacy, lock_notification_user,
+)
+from app.schemas.android_notifications import AndroidDeliveryState
 from app.services.energy_targets import compute_energy_targets
 from app.services.notification_prefs import (
     apply_state_updates,
@@ -102,6 +106,7 @@ async def _request_timer_abort(job: Any) -> None:
 
 
 class NotificationSettingsResponse(BaseModel):
+    android_delivery: AndroidDeliveryState = Field(default_factory=AndroidDeliveryState)
     settings: dict[str, Any]
     defaults: dict[str, Any]
     last_delivery: dict[str, str] | None = None
@@ -228,6 +233,7 @@ async def get_settings_route(user: User = Depends(get_current_user)) -> Notifica
         defaults=default_notification_settings(),
         last_delivery=_last_delivery(user.goals or {}),
         timezone_configured=_timezone_configured(user.goals or {}),
+        android_delivery=android_delivery_state(user.goals or {}),
     )
 
 
@@ -237,6 +243,7 @@ async def put_settings_route(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> NotificationSettingsResponse:
+    user = await lock_notification_user(session, user.id)
     previous_goals = dict(user.goals or {})
     previous_raw = previous_goals.get("notification_settings")
     merged = patch_notification_settings(
@@ -286,6 +293,8 @@ async def put_settings_route(
     )
     workout_cfg = goals["notification_settings"].get("workouts") or {}
     goals["workout_remind_before_minutes"] = workout_cfg.get("remind_before_minutes", 0)
+    if "delivery_channel" in body.settings:
+        goals = disable_android_for_legacy(goals, now=datetime.now(UTC))
     user.goals = goals
     flag_modified(user, "goals")
     await session.commit()
@@ -295,6 +304,7 @@ async def put_settings_route(
         defaults=default_notification_settings(),
         last_delivery=_last_delivery(goals),
         timezone_configured=_timezone_configured(goals),
+        android_delivery=android_delivery_state(goals),
     )
 
 
@@ -451,6 +461,9 @@ async def send_test_notification(
 ) -> NotificationTestResponse:
     """Send one explicit test through the user's common reminder channel."""
 
+    user = await lock_notification_user(session, user.id)
+    if android_delivery_state(user.goals or {}).enabled:
+        raise HTTPException(409, "Проверьте уведомления в приложении Android")
     notification_settings = _merged_notification_settings(user.goals or {})
     channel = _delivery_channel(notification_settings, user)
     if channel == "telegram":
@@ -478,6 +491,7 @@ async def send_test_notification(
         sent = await send_user_web_push(
             session,
             settings,
+            commit=False,
             user_id=user.id,
             title="Проверка уведомлений",
             body="Всё работает. Сюда будут приходить включённые напоминания.",
@@ -577,7 +591,10 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
 
 async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) -> int:
     """Dispatch legacy reminders plus idempotent supplement intake groups."""
+    user = await lock_notification_user(session, user.id)
     goals = user.goals or {}
+    if android_delivery_state(goals).enabled:
+        return 0
     notification_settings = _merged_notification_settings(goals)
     timezone_name = str(notification_settings.get("timezone") or "Europe/Moscow")
     if in_quiet_hours(notification_settings, local_now(timezone_name)):
@@ -634,6 +651,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
             delivered += await send_user_web_push(
                 session,
                 settings,
+                commit=False,
                 user_id=user.id,
                 title=str(item.get("title") or "Напоминание"),
                 body=str(item.get("text") or "").replace("<b>", "").replace("</b>", ""),
@@ -656,6 +674,10 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
         await session.refresh(user)
 
     for group in await supplement_intakes.due_groups(session, user):
+        # Materialization can commit: reload/relock before any external send.
+        user = await lock_notification_user(session, user.id)
+        if android_delivery_state(user.goals or {}).enabled:
+            return sent
         lines = [
             f"{index}. <b>{row.name_ru}</b>" + (f" — {row.dose}" if row.dose else "")
             for index, row in enumerate(group, start=1)
@@ -681,6 +703,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
             delivered += await send_user_web_push(
                 session,
                 settings,
+                commit=False,
                 user_id=user.id,
                 title="Пора принять добавки",
                 body="; ".join(
@@ -691,6 +714,7 @@ async def _dispatch_user(session: AsyncSession, user: User, settings: Settings) 
             )
         if delivered:
             await supplement_intakes.claim_notified(session, group)
+            user = await lock_notification_user(session, user.id)
             user.goals = _record_delivery(user.goals or goals, channel)
             flag_modified(user, "goals")
             await session.commit()
@@ -784,8 +808,12 @@ async def timer_ended_notify(
     body: TimerNotifyRequest,
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
+    session: AsyncSession = Depends(get_db),
 ) -> TimerNotifyResponse:
     """Push a short Telegram message when in-app rest/hold timer finishes."""
+    user = await lock_notification_user(session, user.id)
+    if android_delivery_state(user.goals or {}).enabled:
+        return TimerNotifyResponse(ok=True, detail="Таймер обслуживает приложение Android")
     if user.telegram_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -818,8 +846,12 @@ async def schedule_timer_notification(
     body: TimerScheduleRequest,
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
+    session: AsyncSession = Depends(get_db),
 ) -> TimerNotifyResponse:
     """Schedule delivery so closing or suspending the PWA cannot stop the timer."""
+    user = await lock_notification_user(session, user.id)
+    if android_delivery_state(user.goals or {}).enabled:
+        return TimerNotifyResponse(ok=True, detail="Таймер обслуживает приложение Android")
     from arq import create_pool
     from arq.connections import RedisSettings
     from arq.jobs import Job

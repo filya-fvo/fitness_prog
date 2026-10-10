@@ -212,6 +212,7 @@ async def test_notification_settings_save_records_schedule_version(monkeypatch) 
         },
     )
     session = AsyncMock()
+    session.scalar.return_value = user
     monkeypatch.setattr(
         "app.routers.notifications.scheduler_service.local_schedule_day",
         lambda _goals, _now=None: date(2026, 9, 6),
@@ -257,6 +258,7 @@ async def test_notification_delivery_save_preserves_canonical_schedule(monkeypat
         },
     )
     session = AsyncMock()
+    session.scalar.return_value = user
     monkeypatch.setattr(
         "app.routers.notifications.scheduler_service.local_schedule_day",
         lambda _goals, _now=None: date(2026, 9, 7),

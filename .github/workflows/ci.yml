@@ -66,6 +66,13 @@ jobs:
           JWT_SECRET: ci-test-jwt-secret-not-for-production
           ENVIRONMENT: test
         run: python backend/scripts/check_android_sync_postgres.py
+      - name: Test Android notification CAS, replay and category races
+        env:
+          PYTHONPATH: backend
+          BOT_TOKEN: ci-test-bot-token
+          JWT_SECRET: ci-test-jwt-secret-not-for-production
+          ENVIRONMENT: test
+        run: python backend/scripts/check_android_notifications_postgres.py
   frontend:
     name: Frontend (test + build)
     runs-on: ubuntu-latest

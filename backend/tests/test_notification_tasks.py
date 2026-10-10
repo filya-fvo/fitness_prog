@@ -81,3 +81,27 @@ async def test_scheduled_system_snapshot_uses_sanitized_history_service(monkeypa
     assert result == {"ok": True, "overall_status": "attention"}
     assert captured["source"] == "scheduled"
     assert captured["settings"] is settings
+
+
+@pytest.mark.asyncio
+async def test_queued_timer_reloads_android_selection_under_lock(monkeypatch):
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
+    from app.models.user import User
+    user = User(id=uuid4(), goals={"android_notifications": {"enabled": True, "revision": 3}})
+    class Session:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *_args):
+            pass
+        async def scalar(self, statement):
+            assert "FOR UPDATE" in str(statement)
+            assert statement.get_execution_options()["populate_existing"] is True
+            return user
+    send = AsyncMock()
+    monkeypatch.setattr(notifications, "AsyncSessionLocal", Session)
+    monkeypatch.setattr(notifications, "send_app_notification", send)
+    monkeypatch.setattr(notifications, "send_user_web_push", send)
+    result = await notifications.send_timer_finished_task({}, user_id=str(user.id), title="test", text="test")
+    assert result == {"ok": True, "delivered": 0, "detail": "android_delivery"}
+    send.assert_not_awaited()
