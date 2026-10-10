@@ -124,8 +124,12 @@ const limits = {
   // Prepared offline programs, durable context and local cursor projection add
   // ~3.7 KB gzip across shared workout code; no new vendor dependency.
   // Keep bounded headroom for this approved feature and its save status.
-  totalJsGzip: 580_500,
-  productJsGzip: 524_500,
+  // Account-bound Android delivery controls and durable rest identity add ~3 KB
+  // gzip after excluding unused native-plan validation from web settings imports.
+  // Measured 582.2 KB total / 525.8 KB product; retain <2 KB measured headroom.
+  // No new dependencies; admin and maximum individual chunk limits unchanged.
+  totalJsGzip: 584_000,
+  productJsGzip: 527_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

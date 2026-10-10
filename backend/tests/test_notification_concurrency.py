@@ -70,6 +70,13 @@ class FakeScalarResult:
 class FakePagedSession:
     def __init__(self, batches) -> None:
         self.batches = list(batches)
+        self.locked = False
+
+    async def commit(self):
+        self.locked = False
+
+    async def rollback(self):
+        self.locked = False
 
     async def scalars(self, _statement):
         return FakeScalarResult(self.batches.pop(0))
@@ -82,7 +89,7 @@ async def test_dispatch_all_users_reads_until_empty_page(monkeypatch) -> None:
     dispatched = []
 
     async def fake_dispatch(_session, user, _settings):
-        dispatched.append(user.id)
+        dispatched.append(user.id if hasattr(user, "id") else user)
         return 1
 
     monkeypatch.setattr(notifications, "_dispatch_user", fake_dispatch)
@@ -134,8 +141,13 @@ async def test_worker_status_contains_only_safe_operational_fields() -> None:
 
 
 class FakeNotificationSession:
-    def __init__(self) -> None:
+    def __init__(self, user) -> None:
         self.commits = 0
+        self.user = user
+
+    async def scalar(self, statement):
+        assert "FOR UPDATE" in str(statement)
+        return self.user
 
     async def commit(self) -> None:
         self.commits += 1
@@ -158,7 +170,7 @@ def reminder_item() -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_failed_delivery_stays_retryable(monkeypatch) -> None:
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
 
     async def fail_telegram(*_args, **_kwargs):
         raise TelegramBotError("network unavailable")
@@ -195,7 +207,7 @@ async def test_failed_delivery_stays_retryable(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_successful_delivery_is_marked(monkeypatch) -> None:
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
 
     async def sent_telegram(*_args, **_kwargs):
         return {"ok": True}
@@ -237,7 +249,7 @@ async def test_browser_channel_does_not_duplicate_to_telegram(monkeypatch) -> No
         telegram_id=1,
         goals={"notification_settings": {"delivery_channel": "browser"}},
     )
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
     telegram_calls = 0
     browser_calls = 0
 
@@ -286,7 +298,7 @@ async def test_explicit_notification_test_uses_selected_channel_and_records_succ
         telegram_id=1,
         goals={"notification_settings": {"delivery_channel": "telegram"}},
     )
-    session = FakeNotificationSession()
+    session = FakeNotificationSession(user)
     calls: list[str] = []
 
     async def sent_telegram(*_args, **_kwargs):
@@ -309,3 +321,44 @@ async def test_explicit_notification_test_uses_selected_channel_and_records_succ
     assert calls == ["telegram"]
     assert session.commits == 1
     assert user.goals["notification_state"]["last_successful_delivery"]["channel"] == "telegram"
+
+
+@pytest.mark.asyncio
+async def test_android_switch_during_supplement_materialization_stops_delivery(monkeypatch):
+    from unittest.mock import AsyncMock
+    user = User(id=uuid4(), telegram_id=1, goals={})
+    session = FakeNotificationSession(user)
+    send = AsyncMock()
+    async def changed_mode(*_args):
+        user.goals = {"android_notifications": {"enabled": True, "device_id": str(uuid4()), "revision": 1}}
+        return [object()]
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda _goals: None)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", changed_mode)
+    monkeypatch.setattr(notifications, "send_message", send)
+    monkeypatch.setattr(notifications, "send_user_web_push", send)
+    assert await notifications._dispatch_user(session, user, Settings(jwt_secret="test", bot_token="configured")) == 0
+    send.assert_not_awaited()
+    assert session.commits == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("first_fails", [False, True])
+async def test_dispatch_ends_previous_user_transaction_before_next(monkeypatch, first_fails):
+    users = [SimpleNamespace(id=uuid4()) for _ in range(2)]
+    session = FakePagedSession([users, []])
+    visited = []
+
+    async def fake_dispatch(current, user, _settings):
+        assert not current.locked, "Previous user lock survived into next delivery"
+        current.locked = True
+        visited.append(user.id if hasattr(user, "id") else user)
+        if first_fails and len(visited) == 1:
+            raise RuntimeError("Injected dispatch failure")
+        return 0
+
+    monkeypatch.setattr(notifications, "_dispatch_user", fake_dispatch)
+    result = await notifications.dispatch_all_users(session, Settings(jwt_secret="test"))
+    assert visited == [user.id for user in users]
+    assert result["errors"] == int(first_fails)
+    assert not session.locked

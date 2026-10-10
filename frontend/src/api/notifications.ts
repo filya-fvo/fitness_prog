@@ -1,3 +1,4 @@
+import { androidDeliveryStateSchema } from "./androidDeliverySchema";
 import { z } from "zod";
 
 import { apiClient } from "@/api/client";
@@ -43,6 +44,7 @@ const deliverySchema = z.object({
   delivered_at: z.string(),
 });
 const settingsSchema = z.object({
+  android_delivery: androidDeliveryStateSchema.optional(),
   settings: settingsValueSchema,
   defaults: settingsValueSchema,
   last_delivery: deliverySchema.nullable().optional(),

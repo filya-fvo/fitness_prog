@@ -20,6 +20,7 @@ from app.services.notification_prefs import (
     normalize_supplement_schedule,
 )
 from app.services.illness_pause import is_illness_day
+from app.services.notification_calendar import resolve_local_slot
 from app.services.scheduler import effective_workout_context
 
 VALID_STATUSES = {"pending", "taken", "skipped"}
@@ -62,14 +63,14 @@ def _day_bounds(day: date, timezone_name: str) -> tuple[datetime, datetime]:
     return start, start + timedelta(days=1)
 
 
-def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
+def scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
     goals = user.goals or {}
     settings = merge_notification_settings(
         goals.get("notification_settings")
         if isinstance(goals.get("notification_settings"), dict)
         else None
     )
-    tz = _resolve_tz(str(settings.get("timezone") or "Europe/Moscow"))
+    timezone_name = str(settings.get("timezone") or "Europe/Moscow")
     workout_context = effective_workout_context(goals, day)
     workout_t = workout_context["start_time"]
     rows: list[dict[str, Any]] = []
@@ -102,14 +103,14 @@ def _scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
                     "dose": str(item.get("dose") or ""),
                     "slot": slot,
                     "days_mode": mode,
-                    "scheduled_at": datetime.combine(day, target, tzinfo=tz).astimezone(UTC),
+                    "scheduled_at": resolve_local_slot(day, target, timezone_name),
                 }
             )
     return rows
 
 
 async def ensure_day(session: AsyncSession, user: User, day: date) -> None:
-    rows = _scheduled_rows(user, day)
+    rows = scheduled_rows(user, day)
     if not rows:
         return
     # A PostgreSQL upsert cannot update the same unique slot twice in one batch.
