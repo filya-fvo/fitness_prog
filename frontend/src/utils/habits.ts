@@ -117,6 +117,9 @@ function readStore(ownerUserId?: string | null): Store {
 function writeStore(s: Store, ownerUserId?: string | null) {
   try {
     localStorage.setItem(ownerKey(ownerUserId), JSON.stringify(s));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("fitness:habits-updated", {
+      detail: { owner: ownerUserId ?? null },
+    }));
   } catch {
     /* quota */
   }

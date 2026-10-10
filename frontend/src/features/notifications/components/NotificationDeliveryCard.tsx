@@ -24,6 +24,8 @@ const COMMON_TIMEZONES = [
 
 type Props = {
   settings: NotificationSettings;
+  androidSelected?: boolean;
+  onSelectLegacy?: () => void;
   telegramAvailable: boolean;
   browserAvailable: boolean;
   browserEnabled: boolean;
@@ -44,9 +46,9 @@ export function NotificationDeliveryCard(props: Props) {
   const { settings } = props;
   const detected = detectedTimezone();
   const timezones = Array.from(new Set([settings.timezone, detected, ...COMMON_TIMEZONES]));
-  const testUnavailable = settings.delivery_channel === "telegram"
+  const testUnavailable = props.androidSelected || (settings.delivery_channel === "telegram"
     ? !props.telegramAvailable
-    : !props.browserEnabled;
+    : !props.browserEnabled);
 
   return (
     <section className="app-card app-card-indigo space-y-4 p-4" aria-labelledby="delivery-title">
@@ -60,7 +62,7 @@ export function NotificationDeliveryCard(props: Props) {
       <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Канал уведомлений">
         {(["telegram", "browser"] as const).map((channel) => {
           const available = channel === "telegram" ? props.telegramAvailable : props.browserAvailable;
-          const selected = settings.delivery_channel === channel;
+          const selected = !props.androidSelected && settings.delivery_channel === channel;
           return (
             <button
               key={channel}
@@ -68,7 +70,7 @@ export function NotificationDeliveryCard(props: Props) {
               role="radio"
               aria-checked={selected}
               disabled={!available}
-              onClick={() => props.onChange({ ...settings, delivery_channel: channel })}
+              onClick={() => { props.onSelectLegacy?.(); props.onChange({ ...settings, delivery_channel: channel }); }}
               className={`min-h-11 rounded-xl px-3 text-sm font-medium disabled:opacity-40 ${
                 selected ? "app-gradient-action text-white" : "bg-tg-bg text-tg-text"
               }`}
@@ -79,13 +81,14 @@ export function NotificationDeliveryCard(props: Props) {
         })}
       </div>
 
+      {props.androidSelected ? <p className="text-sm text-tg-hint">Сейчас выбран Android. Для смены выберите способ и сохраните.</p> : null}
       {!props.browserAvailable && props.browserUnavailableReason ? (
         <p className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
           {props.browserUnavailableReason}
         </p>
       ) : null}
 
-      {settings.delivery_channel === "browser" ? (
+      {!props.androidSelected && settings.delivery_channel === "browser" ? (
         <div className="space-y-2 rounded-xl bg-tg-bg p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-tg-hint">

@@ -10,7 +10,7 @@ import pytest
 from app.models.user import User
 from app.models.supplement_intake import SupplementIntake
 from app.services.supplement_intakes import (
-    _scheduled_rows,
+    scheduled_rows,
     day_items,
     due_groups,
     local_day_for_user,
@@ -31,7 +31,7 @@ def test_same_time_supplements_are_materialized_as_independent_rows() -> None:
             ],
         }
     )
-    rows = _scheduled_rows(user, date(2026, 8, 12))
+    rows = scheduled_rows(user, date(2026, 8, 12))
     assert len(rows) == 2
     assert {row["supplement_entry_id"] for row in rows} == {"creatine", "protein"}
     assert rows[0]["scheduled_at"] == rows[1]["scheduled_at"]
@@ -66,8 +66,8 @@ def test_workout_day_supplements_follow_one_off_move() -> None:
         }
     )
 
-    assert _scheduled_rows(user, date(2026, 8, 21)) == []
-    moved_rows = _scheduled_rows(user, date(2026, 8, 22))
+    assert scheduled_rows(user, date(2026, 8, 21)) == []
+    moved_rows = scheduled_rows(user, date(2026, 8, 22))
     assert len(moved_rows) == 1
     assert moved_rows[0]["scheduled_at"] == datetime(2026, 8, 22, 4, 15, tzinfo=UTC)
 
@@ -89,7 +89,7 @@ def test_illness_keeps_daily_and_rest_supplements_but_skips_workout_slots() -> N
         }
     )
 
-    rows = _scheduled_rows(user, date(2026, 9, 23))
+    rows = scheduled_rows(user, date(2026, 9, 23))
 
     assert {row["supplement_entry_id"] for row in rows} == {"rest", "daily"}
 
@@ -138,9 +138,9 @@ async def test_ending_illness_does_not_notify_materialized_rest_intakes() -> Non
         }
     )
     day = date(2026, 10, 5)
-    rest_rows = _scheduled_rows(user, day)
+    rest_rows = scheduled_rows(user, day)
     user.goals["workout_illness_periods"][0]["ended_on"] = "2026-10-04"
-    workout_rows = _scheduled_rows(user, day)
+    workout_rows = scheduled_rows(user, day)
     session = AsyncMock()
     session.scalars = AsyncMock(
         return_value=[

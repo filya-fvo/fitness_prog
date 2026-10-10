@@ -107,3 +107,16 @@ def mark_occurrence_started(goals: dict[str, Any], workout_day: date) -> dict[st
     state["last_workout_mark"] = mark
     updated["notification_state"] = state
     return updated
+
+
+def android_occurrence(goals: dict[str, Any], day: date, timezone_name: str):
+    """Return one canonical occurrence for the Android calendar without writes."""
+    from app.services.notification_calendar import resolve_local_slot
+
+    context = effective_workout_context(goals, day)
+    if not context["is_workout_day"] or is_illness_day(goals, day):
+        return None
+    starts_at = resolve_local_slot(day, context["start_time"], timezone_name)
+    lead = workout_lead_minutes(goals)
+    key = f"workout:{context['original_date'].isoformat()}:{day.isoformat()}:{context['start_time'].strftime('%H:%M')}"
+    return key, starts_at - timedelta(minutes=lead), starts_at, lead == 0

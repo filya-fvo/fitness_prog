@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createRestTimer, readRestTimer, writeRestTimer } from "@/utils/restTimerState";
 
 import type { Exercise, LocalSetDraft, Workout, WorkoutPlan } from "@/types/workout";
 
@@ -11,6 +12,9 @@ type WorkoutState = {
   currentExerciseIndex: number;
   restSecondsLeft: number;
   restEndsAtMs: number | null;
+  restNotificationId: string | null;
+  restOwner: string | null;
+  restClientWorkoutId: string | null;
   isResting: boolean;
   setCatalog: (items: Exercise[]) => void;
   setActiveWorkout: (workout: Workout | null) => void;
@@ -51,27 +55,16 @@ type WorkoutState = {
   resetSession: () => void;
 };
 
-const REST_TIMER_KEY = "fitness_rest_timer_v1";
-
-function saveRestEnd(endsAtMs: number | null): void {
-  try {
-    if (endsAtMs) localStorage.setItem(REST_TIMER_KEY, String(endsAtMs));
-    else localStorage.removeItem(REST_TIMER_KEY);
-  } catch {
-    // Storage may be unavailable in a private WebView; in-memory timer still works.
-  }
-}
-
-function restoredRest(): { isResting: boolean; restSecondsLeft: number; restEndsAtMs: number | null } {
-  try {
-    const endsAtMs = Number(localStorage.getItem(REST_TIMER_KEY));
-    const seconds = Math.max(0, Math.ceil((endsAtMs - Date.now()) / 1000));
-    if (endsAtMs > 0 && seconds > 0) return { isResting: true, restSecondsLeft: seconds, restEndsAtMs: endsAtMs };
-    saveRestEnd(null);
-  } catch {
-    // Fall through to an inactive timer.
-  }
-  return { isResting: false, restSecondsLeft: 0, restEndsAtMs: null };
+function restoredRest(owner: string | null = null, clientWorkoutId: string | null = null) {
+  const record = readRestTimer({ owner, clientWorkoutId });
+  return {
+    isResting: Boolean(record),
+    restSecondsLeft: record ? Math.max(0, Math.ceil((record.endsAtMs - Date.now()) / 1000)) : 0,
+    restEndsAtMs: record?.endsAtMs ?? null,
+    restNotificationId: record?.restNotificationId ?? null,
+    restOwner: record?.owner ?? null,
+    restClientWorkoutId: record?.clientWorkoutId ?? null,
+  };
 }
 
 function clampIndex(index: number, maxExclusive: number): number {
@@ -156,7 +149,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         currentExerciseIndex ?? 0,
         sessionExerciseIds(workout, drafts).length,
       ),
-      ...restoredRest(),
+      ...restoredRest(workout.user_id, clientId),
     }),
   updateDraft: (exerciseId, setNumber, patch) =>
     set({
@@ -197,13 +190,20 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
   startRest: (seconds) =>
     set(() => {
-      const value = Math.max(0, Math.round(seconds));
-      const endsAtMs = value > 0 ? Date.now() + value * 1000 : null;
-      saveRestEnd(endsAtMs);
+      const value = Math.max(0, Math.min(600, Math.round(seconds)));
+      const current = get();
+      const record = value > 0 ? createRestTimer(value, {
+        owner: current.activeWorkout?.user_id ?? null, clientWorkoutId: current.clientWorkoutId,
+      }) : null;
+      const endsAtMs = record?.endsAtMs ?? null;
+      writeRestTimer(record);
       return {
         isResting: value > 0,
         restSecondsLeft: value,
         restEndsAtMs: endsAtMs,
+        restNotificationId: record?.restNotificationId ?? null,
+        restOwner: record?.owner ?? null,
+        restClientWorkoutId: record?.clientWorkoutId ?? null,
       };
     }),
   adjustRest: (deltaSeconds) => {
@@ -214,12 +214,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       : state.restSecondsLeft;
     const next = Math.max(0, Math.min(600, liveLeft + Math.round(deltaSeconds)));
     if (next <= 0) {
-      saveRestEnd(null);
-      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
+      writeRestTimer(null);
+      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null,
+        restNotificationId: null, restOwner: null, restClientWorkoutId: null });
       return;
     }
     const endsAtMs = Date.now() + next * 1000;
-    saveRestEnd(endsAtMs);
+    writeRestTimer({ version: 2, owner: state.restOwner, clientWorkoutId: state.restClientWorkoutId,
+      restNotificationId: state.restNotificationId, endsAtMs });
     set({ restSecondsLeft: next, restEndsAtMs: endsAtMs });
   },
   syncRest: () => {
@@ -227,15 +229,17 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (!state.isResting || !state.restEndsAtMs) return;
     const left = Math.max(0, Math.ceil((state.restEndsAtMs - Date.now()) / 1000));
     if (left <= 0) {
-      saveRestEnd(null);
-      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
+      writeRestTimer(null);
+      set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null,
+        restNotificationId: null, restOwner: null, restClientWorkoutId: null });
       return;
     }
     if (left !== state.restSecondsLeft) set({ restSecondsLeft: left });
   },
   stopRest: () => {
-    saveRestEnd(null);
-    set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null });
+    writeRestTimer(null);
+    set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null,
+        restNotificationId: null, restOwner: null, restClientWorkoutId: null });
   },
   setExerciseRest: (exerciseId, restTimeSec) => {
     const sec = Math.max(0, Math.min(600, Math.round(restTimeSec)));
@@ -513,7 +517,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     return true;
   },
   resetSession: () => {
-    saveRestEnd(null);
+    writeRestTimer(null);
     set({
       activeWorkout: null,
       clientWorkoutId: null,
@@ -523,6 +527,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       isResting: false,
       restSecondsLeft: 0,
       restEndsAtMs: null,
+      restNotificationId: null, restOwner: null, restClientWorkoutId: null,
     });
   },
 }));
