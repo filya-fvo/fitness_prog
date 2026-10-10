@@ -4,7 +4,7 @@ import { apiClient } from "@/api/client";
 import type { Program, Workout } from "@/types/workout";
 import type { CycleReadiness } from "@/utils/cycleTraining";
 
-const programSchema = z.object({
+export const programSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullable().optional(),
@@ -60,7 +60,7 @@ const workoutSchema = z.object({
   sets: z.array(setSchema).default([]),
 });
 
-function mapProgram(item: z.infer<typeof programSchema>): Program {
+export function mapProgram(item: z.infer<typeof programSchema>): Program {
   return {
     id: item.id,
     name: item.name,

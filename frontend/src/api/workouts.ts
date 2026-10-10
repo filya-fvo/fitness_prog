@@ -85,7 +85,7 @@ const scheduleOccurrenceSchema = z.object({
   cancel_to: z.string().nullable().optional(),
 });
 
-const scheduleOverviewSchema = z.object({
+export const scheduleOverviewSchema = z.object({
   requested_date: z.string(),
   current: scheduleOccurrenceSchema.nullable().optional(),
   next: scheduleOccurrenceSchema.nullable().optional(),

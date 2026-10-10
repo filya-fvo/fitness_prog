@@ -214,7 +214,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   await page.getByRole("button", { name: "Завершить", exact: true }).click();
 
   await expect(page).toHaveURL(/\/programs\?notice=limitations$/);
-  await expect(page.getByRole("status")).toContainText(
+  await expect(page.getByRole("status").filter({ hasText: "Не нашли программу" })).toContainText(
     "Не нашли программу, которая учитывает все выбранные ограничения",
   );
   const payload = savedProfile as { goals?: Record<string, unknown> };

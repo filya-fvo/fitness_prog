@@ -113,6 +113,10 @@ jobs:
         run: npm ci
       - name: Install Chromium, Firefox and WebKit
         run: npx playwright install --with-deps chromium firefox webkit
+      - name: PWA cold entry without network
+        run: |
+          VITE_API_URL=http://127.0.0.1:19189 npm run build
+          npx playwright test --config playwright.offline.config.ts
       - name: Browser tests
         run: npm run test:e2e
       - name: Upload browser failure artifacts

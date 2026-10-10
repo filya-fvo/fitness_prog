@@ -121,8 +121,11 @@ const limits = {
   // Approved legal texts and explicit receipt UI add ~11.7 KB gzip. Texts
   // stay in a lazy documents chunk; Shell checks only revision/SHA metadata.
   // Measured 575142 total / 518742 product; keep less than 2.3 KB headroom.
-  totalJsGzip: 577_000,
-  productJsGzip: 521_000,
+  // Prepared offline programs, durable context and local cursor projection add
+  // ~3.7 KB gzip across shared workout code; no new vendor dependency.
+  // Keep bounded headroom for this approved feature and its save status.
+  totalJsGzip: 580_500,
+  productJsGzip: 524_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

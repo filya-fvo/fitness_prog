@@ -1,4 +1,6 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineWorkoutPreparationStatus } from "@/features/workout/components/OfflineWorkoutPreparationStatus";
+import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
@@ -114,6 +116,7 @@ function draftsFromWorkout(workout: {
 export function HomePage() {
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
+  const offline = useOfflineWorkoutContext(user?.id ?? null, localDateKey());
   const plusAccess = hasPlus(user);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
@@ -233,9 +236,19 @@ export function HomePage() {
   });
 
   useEffect(() => {
+    if (!offline.context) return;
+    const context = offline.context;
+    setProfileGoals({ ...context.profile.goals, sex: context.profile.anthropometry.sex || context.profile.goals.sex || "" });
+    setProfileReady(true);
+    setRecommended(context.program ? [context.program] : []);
+    setWorkoutSchedule(context.schedule);
+    setProgramLoading(false);
+  }, [offline.context]);
+
+  useEffect(() => {
     const controller = new AbortController();
     if (!todayProgram || !plannedOccurrence || !getStoredToken() || !isOnline()) {
-      setPreparedPlan(null);
+      setPreparedPlan(offline.context?.plans.find(row => row.scheduled_date === plannedOccurrence?.target_date && row.day_index === (plannedOccurrence?.day_index ?? todayDay) && row.week_phase === todayPhase && row.readiness === "normal")?.plan ?? null);
       return () => controller.abort();
     }
     setPreparedPlan(null);
@@ -250,7 +263,7 @@ export function HomePage() {
       if (!controller.signal.aborted) setPreparedPlan(null);
     });
     return () => controller.abort();
-  }, [plannedOccurrence, todayDay, todayPhase, todayProgram]);
+  }, [plannedOccurrence, todayDay, todayPhase, todayProgram, offline.context]);
 
   useEffect(() => {
     setTodayPlanOpen(false);
@@ -573,7 +586,7 @@ export function HomePage() {
       const goalsMerged = { ...profileGoals, ...(startPatch || {}), ...cursorPatch };
       if (isOnline() && getStoredToken()) {
         try {
-          const profile = await updateMyProfile({ goals: goalsMerged });
+          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
           setProfileGoals((profile.goals as Record<string, unknown>) || goalsMerged);
         } catch {
           setProfileGoals(goalsMerged);
@@ -661,6 +674,7 @@ export function HomePage() {
         title={user?.username ? `Привет, ${user.username.replace(/^@/, "")}` : "Ваш день"}
         subtitle="Сегодня — ещё один шаг к сильной версии себя"
       />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
       <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 

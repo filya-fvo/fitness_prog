@@ -20,6 +20,7 @@ from app.schemas.nutrition import (
 )
 from app.schemas.body_measurements import BodyMeasurementUpdate
 from app.schemas.android_sync import Operation
+from app.services.android_sync.prepared_start import canonical_prepared_start
 
 
 async def dispatch(session: AsyncSession, user: User, op: Operation):
@@ -27,6 +28,8 @@ async def dispatch(session: AsyncSession, user: User, op: Operation):
     if op.kind == "workout":
         if action == "create":
             payload = WorkoutCreate.model_validate({**body, "client_workout_id": op.entityId})
+            if "offline_prepared_at" in body:
+                payload = await canonical_prepared_start(session, user, payload, body)
             return await workouts.create_workout(payload, session, user)
         identity = uuid.UUID(op.entityId)
         if action == "set":

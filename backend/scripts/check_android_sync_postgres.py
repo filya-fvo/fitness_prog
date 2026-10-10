@@ -356,6 +356,8 @@ async def main():
 
     from check_android_login_postgres import check_login
     await check_login(engine)
+    from check_offline_workout_postgres import check_offline_workout
+    await check_offline_workout(engine)
     await engine.dispose()
 
 

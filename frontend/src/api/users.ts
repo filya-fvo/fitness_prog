@@ -4,7 +4,7 @@ import { legalStatusSchema } from "./legalSchemas";
 import { apiClient } from "@/api/client";
 import { subscriptionStateSchema } from "@/api/subscription";
 
-const profileSchema = z.object({
+export const profileSchema = z.object({
   id: z.string().uuid(),
   telegram_id: z.number().nullable().optional(),
   username: z.string().nullable().optional(),

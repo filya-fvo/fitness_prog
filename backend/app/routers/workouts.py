@@ -40,6 +40,8 @@ from app.schemas.scheduler import (
     WorkoutScheduleSettingsResponse,
     WorkoutScheduleSettingsUpdate,
 )
+from app.schemas.offline_workouts import OfflineWorkoutContext
+from app.services import offline_workouts
 from app.schemas.workout import (
     ExerciseProgressResponse,
     PlannedWorkoutPlanRequest,
@@ -423,6 +425,15 @@ async def assign_workout_occurrence(
     )
     return await _schedule_overview_response(session, user, overview)
 
+
+@router.get("/offline-context", response_model=OfflineWorkoutContext)
+async def offline_workout_context(
+    start: date,
+    days: int = Query(default=14, ge=1, le=14),
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> OfflineWorkoutContext:
+    return await offline_workouts.prepare_context(session, user, start=start, days=days)
 
 @router.get("/planned-plan", response_model=WorkoutPlan)
 async def planned_workout_plan(

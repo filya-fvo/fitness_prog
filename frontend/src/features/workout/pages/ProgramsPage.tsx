@@ -1,3 +1,6 @@
+import { localDateKey } from "@/utils/loadProgression";
+import { useUserStore } from "@/store/userStore";
+import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -228,6 +231,8 @@ function placeholderExercise(row: DayExerciseRow): Exercise {
 }
 
 export function ProgramsPage() {
+  const owner = useUserStore((state) => state.user?.id ?? null);
+  const offline = useOfflineWorkoutContext(owner, localDateKey());
   const initialUi = useMemo(readProgramsUi, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -269,6 +274,7 @@ export function ProgramsPage() {
   const [exerciseCatalog, setExerciseCatalog] = useState<Exercise[]>([]);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onlineCatalogLoaded, setOnlineCatalogLoaded] = useState(false);
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const readiness = usePreWorkoutReadiness(
@@ -283,6 +289,7 @@ export function ProgramsPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
+      setOnlineCatalogLoaded(false);
       setError(null);
       setMyProgramsError(null);
       try {
@@ -294,7 +301,7 @@ export function ProgramsPage() {
 
         if (!getStoredToken() || !isOnline()) {
           if (!cancelled) {
-            setError("Нужен онлайн и авторизация, чтобы загрузить программы");
+            setError(null);
             setLoading(false);
           }
           return;
@@ -309,6 +316,7 @@ export function ProgramsPage() {
           fetchExercises({ pageSize: 200 }).catch(() => null),
         ]);
         if (!cancelled) {
+          setOnlineCatalogLoaded(true);
           setItems(result.items);
           setMyItems(mine?.items ?? []);
           const goals = (profile?.goals as Record<string, unknown>) || {};
@@ -341,6 +349,18 @@ export function ProgramsPage() {
       cancelled = true;
     };
   }, [setCatalog]);
+
+  useEffect(() => {
+    // A later cache refresh must not replace the fetched online catalog.
+    if (!offline.context || (isOnline() && onlineCatalogLoaded)) return;
+    const context = offline.context;
+    setItems(context.program ? [context.program] : []);
+    setMyItems(context.program?.owner_id === owner ? [context.program] : []);
+    setProfileGoals(context.profile.goals);
+    setProfileSex(String(context.profile.anthropometry.sex || context.profile.goals.sex || ""));
+    setError(null);
+    setLoading(false);
+  }, [offline.context, owner, onlineCatalogLoaded]);
 
   const exerciseById = useMemo(() => {
     const map = new Map<string, Exercise>();
@@ -675,7 +695,11 @@ export function ProgramsPage() {
   return (
     <section className="programs-page">
       <Header title="Программы тренировок" subtitle="Готовые сеты: всё тело, сплит, жим/тяга/ноги…" />
-      {error ? <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
+      {error || (!offline.context && (!getStoredToken() || !isOnline())) ? (
+        <div className="mb-3 rounded-xl bg-tg-secondary p-3 text-sm">
+          {error || "Нужен онлайн и авторизация, чтобы загрузить программы"}
+        </div>
+      ) : null}
       {selectionNoticeText ? (
         <div role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
           {selectionNoticeText}
