@@ -1,3 +1,6 @@
+import { OfflineWorkoutPreparationStatus } from "@/features/workout/components/OfflineWorkoutPreparationStatus";
+import { useUserStore } from "@/store/userStore";
+import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
 /**
  * Exercise hub — programs + custom workout (bottom nav «Упражнения»).
  */
@@ -85,6 +88,8 @@ function draftsFromWorkout(workout: {
 }
 
 export function TrainHubPage() {
+  const owner = useUserStore((state) => state.user?.id ?? null);
+  const offline = useOfflineWorkoutContext(owner, localDateKey());
   const navigate = useNavigate();
   const location = useLocation();
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
@@ -139,9 +144,18 @@ export function TrainHubPage() {
   const heroPlace = programPlace === "home" || programPlace === "outdoor" ? programPlace : "gym";
 
   useEffect(() => {
+    if (!offline.context) return;
+    const context = offline.context;
+    setProgram(context.program);
+    setGoals({ ...context.profile.goals, sex: context.profile.anthropometry.sex || context.profile.goals.sex || "" });
+    setSchedule(context.schedule);
+    setLoading(false);
+  }, [offline.context]);
+
+  useEffect(() => {
     let cancelled = false;
     if (!program || !getStoredToken() || !isOnline()) {
-      setPreparedPlan(null);
+      setPreparedPlan(offline.context?.plans.find(row => row.scheduled_date === preparedDate && row.day_index === preparedDayIndex && row.week_phase === weekPhase && row.readiness === "normal")?.plan ?? null);
       return () => {
         cancelled = true;
       };
@@ -159,7 +173,7 @@ export function TrainHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [preparedDate, preparedDayIndex, program, weekPhase]);
+  }, [preparedDate, preparedDayIndex, program, weekPhase, offline.context]);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,7 +297,7 @@ export function TrainHubPage() {
       const goalsMerged = { ...goals, ...(startPatch || {}), ...cursorPatch };
       if (isOnline() && getStoredToken()) {
         try {
-          const profile = await updateMyProfile({ goals: goalsMerged });
+          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
           setGoals((profile.goals as Record<string, unknown>) || goalsMerged);
         } catch {
           setGoals(goalsMerged);
@@ -353,6 +367,7 @@ export function TrainHubPage() {
   return (
     <section>
       <Header title="Упражнения" subtitle="Программы тренировок и свой день" />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
       <div className="space-y-3">
         {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}

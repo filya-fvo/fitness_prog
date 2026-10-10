@@ -35,14 +35,13 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        // Precache only the application shell. Exercise GIFs, barcode scanner,
-        // and route chunks are downloaded when the user opens that feature.
+        // Cache application screens for a cold launch without a network.
+        // Exercise media remain outside the installation cache.
         globPatterns: [
           "index.html",
           "manifest.webmanifest",
-          "assets/index-*.js",
-          "assets/index-*.css",
-          "assets/vendor-react-*.js",
+          "assets/*.js",
+          "assets/*.css",
         ],
       },
       devOptions: {
