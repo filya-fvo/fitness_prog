@@ -2,6 +2,7 @@ import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
 
 const USER_ID = "89999999-9999-4999-8999-999999999999";
+test.use({ timezoneId: "Europe/Moscow" });
 
 function checklistState(signals: string[] = []) {
   return {
@@ -15,6 +16,7 @@ function checklistState(signals: string[] = []) {
 }
 
 async function mockHome(page: Page, withChecklist = true, signals: string[] = []) {
+  await page.clock.setFixedTime(new Date("2026-09-07T09:00:00Z"));
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "checklist-e2e-token"));
   const profile = {
 legal_status: acceptedLegalStatus(USER_ID),
@@ -49,6 +51,15 @@ legal_status: acceptedLegalStatus(USER_ID),
   await page.route("**/workouts/schedule/overview**", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({ requested_date: "2026-09-07", current: null, next: null }),
+  }));
+  await page.route("**/workouts/offline-context**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      version: 1, owner: USER_ID, prepared_at: "2026-09-07T09:00:00Z",
+      schedule_fingerprint: "0".repeat(64), start: "2026-09-07", end: "2026-09-07",
+      program: null, plans: [],
+      days: [{ requested_date: "2026-09-07", schedule: { requested_date: "2026-09-07", current: null, next: null } }],
+    }),
   }));
   await page.route("**/workouts/regularity**", (route) => route.fulfill({
     contentType: "application/json",
@@ -109,6 +120,8 @@ test("existing profile without rollout state receives the checklist", async ({ p
   await expect(page.getByRole("heading", { name: "Привет, new-user" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Питание сегодня" }).getByRole("link", { name: "Питание" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Освойте приложение" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Планы сохранены на устройстве" })).toBeVisible();
+  await expect(page.getByText(/Планы без сети:/)).toHaveCount(0);
   if (process.platform === "win32") {
     await expect(page).toHaveScreenshot("home-dashboard-mobile.png", { fullPage: false });
   }
