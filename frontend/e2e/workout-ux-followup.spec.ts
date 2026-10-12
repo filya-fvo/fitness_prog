@@ -106,9 +106,14 @@ test("note-only history edit preserves original precision, null metrics and save
   const set = page.getByRole("dialog", { name: "Изменить подход", exact: true });
   await expect(set.getByText("Рабочий вес, кг", { exact: true })).toBeVisible();
   await expect(set.getByText("Вес одной гантели, кг", { exact: true })).toHaveCount(0);
-  await set.getByLabel("Примечание (по желанию)").fill("Только новая заметка");
+  // Wait for the modal's deferred initial focus before editing in WebKit.
+  await expect(set.getByRole("button", { name: "Закрыть", exact: true })).toBeFocused();
+  const note = set.getByLabel("Примечание (по желанию)");
+  await note.fill("Только новая заметка");
+  await expect(note).toHaveValue("Только новая заметка");
   await set.getByRole("button", { name: "Применить", exact: true }).click();
   await expect.poll(() => received).toMatchObject({ weight: 12.25, reps: null, rest_time_sec: null, weight_mode: "total", note: "Только новая заметка" });
+  await expect(page.getByRole("button", { name: "Изменить подход 1: Гакк-приседания" })).toContainText("Только новая заметка");
 });
 
 test("adding an extra historical set keeps the copied total-weight convention", async ({ page }) => {
