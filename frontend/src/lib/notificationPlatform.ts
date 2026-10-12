@@ -5,6 +5,7 @@ export type PlatformNotificationStatus = {
   permission: "granted" | "prompt" | "denied"; exactAllowed: boolean;
   active: boolean; pending: boolean; preparedUntil: string | null; error: string | null;
   restEnabled: boolean; blockedCategories: ReminderCategory[];
+  timer?: TimerNotification | null;
 };
 export type TimerNotification = {
   owner: string; clientWorkoutId: string; generation: string; endsAtMs: number;

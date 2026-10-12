@@ -9,6 +9,7 @@ export type TimerDeliverySnapshot = {
   isResting: boolean; restEndsAtMs: number | null; restNotificationId: string | null;
   restOwner: string | null; restClientWorkoutId: string | null;
   serverWorkoutId: string | null; activeWorkoutId: string | null;
+  workoutEnded?: boolean;
 };
 type Dependencies = {
   platform: NotificationPlatform; online: () => boolean; now: () => number; owner: () => string | null;
@@ -21,6 +22,7 @@ export function createTimerNotificationDelivery(deps: Dependencies) {
   let queue = Promise.resolve();
   let nativeKey: string | null = null;
   let nativeEnd: number | null = null;
+  let endedOwner: string | null = null;
   let serverEnd: number | null = null;
   let serverId: string | undefined;
   const nativeMode = (status: Awaited<ReturnType<NotificationPlatform["status"]>>) =>
@@ -28,9 +30,17 @@ export function createTimerNotificationDelivery(deps: Dependencies) {
 
   function update(snapshot: TimerDeliverySnapshot, text: string): Promise<void> {
     const request = ++sequence;
+    const owner = deps.owner();
+    if (snapshot.workoutEnded) endedOwner = owner;
+    else if (snapshot.activeWorkoutId || endedOwner !== owner) endedOwner = null;
     const run = async () => {
       const status = await deps.platform.status();
-      if (request !== sequence || (snapshot.restOwner && snapshot.restOwner !== deps.owner())) return;
+      if (request !== sequence || owner !== deps.owner() || (snapshot.restOwner && snapshot.restOwner !== owner)) return;
+      if (status.available && (!owner || status.owner !== owner)) return;
+      if (nativeKey && !nativeKey.startsWith(`${owner}:`)) {
+        nativeKey = null;
+        nativeEnd = null;
+      }
       if (nativeMode(status)) {
         if (!status.restEnabled) {
           nativeKey = null;
@@ -46,10 +56,19 @@ export function createTimerNotificationDelivery(deps: Dependencies) {
             endsAtMs: snapshot.restEndsAtMs });
           nativeKey = key;
           nativeEnd = snapshot.restEndsAtMs;
-        } else if (nativeKey && (!snapshot.activeWorkoutId || !nativeEnd || nativeEnd > deps.now())) {
-          await deps.platform.setTimer(null);
-          nativeKey = null;
-          nativeEnd = null;
+        } else {
+          const timer = status.timer?.owner === owner ? status.timer : null;
+          const knownKey = nativeKey?.startsWith(`${owner}:`) ? nativeKey : null;
+          const end = timer?.endsAtMs ?? (knownKey ? nativeEnd : null);
+          // An empty bootstrap snapshot precedes session hydration. Only an observed
+          // workout end or a hydrated stopped rest may cancel an existing alarm.
+          if ((timer || knownKey) && (endedOwner === owner
+            || (snapshot.activeWorkoutId && end !== null && end > deps.now()))) {
+            await deps.platform.setTimer(null);
+            nativeKey = null;
+            nativeEnd = null;
+            endedOwner = null;
+          }
         }
         return;
       }
@@ -95,20 +114,20 @@ type ObserverOptions = { getText?: () => string; workoutId?: () => string | null
 let stopObserver: (() => void) | null = null;
 const observers = new Set<ObserverOptions>();
 
-function snapshot(fallback?: string | null): TimerDeliverySnapshot {
+function snapshot(fallback?: string | null, workoutEnded = false): TimerDeliverySnapshot {
   const state = useWorkoutStore.getState();
   return { isResting: state.isResting, restEndsAtMs: state.restEndsAtMs,
     restNotificationId: state.restNotificationId, restOwner: state.restOwner,
     restClientWorkoutId: state.restClientWorkoutId, serverWorkoutId: state.serverWorkoutId || fallback || null,
-    activeWorkoutId: state.activeWorkout?.id ?? null };
+    activeWorkoutId: state.activeWorkout?.id ?? null, workoutEnded };
 }
 
 /** Bootstrap retains an observer while workout UI mounts and unmounts. */
 export function installTimerNotificationDelivery(options: ObserverOptions = {}): () => void {
   observers.add(options);
-  const update = () => {
+  const update = (workoutEnded = false) => {
     const current = Array.from(observers).at(-1);
-    void delivery.update(snapshot(current?.workoutId?.()), current?.getText?.() ?? "Время продолжить тренировку")
+    void delivery.update(snapshot(current?.workoutId?.(), workoutEnded), current?.getText?.() ?? "Время продолжить тренировку")
       .catch((error: unknown) => {
         if (current?.onError) current.onError(error);
         else window.dispatchEvent(new CustomEvent("fitness:notification-delivery-error", {
@@ -119,10 +138,13 @@ export function installTimerNotificationDelivery(options: ObserverOptions = {}):
   if (!stopObserver) {
     const unsubscribe = useWorkoutStore.subscribe((state, previous) => {
       if (state.restEndsAtMs !== previous.restEndsAtMs || state.restNotificationId !== previous.restNotificationId
-        || state.serverWorkoutId !== previous.serverWorkoutId || state.activeWorkout !== previous.activeWorkout) update();
+        || state.serverWorkoutId !== previous.serverWorkoutId || state.activeWorkout !== previous.activeWorkout) {
+        update(Boolean(previous.activeWorkout && !state.activeWorkout));
+      }
     });
-    window.addEventListener("fitness:native-notifications-changed", update);
-    stopObserver = () => { unsubscribe(); window.removeEventListener("fitness:native-notifications-changed", update); };
+    const nativeChanged = () => update();
+    window.addEventListener("fitness:native-notifications-changed", nativeChanged);
+    stopObserver = () => { unsubscribe(); window.removeEventListener("fitness:native-notifications-changed", nativeChanged); };
   }
   update();
   return () => {
