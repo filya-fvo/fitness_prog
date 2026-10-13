@@ -1,15 +1,16 @@
 import type { AndroidDeliveryState } from "@/api/androidNotifications";
-import { useAndroidDelivery } from "@/features/notifications/hooks/useAndroidDelivery";
+import type { useAndroidDelivery } from "@/features/notifications/hooks/useAndroidDelivery";
 
-type Props = { selected: AndroidDeliveryState | null; onConfirmedChange: () => Promise<void> };
+type Props = { selected: AndroidDeliveryState | null; delivery: ReturnType<typeof useAndroidDelivery>; disabled: boolean };
 
-export function AndroidDeliveryCard({ selected, onConfirmedChange }: Props) {
-  const { status, busy, error, message, run } = useAndroidDelivery(onConfirmedChange);
+export function AndroidDeliveryCard({ selected, delivery, disabled }: Props) {
+  const { status, error, message, run } = delivery;
+  const busy = disabled || delivery.busy;
   if (!status.available && !selected?.enabled) return null;
   const until = status.preparedUntil ? new Date(status.preparedUntil).toLocaleDateString("ru-RU") : null;
   return (
-    <section className="app-card app-card-indigo space-y-3 p-4" aria-labelledby="android-delivery-title">
-      <h2 id="android-delivery-title" className="text-sm font-semibold">Приложение Android</h2>
+    <section className="space-y-3 rounded-xl bg-tg-bg p-3" aria-labelledby="android-delivery-title">
+      <h3 id="android-delivery-title" className="sr-only">Приложение Android</h3>
       <p className="text-sm text-tg-hint">
         Подготовленные напоминания работают без интернета. Для первого включения нужна сеть.
       </p>

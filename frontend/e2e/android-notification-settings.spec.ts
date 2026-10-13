@@ -78,6 +78,9 @@ for (const width of [320, 393, 1440]) for (const theme of ["light", "dark"] as c
     await page.goto("/notifications");
     const phone = page.getByRole("region", { name: "Приложение Android" });
     await expect(phone).toContainText("Выбран телефон");
+    await page.setViewportSize({ width, height: 1200 });
+    await page.getByRole("region", { name: "Куда присылать" }).screenshot({ path: test.info().outputPath(`channels-${width}-${theme}.png`) });
+    await page.setViewportSize({ width, height: 568 });
     await expect(page.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "false");
     const nutrition = page.locator("details").filter({ hasText: "Питание" });
     await nutrition.locator("summary").click();
@@ -120,6 +123,7 @@ test("explicit permission refusal, pending acknowledgement and local test", asyn
   await page.setViewportSize({ width: 393, height: 568 });
   const state = await fixture(page, true);
   await page.goto("/notifications");
+  await page.getByRole("radio", { name: "Только приложение" }).click();
   const phone = page.getByRole("region", { name: "Приложение Android" });
   await phone.getByRole("button", { name: "Включить на этом телефоне" }).click();
   await expect(phone.getByRole("alert")).toContainText("Разрешите уведомления");
@@ -137,9 +141,39 @@ test("explicit permission refusal, pending acknowledgement and local test", asyn
     window.dispatchEvent(new Event("fitness:native-notifications-changed"));
   });
   await expect(phone).toContainText("Включено на этом телефоне");
+  for (const width of [320, 393, 1440]) for (const theme of ["light", "dark"] as const) {
+    await page.setViewportSize({ width, height: 1400 });
+    await page.emulateMedia({ colorScheme: theme });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("region", { name: "Куда присылать" }).screenshot({ path: test.info().outputPath(`native-channels-${width}-${theme}.png`) });
+  }
+  await page.setViewportSize({ width: 393, height: 568 });
   await phone.getByRole("button", { name: "Проверить уведомление" }).click();
   await expect(phone).toContainText("Телефон принял тестовое уведомление");
   expect(state.legacyTests()).toBe(0);
   await phone.getByRole("button", { name: "Разрешить точный таймер" }).click();
   expect(await page.evaluate(() => Reflect.get(window, "__notificationExactRequests"))).toBe(1);
+});
+
+test("three exclusive channels share one card and app details open only for that choice", async ({ page }) => {
+  const state = await fixture(page, true);
+  await page.goto("/notifications");
+  const delivery = page.getByRole("region", { name: "Куда присылать" });
+  await expect(delivery.getByRole("radio")).toHaveCount(3);
+  await expect(delivery.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("region", { name: "Приложение Android" })).toHaveCount(0);
+  await delivery.getByRole("radio", { name: "Только приложение" }).click();
+  await expect(delivery.getByRole("radio", { name: "Только приложение" })).toHaveAttribute("aria-checked", "true");
+  await expect(delivery.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "false");
+  await expect(delivery.getByRole("region", { name: "Приложение Android" })).toBeVisible();
+  await expect(delivery.getByRole("region", { name: "Приложение Android" })).not.toHaveClass(/\bapp-card\b/);
+  await delivery.getByRole("button", { name: "Сохранить доставку и тишину" }).click();
+  await expect(page.getByRole("alert")).toContainText("Сначала включите уведомления на этом телефоне");
+  expect(state.writes).toHaveLength(0);
+  expect(state.androidEnables()).toBe(0);
+  await delivery.getByRole("radio", { name: "Только Telegram" }).click();
+  await expect(delivery.getByRole("region", { name: "Приложение Android" })).toHaveCount(0);
+  await delivery.getByRole("button", { name: "Сохранить доставку и тишину" }).click();
+  await expect(page.getByText("Доставка и тихие часы сохранены")).toBeVisible();
+  expect(state.writes.at(-1)?.delivery_channel).toBe("telegram");
 });

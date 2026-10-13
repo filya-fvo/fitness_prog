@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AndroidDeliveryState } from "@/api/androidNotifications";
 import { AndroidDeliveryCard } from "@/features/notifications/components/AndroidDeliveryCard";
+import { useAndroidDelivery } from "@/features/notifications/hooks/useAndroidDelivery";
 import { deliverySettingsPatch } from "@/features/notifications/androidDelivery";
 
 import {
@@ -30,7 +31,9 @@ type Category = "workouts" | "water" | "calories" | "measurements" | "supplement
 export function NotificationSettingsPage() {
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [androidDelivery, setAndroidDelivery] = useState<AndroidDeliveryState | null>(null);
-  const [explicitLegacySwitch, setExplicitLegacySwitch] = useState(false);
+  const [deliveryChoice, setDeliveryChoice] = useState<"android" | "legacy" | null>(null);
+  const explicitLegacySwitch = deliveryChoice === "legacy";
+  const androidSelected = deliveryChoice === "android" || (deliveryChoice === null && Boolean(androidDelivery?.enabled));
   const [telegramAvailable, setTelegramAvailable] = useState(false);
   const [browserAvailable, setBrowserAvailable] = useState(false);
   const [browserEnabled, setBrowserEnabled] = useState(false);
@@ -48,6 +51,11 @@ export function NotificationSettingsPage() {
   const [quietHoursSubmitted, setQuietHoursSubmitted] = useState(false);
   const quietHoursEndRef = useRef<HTMLInputElement>(null);
   const browserStateVersion = useRef(0);
+  const android = useAndroidDelivery(async () => {
+    const payload = await fetchNotificationSettings();
+    setAndroidDelivery(payload.android_delivery ?? null);
+    setDeliveryChoice(null);
+  });
   const quietHoursInvalid = Boolean(settings?.quiet_hours.enabled
     && settings.quiet_hours.start_time === settings.quiet_hours.end_time);
 
@@ -89,7 +97,7 @@ export function NotificationSettingsPage() {
         setSupplementCount(supplements.items.length);
         setLastDelivery(payload.last_delivery ?? null);
         setAndroidDelivery(payload.android_delivery ?? null);
-        setExplicitLegacySwitch(false);
+        setDeliveryChoice(null);
         if (canUseBrowser && push) {
           const enabled = await reconcileWebPush(push).catch(() => false);
           if (!cancelled && browserStateVersion.current === browserVersion) setBrowserEnabled(enabled);
@@ -123,6 +131,10 @@ export function NotificationSettingsPage() {
 
   async function saveDelivery(showMessage = true) {
     if (!settings) return false;
+    if (androidSelected && !androidDelivery?.enabled) {
+      setError("Сначала включите уведомления на этом телефоне.");
+      return false;
+    }
     if ((!androidDelivery?.enabled || explicitLegacySwitch) && settings.delivery_channel === "telegram" && !telegramAvailable) {
       setError("Telegram не подключён. Выберите браузер.");
       return false;
@@ -150,7 +162,7 @@ export function NotificationSettingsPage() {
         service_messages: settings.service_messages,
       }, Boolean(androidDelivery?.enabled), explicitLegacySwitch));
       setAndroidDelivery(saved.android_delivery ?? null);
-      setExplicitLegacySwitch(false);
+      setDeliveryChoice(null);
       setSettings((current) => current ? {
         ...current,
         timezone: saved.settings.timezone,
@@ -219,10 +231,6 @@ export function NotificationSettingsPage() {
         ) : <PageSkeleton />
       ) : (
         <div className="space-y-5">
-          <AndroidDeliveryCard selected={androidDelivery} onConfirmedChange={async () => {
-            const payload = await fetchNotificationSettings();
-            setAndroidDelivery(payload.android_delivery ?? null);
-          }} />
           <NotificationDeliveryCard
             settings={settings}
             telegramAvailable={telegramAvailable}
@@ -231,9 +239,12 @@ export function NotificationSettingsPage() {
             browserUnavailableReason={browserUnavailableReason}
             emailAvailable={emailAvailable}
             lastDelivery={lastDelivery}
-            busy={busy}
-            androidSelected={Boolean(androidDelivery?.enabled && !explicitLegacySwitch)}
-            onSelectLegacy={() => setExplicitLegacySwitch(true)}
+            busy={busy || android.busy}
+            androidSelected={androidSelected}
+            androidAvailable={android.status.available || Boolean(androidDelivery?.enabled)}
+            androidDetails={<AndroidDeliveryCard selected={androidDelivery} delivery={android} disabled={busy} />}
+            onSelectAndroid={() => setDeliveryChoice("android")}
+            onSelectLegacy={() => setDeliveryChoice("legacy")}
             onChange={setSettings}
             onSave={() => void saveDelivery()}
             onToggleBrowser={() => void toggleBrowser()}

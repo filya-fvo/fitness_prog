@@ -1,4 +1,4 @@
-import { useId, type Ref } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import type { NotificationSettings } from "@/api/notifications";
 import { AppButton } from "@/components/ui/AppButton";
 import { ServiceMessageConsentCard } from "@/features/profile/components/ServiceMessageConsentCard";
@@ -25,6 +25,9 @@ const COMMON_TIMEZONES = [
 type Props = {
   settings: NotificationSettings;
   androidSelected?: boolean;
+  androidAvailable: boolean;
+  androidDetails: ReactNode;
+  onSelectAndroid: () => void;
   onSelectLegacy?: () => void;
   telegramAvailable: boolean;
   browserAvailable: boolean;
@@ -59,30 +62,37 @@ export function NotificationDeliveryCard(props: Props) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Канал уведомлений">
-        {(["telegram", "browser"] as const).map((channel) => {
-          const available = channel === "telegram" ? props.telegramAvailable : props.browserAvailable;
-          const selected = !props.androidSelected && settings.delivery_channel === channel;
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Канал уведомлений">
+        {(["telegram", "browser", "android"] as const).map((channel) => {
+          const available = channel === "android" ? props.androidAvailable
+            : channel === "telegram" ? props.telegramAvailable : props.browserAvailable;
+          const selected = channel === "android" ? Boolean(props.androidSelected)
+            : !props.androidSelected && settings.delivery_channel === channel;
           return (
             <button
               key={channel}
               type="button"
               role="radio"
               aria-checked={selected}
-              disabled={!available}
-              onClick={() => { props.onSelectLegacy?.(); props.onChange({ ...settings, delivery_channel: channel }); }}
-              className={`min-h-11 rounded-xl px-3 text-sm font-medium disabled:opacity-40 ${
+              disabled={props.busy || !available}
+              title={!available && channel === "android" ? "Откройте настройки в приложении Android"
+                : !available && channel === "browser" ? props.browserUnavailableReason ?? undefined : undefined}
+              onClick={() => {
+                if (channel === "android") props.onSelectAndroid();
+                else { props.onSelectLegacy?.(); props.onChange({ ...settings, delivery_channel: channel }); }
+              }}
+              className={`min-h-11 min-w-0 rounded-xl px-1.5 text-xs font-medium leading-snug sm:px-3 sm:text-sm disabled:opacity-40 ${
                 selected ? "app-gradient-action text-white" : "bg-tg-bg text-tg-text"
               }`}
             >
-              {channel === "telegram" ? "Только Telegram" : "Только браузер"}
+              {channel === "telegram" ? "Только Telegram" : channel === "browser" ? "Только браузер" : "Только приложение"}
             </button>
           );
         })}
       </div>
 
-      {props.androidSelected ? <p className="text-sm text-tg-hint">Сейчас выбран Android. Для смены выберите способ и сохраните.</p> : null}
-      {!props.browserAvailable && props.browserUnavailableReason ? (
+      {props.androidSelected ? props.androidDetails : null}
+      {!props.androidSelected && settings.delivery_channel === "browser" && !props.browserAvailable && props.browserUnavailableReason ? (
         <p className="rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">
           {props.browserUnavailableReason}
         </p>
@@ -199,7 +209,7 @@ export function NotificationDeliveryCard(props: Props) {
         })}
       />
 
-      <p className="text-xs text-tg-hint">Последняя доставка: {lastDeliveryLabel(props.lastDelivery)}</p>
+      {!props.androidSelected ? <p className="text-xs text-tg-hint">Последняя доставка: {lastDeliveryLabel(props.lastDelivery)}</p> : null}
       <AppButton
         disabled={props.busy}
         onClick={props.onSave}
@@ -207,14 +217,14 @@ export function NotificationDeliveryCard(props: Props) {
       >
         {props.busy ? "Сохраняем…" : "Сохранить доставку и тишину"}
       </AppButton>
-      <button
+      {!props.androidSelected ? <button
         type="button"
         disabled={props.busy || testUnavailable}
         onClick={props.onTest}
         className="min-h-11 w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-semibold text-tg-text disabled:opacity-40"
       >
         Проверить: сообщение «Всё работает» → {settings.delivery_channel === "telegram" ? "Telegram" : "браузер"}
-      </button>
+      </button> : null}
     </section>
   );
 }
