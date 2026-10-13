@@ -39,7 +39,7 @@ describe("strength trend sets API", () => {
 
     const result = await fetchStrengthTrendSets();
 
-    expect(apiClient.get).toHaveBeenCalledWith("/exercises/strength-trends");
+    expect(apiClient.get).toHaveBeenCalledWith("/exercises/strength-trends", {});
     expect(result.nextWorkout?.items[0]).toMatchObject({
       exerciseId,
       changePercent: 12.5,
@@ -48,5 +48,19 @@ describe("strength trend sets API", () => {
     });
     expect(result.bestImprovements).toHaveLength(1);
     expect(result.pinned).toHaveLength(1);
+  });
+
+  it.each([
+    ["cache", "stale-while-revalidate"],
+    ["fresh", "no-cache"],
+  ] as const)("keeps the explicitly requested %s read policy", async (policy, header) => {
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: {
+      period_start: "2026-07-16", period_end: "2026-09-09", period_days: 56,
+      next_workout: null, best_improvements: [], pinned: [],
+    } });
+    await fetchStrengthTrendSets(policy);
+    expect(apiClient.get).toHaveBeenCalledExactlyOnceWith("/exercises/strength-trends", {
+      headers: { "Cache-Control": header },
+    });
   });
 });
