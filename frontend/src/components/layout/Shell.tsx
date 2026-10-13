@@ -26,6 +26,7 @@ import {
   pathFromStartParam,
 } from "@/lib/telegram";
 import { applyProfileRefresh } from "@/lib/profileRefresh";
+import { subscribeReadCacheUpdates } from "@/lib/readCacheUpdates";
 import { useUserStore } from "@/store/userStore";
 import { isOnline } from "@/utils/network";
 import {
@@ -267,7 +268,11 @@ export function Shell() {
       }
     };
     window.addEventListener("fitness:plus-required", refreshSubscription);
-    return () => window.removeEventListener("fitness:plus-required", refreshSubscription);
+    const stopRefresh = subscribeReadCacheUpdates(user.id, ["/users/me"], () => { void refreshSubscription(); });
+    return () => {
+      window.removeEventListener("fitness:plus-required", refreshSubscription);
+      stopRefresh();
+    };
   }, [setUser, user]);
 
   const requiresLegal = user ? needsLegalAcceptance(user) : false;

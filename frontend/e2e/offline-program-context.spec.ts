@@ -16,7 +16,7 @@ test.beforeAll(async () => {
   server = createServer((req, res) => {
     requests++;
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:5189");
-    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Content-Type", "application/json");
     if (req.method === "OPTIONS") { res.end(); return; }

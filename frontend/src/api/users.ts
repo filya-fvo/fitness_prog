@@ -20,8 +20,8 @@ export const profileSchema = z.object({
 
 export type UserProfile = z.infer<typeof profileSchema>;
 
-export async function fetchMyProfile(timeoutMs?: number): Promise<UserProfile> {
-  const { data } = await apiClient.get("/users/me", { timeout: timeoutMs });
+export async function fetchMyProfile(timeoutMs?: number, fresh = false): Promise<UserProfile> {
+  const { data } = await apiClient.get("/users/me", { timeout: timeoutMs, ...(fresh ? { headers: { "Cache-Control": "no-cache" } } : {}) });
   return profileSchema.parse(data);
 }
 

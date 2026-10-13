@@ -42,6 +42,7 @@ import { ActivationChecklistCard } from "@/features/onboarding/components/Activa
 import { useActivationChecklist } from "@/features/onboarding/hooks/useActivationChecklist";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { trackEvent } from "@/lib/analytics";
+import { subscribeReadCacheUpdates } from "@/lib/readCacheUpdates";
 import { hapticNotification } from "@/lib/telegram";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
@@ -267,7 +268,7 @@ export function HomePage() {
 
   useEffect(() => {
     setTodayPlanOpen(false);
-  }, [todayDay, todayProgram]);
+  }, [todayDay, todayProgram?.id]);
 
   useEffect(() => {
     const onStatus = () => setOnline(isOnline());
@@ -291,9 +292,13 @@ export function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    let updating = false;
+    let updateQueued = false;
     setProfileReady(false);
     setProgramLoading(true);
     async function load() {
+      if (updating) { updateQueued = true; return; }
+      updating = true;
       try {
         const queue = await getPendingCount();
         const today = progressLocalDate(new Date());
@@ -327,7 +332,7 @@ export function HomePage() {
         }
         if (!cancelled) setSessionHasReplacements(replacements);
 
-        if (getStoredToken() && isOnline()) {
+        if (getStoredToken()) {
           try {
             const [programs, myPrograms, profile, exerciseResponse, schedule, planRegularity, illnessStatus] = await Promise.all([
               fetchPrograms({ templatesOnly: true }),
@@ -409,7 +414,7 @@ export function HomePage() {
           setWaterMl(getHabitDay(undefined, user?.id).waterMl);
         }
 
-        if (getStoredToken() && isOnline()) {
+        if (getStoredToken()) {
           try {
             const [daily, water] = await Promise.all([
               fetchDailyNutrition().catch(() => null),
@@ -436,12 +441,16 @@ export function HomePage() {
       } catch {
         // ignore dashboard soft failures
       } finally {
+        updating = false;
         if (!cancelled) setProgramLoading(false);
+        if (updateQueued && !cancelled) { updateQueued = false; void load(); }
       }
     }
     void load();
+    const stopRefresh = subscribeReadCacheUpdates(user?.id, ["/users/me", "/programs", "/programs/mine", "/workouts/schedule/overview", "/workouts/regularity", "/workouts/illness", "/nutrition/daily", "/notifications/water"], () => { void load(); });
     return () => {
       cancelled = true;
+      stopRefresh();
     };
   }, [plusAccess, setCatalog, user?.id]);
 

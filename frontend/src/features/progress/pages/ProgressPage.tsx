@@ -50,6 +50,7 @@ import { buildWeeklyWorkoutOverview } from "@/utils/weeklyOverview";
 import { toUserMessage } from "@/utils/errors";
 import { useUserStore } from "@/store/userStore";
 import { trackEvent } from "@/lib/analytics";
+import { subscribeReadCacheUpdates } from "@/lib/readCacheUpdates";
 import {
   analyticsDepth,
   dashboardGuidance,
@@ -102,8 +103,12 @@ export function ProgressPage() {
       return;
     }
     let cancelled = false;
+    let updating = false;
+    let updateQueued = false;
+    setLoading(true);
     async function load() {
-      setLoading(true);
+      if (updating) { updateQueued = true; return; }
+      updating = true;
       setError(null);
       setNutritionError(null);
       setDailyMetricsError(null);
@@ -122,7 +127,7 @@ export function ProgressPage() {
           if (cached.length || !isOnline()) setLoading(false);
         }
 
-        if (getStoredToken() && isOnline()) {
+        if (getStoredToken()) {
           // Up to 31 days covers current month (API max)
           const recentStart = new Date();
           recentStart.setDate(recentStart.getDate() - 83);
@@ -164,6 +169,7 @@ export function ProgressPage() {
               return null;
             }),
           ]);
+          if (cancelled) return;
           await cacheWorkouts(items);
           if (ex?.items?.length) {
             await cacheExercises(ex.items);
@@ -202,12 +208,16 @@ export function ProgressPage() {
           }
         }
       } finally {
+        updating = false;
         if (!cancelled) setLoading(false);
+        if (updateQueued && !cancelled) { updateQueued = false; void load(); }
       }
     }
     void load();
+    const stopRefresh = subscribeReadCacheUpdates(ownerUserId, ["/workouts/history", "/workouts/regularity", "/workouts/dashboard", "/nutrition/range", "/metrics/range", "/exercises/strength-trends", "/users/me"], () => { void load(); });
     return () => {
       cancelled = true;
+      stopRefresh();
     };
   }, [ownerUserId, plusAccess]);
 
