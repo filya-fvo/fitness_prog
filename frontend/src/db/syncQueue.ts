@@ -288,12 +288,12 @@ export async function readCachedExercises(): Promise<import("@/types/workout").E
   return db.exercises.toArray();
 }
 
-export async function cacheWorkouts(items: Workout[], mode: "replace" | "merge" = "replace"): Promise<void> {
+export async function cacheWorkouts(items: Workout[]): Promise<void> {
   await db.transaction("rw", db.workouts, db.meta, async () => {
     const ownerIds = [...new Set(items.map((item) => item.user_id))];
     const currentOwner = currentOwnerUserId();
     if (!ownerIds.length && currentOwner) ownerIds.push(currentOwner);
-    if (mode === "replace") for (const ownerId of ownerIds) {
+    for (const ownerId of ownerIds) {
       await db.workouts.where("user_id").equals(ownerId).delete();
     }
     for (const item of items) {

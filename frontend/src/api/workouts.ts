@@ -389,13 +389,17 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
   await apiClient.delete(`/workouts/${workoutId}`);
 }
 
-export async function fetchWorkoutHistory(options: {
+export type WorkoutHistoryQuery = {
   dateFrom?: string;
   dateTo?: string;
   limit?: number;
   offset?: number;
   readPolicy?: ReadPolicy;
-} = {}): Promise<Workout[]> {
+};
+export async function fetchWorkoutHistory(options: WorkoutHistoryQuery = {}): Promise<Workout[]> {
+  return (await fetchWorkoutHistoryPage(options)).items;
+}
+export async function fetchWorkoutHistoryPage(options: WorkoutHistoryQuery = {}): Promise<{ items: Workout[]; total: number }> {
   const { data } = await apiClient.get("/workouts/history", {
     ...readPolicyConfig(options.readPolicy),
     params: {
@@ -408,10 +412,10 @@ export async function fetchWorkoutHistory(options: {
   const parsed = z
     .object({
       items: z.array(workoutSchema),
-      total: z.number(),
+      total: z.number().int().nonnegative(),
     })
     .parse(data);
-  return parsed.items.map(mapWorkout);
+  return { items: parsed.items.map(mapWorkout), total: parsed.total };
 }
 
 export async function fetchWorkoutSchedule(day?: string, policy?: ReadPolicy): Promise<WorkoutScheduleOverview> {

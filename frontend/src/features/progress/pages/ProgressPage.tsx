@@ -15,7 +15,7 @@ import { fetchNutritionRange } from "@/api/nutrition";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPersonalRegularity,
-  fetchWorkoutHistory,
+  fetchWorkoutHistoryPage,
   type PersonalRegularity,
 } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
@@ -24,7 +24,6 @@ import { PlusAccessSummary } from "@/features/subscription/components/PlusAccess
 import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import {
   cacheExercises,
-  cacheWorkouts,
   getPendingCount,
   readCachedExercises,
   readCachedWorkouts,
@@ -52,6 +51,7 @@ import { toUserMessage } from "@/utils/errors";
 import { useUserStore } from "@/store/userStore";
 import { trackEvent } from "@/lib/analytics";
 import { subscribeReadCacheUpdates } from "@/lib/readCacheUpdates";
+import { cacheWorkoutHistory } from "@/db/workoutHistoryCache";
 import {
   analyticsDepth,
   dashboardGuidance,
@@ -142,8 +142,8 @@ export function ProgressPage() {
           const viewStart = localDateKey(new Date(view.year, view.monthIndex, 1));
           const viewEnd = localDateKey(new Date(view.year, view.monthIndex + 1, 0));
           const historical = viewStart < localDateKey(recentStart) || viewEnd > localDateKey(currentMonthEnd);
-          const [items, range, ex, metrics, planRegularity, trendSets, profile, dashboardSummary, historicalItems] = await Promise.all([
-            fetchWorkoutHistory({
+          const [recentPage, range, ex, metrics, planRegularity, trendSets, profile, dashboardSummary, historicalPage] = await Promise.all([
+            fetchWorkoutHistoryPage({
               dateFrom: localDateKey(recentStart),
               dateTo: localDateKey(currentMonthEnd),
               limit: 200,
@@ -178,21 +178,20 @@ export function ProgressPage() {
               }
               return null;
             }),
-            historical ? fetchWorkoutHistory({ dateFrom: viewStart, dateTo: viewEnd, limit: 200, readPolicy: "cache" }).catch(() => null) : Promise.resolve(null),
+            historical ? fetchWorkoutHistoryPage({ dateFrom: viewStart, dateTo: viewEnd, limit: 200, readPolicy: "cache" }).catch(() => null) : Promise.resolve(null),
           ]);
           if (cancelled) return;
-          const received = [...items, ...(historicalItems ?? [])];
-          await cacheWorkouts(received, "merge");
+          const received = [...recentPage.items, ...(historicalPage?.items ?? [])];
+          const windows = [];
+          if (recentPage.total <= recentPage.items.length) windows.push({ start: localDateKey(recentStart), end: localDateKey(currentMonthEnd) });
+          if (historicalPage && historicalPage.total <= historicalPage.items.length) windows.push({ start: viewStart, end: viewEnd });
+          const savedWorkouts = ownerUserId ? await cacheWorkoutHistory(ownerUserId, received, windows) : received;
           if (ex?.items?.length) {
             await cacheExercises(ex.items);
             if (!cancelled) setCatalog(ex.items);
           }
           if (!cancelled) {
-            const start = localDateKey(recentStart), end = localDateKey(currentMonthEnd);
-            setWorkouts(current => {
-              const kept = current.filter(item => (item.scheduled_date < start || item.scheduled_date > end) && (!historicalItems || item.scheduled_date < viewStart || item.scheduled_date > viewEnd));
-              return [...new Map([...kept, ...received].map(item => [item.id, item])).values()];
-            });
+            setWorkouts(savedWorkouts);
             setSource("network");
             if (range) setNutrition(buildNutritionBalance(range));
             if (metrics) setDailyMetrics(metrics.days);
@@ -341,19 +340,16 @@ export function ProgressPage() {
     viewedMonth.current = { year: d.getFullYear(), monthIndex: d.getMonth() };
     if (getStoredToken() && isOnline()) {
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      void fetchWorkoutHistory({
+      void fetchWorkoutHistoryPage({
         dateFrom: localDateKey(d),
         dateTo: localDateKey(end),
         limit: 200,
-      }).then(async (items) => {
+      }).then(async (page) => {
         if (useUserStore.getState().user?.id !== ownerUserId) return;
-        await cacheWorkouts(items, "merge");
+        const items = page.items;
+        const saved = ownerUserId ? await cacheWorkoutHistory(ownerUserId, items, page.total <= items.length ? [{ start: localDateKey(d), end: localDateKey(end) }] : []) : items;
         if (useUserStore.getState().user?.id !== ownerUserId) return;
-        setWorkouts((current) => {
-          const merged = new Map(current.map((item) => [item.id, item]));
-          items.forEach((item) => merged.set(item.id, item));
-          return [...merged.values()];
-        });
+        setWorkouts(saved);
       }).catch(() => setError("Не удалось загрузить выбранный месяц"));
     }
   }
