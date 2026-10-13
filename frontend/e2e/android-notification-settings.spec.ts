@@ -141,6 +141,7 @@ test("explicit permission refusal, pending acknowledgement and local test", asyn
     window.dispatchEvent(new Event("fitness:native-notifications-changed"));
   });
   await expect(phone).toContainText("Включено на этом телефоне");
+  await expect(phone).not.toContainText("Ожидается подтверждение сервера");
   for (const width of [320, 393, 1440]) for (const theme of ["light", "dark"] as const) {
     await page.setViewportSize({ width, height: 1400 });
     await page.emulateMedia({ colorScheme: theme });

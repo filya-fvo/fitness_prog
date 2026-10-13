@@ -54,8 +54,7 @@ export function useAndroidDelivery(onConfirmedChange: () => Promise<void>) {
       const next = await refresh();
       if (version !== epoch.current) return;
       setMessage(action === "test" ? "Телефон принял тестовое уведомление"
-        : next.pending ? "Ожидается подтверждение сервера"
-          : action === "enable" && next.active ? "Напоминания на телефоне включены" : null);
+        : action === "enable" && next.active ? "Напоминания на телефоне включены" : null);
       if (action === "enable" || action === "disable") await onConfirmedChange();
     } catch (caught) {
       if (version === epoch.current) {
