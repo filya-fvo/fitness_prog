@@ -128,8 +128,11 @@ const limits = {
   // gzip after excluding unused native-plan validation from web settings imports.
   // Measured 582.2 KB total / 525.8 KB product; retain <2 KB measured headroom.
   // No new dependencies; admin and maximum individual chunk limits unchanged.
-  totalJsGzip: 584_000,
-  productJsGzip: 527_500,
+  // Background diary refresh and complete-window reconciliation preserve local
+  // edits and remove server-deleted rows. Measured 584498 total / 528103 product;
+  // no new dependency/vendor chunk. Retain <1.4 KB aggregate release headroom.
+  totalJsGzip: 585_500,
+  productJsGzip: 529_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
