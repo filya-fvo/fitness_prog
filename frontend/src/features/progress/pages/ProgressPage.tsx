@@ -116,6 +116,10 @@ export function ProgressPage() {
         if (!cancelled) {
           setPending(queueCount);
           if (cachedEx.length) setCatalog(cachedEx);
+          setWorkouts(cached);
+          setSource("cache");
+          // A server refresh must not hide the diary that is already on this device.
+          if (cached.length || !isOnline()) setLoading(false);
         }
 
         if (getStoredToken() && isOnline()) {
@@ -205,7 +209,7 @@ export function ProgressPage() {
     return () => {
       cancelled = true;
     };
-  }, [plusAccess]);
+  }, [ownerUserId, plusAccess]);
 
   useEffect(() => {
     if (plusAccess) trackEvent("plus_feature_opened", { feature: "progress_dashboard" });

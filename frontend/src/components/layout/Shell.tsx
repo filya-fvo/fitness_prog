@@ -195,12 +195,21 @@ export function Shell() {
     if (!userId) return;
     let cancelled = false;
     let stopSync: (() => void) | null = null;
-    void Promise.all([
-      import("@/db/syncQueue"),
-      import("@/lib/sessionRestore"),
-    ]).then(async ([syncQueue, sessionRestore]) => {
+    void import("@/db/syncQueue").then((syncQueue) => {
       if (cancelled) return;
       stopSync = syncQueue.startSyncListeners(userId);
+    });
+    return () => {
+      cancelled = true;
+      stopSync?.();
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void import("@/lib/sessionRestore").then(async (sessionRestore) => {
+      if (cancelled) return;
       if (!location.pathname.startsWith("/workouts/active/")) {
         const session = await sessionRestore.findResumableSession(userId);
         if (session && !cancelled) {
@@ -210,7 +219,6 @@ export function Shell() {
     });
     return () => {
       cancelled = true;
-      stopSync?.();
     };
   }, [location.pathname, userId]);
 
