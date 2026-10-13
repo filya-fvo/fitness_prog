@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { OCR_API_TIMEOUT_MS, apiClient } from "@/api/client";
 
@@ -221,8 +222,9 @@ export async function recognizeNutritionLabel(image: File): Promise<NutritionLab
   return nutritionLabelRecognitionSchema.parse(data);
 }
 
-export async function fetchDailyNutrition(date?: string): Promise<DailyNutrition> {
+export async function fetchDailyNutrition(date?: string, policy?: ReadPolicy): Promise<DailyNutrition> {
   const { data } = await apiClient.get("/nutrition/daily", {
+    ...readPolicyConfig(policy),
     params: date ? { date } : undefined,
   });
   return dailySchema.parse(data);
@@ -261,8 +263,10 @@ export type NutritionRange = z.infer<typeof rangeSchema>;
 export async function fetchNutritionRange(opts?: {
   days?: number;
   end?: string;
+  readPolicy?: ReadPolicy;
 }): Promise<NutritionRange> {
   const { data } = await apiClient.get("/nutrition/range", {
+    ...readPolicyConfig(opts?.readPolicy),
     params: {
       days: opts?.days ?? 7,
       end: opts?.end,

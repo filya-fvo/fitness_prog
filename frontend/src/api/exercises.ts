@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 import type { Exercise } from "@/types/workout";
@@ -97,9 +98,10 @@ export async function fetchExercises(params?: {
   q?: string;
   tag?: string;
   fresh?: boolean;
+  readPolicy?: ReadPolicy;
 }): Promise<{ items: Exercise[]; total: number }> {
   const { data } = await apiClient.get("/exercises", {
-    ...(params?.fresh ? { headers: { "Cache-Control": "no-cache" } } : {}),
+    ...readPolicyConfig(params?.fresh ? "fresh" : params?.readPolicy),
     params: {
       page: params?.page ?? 1,
       page_size: params?.pageSize ?? 100,

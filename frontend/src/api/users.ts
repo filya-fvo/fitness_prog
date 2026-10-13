@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 import { legalStatusSchema } from "./legalSchemas";
 
 import { apiClient } from "@/api/client";
@@ -20,8 +21,8 @@ export const profileSchema = z.object({
 
 export type UserProfile = z.infer<typeof profileSchema>;
 
-export async function fetchMyProfile(timeoutMs?: number, fresh = false): Promise<UserProfile> {
-  const { data } = await apiClient.get("/users/me", { timeout: timeoutMs, ...(fresh ? { headers: { "Cache-Control": "no-cache" } } : {}) });
+export async function fetchMyProfile(timeoutMs?: number, policy?: ReadPolicy): Promise<UserProfile> {
+  const { data } = await apiClient.get("/users/me", { timeout: timeoutMs, ...readPolicyConfig(policy) });
   return profileSchema.parse(data);
 }
 

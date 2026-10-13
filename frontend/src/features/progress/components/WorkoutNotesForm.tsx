@@ -36,7 +36,7 @@ export function WorkoutNotesForm({ workout, onChanged, disabled, onBusyChange }:
   }
   return <div className="mt-4 border-t border-[var(--border-subtle)] pt-2">
     {workout.ai_notes && !editing ? <p className="mb-2 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{workout.ai_notes}</p> : null}
-    {!editing ? <button type="button" disabled={disabled} className="app-button app-ghost-action w-full text-xs" onClick={() => setEditing(true)}>Заметки и тяжесть тренировки</button>
+    {!editing ? <button type="button" disabled={disabled} className="app-button app-ghost-action w-full text-xs" onClick={() => { setRpe(workout.rpe); setNotes(workout.ai_notes ?? ""); setError(null); setEditing(true); }}>Заметки и тяжесть тренировки</button>
       : <form className="space-y-3" onSubmit={event => { event.preventDefault(); void save(); }}>
         <label className="block text-xs text-tg-hint">Субъективная тяжесть (RPE), от 1 до 10
           <select value={rpe ?? ""} disabled={busy || disabled} onChange={event => setRpe(event.target.value ? Number(event.target.value) : null)} className="app-field mt-1 w-full">

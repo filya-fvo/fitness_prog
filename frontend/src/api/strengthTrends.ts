@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 
@@ -77,8 +78,8 @@ function mapItem(item: z.infer<typeof itemSchema>): StrengthTrendItem {
   };
 }
 
-export async function fetchStrengthTrendSets(): Promise<StrengthTrendSets> {
-  const { data } = await apiClient.get("/exercises/strength-trends");
+export async function fetchStrengthTrendSets(policy?: ReadPolicy): Promise<StrengthTrendSets> {
+  const { data } = await apiClient.get("/exercises/strength-trends", readPolicyConfig(policy));
   const parsed = setsSchema.parse(data);
   return {
     nextWorkout: parsed.next_workout

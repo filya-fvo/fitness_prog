@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 import type { Program, Workout } from "@/types/workout";
@@ -117,8 +118,10 @@ export async function fetchPrograms(params?: {
   workoutType?: string;
   level?: string;
   templatesOnly?: boolean;
+  readPolicy?: ReadPolicy;
 }): Promise<{ items: Program[]; total: number }> {
   const { data } = await apiClient.get("/programs", {
+    ...readPolicyConfig(params?.readPolicy),
     params: {
       workout_type: params?.workoutType,
       level: params?.level,
@@ -140,13 +143,13 @@ export type PersonalProgramInput = {
   }>;
 };
 
-export async function fetchProgram(programId: string): Promise<Program> {
-  const { data } = await apiClient.get(`/programs/${encodeURIComponent(programId)}`);
+export async function fetchProgram(programId: string, policy?: ReadPolicy): Promise<Program> {
+  const { data } = await apiClient.get(`/programs/${encodeURIComponent(programId)}`, readPolicyConfig(policy));
   return mapProgram(programSchema.parse(data));
 }
 
-export async function fetchMyPrograms(): Promise<{ items: Program[]; total: number }> {
-  const { data } = await apiClient.get("/programs/mine");
+export async function fetchMyPrograms(policy?: ReadPolicy): Promise<{ items: Program[]; total: number }> {
+  const { data } = await apiClient.get("/programs/mine", readPolicyConfig(policy));
   const parsed = listSchema.parse(data);
   return { items: parsed.items.map(mapProgram), total: parsed.total };
 }

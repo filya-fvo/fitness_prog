@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 import type {
@@ -393,8 +394,10 @@ export async function fetchWorkoutHistory(options: {
   dateTo?: string;
   limit?: number;
   offset?: number;
+  readPolicy?: ReadPolicy;
 } = {}): Promise<Workout[]> {
   const { data } = await apiClient.get("/workouts/history", {
+    ...readPolicyConfig(options.readPolicy),
     params: {
       date_from: options.dateFrom,
       date_to: options.dateTo,
@@ -411,8 +414,9 @@ export async function fetchWorkoutHistory(options: {
   return parsed.items.map(mapWorkout);
 }
 
-export async function fetchWorkoutSchedule(day?: string): Promise<WorkoutScheduleOverview> {
+export async function fetchWorkoutSchedule(day?: string, policy?: ReadPolicy): Promise<WorkoutScheduleOverview> {
   const { data } = await apiClient.get("/workouts/schedule/overview", {
+    ...readPolicyConfig(policy),
     params: day ? { day } : undefined,
   });
   return scheduleOverviewSchema.parse(data);
@@ -602,13 +606,13 @@ export async function replaceWorkoutScheduleDay(
   return parsed;
 }
 
-export async function fetchPersonalRegularity(days = 28): Promise<PersonalRegularity> {
-  const { data } = await apiClient.get("/workouts/regularity", { params: { days } });
+export async function fetchPersonalRegularity(days = 28, policy?: ReadPolicy): Promise<PersonalRegularity> {
+  const { data } = await apiClient.get("/workouts/regularity", { params: { days }, ...readPolicyConfig(policy) });
   return personalRegularitySchema.parse(data);
 }
 
-export async function fetchIllnessPause(): Promise<IllnessPause> {
-  const { data } = await apiClient.get("/workouts/illness");
+export async function fetchIllnessPause(policy?: ReadPolicy): Promise<IllnessPause> {
+  const { data } = await apiClient.get("/workouts/illness", readPolicyConfig(policy));
   return illnessPauseSchema.parse(data);
 }
 

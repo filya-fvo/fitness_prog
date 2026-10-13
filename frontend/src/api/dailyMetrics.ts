@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 import type { CycleReadiness } from "@/utils/cycleTraining";
@@ -22,8 +23,9 @@ const dailyMetricRangeSchema = z.object({
 export type DailyMetric = z.infer<typeof dailyMetricSchema>;
 export type DailyMetricRange = z.infer<typeof dailyMetricRangeSchema>;
 
-export async function fetchDailyMetrics(date?: string): Promise<DailyMetric> {
+export async function fetchDailyMetrics(date?: string, policy?: ReadPolicy): Promise<DailyMetric> {
   const { data } = await apiClient.get("/metrics/daily", {
+    ...readPolicyConfig(policy),
     params: date ? { date } : undefined,
   });
   return dailyMetricSchema.parse(data);
@@ -54,8 +56,10 @@ export async function saveDailyMetrics(
 export async function fetchDailyMetricsRange(opts?: {
   days?: number;
   end?: string;
+  readPolicy?: ReadPolicy;
 }): Promise<DailyMetricRange> {
   const { data } = await apiClient.get("/metrics/range", {
+    ...readPolicyConfig(opts?.readPolicy),
     params: { days: opts?.days ?? 14, end: opts?.end },
   });
   return dailyMetricRangeSchema.parse(data);

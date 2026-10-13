@@ -1,5 +1,6 @@
 import { androidDeliveryStateSchema } from "./androidDeliverySchema";
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 
@@ -108,8 +109,9 @@ const waterSchema = z.object({
 
 export type WaterLogPayload = z.infer<typeof waterSchema>;
 
-export async function fetchWaterLog(date?: string): Promise<WaterLogPayload> {
+export async function fetchWaterLog(date?: string, policy?: ReadPolicy): Promise<WaterLogPayload> {
   const { data } = await apiClient.get("/notifications/water", {
+    ...readPolicyConfig(policy),
     params: date ? { date } : undefined,
   });
   return waterSchema.parse(data);

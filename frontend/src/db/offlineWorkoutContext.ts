@@ -98,7 +98,7 @@ export function prepareOfflineWorkoutContext(owner: string, start: string): Prom
   const task = (async () => {
     checkOwner(owner);
     if (!await canPrepareOfflineWorkoutContext(owner)) throw new Error("Сначала отправьте сохранённые изменения");
-    const [bundle, profile] = await Promise.all([fetchOfflineWorkoutContext(start), fetchMyProfile(undefined, true)]);
+    const [bundle, profile] = await Promise.all([fetchOfflineWorkoutContext(start), fetchMyProfile(undefined, "fresh")]);
     checkOwner(owner);
     const exerciseIds = [...new Set(bundle.plans.flatMap(plan => plan.plan.exercises.map(ex => ex.exercise_id)))];
     const exercises: Exercise[] = [];

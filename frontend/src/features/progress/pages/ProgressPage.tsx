@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 
 import { analyzeProgress } from "@/api/ai";
+import { useRef } from "react";
 import { getStoredToken } from "@/api/client";
 import { fetchExercises } from "@/api/exercises";
 import { fetchStrengthTrendSets, type StrengthTrendSets } from "@/api/strengthTrends";
@@ -89,6 +90,8 @@ export function ProgressPage() {
   const [weekAiText, setWeekAiText] = useState<string | null>(null);
   const [weekAiError, setWeekAiError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const dashboardPeriod = useRef<ProgressDashboardPeriod>(28);
+  const viewedMonth = useRef({ year, monthIndex });
 
   useEffect(() => {
     if (!plusAccess) {
@@ -106,6 +109,7 @@ export function ProgressPage() {
     let updating = false;
     let updateQueued = false;
     setLoading(true);
+    dashboardPeriod.current = 28;
     async function load() {
       if (updating) { updateQueued = true; return; }
       updating = true;
@@ -133,13 +137,19 @@ export function ProgressPage() {
           recentStart.setDate(recentStart.getDate() - 83);
           const loadDay = new Date();
           const currentMonthEnd = new Date(loadDay.getFullYear(), loadDay.getMonth() + 1, 0);
-          const [items, range, ex, metrics, planRegularity, trendSets, profile, dashboardSummary] = await Promise.all([
+          const requestedPeriod = dashboardPeriod.current;
+          const view = viewedMonth.current;
+          const viewStart = localDateKey(new Date(view.year, view.monthIndex, 1));
+          const viewEnd = localDateKey(new Date(view.year, view.monthIndex + 1, 0));
+          const historical = viewStart < localDateKey(recentStart) || viewEnd > localDateKey(currentMonthEnd);
+          const [items, range, ex, metrics, planRegularity, trendSets, profile, dashboardSummary, historicalItems] = await Promise.all([
             fetchWorkoutHistory({
               dateFrom: localDateKey(recentStart),
               dateTo: localDateKey(currentMonthEnd),
               limit: 200,
+              readPolicy: "cache",
             }),
-            fetchNutritionRange({ days: 31 }).catch((err: unknown) => {
+            fetchNutritionRange({ days: 31, readPolicy: "cache" }).catch((err: unknown) => {
               if (!cancelled) {
                 setNutritionError(
                   toUserMessage(err, "Не удалось загрузить питание"),
@@ -147,43 +157,49 @@ export function ProgressPage() {
               }
               return null;
             }),
-            fetchExercises({ pageSize: 200 }).catch(() => null),
-            fetchDailyMetricsRange({ days: 30 }).catch((err: unknown) => {
+            fetchExercises({ pageSize: 200, readPolicy: "cache" }).catch(() => null),
+            fetchDailyMetricsRange({ days: 30, readPolicy: "cache" }).catch((err: unknown) => {
               if (!cancelled) {
                 setDailyMetricsError(toUserMessage(err, "Не удалось загрузить показатели"));
               }
               return null;
             }),
-            fetchPersonalRegularity().catch(() => null),
-            fetchStrengthTrendSets().catch((err: unknown) => {
+            fetchPersonalRegularity(28, "cache").catch(() => null),
+            fetchStrengthTrendSets("cache").catch((err: unknown) => {
               if (!cancelled) {
                 setStrengthTrendsError(toUserMessage(err, "Не удалось загрузить силовые тренды"));
               }
               return null;
             }),
-            fetchMyProfile().catch(() => null),
-            fetchProgressDashboard(28).catch((err: unknown) => {
+            fetchMyProfile(undefined, "cache").catch(() => null),
+            fetchProgressDashboard(requestedPeriod, "cache").catch((err: unknown) => {
               if (!cancelled) {
                 setDashboardError(toUserMessage(err, "Не удалось загрузить сводку"));
               }
               return null;
             }),
+            historical ? fetchWorkoutHistory({ dateFrom: viewStart, dateTo: viewEnd, limit: 200, readPolicy: "cache" }).catch(() => null) : Promise.resolve(null),
           ]);
           if (cancelled) return;
-          await cacheWorkouts(items);
+          const received = [...items, ...(historicalItems ?? [])];
+          await cacheWorkouts(received, "merge");
           if (ex?.items?.length) {
             await cacheExercises(ex.items);
             if (!cancelled) setCatalog(ex.items);
           }
           if (!cancelled) {
-            setWorkouts(items);
+            const start = localDateKey(recentStart), end = localDateKey(currentMonthEnd);
+            setWorkouts(current => {
+              const kept = current.filter(item => (item.scheduled_date < start || item.scheduled_date > end) && (!historicalItems || item.scheduled_date < viewStart || item.scheduled_date > viewEnd));
+              return [...new Map([...kept, ...received].map(item => [item.id, item])).values()];
+            });
             setSource("network");
             if (range) setNutrition(buildNutritionBalance(range));
             if (metrics) setDailyMetrics(metrics.days);
             setRegularity(planRegularity);
             setStrengthTrendSets(trendSets);
             if (profile) setProfileGoals(profile.goals);
-            setDashboard(dashboardSummary);
+            if (dashboardSummary && dashboardPeriod.current === requestedPeriod) setDashboard(dashboardSummary);
           }
         } else if (cached.length) {
           if (!cancelled) {
@@ -306,9 +322,11 @@ export function ProgressPage() {
   async function changeDashboardPeriod(period: ProgressDashboardPeriod) {
     if (dashboardLoading || dashboard?.period_days === period) return;
     setDashboardLoading(true);
+    dashboardPeriod.current = period;
     setDashboardError(null);
     try {
-      setDashboard(await fetchProgressDashboard(period));
+      const result = await fetchProgressDashboard(period, "cache");
+      if (dashboardPeriod.current === period) setDashboard(result);
     } catch (err) {
       setDashboardError(toUserMessage(err, "Не удалось загрузить выбранный период"));
     } finally {
@@ -320,13 +338,17 @@ export function ProgressPage() {
     const d = new Date(year, monthIndex + delta, 1);
     setYear(d.getFullYear());
     setMonthIndex(d.getMonth());
+    viewedMonth.current = { year: d.getFullYear(), monthIndex: d.getMonth() };
     if (getStoredToken() && isOnline()) {
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
       void fetchWorkoutHistory({
         dateFrom: localDateKey(d),
         dateTo: localDateKey(end),
         limit: 200,
-      }).then((items) => {
+      }).then(async (items) => {
+        if (useUserStore.getState().user?.id !== ownerUserId) return;
+        await cacheWorkouts(items, "merge");
+        if (useUserStore.getState().user?.id !== ownerUserId) return;
         setWorkouts((current) => {
           const merged = new Map(current.map((item) => [item.id, item]));
           items.forEach((item) => merged.set(item.id, item));

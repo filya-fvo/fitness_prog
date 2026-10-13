@@ -335,13 +335,13 @@ export function HomePage() {
         if (getStoredToken()) {
           try {
             const [programs, myPrograms, profile, exerciseResponse, schedule, planRegularity, illnessStatus] = await Promise.all([
-              fetchPrograms({ templatesOnly: true }),
-              fetchMyPrograms().catch(() => ({ items: [] })),
-              fetchMyProfile().catch(() => null),
-              fetchExercises({ pageSize: 200 }).catch(() => null),
-              fetchWorkoutSchedule().catch(() => null),
-              plusAccess ? fetchPersonalRegularity().catch(() => null) : Promise.resolve(null),
-              fetchIllnessPause().catch(() => null),
+              fetchPrograms({ templatesOnly: true, readPolicy: "cache" }),
+              fetchMyPrograms("cache").catch(() => ({ items: [] })),
+              fetchMyProfile(undefined, "cache").catch(() => null),
+              fetchExercises({ pageSize: 200, readPolicy: "cache" }).catch(() => null),
+              fetchWorkoutSchedule(undefined, "cache").catch(() => null),
+              plusAccess ? fetchPersonalRegularity(28, "cache").catch(() => null) : Promise.resolve(null),
+              fetchIllnessPause("cache").catch(() => null),
             ]);
             if (exerciseResponse?.items.length) {
               setCatalog(exerciseResponse.items);
@@ -351,7 +351,7 @@ export function HomePage() {
             const activeId = String(goals.active_program_id || "");
             const active = activeId
               ? [...programs.items, ...myPrograms.items].find((p) => p.id === activeId)
-                ?? await fetchProgram(activeId).catch(() => null)
+                ?? await fetchProgram(activeId, "cache").catch(() => null)
               : null;
             const anthro = (profile?.anthropometry as Record<string, unknown>) || {};
             const goalsWithSex = { ...goals, sex: anthro.sex || goals.sex || "" };
@@ -417,8 +417,8 @@ export function HomePage() {
         if (getStoredToken()) {
           try {
             const [daily, water] = await Promise.all([
-              fetchDailyNutrition().catch(() => null),
-              fetchWaterLog().catch(() => null),
+              fetchDailyNutrition(undefined, "cache").catch(() => null),
+              fetchWaterLog(undefined, "cache").catch(() => null),
             ]);
             if (!cancelled && daily) {
               setTodayNutrition(daily);

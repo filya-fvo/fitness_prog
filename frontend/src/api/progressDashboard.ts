@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
 
@@ -46,8 +47,10 @@ export type ProgressDashboard = z.infer<typeof dashboardSchema>;
 
 export async function fetchProgressDashboard(
   periodDays: ProgressDashboardPeriod = 28,
+  policy?: ReadPolicy,
 ): Promise<ProgressDashboard> {
   const { data } = await apiClient.get("/workouts/dashboard", {
+    ...readPolicyConfig(policy),
     params: { period_days: periodDays },
   });
   return dashboardSchema.parse(data);

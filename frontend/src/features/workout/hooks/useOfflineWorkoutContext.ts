@@ -3,6 +3,7 @@ import { getStoredToken } from "@/api/client";
 import { canPrepareOfflineWorkoutContext, prepareOfflineWorkoutContext, readOfflineWorkoutContext, type OfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
+import { subscribeReadCacheUpdates } from "@/lib/readCacheUpdates";
 
 export function useOfflineWorkoutContext(owner: string | null, day: string) {
   const [context, setContext] = useState<OfflineWorkoutContext | null>(null);
@@ -45,6 +46,7 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
     const onPrepared = () => { void read(); };
     const onReady = () => { void refresh(); };
     const onChanged = () => { dirty = true; void refresh(); };
+    const stopRefresh = subscribeReadCacheUpdates(owner, ["/users/me"], onChanged);
     window.addEventListener("online", onChanged);
     window.addEventListener("fitness:offline-sync-ready", onReady);
     window.addEventListener("fitness:sync-complete", onChanged);
@@ -52,6 +54,7 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
     window.addEventListener("fitness:native-change", onPrepared);
     return () => {
       cancelled = true;
+      stopRefresh();
       window.removeEventListener("online", onChanged);
       window.removeEventListener("fitness:offline-sync-ready", onReady);
       window.removeEventListener("fitness:sync-complete", onChanged);

@@ -73,6 +73,6 @@ export function HistoryWorkoutCard({ workout, history, catalog, onEdit, onChange
       })}
       {!groups.length ? <p className="text-sm text-tg-hint">Упражнения не записаны.</p> : null}
     </div>
-    <WorkoutNotesForm key={`${workout.id}-${workout.rpe}-${workout.ai_notes}`} workout={workout} onChanged={onChanged} disabled={disabled} onBusyChange={onNotesBusyChange} />
+    <WorkoutNotesForm key={workout.id} workout={workout} onChanged={onChanged} disabled={disabled} onBusyChange={onNotesBusyChange} />
   </article>;
 }
