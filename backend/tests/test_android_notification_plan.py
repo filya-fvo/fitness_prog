@@ -160,7 +160,7 @@ async def test_dst_gap_fold_and_cross_midnight_lead():
     event = next(event for event in plan.events if event.key == "workout:2026-10-25:2026-10-25:00:30")
     assert event.local_date == date(2026, 10, 24)
     assert event.context.occurrence_date == date(2026, 10, 25)
-    assert event.expires_at == event.context.starts_at
+    assert event.expires_at == event.context.starts_at + timedelta(minutes=30)
     assert event.context.zero_lead is False
 
 
@@ -171,8 +171,22 @@ async def test_zero_lead_normal_alarm_grace_is_not_reboot_catchup():
     event = next(event for event in plan.events if event.category == "workouts")
     assert event.context.starts_at == datetime(2026, 10, 10, 7, tzinfo=UTC)
     assert event.context.zero_lead is True
-    assert event.expires_at == event.context.starts_at + timedelta(minutes=7)
-    # Native selection uses starts_at + zero_lead to distinguish ALARM from RESTORE.
+    assert event.expires_at == event.context.starts_at + timedelta(minutes=30)
+    # Native selection allows bounded late ALARM delivery, never late RESTORE.
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("lead_minutes", [0, 5, 60])
+async def test_workout_plan_survives_idle_alarm_delay_after_scheduled_start(lead_minutes):
+    user = make_user(
+        workout_schedule={"days": list(range(7)), "start_time": "10:00"},
+        notification_settings={"workouts": {"remind_before_minutes": lead_minutes}},
+    )
+    plan = await prepare(user, now=datetime(2026, 10, 10, 7, 15, tzinfo=UTC))
+    event = next((event for event in plan.events if event.key == "workout:2026-10-10:2026-10-10:10:00"), None)
+    assert event is not None, "A planned workout must remain deliverable after a normal idle alarm delay"
+    assert event.due_at == datetime(2026, 10, 10, 7, tzinfo=UTC) - timedelta(minutes=lead_minutes)
+    assert event.expires_at == datetime(2026, 10, 10, 7, 30, tzinfo=UTC)
 
 
 @pytest.mark.asyncio

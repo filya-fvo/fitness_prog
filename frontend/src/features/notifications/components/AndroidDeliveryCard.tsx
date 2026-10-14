@@ -39,10 +39,13 @@ export function AndroidDeliveryCard({ selected, delivery, disabled }: Props) {
             <input type="checkbox" checked={status.restEnabled} disabled={busy}
               onChange={(event) => void run("rest", event.target.checked)} />Уведомление об окончании отдыха
           </label>
-          <p className="text-sm text-tg-hint">{status.exactAllowed ? "Точное время отдыха разрешено" : "Без дополнительного доступа уведомление об отдыхе может задержаться"}</p>
+          <p className="text-sm text-tg-hint">{status.exactAllowed ? "Точное время тренировок и отдыха разрешено" : "Без дополнительного доступа напоминания о тренировке и отдыхе могут задержаться"}</p>
           {!status.exactAllowed ? <button type="button" disabled={busy}
             className="app-secondary-action min-h-11 px-4 text-sm" onClick={() => void run("exact")}>Разрешить точный таймер</button> : null}
         </div> : null}
+        {status.active ? <p className="text-sm text-tg-hint">
+          Если напоминания появляются только после открытия, разрешите FilFit работу в фоне и отключите ограничения батареи в настройках телефона.
+        </p> : null}
         {status.blockedCategories.length ? <p className="text-sm text-tg-hint">Часть категорий отключена в настройках телефона.</p> : null}
       </>}
       {selected?.confirmed_at ? <p className="text-xs text-tg-hint">Выбор подтверждён: {new Date(selected.confirmed_at).toLocaleString("ru-RU")}</p> : null}

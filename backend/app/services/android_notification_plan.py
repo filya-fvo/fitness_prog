@@ -106,7 +106,10 @@ async def build_android_notification_plan(
         if settings["workouts"]["enabled"] and occurrence and day not in blocked_workouts:
             key, due, starts_at, zero_lead = occurrence
             if state.get("last_workout_mark") != key:
-                add(key, "workouts", due, starts_at + timedelta(minutes=7) if zero_lead else starts_at,
+                # Android idle wakeups share a quota. Keep an actually scheduled
+                # alarm useful after a bounded delay; native RESTORE still skips
+                # workouts whose start has passed.
+                add(key, "workouts", due, starts_at + timedelta(minutes=30),
                     "workouts", {"occurrence_date": day, "occurrence_key": key,
                                  "starts_at": starts_at, "zero_lead": zero_lead})
         if day >= end_day:
