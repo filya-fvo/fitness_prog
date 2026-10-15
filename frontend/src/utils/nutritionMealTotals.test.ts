@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { NutritionLog } from "@/api/nutrition";
-import { formatMealNutrition, sumMealNutrition } from "@/utils/nutritionMealTotals";
+import { applySavedNutritionLog, formatMealNutrition, sumMealNutrition } from "@/utils/nutritionMealTotals";
 
 function log(kbj: Record<string, unknown>): NutritionLog {
   return {
@@ -14,6 +14,37 @@ function log(kbj: Record<string, unknown>): NutritionLog {
     calculated_kbj: kbj,
   };
 }
+
+describe("confirmed nutrition entries", () => {
+  it("keeps distinct portions but never counts a repeated response twice", () => {
+    const first = log({ calories: 80, proteins: 5 });
+    const second = log({ calories: 110, proteins: 7 });
+    const daily = applySavedNutritionLog(applySavedNutritionLog(null, first), second);
+    const repeated = applySavedNutritionLog(daily, first);
+    expect(repeated.meals.breakfast).toHaveLength(2);
+    expect(repeated.totals.calories).toBe(190);
+    expect(repeated.totals.proteins).toBe(12);
+  });
+
+  it("moves an existing entry without leaving it in its previous meal", () => {
+    const entry = log({ calories: 80 });
+    const daily = applySavedNutritionLog(null, entry);
+    const updated = applySavedNutritionLog(daily, { ...entry, meal_type: "lunch", calculated_kbj: { calories: 100 } });
+    expect(updated.meals.breakfast).toEqual([]);
+    expect(updated.meals.lunch).toHaveLength(1);
+    expect(updated.totals.calories).toBe(100);
+    expect(daily.meals.breakfast).toHaveLength(1);
+  });
+
+  it("never mixes another day's rows into the saved day", () => {
+    const first = log({ calories: 80 });
+    const second = { ...log({ calories: 110 }), date: "2026-09-09" };
+    const daily = applySavedNutritionLog(applySavedNutritionLog(null, first), second);
+    expect(daily.date).toBe(second.date);
+    expect(daily.meals.breakfast.map((entry) => entry.id)).toEqual([second.id]);
+    expect(daily.totals.calories).toBe(110);
+  });
+});
 
 describe("sumMealNutrition", () => {
   it("sums calories and macros for one meal", () => {

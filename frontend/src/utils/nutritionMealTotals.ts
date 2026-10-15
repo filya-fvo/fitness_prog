@@ -1,4 +1,4 @@
-import type { NutritionLog } from "@/api/nutrition";
+import type { DailyNutrition, NutritionLog } from "@/api/nutrition";
 
 export type MealNutritionTotals = {
   calories: number;
@@ -41,4 +41,14 @@ export function formatMealNutrition(value: number, maximumFractionDigits = 1): s
   return new Intl.NumberFormat("ru-RU", {
     maximumFractionDigits,
   }).format(value);
+}
+
+/** Apply the confirmed POST response once, without waiting for a second read. */
+export function applySavedNutritionLog(current: DailyNutrition | null, log: NutritionLog): DailyNutrition {
+  const base = current?.date === log.date ? current : { date: log.date, meals: {}, totals: EMPTY_TOTALS };
+  const meals = Object.fromEntries(Object.entries(base.meals).map(([meal, items]) =>
+    [meal, items.filter((item) => item.id !== log.id)],
+  ));
+  meals[log.meal_type] = [...(meals[log.meal_type] ?? []), log];
+  return { ...base, meals, totals: sumMealNutrition(Object.values(meals).flat()) };
 }

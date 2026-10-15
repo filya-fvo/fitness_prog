@@ -3,6 +3,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { QueryClient } from "@tanstack/react-query";
 
 import { getStoredToken } from "@/api/client";
 import {
@@ -36,6 +37,8 @@ import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { toast } from "@/store/toastStore";
+import { useUserStore } from "@/store/userStore";
+import { applySavedNutritionLog } from "@/utils/nutritionMealTotals";
 import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
 import { MEAL_TEMPLATES } from "@/utils/mealTemplates";
@@ -132,6 +135,19 @@ export function DailyLog() {
   }, []);
 
   const [day, setDay] = useState(todayISO);
+  const ownerId = useUserStore((state) => state.user?.id);
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 60_000 } } }));
+  const [catalogRevision, setCatalogRevision] = useState(0);
+  const scope = useMemo(() => ({ day, ownerId }), [day, ownerId]);
+  const activeScope = useRef(scope);
+  activeScope.current = scope;
+  const readSequence = useRef(0);
+  const invalidateReads = useCallback(() => { ++readSequence.current; }, []);
+  function resetProductSearch() {
+    queryClient.removeQueries({ queryKey: ["nutrition-products", ownerId] });
+    setCatalogRevision((revision) => revision + 1);
+  }
+  useEffect(() => () => queryClient.clear(), [queryClient]);
   const [data, setData] = useState<DailyNutrition | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +157,10 @@ export function DailyLog() {
   const [suggestions, setSuggestions] = useState<NutritionProduct[]>([]);
   const [catalog, setCatalog] = useState<NutritionProduct[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState("");
   const [selected, setSelected] = useState<NutritionProduct | null>(null);
@@ -194,6 +214,10 @@ export function DailyLog() {
   }, [customOpen]);
 
   const reload = useCallback(async () => {
+    if (activeScope.current !== scope || useUserStore.getState().user?.id !== scope.ownerId) return;
+    const sequence = ++readSequence.current;
+    const current = () => activeScope.current === scope && sequence === readSequence.current
+      && useUserStore.getState().user?.id === scope.ownerId;
     if (!getStoredToken()) {
       setLoading(false);
       setError(null);
@@ -203,14 +227,20 @@ export function DailyLog() {
     setLoading(true);
     setError(null);
     try {
-      const daily = await fetchDailyNutrition(day);
-      setData(daily);
+      const daily = await fetchDailyNutrition(scope.day, "fresh");
+      if (current()) setData(daily);
     } catch (err) {
-      setError(toUserMessage(err, "Не удалось загрузить дневник"));
+      if (current()) setError(toUserMessage(err, "Не удалось загрузить дневник"));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [day]);
+  }, [scope]);
+
+  useEffect(() => {
+    setData(null);
+    setError(null);
+    return invalidateReads;
+  }, [scope, invalidateReads]);
 
   useEffect(() => {
     void reload();
@@ -229,33 +259,47 @@ export function DailyLog() {
     const q = query.trim();
     if (!q || selected || !getStoredToken() || !isOnline()) {
       setSuggestions([]);
+      setSearchLoading(false);
+      setSearchError(null);
       return;
     }
+    const queryKey = ["nutrition-products", ownerId, q, 12];
+    const cached = queryClient.getQueryData<Awaited<ReturnType<typeof searchProducts>>>(queryKey);
+    setSuggestions(cached?.items ?? []);
+    setSearchLoading(!cached);
+    setSearchError(null);
     const t = window.setTimeout(() => {
-      void searchProducts(q, { limit: 12 })
+      void queryClient.fetchQuery({ queryKey, queryFn: () => searchProducts(q, { limit: 12 }), staleTime: 30_000 })
         .then((res) => {
           if (!cancelled) setSuggestions(res.items);
         })
         .catch(() => {
-          if (!cancelled) setSuggestions([]);
-        });
+          if (!cancelled) setSearchError("Не удалось обновить список продуктов. Повторите поиск.");
+        })
+        .finally(() => { if (!cancelled) setSearchLoading(false); });
     }, 250);
     return () => {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [query, selected]);
+  }, [query, selected, ownerId, queryClient, catalogRevision]);
 
   // Full catalog browser (empty query = all products)
   useEffect(() => {
     let cancelled = false;
     if (!browseOpen || !getStoredToken() || !isOnline()) return;
+    const queryKey = ["nutrition-products", ownerId, query.trim(), 40, category];
+    const cached = queryClient.getQueryData<Awaited<ReturnType<typeof searchProducts>>>(queryKey);
+    setCatalog(cached?.items ?? []);
+    setCatalogTotal(cached?.total ?? 0);
+    setCatalogLoading(!cached);
+    setCatalogError(null);
     const t = window.setTimeout(() => {
-      void searchProducts(query.trim(), {
+      void queryClient.fetchQuery({ queryKey, queryFn: () => searchProducts(query.trim(), {
         limit: 40,
         offset: 0,
         category: category || undefined,
-      })
+      }), staleTime: 30_000 })
         .then((res) => {
           if (!cancelled) {
             setCatalog(res.items);
@@ -264,16 +308,16 @@ export function DailyLog() {
         })
         .catch(() => {
           if (!cancelled) {
-            setCatalog([]);
-            setCatalogTotal(0);
+            setCatalogError("Не удалось обновить каталог. Повторите поиск.");
           }
-        });
+        })
+        .finally(() => { if (!cancelled) setCatalogLoading(false); });
     }, query.trim() ? 250 : 0);
     return () => {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [browseOpen, query, category]);
+  }, [browseOpen, query, category, ownerId, queryClient, catalogRevision]);
 
   const preview = useMemo(() => {
     if (!selected) return null;
@@ -381,7 +425,7 @@ export function DailyLog() {
     setError(null);
     setAddError(null);
     try {
-      await addNutritionLog({
+      const saved = await addNutritionLog({
         productId: selected.id,
         quantityGrams: g,
         mealType,
@@ -391,6 +435,10 @@ export function DailyLog() {
         fatsPer100: reviewedValues?.[2],
         carbsPer100: reviewedValues?.[3],
       });
+      if (activeScope.current !== scope || useUserStore.getState().user?.id !== ownerId) return;
+      ++readSequence.current;
+      setData((current) => applySavedNutritionLog(current, saved));
+      if (reviewedValues) resetProductSearch();
       trackEvent("nutrition_logged", {
         meal_type: mealType,
         grams: g,
@@ -409,7 +457,7 @@ export function DailyLog() {
       setSuggestions([]);
       setGrams("");
       setOverrideOpen(false);
-      await reload();
+      void reload();
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
       setOkNote(needsCatalogReview
         ? `${selected.name_ru} добавлен в «${mealLabel}». БЖУ сохранены для вас и будущих добавлений; общий продукт отправлен на проверку.`
@@ -418,7 +466,9 @@ export function DailyLog() {
       if (closeAfterSave) setAddPanelOpen(false);
       else window.requestAnimationFrame(() => productSearchRef.current?.focus());
     } catch (err) {
-      setAddError(toUserMessage(err, "Не удалось добавить продукт"));
+      if (activeScope.current === scope && useUserStore.getState().user?.id === ownerId) {
+        setAddError(toUserMessage(err, "Не удалось добавить продукт"));
+      }
     } finally {
       setSaving(false);
     }
@@ -459,6 +509,7 @@ export function DailyLog() {
         } : {}),
       });
       setEditingLog(null);
+      if (changed) resetProductSearch();
       await reload();
       if (sentForReview) {
         setOkNote("БЖУ сохранены для вас и будущих добавлений. Исправление общего продукта отправлено администратору на проверку.");
@@ -601,6 +652,7 @@ export function DailyLog() {
         category: "custom",
         barcode: pendingBarcode || undefined,
       });
+      resetProductSearch();
       setCustomOpen(false);
       setCName("");
       setCCal("");
@@ -977,6 +1029,9 @@ export function DailyLog() {
           placeholder="Поиск: яблоко, курица…"
           className="min-h-11 w-full rounded-lg border border-black/10 bg-tg-bg px-3 py-2 text-base"
         />
+        {query.trim() && !selected && (searchLoading || searchError) ? (
+          <p role="status" className="text-sm text-tg-hint">{searchError ?? "Ищем продукты…"}</p>
+        ) : null}
         {suggestions.length > 0 && !selected ? (
           <ul className="max-h-40 overflow-auto rounded-lg bg-tg-bg">
             {suggestions.map((p) => (
@@ -1037,7 +1092,8 @@ export function DailyLog() {
                     ? "Войдите, чтобы открыть каталог"
                     : !isOnline()
                       ? "Каталог доступен онлайн"
-                      : "Нет продуктов по фильтру"}
+                      : catalogLoading ? "Загружаем продукты…"
+                        : catalogError ?? "Нет продуктов по фильтру"}
                   <Link
                     to="/faq?article=nutrition-add"
                     state={{ returnTo: "/nutrition" }}
@@ -1063,6 +1119,7 @@ export function DailyLog() {
                 ))
               )}
             </ul>
+            {catalog.length > 0 && catalogError ? <p role="status" className="text-sm text-tg-hint">{catalogError}</p> : null}
             {catalogTotal > catalog.length ? (
               <p className="text-[11px] text-tg-hint">
                 Показано {catalog.length} из {catalogTotal}. Уточните поиск или категорию.
