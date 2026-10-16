@@ -10,6 +10,7 @@ import pytest
 from app.models.user import User
 from app.models.supplement_intake import SupplementIntake
 from app.services.supplement_intakes import (
+    _day_bounds,
     scheduled_rows,
     day_items,
     due_groups,
@@ -40,6 +41,17 @@ def test_same_time_supplements_are_materialized_as_independent_rows() -> None:
 def test_local_day_uses_profile_timezone_not_utc() -> None:
     user = _user({"notification_settings": {"timezone": "Asia/Vladivostok"}})
     assert local_day_for_user(user, datetime(2026, 8, 12, 18, 0, tzinfo=UTC)) == date(2026, 8, 13)
+
+
+@pytest.mark.parametrize("timezone_name,day,start,end", [
+    ("Europe/Berlin", date(2026, 3, 29), datetime(2026, 3, 28, 23, tzinfo=UTC), datetime(2026, 3, 29, 22, tzinfo=UTC)),
+    ("Europe/Berlin", date(2026, 10, 25), datetime(2026, 10, 24, 22, tzinfo=UTC), datetime(2026, 10, 25, 23, tzinfo=UTC)),
+    ("Europe/Moscow", date(2026, 3, 29), datetime(2026, 3, 28, 21, tzinfo=UTC), datetime(2026, 3, 29, 21, tzinfo=UTC)),
+])
+def test_supplement_day_ends_at_next_local_midnight(
+    timezone_name: str, day: date, start: datetime, end: datetime,
+) -> None:
+    assert _day_bounds(day, timezone_name) == (start, end)
 
 
 def test_workout_day_supplements_follow_one_off_move() -> None:

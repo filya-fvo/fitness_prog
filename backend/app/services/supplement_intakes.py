@@ -60,7 +60,8 @@ def local_day_for_user(user: User, now: datetime | None = None) -> date:
 def _day_bounds(day: date, timezone_name: str) -> tuple[datetime, datetime]:
     tz = _resolve_tz(timezone_name)
     start = datetime.combine(day, time.min, tzinfo=tz).astimezone(UTC)
-    return start, start + timedelta(days=1)
+    end = datetime.combine(day + timedelta(days=1), time.min, tzinfo=tz).astimezone(UTC)
+    return start, end
 
 
 def scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
