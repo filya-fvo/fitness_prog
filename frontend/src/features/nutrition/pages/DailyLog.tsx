@@ -197,8 +197,8 @@ export function DailyLog() {
   const [cF, setCF] = useState("");
   const [cC, setCC] = useState("");
   const [customError, setCustomError] = useState<string | null>(null);
-  const [recent, setRecent] = useState<QuickProduct[]>(() => loadRecentProducts());
-  const [favorites, setFavorites] = useState<QuickProduct[]>(() => loadFavoriteProducts());
+  const [recent, setRecent] = useState<QuickProduct[]>(() => loadRecentProducts(ownerId));
+  const [favorites, setFavorites] = useState<QuickProduct[]>(() => loadFavoriteProducts(ownerId));
   const [copyingYesterday, setCopyingYesterday] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
@@ -213,6 +213,19 @@ export function DailyLog() {
   const [labelReview, setLabelReview] = useState<NutritionLabelRecognition | null>(null);
   const [okNote, setOkNote] = useState<string | null>(null);
   const productSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setRecent(loadRecentProducts(ownerId));
+    setFavorites(loadFavoriteProducts(ownerId));
+    setRecentOpen(false);
+    setSelected(null);
+    setQuery("");
+    setSuggestions([]);
+    setGrams("");
+    setOverrideOpen(false);
+    setOkNote(null);
+    setAddError(null);
+  }, [ownerId]);
 
   useEffect(() => {
     if (!customOpen) setLabelReview(null);
@@ -386,6 +399,7 @@ export function DailyLog() {
         ? q.lastMeal
         : undefined;
     const product = await fetchProduct(q.id).catch(() => productFromQuick(q));
+    if (!isCurrentScope()) return;
     pickProduct(product, {
       grams: q.lastGrams && q.lastGrams > 0 ? q.lastGrams : undefined,
       meal,
@@ -465,7 +479,7 @@ export function DailyLog() {
           calories: reviewedValues[0], proteins: reviewedValues[1],
           fats: reviewedValues[2], carbs: reviewedValues[3],
         } : {}),
-      }, { grams: g, mealType }));
+      }, { grams: g, mealType }, ownerId));
       setQuery("");
       setSelected(null);
       setSuggestions([]);
@@ -617,7 +631,7 @@ export function DailyLog() {
         rememberRecentProduct(e.product, {
           grams: e.quantityGrams,
           mealType: e.mealType,
-        });
+        }, ownerId);
       }
       trackEvent("nutrition_logged", {
         meal_type: "mixed",
@@ -625,7 +639,7 @@ export function DailyLog() {
         source: "copy_yesterday",
         items: entries.length,
       });
-      setRecent(loadRecentProducts());
+      setRecent(loadRecentProducts(ownerId));
       await reload(isOnline() ? "fresh" : undefined);
       if (!isCurrentScope()) return;
     } catch (err) {
@@ -1201,7 +1215,7 @@ export function DailyLog() {
                 type="button"
                 className="text-xs text-tg-link"
                 onClick={() => {
-                  const res = toggleFavoriteProduct(selected);
+                  const res = toggleFavoriteProduct(selected, ownerId);
                   setFavorites(res.favorites);
                 }}
               >

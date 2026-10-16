@@ -1,6 +1,6 @@
 /**
  * Local nutrition shortcuts: recent products, favorites, copy yesterday.
- * Stored in localStorage (per browser / Telegram WebView).
+ * Stored in localStorage per account (browser / Telegram WebView).
  */
 import type { DailyNutrition, NutritionLog, NutritionProduct } from "@/api/nutrition";
 
@@ -21,9 +21,10 @@ export type QuickProduct = {
   lastMeal?: string;
 };
 
-function readList(key: string): QuickProduct[] {
+function readList(key: string, ownerId: string | undefined): QuickProduct[] {
+  if (!ownerId) return [];
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(`${key}:${ownerId}`);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -35,24 +36,31 @@ function readList(key: string): QuickProduct[] {
   }
 }
 
-function writeList(key: string, items: QuickProduct[]) {
+function writeList(key: string, items: QuickProduct[], ownerId: string | undefined) {
+  if (!ownerId) return;
   try {
-    localStorage.setItem(key, JSON.stringify(items));
+    localStorage.setItem(`${key}:${ownerId}`, JSON.stringify(items));
   } catch {
     /* quota */
   }
 }
 
-export function loadRecentProducts(): QuickProduct[] {
-  return readList(RECENT_KEY);
+export function loadRecentProducts(ownerId: string | undefined): QuickProduct[] {
+  return readList(RECENT_KEY, ownerId);
 }
 
-export function loadFavoriteProducts(): QuickProduct[] {
-  return readList(FAV_KEY);
+export function loadFavoriteProducts(ownerId: string | undefined): QuickProduct[] {
+  return readList(FAV_KEY, ownerId);
 }
 
-export function isFavoriteProduct(id: string): boolean {
-  return loadFavoriteProducts().some((p) => p.id === id);
+export function isFavoriteProduct(id: string, ownerId: string | undefined): boolean {
+  return loadFavoriteProducts(ownerId).some((p) => p.id === id);
+}
+
+export function clearNutritionShortcuts(ownerId: string | undefined): void {
+  if (!ownerId) return;
+  localStorage.removeItem(`${RECENT_KEY}:${ownerId}`);
+  localStorage.removeItem(`${FAV_KEY}:${ownerId}`);
 }
 
 export function rememberRecentProduct(
@@ -60,8 +68,10 @@ export function rememberRecentProduct(
     NutritionProduct,
     "id" | "name_ru" | "calories" | "proteins" | "fats" | "carbs" | "category"
   >,
-  opts?: { grams?: number; mealType?: string },
+  opts: { grams?: number; mealType?: string } | undefined,
+  ownerId: string | undefined,
 ): QuickProduct[] {
+  if (!ownerId) return [];
   const entry: QuickProduct = {
     id: product.id,
     name_ru: product.name_ru,
@@ -73,11 +83,11 @@ export function rememberRecentProduct(
     lastGrams: opts?.grams,
     lastMeal: opts?.mealType,
   };
-  const next = [entry, ...loadRecentProducts().filter((p) => p.id !== product.id)].slice(
+  const next = [entry, ...loadRecentProducts(ownerId).filter((p) => p.id !== product.id)].slice(
     0,
     MAX_RECENT,
   );
-  writeList(RECENT_KEY, next);
+  writeList(RECENT_KEY, next, ownerId);
   return next;
 }
 
@@ -86,12 +96,14 @@ export function toggleFavoriteProduct(
     NutritionProduct,
     "id" | "name_ru" | "calories" | "proteins" | "fats" | "carbs" | "category"
   >,
+  ownerId: string | undefined,
 ): { favorites: QuickProduct[]; added: boolean } {
-  const cur = loadFavoriteProducts();
+  if (!ownerId) return { favorites: [], added: false };
+  const cur = loadFavoriteProducts(ownerId);
   const exists = cur.some((p) => p.id === product.id);
   if (exists) {
     const favorites = cur.filter((p) => p.id !== product.id);
-    writeList(FAV_KEY, favorites);
+    writeList(FAV_KEY, favorites, ownerId);
     return { favorites, added: false };
   }
   const entry: QuickProduct = {
@@ -104,7 +116,7 @@ export function toggleFavoriteProduct(
     category: product.category,
   };
   const favorites = [entry, ...cur].slice(0, MAX_FAV);
-  writeList(FAV_KEY, favorites);
+  writeList(FAV_KEY, favorites, ownerId);
   return { favorites, added: true };
 }
 

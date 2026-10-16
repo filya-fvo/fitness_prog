@@ -568,6 +568,90 @@ test("late edit does not announce an old day correction on the new day", async (
   } finally { gate.resolve(); }
 });
 
+test("nutrition shortcuts switch with the account and return to their original owner", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  await setup(page, entries);
+  await page.route("**/nutrition/log", (route) => route.fulfill({
+    json: saveEntry(entries, route.request().postDataJSON() as Entry),
+  }));
+  const add = await choose(page, "137");
+  await add.getByRole("button", { name: "☆ В избранное", exact: true }).click();
+  await add.getByRole("button", { name: "Добавить и продолжить", exact: true }).click();
+  await expect(add.getByRole("button", { name: "★ Тестовый йогурт", exact: true })).toBeVisible();
+  await expect(add.getByRole("button", { name: "Открыть недавние · 1", exact: true })).toBeVisible();
+  for (const owner of ["99999999-9999-4999-8999-999999999999", USER_ID]) {
+    await page.evaluate(async ({ owner, legalStatus }) => {
+      const modulePath = "/src/store/userStore.ts";
+      const { useUserStore } = await import(modulePath);
+      localStorage.setItem("fitness_jwt", `token-for-${owner}`);
+      useUserStore.getState().setUser({ ...useUserStore.getState().user, id: owner, legal_status: legalStatus });
+    }, { owner, legalStatus: acceptedLegalStatus(owner) });
+    if (owner !== USER_ID) {
+      await expect(add.getByRole("button", { name: "★ Тестовый йогурт", exact: true })).toHaveCount(0);
+      await expect(add.getByRole("button", { name: /недавние/ })).toHaveCount(0);
+    } else {
+      await expect(add.getByRole("button", { name: "★ Тестовый йогурт", exact: true })).toBeVisible();
+      await add.getByRole("button", { name: "Открыть недавние · 1", exact: true }).click();
+      await expect(add.getByRole("button", { name: "Тестовый йогурт · 137г", exact: true })).toBeVisible();
+    }
+  }
+});
+
+test("an account change clears an already selected recent product and its personal portion", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  await setup(page, entries);
+  await page.route("**/nutrition/log", (route) => route.fulfill({
+    json: saveEntry(entries, route.request().postDataJSON() as Entry),
+  }));
+  await page.route(`**/nutrition/products/${PRODUCT_ID}`, (route) => route.fulfill({ json: product }));
+  const add = await choose(page, "137");
+  await add.getByRole("button", { name: "Добавить и продолжить", exact: true }).click();
+  await add.getByRole("button", { name: "Открыть недавние · 1", exact: true }).click();
+  await add.getByRole("button", { name: "Тестовый йогурт · 137г", exact: true }).click();
+  await expect(add.getByLabel("Граммы", { exact: true })).toHaveValue("137");
+  await page.evaluate(async (legalStatus) => {
+    const modulePath = "/src/store/userStore.ts";
+    const { useUserStore } = await import(modulePath);
+    localStorage.setItem("fitness_jwt", "new-owner-token");
+    useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999", legal_status: legalStatus });
+  }, acceptedLegalStatus("99999999-9999-4999-8999-999999999999"));
+  await expect(add.getByLabel("Граммы", { exact: true })).toHaveCount(0);
+  await expect(add.getByRole("button", { name: /В избранное/ })).toHaveCount(0);
+  await expect(add.getByLabel("Поиск продукта", { exact: true })).toHaveValue("");
+});
+
+test("a pending recent product selection cannot enter a different account", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  const gate = deferred(); let started = false;
+  await setup(page, entries);
+  await page.route("**/nutrition/log", (route) => route.fulfill({
+    json: saveEntry(entries, route.request().postDataJSON() as Entry),
+  }));
+  await page.route(`**/nutrition/products/${PRODUCT_ID}`, async (route) => {
+    started = true;
+    await gate.promise;
+    await route.fulfill({ json: { ...product, calories: 125 } });
+  });
+  const add = await choose(page, "137");
+  await add.getByRole("button", { name: "Добавить и продолжить", exact: true }).click();
+  await add.getByRole("button", { name: "Открыть недавние · 1", exact: true }).click();
+  try {
+    await add.getByRole("button", { name: "Тестовый йогурт · 137г", exact: true }).click();
+    await expect.poll(() => started).toBe(true);
+    await page.evaluate(async (legalStatus) => {
+      const modulePath = "/src/store/userStore.ts";
+      const { useUserStore } = await import(modulePath);
+      localStorage.setItem("fitness_jwt", "new-owner-token");
+      useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999", legal_status: legalStatus });
+    }, acceptedLegalStatus("99999999-9999-4999-8999-999999999999"));
+    const response = page.waitForResponse((value) => value.url().endsWith(`/nutrition/products/${PRODUCT_ID}`));
+    gate.resolve(); await (await response).finished();
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(add.getByLabel("Граммы", { exact: true })).toHaveCount(0);
+    await expect(add.getByRole("button", { name: /В избранное/ })).toHaveCount(0);
+  } finally { gate.resolve(); }
+});
+
 test("late diary save cannot unlock a custom product save on the new day", async ({ page }) => {
   const oldGate = deferred(); const newGate = deferred();
   let oldStarted = false; let newStarted = false;
