@@ -38,7 +38,7 @@ import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
-import { applySavedNutritionLog } from "@/utils/nutritionMealTotals";
+import { applySavedNutritionLog, sumMealNutrition } from "@/utils/nutritionMealTotals";
 import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
 import { MEAL_TEMPLATES } from "@/utils/mealTemplates";
@@ -139,8 +139,10 @@ export function DailyLog() {
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 60_000 } } }));
   const [catalogRevision, setCatalogRevision] = useState(0);
   const scope = useMemo(() => ({ day, ownerId }), [day, ownerId]);
-  const activeScope = useRef(scope);
+  const activeScope = useRef<typeof scope | null>(scope);
   activeScope.current = scope;
+  const isCurrentScope = () => activeScope.current === scope
+    && useUserStore.getState().user?.id === scope.ownerId;
   const readSequence = useRef(0);
   const invalidateReads = useCallback(() => { ++readSequence.current; }, []);
   function resetProductSearch() {
@@ -239,7 +241,15 @@ export function DailyLog() {
   useEffect(() => {
     setData(null);
     setError(null);
-    return invalidateReads;
+    activeScope.current = scope;
+    setEditingLog(null);
+    setEditError(null);
+    setEditBusy(false);
+    setCopyingYesterday(false);
+    return () => {
+      if (activeScope.current === scope) activeScope.current = null;
+      invalidateReads();
+    };
   }, [scope, invalidateReads]);
 
   useEffect(() => {
@@ -508,17 +518,20 @@ export function DailyLog() {
           carbsPer100: carbs,
         } : {}),
       });
+      if (!isCurrentScope()) return;
       setEditingLog(null);
       if (changed) resetProductSearch();
       await reload();
+      if (!isCurrentScope()) return;
       if (sentForReview) {
         setOkNote("БЖУ сохранены для вас и будущих добавлений. Исправление общего продукта отправлено администратору на проверку.");
       }
       toast(`Обновлено · ${g} г`);
     } catch (err) {
+      if (!isCurrentScope()) return;
       setEditError(toUserMessage(err, "Не удалось изменить запись"));
     } finally {
-      setEditBusy(false);
+      if (isCurrentScope()) setEditBusy(false);
     }
   }
 
@@ -527,37 +540,28 @@ export function DailyLog() {
     const name = item.product?.name_ru ?? "запись";
     // window.confirm often fails silently inside Telegram WebView on mobile
     const ok = await confirmAction(`Удалить «${name}»?`);
-    if (!ok) return;
+    if (!ok || !isCurrentScope()) return;
     setEditBusy(true);
     setError(null);
     try {
       await deleteNutritionLog(item.id);
+      if (!isCurrentScope()) return;
+      ++readSequence.current;
       if (editingLog?.id === item.id) setEditingLog(null);
       // Optimistic UI so the row disappears even if reload is slow/offline-ish
       setData((prev) => {
-        if (!prev) return prev;
+        if (!prev || !isCurrentScope()) return prev;
         const meals: DailyNutrition["meals"] = {};
         for (const [mealKey, list] of Object.entries(prev.meals || {})) {
           meals[mealKey] = (list || []).filter((row) => row.id !== item.id);
         }
-        const kcal = Number(item.calculated_kbj?.calories ?? 0) || 0;
-        const p = Number(item.calculated_kbj?.proteins ?? 0) || 0;
-        const f = Number(item.calculated_kbj?.fats ?? 0) || 0;
-        const c = Number(item.calculated_kbj?.carbs ?? 0) || 0;
-        return {
-          ...prev,
-          meals,
-          totals: {
-            calories: Math.max(0, Number(prev.totals.calories || 0) - kcal),
-            proteins: Math.max(0, Number(prev.totals.proteins || 0) - p),
-            fats: Math.max(0, Number(prev.totals.fats || 0) - f),
-            carbs: Math.max(0, Number(prev.totals.carbs || 0) - c),
-          },
-        };
+        return { ...prev, meals, totals: sumMealNutrition(Object.values(meals).flat()) };
       });
       await reload();
+      if (!isCurrentScope()) return;
       toast("Запись удалена", "info");
     } catch (err) {
+      if (!isCurrentScope()) return;
       const msg =
         err && typeof err === "object" && "response" in err
           ? String(
@@ -575,8 +579,9 @@ export function DailyLog() {
             : "Не удалось удалить",
       );
       await reload();
+      if (!isCurrentScope()) return;
     } finally {
-      setEditBusy(false);
+      if (isCurrentScope()) setEditBusy(false);
     }
   }
 
@@ -590,18 +595,21 @@ export function DailyLog() {
     setError(null);
     try {
       const yDay = await fetchDailyNutrition(localYesterdayISO());
+      if (!isCurrentScope()) return;
       const entries = yesterdayEntries(yDay);
       if (!entries.length) {
         setError("Вчера записей нет");
         return;
       }
       for (const e of entries) {
+        if (!isCurrentScope()) return;
         await addNutritionLog({
           productId: e.product.id,
           quantityGrams: e.quantityGrams,
           mealType: e.mealType,
           date: day,
         });
+        if (!isCurrentScope()) return;
         rememberRecentProduct(e.product, {
           grams: e.quantityGrams,
           mealType: e.mealType,
@@ -615,10 +623,12 @@ export function DailyLog() {
       });
       setRecent(loadRecentProducts());
       await reload();
+      if (!isCurrentScope()) return;
     } catch (err) {
+      if (!isCurrentScope()) return;
       setError(toUserMessage(err, "Не удалось скопировать вчерашний рацион"));
     } finally {
-      setCopyingYesterday(false);
+      if (isCurrentScope()) setCopyingYesterday(false);
     }
   }
 

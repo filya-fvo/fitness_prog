@@ -335,3 +335,116 @@ test("both save actions fit mobile and desktop layouts in both themes", async ({
     }
   }
 });
+
+async function fixtureDates(page: Page) {
+  return page.evaluate(() => [0, -1].map((offset) => {
+    const date = new Date(); date.setDate(date.getDate() + offset);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }));
+}
+
+test("late deletion cannot subtract nutrition from another selected day", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  const dates = await fixtureDates(page);
+  const removed = saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: 100, meal_type: "breakfast", date: dates[0] });
+  saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: 200, meal_type: "breakfast", date: dates[1] });
+  const gate = deferred();
+  let deleteStarted = false;
+  await page.route(`**/nutrition/log/${removed.id}`, async (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    deleteStarted = true;
+    await gate.promise;
+    entries.splice(entries.indexOf(removed), 1);
+    await route.fulfill({ status: 204 });
+  });
+  await setup(page, entries);
+  await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+  page.on("dialog", (dialog) => dialog.accept());
+  try {
+    await page.getByRole("button", { name: "Удалить", exact: true }).click();
+    await expect.poll(() => deleteStarted).toBe(true);
+    await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+    const calories = page.getByRole("meter", { name: "Калории за день" });
+    await expect(calories).toHaveAttribute("aria-valuenow", "160");
+    const deleted = page.waitForResponse((response) => response.url().endsWith(`/nutrition/log/${removed.id}`));
+    gate.resolve();
+    await (await deleted).finished();
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page.getByText("Тестовый йогурт · 200г", { exact: true })).toBeVisible();
+    await expect(calories).toHaveAttribute("aria-valuenow", "160");
+    for (const [name, value] of [["Белки", "10"], ["Жиры", "4"], ["Углеводы", "20"]]) {
+      await expect(page.getByRole("progressbar", { name, exact: true })).toHaveAttribute("aria-valuenow", value);
+    }
+  } finally { gate.resolve(); }
+});
+
+for (const boundary of ["source read", "first write"] as const) {
+  for (const transition of ["owner", "unmount"] as const) {
+    test(`copy yesterday stops after ${boundary} when ${transition} changes`, async ({ page }) => {
+      const entries: SavedEntry[] = [];
+      const dates = await fixtureDates(page);
+      for (const quantity of [100, 200]) saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: quantity, meal_type: "breakfast", date: dates[1] });
+      const gate = deferred();
+      let held = false;
+      const writes: string[] = [];
+      await page.route("**/nutrition/log", async (route) => {
+        writes.push(route.request().headers().authorization ?? "");
+        if (boundary === "first write" && writes.length === 1) { held = true; await gate.promise; }
+        await route.fulfill({ json: saveEntry(entries, route.request().postDataJSON() as Entry) });
+      });
+      await setup(page, entries, async (route, snapshot) => {
+        if (boundary === "source read" && snapshot.date === dates[1]) { held = true; await gate.promise; }
+        await route.fulfill({ json: snapshot });
+      });
+      try {
+        await page.getByRole("button", { name: "Как вчера", exact: true }).click();
+        await expect.poll(() => held).toBe(true);
+        if (transition === "owner") {
+          await page.evaluate(async () => {
+            const modulePath = "/src/store/userStore.ts";
+            const { useUserStore } = await import(modulePath);
+            localStorage.setItem("fitness_jwt", "new-owner-token");
+            useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999" });
+          });
+        } else {
+          await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+          await page.getByRole("link", { name: "Гид по питанию", exact: false }).click();
+          await expect(page).toHaveURL(/\/knowledge/);
+          await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveCount(0);
+        }
+        gate.resolve();
+        await page.waitForTimeout(500);
+        expect(writes).toHaveLength(boundary === "first write" ? 1 : 0);
+        expect(writes).not.toContain("Bearer new-owner-token");
+      } finally { gate.resolve(); }
+    });
+  }
+}
+test("late edit does not announce an old day correction on the new day", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  const dates = await fixtureDates(page);
+  const edited = saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: 100, meal_type: "breakfast", date: dates[0] });
+  const gate = deferred(); let started = false;
+  await page.route(`**/nutrition/log/${edited.id}`, async (route) => {
+    expect(route.request().method()).toBe("PUT"); started = true;
+    await gate.promise;
+    await route.fulfill({ json: edited });
+  });
+  await setup(page, entries);
+  await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+  await page.getByRole("button", { name: "Изменить", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Изменить запись", exact: true });
+  await dialog.getByLabel("Ккал на 100 г", { exact: true }).fill("125");
+  try {
+    await dialog.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await expect.poll(() => started).toBe(true);
+    await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();
+    await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+    await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "0");
+    const response = page.waitForResponse((value) => value.url().endsWith(`/nutrition/log/${edited.id}`));
+    gate.resolve(); await (await response).finished();
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page.getByText("БЖУ сохранены для вас и будущих добавлений.", { exact: false })).toHaveCount(0);
+    await expect(page.getByText("Обновлено · 100 г", { exact: true })).toHaveCount(0);
+  } finally { gate.resolve(); }
+});
