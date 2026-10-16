@@ -131,8 +131,13 @@ const limits = {
   // Background diary refresh and complete-window reconciliation preserve local
   // edits and remove server-deleted rows. Measured 584498 total / 528103 product;
   // no new dependency/vendor chunk. Retain <1.4 KB aggregate release headroom.
-  totalJsGzip: 585_500,
-  productJsGzip: 529_000,
+  // Consecutive nutrition entries use the already declared TanStack Query cache
+  // in the lazy DailyLog route. Same-lock baseline584498/528103 ->593799/537394;
+  // DailyLog gains9218gzip bytes (query-core + race guards), eager index shrinks
+  // 22bytes and vendor chunks stay identical. Keep <0.8KB aggregate headroom;
+  // retain independent admin and largest-chunk caps.
+  totalJsGzip: 594_500,
+  productJsGzip: 538_000,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
