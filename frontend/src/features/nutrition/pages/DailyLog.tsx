@@ -248,6 +248,7 @@ export function DailyLog() {
     setEditingLog(null);
     setEditError(null);
     setEditBusy(false);
+    setSaving(false);
     setCopyingYesterday(false);
     return () => {
       if (activeScope.current === scope) activeScope.current = null;
@@ -483,7 +484,7 @@ export function DailyLog() {
         setAddError(toUserMessage(err, "Не удалось добавить продукт"));
       }
     } finally {
-      setSaving(false);
+      if (isCurrentScope()) setSaving(false);
     }
   }
 
@@ -666,6 +667,7 @@ export function DailyLog() {
         barcode: pendingBarcode || undefined,
       });
       resetProductSearch();
+      if (!isCurrentScope()) return;
       setCustomOpen(false);
       setCName("");
       setCCal("");
@@ -684,9 +686,10 @@ export function DailyLog() {
       setOkNote(`${product.name_ru}: продукт создан и выбран. Проверьте граммы и нажмите «Добавить в дневник».`);
       toast("Продукт создан и выбран");
     } catch (err) {
+      if (!isCurrentScope()) return;
       setCustomError(toUserMessage(err, "Не удалось создать продукт"));
     } finally {
-      setSaving(false);
+      if (isCurrentScope()) setSaving(false);
     }
   }
 

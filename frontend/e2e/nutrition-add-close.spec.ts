@@ -567,3 +567,148 @@ test("late edit does not announce an old day correction on the new day", async (
     await expect(page.getByText("Обновлено · 100 г", { exact: true })).toHaveCount(0);
   } finally { gate.resolve(); }
 });
+
+test("late diary save cannot unlock a custom product save on the new day", async ({ page }) => {
+  const oldGate = deferred(); const newGate = deferred();
+  let oldStarted = false; let newStarted = false;
+  const entries: SavedEntry[] = [];
+  await setup(page, entries);
+  await page.route("**/nutrition/log", async (route) => {
+    oldStarted = true;
+    await oldGate.promise;
+    await route.fulfill({ json: saveEntry(entries, route.request().postDataJSON() as Entry) });
+  });
+  await page.route(/\/nutrition\/products$/, async (route) => {
+    newStarted = true;
+    await newGate.promise;
+    await route.fulfill({ json: product });
+  });
+  const add = await choose(page, "100");
+  try {
+    await add.getByRole("button", { name: "Добавить и продолжить", exact: true }).click();
+    await expect.poll(() => oldStarted).toBe(true);
+    await add.press("Escape");
+    await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+    await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+    await add.getByRole("button", { name: "Другой продукт", exact: true }).click();
+    await add.getByRole("button", { name: "+ Свой продукт в общий каталог", exact: true }).click();
+    const custom = page.getByRole("dialog", { name: "Новый продукт", exact: true });
+    await custom.getByLabel("Название", { exact: true }).fill("Новый продукт");
+    for (const [name, value] of [["Ккал", "80"], ["Белки", "5"], ["Жиры", "2"], ["Углеводы", "10"]]) {
+      await custom.getByLabel(name, { exact: true }).fill(value);
+    }
+    await custom.getByRole("button", { name: "Создать и выбрать", exact: true }).click();
+    await expect.poll(() => newStarted).toBe(true);
+    const oldResponse = page.waitForResponse((value) => value.request().method() === "POST" && value.url().endsWith("/nutrition/log"));
+    oldGate.resolve(); await (await oldResponse).finished();
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(custom.getByRole("button", { name: "Сохраняем…", exact: true })).toBeDisabled();
+    const newResponse = page.waitForResponse((value) => value.request().method() === "POST" && value.url().endsWith("/nutrition/products"));
+    newGate.resolve(); await (await newResponse).finished();
+    await expect(custom).toHaveCount(0);
+    await expect(add.getByLabel("Граммы", { exact: true })).toBeVisible();
+  } finally { oldGate.resolve(); newGate.resolve(); }
+});
+
+for (const transition of ["owner", "day", "unmount"] as const) {
+  test(`late custom product response is ignored after ${transition} changes`, async ({ page }) => {
+    const gate = deferred();
+    let started = false;
+    const created = { ...product, name_ru: "Продукт прежнего экрана" };
+    await setup(page, []);
+    await page.route(/\/nutrition\/products$/, async (route) => {
+      expect(route.request().method()).toBe("POST");
+      started = true;
+      await gate.promise;
+      await route.fulfill({ json: created });
+    });
+    await page.getByRole("button", { name: "+ Свой продукт в общий каталог", exact: true }).click();
+    const custom = page.getByRole("dialog", { name: "Новый продукт", exact: true });
+    await custom.getByLabel("Название", { exact: true }).fill(created.name_ru);
+    for (const [name, value] of [["Ккал", "80"], ["Белки", "5"], ["Жиры", "2"], ["Углеводы", "10"]]) {
+      await custom.getByLabel(name, { exact: true }).fill(value);
+    }
+    try {
+      await custom.getByRole("button", { name: "Создать и выбрать", exact: true }).click();
+      await expect.poll(() => started).toBe(true);
+      if (transition === "owner") {
+        await page.evaluate(async (legalStatus) => {
+          const modulePath = "/src/store/userStore.ts";
+          const { useUserStore } = await import(modulePath);
+          localStorage.setItem("fitness_jwt", "new-owner-token");
+          useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999", legal_status: legalStatus });
+        }, acceptedLegalStatus("99999999-9999-4999-8999-999999999999"));
+        // The old pending save must not block work in the new account.
+        await expect(custom.getByRole("button", { name: "Создать и выбрать", exact: true })).toBeEnabled();
+      } else {
+        await custom.getByRole("button", { name: "Закрыть", exact: true }).click();
+        await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+        if (transition === "day") {
+          await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+        } else {
+          await page.getByRole("link", { name: "Гид по питанию", exact: false }).click();
+          await expect(page).toHaveURL(/\/knowledge/);
+          await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveCount(0);
+        }
+      }
+      const response = page.waitForResponse((value) => value.request().method() === "POST" && value.url().endsWith("/nutrition/products"));
+      gate.resolve();
+      await (await response).finished();
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      // Public routes may not render ToastHost, but stale notifications must
+      // not enter the real global store and appear after returning either.
+      expect(await page.evaluate(async () => {
+        const modulePath = "/src/store/toastStore.ts";
+        const { useToastStore } = await import(modulePath);
+        return useToastStore.getState().items.map((item: { message: string }) => item.message);
+      })).not.toContain("Продукт создан и выбран");
+      await expect(page.getByText("Продукт создан и выбран", { exact: true })).toHaveCount(0);
+      if (transition !== "unmount") {
+        if (transition === "owner") await custom.getByRole("button", { name: "Закрыть", exact: true }).click();
+        else await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+        await expect(page.getByRole("dialog", { name: "Добавить продукт", exact: true }).getByLabel("Граммы", { exact: true })).toHaveCount(0);
+      }
+    } finally { gate.resolve(); }
+  });
+}
+
+for (const transition of ["owner", "day"] as const) {
+  test(`late custom product error is ignored after ${transition} changes`, async ({ page }) => {
+    const gate = deferred(); let started = false;
+    await setup(page, []);
+    await page.route(/\/nutrition\/products$/, async (route) => {
+      started = true;
+      await gate.promise;
+      await route.fulfill({ status: 503, json: { detail: "Не удалось создать продукт" } });
+    });
+    await page.getByRole("button", { name: "+ Свой продукт в общий каталог", exact: true }).click();
+    const custom = page.getByRole("dialog", { name: "Новый продукт", exact: true });
+    await custom.getByLabel("Название", { exact: true }).fill("Старый черновик");
+    for (const [name, value] of [["Ккал", "80"], ["Белки", "5"], ["Жиры", "2"], ["Углеводы", "10"]]) {
+      await custom.getByLabel(name, { exact: true }).fill(value);
+    }
+    try {
+      await custom.getByRole("button", { name: "Создать и выбрать", exact: true }).click();
+      await expect.poll(() => started).toBe(true);
+      if (transition === "owner") {
+        await page.evaluate(async (legalStatus) => {
+          const modulePath = "/src/store/userStore.ts";
+          const { useUserStore } = await import(modulePath);
+          localStorage.setItem("fitness_jwt", "new-owner-token");
+          useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999", legal_status: legalStatus });
+        }, acceptedLegalStatus("99999999-9999-4999-8999-999999999999"));
+      } else {
+        await custom.getByRole("button", { name: "Закрыть", exact: true }).click();
+        await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+        await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+        await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+        await page.getByRole("button", { name: "+ Свой продукт в общий каталог", exact: true }).click();
+      }
+      const response = page.waitForResponse((value) => value.request().method() === "POST" && value.url().endsWith("/nutrition/products"));
+      gate.resolve(); await (await response).finished();
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      await expect(custom.getByRole("alert")).toHaveCount(0);
+      await expect(custom.getByRole("button", { name: "Создать и выбрать", exact: true })).toBeEnabled();
+    } finally { gate.resolve(); }
+  });
+}
