@@ -142,8 +142,8 @@ export function DailyLog() {
   const scope = useMemo(() => ({ day, ownerId }), [day, ownerId]);
   const activeScope = useRef<typeof scope | null>(scope);
   activeScope.current = scope;
-  const isCurrentScope = () => activeScope.current === scope
-    && useUserStore.getState().user?.id === scope.ownerId;
+  const isCurrentScope = useCallback(() => activeScope.current === scope
+    && useUserStore.getState().user?.id === scope.ownerId, [scope]);
   const readSequence = useRef(0);
   const invalidateReads = useCallback(() => { ++readSequence.current; }, []);
   function resetProductSearch() {
@@ -263,6 +263,9 @@ export function DailyLog() {
     setEditBusy(false);
     setSaving(false);
     setCopyingYesterday(false);
+    setBarcodeBusy(false);
+    setLabelBusy(false);
+    setLabelFeedback(null);
     return () => {
       if (activeScope.current === scope) activeScope.current = null;
       invalidateReads();
@@ -363,7 +366,7 @@ export function DailyLog() {
     return previewKbju(selected, g);
   }, [grams, ovC, ovCal, ovF, ovP, overrideOpen, selected]);
 
-  function pickProduct(p: NutritionProduct, opts?: { grams?: number; meal?: MealId }) {
+  const pickProduct = useCallback((p: NutritionProduct, opts?: { grams?: number; meal?: MealId }) => {
     setSelected(p);
     setQuery(p.name_ru);
     setSuggestions([]);
@@ -376,7 +379,7 @@ export function DailyLog() {
     setAddError(null);
     setGrams(opts?.grams && opts.grams > 0 ? String(opts.grams) : "");
     if (opts?.meal) setMealType(opts.meal);
-  }
+  }, []);
 
   /** Drop draft selection before «Добавить» (unsaved product). */
   function clearSelectedDraft() {
@@ -415,6 +418,7 @@ export function DailyLog() {
     setError(null);
     try {
       const res = await searchProducts(t.query, { limit: 5 });
+      if (!isCurrentScope()) return;
       const product = res.items[0];
       if (!product) {
         setError(`Не нашли «${t.query}» в каталоге — введите вручную`);
@@ -427,6 +431,7 @@ export function DailyLog() {
       setOkNote(`${t.label}: ${product.name_ru}, ${t.grams} г. Проверьте и нажмите «Добавить».`);
       toast(`${t.label} · проверьте граммы`);
     } catch (err) {
+      if (!isCurrentScope()) return;
       setError(toUserMessage(err, "Не удалось применить шаблон"));
     }
   }
@@ -720,6 +725,7 @@ export function DailyLog() {
         return;
       }
       const res = await lookupBarcode(digits);
+      if (!isCurrentScope()) return;
       if (!res.found || !res.product) {
         if (res.error === "invalid_barcode") {
           setError("Некорректный штрихкод. Попробуйте ещё раз или сфотографируйте этикетку.");
@@ -749,11 +755,12 @@ export function DailyLog() {
         `Найден: ${res.product.name_ru}. Укажите граммы (сейчас ${gramsDefault} г) и нажмите «Добавить».`,
       );
     } catch (err) {
+      if (!isCurrentScope()) return;
       setError(toUserMessage(err, "Не удалось распознать штрихкод"));
     } finally {
-      setBarcodeBusy(false);
+      if (isCurrentScope()) setBarcodeBusy(false);
     }
-  }, []);
+  }, [isCurrentScope, pickProduct]);
 
   async function handleLabelPhoto(file: File | null) {
     if (!file || labelBusy) return;
@@ -770,8 +777,10 @@ export function DailyLog() {
     setLabelFeedback({ message: "Подготавливаем фото…", error: false });
     try {
       const prepared = await prepareNutritionLabelImage(file);
+      if (!isCurrentScope()) return;
       setLabelFeedback({ message: "Распознаём этикетку, это может занять несколько секунд…", error: false });
       const result = await recognizeNutritionLabel(prepared);
+      if (!isCurrentScope()) return;
       if (!result.recognized) {
         const message = "Не удалось распознать этикетку. Внесите данные с упаковки вручную.";
         setLabelFeedback({ message, error: true });
@@ -800,6 +809,7 @@ export function DailyLog() {
         ].every((value) => value != null),
       });
     } catch (err) {
+      if (!isCurrentScope()) return;
       const message = toUserMessage(
         err,
         err instanceof Error ? err.message : "Не удалось распознать этикетку",
@@ -811,7 +821,7 @@ export function DailyLog() {
       setCustomOpen(true);
       toast(fallbackMessage, "error", 5000);
     } finally {
-      setLabelBusy(false);
+      if (isCurrentScope()) setLabelBusy(false);
     }
   }
 

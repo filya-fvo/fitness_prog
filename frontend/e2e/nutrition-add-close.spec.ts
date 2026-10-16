@@ -756,6 +756,80 @@ for (const transition of ["owner", "day", "unmount"] as const) {
   });
 }
 
+for (const source of ["template", "barcode", "label"] as const) {
+  for (const scenario of ["owner success", "owner error", "day success"] as const) {
+    test(`late ${source} lookup is ignored after ${scenario}`, async ({ page }) => {
+      const gate = deferred(); let started = false;
+      await setup(page, []);
+      const matches = (url: string) => source === "template"
+        ? new URL(url).pathname.endsWith("/nutrition/products") && new URL(url).searchParams.get("q") === "Овсянка на воде"
+        : url.endsWith(source === "barcode" ? "/nutrition/barcode/4601234567890" : "/nutrition/label/recognize");
+      await page.route(source === "template" ? /\/nutrition\/products(?:\?|$)/
+        : source === "barcode" ? "**/nutrition/barcode/*" : "**/nutrition/label/recognize", async (route) => {
+        if (!matches(route.request().url())) return route.fulfill({ json: { items: [product], total: 1 } });
+        started = true;
+        await gate.promise;
+        if (scenario.endsWith("error")) return route.fulfill({ status: 503, json: { detail: "Ответ старого экрана" } });
+        const json = source === "template" ? { items: [product], total: 1 }
+          : source === "barcode" ? { found: true, barcode: "4601234567890", product, serving_grams: 137 }
+          : { recognized: true, name_ru: product.name_ru, calories_kcal: 80, proteins_g: 5, fats_g: 2, carbs_g: 10, confidence: 0.9, warnings: [] };
+        await route.fulfill({ json });
+      });
+      try {
+        if (source === "template") {
+          await page.getByRole("button", { name: "Открыть быстрые шаблоны · 6", exact: true }).click();
+          await page.getByRole("button", { name: "Завтрак ~400 ккал", exact: true }).click();
+        } else {
+          await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
+          const scanner = page.getByRole("dialog", { name: "Сканер штрихкода", exact: true });
+          if (source === "barcode") {
+            await scanner.getByLabel(/Код вручную/).fill("4601234567890");
+            await scanner.getByRole("button", { name: "Найти", exact: true }).click();
+          } else {
+            await scanner.getByRole("button", { name: /Этикетка/ }).click();
+            await page.getByRole("dialog", { name: "Фото этикетки", exact: true }).locator('input[type="file"]').setInputFiles({
+              name: "label.png", mimeType: "image/png",
+              buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+            });
+          }
+        }
+        await expect.poll(() => started).toBe(true);
+        if (scenario.startsWith("owner")) {
+          await page.evaluate(async (legalStatus) => {
+            const modulePath = "/src/store/userStore.ts";
+            const { useUserStore } = await import(modulePath);
+            localStorage.setItem("fitness_jwt", "new-owner-token");
+            useUserStore.getState().setUser({ ...useUserStore.getState().user, id: "99999999-9999-4999-8999-999999999999", legal_status: legalStatus });
+          }, acceptedLegalStatus("99999999-9999-4999-8999-999999999999"));
+        } else {
+          await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+          await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+        }
+        const response = page.waitForResponse((value) => matches(value.url()));
+        gate.resolve(); await (await response).finished();
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+        await expect(page.getByText("Ответ старого экрана", { exact: false })).toHaveCount(0);
+        await expect(page.getByText("Сервис временно недоступен. Попробуйте немного позже.", { exact: false })).toHaveCount(0);
+        await expect(page.getByRole("dialog", { name: /Проверьте этикетку|Новый продукт/ })).toHaveCount(0);
+        expect(await page.evaluate(async () => {
+          const modulePath = "/src/store/toastStore.ts";
+          const { useToastStore } = await import(modulePath);
+          return useToastStore.getState().items.length;
+        })).toBe(0);
+        if (scenario.startsWith("day")) await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+        await expect(page.getByRole("dialog", { name: "Добавить продукт", exact: true }).getByLabel("Граммы", { exact: true })).toHaveCount(0);
+        if (source === "barcode" && scenario === "day success") {
+          await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
+          const scanner = page.getByRole("dialog", { name: "Сканер штрихкода", exact: true });
+          await scanner.getByLabel(/Код вручную/).fill("4601234567890");
+          await scanner.getByRole("button", { name: "Найти", exact: true }).click();
+          await expect(page.getByLabel("Граммы", { exact: true })).toHaveValue("137");
+        }
+      } finally { gate.resolve(); }
+    });
+  }
+}
+
 for (const transition of ["owner", "day"] as const) {
   test(`late custom product error is ignored after ${transition} changes`, async ({ page }) => {
     const gate = deferred(); let started = false;
