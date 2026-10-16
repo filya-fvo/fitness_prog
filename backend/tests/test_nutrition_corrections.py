@@ -2,6 +2,8 @@
 
 from uuid import uuid4
 from datetime import date, datetime, timezone
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 import httpx
@@ -189,6 +191,60 @@ async def test_editing_existing_diary_entry_updates_its_kbju_and_review_queue() 
     proposals = [item for item in session.added if isinstance(item, NutritionCorrection)]
     assert len(proposals) == 1
     assert proposals[0].proposed_kbju["proteins"] == 8
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("with_override", [False, True])
+@pytest.mark.parametrize("payload", [{}, {"meal_type": "lunch"}, {"meal_type": "lunch", "quantity_grams": 50}])
+async def test_meal_update_preserves_historical_nutrition_after_catalog_change(
+    with_override: bool, payload: dict,
+) -> None:
+    row = product()
+    row.calories, row.proteins, row.fats, row.carbs = 200, 10, 6, 24
+    user = User(id=uuid4())
+    historical = {"calories": 50, "proteins": 2.5, "fats": 1.5, "carbs": 6}
+    if with_override:
+        historical["per_100_override"] = {"calories": 100, "proteins": 5, "fats": 3, "carbs": 12}
+    log = NutritionLog(
+        id=uuid4(), user_id=user.id, product_id=row.id, date=date.today(),
+        quantity_grams=50, meal_type="breakfast", is_deleted=False,
+        calculated_kbj=historical.copy(),
+    )
+
+    class Session:
+        def __init__(self) -> None:
+            self.results = iter([log, row])
+
+        async def scalar(self, _query: object) -> object:
+            return next(self.results)
+
+        async def commit(self) -> None:
+            pass
+
+        async def refresh(self, _item: object) -> None:
+            pass
+
+    changed = await update_log(Session(), user, log.id, NutritionLogUpdate.model_validate(payload))
+    assert changed.meal_type == payload.get("meal_type", "breakfast")
+    assert changed.quantity_grams == 50
+    assert changed.calculated_kbj == historical
+
+
+@pytest.mark.asyncio
+async def test_changed_portion_still_recalculates_nutrition() -> None:
+    row = product()
+    user = User(id=uuid4())
+    log = NutritionLog(
+        id=uuid4(), user_id=user.id, product_id=row.id, date=date.today(),
+        quantity_grams=50, meal_type="breakfast", is_deleted=False,
+        calculated_kbj={"calories": 50, "proteins": 2.5, "fats": 1.5, "carbs": 6},
+    )
+    session = SimpleNamespace(
+        scalar=AsyncMock(side_effect=[log, row]), commit=AsyncMock(), refresh=AsyncMock(),
+    )
+    changed = await update_log(session, user, log.id, NutritionLogUpdate(quantity_grams=150))
+    assert changed.quantity_grams == 150
+    assert changed.calculated_kbj == {"calories": 150, "proteins": 7.5, "fats": 4.5, "carbs": 18}
 
 
 @pytest.mark.asyncio

@@ -221,6 +221,7 @@ async def update_log(
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
+    quantity_changed = data.quantity_grams is not None and data.quantity_grams != row.quantity_grams
     if data.quantity_grams is not None:
         row.quantity_grams = data.quantity_grams
     if data.meal_type is not None:
@@ -246,6 +247,11 @@ async def update_log(
             data.carbs_per_100,
         )
     )
+    if not quantity_changed and not touch_override:
+        # Moving an unchanged portion must retain its historical nutrition.
+        await session.commit()
+        await session.refresh(row)
+        return row
     if touch_override or prev_ov:
         cal = _pick(data.calories_per_100, "calories", product.calories)
         prot = _pick(data.proteins_per_100, "proteins", product.proteins)
