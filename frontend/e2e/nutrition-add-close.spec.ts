@@ -420,6 +420,66 @@ for (const boundary of ["source read", "first write"] as const) {
     });
   }
 }
+for (const action of ["edit", "add override"] as const) {
+  test(`successful ${action} refreshes personal nutrition search after a day switch`, async ({ page }) => {
+    const entries: SavedEntry[] = [];
+    const dates = await fixtureDates(page);
+    const existing = saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: 100, meal_type: "breakfast", date: dates[0] });
+    const gate = deferred();
+    let started = false;
+    let personalCalories = 80;
+    await setup(page, entries);
+    await page.route(/\/nutrition\/products(?:\?|$)/, (route) => route.fulfill({
+      json: { items: [{ ...product, calories: personalCalories }], total: 1 },
+    }));
+    const addDialog = page.getByRole("dialog", { name: "Добавить продукт", exact: true });
+    await addDialog.getByLabel("Поиск продукта", { exact: true }).fill("йогурт");
+    await expect(addDialog.getByRole("button", { name: /^Тестовый йогурт\s*80 ккал\/100г$/ })).toBeVisible();
+    const mutationUrl = action === "edit" ? `**/nutrition/log/${existing.id}` : "**/nutrition/log";
+    await page.route(mutationUrl, async (route) => {
+      expect(route.request().method()).toBe(action === "edit" ? "PUT" : "POST");
+      expect(route.request().postDataJSON().calories_per_100).toBe(125);
+      started = true;
+      await gate.promise;
+      personalCalories = 125;
+      await route.fulfill({ json: action === "edit" ? existing : saveEntry(entries, route.request().postDataJSON() as Entry) });
+    });
+    if (action === "edit") {
+      await addDialog.press("Escape");
+      await page.getByRole("button", { name: "Изменить", exact: true }).click();
+      const editDialog = page.getByRole("dialog", { name: "Изменить запись", exact: true });
+      await editDialog.getByLabel("Ккал на 100 г", { exact: true }).fill("125");
+      await editDialog.getByRole("button", { name: "Сохранить", exact: true }).click();
+      await expect.poll(() => started).toBe(true);
+      await editDialog.getByRole("button", { name: "Закрыть", exact: true }).click();
+    } else {
+      await addDialog.getByRole("button", { name: /^Тестовый йогурт\s*80 ккал\/100г$/ }).click();
+      await addDialog.getByLabel("Граммы", { exact: true }).fill("100");
+      await addDialog.getByRole("button", { name: "Изменить БЖУ / 100 г", exact: true }).click();
+      await addDialog.getByLabel("Ккал/100г", { exact: true }).fill("125");
+      await addDialog.getByRole("button", { name: "Добавить и продолжить", exact: true }).click();
+      await expect.poll(() => started).toBe(true);
+      await addDialog.press("Escape");
+    }
+    try {
+      await page.getByRole("button", { name: "Предыдущий день", exact: true }).click();
+      await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "0");
+      const response = page.waitForResponse((value) => value.url().endsWith(action === "edit" ? `/nutrition/log/${existing.id}` : "/nutrition/log"));
+      gate.resolve();
+      await (await response).finished();
+      await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+      if (action === "add override") {
+        await addDialog.getByRole("button", { name: "Другой продукт", exact: true }).click();
+        await addDialog.getByLabel("Поиск продукта", { exact: true }).fill("йогурт");
+      }
+      await expect(addDialog.getByRole("button", { name: /^Тестовый йогурт\s*125 ккал\/100г$/ })).toBeVisible();
+      await expect(addDialog.getByRole("button", { name: /^Тестовый йогурт\s*80 ккал\/100г$/ })).toHaveCount(0);
+      await expect(page.getByText("БЖУ сохранены для вас и будущих добавлений.", { exact: false })).toHaveCount(0);
+      await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "0");
+    } finally { gate.resolve(); }
+  });
+}
+
 test("late edit does not announce an old day correction on the new day", async ({ page }) => {
   const entries: SavedEntry[] = [];
   const dates = await fixtureDates(page);

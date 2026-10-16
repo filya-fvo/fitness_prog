@@ -147,7 +147,9 @@ export function DailyLog() {
   const invalidateReads = useCallback(() => { ++readSequence.current; }, []);
   function resetProductSearch() {
     queryClient.removeQueries({ queryKey: ["nutrition-products", ownerId] });
-    setCatalogRevision((revision) => revision + 1);
+    if (activeScope.current && activeScope.current.ownerId === ownerId && useUserStore.getState().user?.id === ownerId) {
+      setCatalogRevision((revision) => revision + 1);
+    }
   }
   useEffect(() => () => queryClient.clear(), [queryClient]);
   const [data, setData] = useState<DailyNutrition | null>(null);
@@ -445,10 +447,10 @@ export function DailyLog() {
         fatsPer100: reviewedValues?.[2],
         carbsPer100: reviewedValues?.[3],
       });
+      if (reviewedValues) resetProductSearch();
       if (activeScope.current !== scope || useUserStore.getState().user?.id !== ownerId) return;
       ++readSequence.current;
       setData((current) => applySavedNutritionLog(current, saved));
-      if (reviewedValues) resetProductSearch();
       trackEvent("nutrition_logged", {
         meal_type: mealType,
         grams: g,
@@ -518,9 +520,9 @@ export function DailyLog() {
           carbsPer100: carbs,
         } : {}),
       });
+      if (changed) resetProductSearch();
       if (!isCurrentScope()) return;
       setEditingLog(null);
-      if (changed) resetProductSearch();
       await reload();
       if (!isCurrentScope()) return;
       if (sentForReview) {
