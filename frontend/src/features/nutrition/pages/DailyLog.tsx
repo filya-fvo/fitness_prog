@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { QueryClient } from "@tanstack/react-query";
 
 import { getStoredToken } from "@/api/client";
+import type { ReadPolicy } from "@/api/readPolicy";
 import {
   addNutritionLog,
   createNutritionProduct,
@@ -217,7 +218,7 @@ export function DailyLog() {
     if (!customOpen) setLabelReview(null);
   }, [customOpen]);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (policy?: ReadPolicy) => {
     if (activeScope.current !== scope || useUserStore.getState().user?.id !== scope.ownerId) return;
     const sequence = ++readSequence.current;
     const current = () => activeScope.current === scope && sequence === readSequence.current
@@ -231,7 +232,7 @@ export function DailyLog() {
     setLoading(true);
     setError(null);
     try {
-      const daily = await fetchDailyNutrition(scope.day, "fresh");
+      const daily = await fetchDailyNutrition(scope.day, policy);
       if (current()) setData(daily);
     } catch (err) {
       if (current()) setError(toUserMessage(err, "Не удалось загрузить дневник"));
@@ -469,7 +470,7 @@ export function DailyLog() {
       setSuggestions([]);
       setGrams("");
       setOverrideOpen(false);
-      void reload();
+      void reload(isOnline() ? "fresh" : undefined);
       const mealLabel = MEALS.find((m) => m.id === mealType)?.label ?? mealType;
       setOkNote(needsCatalogReview
         ? `${selected.name_ru} добавлен в «${mealLabel}». БЖУ сохранены для вас и будущих добавлений; общий продукт отправлен на проверку.`
@@ -523,7 +524,7 @@ export function DailyLog() {
       if (changed) resetProductSearch();
       if (!isCurrentScope()) return;
       setEditingLog(null);
-      await reload();
+      await reload(isOnline() ? "fresh" : undefined);
       if (!isCurrentScope()) return;
       if (sentForReview) {
         setOkNote("БЖУ сохранены для вас и будущих добавлений. Исправление общего продукта отправлено администратору на проверку.");
@@ -559,7 +560,7 @@ export function DailyLog() {
         }
         return { ...prev, meals, totals: sumMealNutrition(Object.values(meals).flat()) };
       });
-      await reload();
+      await reload(isOnline() ? "fresh" : undefined);
       if (!isCurrentScope()) return;
       toast("Запись удалена", "info");
     } catch (err) {
@@ -580,7 +581,7 @@ export function DailyLog() {
             ? `Не удалось удалить (${msg})`
             : "Не удалось удалить",
       );
-      await reload();
+      await reload(isOnline() ? "fresh" : undefined);
       if (!isCurrentScope()) return;
     } finally {
       if (isCurrentScope()) setEditBusy(false);
@@ -624,7 +625,7 @@ export function DailyLog() {
         items: entries.length,
       });
       setRecent(loadRecentProducts());
-      await reload();
+      await reload(isOnline() ? "fresh" : undefined);
       if (!isCurrentScope()) return;
     } catch (err) {
       if (!isCurrentScope()) return;

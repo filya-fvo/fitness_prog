@@ -54,6 +54,7 @@ function holdFirstSavedRead(entries: SavedEntry[]) {
     release: gate.resolve,
     read: async (route: Route, snapshot: ReturnType<typeof dailySnapshot>) => {
       if (entries.length !== 1 || started) return route.fulfill({ json: snapshot });
+      expect(route.request().headers()["cache-control"]).toBe("no-cache");
       started = true;
       await gate.promise;
       return route.fulfill({ headers: { "x-e2e-daily": "delayed-after-save" }, json: snapshot });
@@ -99,6 +100,64 @@ async function choose(page: Page, grams: string) {
   await dialog.getByLabel("Граммы", { exact: true }).fill(grams);
   return dialog;
 }
+
+test("offline reopen reads the durable diary and reconciles local deletion without forcing the network", async ({ page }) => {
+  const entries: SavedEntry[] = [];
+  const [date] = await fixtureDates(page);
+  for (const quantity of [100, 137]) saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: quantity, meal_type: "breakfast", date });
+  await page.addInitScript(() => {
+    // Routing disables WebKit's HTTP cache and adds its own no-cache header.
+    // Preserve Axios's explicit policy separately, as the native adapter sees it.
+    const policies = new WeakMap<XMLHttpRequest, string>();
+    const setHeader = XMLHttpRequest.prototype.setRequestHeader;
+    const send = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.setRequestHeader = function (name: string, value: string) {
+      if (name.toLowerCase() === "cache-control") policies.set(this, value);
+      return setHeader.call(this, name, value);
+    };
+    XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+      setHeader.call(this, "X-E2E-Diary-Read-Policy", policies.get(this) ?? "default");
+      return send.call(this, body);
+    };
+  });
+  const policies: Array<string | undefined> = [];
+  await page.route("**/nutrition/log/*", async (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    const id = route.request().url().split("/").at(-1);
+    const index = entries.findIndex((entry) => entry.id === id);
+    expect(index).toBeGreaterThanOrEqual(0);
+    entries.splice(index, 1);
+    await route.fulfill({ status: 204 });
+  });
+  // Model the native adapter boundary: explicit fresh reads reject offline;
+  // ordinary reads return its durable projection. The React page stays real.
+  await setup(page, entries, async (route, snapshot) => {
+    // Browser authentication bootstraps online; the native protected bootstrap
+    // is covered separately. Switch offline at the diary adapter boundary.
+    await page.evaluate(() => Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false }));
+    const policy = route.request().headers()["x-e2e-diary-read-policy"];
+    policies.push(policy);
+    if (policy === "no-cache") return route.abort("internetdisconnected");
+    return route.fulfill({ json: snapshot });
+  });
+  await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
+  await page.reload();
+  for (const quantity of [100, 137]) {
+    await expect(page.getByText(`Тестовый йогурт · ${quantity}г`, { exact: true })).toHaveCount(1);
+  }
+  await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "190");
+  for (const [name, value] of [["Белки", "12"], ["Жиры", "5"], ["Углеводы", "24"]]) {
+    await expect(page.getByRole("progressbar", { name, exact: true })).toHaveAttribute("aria-valuenow", value);
+  }
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Удалить", exact: true }).first().click();
+  await expect(page.getByText("Тестовый йогурт · 100г", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Тестовый йогурт · 137г", { exact: true })).toHaveCount(1);
+  await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveAttribute("aria-valuenow", "110");
+  await expect.poll(() => policies.length).toBeGreaterThanOrEqual(3);
+  expect(policies).not.toContain("no-cache");
+  await expect(page.getByText("Нет сети. Проверьте подключение или продолжите офлайн.", { exact: true })).toHaveCount(0);
+});
 
 test("continues adding products, then saves the last portion and closes directly", async ({ page }) => {
   const entries: SavedEntry[] = [];
