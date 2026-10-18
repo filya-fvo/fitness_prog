@@ -188,9 +188,10 @@ export function DailyLog() {
   const [ovF, setOvF] = useState("");
   const [ovC, setOvC] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
+  const customFormVersion = useRef(0);
   const addDialogRef = useModalAccessibility(addPanelOpen, () => setAddPanelOpen(false));
   const editDialogRef = useModalAccessibility(Boolean(editingLog), () => setEditingLog(null));
-  const customDialogRef = useModalAccessibility(customOpen, () => setCustomOpen(false));
+  const customDialogRef = useModalAccessibility(customOpen, closeCustomProduct);
   const [cName, setCName] = useState("");
   const [cCal, setCCal] = useState("");
   const [cP, setCP] = useState("");
@@ -213,6 +214,12 @@ export function DailyLog() {
   const [labelReview, setLabelReview] = useState<NutritionLabelRecognition | null>(null);
   const [okNote, setOkNote] = useState<string | null>(null);
   const productSearchRef = useRef<HTMLInputElement>(null);
+
+  function closeCustomProduct() {
+    ++customFormVersion.current;
+    setCustomOpen(false);
+    setLabelReview(null);
+  }
 
   useEffect(() => {
     setRecent(loadRecentProducts(ownerId));
@@ -673,6 +680,7 @@ export function DailyLog() {
       setCustomError("Проверьте значения на 100 г: ккал — до 1200, БЖУ — до 100 г");
       return;
     }
+    const formVersion = customFormVersion.current;
     setSaving(true);
     setCustomError(null);
     try {
@@ -686,7 +694,7 @@ export function DailyLog() {
         barcode: pendingBarcode || undefined,
       });
       resetProductSearch();
-      if (!isCurrentScope()) return;
+      if (!isCurrentScope() || customFormVersion.current !== formVersion) return;
       setCustomOpen(false);
       setCName("");
       setCCal("");
@@ -705,7 +713,7 @@ export function DailyLog() {
       setOkNote(`${product.name_ru}: продукт создан и выбран. Проверьте граммы и нажмите «Добавить в дневник».`);
       toast("Продукт создан и выбран");
     } catch (err) {
-      if (!isCurrentScope()) return;
+      if (!isCurrentScope() || customFormVersion.current !== formVersion) return;
       setCustomError(toUserMessage(err, "Не удалось создать продукт"));
     } finally {
       if (isCurrentScope()) setSaving(false);
@@ -1504,10 +1512,7 @@ export function DailyLog() {
                 type="button"
                 aria-label="Закрыть"
                 className="flex min-h-11 min-w-11 items-center justify-center text-tg-hint"
-                onClick={() => {
-                  setCustomOpen(false);
-                  setLabelReview(null);
-                }}
+                onClick={closeCustomProduct}
               >
                 ✕
               </button>

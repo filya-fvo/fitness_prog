@@ -694,6 +694,53 @@ test("late diary save cannot unlock a custom product save on the new day", async
   } finally { oldGate.resolve(); newGate.resolve(); }
 });
 
+for (const result of ["success", "error"] as const) {
+  for (const close of ["button", "escape"] as const) {
+    test(`reopened custom product draft survives old ${result} after ${close} close`, async ({ page }) => {
+      const gate = deferred(); let started = false;
+      await setup(page, []);
+      await page.route(/\/nutrition\/products$/, async (route) => {
+        expect(route.request().method()).toBe("POST");
+        started = true;
+        await gate.promise;
+        if (result === "error") return route.fulfill({ status: 503, json: { detail: "Ошибка старого продукта" } });
+        await route.fulfill({ json: { ...product, name_ru: "Старый продукт" } });
+      });
+      const open = page.getByRole("button", { name: "+ Свой продукт в общий каталог", exact: true });
+      const custom = page.getByRole("dialog", { name: "Новый продукт", exact: true });
+      await open.click();
+      await custom.getByLabel("Название", { exact: true }).fill("Старый продукт");
+      for (const [name, value] of [["Ккал", "80"], ["Белки", "5"], ["Жиры", "2"], ["Углеводы", "10"]]) {
+        await custom.getByLabel(name, { exact: true }).fill(value);
+      }
+      try {
+        await custom.getByRole("button", { name: "Создать и выбрать", exact: true }).click();
+        await expect.poll(() => started).toBe(true);
+        if (close === "button") await custom.getByRole("button", { name: "Закрыть", exact: true }).click();
+        else await custom.press("Escape");
+        await expect(custom).toHaveCount(0);
+        await open.click();
+        const draft = [["Название", "Новый черновик"], ["Ккал", "95"], ["Белки", "7"], ["Жиры", "3"], ["Углеводы", "11"]];
+        for (const [name, value] of draft) await custom.getByLabel(name, { exact: true }).fill(value);
+        const response = page.waitForResponse((value) => value.request().method() === "POST" && value.url().endsWith("/nutrition/products"));
+        gate.resolve(); await (await response).finished();
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+        await expect(custom).toBeVisible();
+        for (const [name, value] of draft) await expect(custom.getByLabel(name, { exact: true })).toHaveValue(value);
+        await expect(custom.getByRole("alert")).toHaveCount(0);
+        await expect(custom.getByRole("button", { name: "Создать и выбрать", exact: true })).toBeEnabled();
+        expect(await page.evaluate(async () => {
+          const modulePath = "/src/store/toastStore.ts";
+          const { useToastStore } = await import(modulePath);
+          return useToastStore.getState().items.length;
+        })).toBe(0);
+        await custom.getByRole("button", { name: "Закрыть", exact: true }).click();
+        await expect(page.getByRole("dialog", { name: "Добавить продукт", exact: true }).getByLabel("Граммы", { exact: true })).toHaveCount(0);
+      } finally { gate.resolve(); }
+    });
+  }
+}
+
 for (const transition of ["owner", "day", "unmount"] as const) {
   test(`late custom product response is ignored after ${transition} changes`, async ({ page }) => {
     const gate = deferred();
