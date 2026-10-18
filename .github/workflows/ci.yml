@@ -31,6 +31,8 @@ jobs:
           CORS_ORIGINS: "https://web.telegram.org"
           ENVIRONMENT: "test"
         run: pytest -q
+      - name: Build cache maintenance safety
+        run: python ../scripts/tests/test_vps_build_cache.py
       - name: Ruff
         run: ruff check .
       - name: Compile app import

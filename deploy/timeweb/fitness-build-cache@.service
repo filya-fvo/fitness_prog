@@ -1,0 +1,12 @@
+[Unit]
+Description=Fitness Docker build cache maintenance (%i)
+After=docker.service
+ConditionPathIsSocket=/var/run/docker.sock
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/fitness/maintain-build-cache.sh --%i
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true

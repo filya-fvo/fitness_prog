@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep Fitness Docker build cache near 5 GB every hour
+
+[Timer]
+OnCalendar=*-*-* *:20:00 UTC
+RandomizedDelaySec=5m
+Persistent=true
+Unit=fitness-build-cache@budget.service
+
+[Install]
+WantedBy=timers.target

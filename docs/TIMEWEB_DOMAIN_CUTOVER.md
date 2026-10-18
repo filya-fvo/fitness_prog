@@ -255,9 +255,31 @@ docker compose --env-file backend/.env.production build --pull api worker telegr
 docker compose --env-file backend/.env.production up -d
 sh scripts/write-admin-system-status.sh
 docker compose --env-file backend/.env.production ps
-# После успешных health-check удаляем только неиспользуемый build-кэш старше 72 часов.
-# Образы запущенных сервисов и volumes эта команда не затрагивает.
-docker builder prune --all --force --filter until=72h
+# После успешного выпуска: age cleanup и лимит 5 GB; скрипт сам проверяет API/сайт.
+# Рабочие и rollback images, контейнеры и volumes сохраняются.
+sh scripts/maintain-vps-build-cache.sh --after-release
+```
+
+Первичная установка регулярного обслуживания build-кэша (после обновления
+скриптов повторить ту же идемпотентную команду):
+
+```bash
+sh scripts/install-vps-build-cache-timers.sh
+```
+
+Без перезапуска Docker: каждый час в `:20–:25 UTC` неиспользуемый кэш
+сокращается до 5 GB; по воскресеньям в `02:30–02:40 UTC` удаляется кэш,
+не использованный 72 часа. В Москве это каждый час в `:20–:25` и воскресенье
+`05:30–05:40`. Это целевой размер после обслуживания, а не запрет роста
+во время сборки; используемые записи и shared layers могут ограничить освобождение.
+Настройки daemon.json не меняются. Общий flock исключает наложение очисток;
+активные сборки защищаются самим BuildKit.
+
+```bash
+systemctl list-timers 'fitness-build-cache-*.timer'
+journalctl -u 'fitness-build-cache@*.service' -n 50 --no-pager
+# При необходимости остановить только автоматическое обслуживание:
+systemctl disable --now fitness-build-cache-budget.timer fitness-build-cache-stale.timer
 ```
 
 После создания backup его можно проверить без изменения production-БД. Скрипт

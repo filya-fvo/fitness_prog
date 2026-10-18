@@ -1,0 +1,11 @@
+[Unit]
+Description=Remove Fitness unused build cache older than 72 hours weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 02:30:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+Unit=fitness-build-cache@stale.service
+
+[Install]
+WantedBy=timers.target

@@ -328,6 +328,35 @@ LIMIT 20;
 `DELETE`, `UPDATE`, `DROP`, `TRUNCATE` или `ALTER` на production. Исправления структуры
 делаются миграциями из `supabase/migrations/` и сначала проверяются тестами.
 
+### Обслуживание сборочного кэша Docker
+
+Docker сохраняет временные слои каждой сборки. На VPS работает отдельное
+обслуживание: каждый час в `:20–:25` сокращает неиспользуемый кэш до 5 GB,
+по воскресеньям в `05:30–05:40 МСК` удаляет записи старше 72 часов.
+Во время сборок объём может временно превышать 5 GB. Образы для отката,
+контейнеры, volumes, базы, APK, модели и резервные копии не очищаются.
+Следующая сборка после очистки может занять больше времени.
+
+```bash
+df -h /
+docker system df
+systemctl list-timers 'fitness-build-cache-*.timer'
+journalctl -u 'fitness-build-cache@*.service' -n 50 --no-pager
+```
+
+Установка/обновление: `sh scripts/install-vps-build-cache-timers.sh` из
+`/opt/fitness/source`. После успешного выпуска выполняется
+`sh scripts/maintain-vps-build-cache.sh --after-release`: он сначала
+проверяет API и сайт. Полная команда выпуска — в `TIMEWEB_DOMAIN_CUTOVER.md`.
+Для отключения расписаний:
+
+```bash
+systemctl disable --now fitness-build-cache-budget.timer fitness-build-cache-stale.timer
+```
+
+Не заменяйте это обслуживание на `docker system prune`, `image prune`
+или `volume prune`: они затрагивают другие категории данных.
+
 ## 8. Резервные копии
 
 Ежедневная копия PostgreSQL запускается в **03:15 UTC (06:15 МСК)** с случайной
