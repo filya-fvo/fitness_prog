@@ -649,6 +649,7 @@ export type PlannedWorkoutPlanInput = {
   programId: string;
   scheduledDate: string;
   dayIndex: number;
+  includeSavedOverride?: boolean;
   weekPhase?: "light" | "medium" | "heavy" | null;
 };
 
@@ -657,6 +658,7 @@ export async function fetchPlannedWorkoutPlan(
 ): Promise<WorkoutPlan> {
   const { data } = await apiClient.get("/workouts/planned-plan", {
     params: {
+      ...(input.includeSavedOverride === false ? { include_saved_override: false } : {}),
       program_id: input.programId,
       scheduled_date: input.scheduledDate,
       day_index: input.dayIndex,

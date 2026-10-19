@@ -213,3 +213,54 @@ async def test_duplicate_exercise_is_rejected_without_persisting(database):
         await service.save_customization(session, owner, request(program, base))
     assert caught.value.status_code == 422
     assert await session.scalar(select(model).where(model.user_id == owner.id)) is None
+
+@pytest.mark.asyncio
+async def test_explicit_base_preview_excludes_only_date_patch(database):
+    import httpx
+    from app.core.database import get_db
+    from app.deps import get_current_user
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, base, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
+    async def db():
+        yield session
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = lambda: owner
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/workouts/planned-plan", params={"program_id": str(program.id), "scheduled_date": "2026-10-19", "day_index": 1, "include_saved_override": "false"})
+        assert response.status_code == 200
+        assert response.json()["exercises"][0]["target_sets"] == 3
+        assert len(response.json()["exercises"]) == 2
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_modern_occurrence_atomically_adopts_legacy_replacement(database):
+    from app.models.workout_plan_override import WorkoutPlanOverride
+    from app.services import workout_customization as service, workout_service
+    session, owner, _, program, exercise, base, _ = database
+    session.add(WorkoutPlanOverride(user_id=owner.id, program_id=program.id, day_index=1, scheduled_date=date(2026, 10, 19), replacements=[{"from_exercise_id": str(base.id), "to_exercise_id": str(exercise.id)}]))
+    await session.commit()
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "replacement_exercise_id": exercise.id}]}))
+    plan = await workout_service.build_program_plan_for_user(session, owner, program, day_index=1, scheduled_date=date(2026, 10, 19), week_phase="medium")
+    assert plan["exercises"][0]["exercise_id"] == str(exercise.id)
+    assert await session.scalar(select(WorkoutPlanOverride).where(WorkoutPlanOverride.user_id == owner.id)) is None
+
+@pytest.mark.asyncio
+async def test_start_customized_program_creates_added_slots_once(database):
+    from app.models.workout import WorkoutSet
+    from app.schemas.workout import WorkoutCreate
+    from app.services import workout_customization as service, workout_service
+    session, owner, _, program, exercise, _, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    payload = WorkoutCreate(program_id=program.id, scheduled_date=date(2026, 10, 19), day_index=1, client_workout_id=uuid4())
+    first = await workout_service.create_workout(session, owner, payload)
+    replay = await workout_service.create_workout(session, owner, payload)
+    rows = (await session.scalars(select(WorkoutSet).where(WorkoutSet.workout_id == first.id))).all()
+    assert first.id == replay.id
+    assert len(rows) == 6
+    assert len([row for row in rows if row.exercise_id == exercise.id]) == 3

@@ -1,6 +1,6 @@
 # API личных изменений дня программы
 
-Серверная основа W1; пользовательский редактор подключается следующими этапами.
+W1–W2: разовое редактирование состава подключено; постоянное применение — следующий этап.
 
 `GET /workouts/customizations?program_id=<uuid>&day_index=1&scope=program_day`
 возвращает `program_id`, `day_index`, `scope`, `scheduled_date`, `program_version`,
@@ -24,3 +24,5 @@ Patch: `added_exercises`, `removed_exercise_ids`, `exercise_overrides`, необ
 → разовый patch. Одни и те же правила используются preview/start/offline preparation.
 `customization_revisions` в снимке сообщает revisions применённых областей.
 Планы/шаблоны каталога не меняются; старые snapshots сохраняют свои результаты.
+
+`GET /workouts/planned-plan?include_saved_override=false` возвращает фазовый план с постоянными личными правками, но без правок на дату. Современный occurrence PUT/DELETE атомарно заменяет старый draft replacements этой даты, поскольку полный patch включает все её изменения.

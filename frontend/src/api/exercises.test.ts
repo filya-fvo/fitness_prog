@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "./client";
-import { fetchExerciseExplorer, setExercisePinned } from "./exercises";
+import { fetchExerciseExplorer, setExercisePinned, fetchExerciseCatalog } from "./exercises";
 
 const exerciseId = "11111111-1111-4111-8111-111111111111";
 
@@ -61,5 +61,18 @@ describe("exercise explorer API", () => {
       pin_limit: 8,
     } });
     expect((await setExercisePinned(exerciseId, false)).isPinned).toBe(false);
+  });
+});
+
+
+describe("catalog for personal additions", () => {
+  afterEach(() => vi.restoreAllMocks());
+  it("includes an exercise from a later page instead of restricting additions to page one", async () => {
+    const abs = "22222222-2222-4222-8222-222222222222";
+    vi.spyOn(apiClient, "get")
+      .mockResolvedValueOnce({ data: { items: [{ id: exerciseId, name_ru: "Сгибания", muscle_group: "biceps", difficulty: 1 }], total: 201, page: 1, page_size: 200 } })
+      .mockResolvedValueOnce({ data: { items: [{ id: abs, name_ru: "Скручивания", muscle_group: "abs", difficulty: 1 }], total: 201, page: 2, page_size: 200 } });
+    const rows = await fetchExerciseCatalog();
+    expect(rows.map(row => row.name_ru)).toEqual(["Сгибания", "Скручивания"]);
   });
 });

@@ -186,3 +186,16 @@ export async function setExercisePinned(
     : await apiClient.delete(`/exercises/${exerciseId}/pin`);
   return mapPinState(response.data);
 }
+
+/** Load the bounded full catalog so additions are not limited to the first 200 items. */
+export async function fetchExerciseCatalog(): Promise<Exercise[]> {
+  const first = await fetchExercises({ pageSize: 200, page: 1 });
+  const pages = Math.max(1, Math.ceil(first.total / 200));
+  if (pages > 50) throw new Error("Каталог слишком большой. Уточните поиск упражнения");
+  const items = new Map(first.items.map(row => [row.id, row]));
+  for (let page = 2; page <= pages; page += 1) {
+    const chunk = await fetchExercises({ pageSize: 200, page });
+    for (const row of chunk.items) items.set(row.id, row);
+  }
+  return [...items.values()];
+}

@@ -444,6 +444,7 @@ async def planned_workout_plan(
     scheduled_date: date,
     day_index: int = Query(..., ge=1),
     week_phase: str | None = Query(default=None, pattern=r"^(light|medium|heavy)$"),
+    include_saved_override: bool = True,
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> WorkoutPlan:
@@ -454,6 +455,7 @@ async def planned_workout_plan(
         day_index=day_index,
         scheduled_date=scheduled_date,
         week_phase=week_phase,
+        include_saved_override=include_saved_override,
     )
     return WorkoutPlan.model_validate(plan)
 

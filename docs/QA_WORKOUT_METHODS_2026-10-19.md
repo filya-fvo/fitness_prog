@@ -23,3 +23,11 @@ W0 complete. Next: W1 owner-scoped personal day and occurrence patches, revision
 ## W2 — identity regression fixed before UI work
 
 Real PostgreSQL RED: reordering two exercises deleted both saved set rows. GREEN: IDs/weights preserved; backend 969 passed, Ruff PASS. Replacement mapping now uses explicit source identity, never display order. First test fixture import failed during setup and was corrected to the repository tests package before the valid RED run. W2 editor still in progress.
+
+## W2 — date-scoped composer
+
+- Browser RED: missing Add exercise button (after repairing a test route that intercepted exercises.ts). GREEN: 18 Chromium cases including 320/375/393/1440, light/dark, 393x600, save/reopen, reorder/remove, conflict draft retention, existing program preparation and recovery. Both 393px screenshots inspected.
+- Backend 972 passed / Ruff PASS, including canonical base GET, atomic legacy adoption, added set slots and duplicate start prevention. Frontend 749 unit passed; an added catalog pagination assertion and API checks passed 12/12. ESLint/build/PWA PASS.
+- Initial bundle gate failed (596444 total / 539996 product). A clean export of c9d9153 built with the same dependencies measures 594189 / 537727; measured feature growth is 2269 product bytes. Explicit bounded budgets now 597000 / 540500 (<0.6 KB headroom), with admin/largest/vendor boundaries retained; no dependency added.
+
+Final W2 follow-up: a missing catalog-outage notice was reproduced and fixed; current plan remains usable, adding is disabled without catalog, Escape restores focus. All 10 composer browser cases passed, earlier 18 combined cases passed, frontend final 750 passed/lint/build/PWA PASS. Final budget 596558 total / 540081 product, growth 2354 product bytes against the clean baseline; caps 597000/540500 pass. Backend remains at the checked 972 passed/Ruff.

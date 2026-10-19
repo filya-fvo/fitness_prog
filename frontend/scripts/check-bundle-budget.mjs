@@ -136,8 +136,12 @@ const limits = {
   // DailyLog gains9218gzip bytes (query-core + race guards), eager index shrinks
   // 22bytes and vendor chunks stay identical. Keep <0.8KB aggregate headroom;
   // retain independent admin and largest-chunk caps.
-  totalJsGzip: 594_500,
-  productJsGzip: 538_000,
+  // Approved personal workout composer/API, measured with the same dependencies:
+  // c9d9153 baseline 594189 total / 537727 product -> 596558 / 540081.
+  // Net product growth 2354 bytes; no new dependency or vendor, <0.6 KB headroom.
+  // Independent admin and largest-chunk limits remain unchanged.
+  totalJsGzip: 597_000,
+  productJsGzip: 540_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

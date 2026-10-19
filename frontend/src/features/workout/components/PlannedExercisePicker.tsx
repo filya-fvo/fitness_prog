@@ -9,7 +9,7 @@ type Mode = "recommended" | "catalog";
 type SortOrder = "name" | "muscle" | "difficulty";
 
 type Props = {
-  source: Exercise;
+  source: Exercise | null;
   catalog: Exercise[];
   occupiedIds: Set<string>;
   onBack: () => void;
@@ -36,7 +36,7 @@ export function PlannedExercisePicker({
   onOpenDetail,
 }: Props) {
   const searchId = useId();
-  const [mode, setMode] = useState<Mode>("recommended");
+  const [mode, setMode] = useState<Mode>(source ? "recommended" : "catalog");
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("");
   const [equipment, setEquipment] = useState("");
@@ -57,13 +57,13 @@ export function PlannedExercisePicker({
   );
 
   const recommended = useMemo(
-    () => rankEquivalentExercises(source, catalog, { excludedIds: occupiedIds })
-      .filter((item) => matchesQuery(item, normalizedQuery)),
+    () => source ? rankEquivalentExercises(source, catalog, { excludedIds: occupiedIds })
+      .filter((item) => matchesQuery(item, normalizedQuery)) : [],
     [catalog, normalizedQuery, occupiedIds, source],
   );
   const fullCatalog = useMemo(() => {
     const rows = catalog.filter((item) => {
-      if (item.id === source.id || occupiedIds.has(item.id)) return false;
+      if (item.id === source?.id || occupiedIds.has(item.id)) return false;
       if (muscle && item.muscle_group !== muscle) return false;
       if (equipment && item.equipment !== equipment) return false;
       if (difficulty && item.difficulty !== Number(difficulty)) return false;
@@ -79,7 +79,7 @@ export function PlannedExercisePicker({
       }
       return a.name_ru.localeCompare(b.name_ru, "ru");
     });
-  }, [catalog, difficulty, equipment, muscle, normalizedQuery, occupiedIds, sortOrder, source.id]);
+  }, [catalog, difficulty, equipment, muscle, normalizedQuery, occupiedIds, sortOrder, source?.id]);
 
   useEffect(() => setVisibleCount(PAGE_SIZE), [difficulty, equipment, mode, muscle, normalizedQuery, sortOrder]);
 
@@ -92,7 +92,7 @@ export function PlannedExercisePicker({
         ← К плану
       </button>
 
-      <div className="app-card app-card-ember flex items-center gap-3 p-3">
+      {source ? <div className="app-card app-card-ember flex items-center gap-3 p-3">
         <ExerciseThumbnail exercise={source} />
         <div className="min-w-0 flex-1">
           <p className="text-[11px] text-tg-hint">Заменяем</p>
@@ -100,13 +100,13 @@ export function PlannedExercisePicker({
           <p className="mt-0.5 text-[11px] text-tg-hint">
             {enumLabel(source.muscle_group)}{source.equipment ? ` · ${enumLabel(source.equipment)}` : ""}
           </p>
-          <button type="button" onClick={() => onOpenDetail(source)} className="mt-1 min-h-[32px] text-xs text-tg-link">
+          <button type="button" onClick={() => onOpenDetail(source)} className="mt-1 min-h-[44px] text-xs text-tg-link">
             Посмотреть технику
           </button>
         </div>
-      </div>
+      </div> : null}
 
-      <div className="app-card-inset mt-3 grid grid-cols-2 p-1" role="group" aria-label="Режим выбора замены">
+      {source ? <div className="app-card-inset mt-3 grid grid-cols-2 p-1" role="group" aria-label="Режим выбора замены">
         <button
           type="button"
           aria-pressed={mode === "recommended"}
@@ -123,9 +123,9 @@ export function PlannedExercisePicker({
         >
           Весь каталог
         </button>
-      </div>
+      </div> : null}
 
-      <label htmlFor={searchId} className="sr-only">Поиск замены упражнения</label>
+      <label htmlFor={searchId} className="sr-only">{source ? "Поиск замены упражнения" : "Поиск упражнения"}</label>
       <input
         id={searchId}
         type="search"
@@ -178,7 +178,7 @@ export function PlannedExercisePicker({
       <div className="mt-2 space-y-2">
         {visibleCandidates.map((item) => (
           <div key={item.id} className="app-card app-card-ocean flex min-h-[68px] items-center gap-2 p-2">
-            <button type="button" onClick={() => onOpenDetail(item)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-label={`Посмотреть ${item.name_ru}`}>
+            <button type="button" onClick={() => onOpenDetail(item)} className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 text-left" aria-label={`Посмотреть ${item.name_ru}`}>
               <ExerciseThumbnail exercise={item} size="sm" />
               <span className="min-w-0">
                 <span className="block break-words text-sm font-medium">{item.name_ru}</span>
@@ -187,8 +187,8 @@ export function PlannedExercisePicker({
                 </span>
               </span>
             </button>
-            <button type="button" onClick={() => onChoose(item)} className="app-button app-gradient-action shrink-0 px-3 text-xs">
-              Выбрать
+            <button type="button" aria-label={source ? `Выбрать ${item.name_ru}` : `Добавить ${item.name_ru}`} onClick={() => onChoose(item)} className="app-button app-gradient-action shrink-0 px-3 text-xs">
+              {source ? "Выбрать" : "Добавить"}
             </button>
           </div>
         ))}

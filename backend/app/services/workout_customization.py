@@ -161,6 +161,15 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
             base = await apply_customizations(session, user_id=user.id, program_id=program.id,
                 day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
         await apply_day_patch(session, base, data.patch)
+    if data.scope == "occurrence":
+        from app.models.workout_plan_override import WorkoutPlanOverride
+        legacy = await session.scalar(select(WorkoutPlanOverride).where(
+            WorkoutPlanOverride.user_id == user.id, WorkoutPlanOverride.program_id == program.id,
+            WorkoutPlanOverride.day_index == data.day_index,
+            WorkoutPlanOverride.scheduled_date == data.scheduled_date,
+        ))
+        if legacy is not None:
+            await session.delete(legacy)
     if row is None:
         row = UserProgramDayOverride(user_id=user.id, program_id=program.id, day_index=data.day_index,
             scheduled_date=data.scheduled_date, revision=0, program_version=program.version)
