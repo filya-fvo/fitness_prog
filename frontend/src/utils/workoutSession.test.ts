@@ -180,3 +180,16 @@ describe("active workout completion rules", () => {
     expect(next).toBe(2);
   });
 });
+
+it("restores all twenty new plan slots", () => {
+  const workout = workoutFixture({ plan: { execution_version: 2, exercises: [{ exercise_id: "exercise-1", order: 1, target_sets: 20 }] } });
+  expect(draftsFromWorkoutSnapshot(workout).map(row => row.setNumber)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+});
+
+it("retains a sparse historical slot without manufacturing hundreds of empty sets", () => {
+  const workout = workoutFixture({ sets: [{ id: "legacy", workout_id: "workout-1", exercise_id: "exercise-1", set_number: 300,
+    reps: 8, weight: 100, is_completed: true, rest_time_sec: 90 }] });
+  const drafts = draftsFromWorkoutSnapshot(workout);
+  expect(drafts).toHaveLength(4);
+  expect(drafts[3]).toMatchObject({ setNumber: 300, reps: "8", weight: "100" });
+});

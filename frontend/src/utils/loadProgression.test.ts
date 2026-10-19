@@ -271,3 +271,9 @@ describe("loadProgression", () => {
     ).toBe(true);
   });
 });
+
+it("prefills all twenty planned slots", () => {
+  const drafts = draftsWithSuggestions({ exercises: [{ exercise_id: "bench", order: 1, target_sets: 20 }],
+    history: new Map(), phase: resolveWeekPhase("2026-10-19", new Date(2026, 9, 19)) });
+  expect(drafts.map(row => row.setNumber)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+});

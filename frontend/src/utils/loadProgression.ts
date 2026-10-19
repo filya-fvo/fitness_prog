@@ -345,7 +345,7 @@ export function draftsWithSuggestions(input: {
   // User can tap «Готово» or open modal to edit.
   const drafts: LocalSetDraft[] = [];
   for (const item of [...input.exercises].sort((a, b) => a.order - b.order)) {
-    const sets = Math.max(1, Math.min(12, item.target_sets || 3));
+    const sets = Math.max(1, Math.min(20, Math.trunc(item.target_sets || 3)));
     const sug = suggestLoad({
       history: input.history.get(item.exercise_id),
       phase: input.phase,

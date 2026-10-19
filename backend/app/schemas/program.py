@@ -101,6 +101,7 @@ class ProgramResponse(BaseModel):
 
 
 class ProgramStartRequest(BaseModel):
+    execution_version: Literal[1, 2] | None = None
     day_index: int = Field(default=1, ge=1)
     scheduled_date: date | None = None
     # Optional manual override for 3-week cycle (light|medium|heavy)

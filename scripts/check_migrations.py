@@ -64,6 +64,7 @@ REQUIRED_FILES = [
     "20261008000054_legal_acceptances.sql",
     "20261008000055_android_login.sql",
     "20261019000000_personal_workout_customizations.sql",
+    "20261019000001_structured_workout_execution.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -76,6 +77,8 @@ REQUIRED_TABLES = [
     "programs",
     "workouts",
     "workout_sets",
+    "workout_set_parts",
+    "workout_set_execution_receipts",
     "nutrition_products",
     "nutrition_logs",
     "ai_conversations",
@@ -179,6 +182,10 @@ REQUIRED_SNIPPETS = [
     "ix_android_login_requests_expires_at",
     "uq_user_program_day_overrides_slot UNIQUE NULLS NOT DISTINCT",
     "last_operation_hash TEXT NOT NULL",
+    "ck_workout_sets_compound_parent",
+    "uq_workout_set_parts_ordinal",
+    "ck_workout_set_parts_completed",
+    "PRIMARY KEY (workout_set_id, operation_id)",
     "revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1)",
 ]
 

@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -17,6 +19,7 @@ class AddedWorkoutExercise(StrictModel):
     rest_sec: int | None = Field(default=None, ge=0, le=600)
     weight_mode: Literal["total", "per_hand"] | None = None
     note: str | None = Field(default=None, max_length=500)
+    set_methods: list[WorkoutSetMethod] | None = Field(default=None, max_length=20)
 
 
 class WorkoutExerciseOverride(StrictModel):
@@ -26,24 +29,7 @@ class WorkoutExerciseOverride(StrictModel):
     target_reps: str | None = Field(default=None, min_length=1, max_length=30)
     rest_sec: int | None = Field(default=None, ge=0, le=600)
     note: str | None = Field(default=None, max_length=500)
-
-
-class WorkoutGroup(StrictModel):
-    id: UUID
-    kind: Literal["superset", "triset", "circuit"]
-    exercise_ids: list[UUID] = Field(min_length=2, max_length=20)
-    rounds: int = Field(ge=1, le=20)
-    transition_sec: int = Field(default=0, ge=0, le=600)
-    round_rest_sec: int = Field(default=90, ge=0, le=600)
-
-    @model_validator(mode="after")
-    def validate_members(self):
-        required = {"superset": 2, "triset": 3}.get(self.kind)
-        if required is not None and len(self.exercise_ids) != required:
-            raise ValueError("Неверное число упражнений в связке")
-        if len(set(self.exercise_ids)) != len(self.exercise_ids):
-            raise ValueError("Упражнения связки не должны повторяться")
-        return self
+    set_methods: list[WorkoutSetMethod] | None = Field(default=None, max_length=20)
 
 
 class WorkoutDayPatch(StrictModel):

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { executionPartSchema, setMethodSchema, workoutGroupSchema } from "./workoutExecutionSchemas";
 import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
@@ -8,9 +9,12 @@ import type {
   WorkoutLoadHint,
   WorkoutPlan,
   WorkoutSet,
+  WorkoutExecutionPart,
 } from "@/types/workout";
 
 export const workoutPlanSchema = z.object({
+  execution_version: z.union([z.literal(1), z.literal(2)]).optional(),
+  groups: z.array(workoutGroupSchema).max(10).optional(),
   customization_scopes: z.array(z.enum(["program_day", "occurrence"])).max(2).optional(),
   customization_revisions: z.record(z.string(), z.number().int().nonnegative()).optional(),
   title: z.string().nullable().optional(),
@@ -28,6 +32,7 @@ export const workoutPlanSchema = z.object({
   limitations: z.array(z.string()).default([]),
   exercises: z.array(z.object({
     exercise_id: z.string().uuid(),
+    set_methods: z.array(setMethodSchema).max(20).optional(),
     order: z.number(),
     target_sets: z.number(),
     target_reps: z.string().nullable().optional(),
@@ -41,6 +46,9 @@ export const workoutPlanSchema = z.object({
 });
 
 const setSchema = z.object({
+  execution_kind: z.enum(["standard", "drop", "cluster"]).nullable().optional(),
+  execution_revision: z.number().int().nonnegative().nullable().optional(),
+  parts: z.array(executionPartSchema).max(8).default([]),
   id: z.string().uuid(),
   workout_id: z.string().uuid(),
   exercise_id: z.string().uuid(),
@@ -55,7 +63,7 @@ const setSchema = z.object({
   machine_params: z.record(z.union([z.string(), z.number()])).nullable().optional(),
 });
 
-const workoutSchema = z.object({
+export const workoutSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
   program_id: z.string().uuid().nullable().optional(),
@@ -232,6 +240,9 @@ export type IllnessPause = z.infer<typeof illnessPauseSchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   return {
+    execution_kind: item.execution_kind ?? "standard",
+    execution_revision: item.execution_revision ?? 0,
+    parts: item.parts,
     id: item.id,
     workout_id: item.workout_id,
     exercise_id: item.exercise_id,
@@ -247,7 +258,7 @@ function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   };
 }
 
-function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
+export function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
   return {
     id: item.id,
     user_id: item.user_id,
@@ -260,7 +271,7 @@ function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
     completed_at: item.completed_at ?? null,
     title: item.title ?? null,
     workout_type: item.workout_type ?? null,
-    plan: (item.plan as Workout["plan"]) ?? {},
+    plan: item.plan.execution_version === 2 ? workoutPlanSchema.parse(item.plan) as Workout["plan"] : (item.plan as Workout["plan"]) ?? {},
     duration_sec: item.duration_sec ?? null,
     sets: item.sets.map(mapSet),
   };
@@ -275,6 +286,7 @@ function invalidateWorkoutResponse(workoutId: string): void {
 }
 
 export async function createWorkout(input: {
+  executionVersion?: 1 | 2;
   clientWorkoutId?: string | null;
   scheduledDate: string;
   exerciseIds?: string[];
@@ -286,6 +298,7 @@ export async function createWorkout(input: {
   plan?: WorkoutPlan | null;
 }): Promise<Workout> {
   const { data } = await apiClient.post("/workouts", {
+    ...(input.executionVersion ? { execution_version: input.executionVersion } : {}),
     client_workout_id: input.clientWorkoutId ?? null,
     scheduled_date: input.scheduledDate,
     exercise_ids: input.exerciseIds ?? [],
@@ -332,6 +345,11 @@ export async function updateWorkoutPlan(input: {
 }
 
 export async function addWorkoutSet(input: {
+  executionVersion?: 1 | 2;
+  executionKind?: "standard" | "drop" | "cluster";
+  baseExecutionRevision?: number;
+  clientOperationId?: string;
+  parts?: WorkoutExecutionPart[];
   workoutId: string;
   exerciseId: string;
   setNumber: number;
@@ -346,6 +364,11 @@ export async function addWorkoutSet(input: {
 }): Promise<WorkoutSet> {
   invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.post(`/workouts/${input.workoutId}/sets`, {
+    ...(input.executionVersion === 2 ? {
+      execution_version: 2, execution_kind: input.executionKind ?? "standard",
+      base_execution_revision: input.baseExecutionRevision, client_operation_id: input.clientOperationId,
+      parts: input.parts ?? [],
+    } : {}),
     exercise_id: input.exerciseId,
     set_number: input.setNumber,
     reps: input.reps ?? null,
@@ -361,12 +384,14 @@ export async function addWorkoutSet(input: {
 }
 
 export async function completeWorkout(input: {
+  executionVersion?: 1 | 2;
   workoutId: string;
   rpe?: number | null;
   aiNotes?: string | null;
 }): Promise<Workout> {
   invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.put(`/workouts/${input.workoutId}/complete`, {
+    ...(input.executionVersion ? { execution_version: input.executionVersion } : {}),
     rpe: input.rpe ?? null,
     ai_notes: input.aiNotes ?? null,
   });

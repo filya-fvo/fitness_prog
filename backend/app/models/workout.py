@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.workout_set_part import WorkoutSetPart
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -92,6 +96,12 @@ class WorkoutSet(Base, TimestampSoftDeleteMixin):
         index=True,
     )
     set_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    execution_kind: Mapped[str] = mapped_column(Text, nullable=False, default="standard", server_default="standard")
+    execution_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    parts: Mapped[list["WorkoutSetPart"]] = relationship(
+        "WorkoutSetPart", back_populates="parent", cascade="all, delete-orphan", lazy="selectin",
+        order_by="WorkoutSetPart.ordinal",
+    )
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
     weight_mode: Mapped[str | None] = mapped_column(Text, nullable=True)

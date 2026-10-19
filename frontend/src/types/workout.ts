@@ -19,7 +19,24 @@ export type Exercise = {
   weight_rule?: "total" | "per_hand" | "per_side" | "none";
 };
 
+export type WorkoutSetMethod = {
+  set_number: number;
+  kind: "drop" | "cluster";
+  parts: Array<{ target_reps: number; target_weight?: number | null; pause_after_sec: number }>;
+};
+export type WorkoutGroup = {
+  id: string; kind: "superset" | "triset" | "circuit"; exercise_ids: string[];
+  rounds: number; transition_sec: number; round_rest_sec: number;
+};
+export type WorkoutExecutionPart = {
+  id: string; ordinal: number; reps: number | null; weight: number | null;
+  duration_sec: number | null; status: "pending" | "completed" | "skipped"; rest_after_sec: number;
+};
+
 export type WorkoutSet = {
+  execution_kind?: "standard" | "drop" | "cluster";
+  execution_revision?: number;
+  parts?: WorkoutExecutionPart[];
   id: string;
   workout_id: string;
   exercise_id: string;
@@ -38,6 +55,7 @@ export type WorkoutSet = {
 };
 
 export type WorkoutPlanExercise = {
+  set_methods?: WorkoutSetMethod[];
   exercise_id: string;
   order: number;
   target_sets: number;
@@ -52,6 +70,8 @@ export type WorkoutPlanExercise = {
 };
 
 export type WorkoutPlan = {
+  execution_version?: 1 | 2;
+  groups?: WorkoutGroup[];
   customization_scopes?: Array<"program_day" | "occurrence">;
   customization_revisions?: Partial<Record<"program_day" | "occurrence", number>>;
   title?: string | null;
@@ -144,6 +164,9 @@ export type ExerciseProgress = {
 };
 
 export type LocalSetDraft = {
+  executionKind?: "standard" | "drop" | "cluster";
+  executionRevision?: number;
+  parts?: WorkoutExecutionPart[];
   exerciseId: string;
   setNumber: number;
   reps: string;

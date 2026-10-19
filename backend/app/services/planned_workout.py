@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.workout_plan_override import WorkoutPlanOverride
+from app.models.user_program_day_override import UserProgramDayOverride
 from app.schemas.workout import PlannedWorkoutReplacement
 
 
@@ -108,7 +109,11 @@ async def apply_replacements(
         item["original_exercise_id"] = str(source)
         item["name_ru"] = targets[target].name_ru
         item.pop("suggested_weight", None)
-    return {**base_plan, "exercises": exercises}
+    plan = {**base_plan, "exercises": exercises}
+    if plan.get("groups"):
+        plan["groups"] = [{**group, "exercise_ids": [str(mapping.get(uuid.UUID(str(member)), uuid.UUID(str(member))))
+            for member in group["exercise_ids"]]} for group in plan["groups"]]
+    return plan
 
 
 async def save_override(
@@ -123,6 +128,13 @@ async def save_override(
     replacements: list[PlannedWorkoutReplacement],
 ) -> dict[str, Any]:
     await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+    modern = await session.scalar(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user_id, UserProgramDayOverride.program_id == program_id,
+        UserProgramDayOverride.day_index == day_index, UserProgramDayOverride.scheduled_date == scheduled_date,
+        UserProgramDayOverride.is_deleted.is_(False),
+    ))
+    if modern is not None or base_plan.get("execution_version") == 2:
+        raise HTTPException(409, "Подготовьте замену в обновлённом редакторе личного плана")
     payload = [
         {
             "from_exercise_id": str(item.from_exercise_id),

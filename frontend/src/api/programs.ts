@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workoutSchema, mapWorkout } from "./workouts";
 import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
@@ -30,37 +31,6 @@ const listSchema = z.object({
   total: z.number(),
 });
 
-const setSchema = z.object({
-  id: z.string().uuid(),
-  workout_id: z.string().uuid(),
-  exercise_id: z.string().uuid(),
-  set_number: z.number(),
-  reps: z.number().nullable().optional(),
-  weight: z.union([z.number(), z.string()]).nullable().optional(),
-  is_completed: z.boolean(),
-  rest_time_sec: z.number().nullable().optional(),
-  duration_sec: z.number().nullable().optional(),
-  note: z.string().nullable().optional(),
-  machine_params: z.record(z.union([z.string(), z.number()])).nullable().optional(),
-});
-
-const workoutSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  program_id: z.string().uuid().nullable().optional(),
-  scheduled_date: z.string(),
-  status: z.string(),
-  ai_notes: z.string().nullable().optional(),
-  rpe: z.number().nullable().optional(),
-  started_at: z.string().nullable().optional(),
-  completed_at: z.string().nullable().optional(),
-  title: z.string().nullable().optional(),
-  workout_type: z.string().nullable().optional(),
-  plan: z.record(z.string(), z.unknown()).optional().default({}),
-  duration_sec: z.number().nullable().optional(),
-  sets: z.array(setSchema).default([]),
-});
-
 export function mapProgram(item: z.infer<typeof programSchema>): Program {
   return {
     id: item.id,
@@ -80,37 +50,6 @@ export function mapProgram(item: z.infer<typeof programSchema>): Program {
     owner_id: item.owner_id ?? null,
     personal_duration_min: item.personal_duration_min ?? null,
     personal_duration_sample_size: item.personal_duration_sample_size,
-  };
-}
-
-function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
-  return {
-    id: item.id,
-    user_id: item.user_id,
-    program_id: item.program_id ?? null,
-    scheduled_date: item.scheduled_date,
-    status: item.status,
-    ai_notes: item.ai_notes ?? null,
-    rpe: item.rpe ?? null,
-    started_at: item.started_at ?? null,
-    completed_at: item.completed_at ?? null,
-    title: item.title ?? null,
-    workout_type: item.workout_type ?? null,
-    plan: (item.plan as Workout["plan"]) ?? {},
-    duration_sec: item.duration_sec ?? null,
-    sets: item.sets.map((s) => ({
-      id: s.id,
-      workout_id: s.workout_id,
-      exercise_id: s.exercise_id,
-      set_number: s.set_number,
-      reps: s.reps ?? null,
-      weight: s.weight == null ? null : Number(s.weight),
-      is_completed: s.is_completed,
-      rest_time_sec: s.rest_time_sec ?? null,
-      duration_sec: s.duration_sec ?? null,
-      note: s.note ?? null,
-      machine_params: s.machine_params ?? null,
-    })),
   };
 }
 
@@ -160,6 +99,7 @@ export async function createMyProgram(input: PersonalProgramInput): Promise<Prog
 }
 
 export async function startProgramWorkout(input: {
+  executionVersion?: 1 | 2;
   programId: string;
   dayIndex?: number;
   scheduledDate?: string;
@@ -171,6 +111,7 @@ export async function startProgramWorkout(input: {
     scheduled_date: input.scheduledDate ?? null,
     week_phase: input.weekPhase ?? null,
   };
+  if (input.executionVersion) payload.execution_version = input.executionVersion;
   if (input.cycleReadiness !== undefined) payload.cycle_readiness = input.cycleReadiness;
   const { data } = await apiClient.post(`/programs/${input.programId}/start`, payload);
   return mapWorkout(workoutSchema.parse(data));

@@ -1,0 +1,20 @@
+import { z } from "zod";
+
+const weight = z.union([z.number(), z.string()]).transform(Number).pipe(z.number().finite().positive().max(10_000));
+export const setMethodSchema = z.object({
+  set_number: z.number().int().min(1).max(20), kind: z.enum(["drop", "cluster"]),
+  parts: z.array(z.object({ target_reps: z.number().int().min(1).max(100_000),
+    target_weight: weight.nullable().optional(), pause_after_sec: z.number().int().min(0).max(600).default(0),
+  })).min(2).max(8),
+});
+export const workoutGroupSchema = z.object({
+  id: z.string().uuid(), kind: z.enum(["superset", "triset", "circuit"]),
+  exercise_ids: z.array(z.string().uuid()).min(2).max(20), rounds: z.number().int().min(1).max(20),
+  transition_sec: z.number().int().min(0).max(600).default(0), round_rest_sec: z.number().int().min(0).max(600).default(90),
+});
+export const executionPartSchema = z.object({
+  id: z.string().uuid(), ordinal: z.number().int().min(1).max(8),
+  reps: z.number().int().min(0).max(100_000).nullable().default(null), weight: weight.nullable().default(null),
+  duration_sec: z.number().int().min(0).max(86400).nullable().default(null),
+  status: z.enum(["pending", "completed", "skipped"]), rest_after_sec: z.number().int().min(0).max(600),
+});

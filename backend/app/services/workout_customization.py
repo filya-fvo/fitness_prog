@@ -106,12 +106,17 @@ async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: Workout
         exercises = [by_id[exercise_id] for exercise_id in patch.exercise_order]
     for order, item in enumerate(exercises, 1):
         item["order"] = order
-    if patch.groups:
-        # Enabled together with the validated execution-v2 contract in W4.
-        raise HTTPException(422, "Настройка связок пока недоступна")
-    if patch.groups == []:
-        plan.pop("groups", None)
+    if patch.groups is not None:
+        plan["groups"] = [group.model_dump(mode="json") for group in patch.groups]
     plan["exercises"] = exercises
+    if plan.get("groups") or any(row.get("set_methods") for row in exercises) or plan.get("execution_version") == 2:
+        from pydantic import ValidationError
+        from app.schemas.workout import WorkoutPlan
+        plan["execution_version"] = 2
+        try:
+            plan = WorkoutPlan.model_validate(plan).model_dump(mode="json")
+        except ValidationError as exc:
+            raise HTTPException(422, "Проверьте состав связок, число подходов и части сложного подхода") from exc
     return plan
 
 

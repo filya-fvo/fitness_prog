@@ -6,6 +6,7 @@ function setKey(exerciseId: string, setNumber: number): string {
 
 function draftFromSet(row: WorkoutSet, fallbackRestSec = 60): LocalSetDraft {
   return {
+    ...(row.execution_kind ? { executionKind: row.execution_kind, executionRevision: row.execution_revision ?? 0, parts: row.parts ?? [] } : {}),
     exerciseId: row.exercise_id,
     setNumber: row.set_number,
     reps: row.reps == null ? "" : String(row.reps),
@@ -38,15 +39,14 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
     const savedRows = (workout.sets || []).filter(
       (row) => row.exercise_id === exercise.exercise_id,
     );
-    const highestSavedSet = savedRows.reduce(
-      (highest, row) => Math.max(highest, row.set_number),
-      0,
-    );
-    const plannedSetCount = Math.max(1, Math.min(12, exercise.target_sets || 3));
-    const setCount = Math.max(plannedSetCount, highestSavedSet);
+    const plannedSetCount = Math.max(1, Math.min(20, Math.trunc(exercise.target_sets || 3)));
+    const setNumbers = [...new Set([
+      ...Array.from({ length: plannedSetCount }, (_, i) => i + 1),
+      ...savedRows.map(row => row.set_number),
+    ])].sort((a, b) => a - b);
     const restSec = exercise.rest_sec ?? 60;
 
-    for (let setNumber = 1; setNumber <= setCount; setNumber += 1) {
+    for (const setNumber of setNumbers) {
       const saved = savedByKey.get(setKey(exercise.exercise_id, setNumber));
       drafts.push(
         saved

@@ -40,3 +40,13 @@ Final W2 follow-up: a missing catalog-outage notice was reproduced and fixed; cu
 - Final backend985 passed/Ruff PASS (one existing Starlette deprecation warning); frontend754 unit/lint/build/PWA PASS;16 Chromium cases PASS, including both themes/four widths and separate persistent reset. Updated393px light/dark screenshots inspected.
 - Aggregate JS initially exceeded W2 cap. Same-session W2 baseline596558/540081 -> W3 598001/541545 (product+1464bytes). Bounded caps598600/542100 pass; largest/vendor/admin limits unchanged, no dependency added.
 - Server commit did not publish changes; methods/sequence/timers and remaining offline/Android stages still pending.
+
+
+## W4 — structured results and compatibility
+
+- Valid RED: old plan validation discarded method/groups; SQL writes had no child parts, legacy writes could flatten the result; personal delta omitted methods; both restore/prefill paths clipped slots13–20. All repaired with focused assertions.
+- Actual PostgreSQL checks cover partial/all-skipped/completed parts, immutable operation receipts, stale revisions, two concurrent devices, offline part IDs, private access, invalid weights, legacy dispatch, stale prepared snapshot and private cluster-in-superset plan.
+- Migration tested against synthetic ordinary history: intentionally failed transaction rolls back all new schema, successful migration retains IDs/reps/weight/completion. Calendar completion lock order was reproduced separately and aligned to user-before-workout; final execution/idempotency28 PASS.
+- Full backend1003 PASS before final bounded-size/lock-order additions; final targeted28 PASS and Ruff PASS. Migration checker57 PASS. Frontend761 unit, lint/types/build/PWA PASS. Chromium15 PASS (preparation plus composer, four widths and both themes).
+- Bundle598238 total /541770 product, largest108742/admin56468, within unchanged W3 limits; shared API mapping replaces duplicated program-start parsing. No new dependency.
+- No native implementation/device claim: only the existing legacy protocol dispatch was exercised. Timer/runtime UI/analytics integration and W9 durable queue remain pending; no deployment at this stage.

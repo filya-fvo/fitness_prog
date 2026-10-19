@@ -129,6 +129,7 @@ async def start_program(
         scheduled_date=payload.scheduled_date,
         week_phase=payload.week_phase,
         cycle_readiness=payload.cycle_readiness,
+        execution_version=payload.execution_version,
     )
     return WorkoutResponse.model_validate(workout)
 

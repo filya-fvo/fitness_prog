@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization
+from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization, workout_execution
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -54,19 +54,7 @@ def _normalize_plan(plan: WorkoutPlan | dict[str, Any] | None) -> dict[str, Any]
         return {"title": None, "workout_type": None, "exercises": []}
     if isinstance(plan, WorkoutPlan):
         return plan.model_dump(mode="json")
-    return {
-        "title": plan.get("title"),
-        "workout_type": plan.get("workout_type"),
-        "day_index": plan.get("day_index"),
-        "week_phase": plan.get("week_phase"),
-        "week_in_cycle": plan.get("week_in_cycle"),
-        "week_label": plan.get("week_label"),
-        "week_rir": plan.get("week_rir"),
-        "base_week_phase": plan.get("base_week_phase"),
-        "load_adjustment": plan.get("load_adjustment"),
-        "load_adjustment_label": plan.get("load_adjustment_label"),
-        "exercises": list(plan.get("exercises") or []),
-    }
+    return WorkoutPlan.model_validate(plan).model_dump(mode="json")
 
 
 def resolve_week_phase_meta(started_at: date | None, today: date | None = None) -> dict[str, Any]:
@@ -447,20 +435,17 @@ async def _plan_from_exercise_ids(
 
 def _create_set_slots(session: AsyncSession, workout_id: uuid.UUID, plan: dict[str, Any]) -> None:
     for item in plan.get("exercises") or []:
-        exercise_id = uuid.UUID(str(item["exercise_id"]))
-        target_sets = int(item.get("target_sets") or 3)
-        for set_number in range(1, target_sets + 1):
-            session.add(
-                WorkoutSet(
-                    workout_id=workout_id,
-                    exercise_id=exercise_id,
-                    set_number=set_number,
-                    is_completed=False,
-                    rest_time_sec=int(item.get("rest_sec") or 60),
-                    weight_mode=item.get("weight_mode") or None,
-                    note=item.get("note") or None,
-                )
+        methods = {row["set_number"]: row for row in item.get("set_methods", [])}
+        for set_number in range(1, int(item.get("target_sets") or 3) + 1):
+            parent = WorkoutSet(
+                workout_id=workout_id, exercise_id=uuid.UUID(str(item["exercise_id"])),
+                set_number=set_number, is_completed=False,
+                rest_time_sec=int(item.get("rest_sec") if item.get("rest_sec") is not None else 60),
+                weight_mode=item.get("weight_mode") or None, note=item.get("note") or None,
             )
+            if set_number in methods:
+                workout_execution.seed_method_parts(parent, methods[set_number])
+            session.add(parent)
 
 
 async def _lock_workout_idempotency_key(
@@ -495,6 +480,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             )
         )
         if existing is not None:
+            workout_execution.require_execution_version(existing.plan, data.execution_version)
             return await _get_workout_for_user(
                 session,
                 workout_id=existing.id,
@@ -509,6 +495,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
 
     program: Program | None = None
     if data.program_id is not None:
+        await session.execute(select(User.id).where(User.id == user_id).with_for_update())
         program = await session.scalar(
             select(Program).where(Program.id == data.program_id, Program.is_deleted.is_(False))
         )
@@ -518,6 +505,18 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             program, (user.goals or {}).get("active_program_id"), user_id=user.id
         ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+
+    if program is not None and data.plan is not None:
+        expected = await build_program_plan_for_user(
+            session, user, program, day_index=data.day_index or data.plan.day_index or 1,
+            scheduled_date=data.scheduled_date, week_phase=data.week_phase,
+            cycle_readiness=data.cycle_readiness, consume_saved_override=False,
+        )
+        workout_execution.require_execution_version(expected, data.execution_version)
+        if (expected.get("customization_revisions") or {}) != data.plan.customization_revisions:
+            raise HTTPException(409, "Личный план изменился после подготовки. Результат сохранён на устройстве")
+        if expected.get("execution_version") == 2:
+            workout_execution.validate_plan_edit(expected, _normalize_plan(data.plan))
 
     if data.plan is not None and data.plan.exercises:
         ids = [item.exercise_id for item in data.plan.exercises]
@@ -553,6 +552,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             "exercises": [],
         }
 
+    workout_execution.require_execution_version(plan, data.execution_version)
     workout = Workout(
         user_id=user_id,
         client_workout_id=data.client_workout_id,
@@ -600,6 +600,7 @@ async def start_program_workout(
     scheduled_date: date | None = None,
     week_phase: str | None = None,
     cycle_readiness: object = None,
+    execution_version: int | None = None,
 ) -> Workout:
     program = await session.scalar(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
@@ -623,6 +624,7 @@ async def start_program_workout(
         .order_by(Workout.created_at.desc())
     )
     if existing is not None:
+        workout_execution.require_execution_version(existing.plan, execution_version)
         if existing.status == "completed":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -635,6 +637,7 @@ async def start_program_workout(
         )
 
     payload = WorkoutCreate(
+        execution_version=execution_version,
         scheduled_date=target_date,
         program_id=program_id,
         day_index=day_index,
@@ -735,6 +738,10 @@ async def complete_workout(
     data: WorkoutCompleteRequest,
 ) -> Workout:
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    if (workout.plan or {}).get("execution_version") == 2:
+        await session.execute(select(User.id).where(User.id == user.id).with_for_update())
+        workout = await workout_execution.lock_workout(session, workout.id, user.id)
+        workout_execution.require_execution_version(workout.plan, data.execution_version)
     if workout.status == "completed":
         # Also repairs cursors from older/client-only completion flows.
         repaired = await _advance_program_cursor_for_completed_workout(session, user, workout)
@@ -799,6 +806,8 @@ async def add_workout_set(
     data: WorkoutSetCreate,
 ) -> WorkoutSet:
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    if (workout.plan or {}).get("execution_version") == 2 or data.execution_version == 2 or data.execution_kind != "standard" or data.parts:
+        return await workout_execution.save_execution_set(session, user, workout.id, data)
     exercise = await session.scalar(
         select(Exercise).where(Exercise.id == data.exercise_id, Exercise.is_deleted.is_(False))
     )
@@ -991,6 +1000,9 @@ async def update_workout_plan(
 ) -> Workout:
     """Persist exercise replacements and keep empty set slots aligned with the plan."""
     workout = await _get_workout_for_user(session, workout_id=workout_id, user_id=user.id)
+    if (workout.plan or {}).get("execution_version") == 2:
+        workout = await workout_execution.lock_workout(session, workout.id, user.id)
+        workout_execution.require_execution_version(workout.plan, data.execution_version)
     if workout.status == "completed":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -998,6 +1010,7 @@ async def update_workout_plan(
         )
 
     plan = _normalize_plan(data)
+    workout_execution.validate_plan_edit(workout.plan or {}, plan)
     exercise_ids = [uuid.UUID(str(item["exercise_id"])) for item in plan["exercises"]]
     if len(exercise_ids) != len(set(exercise_ids)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="В плане повторяются упражнения")

@@ -148,6 +148,10 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/core/` — settings, DB session, auth dependencies, logging, Sentry.
 - `backend/app/models/` — SQLAlchemy-модели. Экспорт новой модели добавить в
   `models/__init__.py`, если этого требует импорт metadata.
+- `backend/app/services/workout_execution.py`, `schemas/workout_execution.py` и
+  `models/workout_set_part.py` — формат2 сложных подходов, части/пропуски,
+  ревизии и receipts; один путь REST/native sync. Структура начатого v2-снимка
+  неизменяема; настройки меняются при подготовке. Миграция20261019000001.
 - `backend/app/schemas/` — Pydantic request/response contracts.
 - `backend/app/routers/` — HTTP-слой: валидация контекста, статус, вызов service.
 - `backend/app/services/` — бизнес-логика и внешние интеграции.

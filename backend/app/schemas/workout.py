@@ -7,10 +7,14 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod, WorkoutExecutionPart, WorkoutExecutionPartResponse
 
 
 class WorkoutPlanExercise(BaseModel):
+    set_methods: list[WorkoutSetMethod] = Field(default_factory=list, max_length=20)
     exercise_id: uuid.UUID
     order: int = Field(..., ge=1)
     target_sets: int = Field(default=3, ge=1, le=20)
@@ -24,6 +28,8 @@ class WorkoutPlanExercise(BaseModel):
 
 
 class WorkoutPlan(BaseModel):
+    execution_version: Literal[1, 2] = 1
+    groups: list[WorkoutGroup] = Field(default_factory=list, max_length=10)
     customization_scopes: list[Literal["program_day", "occurrence"]] = Field(default_factory=list)
     customization_revisions: dict[str, int] = Field(default_factory=dict)
     title: str | None = None
@@ -42,7 +48,42 @@ class WorkoutPlan(BaseModel):
     exercises: list[WorkoutPlanExercise] = Field(default_factory=list)
 
 
+    @model_validator(mode="after")
+    def validate_execution(self):
+        if self.execution_version == 2 and not 1 <= len(self.exercises) <= 20:
+            raise ValueError("В тренировке должно быть от 1 до 20 упражнений")
+        if not self.groups and not any(row.set_methods for row in self.exercises):
+            return self
+        if self.execution_version != 2:
+            raise ValueError("Для сложной тренировки требуется формат 2")
+        ids = [row.exercise_id for row in self.exercises]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Упражнения плана не должны повторяться")
+        for row in self.exercises:
+            slots = [method.set_number for method in row.set_methods]
+            if len(slots) != len(set(slots)) or any(slot > row.target_sets for slot in slots):
+                raise ValueError("Метод должен относиться к существующему подходу")
+        by_id = {row.exercise_id: row for row in self.exercises}
+        ordered = [row.exercise_id for row in sorted(self.exercises, key=lambda row: row.order)]
+        grouped = set()
+        group_ids = set()
+        for group in self.groups:
+            if group.id in group_ids:
+                raise ValueError("Идентификаторы связок не должны повторяться")
+            group_ids.add(group.id)
+            if any(member not in by_id or member in grouped for member in group.exercise_ids):
+                raise ValueError("Связка содержит отсутствующее упражнение или пересекается с другой")
+            if any(by_id[member].target_sets != group.rounds for member in group.exercise_ids):
+                raise ValueError("Число подходов участников должно совпадать с числом раундов")
+            start = ordered.index(group.exercise_ids[0])
+            if ordered[start:start + len(group.exercise_ids)] != group.exercise_ids:
+                raise ValueError("Упражнения связки должны идти подряд в заданном порядке")
+            grouped.update(group.exercise_ids)
+        return self
+
+
 class WorkoutCreate(BaseModel):
+    execution_version: Literal[1, 2] | None = None
     scheduled_date: date
     client_workout_id: uuid.UUID | None = None
     program_id: uuid.UUID | None = None
@@ -73,6 +114,7 @@ class PlannedWorkoutPlanRequest(BaseModel):
 
 
 class WorkoutCompleteRequest(BaseModel):
+    execution_version: Literal[1, 2] | None = None
     rpe: int | None = Field(default=None, ge=1, le=10)
     ai_notes: str | None = None
 
@@ -85,6 +127,11 @@ class WorkoutUpdateRequest(BaseModel):
 
 
 class WorkoutSetCreate(BaseModel):
+    execution_version: Literal[1, 2] | None = None
+    execution_kind: Literal["standard", "drop", "cluster"] = "standard"
+    base_execution_revision: int | None = Field(default=None, ge=0)
+    client_operation_id: uuid.UUID | None = None
+    parts: list[WorkoutExecutionPart] = Field(default_factory=list, max_length=8)
     exercise_id: uuid.UUID
     set_number: int = Field(..., gt=0)
     reps: int | None = Field(default=None, ge=0, le=100_000)
@@ -98,6 +145,9 @@ class WorkoutSetCreate(BaseModel):
 
 
 class WorkoutSetResponse(BaseModel):
+    execution_kind: Literal["standard", "drop", "cluster"] | None = "standard"
+    execution_revision: int | None = 0
+    parts: list[WorkoutExecutionPartResponse] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID

@@ -53,3 +53,17 @@ it("keeps a deliberately fixed rest even when it matches this phase's base", () 
   const patch = buildWorkoutDayPatch(base, base, { loaded: base, sources: [{ added_exercises: [], removed_exercise_ids: [], exercise_overrides: [{ exercise_id: A, rest_sec: 90 }] }] });
   expect(patch.exercise_overrides).toEqual([{ exercise_id: A, rest_sec: 90 }]);
 });
+
+it("keeps structured method changes and group membership in the personal delta", () => {
+  const method = { set_number: 1, kind: "cluster" as const, parts: [0, 1, 2].map(i => ({ target_reps: 4, target_weight: 100, pause_after_sec: i < 2 ? 20 : 0 })) };
+  const group = { id: C, kind: "superset" as const, exercise_ids: [A, B], rounds: 3, transition_sec: 0, round_rest_sec: 90 };
+  const next: WorkoutPlan = { execution_version: 2, groups: [group], exercises: [
+    { ...base.exercises[0], set_methods: [method] }, { ...base.exercises[1], target_sets: 3 },
+  ] };
+  const patch = buildWorkoutDayPatch(base, next);
+  expect(patch.exercise_overrides[0].set_methods).toEqual([method]);
+  expect(patch.groups).toEqual([group]);
+  const reset = buildWorkoutDayPatch(next, { ...next, groups: [], exercises: next.exercises.map(row => ({ ...row, set_methods: [] })) });
+  expect(reset.groups).toEqual([]);
+  expect(reset.exercise_overrides[0].set_methods).toEqual([]);
+});

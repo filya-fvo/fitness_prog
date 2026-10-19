@@ -15,6 +15,7 @@ export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan, optio
     throw new Error("В тренировке должно быть от 1 до 20 разных упражнений");
   }
   const patch: WorkoutDayPatch = { added_exercises: [], removed_exercise_ids: [], exercise_overrides: [], exercise_order: ids };
+  if (JSON.stringify(base.groups ?? []) !== JSON.stringify(next.groups ?? [])) patch.groups = next.groups ?? [];
   const matched = new Set<string>();
   for (const original of base.exercises) {
     const desired = next.exercises.find(row => row.exercise_id === original.exercise_id)
@@ -30,6 +31,7 @@ export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan, optio
     if (desired.target_sets !== original.target_sets) changes.target_sets = desired.target_sets;
     if (desired.target_reps != null && desired.target_reps !== original.target_reps) changes.target_reps = desired.target_reps;
     if (desired.rest_sec != null && desired.rest_sec !== original.rest_sec) changes.rest_sec = desired.rest_sec;
+    if (JSON.stringify(desired.set_methods ?? []) !== JSON.stringify(original.set_methods ?? [])) changes.set_methods = desired.set_methods ?? [];
     if (desired.note != null && desired.note !== original.note) changes.note = desired.note;
     const loaded = options?.loaded.exercises.find(row => row.exercise_id === desired.exercise_id || row.exercise_id === original.exercise_id);
     for (const field of ["target_reps", "rest_sec"] as const) {
@@ -43,6 +45,7 @@ export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan, optio
   }
   for (const row of next.exercises) {
     if (!matched.has(row.exercise_id)) patch.added_exercises.push({
+      ...(row.set_methods?.length ? { set_methods: row.set_methods } : {}),
       exercise_id: row.exercise_id, target_sets: row.target_sets,
       target_reps: row.target_reps ?? null, rest_sec: row.rest_sec ?? null,
       weight_mode: row.weight_mode ?? null, note: row.note ?? null,
