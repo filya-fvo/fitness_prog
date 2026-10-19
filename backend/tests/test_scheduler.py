@@ -350,6 +350,7 @@ async def test_reschedule_updates_only_one_occurrence(monkeypatch) -> None:
     goals = _schedule_goals()
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None])
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
@@ -378,6 +379,7 @@ async def test_cancel_occurrence_keeps_cursor_and_moves_prepared_date(monkeypatc
     goals = _schedule_goals()
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()
@@ -448,6 +450,7 @@ async def test_assignment_moves_next_program_day_earlier_without_changing_cursor
     ]
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None, None, None, None, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()
@@ -500,6 +503,7 @@ async def test_cancelling_assignment_restores_the_existing_next_date(monkeypatch
     }]
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()
@@ -583,6 +587,7 @@ async def test_reschedule_cascades_occupied_workout_to_next_free_day(monkeypatch
     goals["notification_settings"]["workouts"]["days"] = [0, 1, 3, 4]
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()
@@ -619,6 +624,7 @@ async def test_reschedule_can_cancel_occupied_workout_without_hiding_moved_one(m
     goals["notification_settings"]["workouts"]["days"] = [0, 1, 3, 4]
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()
@@ -724,6 +730,7 @@ async def test_permanent_replacement_is_atomic_and_idempotent(monkeypatch) -> No
     goals = {**_schedule_goals(), "active_program_started_at": "2026-08-03"}
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
+    session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
     session.scalar = AsyncMock(side_effect=[locked_user, None])
     session.execute = AsyncMock()
     session.commit = AsyncMock()

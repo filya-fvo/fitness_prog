@@ -31,3 +31,12 @@ Real PostgreSQL RED: reordering two exercises deleted both saved set rows. GREEN
 - Initial bundle gate failed (596444 total / 539996 product). A clean export of c9d9153 built with the same dependencies measures 594189 / 537727; measured feature growth is 2269 product bytes. Explicit bounded budgets now 597000 / 540500 (<0.6 KB headroom), with admin/largest/vendor boundaries retained; no dependency added.
 
 Final W2 follow-up: a missing catalog-outage notice was reproduced and fixed; current plan remains usable, adding is disabled without catalog, Escape restores focus. All 10 composer browser cases passed, earlier 18 combined cases passed, frontend final 750 passed/lint/build/PWA PASS. Final budget 596558 total / 540081 product, growth 2354 product bytes against the clean baseline; caps 597000/540500 pass. Backend remains at the checked 972 passed/Ruff.
+
+## W3 — recurring personal days and calendar compatibility
+
+- Four API/SQL RED cases for raw template, promotion, inherited revision and dependent reset; GREEN with explicit scope/revision checks and atomic promotion. Other incompatible date drafts cause409 without changes.
+- The automatic-target freeze was reproduced in the pure patch builder and fixed; explicit fixed rest survives even when equal to current phase. Cache invalidation preserves other owners/programs/outbox.
+- Actual PostgreSQL tests cover four-day rotation/cursor, new program version and return, move/cancel, repeated move and return to default, target draft conflict. Repeated-date source bug and cancelled legacy unique collision reproduced/fixed. Two actual concurrent-connection tests fail without user locks and pass with them.
+- Final backend985 passed/Ruff PASS (one existing Starlette deprecation warning); frontend754 unit/lint/build/PWA PASS;16 Chromium cases PASS, including both themes/four widths and separate persistent reset. Updated393px light/dark screenshots inspected.
+- Aggregate JS initially exceeded W2 cap. Same-session W2 baseline596558/540081 -> W3 598001/541545 (product+1464bytes). Bounded caps598600/542100 pass; largest/vendor/admin limits unchanged, no dependency added.
+- Server commit did not publish changes; methods/sequence/timers and remaining offline/Android stages still pending.

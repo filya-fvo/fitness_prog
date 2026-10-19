@@ -312,6 +312,7 @@ async def build_program_plan_for_user(
     scheduled_date: date,
     week_phase: str | None,
     include_saved_override: bool = True,
+    include_personal_override: bool = True,
     consume_saved_override: bool = False,
     apply_readiness_adjustment: bool = True,
     cycle_readiness: object = None,
@@ -361,10 +362,11 @@ async def build_program_plan_for_user(
     if recovery_week:
         plan["load_adjustment"] = "illness_recovery"
         plan["load_adjustment_label"] = "Восстановительная лёгкая неделя после болезни"
-    plan = await workout_customization.apply_customizations(
-        session, user_id=user.id, program_id=program.id, day_index=day_index,
-        scheduled_date=scheduled_date, base_plan=plan, scopes=("program_day",),
-    )
+    if include_personal_override:
+        plan = await workout_customization.apply_customizations(
+            session, user_id=user.id, program_id=program.id, day_index=day_index,
+            scheduled_date=scheduled_date, base_plan=plan, scopes=("program_day",),
+        )
     if not include_saved_override:
         return plan
     plan = await planned_workout.apply_saved_override(
@@ -391,6 +393,7 @@ async def preview_program_plan(
     scheduled_date: date,
     week_phase: str | None,
     include_saved_override: bool = True,
+    include_personal_override: bool = True,
 ) -> dict[str, Any]:
     program = await session.scalar(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
@@ -409,6 +412,7 @@ async def preview_program_plan(
         scheduled_date=scheduled_date,
         week_phase=week_phase,
         include_saved_override=include_saved_override,
+        include_personal_override=include_personal_override,
     )
 
 

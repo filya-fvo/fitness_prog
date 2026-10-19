@@ -52,6 +52,7 @@ export type WorkoutPlanExercise = {
 };
 
 export type WorkoutPlan = {
+  customization_scopes?: Array<"program_day" | "occurrence">;
   customization_revisions?: Partial<Record<"program_day" | "occurrence", number>>;
   title?: string | null;
   workout_type?: string | null;

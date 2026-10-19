@@ -12,7 +12,6 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.models.workout import Workout
-from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services import scheduler, workout_reschedule
 
 MAX_ASSIGNMENT_AHEAD_DAYS = 14
@@ -253,15 +252,10 @@ async def cancel_assigned_occurrence(
         )
         .values(scheduled_date=source_target_date)
     )
-    await session.execute(
-        update(WorkoutPlanOverride)
-        .where(
-            WorkoutPlanOverride.user_id == user.id,
-            WorkoutPlanOverride.scheduled_date == scheduled_date,
-            WorkoutPlanOverride.is_deleted.is_(False),
-        )
-        .values(scheduled_date=source_target_date)
-    )
+    from app.services.planned_workout import move_saved_overrides
+    await move_saved_overrides(session, user_id=user.id, source_date=scheduled_date, target_date=source_target_date)
+    from app.services.workout_customization_dates import change_customization_date
+    await change_customization_date(session, user.id, scheduled_date, source_target_date)
     await session.commit()
     await session.refresh(user)
 

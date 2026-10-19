@@ -8,14 +8,13 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.program import Program
 from app.models.user import User
 from app.models.workout import Workout
-from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services.notification_prefs import _resolve_tz, merge_notification_settings, parse_hhmm
 
 OVERRIDES_KEY = "workout_schedule_overrides"
@@ -897,18 +896,10 @@ async def cancel_workout_occurrence(
     locked_user.goals = goals
     flag_modified(locked_user, "goals")
 
-    plan_override_filters = [
-        WorkoutPlanOverride.user_id == locked_user.id,
-        WorkoutPlanOverride.scheduled_date == scheduled_date,
-        WorkoutPlanOverride.is_deleted.is_(False),
-    ]
-    if program_id is not None:
-        plan_override_filters.append(WorkoutPlanOverride.program_id == program_id)
-    await session.execute(
-        update(WorkoutPlanOverride)
-        .where(*plan_override_filters)
-        .values(scheduled_date=next_date)
-    )
+    from app.services.planned_workout import move_saved_overrides
+    await move_saved_overrides(session, user_id=locked_user.id, source_date=scheduled_date, target_date=next_date, program_id=program_id)
+    from app.services.workout_customization_dates import change_customization_date
+    await change_customization_date(session, locked_user.id, scheduled_date, next_date, program_id)
     await session.commit()
     await session.refresh(locked_user)
     user.goals = locked_user.goals

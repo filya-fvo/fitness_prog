@@ -11,6 +11,7 @@ import type {
 } from "@/types/workout";
 
 export const workoutPlanSchema = z.object({
+  customization_scopes: z.array(z.enum(["program_day", "occurrence"])).max(2).optional(),
   customization_revisions: z.record(z.string(), z.number().int().nonnegative()).optional(),
   title: z.string().nullable().optional(),
   workout_type: z.string().nullable().optional(),
@@ -650,6 +651,7 @@ export type PlannedWorkoutPlanInput = {
   scheduledDate: string;
   dayIndex: number;
   includeSavedOverride?: boolean;
+  includePersonalOverride?: boolean;
   weekPhase?: "light" | "medium" | "heavy" | null;
 };
 
@@ -659,6 +661,7 @@ export async function fetchPlannedWorkoutPlan(
   const { data } = await apiClient.get("/workouts/planned-plan", {
     params: {
       ...(input.includeSavedOverride === false ? { include_saved_override: false } : {}),
+      ...(input.includePersonalOverride === false ? { include_personal_override: false } : {}),
       program_id: input.programId,
       scheduled_date: input.scheduledDate,
       day_index: input.dayIndex,

@@ -122,3 +122,26 @@ export function prepareOfflineWorkoutContext(owner: string, start: string): Prom
   running.set(key, task);
   return task;
 }
+
+/** Invalidate derived prepared plans only; active workouts and outbox remain intact. */
+export async function invalidateOfflineWorkoutContext(owner: string, programId: string): Promise<void> {
+  checkOwner(owner);
+  const root = prefix(owner);
+  await db.transaction("rw", db.meta, async () => {
+    checkOwner(owner);
+    const saved = await db.meta.get(`${root}header`);
+    if (!saved) return;
+    let savedProgram: string | null | undefined;
+    try {
+      const parsed = headerSchema.safeParse(JSON.parse(saved.value));
+      savedProgram = parsed.success ? parsed.data.bundle.program?.id : undefined;
+    } catch {
+      console.warn("Повреждённый сохранённый план будет загружен заново");
+    }
+    if (savedProgram && savedProgram !== programId) return;
+    const keys = await db.meta.where("key").startsWith(root).primaryKeys();
+    await db.meta.bulkDelete(keys);
+    checkOwner(owner);
+  });
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("fitness:offline-prepared", { detail: owner }));
+}

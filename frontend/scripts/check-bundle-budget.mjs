@@ -140,8 +140,11 @@ const limits = {
   // c9d9153 baseline 594189 total / 537727 product -> 596558 / 540081.
   // Net product growth 2354 bytes; no new dependency or vendor, <0.6 KB headroom.
   // Independent admin and largest-chunk limits remain unchanged.
-  totalJsGzip: 597_000,
-  productJsGzip: 540_500,
+  // Persistent personal-day scope, explicit reset, phase-preserving edits and
+  // prepared-cache invalidation: W2 596558/540081 -> W3 598001/541545.
+  // Measured product growth1464bytes; retain <0.6KB headroom, no vendor/dependency growth.
+  totalJsGzip: 598_600,
+  productJsGzip: 542_100,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

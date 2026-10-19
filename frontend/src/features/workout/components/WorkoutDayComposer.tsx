@@ -20,7 +20,7 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
         <div className="flex items-center gap-3">
           {exercise ? <ExerciseThumbnail exercise={exercise} /> : null}
           <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{name}</p>
-            <p className="mt-1 text-xs text-tg-hint">{row.target_sets} × {row.target_reps || "по фазе программы"}</p>
+            <p className="mt-1 text-xs text-tg-hint">{row.target_sets} × {row.target_reps || "по плану"}</p>
             {row.original_exercise_id ? <p className="mt-1 text-xs text-tg-link">Подготовлена замена</p> : null}
           </div>
         </div>
@@ -28,8 +28,8 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
           <label className="text-xs text-tg-hint">Подходы<input type="number" inputMode="numeric" min={1} max={20} value={row.target_sets} disabled={disabled} onChange={event => {
             const value = Number(event.target.value); if (value >= 1 && value <= 20) change(row.exercise_id, { target_sets: value });
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
-          <label className="text-xs text-tg-hint">Повторы<input value={row.target_reps ?? ""} placeholder="По фазе" maxLength={30} disabled={disabled} onChange={event => change(row.exercise_id, { target_reps: event.target.value || null })} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
-          <label className="text-xs text-tg-hint">Отдых, с<input type="number" inputMode="numeric" min={0} max={600} value={row.rest_sec ?? ""} placeholder="По фазе" disabled={disabled} onChange={event => {
+          <label className="text-xs text-tg-hint">Повторы<input value={row.target_reps ?? ""} placeholder="По плану" maxLength={30} disabled={disabled} onChange={event => change(row.exercise_id, { target_reps: event.target.value || null })} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
+          <label className="text-xs text-tg-hint">Отдых, с<input type="number" inputMode="numeric" min={0} max={600} value={row.rest_sec ?? ""} placeholder="По плану" disabled={disabled} onChange={event => {
             const value = event.target.value === "" ? null : Number(event.target.value);
             if (value === null || (value >= 0 && value <= 600)) change(row.exercise_id, { rest_sec: value });
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>

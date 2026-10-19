@@ -35,13 +35,16 @@ export async function fetchWorkoutCustomization(context: WorkoutCustomizationCon
   const { data } = await apiClient.get("/workouts/customizations", { params: context });
   return responseSchema.parse(data);
 }
-export async function saveWorkoutCustomization(input: WorkoutCustomizationContext & {
+export type WorkoutCustomizationGuards = {
+  base_program_day_revision?: number; promote_date?: string; base_occurrence_revision?: number;
+};
+export async function saveWorkoutCustomization(input: WorkoutCustomizationContext & WorkoutCustomizationGuards & {
   base_revision: number; operation_id: string; patch: WorkoutDayPatch;
 }): Promise<WorkoutCustomization> {
   const { data } = await apiClient.put("/workouts/customizations", input);
   return responseSchema.parse(data);
 }
-export async function resetWorkoutCustomization(input: WorkoutCustomizationContext & {
+export async function resetWorkoutCustomization(input: WorkoutCustomizationContext & WorkoutCustomizationGuards & {
   base_revision: number; operation_id: string;
 }): Promise<WorkoutCustomization> {
   const { data } = await apiClient.delete("/workouts/customizations", { data: input });

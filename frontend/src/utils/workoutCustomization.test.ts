@@ -38,3 +38,18 @@ describe("personal workout patch", () => {
     expect(() => buildWorkoutDayPatch(base, { exercises: [] })).toThrow();
   });
 });
+
+it("keeps automatic phase targets when a saved personal addition is reopened", () => {
+  const row = { exercise_id: C, order: 3, target_sets: 3, target_reps: "8-10", rest_sec: 60 };
+  const loaded = { exercises: [...base.exercises, row] };
+  const patch = buildWorkoutDayPatch(base, loaded, {
+    loaded, sources: [{ added_exercises: [{ exercise_id: C, target_sets: 3, target_reps: null, rest_sec: null }], removed_exercise_ids: [], exercise_overrides: [] }],
+  });
+  expect(patch.added_exercises[0].target_reps).toBeNull();
+  expect(patch.added_exercises[0].rest_sec).toBeNull();
+});
+
+it("keeps a deliberately fixed rest even when it matches this phase's base", () => {
+  const patch = buildWorkoutDayPatch(base, base, { loaded: base, sources: [{ added_exercises: [], removed_exercise_ids: [], exercise_overrides: [{ exercise_id: A, rest_sec: 90 }] }] });
+  expect(patch.exercise_overrides).toEqual([{ exercise_id: A, rest_sec: 90 }]);
+});

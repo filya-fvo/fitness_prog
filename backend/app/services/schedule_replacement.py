@@ -13,7 +13,6 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.models.workout import Workout
-from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services import scheduler
 
 SCHEDULE_CHANGE_REQUESTS_KEY = "workout_schedule_change_requests"
@@ -198,15 +197,12 @@ async def replace_recurring_workout_day(
             )
             .values(scheduled_date=target_date)
         )
-        await session.execute(
-            update(WorkoutPlanOverride)
-            .where(
-                WorkoutPlanOverride.user_id == locked_user.id,
-                WorkoutPlanOverride.scheduled_date == original_date,
-                WorkoutPlanOverride.is_deleted.is_(False),
-            )
-            .values(scheduled_date=target_date)
-        )
+        from app.services.planned_workout import move_saved_overrides
+        await move_saved_overrides(session, user_id=locked_user.id, source_date=original_date, target_date=target_date)
+
+    if preview["moves_current_occurrence"]:
+        from app.services.workout_customization_dates import change_customization_date
+        await change_customization_date(session, locked_user.id, original_date, target_date)
 
     source_key = original_date.isoformat()
     target_key = target_date.isoformat()

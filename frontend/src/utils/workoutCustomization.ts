@@ -1,8 +1,15 @@
 import { workoutDayPatchSchema, type WorkoutDayPatch } from "@/api/workoutCustomization";
 import type { WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 
+type PatchOptions = { loaded: WorkoutPlan; sources: WorkoutDayPatch[] };
+function explicitField(ids: Set<string>, field: "target_reps" | "rest_sec", options?: PatchOptions): boolean {
+  return Boolean(options?.sources.some(source =>
+    source.added_exercises.some(row => ids.has(row.exercise_id) && row[field] != null) ||
+    source.exercise_overrides.some(row => (ids.has(row.exercise_id) || Boolean(row.replacement_exercise_id && ids.has(row.replacement_exercise_id))) && row[field] != null)));
+}
+
 /** Build a complete delta against a canonical base; display order never identifies a set. */
-export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan): WorkoutDayPatch {
+export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan, options?: PatchOptions): WorkoutDayPatch {
   const ids = next.exercises.map(row => row.exercise_id);
   if (ids.length < 1 || ids.length > 20 || new Set(ids).size !== ids.length) {
     throw new Error("В тренировке должно быть от 1 до 20 разных упражнений");
@@ -24,6 +31,14 @@ export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan): Work
     if (desired.target_reps != null && desired.target_reps !== original.target_reps) changes.target_reps = desired.target_reps;
     if (desired.rest_sec != null && desired.rest_sec !== original.rest_sec) changes.rest_sec = desired.rest_sec;
     if (desired.note != null && desired.note !== original.note) changes.note = desired.note;
+    const loaded = options?.loaded.exercises.find(row => row.exercise_id === desired.exercise_id || row.exercise_id === original.exercise_id);
+    for (const field of ["target_reps", "rest_sec"] as const) {
+      const ids = new Set([original.exercise_id, desired.exercise_id]);
+      if (loaded && desired[field] != null && desired[field] === loaded[field] && explicitField(ids, field, options)) {
+        if (field === "target_reps") changes.target_reps = desired.target_reps;
+        else changes.rest_sec = desired.rest_sec;
+      }
+    }
     if (Object.keys(changes).length > 1) patch.exercise_overrides.push(changes);
   }
   for (const row of next.exercises) {
@@ -32,6 +47,14 @@ export function buildWorkoutDayPatch(base: WorkoutPlan, next: WorkoutPlan): Work
       target_reps: row.target_reps ?? null, rest_sec: row.rest_sec ?? null,
       weight_mode: row.weight_mode ?? null, note: row.note ?? null,
     });
+  }
+  if (options) for (const added of patch.added_exercises) {
+    const desired = next.exercises.find(row => row.exercise_id === added.exercise_id)!;
+    const loaded = options.loaded.exercises.find(row => row.exercise_id === added.exercise_id || row.exercise_id === desired.original_exercise_id);
+    const ids = new Set([added.exercise_id, loaded?.exercise_id ?? added.exercise_id]);
+    if (loaded) for (const field of ["target_reps", "rest_sec"] as const) {
+      if (desired[field] === loaded[field] && !explicitField(ids, field, options)) added[field] = null;
+    }
   }
   const checked = workoutDayPatchSchema.safeParse(patch);
   if (!checked.success) throw new Error("Проверьте подходы, повторы и время отдыха");

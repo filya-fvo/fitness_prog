@@ -1,6 +1,6 @@
 # API личных изменений дня программы
 
-W1–W2: разовое редактирование состава подключено; постоянное применение — следующий этап.
+W1–W3: разовое и постоянное редактирование состава подключено; методы выполнения добавляются отдельно.
 
 `GET /workouts/customizations?program_id=<uuid>&day_index=1&scope=program_day`
 возвращает `program_id`, `day_index`, `scope`, `scheduled_date`, `program_version`,
@@ -26,3 +26,9 @@ Patch: `added_exercises`, `removed_exercise_ids`, `exercise_overrides`, необ
 Планы/шаблоны каталога не меняются; старые snapshots сохраняют свои результаты.
 
 `GET /workouts/planned-plan?include_saved_override=false` возвращает фазовый план с постоянными личными правками, но без правок на дату. Современный occurrence PUT/DELETE атомарно заменяет старый draft replacements этой даты, поскольку полный patch включает все её изменения.
+
+Для исходного шаблона GET planned-plan принимает одновременно `include_saved_override=false` и `include_personal_override=false`. `customization_scopes` перечисляет действующие личные области, `customization_revisions` включает и tombstones.
+
+Современный клиент передаёт `base_program_day_revision` дополнительно к revision выбранной области. Для переноса текущей разовой подготовки в постоянный план: `scope=program_day`, `promote_date`, `base_occurrence_revision`; перенос и запись постоянного patch атомарны. Другие date drafts проверяются на совместимость; при конфликте409 обе области сохраняются.
+
+Сохранения обоих форматов используют блокировку users, затем пользователь/программа/день. Календарные перемещения переносят только date rows, сохраняя revision/tombstones; занятая подготовленная дата не перезаписывается молча. Отменённый legacy draft освобождает свой слот только при реальном переносе в него.

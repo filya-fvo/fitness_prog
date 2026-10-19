@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.exercise import Exercise
+from app.models.user import User
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.schemas.workout import PlannedWorkoutReplacement
 
@@ -121,6 +122,7 @@ async def save_override(
     base_plan: dict[str, Any],
     replacements: list[PlannedWorkoutReplacement],
 ) -> dict[str, Any]:
+    await session.execute(select(User.id).where(User.id == user_id).with_for_update())
     payload = [
         {
             "from_exercise_id": str(item.from_exercise_id),
@@ -156,3 +158,32 @@ async def save_override(
         existing.replacements = payload
     await session.commit()
     return plan
+
+async def move_saved_overrides(
+    session: AsyncSession, *, user_id: uuid.UUID, source_date: date, target_date: date,
+    program_id: uuid.UUID | None = None,
+) -> None:
+    """Move legacy drafts inside the caller's locked-user transaction."""
+    from sqlalchemy import update
+    if source_date == target_date:
+        return
+    filters = [WorkoutPlanOverride.user_id == user_id, WorkoutPlanOverride.scheduled_date == source_date,
+        WorkoutPlanOverride.is_deleted.is_(False)]
+    targets = [WorkoutPlanOverride.user_id == user_id, WorkoutPlanOverride.scheduled_date == target_date]
+    if program_id is not None:
+        filters.append(WorkoutPlanOverride.program_id == program_id)
+        targets.append(WorkoutPlanOverride.program_id == program_id)
+    collisions = await session.scalars(select(WorkoutPlanOverride).where(*targets))
+    removed = False
+    for target in collisions.all():
+        source = await session.scalar(select(WorkoutPlanOverride.id).where(*filters,
+            WorkoutPlanOverride.program_id == target.program_id, WorkoutPlanOverride.day_index == target.day_index))
+        if source is None:
+            continue
+        if not target.is_deleted:
+            raise HTTPException(409, "На выбранную дату уже есть подготовленные замены")
+        await session.delete(target)
+        removed = True
+    if removed:
+        await session.flush()
+    await session.execute(update(WorkoutPlanOverride).where(*filters).values(scheduled_date=target_date))

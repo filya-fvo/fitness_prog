@@ -57,7 +57,7 @@ fallback. `llm_base_url` указывает только на внутренни
 код отклоняет внешний host. Не добавляйте внешнего AI-провайдера без отдельного
 решения владельца. При недоступности модели допустим безопасный rule-based ответ.
 
-- `backend/app/services/workout_customization.py`, `schemas/workout_customization.py` и `models/user_program_day_override.py` — личные deltas дня/даты с revision и идемпотентным сохранением; контракт — `docs/WORKOUT_CUSTOMIZATION_API.md`.
+- `backend/app/services/workout_customization.py`, `schemas/workout_customization.py` и `models/user_program_day_override.py` — личные deltas дня/даты с revision и идемпотентным сохранением; `workout_customization_dates.py`/`workout_customization_conflicts.py` отвечают за перенос и конфликты отдельных дат; контракт — `docs/WORKOUT_CUSTOMIZATION_API.md`.
 
 ### Frontend
 

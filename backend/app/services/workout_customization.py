@@ -131,7 +131,10 @@ async def apply_customizations(
         if scope not in scopes:
             continue
         if not row.is_deleted:
-            plan = await apply_day_patch(session, plan, WorkoutDayPatch.model_validate(row.patch))
+            patch = WorkoutDayPatch.model_validate(row.patch)
+            plan = await apply_day_patch(session, plan, patch)
+            if patch.model_dump(exclude_defaults=True):
+                plan = {**plan, "customization_scopes": [*plan.get("customization_scopes", []), scope]}
         plan = {**plan, "customization_revisions": {**plan.get("customization_revisions", {}), scope: row.revision}}
     return plan
 
@@ -139,9 +142,10 @@ async def apply_customizations(
 async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRequest, *, reset: bool):
     from app.services import workout_service
 
+    await session.execute(select(User.id).where(User.id == user.id).with_for_update())
     program = await _program(session, user, data.program_id)
     context = WorkoutCustomizationContext(**data.model_dump(include=set(WorkoutCustomizationContext.model_fields)))
-    key = f"workout-customization:{user.id}:{data.program_id}:{data.day_index}:{data.scheduled_date}"
+    key = f"workout-customization:{user.id}:{data.program_id}:{data.day_index}"
     await session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"), {"key": key})
     row = await session.scalar(select(UserProgramDayOverride).where(
         UserProgramDayOverride.user_id == user.id, *_slot(context),
@@ -155,12 +159,28 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
         raise HTTPException(409, "План уже изменён на другом устройстве. Обновите его перед сохранением")
     if row and row.program_version != program.version:
         raise HTTPException(409, "Версия программы изменилась. Проверьте личные изменения")
+    if data.promote_date is not None and (data.scope != "program_day" or reset or data.base_occurrence_revision is None):
+        raise HTTPException(422, "Для переноса подготовки выберите постоянный план и его актуальную версию")
+    if data.base_program_day_revision is not None:
+        inherited = await session.scalar(select(UserProgramDayOverride).where(
+            UserProgramDayOverride.user_id == user.id, UserProgramDayOverride.program_id == program.id,
+            UserProgramDayOverride.day_index == data.day_index, UserProgramDayOverride.scheduled_date.is_(None),
+        ).execution_options(populate_existing=True))
+        if data.base_program_day_revision != (inherited.revision if inherited else 0):
+            raise HTTPException(409, "Личный план уже изменён. Откройте подготовку снова")
+    base = await workout_service.build_plan_from_program_day(session, program, data.day_index)
     if not reset:
-        base = await workout_service.build_plan_from_program_day(session, program, data.day_index)
         if data.scope == "occurrence":
             base = await apply_customizations(session, user_id=user.id, program_id=program.id,
                 day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
-        await apply_day_patch(session, base, data.patch)
+        proposed = await apply_day_patch(session, base, data.patch)
+    else:
+        proposed = base
+    if data.scope == "program_day":
+        from app.services.workout_customization_conflicts import validate_occurrences, promote_occurrence
+        await validate_occurrences(session, user.id, program.id, data.day_index, proposed, data.promote_date)
+        if data.promote_date is not None:
+            await promote_occurrence(session, user.id, data)
     if data.scope == "occurrence":
         from app.models.workout_plan_override import WorkoutPlanOverride
         legacy = await session.scalar(select(WorkoutPlanOverride).where(

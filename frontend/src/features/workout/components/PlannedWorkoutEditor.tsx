@@ -3,15 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredToken } from "@/api/client";
 import { fetchExerciseCatalog } from "@/api/exercises";
 import { fetchPlannedWorkoutPlan, savePlannedWorkoutPlan, type PlannedWorkoutPlanInput } from "@/api/workouts";
-import { fetchWorkoutCustomization, saveWorkoutCustomization } from "@/api/workoutCustomization";
 import { cacheExercises, readCachedExercises } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
 import { PlannedExercisePicker } from "./PlannedExercisePicker";
 import { WorkoutDayComposer } from "./WorkoutDayComposer";
+import { WorkoutCustomizationScope } from "./WorkoutCustomizationScope";
+import { savePreparedWorkoutChanges, resetPreparedWorkoutChanges } from "../services/workoutCustomizationActions";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { toast } from "@/store/toastStore";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { buildWorkoutDayPatch } from "@/utils/workoutCustomization";
 import { toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
 
@@ -31,6 +31,8 @@ export function PlannedWorkoutEditor(props: Props) {
   const [structuralEdit, setStructuralEdit] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scope, setScope] = useState<"occurrence" | "program_day">("occurrence");
+  const loadedPlan = useRef<WorkoutPlan | null>(null);
   const generation = useRef(0);
   const openedContext = useRef<PlannedWorkoutPlanInput>(props);
   const close = useCallback(() => {
@@ -48,7 +50,7 @@ export function PlannedWorkoutEditor(props: Props) {
     if (loading || props.disabled) return;
     const current = ++generation.current;
     openedContext.current = { ...props };
-    setOpen(true); setLoading(true); setError(null); setPlan(null); setStructuralEdit(false);
+    setOpen(true); setLoading(true); setError(null); setPlan(null); setStructuralEdit(false); setScope("occurrence");
     try {
       const cached = await readCachedExercises();
       if (current !== generation.current) return;
@@ -58,7 +60,7 @@ export function PlannedWorkoutEditor(props: Props) {
         isOnline() && getStoredToken() ? fetchExerciseCatalog().catch(() => null) : Promise.resolve(null),
       ]);
       if (current !== generation.current) return;
-      setPlan(prepared);
+      setPlan(prepared); loadedPlan.current = prepared;
       if (fresh === null && !cached.length) setError("Не удалось загрузить каталог упражнений. Откройте подготовку снова");
       if (fresh?.length) { setCatalog(fresh); await cacheExercises(fresh); }
     } catch (err) {
@@ -100,13 +102,8 @@ export function PlannedWorkoutEditor(props: Props) {
     const context = openedContext.current;
     setSaving(true); setError(null);
     try {
-      if (structuralEdit || Object.keys(plan.customization_revisions ?? {}).length > 0) {
-        const input = { program_id: context.programId, day_index: context.dayIndex, scope: "occurrence" as const, scheduled_date: context.scheduledDate };
-        const [base, stored] = await Promise.all([
-          fetchPlannedWorkoutPlan({ ...context, includeSavedOverride: false }), fetchWorkoutCustomization(input),
-        ]);
-        if (stored.revision !== (plan.customization_revisions?.occurrence ?? 0)) throw new Error("План уже изменён. Закройте подготовку и откройте её снова");
-        await saveWorkoutCustomization({ ...input, base_revision: stored.revision, operation_id: crypto.randomUUID(), patch: buildWorkoutDayPatch(base, plan) });
+      if (scope === "program_day" || structuralEdit || Object.keys(plan.customization_revisions ?? {}).length > 0) {
+        await savePreparedWorkoutChanges(context, loadedPlan.current ?? plan, plan, scope);
       } else {
         const replacements = plan.exercises.flatMap(row => row.original_exercise_id && row.original_exercise_id !== row.exercise_id
           ? [{ fromExerciseId: row.original_exercise_id, toExerciseId: row.exercise_id }] : []);
@@ -120,6 +117,28 @@ export function PlannedWorkoutEditor(props: Props) {
     }
   }
 
+  async function resetScope(value: "occurrence" | "program_day") {
+    if (!plan || saving) return;
+    const current = generation.current;
+    const context = openedContext.current;
+    let saved = false;
+    setSaving(true); setError(null);
+    try {
+      await resetPreparedWorkoutChanges(context, loadedPlan.current ?? plan, value);
+      saved = true;
+      if (current !== generation.current) return;
+      setPlan(null); setLoading(true);
+      const fresh = await fetchPlannedWorkoutPlan(context);
+      if (current !== generation.current) return;
+      loadedPlan.current = fresh; setPlan(fresh); setStructuralEdit(false);
+      toast(value === "program_day" ? "Личные изменения дня сброшены" : "Подготовка этой даты сброшена");
+    } catch (err) {
+      if (current === generation.current) setError(saved ? "Изменения сброшены. Откройте подготовку снова, чтобы обновить план" : toUserMessage(err, "Не удалось сбросить изменения"));
+    } finally {
+      if (current === generation.current) { setSaving(false); setLoading(false); }
+    }
+  }
+
   const picking = adding || editingId !== null;
   return <>
     <button type="button" disabled={props.disabled} onClick={() => void showEditor()} className="app-button app-secondary-action mt-2 w-full">
@@ -128,12 +147,13 @@ export function PlannedWorkoutEditor(props: Props) {
     {open ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-3 sm:items-center">
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="planned-workout-editor-title" tabIndex={-1} className="app-card flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden">
         <div className="flex items-start justify-between gap-3 border-b border-black/5 px-4 py-3">
-          <div><h3 id="planned-workout-editor-title" className="font-semibold">Подготовка тренировки</h3><p className="mt-1 text-xs text-tg-hint">Изменения применятся {formatDate(props.scheduledDate)} при старте.</p></div>
+          <div><h3 id="planned-workout-editor-title" className="font-semibold">Подготовка тренировки</h3>{plan?.customization_scopes?.includes("program_day") ? <p className="mt-1 text-xs text-tg-link">Изменено для вас</p> : null}<p className="mt-1 text-xs text-tg-hint">{scope === "program_day" ? "Для моих следующих тренировок этого дня" : `Изменения применятся ${formatDate(props.scheduledDate)} при старте.`}</p></div>
           <button type="button" aria-label="Закрыть" onClick={close} className="min-h-[44px] min-w-[44px] text-tg-hint">✕</button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? <p className="text-sm text-tg-hint">Загрузка плана…</p> : null}
           {error ? <p role="alert" className="app-status app-status-danger text-sm">{error}</p> : null}
+          {plan && !picking ? <WorkoutCustomizationScope value={scope} activeScopes={plan.customization_scopes} disabled={saving} onChange={setScope} onReset={value => void resetScope(value)} /> : null}
           {picking ? <PlannedExercisePicker key={adding ? "add" : editingId} source={adding ? null : source} catalog={catalog} occupiedIds={occupiedIds}
             onBack={() => { setAdding(false); setEditingId(null); }} onChoose={choose} onOpenDetail={setDetailExercise} />
             : plan ? <WorkoutDayComposer plan={plan} catalog={catalog} disabled={saving}

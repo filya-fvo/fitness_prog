@@ -100,3 +100,22 @@ it("persists completion IDs as the cursor boundary across clock skew and reopen"
  expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.profile.goals.active_program_next_day).toBe(2);
  expect((await readOfflineWorkoutContext(owner,"2026-10-09"))?.profile.goals.active_program_next_day).toBe(2);
 });
+
+it("invalidates prepared plans for only the changed owner/program and keeps the outbox", async () => {
+  const { invalidateOfflineWorkoutContext } = await import("./offlineWorkoutContext");
+  await saveOfflineWorkoutContext(owner, snapshot(), profile, [], []);
+  const foreignKey = `offline-workout:v1:${other}:header`;
+  await db.meta.put({ key: foreignKey, value: "foreign", updatedAt: 1 });
+  await db.syncQueue.put({ id: crypto.randomUUID(), ownerUserId: owner, type: "complete_workout", clientWorkoutId: crypto.randomUUID(), payload: {}, createdAt: 1, attempts: 0, lastError: null });
+  await invalidateOfflineWorkoutContext(owner, programId);
+  expect(await readOfflineWorkoutContext(owner, "2026-10-09")).toBeNull();
+  expect(await db.syncQueue.count()).toBe(1);
+  expect((await db.meta.get(foreignKey))?.value).toBe("foreign");
+});
+
+it("keeps another program's prepared context when browsing a different program", async () => {
+  const { invalidateOfflineWorkoutContext } = await import("./offlineWorkoutContext");
+  await saveOfflineWorkoutContext(owner, snapshot(), profile, [], []);
+  await invalidateOfflineWorkoutContext(owner, "00000000-0000-4000-8000-000000000099");
+  expect((await readOfflineWorkoutContext(owner, "2026-10-09"))?.program?.id).toBe(programId);
+});

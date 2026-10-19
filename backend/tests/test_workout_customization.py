@@ -264,3 +264,174 @@ async def test_start_customized_program_creates_added_slots_once(database):
     assert first.id == replay.id
     assert len(rows) == 6
     assert len([row for row in rows if row.exercise_id == exercise.id]) == 3
+
+@pytest.mark.asyncio
+async def test_raw_program_preview_can_exclude_personal_and_date_layers(database):
+    import httpx
+    from app.core.database import get_db
+    from app.deps import get_current_user
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, _, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    async def db():
+        yield session
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = lambda: owner
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/workouts/planned-plan", params={"program_id": str(program.id), "scheduled_date": "2026-10-19", "day_index": 1, "include_saved_override": "false", "include_personal_override": "false"})
+        assert response.status_code == 200
+        assert len(response.json()["exercises"]) == 1
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_promotes_only_selected_occurrence_and_keeps_future_personal_day(database):
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, base, _ = database
+    await service.save_customization(session, owner, request(program, exercise, scope="occurrence"))
+    permanent = request(program, exercise).model_copy(update={"promote_date": date(2026, 10, 19), "base_occurrence_revision": 1})
+    await service.save_customization(session, owner, permanent)
+    current = await resolve(service, session, owner, program, base)
+    later = await resolve(service, session, owner, program, base, when=date(2026, 10, 26))
+    occurrence = await service.get_customization(session, owner, program_id=program.id, day_index=1, scope="occurrence", scheduled_date=date(2026, 10, 19))
+    assert len(current["exercises"]) == len(later["exercises"]) == 2
+    assert occurrence.revision == 2 and occurrence.patch.added_exercises == []
+
+
+@pytest.mark.asyncio
+async def test_stale_inherited_revision_cannot_overwrite_new_personal_day(database):
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, _, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    stale = request(program, scope="occurrence", patch={}).model_copy(update={"base_program_day_revision": 0})
+    with pytest.raises(HTTPException) as caught:
+        await service.save_customization(session, owner, stale)
+    assert caught.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_reset_with_dependent_occurrence_preserves_both_layers_on_conflict(database):
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, _, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": exercise.id, "target_sets": 5}]}))
+    with pytest.raises(HTTPException) as caught:
+        await service.reset_customization(session, owner, request(program, revision=1, patch={}))
+    assert caught.value.status_code == 409
+    stored = await service.get_customization(session, owner, program_id=program.id, day_index=1, scope="program_day", scheduled_date=None)
+    assert stored.revision == 1 and len(stored.patch.added_exercises) == 1
+
+@pytest.mark.asyncio
+async def test_one_off_move_transfers_only_date_layer(database):
+    from app.services import workout_customization as service, workout_reschedule
+    session, owner, _, program, exercise, base, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
+    await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+    await session.commit()
+    moved = await resolve(service, session, owner, program, base, when=date(2026, 10, 20))
+    original = await resolve(service, session, owner, program, base)
+    assert moved["exercises"][0]["target_sets"] == 5
+    assert original["exercises"][0]["target_sets"] == 3
+    assert len(original["exercises"]) == len(moved["exercises"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_cancel_existing_does_not_delete_permanent_layer(database):
+    from app.services import workout_customization as service, workout_reschedule
+    session, owner, _, program, exercise, base, _ = database
+    await service.save_customization(session, owner, request(program, exercise))
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
+    await workout_reschedule._cancel_pending_occurrence(session, owner.id, date(2026, 10, 19))
+    await session.commit()
+    current = await resolve(service, session, owner, program, base)
+    assert len(current["exercises"]) == 2
+    assert current["exercises"][0]["target_sets"] == 3
+
+@pytest.mark.asyncio
+async def test_four_day_rotation_and_cursor_stay_unchanged(database):
+    from copy import deepcopy
+    from app.services import workout_customization as service, workout_service
+    session, owner, other, program, exercise, base, _ = database
+    program.structure = {"schedule": [{"day_index": day, "name": f"Акцент {day}", "exercises": [{"exercise_id": str(base.id), "sets": 3}]} for day in range(1, 5)]}
+    owner.goals = {"active_program_id": str(program.id), "active_program_next_day": 3, "active_program_week_phase": "heavy", "active_program_started_at": "2026-10-01"}
+    await session.commit()
+    goals, structure = deepcopy(owner.goals), deepcopy(program.structure)
+    await service.save_customization(session, owner, request(program, exercise))
+    for day in range(1, 5):
+        plan = await workout_service.build_program_plan_for_user(session, owner, program, day_index=day, scheduled_date=date(2026, 10, 26), week_phase="heavy")
+        assert len(plan["exercises"]) == (2 if day == 1 else 1)
+        assert plan["week_phase"] == "heavy"
+    assert owner.goals == goals and program.structure == structure
+    foreign = await resolve(service, session, other, program, base)
+    assert len(foreign["exercises"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_personal_changes_do_not_leak_to_new_program_version(database):
+    from copy import deepcopy
+    from app.models.program import Program
+    from app.services import workout_customization as service
+    session, owner, _, program, exercise, base, _ = database
+    owner.goals = {"active_program_id": str(program.id)}
+    program.is_current = False
+    newer = Program(name=program.name, program_key=program.program_key, version=2, is_current=True, publication_status="published", structure=deepcopy(program.structure))
+    session.add(newer)
+    await session.commit()
+    await service.save_customization(session, owner, request(program, exercise))
+    owner.goals = {"active_program_id": str(newer.id)}
+    await session.commit()
+    fresh = await resolve(service, session, owner, newer, base)
+    assert len(fresh["exercises"]) == 1
+    owner.goals = {"active_program_id": str(program.id)}
+    await session.commit()
+    returned = await resolve(service, session, owner, program, base)
+    assert len(returned["exercises"]) == 2
+
+@pytest.mark.asyncio
+async def test_repeated_reschedule_and_return_to_default_keep_preparation(database, monkeypatch):
+    from datetime import datetime, time, timezone
+    from unittest.mock import AsyncMock
+    from app.services import workout_customization as service, workout_reschedule, supplement_intakes
+    session, owner, _, program, _, base, _ = database
+    owner.goals = {"active_program_id": str(program.id), "active_program_next_day": 1, "active_program_week_phase": "medium", "active_program_started_at": "2026-10-19", "workout_schedule": {"version": 1, "days": [0, 2, 4], "start_time": "08:00"}}
+    await session.commit()
+    monkeypatch.setattr(supplement_intakes, "reset_pending_days", AsyncMock())
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
+    for target in (date(2026, 10, 20), date(2026, 10, 22), date(2026, 10, 19)):
+        await workout_reschedule.reschedule_workout_occurrence(session, owner, original_date=date(2026, 10, 19), target_date=target, target_time=time(8), now=datetime(2026, 10, 19, 4, tzinfo=timezone.utc))
+        plan = await resolve(service, session, owner, program, base, when=target)
+        assert plan["exercises"][0]["target_sets"] == 5
+    assert owner.goals["workout_schedule"]["days"] == [0, 2, 4]
+    assert owner.goals["workout_schedule_overrides"] == []
+
+
+@pytest.mark.asyncio
+async def test_move_conflict_preserves_both_date_preparations(database):
+    from app.services import workout_customization as service, workout_reschedule
+    session, owner, _, program, _, base, _ = database
+    await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
+    target = request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 6}]}).model_copy(update={"scheduled_date": date(2026, 10, 20)})
+    await service.save_customization(session, owner, target)
+    with pytest.raises(HTTPException) as caught:
+        await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+    assert caught.value.status_code == 409
+    assert (await resolve(service, session, owner, program, base))["exercises"][0]["target_sets"] == 5
+    assert (await resolve(service, session, owner, program, base, when=date(2026, 10, 20)))["exercises"][0]["target_sets"] == 6
+
+@pytest.mark.asyncio
+async def test_cancelled_legacy_target_does_not_block_a_move(database):
+    from app.models.workout_plan_override import WorkoutPlanOverride
+    from app.services import workout_reschedule
+    session, owner, _, program, exercise, base, _ = database
+    for day in (date(2026, 10, 19), date(2026, 10, 20)):
+        session.add(WorkoutPlanOverride(user_id=owner.id, program_id=program.id, day_index=1, scheduled_date=day, replacements=[{"from_exercise_id": str(base.id), "to_exercise_id": str(exercise.id)}]))
+    await session.commit()
+    await workout_reschedule._cancel_pending_occurrence(session, owner.id, date(2026, 10, 20))
+    await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+    await session.commit()
+    rows = (await session.scalars(select(WorkoutPlanOverride).where(WorkoutPlanOverride.user_id == owner.id, WorkoutPlanOverride.is_deleted.is_(False)))).all()
+    assert len(rows) == 1 and rows[0].scheduled_date == date(2026, 10, 20)

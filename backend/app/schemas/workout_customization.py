@@ -78,6 +78,9 @@ class WorkoutCustomizationContext(StrictModel):
 class WorkoutCustomizationRequest(WorkoutCustomizationContext):
     base_revision: int = Field(ge=0)
     operation_id: UUID
+    base_program_day_revision: int | None = Field(default=None, ge=0)
+    promote_date: date | None = None
+    base_occurrence_revision: int | None = Field(default=None, ge=0)
     patch: WorkoutDayPatch = Field(default_factory=WorkoutDayPatch)
 
 
