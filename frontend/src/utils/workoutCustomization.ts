@@ -69,8 +69,20 @@ export function reorderWorkoutExercise(plan: WorkoutPlan, exerciseId: string, di
   const source = rows.findIndex(row => row.exercise_id === exerciseId);
   const target = source + direction;
   if (source < 0 || target < 0 || target >= rows.length) return plan;
-  [rows[source], rows[target]] = [rows[target], rows[source]];
-  return { ...plan, exercises: rows.map((row, index) => ({ ...row, order: index + 1 })) };
+  const own = plan.groups?.find(group => group.exercise_ids.includes(exerciseId));
+  const neighbor = plan.groups?.find(group => group.exercise_ids.includes(rows[target].exercise_id));
+  if (own?.id === neighbor?.id) {
+    [rows[source], rows[target]] = [rows[target], rows[source]];
+  } else {
+    const ownIds = new Set(own?.exercise_ids ?? [exerciseId]);
+    const neighborIds = new Set(neighbor?.exercise_ids ?? [rows[target].exercise_id]);
+    const first = rows.findIndex(row => ownIds.has(row.exercise_id) || neighborIds.has(row.exercise_id));
+    const left = rows.filter(row => (direction === -1 ? ownIds : neighborIds).has(row.exercise_id));
+    const right = rows.filter(row => (direction === -1 ? neighborIds : ownIds).has(row.exercise_id));
+    rows.splice(first, left.length + right.length, ...left, ...right);
+  }
+  const groups = plan.groups?.map(group => ({ ...group, exercise_ids: rows.filter(row => group.exercise_ids.includes(row.exercise_id)).map(row => row.exercise_id) }));
+  return { ...plan, ...(groups ? { groups } : {}), exercises: rows.map((row, index) => ({ ...row, order: index + 1 })) };
 }
 
 export function updateWorkoutExercise(plan: WorkoutPlan, exerciseId: string, changes: Partial<WorkoutPlanExercise>): WorkoutPlan {

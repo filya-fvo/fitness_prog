@@ -143,8 +143,11 @@ const limits = {
   // Persistent personal-day scope, explicit reset, phase-preserving edits and
   // prepared-cache invalidation: W2 596558/540081 -> W3 598001/541545.
   // Measured product growth1464bytes; retain <0.6KB headroom, no vendor/dependency growth.
-  totalJsGzip: 598_600,
-  productJsGzip: 542_100,
+  // Method/group preparation and the single sequence preview add 5986 product
+  // gzip bytes versus W5 (598290/541813 -> 604278/547799). They remain in the
+  // existing lazy Training chunk; no vendor/dependency or largest/admin growth.
+  totalJsGzip: 604_900,
+  productJsGzip: 548_400,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

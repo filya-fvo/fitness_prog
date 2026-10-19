@@ -39,3 +39,11 @@ describe("inferLoadType", () => {
     expect(inferCardioMachineKind(ex("Велотренажёр"))).toBe("bike");
   });
 });
+
+import { readFileSync } from "node:fs";
+const sharedLoadCases = JSON.parse(readFileSync(new URL("../../../contracts/workout-exercise-load-types.json", import.meta.url), "utf8").replace(/^\uFEFF/, "")) as Array<{
+  name_ru: string; muscle_group: string; equipment: string | null; tags: string[]; expected: string;
+}>;
+it.each(sharedLoadCases)("matches the server load contract for $name_ru / $expected", row => {
+  expect(inferLoadType(row)).toBe(row.expected);
+});

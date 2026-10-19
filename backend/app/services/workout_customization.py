@@ -179,6 +179,8 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
             base = await apply_customizations(session, user_id=user.id, program_id=program.id,
                 day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
         proposed = await apply_day_patch(session, base, data.patch)
+        from app.services.workout_execution import validate_method_exercises
+        await validate_method_exercises(session, proposed)
     else:
         proposed = base
     if data.scope == "program_day":

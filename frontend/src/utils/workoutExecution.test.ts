@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorkoutPlan, WorkoutPlanExercise, WorkoutSetMethod } from "@/types/workout";
-import { buildExecutionSteps, resolveExecutionTransition, type TransitionInput } from "./workoutExecution";
+import { buildExecutionTimingPreview, buildExecutionSteps, resolveExecutionTransition, type TransitionInput } from "./workoutExecution";
 
 const ex = (id: string, sets = 1, rest = 120): WorkoutPlanExercise => ({ exercise_id: id, order: 1, target_sets: sets, rest_sec: rest });
 const method = (kind: "drop" | "cluster"): WorkoutSetMethod => ({ set_number: 1, kind, parts: [0, 1, 2].map(i => ({
@@ -133,4 +133,9 @@ it("a stale undo button cannot undo a newer completion of the same logical step"
   expect(stale.accepted).toBe(false);
   expect(stale.facts[input(p).stepId]).toBe("completed");
   expect(stale.rest?.sourceActionId).toBe("redo");
+});
+
+it("previews the same pauses as runtime without building a second timing rule", () => {
+  const p = plan([{ ...ex("A", 2), set_methods: [method("cluster")] }, ex("B", 2)], [group(["A", "B"])]);
+  expect(buildExecutionTimingPreview(p).map(row => row.durationSec)).toEqual(pauses(p));
 });

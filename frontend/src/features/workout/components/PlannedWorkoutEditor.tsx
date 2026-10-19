@@ -6,6 +6,8 @@ import { fetchPlannedWorkoutPlan, savePlannedWorkoutPlan, type PlannedWorkoutPla
 import { cacheExercises, readCachedExercises } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
 import { PlannedExercisePicker } from "./PlannedExercisePicker";
+import { replacePreparedExercise, workoutPreparationError } from "@/utils/workoutMethods";
+import { inferLoadType, defaultTimedSeconds } from "@/utils/exerciseLoadType";
 import { WorkoutDayComposer } from "./WorkoutDayComposer";
 import { WorkoutCustomizationScope } from "./WorkoutCustomizationScope";
 import { savePreparedWorkoutChanges, resetPreparedWorkoutChanges } from "../services/workoutCustomizationActions";
@@ -28,6 +30,7 @@ export function PlannedWorkoutEditor(props: Props) {
   const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [pendingGroup, setPendingGroup] = useState(false);
   const [structuralEdit, setStructuralEdit] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export function PlannedWorkoutEditor(props: Props) {
   const openedContext = useRef<PlannedWorkoutPlanInput>(props);
   const close = useCallback(() => {
     generation.current += 1;
-    setOpen(false); setLoading(false); setSaving(false); setAdding(false); setEditingId(null); setDetailExercise(null);
+    setPendingGroup(false); setOpen(false); setLoading(false); setSaving(false); setAdding(false); setEditingId(null); setDetailExercise(null);
   }, []);
   useEffect(close, [close, props.programId, props.dayIndex, props.scheduledDate, props.weekPhase]);
   const dialogRef = useModalAccessibility(open, close);
@@ -76,33 +79,36 @@ export function PlannedWorkoutEditor(props: Props) {
       if (occupiedIds.has(exercise.id) || plan.exercises.length >= 20) return;
       setPlan({ ...plan, exercises: [...plan.exercises, {
         exercise_id: exercise.id, name_ru: exercise.name_ru, order: plan.exercises.length + 1,
-        target_sets: 3, target_reps: null, rest_sec: null,
+        target_sets: 3, target_reps: ["timed", "cardio_machine"].includes(inferLoadType(exercise)) ? `${defaultTimedSeconds(exercise)} с` : null, rest_sec: null,
       }] });
       setStructuralEdit(true);
     } else if (editingId) {
-      setPlan({ ...plan, exercises: plan.exercises.map(row => row.exercise_id === editingId ? {
-        ...row, exercise_id: exercise.id, name_ru: exercise.name_ru,
-        original_exercise_id: row.original_exercise_id || row.exercise_id, suggested_weight: null,
-      } : row) });
+      try { setPlan(replacePreparedExercise(plan, editingId, exercise)); }
+      catch (err) { setError(toUserMessage(err, "Не удалось заменить упражнение")); return; }
     }
     setAdding(false); setEditingId(null);
   }
 
   function restoreDefaults() {
     if (!plan) return;
-    setPlan({ ...plan, exercises: plan.exercises.map(row => row.original_exercise_id ? {
-      ...row, exercise_id: row.original_exercise_id, name_ru: byId.get(row.original_exercise_id)?.name_ru || row.name_ru,
-      original_exercise_id: null, suggested_weight: null,
-    } : row) });
+    try {
+      let restored = plan;
+      for (const row of plan.exercises) if (row.original_exercise_id) {
+        const original = byId.get(row.original_exercise_id);
+        if (!original) throw new Error("Загрузите каталог заново, чтобы вернуть упражнение программы");
+        restored = replacePreparedExercise(restored, row.exercise_id, original, true);
+      }
+      setPlan(restored);
+    } catch (err) { setError(toUserMessage(err, "Не удалось вернуть упражнения программы")); }
   }
 
   async function save() {
-    if (!plan || saving) return;
+    if (!plan || saving || pendingGroup || workoutPreparationError(plan)) return;
     const current = generation.current;
     const context = openedContext.current;
     setSaving(true); setError(null);
     try {
-      if (scope === "program_day" || structuralEdit || Object.keys(plan.customization_revisions ?? {}).length > 0) {
+      if (scope === "program_day" || structuralEdit || plan.execution_version === 2 || Object.keys(plan.customization_revisions ?? {}).length > 0) {
         await savePreparedWorkoutChanges(context, loadedPlan.current ?? plan, plan, scope);
       } else {
         const replacements = plan.exercises.flatMap(row => row.original_exercise_id && row.original_exercise_id !== row.exercise_id
@@ -153,14 +159,14 @@ export function PlannedWorkoutEditor(props: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? <p className="text-sm text-tg-hint">Загрузка плана…</p> : null}
           {error ? <p role="alert" className="app-status app-status-danger text-sm">{error}</p> : null}
-          {plan && !picking ? <WorkoutCustomizationScope value={scope} activeScopes={plan.customization_scopes} disabled={saving} onChange={setScope} onReset={value => void resetScope(value)} /> : null}
-          {picking ? <PlannedExercisePicker key={adding ? "add" : editingId} source={adding ? null : source} catalog={catalog} occupiedIds={occupiedIds}
+          {plan && !picking ? <WorkoutCustomizationScope value={scope} activeScopes={plan.customization_scopes} disabled={saving || pendingGroup} onChange={setScope} onReset={value => void resetScope(value)} /> : null}
+          {picking ? <PlannedExercisePicker key={adding ? "add" : editingId} source={adding ? null : source} catalog={editingItem?.set_methods?.length ? catalog.filter(item => inferLoadType(item) === "weight_reps") : catalog} occupiedIds={occupiedIds}
             onBack={() => { setAdding(false); setEditingId(null); }} onChoose={choose} onOpenDetail={setDetailExercise} />
             : plan ? <WorkoutDayComposer plan={plan} catalog={catalog} disabled={saving}
-              onChange={next => { setPlan(next); setStructuralEdit(true); }} onAdd={() => setAdding(true)} onReplace={row => setEditingId(row.exercise_id)} onOpenDetail={setDetailExercise} /> : null}
+              onPendingChange={setPendingGroup} onChange={next => { setPlan(next); setStructuralEdit(true); }} onAdd={() => setAdding(true)} onReplace={row => setEditingId(row.exercise_id)} onOpenDetail={setDetailExercise} /> : null}
         </div>
         {plan && !picking ? <div className="space-y-2 border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <button type="button" disabled={saving} onClick={() => void save()} className="app-button app-gradient-action min-h-[48px] w-full">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
+          <button type="button" disabled={saving || pendingGroup || Boolean(workoutPreparationError(plan))} onClick={() => void save()} className="app-button app-gradient-action min-h-[48px] w-full">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
           {plan.exercises.some(row => row.original_exercise_id) ? <button type="button" disabled={saving} onClick={restoreDefaults} className="min-h-[44px] w-full text-xs text-tg-hint">Вернуть упражнения программы</button> : null}
         </div> : null}
       </div>

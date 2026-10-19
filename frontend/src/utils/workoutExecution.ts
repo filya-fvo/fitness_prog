@@ -179,3 +179,10 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
   return { ...base, ...accepted, facts, nextStep, cursor: nextStep?.id ?? null, rest, ...pause,
     terminal: nextStep === null, manualContinue: skipping, lastAction: { actionId: input.actionId, stepId: source.id, previousFacts } };
 }
+
+
+/** Preview consumes exactly the same pause rule as confirmed runtime actions. */
+export function buildExecutionTimingPreview(plan: WorkoutPlan): Array<{ step: ExecutionStep; nextStep: ExecutionStep | null; restKind: RestKind | null; durationSec: number }> {
+  const steps = buildExecutionSteps(plan);
+  return steps.map((step, index) => ({ step, nextStep: steps[index + 1] ?? null, ...pauseFor(plan, step, steps[index + 1] ?? null) }));
+}

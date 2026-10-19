@@ -552,6 +552,7 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             "exercises": [],
         }
 
+    await workout_execution.validate_method_exercises(session, plan)
     workout_execution.require_execution_version(plan, data.execution_version)
     workout = Workout(
         user_id=user_id,

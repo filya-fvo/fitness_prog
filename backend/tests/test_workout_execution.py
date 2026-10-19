@@ -306,3 +306,41 @@ async def test_completion_obeys_calendar_lock_order(database):
             await session.commit()
             result = await task
         assert result.status == "completed"
+
+@pytest.mark.asyncio
+async def test_preparation_rejects_method_on_timed_or_reps_only_exercise(database):
+    from app.services import workout_customization
+    from tests.test_workout_customization import request
+    session, owner, _, program, _, base, _ = database
+    base.tags = ["load:timed"]
+    await session.commit()
+    with pytest.raises(HTTPException) as caught:
+        await workout_customization.save_customization(session, owner, request(program, patch={
+            "exercise_overrides": [{"exercise_id": base.id, "set_methods": method_plan(base.id)["exercises"][0]["set_methods"]}],
+        }))
+    assert caught.value.status_code == 422
+
+
+def test_v2_orders_are_unique_and_bounded():
+    raw = method_plan()
+    raw["exercises"].append({"exercise_id": str(uuid4()), "order": 1, "target_sets": 1})
+    with pytest.raises(ValidationError):
+        WorkoutPlan.model_validate(raw)
+
+@pytest.mark.asyncio
+async def test_changed_catalog_type_does_not_prevent_opening_and_repairing_personal_method(database):
+    from app.services import workout_customization
+    from tests.test_workout_customization import request
+    session, owner, _, program, _, base, _ = database
+    await workout_customization.save_customization(session, owner, request(program, patch={
+        "exercise_overrides": [{"exercise_id": base.id, "set_methods": method_plan(base.id)["exercises"][0]["set_methods"]}],
+    }))
+    base.tags = ["load:timed"]
+    await session.commit()
+    plan = await workout_service.build_program_plan_for_user(session, owner, program, day_index=1,
+        scheduled_date=date(2026, 10, 19), week_phase=None)
+    assert plan["exercises"][0]["set_methods"]
+    repaired = await workout_customization.save_customization(session, owner, request(program, revision=1, patch={
+        "exercise_overrides": [{"exercise_id": base.id, "set_methods": []}],
+    }))
+    assert repaired.revision == 2

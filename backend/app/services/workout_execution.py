@@ -113,3 +113,17 @@ def validate_plan_edit(old_plan, new_plan):
             return (plan.get("groups") or [], [(row["exercise_id"], row.get("target_sets", 3), row.get("set_methods") or []) for row in plan.get("exercises", [])])
         if topology(old_plan) != topology(new_plan):
             raise HTTPException(409, "Состав сложной тренировки меняется при подготовке следующей, до её начала")
+
+
+async def validate_method_exercises(session, plan):
+    from uuid import UUID
+    from app.models.exercise import Exercise
+    from app.services.exercise_load_type import infer_load_type
+    ids = {UUID(str(row["exercise_id"])) for row in plan.get("exercises", []) if row.get("set_methods")}
+    if not ids:
+        return
+    exercises = list((await session.scalars(select(Exercise).where(Exercise.id.in_(ids), Exercise.is_deleted.is_(False)))).all())
+    if {row.id for row in exercises} != ids:
+        raise HTTPException(422, "Одно из упражнений больше недоступно. Выберите другое")
+    if any(infer_load_type(row) != "weight_reps" for row in exercises):
+        raise HTTPException(422, "Дроп-сеты и кластеры доступны только для упражнений с весом и повторами")

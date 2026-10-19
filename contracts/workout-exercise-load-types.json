@@ -1,0 +1,18 @@
+[
+  {"name_ru":"Тяга штанги в наклоне","muscle_group":"Спина","equipment":"штанга","tags":[],"expected":"weight_reps"},
+  {"name_ru":"Сгибания с гантелями","muscle_group":"Бицепс","equipment":"гантели","tags":[],"expected":"weight_reps"},
+  {"name_ru":"Жим штанги лёжа","muscle_group":"Грудь","equipment":"штанга","tags":[],"expected":"weight_reps"},
+  {"name_ru":"Планка","muscle_group":"Пресс","equipment":"свой вес","tags":[],"expected":"timed"},
+  {"name_ru":"Наклоны к носкам","muscle_group":"Разминка","equipment":null,"tags":[],"expected":"timed"},
+  {"name_ru":"Кошка-корова","muscle_group":"Разминка","equipment":null,"tags":[],"expected":"timed"},
+  {"name_ru":"Скакалка","muscle_group":"Кардио","equipment":null,"tags":[],"expected":"timed"},
+  {"name_ru":"Отжимания от пола","muscle_group":"Грудь","equipment":"свой вес","tags":[],"expected":"reps_only"},
+  {"name_ru":"Подтягивания","muscle_group":"Спина","equipment":null,"tags":[],"expected":"reps_only"},
+  {"name_ru":"Отжимания в тренажере","muscle_group":"Грудь","equipment":"тренажер","tags":[],"expected":"weight_reps"},
+  {"name_ru":"Велотренажёр","muscle_group":"Кардио","equipment":null,"tags":[],"expected":"cardio_machine"},
+  {"name_ru":"Беговая дорожка","muscle_group":"Кардио","equipment":null,"tags":["load:timed"],"expected":"cardio_machine"},
+  {"name_ru":"Упражнение","muscle_group":"","equipment":null,"tags":["load:timed"],"expected":"timed"},
+  {"name_ru":"Упражнение","muscle_group":"","equipment":null,"tags":["load:reps_only"],"expected":"reps_only"},
+  {"name_ru":"Упражнение","muscle_group":"","equipment":null,"tags":["load:weight_reps"],"expected":"weight_reps"},
+  {"name_ru":"Упражнение","muscle_group":"","equipment":null,"tags":["load:cardio_machine"],"expected":"cardio_machine"}
+]

@@ -50,8 +50,12 @@ class WorkoutPlan(BaseModel):
 
     @model_validator(mode="after")
     def validate_execution(self):
-        if self.execution_version == 2 and not 1 <= len(self.exercises) <= 20:
-            raise ValueError("В тренировке должно быть от 1 до 20 упражнений")
+        if self.execution_version == 2:
+            if not 1 <= len(self.exercises) <= 20:
+                raise ValueError("В тренировке должно быть от 1 до 20 упражнений")
+            orders = [row.order for row in self.exercises]
+            if len(orders) != len(set(orders)) or any(order > 20 for order in orders):
+                raise ValueError("Порядок упражнений должен быть уникальным от 1 до 20")
         if not self.groups and not any(row.set_methods for row in self.exercises):
             return self
         if self.execution_version != 2:

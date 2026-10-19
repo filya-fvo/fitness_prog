@@ -60,3 +60,15 @@ Final W2 follow-up: a missing catalog-outage notice was reproduced and fixed; cu
 - Full web790 unit PASS; final targeted41 PASS after explicit midnight and stale-undo regressions, lint/types PASS. No backend changes in W5. This is the pure layer: UI/durable transactions/signals are connected in W7/W9, native lifecycle remains untested until Android stages.
 
 W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within unchanged W3 limits.
+
+
+## W6 — preparation UI
+
+- Valid browser RED reached missing group editor after correcting the fixture Add-button name. Pure helper tests cover contiguous grouping, explicit rounds, block/member reorder, guarded removal and replacement references.
+- Real RED→GREEN: applying a configured100kg cluster to all slots had retained100 only on the last slot; selection now explicitly copies one common template. Invalid descending weights block save, failed network save retains the draft.
+- Timed circle member initially had a repetitions-only control; now uses seconds in the existing human-readable target field (e.g.40 с). Weighted methods are blocked for timed/reps-only/cardio types in preparation and server start; sixteen shared fixtures verify client/server classification. Duplicate v2 order rejected.
+- Changed catalog type initially prevented reopening a saved personal method; validation moved to writes/start so it can be opened and cleared. Actual SQL regression66 targeted PASS/Ruff after full backend1024 PASS before that final regression.
+- Full web814 unit PASS, final lint/types/build/PWA PASS. Combined Chromium29 PASS: previous preparation/composer plus methods, group references, four widths/two themes/393x600, focus and network errors. Final393 light/dark screenshots inspected.
+- Playwright option toBeDisabled matcher reported an enabled option despite native disabled=true; changed to the actual HTMLOptionElement.disabled property plus standard-value assertion. No product restriction was weakened.
+- W5 bundle598290/541813 -> final604278/547799 (+5986 product gzip bytes). New editors/preview remain in existing lazy Training chunk, same vendor108742/admin56479. Narrow caps604900/548400, other caps/dependencies unchanged.
+- Not deployed. Runtime recording/timer screen, analytics, offline reconciliation and installed Android remain later stages.
