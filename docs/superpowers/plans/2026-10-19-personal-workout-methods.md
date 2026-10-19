@@ -63,13 +63,13 @@
 
 **Interfaces:** `WorkoutDayPatch` содержит `added_exercises`, `removed_exercise_ids`, `exercise_overrides`, `exercise_order`, `groups`; IDs внутри дня уникальны. `WorkoutCustomizationRequest` содержит `program_id`, `day_index`, `scope: occurrence|program_day`, дату для occurrence, `base_revision`, `patch`. Новый `/workouts/customizations` GET/PUT/DELETE возвращает patch/revision; запись использует optimistic revision. DELETE также требует revision. Существующий `/planned-plan` сохраняет поддержку legacy replacements.
 
-- [ ] Написать и запустить failing tests `test_personal_day_is_owner_scoped`, `test_occurrence_wins_without_changing_next_occurrence`, `test_stale_revision_preserves_both_changes`, `test_reset_does_not_delete_occurrence_or_history`.
-- [ ] Assertions: A добавляет пресс в день 1; B и дни 2–4 неизменны; версия/курсор программы не сброшены; запись с прежней revision даёт 409; повтор той же операции не создаёт вторую запись.
-- [ ] Реализовать слой deltas и единый resolver для preview/start/offline preparation. Существующие legacy replacements переводить в тот же resolver, не создавать конкурирующие состояния.
-- [ ] Проверить фазы и readiness: не переопределённые reps/rest остаются расчётными; добавленное упражнение получает параметры без замораживания фазы.
-- [ ] Проверить миграцию на пустой и существующей тестовой PostgreSQL, ownership/soft delete/unique constraints; `check_migrations.py` дополнить только если его контракт требует этого.
-- [ ] Запустить targeted backend tests, Ruff изменённых модулей; при ошибках исправить их и повторить затронутые проверки. При успехе перейти к коммиту.
-- [ ] Обновить описание API/CHANGELOG и закоммитить `feat: persist personal workout day customizations`.
+- [x] Написать и запустить failing tests `test_personal_day_is_owner_scoped`, `test_occurrence_wins_without_changing_next_occurrence`, `test_stale_revision_preserves_both_changes`, `test_reset_does_not_delete_occurrence_or_history`.
+- [x] Assertions: A добавляет пресс в день 1; B и дни 2–4 неизменны; версия/курсор программы не сброшены; запись с прежней revision даёт 409; повтор той же операции не создаёт вторую запись.
+- [x] Реализовать слой deltas и единый resolver для preview/start/offline preparation. Существующие legacy replacements переводить в тот же resolver, не создавать конкурирующие состояния.
+- [x] Проверить фазы и readiness: не переопределённые reps/rest остаются расчётными; добавленное упражнение получает параметры без замораживания фазы.
+- [x] Проверить миграцию на пустой и существующей тестовой PostgreSQL, ownership/soft delete/unique constraints; `check_migrations.py` дополнить только если его контракт требует этого.
+- [x] Запустить targeted backend tests, Ruff изменённых модулей; при ошибках исправить их и повторить затронутые проверки. При успехе перейти к коммиту.
+- [x] Обновить описание API/CHANGELOG и закоммитить `feat: persist personal workout day customizations`.
 
 ### W2. Обычные упражнения: добавление, удаление и порядок без потери результатов
 

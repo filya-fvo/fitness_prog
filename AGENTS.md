@@ -57,6 +57,8 @@ fallback. `llm_base_url` указывает только на внутренни
 код отклоняет внешний host. Не добавляйте внешнего AI-провайдера без отдельного
 решения владельца. При недоступности модели допустим безопасный rule-based ответ.
 
+- `backend/app/services/workout_customization.py`, `schemas/workout_customization.py` и `models/user_program_day_override.py` — личные deltas дня/даты с revision и идемпотентным сохранением; контракт — `docs/WORKOUT_CUSTOMIZATION_API.md`.
+
 ### Frontend
 
 - React 18, TypeScript strict, Vite 6.

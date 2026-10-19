@@ -61,6 +61,9 @@ REQUIRED_FILES = [
     "20261001000051_rename_cable_crunch_molitva.sql",
     "20261001000052_approved_exercise_images.sql",
     "20261008000053_android_sync.sql",
+    "20261008000054_legal_acceptances.sql",
+    "20261008000055_android_login.sql",
+    "20261019000000_personal_workout_customizations.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -82,6 +85,7 @@ REQUIRED_TABLES = [
     "daily_metrics",
     "body_measurements",
     "workout_plan_overrides",
+    "user_program_day_overrides",
     "admin_audit_log",
     "admin_broadcasts",
     "admin_broadcast_deliveries",
@@ -169,6 +173,13 @@ REQUIRED_SNIPPETS = [
     "programs_personal_not_template_check",
     "ADD COLUMN IF NOT EXISTS image_url TEXT",
     "image:owner-approved:2026-10-01",
+    "CREATE TABLE IF NOT EXISTS public.legal_acceptances",
+    "uq_legal_acceptance_revision",
+    "CREATE TABLE android_login_requests",
+    "ix_android_login_requests_expires_at",
+    "uq_user_program_day_overrides_slot UNIQUE NULLS NOT DISTINCT",
+    "last_operation_hash TEXT NOT NULL",
+    "revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1)",
 ]
 
 

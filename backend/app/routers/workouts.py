@@ -73,7 +73,10 @@ from app.services import workout_shift
 from app.services import workout_load_hints
 from app.services import workout_service
 
+from app.routers.workout_customizations import router as customizations_router
+
 router = APIRouter(prefix="/workouts", tags=["workouts"])
+router.include_router(customizations_router)
 
 _WORKOUT_HISTORY_MESSAGE = "История тренировок доступна в PLUS"
 _WORKOUT_DETAILS_MESSAGE = "Прошлые тренировки доступны в PLUS"

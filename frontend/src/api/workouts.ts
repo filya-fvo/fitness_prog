@@ -11,6 +11,7 @@ import type {
 } from "@/types/workout";
 
 export const workoutPlanSchema = z.object({
+  customization_revisions: z.record(z.string(), z.number().int().nonnegative()).optional(),
   title: z.string().nullable().optional(),
   workout_type: z.string().nullable().optional(),
   day_index: z.number().nullable().optional(),

@@ -24,7 +24,7 @@ from app.schemas.workout import (
     WorkoutSetCreate,
     WorkoutUpdateRequest,
 )
-from app.services import cycle_training, illness_pause, planned_workout, program_publication
+from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization
 from app.services.workout_notifications import mark_occurrence_started
 
 
@@ -361,9 +361,13 @@ async def build_program_plan_for_user(
     if recovery_week:
         plan["load_adjustment"] = "illness_recovery"
         plan["load_adjustment_label"] = "Восстановительная лёгкая неделя после болезни"
+    plan = await workout_customization.apply_customizations(
+        session, user_id=user.id, program_id=program.id, day_index=day_index,
+        scheduled_date=scheduled_date, base_plan=plan, scopes=("program_day",),
+    )
     if not include_saved_override:
         return plan
-    return await planned_workout.apply_saved_override(
+    plan = await planned_workout.apply_saved_override(
         session,
         user_id=user.id,
         program_id=program.id,
@@ -371,6 +375,10 @@ async def build_program_plan_for_user(
         day_index=day_index,
         base_plan=plan,
         consume=consume_saved_override,
+    )
+    return await workout_customization.apply_customizations(
+        session, user_id=user.id, program_id=program.id, day_index=day_index,
+        scheduled_date=scheduled_date, base_plan=plan, scopes=("occurrence",),
     )
 
 

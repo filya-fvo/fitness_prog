@@ -11,6 +11,7 @@ import {
   fetchWorkoutHistory,
   fetchWorkoutSchedule,
   fetchWorkoutLoadHints,
+  workoutPlanSchema,
 } from "./workouts";
 
 describe("workout schedule API", () => {
@@ -273,4 +274,10 @@ describe("workout schedule API", () => {
     });
     expect(result.diary[0]?.sets[0]?.totalWeight).toBe(44);
   });
+});
+
+
+it("preserves personal and occurrence revisions at the plan API boundary", () => {
+  const plan = workoutPlanSchema.parse({ exercises: [], customization_revisions: { program_day: 3, occurrence: 2 } });
+  expect(plan.customization_revisions).toEqual({ program_day: 3, occurrence: 2 });
 });

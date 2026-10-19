@@ -15,6 +15,11 @@ from app.schemas.workout import WorkoutCreate
 from app.services import cycle_training, workout_service
 
 
+class EmptyCustomizationSession:
+    async def scalars(self, _query):
+        return SimpleNamespace(all=lambda: [])
+
+
 @pytest.mark.parametrize(
     ("base", "readiness", "expected"),
     [
@@ -88,7 +93,7 @@ async def test_user_plan_uses_explicit_preworkout_readiness_without_moving_progr
     monkeypatch.setattr(workout_service, "build_plan_from_program_day", fake_plan)
 
     plan = await workout_service.build_program_plan_for_user(
-        SimpleNamespace(),  # type: ignore[arg-type]
+        EmptyCustomizationSession(),  # type: ignore[arg-type]
         user,
         SimpleNamespace(id=program_id),  # type: ignore[arg-type]
         day_index=1,
@@ -120,7 +125,7 @@ async def test_plan_without_explicit_answer_does_not_apply_private_readiness(
     monkeypatch.setattr(workout_service, "build_plan_from_program_day", fake_plan)
 
     plan = await workout_service.build_program_plan_for_user(
-        SimpleNamespace(),  # type: ignore[arg-type]
+        EmptyCustomizationSession(),  # type: ignore[arg-type]
         user,
         SimpleNamespace(id=uuid.uuid4()),  # type: ignore[arg-type]
         day_index=1,
@@ -149,7 +154,7 @@ async def test_male_profile_ignores_explicit_legacy_cycle_answer(
 
     monkeypatch.setattr(workout_service, "build_plan_from_program_day", fake_plan)
     plan = await workout_service.build_program_plan_for_user(
-        SimpleNamespace(),  # type: ignore[arg-type]
+        EmptyCustomizationSession(),  # type: ignore[arg-type]
         user,
         SimpleNamespace(id=uuid.uuid4()),  # type: ignore[arg-type]
         day_index=1,

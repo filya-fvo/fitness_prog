@@ -24,6 +24,7 @@ class WorkoutPlanExercise(BaseModel):
 
 
 class WorkoutPlan(BaseModel):
+    customization_revisions: dict[str, int] = Field(default_factory=dict)
     title: str | None = None
     workout_type: str | None = None
     day_index: int | None = None

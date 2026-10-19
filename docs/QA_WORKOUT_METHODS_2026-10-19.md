@@ -11,3 +11,11 @@ Approved implementation: docs/superpowers/plans/2026-10-19-personal-workout-meth
 - Original checkout and Android source remain unchanged. Android implementation waits for W10.
 
 W0 complete. Next: W1 owner-scoped personal day and occurrence patches, revisions, resolver and transactional migration tests.
+
+## W1 — server customization foundation
+
+- RED: public customizations API absent; then preview resolver omitted added exercise. Both confirmed before implementation.
+- GREEN: 968 backend tests including 12 real isolated PostgreSQL checks; Ruff all backend; migration checker 56 files; frontend 743 unit tests plus 9 API tests after adding revision roundtrip; ESLint/build/PWA passed.
+- Three readiness tests needed empty customization DB results added to their session stubs; existing assertions unchanged. Eleven tmp_path setup errors resolved using a new dedicated basetemp under task artifacts; no product changes for this environment error.
+- Existing Starlette/httpx deprecation warning remains; no test failed or skipped in the final backend run.
+- API/model/append-only SQL migration, permanent and date deltas, ownership, optimistic revision, replay protection and shared preview/start resolver implemented. UI and methods/timer still pending.
