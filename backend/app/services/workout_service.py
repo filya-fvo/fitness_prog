@@ -999,28 +999,9 @@ async def update_workout_plan(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="В плане повторяются упражнения")
     await _load_exercises_map(session, exercise_ids)
 
-    old_by_order = {
-        int(item.get("order") or 0): uuid.UUID(str(item["exercise_id"]))
-        for item in (workout.plan or {}).get("exercises", [])
-        if item.get("exercise_id")
-    }
-    sets_by_slot = {(item.exercise_id, item.set_number): item for item in workout.sets}
-    for item in plan["exercises"]:
-        order = int(item.get("order") or 0)
-        new_id = uuid.UUID(str(item["exercise_id"]))
-        old_id = old_by_order.get(order)
-        if old_id is None or old_id == new_id:
-            continue
-        for workout_set in workout.sets:
-            if workout_set.exercise_id != old_id or workout_set.is_completed:
-                continue
-            collision = sets_by_slot.get((new_id, workout_set.set_number))
-            if collision is not None:
-                await session.delete(workout_set)
-            else:
-                sets_by_slot.pop((old_id, workout_set.set_number), None)
-                workout_set.exercise_id = new_id
-                sets_by_slot[(new_id, workout_set.set_number)] = workout_set
+    from app.services.workout_plan_sets import align_replacement_slots
+
+    await align_replacement_slots(session, workout, plan)
 
     workout.plan = plan
     await session.commit()

@@ -28,6 +28,7 @@ async def database():
     from app.models.program import Program
     from app.models.user import User
     from app.models.workout_plan_override import WorkoutPlanOverride
+    from app.models.workout import Workout, WorkoutSet
     from app.models.user_program_day_override import UserProgramDayOverride
     schema = "workout_test_" + uuid4().hex
     admin = create_async_engine(url)
@@ -37,8 +38,9 @@ async def database():
     try:
         async with engine.begin() as conn:
             await conn.execute(text("CREATE TYPE subscription_status AS ENUM ('free', 'pro_stars')"))
+            await conn.execute(text("CREATE TYPE workout_status AS ENUM ('planned', 'completed', 'skipped')"))
             await conn.execute(text("CREATE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END $$"))
-            tables = [User.__table__, Program.__table__, Exercise.__table__, WorkoutPlanOverride.__table__]
+            tables = [User.__table__, Program.__table__, Exercise.__table__, WorkoutPlanOverride.__table__, Workout.__table__, WorkoutSet.__table__]
             await conn.run_sync(lambda sync: Base.metadata.create_all(sync, tables=tables))
             raw = await conn.get_raw_connection()
             await raw.driver_connection.execute(migration().read_text(encoding="utf-8"))

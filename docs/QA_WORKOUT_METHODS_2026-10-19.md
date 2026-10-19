@@ -19,3 +19,7 @@ W0 complete. Next: W1 owner-scoped personal day and occurrence patches, revision
 - Three readiness tests needed empty customization DB results added to their session stubs; existing assertions unchanged. Eleven tmp_path setup errors resolved using a new dedicated basetemp under task artifacts; no product changes for this environment error.
 - Existing Starlette/httpx deprecation warning remains; no test failed or skipped in the final backend run.
 - API/model/append-only SQL migration, permanent and date deltas, ownership, optimistic revision, replay protection and shared preview/start resolver implemented. UI and methods/timer still pending.
+
+## W2 — identity regression fixed before UI work
+
+Real PostgreSQL RED: reordering two exercises deleted both saved set rows. GREEN: IDs/weights preserved; backend 969 passed, Ruff PASS. Replacement mapping now uses explicit source identity, never display order. First test fixture import failed during setup and was corrected to the repository tests package before the valid RED run. W2 editor still in progress.
