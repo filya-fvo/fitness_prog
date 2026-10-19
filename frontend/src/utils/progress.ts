@@ -1,6 +1,7 @@
 /**
  * Progress calculations — volume, calendar marks and nutrition summaries.
  */
+import { workoutSetVolume } from "./workoutLoad";
 import type { Workout } from "@/types/workout";
 
 export type DayVolume = {
@@ -47,14 +48,7 @@ export function workoutDateKey(workout: Workout): string | null {
 }
 
 export function computeWorkoutVolume(workout: Workout): number {
-  return workout.sets.reduce((acc, set) => {
-    if (!set.is_completed) {
-      return acc;
-    }
-    const reps = set.reps ?? 0;
-    const weight = (set.weight ?? 0) * (set.weight_mode === "per_hand" ? 2 : 1);
-    return acc + reps * weight;
-  }, 0);
+  return workout.sets.reduce((total, row) => total + workoutSetVolume(row), 0);
 }
 
 export function computeDailyVolume(workouts: Workout[], days = 14, today = new Date()): DayVolume[] {

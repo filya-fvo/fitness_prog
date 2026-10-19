@@ -15,6 +15,7 @@ from app.models.body_measurement import BodyMeasurement
 from app.models.exercise import Exercise
 from app.models.social import Competition, CompetitionParticipant
 from app.models.workout import Workout, WorkoutSet
+from app.services.workout_load_rows import standard_set_filter
 from app.schemas.social import CompetitionFactor
 from app.services.competition_scoring import regularity_score
 from app.services.workout_metrics import normalized_set_volume
@@ -183,6 +184,7 @@ async def _best_lift(
             Workout.is_deleted.is_(False),
             WorkoutSet.exercise_id == exercise_id,
             WorkoutSet.is_completed.is_(True),
+            standard_set_filter(),
             WorkoutSet.is_deleted.is_(False),
             WorkoutSet.reps >= 1,
             WorkoutSet.reps <= 12,

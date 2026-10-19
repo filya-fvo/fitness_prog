@@ -250,11 +250,15 @@ class ExerciseProgressPoint(BaseModel):
 
 
 class ExerciseProgressDiarySet(BaseModel):
-    set_number: int = Field(..., ge=1)
-    weight: Decimal = Field(..., ge=0)
-    total_weight: Decimal = Field(..., ge=0)
-    reps: int = Field(..., ge=1)
+    set_number: int
+    weight: Decimal | None
+    total_weight: Decimal | None
+    reps: int | None
     weight_mode: Literal["total", "per_hand"] | None = None
+    execution_kind: Literal["standard", "drop", "cluster"] = "standard"
+    execution_revision: int = 0
+    is_completed: bool = True
+    parts: list[WorkoutExecutionPart] = Field(default_factory=list)
 
 
 class ExerciseProgressDiarySession(BaseModel):

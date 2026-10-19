@@ -179,6 +179,7 @@ async def exercise_progress_summary(
     phase: Literal["all", "light", "medium", "heavy"] = Query(default="all"),
     diary_limit: int = Query(default=1, ge=1, le=25),
     diary_cursor: str | None = Query(default=None, max_length=200),
+    execution_version: Literal[1, 2] | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
     user: User = Depends(require_plus("exercise_history", _EXERCISE_HISTORY_MESSAGE)),
 ) -> ExerciseProgressResponse:
@@ -192,6 +193,7 @@ async def exercise_progress_summary(
         phase=phase,
         diary_limit=diary_limit,
         diary_cursor=diary_cursor,
+        include_compound=execution_version == 2,
     )
     return ExerciseProgressResponse.model_validate(result)
 

@@ -1,11 +1,12 @@
-import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
+import type { Exercise, Workout, WorkoutPlan, WorkoutSet, ExerciseProgressDiarySet } from "@/types/workout";
+import { isCompoundSet, hasRecordedWork } from "./workoutLoad";
 import { workoutDateKey } from "@/utils/progress";
 import { estimate1rm } from "@/utils/strengthProgress";
 import { formatDurationLabel } from "@/utils/exerciseLoadType";
 
 export type HistorySet = { row: WorkoutSet; saved: boolean };
 export type HistoryExercise = { exercise: Exercise; rows: HistorySet[] };
-export type SetOutcome = "missing" | "better" | "steady" | "unknown";
+export type SetOutcome = "missing" | "better" | "steady" | "unknown" | "partial" | "skipped";
 
 export function buildWorkoutHistoryGroups(workout: Workout, catalog: Exercise[]): HistoryExercise[] {
   const plan = workout.plan as WorkoutPlan | null;
@@ -57,6 +58,9 @@ export function previousExerciseSets(workout: Workout, history: Workout[], exerc
 
 /** Compare the same ordinal set; weight is normalized just like strength charts. */
 export function historySetOutcome(row: WorkoutSet, previous?: WorkoutSet): SetOutcome {
+  if (isCompoundSet(row)) return row.parts?.some(part => part.status === "pending")
+    ? hasRecordedWork(row) ? "partial" : "missing" : hasRecordedWork(row) ? "unknown" : "skipped";
+  if (previous && isCompoundSet(previous)) return row.is_completed ? "unknown" : "missing";
   if (!row.is_completed) return "missing";
   if (!previous?.is_completed || row.exercise_id !== previous.exercise_id || row.machine_params || previous.machine_params) return "unknown";
   if (row.duration_sec != null || previous.duration_sec != null) {
@@ -72,6 +76,19 @@ export function historySetOutcome(row: WorkoutSet, previous?: WorkoutSet): SetOu
 }
 
 export function historySetLoad(row: WorkoutSet): string {
+  if (isCompoundSet(row)) {
+    const title = row.execution_kind === "cluster" ? "Кластер" : "Дроп-сет";
+    const parts = row.parts?.map(part => part.status === "completed" ? `${part.weight ?? "—"} кг × ${part.reps ?? "—"}`
+      : `${part.ordinal}: ${part.status === "skipped" ? "пропущена" : "ожидает"}`).join(" + ") ?? "Нет частей";
+    return `${title}: ${parts}${row.weight_mode === "per_hand" ? " / рука" : ""}`;
+  }
   if (row.duration_sec != null) return formatDurationLabel(row.duration_sec);
   return `${row.weight != null ? `${row.weight} кг × ` : ""}${row.reps ?? "—"}${row.weight_mode === "per_hand" ? " / рука" : ""}`;
+}
+
+
+export function exerciseDiarySetLoad(row: ExerciseProgressDiarySet): string {
+  return historySetLoad({ id: "diary", workout_id: "diary", exercise_id: "diary", set_number: row.setNumber,
+    execution_kind: row.executionKind, parts: row.parts, reps: row.reps, weight: row.weight, weight_mode: row.weightMode,
+    is_completed: row.isCompleted ?? true, rest_time_sec: null });
 }

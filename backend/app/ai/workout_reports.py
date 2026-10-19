@@ -17,7 +17,7 @@ from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
 from app.services.scheduler import local_schedule_day
-from app.services.workout_metrics import aggregate_workout_load, normalized_set_volume
+from app.services.workout_metrics import aggregate_workout_load, normalized_set_volume, has_recorded_work, is_standard_set, completed_parts
 
 _LATEST = re.compile(
     r"\b(?:последн(?:яя|юю|ей)|предыдущ(?:ая|ую|ей)|прошл(?:ая|ую|ой)|"
@@ -53,14 +53,15 @@ def _number(value: float | int) -> str:
 
 
 def _completed_sets(workout: Workout) -> list[WorkoutSet]:
-    return [item for item in workout.sets if item.is_completed and not item.is_deleted]
+    return [item for item in workout.sets if has_recorded_work(item)]
 
 
 def _load_lines(workouts: list[Workout]) -> list[str]:
     sets = [item for workout in workouts for item in _completed_sets(workout)]
     load = aggregate_workout_load(sets)
     return [
-        f"Подходов выполнено: {len(sets)}; с весом: {load.weighted_sets}.",
+        f"Подходов выполнено: {sum(int(item.is_completed) for item in sets)}; с весом: {load.weighted_sets}."
+        + (f" Выполненных частей: {load.weighted_parts}; частичных подходов: {load.partial_sets}." if load.weighted_parts else ""),
         f"Тоннаж: {_number(load.weighted_volume_kg_reps)} кг·повт.",
         f"Без веса: {load.reps_only_sets} подходов, {load.reps_only_reps} повторов; "
         f"по времени: {load.timed_sets} подходов, {load.timed_seconds} сек.",
@@ -68,6 +69,10 @@ def _load_lines(workouts: list[Workout]) -> list[str]:
 
 
 def _set_detail(item: WorkoutSet) -> str:
+    if not is_standard_set(item):
+        label = "Кластер" if item.execution_kind == "cluster" else "Дроп-сет"
+        mode = " на гантель" if item.weight_mode == "per_hand" else ""
+        return label + ": " + "; ".join(f"{part.weight} кг × {part.reps}{mode}" for part in completed_parts(item))
     if item.duration_sec:
         return f"{item.duration_sec} сек"
     if item.weight and item.weight > 0:
@@ -174,7 +179,7 @@ def _groups(workout: Workout) -> dict[uuid.UUID, list[WorkoutSet]]:
 
 
 def _weighted_peak(sets: list[WorkoutSet]) -> tuple[float, int, list[int]] | None:
-    weighted = [item for item in sets if normalized_set_volume(item) > 0]
+    weighted = [item for item in sets if is_standard_set(item) and normalized_set_volume(item) > 0]
     if not weighted:
         return None
     effective = [(float(item.weight) * (2 if item.weight_mode == "per_hand" else 1), item)
@@ -204,7 +209,7 @@ def _comparison_fact(name: str, current: list[WorkoutSet], previous: list[Workou
 def _pattern_facts(groups: dict[uuid.UUID, list[WorkoutSet]], names: dict[uuid.UUID, str]) -> list[str]:
     stable, varying = [], []
     for exercise_id, sets in groups.items():
-        weighted = sorted((item for item in sets if normalized_set_volume(item) > 0),
+        weighted = sorted((item for item in sets if is_standard_set(item) and normalized_set_volume(item) > 0),
                           key=lambda item: item.set_number)
         if len(weighted) < 2:
             continue
@@ -248,7 +253,7 @@ async def _latest_facts(
                      for item in matching)
     facts.extend(_pattern_facts(groups, names))
     facts.append("Выборка сравнений частичная, не вся сессия; техника по записям не оценена.")
-    facts.append(f"{lines[0]} Подходов выполнено: {len(_completed_sets(current))}.")
+    facts.append(f"{lines[0]} Подходов выполнено: {sum(int(item.is_completed) for item in _completed_sets(current))}.")
     return facts
 
 

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { apiClient } from "./client";
-import { addWorkoutSet, fetchWorkout, workoutPlanSchema } from "./workouts";
+import { addWorkoutSet, fetchWorkout, fetchExerciseProgress, workoutPlanSchema } from "./workouts";
 import { startProgramWorkout } from "./programs";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -48,4 +48,15 @@ it("advertises execution format2 when starting a program without a client-suppli
   vi.spyOn(apiClient, "post").mockResolvedValue({ data: workout });
   await startProgramWorkout({ programId: id });
   expect(apiClient.post).toHaveBeenCalledWith(`/programs/${id}/start`, expect.objectContaining({ execution_version: 2 }));
+});
+
+
+it("round-trips compound exercise diary without flattening nullable parent values", async () => {
+  vi.spyOn(apiClient, "get").mockResolvedValue({ data: { exercise_id: exerciseId, period_start: "2026-10-01", period_end: "2026-10-19", points: [],
+    summary: { total_weight: { latest: null, best: null, change: null }, estimated_1rm: { latest: null, best: null, change: null } },
+    diary: [{ workout_id: id, date: "2026-10-19", phase: "heavy", sets: [{ ...set, total_weight: null }] }], next_diary_cursor: null } });
+  const result = await fetchExerciseProgress(exerciseId);
+  expect(result.points).toEqual([]);
+  expect(result.diary[0].sets[0]).toMatchObject({ executionKind: "cluster", weight: null, reps: null, parts: [{ status: "completed", weight: 100, reps: 4 }] });
+  expect(apiClient.get).toHaveBeenCalledWith(`/workouts/exercises/${exerciseId}/progress`, expect.objectContaining({ params: expect.objectContaining({ execution_version: 2 }) }));
 });

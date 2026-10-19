@@ -10,6 +10,7 @@ import { hasPlus } from "@/features/subscription/subscriptionAccess";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { useUserStore } from "@/store/userStore";
 import type { ExerciseProgress } from "@/types/workout";
+import { exerciseDiarySetLoad } from "@/utils/workoutHistorySets";
 import { isOnline } from "@/utils/network";
 
 const PHASE_LABELS = { light: "Лёгкая", medium: "Средняя", heavy: "Тяжёлая", unknown: "Без фазы" } as const;
@@ -93,7 +94,7 @@ export function ExerciseProgressSection({
           <span className="rounded-full bg-tg-secondary px-2 py-1 text-tg-hint">{PHASE_LABELS[latest.phase]}</span>
         </div>
         <div className="space-y-1.5">
-          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-tg-secondary px-3 py-2.5 text-sm"><span className="w-4 text-tg-link">{set.setNumber}</span><span className="font-semibold tabular-nums">{set.weight} кг{set.weightMode === "per_hand" ? "/руку" : ""} × {set.reps} повт.</span></div>)}
+          {latest.sets.map((set) => <div key={set.setNumber} className="flex items-center gap-3 rounded-xl bg-tg-secondary px-3 py-2.5 text-sm"><span className="w-4 text-tg-link">{set.setNumber}</span><span className="min-w-0 break-words font-semibold tabular-nums">{exerciseDiarySetLoad(set)}</span></div>)}
         </div>
       </div> : null}
       {error ? <p className="mt-2 text-[11px] text-[var(--app-warning)]">{error}</p> : null}

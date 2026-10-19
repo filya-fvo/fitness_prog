@@ -20,7 +20,7 @@ from app.models.workout import Workout
 from app.services.energy_targets import compute_energy_targets
 from app.services.nutrition_service import range_daily_totals
 from app.services.notification_prefs import water_ml_for_day
-from app.services.workout_metrics import aggregate_workout_load, normalized_set_volume
+from app.services.workout_metrics import aggregate_workout_load, normalized_set_volume, is_standard_set
 
 
 class AIQueryDomain(StrEnum):
@@ -249,16 +249,19 @@ async def _workout_evidence(
         f"взвешенные подходы: {load.weighted_sets}; тоннаж {_fmt(load.weighted_volume_kg_reps)} кг·повт",
         f"подходы без веса: {load.reps_only_sets}, повторов {load.reps_only_reps}",
         f"подходы по времени: {load.timed_sets}, всего {load.timed_seconds} сек",
+        f"выполненных частей сложных подходов: {load.weighted_parts}; частичных подходов: {load.partial_sets}",
         f"средний RPE: {_fmt(sum(rpe) / len(rpe)) if rpe else 'нет данных'}",
     ]
     if domain == AIQueryDomain.STRENGTH:
-        exercise_ids = {item.exercise_id for item in sets if normalized_set_volume(item) > 0}
+        exercise_ids = {item.exercise_id for item in sets if is_standard_set(item) and normalized_set_volume(item) > 0}
         names: dict[uuid.UUID, str] = {}
         if exercise_ids:
             exercises = await session.scalars(select(Exercise).where(Exercise.id.in_(exercise_ids)))
             names = {item.id: item.name_ru for item in exercises.all()}
         best: dict[uuid.UUID, float] = {}
         for item in sets:
+            if not is_standard_set(item):
+                continue
             volume = normalized_set_volume(item)
             reps = int(item.reps or 0)
             if volume <= 0 or reps <= 0:

@@ -130,11 +130,11 @@ const decimalSchema = z
   .pipe(z.number().finite());
 const nonnegativeDecimalSchema = decimalSchema.pipe(z.number().nonnegative());
 const exerciseProgressSetSchema = z.object({
-  set_number: z.number().int().positive(),
-  weight: nonnegativeDecimalSchema,
-  total_weight: nonnegativeDecimalSchema,
-  reps: z.number().int().positive(),
-  weight_mode: z.enum(["total", "per_hand"]).nullable(),
+  set_number: z.number().int().positive(), weight: nonnegativeDecimalSchema.nullable(), total_weight: nonnegativeDecimalSchema.nullable(),
+  reps: z.number().int().positive().nullable(), weight_mode: z.enum(["total", "per_hand"]).nullable(),
+  execution_kind: z.enum(["standard", "drop", "cluster"]).default("standard"),
+  execution_revision: z.number().int().nonnegative().default(0), is_completed: z.boolean().default(true),
+  parts: z.array(executionPartSchema).max(8).default([]),
 });
 const exerciseProgressSchema = z.object({
   exercise_id: z.string().uuid(),
@@ -513,6 +513,7 @@ export async function fetchExerciseProgress(
 ): Promise<ExerciseProgress> {
   const { data } = await apiClient.get(`/workouts/exercises/${exerciseId}/progress`, {
     params: {
+      execution_version: 2,
       period_days: options.periodDays ?? 365,
       phase: options.phase ?? "all",
       diary_limit: options.diaryLimit ?? 1,
@@ -543,6 +544,8 @@ export async function fetchExerciseProgress(
         totalWeight: set.total_weight,
         reps: set.reps,
         weightMode: set.weight_mode,
+        ...(set.execution_kind !== "standard" || set.parts.length ? { executionKind: set.execution_kind,
+          executionRevision: set.execution_revision, isCompleted: set.is_completed, parts: set.parts } : {}),
       })),
     })),
     nextDiaryCursor: parsed.next_diary_cursor,

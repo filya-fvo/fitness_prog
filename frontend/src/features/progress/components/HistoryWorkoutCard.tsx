@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import type { Exercise, Workout } from "@/types/workout";
+import { hasRecordedWork } from "@/utils/workoutLoad";
+import type { WorkoutPlan } from "@/types/workout";
 import { computeWorkoutVolume } from "@/utils/progress";
 import { enumLabel, programDayLabel } from "@/utils/localization";
 import { buildWorkoutHistoryGroups, emptyHistorySet, historySetLoad, historySetOutcome, previousExerciseSets, type HistorySet } from "@/utils/workoutHistorySets";
@@ -13,6 +15,8 @@ type Props = {
   onNotesBusyChange: (busy: boolean) => void;
 };
 const outcomes = {
+  partial: { tone: "warning", label: "Частично выполнено", icon: "◐" },
+  skipped: { tone: "info", label: "Пропущено", icon: "–" },
   missing: { tone: "warning", label: "Не выполнено", icon: "○" },
   better: { tone: "success", label: "Лучше прошлого", icon: "↑" },
   steady: { tone: "info", label: "Так же / ниже", icon: "✓" },
@@ -22,6 +26,7 @@ export function HistoryWorkoutCard({ workout, history, catalog, onEdit, onChange
   const groups = useMemo(() => buildWorkoutHistoryGroups(workout, catalog), [workout, catalog]);
   const plan = workout.plan as { title?: string; day_index?: number; week_label?: string; location?: string } | null;
   const completed = workout.sets.filter(row => row.is_completed);
+  const parts = workout.sets.flatMap(row => row.parts ?? []);
   const minutes = workout.duration_sec ? Math.max(1, Math.round(workout.duration_sec / 60)) : null;
   const duration = minutes == null ? "—" : minutes >= 60 ? `${Math.floor(minutes / 60)} ч ${minutes % 60} мин` : `${minutes} мин`;
   return <article className="app-card bg-tg-secondary p-3 sm:p-4">
@@ -33,14 +38,16 @@ export function HistoryWorkoutCard({ workout, history, catalog, onEdit, onChange
         ["Объём", `${Math.round(computeWorkoutVolume(workout))} кг`],
       ].map(([label, value]) => <div key={label}><dt className="text-tg-hint">{label}</dt><dd className="mt-1 font-semibold">{value}</dd></div>)}
     </dl>
-    <p className="mt-2 text-xs text-tg-hint">Упражнений выполнено: {new Set(completed.map(row => row.exercise_id)).size}{plan?.location ? ` · ${enumLabel(plan.location)}` : ""}.</p>
+    <p className="mt-2 text-xs text-tg-hint">Упражнений выполнено: {new Set(workout.sets.filter(hasRecordedWork).map(row => row.exercise_id)).size}{plan?.location ? ` · ${enumLabel(plan.location)}` : ""}.</p>
+    {parts.length ? <p className="mt-2 text-xs text-tg-hint">Частей выполнено: {parts.filter(part => part.status === "completed").length}/{parts.length}. Объём включает выполненные части незаконченных подходов.</p> : null}
     <div className="mt-4 space-y-4">
       {groups.map(({ exercise, rows }) => {
         const previous = previousExerciseSets(workout, history, exercise.id);
+        const group = (workout.plan as WorkoutPlan | null)?.groups?.find(group => group.exercise_ids.includes(exercise.id));
         const done = rows.filter(({ row }) => row.is_completed).length;
         return <section key={exercise.id} aria-label={exercise.name_ru}>
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-1">
-            <h4 className="text-sm font-semibold">{exercise.name_ru}</h4>
+            <h4 className="text-sm font-semibold">{exercise.name_ru}</h4>{group ? <span className="text-xs text-tg-hint">{group.kind === "superset" ? "Суперсет" : group.kind === "triset" ? "Трисет" : "Круговая тренировка"} · {group.rounds} круга</span> : null}
             <span className={`text-xs ${done ? "text-tg-hint" : "text-[var(--app-warning)]"}`}>{done ? `${done}/${rows.length} выполнено` : "Не выполнено"}</span>
           </div>
           <ul className="space-y-2">
@@ -54,7 +61,7 @@ export function HistoryWorkoutCard({ workout, history, catalog, onEdit, onChange
                   className={`app-status app-status-${state.tone} flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border-l-[3px] p-3 text-left`}>
                   <span className="min-w-0 space-y-1">
                     <span className="block text-xs">Подход {row.set_number} · <span aria-hidden="true">{state.icon} </span>{state.label}</span>
-                    <span className="block text-sm font-semibold text-tg-text">{set.saved ? historySetLoad(row) : "Результат не записан"}</span>
+                    <span className="block break-words text-sm font-semibold text-tg-text">{set.saved ? historySetLoad(row) : "Результат не записан"}</span>
                     {row.is_completed && prior ? <span className="block text-xs text-tg-hint">Прошлый: {historySetLoad(prior)}</span> : null}
                     {set.saved && row.note ? <span className="block break-words text-xs text-tg-hint">{row.note}</span> : null}
                   </span>
@@ -63,7 +70,7 @@ export function HistoryWorkoutCard({ workout, history, catalog, onEdit, onChange
               </li>;
             })}
           </ul>
-          <button type="button" disabled={disabled} aria-label={`Добавить подход: ${exercise.name_ru}`} className="app-button app-ghost-action mt-1 w-full text-xs"
+          <button type="button" disabled={disabled || (workout.plan as WorkoutPlan | null)?.execution_version === 2} aria-label={`Добавить подход: ${exercise.name_ru}`} className="app-button app-ghost-action mt-1 w-full text-xs"
             onClick={event => {
               event.currentTarget.focus({ preventScroll: true });
               const saved = rows.filter(set => set.saved).at(-1)?.row;

@@ -161,7 +161,7 @@ export function buildExerciseHistory(workouts: Workout[]): Map<string, ExerciseH
       machineParams: Record<string, string | number> | null;
     }>();
     for (const s of w.sets) {
-      if (!s.is_completed) continue;
+      if (!s.is_completed || s.execution_kind === "drop" || s.execution_kind === "cluster") continue;
       const weight = Number(s.weight) || 0;
       const reps = Number(s.reps) || 0;
       const durationSec = Number(s.duration_sec) || 0;

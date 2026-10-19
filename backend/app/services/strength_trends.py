@@ -18,6 +18,7 @@ from app.models.program import Program
 from app.models.user import User
 from app.models.user_exercise_pin import UserExercisePin
 from app.models.workout import Workout, WorkoutSet
+from app.services.workout_load_rows import standard_set_filter
 from app.services import scheduler, workout_service
 from app.services.workout_metrics import estimated_one_rep_max
 
@@ -88,6 +89,7 @@ async def _history_by_exercise(
             Workout.scheduled_date >= period_start,
             Workout.scheduled_date <= period_end,
             WorkoutSet.is_completed.is_(True),
+            standard_set_filter(),
             WorkoutSet.is_deleted.is_(False),
             WorkoutSet.weight > 0,
             WorkoutSet.reps > 0,

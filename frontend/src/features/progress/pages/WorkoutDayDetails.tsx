@@ -1,5 +1,7 @@
 import { HistoryWorkoutCard } from "@/features/progress/components/HistoryWorkoutCard";
 import { useHistorySetEditor } from "@/features/progress/hooks/useHistorySetEditor";
+import { CompoundHistorySetModal } from "@/features/progress/components/CompoundHistorySetModal";
+import { isCompoundSet } from "@/utils/workoutLoad";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, Workout } from "@/types/workout";
@@ -33,14 +35,15 @@ export function WorkoutDayDetails({ date, workouts, history = workouts, catalog,
           <span className="text-[var(--app-success)]">↑ Лучше прошлого</span>
           <span className="text-[var(--app-info)]">✓ Так же / ниже</span>
         </div>
-        <p className="mb-3 text-xs text-tg-hint">Сравнение с тем же подходом прошлого выполнения: для веса — расчёт силы, для повторений и времени — их значения.</p>
+        <p className="mb-3 text-xs text-tg-hint">Сравнение с тем же подходом прошлого выполнения: для веса — расчёт силы, для повторений и времени — их значения. Дропы и кластеры показаны по частям, без сравнения силы.</p>
         <div className="space-y-3">{workouts.length ? workouts.map(workout => <HistoryWorkoutCard key={workout.id} workout={workout} history={history} catalog={catalog}
           disabled={notesBusy} onNotesBusyChange={setNotesBusy}
           onEdit={(exercise, set, adding = false) => editor.open({ workout, exercise, ...set, adding })} onChanged={onChanged} />)
           : <p className="app-card p-4 text-sm text-tg-hint">В этот день тренировок не было.</p>}</div>
       </div>
     </div>
-    {selected ? <AddSetModal key={selected.row.id} open exercise={selected.exercise} editing={!selected.adding} preserveWeightMode showTimerControls={false}
+    {selected && isCompoundSet(selected.row) ? <CompoundHistorySetModal key={selected.row.id} row={selected.row} name={selected.exercise.name_ru}
+      busy={editor.busy} error={editor.error} onClose={editor.close} onSave={editor.saveParts} /> : selected ? <AddSetModal key={selected.row.id} open exercise={selected.exercise} editing={!selected.adding} preserveWeightMode showTimerControls={false}
       busy={editor.busy} error={editor.error}
       initial={{ reps: selected.row.reps != null ? String(selected.row.reps) : "", weight: selected.row.weight != null ? String(selected.row.weight) : "",
         weightMode: selected.row.weight_mode, durationSec: selected.row.duration_sec, restTimeSec: selected.row.rest_time_sec ?? 60,

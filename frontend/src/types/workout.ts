@@ -141,17 +141,13 @@ export type ExerciseProgressPoint = {
   phase: ExerciseWeekPhase;
 };
 
+export type ExerciseProgressDiarySet = {
+  setNumber: number; weight: number | null; totalWeight: number | null; reps: number | null;
+  weightMode: "total" | "per_hand" | null;
+  executionKind?: "standard" | "drop" | "cluster"; executionRevision?: number; isCompleted?: boolean; parts?: WorkoutExecutionPart[];
+};
 export type ExerciseProgressDiarySession = {
-  workoutId: string;
-  date: string;
-  phase: ExerciseWeekPhase;
-  sets: Array<{
-    setNumber: number;
-    weight: number;
-    totalWeight: number;
-    reps: number;
-    weightMode: "total" | "per_hand" | null;
-  }>;
+  workoutId: string; date: string; phase: ExerciseWeekPhase; sets: ExerciseProgressDiarySet[];
 };
 
 export type ExerciseProgress = {

@@ -83,3 +83,14 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - AutoAdvance changes viewed card only. Completion/correction require user action. Drop0-pause, cluster20/20/120, grouped participant transition before round90, timed40-second target, +15/early stop/no final rest are verified in the browser.
 - W6 bundle604278/547799 -> W7 615345/558870 (+11071 product gzip bytes), same dependencies/largest108742/admin56475. Bounded aggregate caps615950/559450 preserve less than0.7KB headroom; admin/largest caps unchanged.
 - No release yet: W8 owns report/history math for compound parts; W9 owns full offline fingerprint/conflict/native-projection review and completion timestamp at the server. Android source remains untouched.
+
+
+## W8 — actual load and structured history
+
+- Valid RED: pure volume returned0 for compounds; actual PostgreSQL lost partial rows and reported0 full volume. Client chart/completion and local diary independently reproduced the same loss. Fixed with one SQL effective-load projection and matched Python/web rules.
+- Checked vectors: drop660, cluster1200, partial800, per_hand1600 for partial; no parent duplication, pending/skipped0, deleted part/parent excluded and other owner empty. Ordinary superset participant keeps63.3 estimated1RM for50×8, normal hints/trends, one parent and one workout. Compound methods excluded from points/trends/private relative strength/hints.
+- Full backend1035 PASS, then final targeted129 PASS and final expanded metrics/SQL12 PASS; Ruff PASS. Web835 unit/lint/types/build/PWA PASS. API roundtrip verifies nullable root and numeric parts; new version query preserves legacy exercise diary behavior.
+- Chromium23 PASS for method history + timing, plus4 legacy day-edit cases earlier. Final2 layout/theme runs after hiding fixture-only diagnostic output passed. Four widths, low height568, both themes, focus restoration and axe checked; screenshots inspected.
+- Actual accessibility failure: role=dialog on form was disallowed; replaced with named dialog container and inner form, original axe assertion passes. Failed network correction retains form and retries identical operation UUID; no rest controls in history.
+- W7 bundle615345/558870 ->617972/561471 (+2601 product gzip bytes), same dependencies/largest108742/admin56501. Narrow caps618550/562050; admin/largest caps unchanged.
+- Not released; W9 offline reconciliation and W10 final acceptance/deployment remain. Native source not started.

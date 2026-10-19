@@ -10,6 +10,7 @@ from sqlalchemy import Date, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workout import Workout, WorkoutSet
+from app.services.workout_load_rows import standard_set_filter
 
 
 async def load_hints_for_exercises(
@@ -63,6 +64,7 @@ async def load_hints_for_exercises(
             Workout.status == "completed",
             WorkoutSet.is_deleted.is_(False),
             WorkoutSet.is_completed.is_(True),
+            standard_set_filter(),
             WorkoutSet.exercise_id.in_(unique_ids),
             or_(
                 WorkoutSet.weight > 0,

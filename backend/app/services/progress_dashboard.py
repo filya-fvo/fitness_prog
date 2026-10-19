@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
-from sqlalchemy import Integer, Numeric, case, cast, column, func, select, true
+from sqlalchemy import Integer, Numeric, cast, column, func, select, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.workout import Workout, WorkoutSet
 from app.services import scheduler
+from app.services.workout_load_rows import effective_load_rows, effective_volume, completed_parent_count
 
 ALLOWED_PERIOD_DAYS = {28, 56, 84}
 _ONE_DECIMAL = Decimal("0.1")
@@ -26,13 +27,6 @@ def _decimal(value: object) -> Decimal:
 
 def _rounded(value: object) -> Decimal:
     return _decimal(value).quantize(_ONE_DECIMAL, rounding=ROUND_HALF_UP)
-
-
-def _normalized_weight():
-    return case(
-        (WorkoutSet.weight_mode == "per_hand", WorkoutSet.weight * 2),
-        else_=WorkoutSet.weight,
-    )
 
 
 def _daily_workout_statement(*, user_id: uuid.UUID, start: date, end: date):
@@ -56,29 +50,13 @@ def _daily_workout_statement(*, user_id: uuid.UUID, start: date, end: date):
 
 
 def _daily_set_statement(*, user_id: uuid.UUID, start: date, end: date):
-    volume = (
-        cast(func.coalesce(WorkoutSet.reps, 0), Numeric)
-        * func.coalesce(_normalized_weight(), 0)
-    )
-    return (
-        select(
-            Workout.scheduled_date.label("date"),
-            func.count(WorkoutSet.id).label("completed_sets"),
-            func.sum(volume).label("volume_kg"),
-        )
-        .join(Workout, Workout.id == WorkoutSet.workout_id)
-        .where(
-            Workout.user_id == user_id,
-            Workout.status == "completed",
-            Workout.is_deleted.is_(False),
-            Workout.scheduled_date >= start,
-            Workout.scheduled_date <= end,
-            WorkoutSet.is_completed.is_(True),
-            WorkoutSet.is_deleted.is_(False),
-        )
-        .group_by(Workout.scheduled_date)
-        .order_by(Workout.scheduled_date.asc())
-    )
+    rows = effective_load_rows()
+    return (select(Workout.scheduled_date.label("date"), completed_parent_count(rows).label("completed_sets"),
+        func.sum(effective_volume(rows)).label("volume_kg"))
+        .select_from(rows).join(Workout, Workout.id == rows.c.workout_id)
+        .where(Workout.user_id == user_id, Workout.status == "completed", Workout.is_deleted.is_(False),
+            Workout.scheduled_date >= start, Workout.scheduled_date <= end)
+        .group_by(Workout.scheduled_date).order_by(Workout.scheduled_date.asc()))
 
 
 def _daily_planned_set_statement(*, user_id: uuid.UUID, start: date, end: date):
@@ -106,32 +84,14 @@ def _daily_planned_set_statement(*, user_id: uuid.UUID, start: date, end: date):
 
 
 def _muscle_group_statement(*, user_id: uuid.UUID, start: date, end: date):
-    volume = (
-        cast(func.coalesce(WorkoutSet.reps, 0), Numeric)
-        * func.coalesce(_normalized_weight(), 0)
-    )
-    return (
-        select(
-            Exercise.muscle_group.label("muscle_group"),
-            func.count(WorkoutSet.id).label("completed_sets"),
-            func.count(func.distinct(WorkoutSet.exercise_id)).label("exercises"),
-            func.sum(volume).label("volume_kg"),
-        )
-        .join(WorkoutSet, WorkoutSet.exercise_id == Exercise.id)
-        .join(Workout, Workout.id == WorkoutSet.workout_id)
-        .where(
-            Workout.user_id == user_id,
-            Workout.status == "completed",
-            Workout.is_deleted.is_(False),
-            Workout.scheduled_date >= start,
-            Workout.scheduled_date <= end,
-            WorkoutSet.is_completed.is_(True),
-            WorkoutSet.is_deleted.is_(False),
-        )
-        .group_by(Exercise.muscle_group)
-        .order_by(func.count(WorkoutSet.id).desc(), Exercise.muscle_group.asc())
-        .limit(20)
-    )
+    rows = effective_load_rows()
+    count = completed_parent_count(rows)
+    return (select(Exercise.muscle_group.label("muscle_group"), count.label("completed_sets"),
+        func.count(func.distinct(rows.c.exercise_id)).label("exercises"), func.sum(effective_volume(rows)).label("volume_kg"))
+        .select_from(rows).join(Exercise, Exercise.id == rows.c.exercise_id).join(Workout, Workout.id == rows.c.workout_id)
+        .where(Workout.user_id == user_id, Workout.status == "completed", Workout.is_deleted.is_(False),
+            Workout.scheduled_date >= start, Workout.scheduled_date <= end)
+        .group_by(Exercise.muscle_group).order_by(count.desc(), Exercise.muscle_group.asc()).limit(20))
 
 
 def _summary(

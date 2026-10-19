@@ -5,6 +5,7 @@ import type {
   Workout,
 } from "@/types/workout";
 import { estimate1rm } from "@/utils/strengthProgress";
+import { isCompoundSet, hasRecordedWork } from "./workoutLoad";
 import { workoutDateKey } from "@/utils/progress";
 
 function workoutPhase(workout: Workout): ExerciseWeekPhase {
@@ -24,7 +25,7 @@ export function buildExerciseProgress(
     if (!date) continue;
 
     const candidates = workout.sets
-      .filter((set) => set.exercise_id === exerciseId && set.is_completed)
+      .filter((set) => set.exercise_id === exerciseId && set.is_completed && !isCompoundSet(set))
       .map((set) => ({
         weight: Number(set.weight) || 0,
         weightMode: set.weight_mode ?? null,
@@ -71,22 +72,15 @@ export function buildExerciseDiary(
 ): ExerciseProgressDiarySession[] {
   return workouts
     .filter((workout) => workout.status === "completed")
-    .map((workout) => {
+    .map((workout): ExerciseProgressDiarySession | null => {
       const date = workoutDateKey(workout);
-      const sets = workout.sets
-        .filter((set) => set.exercise_id === exerciseId && set.is_completed)
-        .map((set) => ({
-          setNumber: set.set_number,
-          weight: Number(set.weight) || 0,
-          totalWeight: (Number(set.weight) || 0) * (set.weight_mode === "per_hand" ? 2 : 1),
-          reps: Number(set.reps) || 0,
-          weightMode: set.weight_mode ?? null,
-        }))
-        .filter((set) => set.weight > 0 && set.reps > 0)
-        .sort((a, b) => a.setNumber - b.setNumber);
-      return date && sets.length
-        ? { workoutId: workout.id, date, phase: workoutPhase(workout), sets }
-        : null;
+      const sets = workout.sets.filter(set => set.exercise_id === exerciseId && hasRecordedWork(set)
+        && (isCompoundSet(set) || (Number(set.weight) > 0 && Number(set.reps) > 0)))
+        .map(set => ({ setNumber: set.set_number, weight: set.weight, totalWeight: set.weight == null ? null : set.weight * (set.weight_mode === "per_hand" ? 2 : 1),
+          reps: set.reps, weightMode: set.weight_mode ?? null,
+          ...(isCompoundSet(set) ? { executionKind: set.execution_kind, executionRevision: set.execution_revision, isCompleted: set.is_completed, parts: set.parts } : {}),
+        })).sort((a, b) => a.setNumber - b.setNumber);
+      return date && sets.length ? { workoutId: workout.id, date, phase: workoutPhase(workout), sets } : null;
     })
     .filter((session): session is ExerciseProgressDiarySession => session != null)
     .sort((a, b) => b.date.localeCompare(a.date))

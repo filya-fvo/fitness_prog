@@ -77,6 +77,7 @@ export async function cacheCompletedDraftHints(
   const best = new Map<string, WorkoutLoadHint>();
   for (const draft of drafts) {
     if (!draft.isCompleted) continue;
+    if (draft.executionKind === "drop" || draft.executionKind === "cluster") continue;
     const weight = Number(draft.weight) || 0;
     const reps = Number(draft.reps) || 0;
     const duration = Number(draft.durationSec) || 0;

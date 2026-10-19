@@ -37,6 +37,17 @@ const saved: Workout = {
       rest_time_sec: 105, duration_sec: 300, note: null, machine_params: { speed: 4, incline: 2, custom_setting: "keep" } },
   ],
 };
+const methodKind = new URLSearchParams(location.search).get("method");
+if (methodKind === "cluster") {
+  const parts = [0, 1, 2].map(index => ({ id: ["99999999-9999-4999-8999-999999999999", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"][index],
+    ordinal: index + 1, reps: index < 2 ? 4 : null, weight: index < 2 ? 100 : null, duration_sec: null,
+    status: index < 2 ? "completed" as const : "pending" as const, rest_after_sec: index < 2 ? 20 : 0 }));
+  saved.sets[0] = { ...saved.sets[0], reps: null, weight: null, execution_kind: "cluster", execution_revision: 1, is_completed: false, parts };
+  const plan = saved.plan as import("../../src/types/workout").WorkoutPlan;
+  plan.execution_version = 2;
+  plan.exercises[0].target_sets = 1;
+  plan.exercises[0].set_methods = [{ set_number: 1, kind: "cluster", parts: parts.map(part => ({ target_reps: 4, target_weight: 100, pause_after_sec: part.rest_after_sec })) }];
+}
 function Fixture() {
   const legacy = new URLSearchParams(location.search).has("legacy");
   const [workout, setWorkout] = useState(() => legacy ? {
@@ -51,7 +62,7 @@ function Fixture() {
     <button onClick={() => setOpen(true)}>Открыть день</button>
     {open && <WorkoutDayDetails date={saved.scheduled_date} workouts={[workout]} history={[previous, workout]} catalog={currentCatalog}
       onClose={() => setOpen(false)} onChanged={next => { if (next) setWorkout(next); }} />}
-    <output className="block break-all" aria-label="Сохранённая тренировка">{JSON.stringify(workout)}</output>
+    <output className={methodKind ? "sr-only" : "block break-all"} aria-label="Сохранённая тренировка">{JSON.stringify(workout)}</output>
   </main>;
 }
 createRoot(document.getElementById("root")!).render(<Fixture />);

@@ -12,9 +12,12 @@ from typing import Literal
 
 from fastapi import HTTPException, status
 from sqlalchemy import Numeric, and_, case, cast, func, or_, select
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workout import Workout, WorkoutSet
+from app.services.workout_load_rows import standard_set_filter, performed_set_filter
+from app.models.workout_set_part import WorkoutSetPart
 from app.services.workout_metrics import estimated_one_rep_max
 
 ExercisePhase = Literal["all", "light", "medium", "heavy"]
@@ -73,19 +76,20 @@ def _common_filters(
     exercise_id: uuid.UUID,
     date_from: date,
     date_to: date,
+    strength: bool = True,
 ) -> list[object]:
-    return [
+    common = [
         Workout.user_id == user_id,
         Workout.status == "completed",
         Workout.is_deleted.is_(False),
         Workout.scheduled_date >= date_from,
         Workout.scheduled_date <= date_to,
         WorkoutSet.exercise_id == exercise_id,
-        WorkoutSet.is_completed.is_(True),
         WorkoutSet.is_deleted.is_(False),
-        WorkoutSet.weight > 0,
-        WorkoutSet.reps > 0,
     ]
+    return common + ([WorkoutSet.is_completed.is_(True), standard_set_filter(), WorkoutSet.weight > 0, WorkoutSet.reps > 0]
+        if strength else [performed_set_filter()])
+
 
 
 async def get_exercise_progress(
@@ -98,6 +102,7 @@ async def get_exercise_progress(
     phase: ExercisePhase = "all",
     diary_limit: int = 1,
     diary_cursor: str | None = None,
+    include_compound: bool = False,
 ) -> dict[str, object]:
     """Return at most one strongest weighted point per day and a bounded diary page."""
 
@@ -168,7 +173,9 @@ async def get_exercise_progress(
             }
         )
 
-    session_filters = list(filters)
+    session_filters = _common_filters(user_id=user_id, exercise_id=exercise_id, date_from=date_from, date_to=date_to, strength=not include_compound)
+    if phase != "all":
+        session_filters.append(phase_expr == phase)
     if decoded_cursor:
         cursor_day, cursor_id = decoded_cursor
         session_filters.append(
@@ -193,6 +200,11 @@ async def get_exercise_progress(
     ).mappings().all()
     visible_sessions = session_rows[:diary_limit]
     workout_ids = [row["workout_id"] for row in visible_sessions]
+    part = WorkoutSetPart
+    part_values = func.jsonb_build_object("id", part.id, "ordinal", part.ordinal, "reps", part.reps, "weight", part.weight,
+        "duration_sec", part.duration_sec, "status", part.status, "rest_after_sec", part.rest_after_sec)
+    part_rows = select(func.jsonb_agg(aggregate_order_by(part_values, part.ordinal))).where(
+        part.workout_set_id == WorkoutSet.id, part.is_deleted.is_(False)).correlate(WorkoutSet).scalar_subquery()
     set_rows: list[object] = []
     if workout_ids:
         set_rows = list(
@@ -205,14 +217,15 @@ async def get_exercise_progress(
                         total_weight.label("total_weight"),
                         WorkoutSet.reps.label("reps"),
                         WorkoutSet.weight_mode.label("weight_mode"),
+                        WorkoutSet.execution_kind, WorkoutSet.execution_revision, WorkoutSet.is_completed,
+                        part_rows.label("parts"),
                     )
                     .where(
                         WorkoutSet.workout_id.in_(workout_ids),
                         WorkoutSet.exercise_id == exercise_id,
-                        WorkoutSet.is_completed.is_(True),
                         WorkoutSet.is_deleted.is_(False),
-                        WorkoutSet.weight > 0,
-                        WorkoutSet.reps > 0,
+                        performed_set_filter() if include_compound else standard_set_filter(),
+                        *([] if include_compound else [WorkoutSet.is_completed.is_(True), WorkoutSet.weight > 0, WorkoutSet.reps > 0]),
                     )
                     .order_by(WorkoutSet.workout_id, WorkoutSet.set_number.asc())
                 )
@@ -227,9 +240,13 @@ async def get_exercise_progress(
         sets_by_workout.setdefault(workout_id, []).append(
             {
                 "set_number": int(row["set_number"]),
-                "weight": _decimal(row["weight"]),
-                "total_weight": _decimal(row["total_weight"]),
-                "reps": int(row["reps"]),
+                "weight": _decimal(row["weight"]) if row["weight"] is not None else None,
+                "total_weight": _decimal(row["total_weight"]) if row["total_weight"] is not None else None,
+                "reps": int(row["reps"]) if row["reps"] is not None else None,
+                "execution_kind": row.get("execution_kind") or "standard",
+                "execution_revision": row.get("execution_revision") or 0,
+                "is_completed": row.get("is_completed", True),
+                "parts": row.get("parts") or [],
                 "weight_mode": row["weight_mode"] if row["weight_mode"] in {"total", "per_hand"} else None,
             }
         )

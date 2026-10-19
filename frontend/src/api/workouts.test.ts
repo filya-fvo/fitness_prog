@@ -264,7 +264,7 @@ describe("workout schedule API", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith(
       `/workouts/exercises/${exerciseId}/progress`,
-      { params: { period_days: 365, phase: "all", diary_limit: 1 } },
+      { params: { execution_version: 2, period_days: 365, phase: "all", diary_limit: 1 } },
     );
     expect(result.points[0]).toMatchObject({
       weight: 22,

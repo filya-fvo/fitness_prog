@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.user_exercise_pin import UserExercisePin
-from app.models.workout import Workout, WorkoutSet
+from app.models.workout import Workout
+from app.services.workout_load_rows import effective_load_rows
 
 ExplorerScope = Literal["all", "recent", "pinned"]
 PIN_LIMIT = 8
@@ -26,21 +27,20 @@ class ExerciseUnavailableError(RuntimeError):
 
 
 def _recent_subquery(user_id: uuid.UUID):
+    rows = effective_load_rows()
     return (
         select(
-            WorkoutSet.exercise_id.label("exercise_id"),
+            rows.c.exercise_id.label("exercise_id"),
             func.max(Workout.scheduled_date).label("last_completed_date"),
             func.count(func.distinct(Workout.id)).label("completed_workouts"),
         )
-        .join(Workout, Workout.id == WorkoutSet.workout_id)
+        .select_from(rows).join(Workout, Workout.id == rows.c.workout_id)
         .where(
             Workout.user_id == user_id,
             Workout.status == "completed",
             Workout.is_deleted.is_(False),
-            WorkoutSet.is_completed.is_(True),
-            WorkoutSet.is_deleted.is_(False),
         )
-        .group_by(WorkoutSet.exercise_id)
+        .group_by(rows.c.exercise_id)
         .subquery("recent_user_exercises")
     )
 
