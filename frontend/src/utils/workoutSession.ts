@@ -1,4 +1,5 @@
-import type { LocalSetDraft, Workout, WorkoutPlanExercise, WorkoutSet } from "@/types/workout";
+import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutPlanExercise, WorkoutSet } from "@/types/workout";
+import { buildExecutionSteps, type ExecutionFacts } from "./workoutExecution";
 
 function setKey(exerciseId: string, setNumber: number): string {
   return `${exerciseId}:${setNumber}`;
@@ -136,4 +137,18 @@ export function resolveAutoAdvanceSetting(value: unknown, fallback = true): bool
   if (value === true || value === 1 || value === "1" || value === "true") return true;
   if (value === false || value === 0 || value === "0" || value === "false") return false;
   return fallback;
+}
+
+
+/** Seed logical facts from durable drafts. A logical part slot never replaces its recorded UUID. */
+export function executionFactsFromDrafts(plan: WorkoutPlan, drafts: LocalSetDraft[], retained: ExecutionFacts = {}): ExecutionFacts {
+  const bySlot = new Map(drafts.map(draft => [setKey(draft.exerciseId, draft.setNumber), draft]));
+  const facts: ExecutionFacts = {};
+  for (const step of buildExecutionSteps(plan)) {
+    const draft = bySlot.get(setKey(step.exerciseId, step.setNumber));
+    facts[step.id] = step.partOrdinal === null
+      ? draft?.isCompleted ? "completed" : retained[step.id] === "skipped" ? "skipped" : "pending"
+      : draft?.parts?.find(part => part.ordinal === step.partOrdinal)?.status ?? retained[step.id] ?? "pending";
+  }
+  return facts;
 }

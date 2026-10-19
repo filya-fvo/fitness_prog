@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { Workout } from "@/types/workout";
+import type { Workout, WorkoutPlan, LocalSetDraft } from "@/types/workout";
 import {
   draftsFromWorkoutSnapshot,
+  executionFactsFromDrafts,
   findNextIncompleteExerciseIndex,
   isPlannedExerciseComplete,
   resolveAutoAdvanceSetting,
@@ -192,4 +193,16 @@ it("retains a sparse historical slot without manufacturing hundreds of empty set
   const drafts = draftsFromWorkoutSnapshot(workout);
   expect(drafts).toHaveLength(4);
   expect(drafts[3]).toMatchObject({ setNumber: 300, reps: "8", weight: "100" });
+});
+
+it("bridges saved compound UUIDs into stable logical steps without flattening repetitions", () => {
+  const plan: WorkoutPlan = { execution_version: 2, exercises: [{ exercise_id: "exercise-1", order: 1, target_sets: 1,
+    set_methods: [{ set_number: 1, kind: "cluster", parts: [0, 1, 2].map(i => ({ target_reps: 4, target_weight: 100, pause_after_sec: i < 2 ? 20 : 0 })) }] }] };
+  const drafts: LocalSetDraft[] = [{ exerciseId: "exercise-1", setNumber: 1, reps: "", weight: "", isCompleted: false, restTimeSec: 120,
+    executionKind: "cluster", parts: ["completed", "skipped", "pending"].map((status, i) => ({ id: `saved-uuid-${i}`, ordinal: i + 1,
+      reps: 4, weight: 100, duration_sec: null, status: status as "completed" | "skipped" | "pending", rest_after_sec: i < 2 ? 20 : 0 })) }];
+  const facts = executionFactsFromDrafts(plan, drafts);
+  expect(Object.values(facts)).toEqual(["completed", "skipped", "pending"]);
+  expect(drafts[0].reps).toBe("");
+  expect(drafts[0].parts?.[0].id).toBe("saved-uuid-0");
 });

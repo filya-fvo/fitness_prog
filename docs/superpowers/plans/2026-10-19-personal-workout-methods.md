@@ -125,12 +125,12 @@ Step содержит blockId/round/exerciseId/setNumber/partId; Decision — ne
 durationSec, terminal. RestState — transitionId/sourceActionId/targetStep/startedAt/endsAt/durationSec/owner.
 Input содержит plan/факты/курсор/actionId/confirmedAt и текущую паузу. Повтор actionId — no-op.
 
-- [ ] Написать табличные tests всех строк раздела 5 spec до интеграции UI.
-- [ ] Точные assertions: кластер 3×4 перед следующим полным подходом — rest 20/20/120, в конце тренировки — только 20/20; суперсет на 2 раунда — A1/B1/A2/B2; между A/B 0, после B1 90, после B2 при конце тренировки 0.
-- [ ] Проверить трисет, круг с timed-участником, кластер внутри суперсета, следующий независимый блок, последний шаг, пропуск и отмену. Вложенных групп нет; неравные rounds дают validation error.
-- [ ] Реализовать pure transition reducer и deadline clock; `autoAdvance=false` меняет только UI-навигацию, не решение таймера.
-- [ ] Fake clocks: возврат через 10 с, после deadline, background throttling, смена даты/часового пояса, скачок wall clock, повтор actionId, исправление старого подхода, уже идущий отдых. Ноль не заменяется fallback через `||`.
-- [ ] Проверки; только при ошибках — исправления и повторные проверки; после успеха — `feat: resolve workout sequence and rest timing`.
+- [x] Написать табличные tests всех строк раздела 5 spec до интеграции UI.
+- [x] Точные assertions: кластер 3×4 перед следующим полным подходом — rest 20/20/120, в конце тренировки — только 20/20; суперсет на 2 раунда — A1/B1/A2/B2; между A/B 0, после B1 90, после B2 при конце тренировки 0.
+- [x] Проверить трисет, круг с timed-участником, кластер внутри суперсета, следующий независимый блок, последний шаг, пропуск и отмену. Вложенных групп нет; неравные rounds дают validation error.
+- [x] Реализовать pure transition reducer и deadline clock; `autoAdvance=false` меняет только UI-навигацию, не решение таймера.
+- [x] Fake clocks: возврат через 10 с, после deadline, background throttling, смена даты/часового пояса, скачок wall clock, повтор actionId, исправление старого подхода, уже идущий отдых. Ноль не заменяется fallback через `||`.
+- [x] Проверки; только при ошибках — исправления и повторные проверки; после успеха — `feat: resolve workout sequence and rest timing`.
 
 ### W6. Настройка методов в подготовке
 

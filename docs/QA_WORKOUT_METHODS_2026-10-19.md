@@ -50,3 +50,13 @@ Final W2 follow-up: a missing catalog-outage notice was reproduced and fixed; cu
 - Full backend1003 PASS before final bounded-size/lock-order additions; final targeted28 PASS and Ruff PASS. Migration checker57 PASS. Frontend761 unit, lint/types/build/PWA PASS. Chromium15 PASS (preparation plus composer, four widths and both themes).
 - Bundle598238 total /541770 product, largest108742/admin56468, within unchanged W3 limits; shared API mapping replaces duplicated program-start parsing. No new dependency.
 - No native implementation/device claim: only the existing legacy protocol dispatch was exercised. Timer/runtime UI/analytics integration and W9 durable queue remain pending; no deployment at this stage.
+
+
+## W5 — sequence and deadline clock
+
+- Pure domain vectors cover every rest decision: ordinary sets/blocks, drop, cluster20/20/120 and20/20/end, superset0/90/0/end, triset, circuit with timed member, cluster inside group and following independent block. AutoAdvance does not change timing.
+- RED: absent engine/clock, missing bridge, whole-participant skip incorrectly completed work, stale undo could cancel a new completion of the same step. All corrected; original UUIDs and completed parts retained.
+- Clock vectors cover delayed response, throttling, same deadline after reload, owner/workout boundary, late return with one signal, zero, extension/manual stop, no resurrection, midnight/timezone and ambiguous system-clock/sleep changes. Ambiguity requires explicit continuation.
+- Full web790 unit PASS; final targeted41 PASS after explicit midnight and stale-undo regressions, lint/types PASS. No backend changes in W5. This is the pure layer: UI/durable transactions/signals are connected in W7/W9, native lifecycle remains untested until Android stages.
+
+W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within unchanged W3 limits.
