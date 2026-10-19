@@ -19,6 +19,7 @@ export type ExecutionStatus = "pending" | "completed" | "skipped";
 export type ExecutionFacts = Record<string, ExecutionStatus>;
 export type ExecutionUndo = { actionId: string; stepId: string; previousFacts: ExecutionFacts };
 export type ExecutionProgress = {
+  manualContinue: boolean;
   facts: ExecutionFacts;
   cursor: string | null;
   rest: RestState | null;
@@ -40,6 +41,7 @@ export type TransitionInput = {
   processedActionIds?: string[];
   lastAction?: ExecutionUndo | null;
   autoAdvance?: boolean;
+  manualContinue?: boolean;
 };
 export type TransitionDecision = ExecutionProgress & {
   accepted: boolean;
@@ -146,7 +148,7 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
   const base: TransitionDecision = {
     accepted: false, blockedReason: null, facts: input.facts, cursor: input.cursor, rest: input.rest,
     processedActionIds: processed, lastAction: input.lastAction ?? null, nextStep: current,
-    restKind: input.rest?.restKind ?? null, durationSec: input.rest?.durationSec ?? 0, terminal: current === null, manualContinue: input.rest?.requiresConfirmation ?? false,
+    restKind: input.rest?.restKind ?? null, durationSec: input.rest?.durationSec ?? 0, terminal: current === null, manualContinue: input.manualContinue ?? input.rest?.requiresConfirmation ?? false,
   };
   if (!["complete", "skip", "skip_participant", "correct", "undo"].includes(input.action)) return { ...base, blockedReason: "invalid_action" };
   if (processed.includes(input.actionId)) return { ...base, blockedReason: "duplicate" };

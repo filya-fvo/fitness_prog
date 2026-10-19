@@ -146,8 +146,11 @@ const limits = {
   // Method/group preparation and the single sequence preview add 5986 product
   // gzip bytes versus W5 (598290/541813 -> 604278/547799). They remain in the
   // existing lazy Training chunk; no vendor/dependency or largest/admin growth.
-  totalJsGzip: 604_900,
-  productJsGzip: 548_400,
+  // Atomic v2 execution, contextual navigator and part forms add11071 product
+  // gzip bytes versus W6 (604278/547799 -> 615345/558870). Same dependencies;
+  // largest vendor108742 and admin56475 remain within unchanged limits.
+  totalJsGzip: 615_950,
+  productJsGzip: 559_450,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

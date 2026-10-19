@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useRef } from "react";
 import { sendAIChat } from "@/api/ai";
 import { getStoredToken } from "@/api/client";
-import { fetchExercises } from "@/api/exercises";
+import { fetchExerciseCatalog } from "@/api/exercises";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import { addWorkoutSet, completeWorkout, deleteWorkout, fetchWorkout } from "@/api/workouts";
 import { Header } from "@/components/layout/Header";
@@ -25,6 +25,9 @@ import { ExerciseProgressSection } from "@/features/workout/components/ExerciseP
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscriptionAccess";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { WorkoutExecutionNavigator } from "@/features/workout/components/WorkoutExecutionNavigator";
+import { finishExecutionSession } from "@/db/workoutExecution";
+import { workoutClockSnapshot } from "@/utils/workoutRest";
 import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
 import { WarmupPanel } from "@/features/workout/components/WarmupPanel";
 import { WorkoutElapsedClock } from "@/features/workout/components/WorkoutElapsedClock";
@@ -79,6 +82,7 @@ function asPlan(raw: Workout["plan"]): WorkoutPlan & {
   if (!raw || typeof raw !== "object") return { exercises: [] };
   const plan = raw as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
   return {
+    ...plan,
     title: plan.title ?? null,
     workout_type: plan.workout_type ?? null,
     day_index: plan.day_index ?? null,
@@ -288,13 +292,7 @@ export function ActiveWorkout() {
           }
           const remoteWorkout = await fetchWorkout(routeId);
           const remoteDrafts = draftsFromWorkoutSnapshot(remoteWorkout);
-          useWorkoutStore.getState().hydrateSession({
-            clientId: remoteWorkout.id,
-            serverId: remoteWorkout.id,
-            workout: remoteWorkout,
-            drafts: remoteDrafts,
-            currentExerciseIndex: 0,
-          });
+
 
           if (remoteWorkout.status === "completed") {
             setElapsedFinalSec(remoteWorkout.duration_sec ?? 0);
@@ -308,6 +306,15 @@ export function ActiveWorkout() {
               currentExerciseIndex: 0,
             });
           }
+
+          if (cancelled || useUserStore.getState().user?.id !== remoteWorkout.user_id) return;
+          useWorkoutStore.getState().hydrateSession({
+            clientId: remoteWorkout.id,
+            serverId: remoteWorkout.id,
+            workout: remoteWorkout,
+            drafts: remoteDrafts,
+            currentExerciseIndex: 0,
+          });
 
           if (!cancelled) {
             setBooting(false);
@@ -346,22 +353,8 @@ export function ActiveWorkout() {
     let cancelled = false;
     void (async () => {
       try {
-        const pages: Awaited<ReturnType<typeof fetchExercises>>[] = [];
-        const first = await fetchExercises({ pageSize: 200, page: 1 });
-        pages.push(first);
-        const maxPages = Math.min(5, Math.ceil((first.total || 0) / 200) || 1);
-        for (let page = 2; page <= maxPages; page += 1) {
-          const chunk = await fetchExercises({ pageSize: 200, page }).catch(() => null);
-          if (!chunk?.items?.length) break;
-          pages.push(chunk);
-          if (chunk.items.length < 200) break;
-        }
+        const items = await fetchExerciseCatalog();
         if (cancelled) return;
-        const map = new Map<string, (typeof first.items)[number]>();
-        for (const pg of pages) {
-          for (const it of pg.items) map.set(it.id, it);
-        }
-        const items = Array.from(map.values());
         if (!items.length) return;
         setCatalog(items);
         await cacheExercises(items);
@@ -395,6 +388,7 @@ export function ActiveWorkout() {
   const stableClientId = clientWorkoutId ?? workoutId ?? activeWorkout?.id ?? "";
   const exerciseMap = useMemo(() => new Map(catalog.map((item) => [item.id, item])), [catalog]);
   const plan = useMemo(() => asPlan(activeWorkout?.plan), [activeWorkout?.plan]);
+  const isV2 = plan.execution_version === 2;
   const exerciseIds = useMemo(() => {
     if (plan.exercises.length) {
       return [...plan.exercises]
@@ -490,7 +484,7 @@ export function ActiveWorkout() {
   useEffect(() => {
     let cancelled = false;
     async function suggest() {
-      if (!currentExerciseId || booting) return;
+      if (!currentExerciseId || booting || isV2) return;
       try {
         const histMap = await loadExerciseHints([currentExerciseId]);
         if (cancelled) return;
@@ -545,7 +539,7 @@ export function ActiveWorkout() {
     };
     // only re-run when exercise changes / boot done
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booting, currentExerciseId, weekPhase.phase]);
+  }, [booting, currentExerciseId, weekPhase.phase, isV2]);
 
   const persistSession = useCallback(
     async (workout: Workout, nextDrafts = drafts, exerciseIndex = currentExerciseIndex) => {
@@ -873,7 +867,15 @@ export function ActiveWorkout() {
       const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
 
       let result: Workout;
-      if (isOnline()) {
+      if (isV2) {
+        const owner = useUserStore.getState().user?.id;
+        if (!owner || owner !== activeWorkout.user_id) throw new Error("Аккаунт изменился. Откройте тренировку заново");
+        const session = await finishExecutionSession({ owner, clientWorkoutId: clientId, actionId: crypto.randomUUID(), now: workoutClockSnapshot(), rpe, aiNotes });
+        result = session.workout;
+        useWorkoutStore.getState().applyExecutionSession(session, workoutClockSnapshot());
+        void flushSyncQueue(owner).catch(() => { /* results remain in the durable queue */ });
+        setOfflineNote("Результат сохранён. Синхронизация выполняется в фоне.");
+      } else if (isOnline()) {
         try {
           await flushSyncQueue();
           const wid = await apiWorkoutId();
@@ -924,7 +926,7 @@ export function ActiveWorkout() {
         weekPhase.phase,
       );
 
-      await deleteLocalSession(clientId);
+      if (!isV2) await deleteLocalSession(clientId);
       resetSession();
       hapticNotification("success");
       trackEvent("workout_completed", {
@@ -947,6 +949,7 @@ export function ActiveWorkout() {
   }, [
     activeWorkout,
     apiWorkoutId,
+    isV2,
     completing,
     drafts,
     exerciseIds,
@@ -1064,7 +1067,7 @@ export function ActiveWorkout() {
   }, [currentExerciseId]);
 
   useEffect(() => {
-    if (autoAdvance == null) return;
+    if (isV2 || autoAdvance == null) return;
     if (autoAdvance.seconds <= 0) {
       setAutoAdvance(null);
       const state = useWorkoutStore.getState();
@@ -1080,7 +1083,7 @@ export function ActiveWorkout() {
       1000,
     );
     return () => window.clearTimeout(timer);
-  }, [autoAdvance, persistSession]);
+  }, [autoAdvance, persistSession, isV2]);
 
   useEffect(() => {
     if (!activeWorkout || ["completed", "skipped"].includes(activeWorkout.status)) return;
@@ -1485,14 +1488,14 @@ export function ActiveWorkout() {
           label="Таймер тренировки"
         />
         <div className="flex shrink-0 items-center gap-2">
-          <button
+          {!isV2 ? <button
             type="button"
             onClick={toggleSimpleMode}
             className="tap-target rounded-full bg-tg-bg px-2.5 py-1.5 text-[11px] font-medium text-tg-hint"
             title={simpleMode ? "Показать все настройки" : "Режим зала"}
           >
             {simpleMode ? "Зал" : "Полный"}
-          </button>
+          </button> : null}
           <button
             type="button"
             onClick={openFinishDialog}
@@ -1577,7 +1580,7 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      {plan.exercises.length > 1 && activeWorkout?.status !== "completed" ? (
+      {!isV2 && plan.exercises.length > 1 && activeWorkout?.status !== "completed" ? (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-tg-secondary px-3 py-2">
           <p className="text-[11px] text-tg-hint">
             Хотите другой набор, сохранив структуру дня?
@@ -1592,7 +1595,7 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+      {!isV2 ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {exerciseIds.map((id, idx) => {
           const name =
             exerciseMap.get(id)?.name_ru ||
@@ -1620,9 +1623,10 @@ export function ActiveWorkout() {
             </button>
           );
         })}
-      </div>
+      </div> : null}
 
-      {currentExercise ? (
+      {isV2 ? <WorkoutExecutionNavigator autoAdvance={autoAdvanceExercises} /> : null}
+      {!isV2 && currentExercise ? (
         <article className="app-card app-card-indigo space-y-3 p-4">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -2191,9 +2195,9 @@ export function ActiveWorkout() {
         </article>
       ) : null}
 
-      <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} />
+      {!isV2 ? <RestTimerHost restContext={restContext} workoutId={activeWorkout.id} /> : null}
 
-      {autoAdvance != null ? (
+      {!isV2 && autoAdvance != null ? (
         <div className="app-card app-card-indigo fixed inset-x-3 bottom-24 z-50 p-4 text-tg-text shadow-2xl">
           <p className="text-sm font-semibold">Упражнение выполнено</p>
           <p className="mt-1 text-xs text-tg-hint">

@@ -61,6 +61,7 @@ describe("program catalog API", () => {
       cycleReadiness: "reduce",
     });
     expect(post).toHaveBeenLastCalledWith(`/programs/${response.program_id}/start`, {
+      execution_version: 2,
       day_index: 2,
       scheduled_date: null,
       week_phase: "heavy",
@@ -69,6 +70,7 @@ describe("program catalog API", () => {
 
     await startProgramWorkout({ programId: response.program_id });
     expect(post).toHaveBeenLastCalledWith(`/programs/${response.program_id}/start`, {
+      execution_version: 2,
       day_index: 1,
       scheduled_date: null,
       week_phase: null,

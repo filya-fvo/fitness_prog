@@ -1,9 +1,15 @@
+import type { LocalWorkoutSession } from "@/db/schema";
+import { mergeExecutionWorkoutMetadata, type WorkoutExecutionEnvelope } from "@/utils/workoutExecutionState";
+import { remainingRestMs, executionRestNeedsConfirmation, workoutClockSnapshot, type ClockSnapshot } from "@/utils/workoutRest";
 import { create } from "zustand";
 import { createRestTimer, readRestTimer, writeRestTimer } from "@/utils/restTimerState";
 
 import type { Exercise, LocalSetDraft, Workout, WorkoutPlan } from "@/types/workout";
 
 type WorkoutState = {
+  execution: WorkoutExecutionEnvelope | null;
+  applyExecutionSession: (session: LocalWorkoutSession, clock?: ClockSnapshot) => boolean;
+  projectExecutionTime: (clock: ClockSnapshot) => void;
   catalog: Exercise[];
   activeWorkout: Workout | null;
   clientWorkoutId: string | null;
@@ -30,6 +36,7 @@ type WorkoutState = {
     workout: Workout;
     drafts: LocalSetDraft[];
     currentExerciseIndex?: number;
+    execution?: WorkoutExecutionEnvelope;
   }) => void;
   updateDraft: (exerciseId: string, setNumber: number, patch: Partial<LocalSetDraft>) => void;
   addDraftSet: (exerciseId: string, template?: Partial<LocalSetDraft>) => void;
@@ -106,7 +113,28 @@ function asMutablePlan(raw: Workout["plan"] | null | undefined): WorkoutPlan {
   };
 }
 
+function projectedExecutionRest(execution: WorkoutExecutionEnvelope | null, clock: ClockSnapshot) {
+  const rest = execution?.progress.rest;
+  const left = rest ? remainingRestMs(rest, clock) : 0;
+  const running = Boolean(rest && left > 0 && !executionRestNeedsConfirmation(rest, clock));
+  return { isResting: running, restSecondsLeft: Math.ceil(left / 1000), restEndsAtMs: running ? rest!.endsAt : null,
+    restNotificationId: running ? rest!.transitionId : null, restOwner: running ? rest!.owner : null,
+    restClientWorkoutId: running ? rest!.clientWorkoutId : null };
+}
+
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
+  execution: null,
+  applyExecutionSession: (session, clock = workoutClockSnapshot()) => {
+    const current = get();
+    if (!session.execution || current.clientWorkoutId !== session.clientId || current.activeWorkout?.user_id !== session.ownerUserId) return false;
+    set({ activeWorkout: session.workout, serverWorkoutId: session.serverId, drafts: session.drafts,
+      currentExerciseIndex: session.currentExerciseIndex ?? 0, execution: session.execution,
+      ...projectedExecutionRest(session.execution, clock) });
+    return true;
+  },
+  projectExecutionTime: clock => {
+    if (get().execution) set(projectedExecutionRest(get().execution, clock));
+  },
   catalog: [],
   activeWorkout: null,
   clientWorkoutId: null,
@@ -115,8 +143,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   currentExerciseIndex: 0,
   ...restoredRest(),
   setCatalog: (catalog) => set({ catalog }),
-  setActiveWorkout: (activeWorkout) => set({ activeWorkout }),
-  setDrafts: (drafts) => set({ drafts }),
+  setActiveWorkout: (activeWorkout) => {
+    const current = get();
+    if (current.execution && activeWorkout && current.activeWorkout?.id === activeWorkout.id) {
+      set({ activeWorkout: mergeExecutionWorkoutMetadata(current.activeWorkout, activeWorkout) });
+    } else set({ activeWorkout, execution: null });
+  },
+  setDrafts: (drafts) => { if (!get().execution) set({ drafts }); },
   setCurrentExerciseIndex: (index) => {
     const state = get();
     const ids = sessionExerciseIds(state.activeWorkout, state.drafts);
@@ -139,7 +172,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const workout = state.activeWorkout ? { ...state.activeWorkout, id: serverId } : null;
     set({ clientWorkoutId: clientId, serverWorkoutId: serverId, activeWorkout: workout });
   },
-  hydrateSession: ({ clientId, serverId, workout, drafts, currentExerciseIndex }) =>
+  hydrateSession: ({ clientId, serverId, workout, drafts, currentExerciseIndex, execution }) =>
     set({
       clientWorkoutId: clientId,
       serverWorkoutId: serverId,
@@ -149,15 +182,19 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         currentExerciseIndex ?? 0,
         sessionExerciseIds(workout, drafts).length,
       ),
-      ...restoredRest(workout.user_id, clientId),
+      execution: execution ?? null,
+      ...(execution ? projectedExecutionRest(execution, workoutClockSnapshot()) : restoredRest(workout.user_id, clientId)),
     }),
-  updateDraft: (exerciseId, setNumber, patch) =>
+  updateDraft: (exerciseId, setNumber, patch) => {
+    if (get().execution) return;
     set({
       drafts: get().drafts.map((draft) =>
         draft.exerciseId === exerciseId && draft.setNumber === setNumber ? { ...draft, ...patch } : draft,
       ),
-    }),
+    });
+  },
   addDraftSet: (exerciseId, template) => {
+    if (get().execution) return;
     const existing = get().drafts.filter((d) => d.exerciseId === exerciseId);
     const nextNumber = existing.reduce((max, d) => Math.max(max, d.setNumber), 0) + 1;
     const last = existing[existing.length - 1];
@@ -176,6 +213,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set({ drafts: [...get().drafts, draft] });
   },
   removeDraftSet: (exerciseId, setNumber) => {
+    if (get().execution) return;
     const filtered = get().drafts.filter(
       (d) => !(d.exerciseId === exerciseId && d.setNumber === setNumber && !d.isCompleted),
     );
@@ -190,6 +228,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
   startRest: (seconds) =>
     set(() => {
+      if (get().execution) return {};
       const value = Math.max(0, Math.min(600, Math.round(seconds)));
       const current = get();
       const record = value > 0 ? createRestTimer(value, {
@@ -207,6 +246,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       };
     }),
   adjustRest: (deltaSeconds) => {
+    if (get().execution) return;
     const state = get();
     if (!state.isResting) return;
     const liveLeft = state.restEndsAtMs
@@ -225,6 +265,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set({ restSecondsLeft: next, restEndsAtMs: endsAtMs });
   },
   syncRest: () => {
+    if (get().execution) return;
     const state = get();
     if (!state.isResting || !state.restEndsAtMs) return;
     const left = Math.max(0, Math.ceil((state.restEndsAtMs - Date.now()) / 1000));
@@ -237,11 +278,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (left !== state.restSecondsLeft) set({ restSecondsLeft: left });
   },
   stopRest: () => {
+    if (get().execution) return;
     writeRestTimer(null);
     set({ isResting: false, restSecondsLeft: 0, restEndsAtMs: null,
         restNotificationId: null, restOwner: null, restClientWorkoutId: null });
   },
   setExerciseRest: (exerciseId, restTimeSec) => {
+    if (get().execution) return;
     const sec = Math.max(0, Math.min(600, Math.round(restTimeSec)));
     set({
       drafts: get().drafts.map((d) =>
@@ -250,6 +293,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     });
   },
   replaceExercise: (fromExerciseId, toExercise) => {
+    if (get().execution) return false;
     if (!fromExerciseId || !toExercise?.id || fromExerciseId === toExercise.id) return false;
     const state = get();
     if (!state.activeWorkout) return false;
@@ -350,6 +394,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     return true;
   },
   replaceExercises: (replacements) => {
+    if (get().execution) return 0;
     const state = get();
     if (!state.activeWorkout || !replacements.length) return 0;
 
@@ -440,6 +485,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     return accepted.size;
   },
   restoreDefaultExercises: (catalog) => {
+    if (get().execution) return false;
     const state = get();
     if (!state.activeWorkout) return false;
     const plan = asMutablePlan(state.activeWorkout.plan);
@@ -519,6 +565,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   resetSession: () => {
     writeRestTimer(null);
     set({
+      execution: null,
       activeWorkout: null,
       clientWorkoutId: null,
       serverWorkoutId: null,

@@ -72,3 +72,14 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Playwright option toBeDisabled matcher reported an enabled option despite native disabled=true; changed to the actual HTMLOptionElement.disabled property plus standard-value assertion. No product restriction was weakened.
 - W5 bundle598290/541813 -> final604278/547799 (+5986 product gzip bytes). New editors/preview remain in existing lazy Training chunk, same vendor108742/admin56479. Narrow caps604900/548400, other caps/dependencies unchanged.
 - Not deployed. Runtime recording/timer screen, analytics, offline reconciliation and installed Android remain later stages.
+
+
+## W7 — runtime, durable facts and contextual rest
+
+- Valid initial browser RED: real ActiveWorkout had no part UI. GREEN: individual parts, group rounds, timed targets, old correction, exact-action undo, skip remainder and manual navigation.
+- IndexedDB tests verify atomic part/cursor/rest/full outbox, rollback on storage failure, duplicate identity/stale-tab rejection, single signal claim, owner boundary and protection from late generic saves. Full v2 projection and dependent-operation blocking preserve all facts.
+- Final web828 unit PASS, lint/types/build/PWA PASS. Chromium18 timing/layout/a11y PASS plus8 legacy recovery/day cases; final additional early-finish regression PASS. Four widths320/375/393/1440, light/dark, low height568, actual browser clock and explicit focus/visibility checked. Both393 screenshots inspected.
+- Real RED→GREEN: note1001 characters was accepted locally although server allows1000; writer/UI now reject before facts/rest/outbox. Real RED→GREEN: early finish during an in-flight part waited for a later background flush after unmount; a requested follow-up flush now drains immediately in order. Partial finish never marks pending parts completed.
+- AutoAdvance changes viewed card only. Completion/correction require user action. Drop0-pause, cluster20/20/120, grouped participant transition before round90, timed40-second target, +15/early stop/no final rest are verified in the browser.
+- W6 bundle604278/547799 -> W7 615345/558870 (+11071 product gzip bytes), same dependencies/largest108742/admin56475. Bounded aggregate caps615950/559450 preserve less than0.7KB headroom; admin/largest caps unchanged.
+- No release yet: W8 owns report/history math for compound parts; W9 owns full offline fingerprint/conflict/native-projection review and completion timestamp at the server. Android source remains untouched.

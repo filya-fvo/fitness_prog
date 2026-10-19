@@ -41,6 +41,7 @@ export async function restoreSessionIntoStore(
     workout: session.workout,
     drafts: session.drafts,
     currentExerciseIndex: session.currentExerciseIndex ?? 0,
+    execution: session.execution,
   });
 }
 

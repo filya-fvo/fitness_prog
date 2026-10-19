@@ -298,7 +298,7 @@ export async function createWorkout(input: {
   plan?: WorkoutPlan | null;
 }): Promise<Workout> {
   const { data } = await apiClient.post("/workouts", {
-    ...(input.executionVersion ? { execution_version: input.executionVersion } : {}),
+    execution_version: input.executionVersion ?? 2,
     client_workout_id: input.clientWorkoutId ?? null,
     scheduled_date: input.scheduledDate,
     exercise_ids: input.exerciseIds ?? [],

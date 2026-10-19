@@ -1,3 +1,4 @@
+import type { WorkoutExecutionEnvelope } from "@/utils/workoutExecutionState";
 /**
  * Dexie / IndexedDB schema — Sprint 3 (TZ §2, §3, §10).
  * Offline-first cache for exercises, workouts, and sync queue.
@@ -37,6 +38,7 @@ export type WorkoutIdMap = {
 };
 
 export type LocalWorkoutSession = {
+  execution?: WorkoutExecutionEnvelope;
   clientId: string;
   ownerUserId: string;
   serverId: string | null;

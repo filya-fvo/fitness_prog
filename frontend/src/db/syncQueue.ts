@@ -1,3 +1,4 @@
+import { mergeExecutionWorkoutMetadata } from "@/utils/workoutExecutionState";
 /**
  * Background sync queue — Sprint 3+.
  * Flushes offline workout mutations when the network is back.
@@ -346,23 +347,25 @@ export async function saveLocalSession(input: {
   currentExerciseIndex?: number;
 }): Promise<void> {
   const ownerUserId = requireOwnerUserId(input.workout.user_id);
-  const workoutForStore: Workout = {
-    ...input.workout,
-    id: input.serverId ?? input.workout.id,
-  };
-  await db.sessions.put({
-    clientId: input.clientId,
-    ownerUserId,
-    serverId: input.serverId,
-    workout: workoutForStore,
-    drafts: input.drafts,
-    currentExerciseIndex: input.currentExerciseIndex ?? 0,
-    updatedAt: Date.now(),
+  await db.transaction("rw", db.sessions, db.workouts, async () => {
+    const existing = await db.sessions.get(input.clientId);
+    if (existing && existing.ownerUserId !== ownerUserId) throw new Error("Тренировка принадлежит другому аккаунту");
+    const serverId = input.serverId ?? existing?.serverId ?? null;
+    if (existing?.execution) {
+      // Dedicated execution transactions own v2 facts. Late generic saves only
+      // update identity/navigation and the existing warmup completion metadata.
+      const preserved = { ...existing, serverId, currentExerciseIndex: input.currentExerciseIndex ?? existing.currentExerciseIndex,
+        workout: mergeExecutionWorkoutMetadata(existing.workout, input.workout, serverId ?? existing.workout.id), updatedAt: Date.now() };
+      await db.sessions.put(preserved);
+      await db.workouts.put(preserved.workout);
+    } else {
+      const workoutForStore = { ...input.workout, id: serverId ?? input.workout.id };
+      await db.sessions.put({ clientId: input.clientId, ownerUserId, serverId, workout: workoutForStore,
+        drafts: input.drafts, currentExerciseIndex: input.currentExerciseIndex ?? 0, updatedAt: Date.now() });
+      await db.workouts.put(workoutForStore);
+    }
+    if (serverId && serverId !== input.clientId) await db.workouts.delete(input.clientId);
   });
-  await db.workouts.put(workoutForStore);
-  if (input.serverId && input.serverId !== input.clientId) {
-    await db.workouts.delete(input.clientId);
-  }
 }
 
 export async function syncWorkoutPlan(input: {
@@ -398,6 +401,7 @@ export async function deleteLocalSession(clientId: string): Promise<void> {
 }
 
 let flushing = false;
+let pendingFlush: { owner: string; retryFailed: boolean } | null = null;
 
 export async function flushSyncQueue(
   ownerUserId?: string,
@@ -405,9 +409,11 @@ export async function flushSyncQueue(
 ): Promise<{ processed: number; failed: number; dropped: number }> {
   const owner = ownerUserId || currentOwnerUserId();
   if (!owner) return { processed: 0, failed: 0, dropped: 0 };
-  if (flushing || !navigator.onLine) {
+  if (flushing) {
+    pendingFlush = { owner, retryFailed: Boolean(options.retryFailed || (pendingFlush?.owner === owner && pendingFlush.retryFailed)) };
     return { processed: 0, failed: 0, dropped: 0 };
   }
+  if (!navigator.onLine) return { processed: 0, failed: 0, dropped: 0 };
   flushing = true;
   let processed = 0;
   let failed = 0;
@@ -431,9 +437,13 @@ export async function flushSyncQueue(
         }
       }
     }
+    const blockedWorkouts = new Set<string>();
     for (const item of items) {
+      if (blockedWorkouts.has(item.clientWorkoutId)) { failed += 1; continue; }
+      const structured = item.payload.executionVersion === 2 || (item.payload.plan && typeof item.payload.plan === "object" && (item.payload.plan as { execution_version?: unknown }).execution_version === 2);
       if (useUserStore.getState().user?.id !== owner) break;
       if ((item.attempts || 0) >= MAX_SYNC_ATTEMPTS) {
+        if (structured) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         continue;
       }
@@ -442,6 +452,7 @@ export async function flushSyncQueue(
         await db.syncQueue.delete(item.id);
         processed += 1;
       } catch (err) {
+        if (structured) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         const message = err instanceof Error ? err.message : "sync failed";
         const attempts = (item.attempts || 0) + 1;
@@ -455,6 +466,13 @@ export async function flushSyncQueue(
     }
   } finally {
     flushing = false;
+    const requested = pendingFlush;
+    pendingFlush = null;
+    if (requested && useUserStore.getState().user?.id === requested.owner) {
+      void flushSyncQueue(requested.owner, { retryFailed: requested.retryFailed }).catch(() => {
+        window.dispatchEvent(new CustomEvent("fitness:sync-error", { detail: { message: "Не удалось синхронизировать сохранённые данные" } }));
+      });
+    }
   }
 
   if (processed > 0 && typeof window !== "undefined") {
@@ -545,40 +563,19 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
   }
 
   if (item.type === "add_set") {
-    const payload = item.payload as {
-      exerciseId: string;
-      setNumber: number;
-      reps?: number | null;
-      weight?: number | null;
-      weightMode?: "total" | "per_hand" | null;
-      restTimeSec?: number | null;
-      durationSec?: number | null;
-      note?: string | null;
-      machineParams?: Record<string, string | number> | null;
-      isCompleted?: boolean;
-    };
-    await addWorkoutSet({
-      workoutId: serverWorkoutId,
-      exerciseId: payload.exerciseId,
-      setNumber: payload.setNumber,
-      reps: payload.reps ?? null,
-      weight: payload.weight ?? null,
-      weightMode: payload.weightMode ?? null,
-      restTimeSec: payload.restTimeSec ?? null,
-      durationSec: payload.durationSec ?? null,
-      note: payload.note ?? null,
-      machineParams: payload.machineParams ?? null,
-      isCompleted: payload.isCompleted ?? true,
-    });
+    const payload = item.payload as Omit<Parameters<typeof addWorkoutSet>[0], "workoutId">;
+    await addWorkoutSet({ ...payload, workoutId: serverWorkoutId, isCompleted: payload.isCompleted ?? true });
     return;
   }
 
   if (item.type === "complete_workout") {
     const payload = item.payload as {
+      executionVersion?: 1 | 2;
       rpe?: number | null;
       aiNotes?: string | null;
     };
     const workout = await completeWorkout({
+      executionVersion: payload.executionVersion,
       workoutId: serverWorkoutId,
       rpe: payload.rpe ?? null,
       aiNotes: payload.aiNotes ?? null,

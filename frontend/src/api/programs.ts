@@ -111,7 +111,7 @@ export async function startProgramWorkout(input: {
     scheduled_date: input.scheduledDate ?? null,
     week_phase: input.weekPhase ?? null,
   };
-  if (input.executionVersion) payload.execution_version = input.executionVersion;
+  payload.execution_version = input.executionVersion ?? 2;
   if (input.cycleReadiness !== undefined) payload.cycle_readiness = input.cycleReadiness;
   const { data } = await apiClient.post(`/programs/${input.programId}/start`, payload);
   return mapWorkout(workoutSchema.parse(data));

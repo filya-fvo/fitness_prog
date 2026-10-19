@@ -43,3 +43,9 @@ it("sends all parts and concurrency identity without flattening the parent", asy
     reps: null, weight: null, parts: [expect.objectContaining({ reps: 4, weight: 100 })],
   }));
 });
+
+it("advertises execution format2 when starting a program without a client-supplied plan", async () => {
+  vi.spyOn(apiClient, "post").mockResolvedValue({ data: workout });
+  await startProgramWorkout({ programId: id });
+  expect(apiClient.post).toHaveBeenCalledWith(`/programs/${id}/start`, expect.objectContaining({ execution_version: 2 }));
+});
