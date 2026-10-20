@@ -161,7 +161,7 @@ export function PlannedWorkoutEditor(props: Props) {
 
   const picking = adding || editingId !== null;
   return <>
-    <button type="button" disabled={props.disabled} onClick={() => void showEditor()} className="app-button app-secondary-action mt-2 w-full">
+    <button type="button" disabled={props.disabled} onClick={event => { event.currentTarget.focus(); void showEditor(); }} className="app-button app-secondary-action mt-2 w-full">
       Подготовить упражнения · {formatDate(props.scheduledDate)}
     </button>
     {open ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-3 sm:items-center">

@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const visualRegressionEnabled =
   process.platform === "win32" || process.env.PLAYWRIGHT_VISUAL_QA === "1";
+const workoutMethodsTests = /(?:workout-customization|workout-method-(?:preparation|timing|recovery|history)|workout-prepared-start)\.spec\.ts/;
 const auditRegressionTests =
   /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|measurement-chart-values|wheel-picker-accessibility|workout-ux-followup|workout-day-sets|warmup-media|active-program-preparation|nutrition-add-close)\.spec\.ts/;
 
@@ -42,7 +43,7 @@ export default defineConfig({
     },
     {
       name: "iphone-webkit",
-      testMatch: [/(?:iphone-(layout|telegram-entry)|content-design|faq-design)\.spec\.ts/, auditRegressionTests],
+      testMatch: [/(?:iphone-(layout|telegram-entry)|content-design|faq-design)\.spec\.ts/, auditRegressionTests, workoutMethodsTests],
       use: { ...devices["iPhone 13"] },
     },
     {
@@ -50,6 +51,7 @@ export default defineConfig({
       testMatch: [
         /(?:browser-session|critical-path|nutrition-label|onboarding|stale-release-update|support|telegram-browser-login|workout-recovery)\.spec\.ts/,
         auditRegressionTests,
+        workoutMethodsTests,
       ],
       use: { ...devices["Desktop Firefox"] },
     },
