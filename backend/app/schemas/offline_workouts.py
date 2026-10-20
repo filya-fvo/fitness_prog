@@ -22,6 +22,7 @@ class PreparedProgramPlan(BaseModel):
     week_phase: Literal["light", "medium", "heavy"]
     readiness: Literal["normal", "caution", "reduce", "rest"]
     after_recovery: bool = False
+    preparation_fingerprint: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     plan: WorkoutPlan
 
 

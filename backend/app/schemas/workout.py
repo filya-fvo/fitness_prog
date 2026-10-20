@@ -86,7 +86,14 @@ class WorkoutPlan(BaseModel):
         return self
 
 
+class WorkoutPreparationStamp(BaseModel):
+    prepared_at: AwareDatetime
+    schedule_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    plan_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class WorkoutCreate(BaseModel):
+    preparation: WorkoutPreparationStamp | None = None
     execution_version: Literal[1, 2] | None = None
     scheduled_date: date
     client_workout_id: uuid.UUID | None = None
@@ -102,6 +109,13 @@ class WorkoutCreate(BaseModel):
     )
     plan: WorkoutPlan | None = None
     sets_per_exercise: int = Field(default=3, ge=1, le=10)
+
+    @model_validator(mode="after")
+    def validate_preparation(self):
+        if self.preparation is not None and (self.execution_version != 2 or not self.program_id or not self.day_index or not self.client_workout_id or not self.plan or not self.plan.exercises):
+            raise ValueError("Сохранённому плану нужны программа, день, версия и идентификатор тренировки")
+        return self
+
 
 
 class PlannedWorkoutReplacement(BaseModel):

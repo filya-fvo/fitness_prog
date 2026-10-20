@@ -290,6 +290,9 @@ function invalidateWorkoutResponse(workoutId: string): void {
 }
 
 export async function createWorkout(input: {
+  preparation?: import("@/types/workout").WorkoutPreparationStamp | null;
+  weekPhase?: "light" | "medium" | "heavy" | null;
+  cycleReadiness?: "normal" | "caution" | "reduce" | "rest" | null;
   executionVersion?: 1 | 2;
   clientWorkoutId?: string | null;
   scheduledDate: string;
@@ -302,6 +305,9 @@ export async function createWorkout(input: {
   plan?: WorkoutPlan | null;
 }): Promise<Workout> {
   const { data } = await apiClient.post("/workouts", {
+    preparation: input.preparation ?? null,
+    week_phase: input.weekPhase ?? null,
+    cycle_readiness: input.cycleReadiness ?? null,
     execution_version: input.executionVersion ?? 2,
     client_workout_id: input.clientWorkoutId ?? null,
     scheduled_date: input.scheduledDate,

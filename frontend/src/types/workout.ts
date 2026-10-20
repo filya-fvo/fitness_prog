@@ -201,3 +201,5 @@ export type Program = {
   personal_duration_min?: number | null;
   personal_duration_sample_size?: number;
 };
+
+export type WorkoutPreparationStamp = { prepared_at: string; schedule_fingerprint: string; plan_fingerprint: string };

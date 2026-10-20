@@ -496,6 +496,8 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
     program: Program | None = None
     if data.program_id is not None:
         await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+        if data.preparation is not None:
+            await session.refresh(user, attribute_names=["goals"])
         program = await session.scalar(
             select(Program).where(Program.id == data.program_id, Program.is_deleted.is_(False))
         )
@@ -513,6 +515,8 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             cycle_readiness=data.cycle_readiness, consume_saved_override=False,
         )
         workout_execution.require_execution_version(expected, data.execution_version)
+        from app.services.workout_preparation import validate_prepared_start
+        await validate_prepared_start(session, user, program, data, expected)
         if (expected.get("customization_revisions") or {}) != data.plan.customization_revisions:
             raise HTTPException(409, "Личный план изменился после подготовки. Результат сохранён на устройстве")
         if expected.get("execution_version") == 2:

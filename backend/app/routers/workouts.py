@@ -435,10 +435,11 @@ async def assign_workout_occurrence(
 async def offline_workout_context(
     start: date,
     days: int = Query(default=14, ge=1, le=14),
+    execution_version: Literal[1, 2] | None = None,
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> OfflineWorkoutContext:
-    return await offline_workouts.prepare_context(session, user, start=start, days=days)
+    return await offline_workouts.prepare_context(session, user, start=start, days=days, execution_version=execution_version)
 
 @router.get("/planned-plan", response_model=WorkoutPlan)
 async def planned_workout_plan(

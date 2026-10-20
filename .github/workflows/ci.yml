@@ -75,6 +75,17 @@ jobs:
           JWT_SECRET: ci-test-jwt-secret-not-for-production
           ENVIRONMENT: test
         run: python backend/scripts/check_android_notifications_postgres.py
+      - name: Test private plans, structured execution, migrations and prepared starts
+        working-directory: backend
+        env:
+          WORKOUT_METHODS_TEST_URL: postgresql+asyncpg://fitness_android_test@127.0.0.1:55439/fitness_android_sync_test
+          BOT_TOKEN: ci-test-bot-token
+          JWT_SECRET: ci-test-jwt-secret-not-for-production
+          ENVIRONMENT: test
+        run: >-
+          pytest -q tests/test_workout_customization.py tests/test_workout_customization_locks.py
+          tests/test_workout_execution.py tests/test_workout_method_metrics.py tests/test_workout_plan_identity.py
+          tests/test_workout_preparation.py tests/test_workout_recovery_contract.py tests/test_workout_skips.py
   frontend:
     name: Frontend (test + build)
     runs-on: ubuntu-latest

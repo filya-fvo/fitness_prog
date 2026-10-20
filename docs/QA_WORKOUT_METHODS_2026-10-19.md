@@ -119,3 +119,11 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Full backend:1050 PASS and one test-harness failure (raw DDL executed before lazy SAVEPOINT). Materialized the SAVEPOINT; all6 skip tests now PASS. Ruff and58-migration checker PASS. Web849 unit/lint/types/build/PWA PASS.
 - Bundle620261/563741 below620550/564050, same dependencies and largest108742/admin56520. Chromium25 timing/recovery PASS; new skip test initially had an invalid text encoding, corrected and independently PASS (1).
 - Remaining W9 durable preparation/start, fingerprints/bounds, cache/owner audit and CI SQL wiring. No deployment or Android source changes.
+
+
+## W9d — prepared start identity and SQL CI
+
+- Six valid initial RED failures: missing preparation identity/legacy capability guard. GREEN: private revision, calendar, program version, tampered plan, stable same-ID replay, old client rejection. Expanded checks cover actual6 MiB rejection/explicit1-day complete range, decimal normalization and owner separation.
+- Backend1059 full PASS; final58 affected SQL/contract PASS after goals refresh under user lock; Ruff PASS. Web850 full +final26 affected PASS, lint/types/build/PWA PASS. Bundle620202/563704 stays below620550/564050; same dependencies.
+- CI PostgreSQL18 job now runs all8 private-plan/structured-execution test modules with WORKOUT_METHODS_TEST_URL, so real transaction checks no longer silently skip there. Hosted CI execution will occur after push.
+- Legacy native preparation unchanged; modern nested stamp is ready for web durable start and later Android adaptation. Web durable proposal queue/start UI and smaller-range choice remain next; no release yet.

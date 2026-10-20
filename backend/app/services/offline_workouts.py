@@ -8,6 +8,8 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.offline_schedule import schedule_fingerprint
+from app.services.workout_preparation import plan_fingerprint
+from app.services.workout_execution import require_execution_version
 from app.models.user import User
 from app.schemas.offline_workouts import (
     OfflineWorkoutContext,
@@ -41,6 +43,7 @@ async def prepare_context(
     *,
     start: date,
     days: int = 14,
+    execution_version: int | None = None,
 ) -> OfflineWorkoutContext:
     if not 1 <= days <= 14:
         raise HTTPException(422, "Можно подготовить от 1 до 14 дней")
@@ -121,6 +124,9 @@ async def prepare_context(
                                 consume_saved_override=False,
                                 cycle_readiness=readiness,
                             )
+                            require_execution_version(plan, execution_version)
+                            fingerprint = plan_fingerprint(planning_user, program, plan, scheduled_date=target,
+                                day_index=index, week_phase=phase, cycle_readiness=readiness) if execution_version == 2 else None
                             result.plans.append(
                                 PreparedProgramPlan(
                                     scheduled_date=target,
@@ -129,6 +135,7 @@ async def prepare_context(
                                     readiness=readiness,
                                     after_recovery=after_recovery,
                                     plan=WorkoutPlan.model_validate(plan),
+                                    preparation_fingerprint=fingerprint,
                                 )
                             )
     # Native transport is bounded to 8MiB. Leave room for encoding and middleware.

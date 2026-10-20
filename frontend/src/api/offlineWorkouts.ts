@@ -5,6 +5,7 @@ import { scheduleOverviewSchema, workoutPlanSchema } from "@/api/workouts";
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const preparedWorkoutPlanSchema = workoutPlanSchema.extend({ exercises: z.array(workoutPlanSchema.shape.exercises.element.extend({ suggested_weight: z.union([z.number(), z.string()]).transform(Number).pipe(z.number().finite().nonnegative()).nullable().optional() })) });
 export const preparedProgramPlanSchema = z.object({
+  preparation_fingerprint: z.string().regex(/^[a-f0-9]{64}$/).nullable().optional(),
   scheduled_date: day, day_index: z.number().int().min(1).max(7),
   week_phase: z.enum(["light", "medium", "heavy"]),
   readiness: z.enum(["normal", "caution", "reduce", "rest"]), after_recovery: z.boolean().default(false), plan: preparedWorkoutPlanSchema,
@@ -22,7 +23,8 @@ export const offlineWorkoutContextSchema = z.object({
   }
 });
 export type OfflineWorkoutBundle = z.infer<typeof offlineWorkoutContextSchema>;
-export async function fetchOfflineWorkoutContext(start: string): Promise<OfflineWorkoutBundle> {
-  const { data } = await apiClient.get("/workouts/offline-context", { params: { start, days: 14 }, timeout: 60000 });
+export async function fetchOfflineWorkoutContext(start: string, days = 14): Promise<OfflineWorkoutBundle> {
+  if (!Number.isInteger(days) || days < 1 || days > 14) throw new Error("Можно подготовить от 1 до 14 дней");
+  const { data } = await apiClient.get("/workouts/offline-context", { params: { start, days, execution_version: 2 }, timeout: 60000 });
   return offlineWorkoutContextSchema.parse(data);
 }
