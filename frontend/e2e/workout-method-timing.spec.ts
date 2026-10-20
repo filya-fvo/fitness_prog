@@ -116,7 +116,7 @@ test("auto navigation off leaves the viewed part unchanged while timer still fin
   await page.clock.runFor(20000);
   await expect(page.getByText("Отдых завершён", { exact: true })).toBeVisible();
   await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "К текущему шагу", exact: true }).click();
+  await page.getByRole("button", { name: "Продолжить", exact: true }).click();
   await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeEnabled();
 });
