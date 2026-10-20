@@ -7,7 +7,7 @@ type Props = { plan: WorkoutPlan; disabled?: boolean; onChange: (plan: WorkoutPl
 const field = "app-field mt-1 min-h-[44px] w-full px-2 py-2 text-base";
 export type WorkoutGroupEditorHandle = { startWith: (exerciseId: string) => void };
 export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(function WorkoutGroupEditor({ plan, disabled, onChange, onEditingChange }, ref) {
-  const editor = useRef<HTMLDivElement>(null);
+  const editor = useRef<HTMLElement>(null);
   const [draft, setDraft] = useState<WorkoutGroup | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
   const required = draft?.kind === "superset" ? 2 : draft?.kind === "triset" ? 3 : null;
   const validCount = draft && (required ? draft.exercise_ids.length === required : draft.exercise_ids.length >= 2);
   const available = plan.exercises.filter(row => !(plan.groups ?? []).some(group => group.exercise_ids.includes(row.exercise_id))).length;
-  return <div ref={editor} className="scroll-mt-3 space-y-2">
+  return <div className="space-y-2">
     <h4 className="text-sm font-semibold">Суперсеты, трисеты и круги</h4>
     <p className="text-xs text-tg-hint">Суперсет — 2 упражнения подряд, трисет — 3. Выберите участников и задайте отдых после всего круга.</p>
     {(plan.groups ?? []).map(group => <section key={group.id} aria-label={`Связка ${workoutGroupLabels[group.kind]}`} className="app-card app-card-plum p-3">
@@ -46,7 +46,7 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
         <button type="button" disabled={disabled || Boolean(draft)} className="min-h-[44px] px-2 text-xs text-tg-hint" onClick={() => onChange(dissolveWorkoutGroup(plan, group.id))}>Распустить связку</button>
       </div>
     </section>)}
-    {draft ? <section aria-label="Настройка связки" className="app-card-inset space-y-3 p-3">
+    {draft ? <section ref={editor} aria-label="Настройка связки" className="app-card-inset scroll-mt-3 space-y-3 p-3">
       <label className="block text-xs text-tg-hint">Вид связки<select aria-label="Вид связки" value={draft.kind} disabled={disabled} onChange={event => setDraft({ ...draft, kind: event.target.value as WorkoutGroup["kind"] })} className={field}>
         <option value="superset">Суперсет</option><option value="triset">Трисет</option><option value="circuit">Круговая тренировка</option>
       </select></label>
