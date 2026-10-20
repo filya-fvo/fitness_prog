@@ -11,8 +11,8 @@ for (const width of [320, 375, 393, 1440]) for (const theme of ["light", "dark"]
     await page.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
     await page.getByLabel("Поиск упражнения", { exact: true }).fill("с гантелями");
     await page.getByRole("button", { name: "Добавить Сгибания с гантелями", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Объединить упражнения", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Объединить упражнения", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Создать суперсет", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Создать суперсет", exact: true }).click();
     await page.getByRole("checkbox", { name: "Сгибания со штангой", exact: true }).check();
     await page.getByRole("checkbox", { name: "Сгибания с гантелями", exact: true }).check();
     await page.getByLabel("Раунды", { exact: true }).fill("3");
@@ -94,7 +94,7 @@ for (const kind of ["triset", "circuit"] as const) test(`configures ${kind} with
   const timed = page.getByRole("region", { name: "Планка", exact: true });
   await expect(timed.getByLabel("Время, с", { exact: true })).toHaveValue("45");
   await timed.getByLabel("Время, с", { exact: true }).fill("40");
-  await page.getByRole("button", { name: "Объединить упражнения", exact: true }).click();
+  await page.getByRole("button", { name: "Создать суперсет", exact: true }).click();
   await page.getByLabel("Вид связки", { exact: true }).selectOption(kind);
   for (const name of ["Сгибания со штангой", "Разгибания на блоке", "Планка"]) await page.getByRole("checkbox", { name, exact: true }).check();
   await page.getByLabel("Раунды", { exact: true }).fill("2");
@@ -132,7 +132,7 @@ test("applies one configured cluster consistently to all selected sets", async (
 
 test("keeps links when reordering a saved group and requires dissolving before removing a member", async ({ page }) => {
   const api = await openPrepared(page);
-  await page.getByRole("button", { name: "Объединить упражнения", exact: true }).click();
+  await page.getByRole("button", { name: "Создать суперсет", exact: true }).click();
   for (const name of ["Сгибания со штангой", "Разгибания на блоке"]) await page.getByRole("checkbox", { name, exact: true }).check();
   await page.getByLabel("Раунды", { exact: true }).fill("2");
   await page.getByRole("button", { name: "Создать связку", exact: true }).click();
@@ -148,4 +148,28 @@ test("keeps links when reordering a saved group and requires dissolving before r
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(api.writes[1].removed_exercise_ids).toContain(methodIds.curl);
   expect(api.writes[1].groups ?? []).toEqual([]);
+});
+
+test("exercise card starts an explicitly named superset with its first participant selected",async({page})=>{
+ const api=await openPrepared(page);
+ const row=page.getByRole("region",{name:"Сгибания со штангой",exact:true});
+ await row.getByRole("button",{name:"Суперсет / трисет",exact:true}).click();
+ await expect(page.getByLabel("Вид связки",{exact:true})).toHaveValue("superset");
+ await expect(page.getByLabel("Вид связки",{exact:true})).toBeFocused();
+ await expect(page.getByRole("checkbox",{name:"Сгибания со штангой",exact:true})).toBeChecked();
+ await page.getByRole("checkbox",{name:"Разгибания на блоке",exact:true}).check();
+ await page.getByRole("button",{name:"Создать связку",exact:true}).click();
+ await page.getByRole("button",{name:"Сохранить подготовку",exact:true}).click();
+ await expect.poll(()=>api.writes.length).toBe(1);
+ expect(api.writes[0].groups?.[0]).toMatchObject({kind:"superset",exercise_ids:[methodIds.curl,methodIds.tri]});
+});
+test("explicit triset entry describes three participants and selects the right kind",async({page})=>{
+ await openPrepared(page);
+ await expect(page.getByRole("button",{name:"Создать трисет",exact:true})).toBeDisabled();
+ await page.getByRole("button",{name:"Добавить упражнение",exact:true}).click();
+ await page.getByRole("button",{name:"Добавить Сгибания с гантелями",exact:true}).click();
+ await page.getByRole("button",{name:"Создать трисет",exact:true}).click();
+ await expect(page.getByLabel("Вид связки",{exact:true})).toHaveValue("triset");
+ await expect(page.getByRole("group",{name:"Участники (нужно 3)",exact:true})).toBeVisible();
+ await expect(page.getByRole("button",{name:"Создать связку",exact:true})).toBeDisabled();
 });

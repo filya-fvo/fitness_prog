@@ -1,19 +1,30 @@
-import { useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { pluralRu, setsCount } from "@/utils/localization";
 import type { WorkoutGroup, WorkoutPlan } from "@/types/workout";
 import { configureWorkoutGroup, dissolveWorkoutGroup, workoutGroupLabels } from "@/utils/workoutMethods";
 
 type Props = { plan: WorkoutPlan; disabled?: boolean; onChange: (plan: WorkoutPlan) => void; onEditingChange: (editing: boolean) => void };
 const field = "app-field mt-1 min-h-[44px] w-full px-2 py-2 text-base";
-export function WorkoutGroupEditor({ plan, disabled, onChange, onEditingChange }: Props) {
+export type WorkoutGroupEditorHandle = { startWith: (exerciseId: string) => void };
+export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(function WorkoutGroupEditor({ plan, disabled, onChange, onEditingChange }, ref) {
+  const editor = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<WorkoutGroup | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const names = new Map(plan.exercises.map(row => [row.exercise_id, row.name_ru || "Упражнение"]));
-  function begin(group?: WorkoutGroup) {
-    setDraft(group ? { ...group, exercise_ids: [...group.exercise_ids] } : { id: crypto.randomUUID(), kind: "superset", exercise_ids: [], rounds: 3, transition_sec: 0, round_rest_sec: 90 });
+  const draftId = draft?.id;
+  useEffect(() => {
+    if (!draftId) return;
+    editor.current?.scrollIntoView({ block: "start" });
+    editor.current?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
+  }, [draftId]);
+  function begin(group?: WorkoutGroup, kind: WorkoutGroup["kind"] = "superset", exerciseId?: string) {
+    if (disabled || draft) return;
+    setDraft(group ? { ...group, exercise_ids: [...group.exercise_ids] } : { id: crypto.randomUUID(), kind,
+      exercise_ids: exerciseId ? [exerciseId] : [], rounds: plan.exercises.find(row => row.exercise_id === exerciseId)?.target_sets ?? 3, transition_sec: 0, round_rest_sec: 90 });
     setIsNew(!group); setError(null); onEditingChange(true);
   }
+  useImperativeHandle(ref, () => ({ startWith: exerciseId => begin(undefined, "superset", exerciseId) }));
   function cancel() { setDraft(null); setError(null); onEditingChange(false); }
   function apply() {
     if (!draft) return;
@@ -22,7 +33,10 @@ export function WorkoutGroupEditor({ plan, disabled, onChange, onEditingChange }
   }
   const required = draft?.kind === "superset" ? 2 : draft?.kind === "triset" ? 3 : null;
   const validCount = draft && (required ? draft.exercise_ids.length === required : draft.exercise_ids.length >= 2);
-  return <div className="space-y-2">
+  const available = plan.exercises.filter(row => !(plan.groups ?? []).some(group => group.exercise_ids.includes(row.exercise_id))).length;
+  return <div ref={editor} className="scroll-mt-3 space-y-2">
+    <h4 className="text-sm font-semibold">Суперсеты, трисеты и круги</h4>
+    <p className="text-xs text-tg-hint">Суперсет — 2 упражнения подряд, трисет — 3. Выберите участников и задайте отдых после всего круга.</p>
     {(plan.groups ?? []).map(group => <section key={group.id} aria-label={`Связка ${workoutGroupLabels[group.kind]}`} className="app-card app-card-plum p-3">
       <p className="text-sm font-semibold">{workoutGroupLabels[group.kind]} · {pluralRu(group.rounds, ["раунд", "раунда", "раундов"])}</p>
       <p className="mt-1 break-words text-xs">{group.exercise_ids.map(id => names.get(id)).join(" → ")}</p>
@@ -58,6 +72,13 @@ export function WorkoutGroupEditor({ plan, disabled, onChange, onEditingChange }
         <button type="button" disabled={disabled || !validCount} onClick={apply} className="app-button app-secondary-action px-3 text-sm">{isNew ? "Создать связку" : "Сохранить связку"}</button>
         <button type="button" disabled={disabled} onClick={cancel} className="min-h-[44px] px-3 text-sm text-tg-hint">Отменить настройку связки</button>
       </div>
-    </section> : <button type="button" disabled={disabled || plan.exercises.length < 2} onClick={() => begin()} className="app-button app-secondary-action w-full">Объединить упражнения</button>}
+    </section> : <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={disabled || available < 2} onClick={() => begin(undefined, "superset")} className="app-button app-secondary-action px-3 text-sm">Создать суперсет</button>
+        <button type="button" disabled={disabled || available < 3} onClick={() => begin(undefined, "triset")} className="app-button app-secondary-action px-3 text-sm">Создать трисет</button>
+        <button type="button" disabled={disabled || available < 2} onClick={() => begin(undefined, "circuit")} className="app-button app-secondary-action px-3 text-sm">Создать круг</button>
+      </div>
+      {available < 3 ? <p className="text-xs text-tg-hint">Для новой связки нужны свободные упражнения: для суперсета — 2, для трисета — 3. При необходимости добавьте упражнение из каталога.</p> : null}
+    </div>}
   </div>;
-}
+});

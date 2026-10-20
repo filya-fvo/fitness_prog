@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { inferLoadType } from "@/utils/exerciseLoadType";
 import type { Exercise, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 import { WorkoutMethodEditor } from "./WorkoutMethodEditor";
-import { WorkoutGroupEditor } from "./WorkoutGroupEditor";
+import { WorkoutGroupEditor, type WorkoutGroupEditorHandle } from "./WorkoutGroupEditor";
 import { WorkoutTimingPreview } from "./WorkoutTimingPreview";
 import { removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "@/utils/workoutMethods";
 import { ExerciseThumbnail } from "./ExerciseThumbnail";
@@ -15,6 +15,7 @@ type Props = {
   onReplace: (row: WorkoutPlanExercise) => void; onOpenDetail: (exercise: Exercise) => void;
 };
 export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, onReplace, onOpenDetail, onPendingChange }: Props) {
+  const groupEditor = useRef<WorkoutGroupEditorHandle>(null);
   const [groupDraft, setGroupDraft] = useState(false);
   const locked = disabled || groupDraft;
   const byId = new Map(catalog.map(row => [row.id, row]));
@@ -22,7 +23,7 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
     onChange(updateWorkoutExercise(plan, id, values));
   }
   return <div className="space-y-3">
-    <WorkoutGroupEditor plan={plan} disabled={disabled} onChange={onChange} onEditingChange={value => { setGroupDraft(value); onPendingChange?.(value); }} />
+    <WorkoutGroupEditor ref={groupEditor} plan={plan} disabled={disabled} onChange={onChange} onEditingChange={value => { setGroupDraft(value); onPendingChange?.(value); }} />
     {plan.exercises.map((row, index) => {
       const exercise = byId.get(row.exercise_id);
       const timed = exercise && ["timed", "cardio_machine"].includes(inferLoadType(exercise));
@@ -52,6 +53,7 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
         {grouped ? <p className="mt-2 text-xs text-tg-hint">Подходы и отдых задаются в связке. Перед удалением участника измените или распустите её.</p> : null}
         <WorkoutMethodEditor row={row} exercise={exercise} disabled={locked} onChange={methods => onChange({ ...plan, execution_version: 2,
           exercises: plan.exercises.map(item => item.exercise_id === row.exercise_id ? { ...item, set_methods: methods } : item) })} />
+        {!grouped ? <button type="button" disabled={locked || plan.exercises.length < 2} onClick={() => groupEditor.current?.startWith(row.exercise_id)} className="min-h-[44px] px-2 text-sm font-medium text-tg-link">Суперсет / трисет</button> : null}
         <div className="mt-2 flex flex-wrap items-center gap-1">
           <button type="button" disabled={locked} onClick={() => onReplace(row)} className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
           {exercise ? <button type="button" disabled={locked} onClick={() => onOpenDetail(exercise)} className="min-h-[44px] rounded-lg px-2 text-xs text-tg-link">Техника и описание</button> : null}
