@@ -213,3 +213,5 @@ W10 review P2 readiness: RED2 client tests created sessions without confirmation
 | 10 Android | pending A1–A4; never inferred from web tests |
 
 Web source acceptance green; publication and live checks pending next step. No production data or original dirty checkout changed by these tests.
+
+W10 hosted CI133 found workflow-only indentation defect:58 isolated SQL tests PASS, then migration-runner filename executed as separate shell command(exit126). Actual js-yaml parsed RED newline; equalized folded scalar indentation; parser GREEN one pytest command including ninth module. No product code changed; production services stillold while images build. Backup fitness-20261020T082226Z.dump SHA2569b9a70aec18765bb40384fb485b1f1d5a212de5ba5b74d375617a247de58f00c restored successfully both before and after pull/new migrations; counts preserved/audit triggerverified. CommitCI fix and awaithostedGREENbeforeup.
