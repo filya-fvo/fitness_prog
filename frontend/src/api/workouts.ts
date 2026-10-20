@@ -386,12 +386,15 @@ export async function addWorkoutSet(input: {
 export async function completeWorkout(input: {
   executionVersion?: 1 | 2;
   workoutId: string;
+  completedAt?: string;
+  durationSec?: number;
   rpe?: number | null;
   aiNotes?: string | null;
 }): Promise<Workout> {
   invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.put(`/workouts/${input.workoutId}/complete`, {
     ...(input.executionVersion ? { execution_version: input.executionVersion } : {}),
+    ...(input.completedAt !== undefined ? { completed_at: input.completedAt, duration_sec: input.durationSec } : {}),
     rpe: input.rpe ?? null,
     ai_notes: input.aiNotes ?? null,
   });

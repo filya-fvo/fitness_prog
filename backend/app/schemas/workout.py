@@ -7,7 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 
 from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod, WorkoutExecutionPart, WorkoutExecutionPartResponse
@@ -119,6 +119,17 @@ class PlannedWorkoutPlanRequest(BaseModel):
 
 class WorkoutCompleteRequest(BaseModel):
     execution_version: Literal[1, 2] | None = None
+    completed_at: AwareDatetime | None = None
+    duration_sec: int | None = Field(default=None, ge=0, le=604800)
+
+    @model_validator(mode="after")
+    def validate_confirmation(self):
+        if (self.completed_at is None) != (self.duration_sec is None):
+            raise ValueError("Передайте время завершения вместе с длительностью")
+        if self.completed_at is not None and (self.execution_version != 2 or self.completed_at.year < 2000):
+            raise ValueError("Проверьте формат и время завершения")
+        return self
+
     rpe: int | None = Field(default=None, ge=1, le=10)
     ai_notes: str | None = None
 

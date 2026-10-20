@@ -122,3 +122,17 @@ it("rejects an undeliverable oversized note before committing work or starting r
   expect((await db.sessions.get(client))!.execution!.revision).toBe(0);
   expect(await db.syncQueue.count()).toBe(0);
 });
+
+it("outbox preserves offline completion confirmation and duration through the REST boundary", async () => {
+  await seed(); await commitExecutionAction(action());
+  const completedAt = "2026-10-19T09:10:00.000Z";
+  await finishExecutionSession({ owner, clientWorkoutId: client, actionId: crypto.randomUUID(), now: { ...clock, wallMs: Date.parse(completedAt) }, rpe: 7, aiNotes: null });
+  vi.stubGlobal("navigator", { onLine: true });
+  const queued = (await db.syncQueue.orderBy("createdAt").toArray())[0].payload;
+  vi.spyOn(apiClient, "post").mockResolvedValue({ data: { id: crypto.randomUUID(), workout_id: client,
+    exercise_id: exercise, set_number: 1, reps: null, weight: null, is_completed: false, execution_kind: "cluster", execution_revision: 1, parts: queued.parts } });
+  const put = vi.spyOn(apiClient, "put").mockResolvedValue({ data: { ...workout, status: "completed", completed_at: completedAt, duration_sec: 600 } });
+  await flushSyncQueue(owner);
+  expect(put).toHaveBeenCalledWith(`/workouts/${client}/complete`, expect.objectContaining({ execution_version: 2, completed_at: completedAt, duration_sec: 600 }));
+  expect(await db.syncQueue.count()).toBe(0);
+});

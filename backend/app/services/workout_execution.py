@@ -110,7 +110,11 @@ def validate_plan_edit(old_plan, new_plan):
     if old_plan.get("execution_version") == 2 or new_plan.get("execution_version") == 2:
         # The execution topology is a session snapshot. Future-day editing remains separate.
         def topology(plan):
-            return (plan.get("groups") or [], [(row["exercise_id"], row.get("target_sets", 3), row.get("set_methods") or []) for row in plan.get("exercises", [])])
+            parsed = WorkoutPlan.model_validate(plan)
+            return (sorted(parsed.groups, key=lambda group: str(group.id)), [
+                (row.exercise_id, row.order, row.target_sets, row.target_reps, row.rest_sec, row.weight_mode,
+                 sorted(row.set_methods, key=lambda method: method.set_number))
+                for row in sorted(parsed.exercises, key=lambda row: row.order)])
         if topology(old_plan) != topology(new_plan):
             raise HTTPException(409, "Состав сложной тренировки меняется при подготовке следующей, до её начала")
 

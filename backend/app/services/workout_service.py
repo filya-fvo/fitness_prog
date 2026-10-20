@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -574,6 +574,9 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
         # commit, when two offline clients replay the same operation together.
         await session.flush()
         _create_set_slots(session, workout.id, plan)
+        if program is not None:
+            await workout_customization.consume_occurrence(session, user_id=user_id, program_id=program.id,
+                day_index=data.day_index or int(plan.get("day_index") or 1), scheduled_date=data.scheduled_date)
         await session.commit()
     except IntegrityError:
         await session.rollback()
@@ -753,17 +756,23 @@ async def complete_workout(
         return workout
 
     now = datetime.now(UTC)
+    confirmed = data.completed_at.astimezone(UTC) if data.completed_at is not None else now
+    if confirmed > now + timedelta(minutes=5):
+        raise HTTPException(422, "Проверьте время устройства перед отправкой завершения")
     workout.status = "completed"
     workout.rpe = data.rpe
     workout.ai_notes = data.ai_notes
-    workout.completed_at = now
-    if workout.started_at is None:
-        workout.started_at = now
-    if workout.started_at is not None:
+    workout.completed_at = confirmed
+    if data.duration_sec is not None:
+        workout.duration_sec = data.duration_sec
+        workout.started_at = confirmed - timedelta(seconds=data.duration_sec)
+    else:
+        if workout.started_at is None:
+            workout.started_at = confirmed
         started = workout.started_at
         if started.tzinfo is None:
             started = started.replace(tzinfo=UTC)
-        workout.duration_sec = max(0, int((now - started).total_seconds()))
+        workout.duration_sec = max(0, int((confirmed - started).total_seconds()))
 
     # AsyncSessionLocal has autoflush disabled. Persist the completed status in
     # this transaction before the latest-completion guard queries the database.

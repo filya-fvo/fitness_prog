@@ -2,7 +2,7 @@
 from copy import deepcopy
 from datetime import date
 from hashlib import sha256
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import or_, select, text
@@ -160,6 +160,12 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
         if row.last_operation_hash != operation_hash:
             raise HTTPException(409, "Повторное действие содержит другие изменения")
         return _response(program, context, row)
+    if data.scope == "occurrence":
+        from app.models.workout import Workout
+        started = await session.scalar(select(Workout.id).where(Workout.user_id == user.id,
+            Workout.program_id == data.program_id, Workout.scheduled_date == data.scheduled_date, Workout.is_deleted.is_(False)))
+        if started is not None:
+            raise HTTPException(409, "Тренировка уже начата. Измените подготовку следующей даты")
     if data.base_revision != (row.revision if row else 0):
         raise HTTPException(409, "План уже изменён на другом устройстве. Обновите его перед сохранением")
     if row and row.program_version != program.version:
@@ -216,3 +222,23 @@ async def save_customization(session: AsyncSession, user: User, data: WorkoutCus
 
 async def reset_customization(session: AsyncSession, user: User, data: WorkoutCustomizationRequest):
     return await _write(session, user, data, reset=True)
+
+
+async def consume_occurrence(session: AsyncSession, *, user_id: UUID, program_id: UUID, day_index: int, scheduled_date: date):
+    """Inside the start transaction, after user lock and successful snapshot validation."""
+    row = await session.scalar(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user_id, UserProgramDayOverride.program_id == program_id,
+        UserProgramDayOverride.day_index == day_index, UserProgramDayOverride.scheduled_date == scheduled_date,
+        UserProgramDayOverride.is_deleted.is_(False)).with_for_update())
+    if row:
+        row.is_deleted = True
+        row.patch = {}
+        row.revision += 1
+        row.last_operation_id = uuid4()
+        row.last_operation_hash = "consumed"
+    from app.models.workout_plan_override import WorkoutPlanOverride
+    legacy = await session.scalar(select(WorkoutPlanOverride).where(WorkoutPlanOverride.user_id == user_id,
+        WorkoutPlanOverride.program_id == program_id, WorkoutPlanOverride.day_index == day_index,
+        WorkoutPlanOverride.scheduled_date == scheduled_date))
+    if legacy is not None:
+        await session.delete(legacy)

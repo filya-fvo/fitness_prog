@@ -571,11 +571,15 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
   if (item.type === "complete_workout") {
     const payload = item.payload as {
       executionVersion?: 1 | 2;
+      completedAt?: string;
+      durationSec?: number;
       rpe?: number | null;
       aiNotes?: string | null;
     };
     const workout = await completeWorkout({
       executionVersion: payload.executionVersion,
+      completedAt: payload.completedAt,
+      durationSec: payload.durationSec,
       workoutId: serverWorkoutId,
       rpe: payload.rpe ?? null,
       aiNotes: payload.aiNotes ?? null,

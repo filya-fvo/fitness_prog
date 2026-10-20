@@ -94,3 +94,10 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Actual accessibility failure: role=dialog on form was disallowed; replaced with named dialog container and inner form, original axe assertion passes. Failed network correction retains form and retries identical operation UUID; no rest controls in history.
 - W7 bundle615345/558870 ->617972/561471 (+2601 product gzip bytes), same dependencies/largest108742/admin56501. Narrow caps618550/562050; admin/largest caps unchanged.
 - Not released; W9 offline reconciliation and W10 final acceptance/deployment remain. Native source not started.
+
+
+## W9a — first recovery fixes
+
+- Valid RED3: equivalent decimal weights caused a topology conflict; offline completion used server receipt time; occurrence patch survived start. All fixed and SQL-checked, with constant personal-day revision and rejection of late writes to the started date.
+- Complete confirmation pair is aware/bounded, future>5min rejected before completion, retry retains original finish/duration. Full web outbox-to-REST assertion verifies both fields.
+- Backend1045 PASS/Ruff PASS; web836 unit/lint/types/build/PWA PASS; Chromium2 completion regressions PASS. Remaining W9 durable preparation/envelope/conflict work is still open; no deployment or Android source changes.

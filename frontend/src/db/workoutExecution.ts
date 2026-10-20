@@ -217,7 +217,7 @@ export async function finishExecutionSession(input: { owner: string; clientWorko
     execution.revision += 1;
     const queued: SyncQueueItem = { id: input.actionId, ownerUserId: input.owner, clientWorkoutId: input.clientWorkoutId,
       type: "complete_workout", createdAt: queueTime(session), attempts: 0, lastError: null,
-      payload: { executionVersion: 2, completedAt, rpe: input.rpe, aiNotes: input.aiNotes } };
+      payload: { executionVersion: 2, completedAt, durationSec: session.workout.duration_sec, rpe: input.rpe, aiNotes: input.aiNotes } };
     await writeSession(session);
     await db.syncQueue.add(queued);
     requireOwner(input.owner);
