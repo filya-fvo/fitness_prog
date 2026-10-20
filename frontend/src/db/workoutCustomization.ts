@@ -137,3 +137,12 @@ export async function clearAcknowledgedWorkoutPreparation(context: PlannedWorkou
     checkOwner(owner);
   });
 }
+
+
+export async function readWorkoutPreparationFailure(operationId: string, owner: string): Promise<string | null> {
+  checkOwner(owner);
+  const queued = await db.syncQueue.get(operationId);
+  checkOwner(owner);
+  if (!queued || queued.ownerUserId !== owner || queued.type !== "customize_workout") return null;
+  return queued.lastError;
+}

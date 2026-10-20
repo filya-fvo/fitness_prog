@@ -169,3 +169,10 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Full web871 PASS; final lint clean (rewrote ref increments to avoid misleading cleanup warnings), types/build/PWA PASS. Chromium13 history/notes cases PASS: ordinary and compound edits, unchanged request identity after failure, delayed response after account change, cache failure for part/note/deletion, pending-note edit exclusion and mobile/theme accessibility.
 - Storage tests prove account switch inside creating/deleting hooks rolls back local changes; an acknowledged cache failure warns without claiming the server write failed. Final bundle624967/568409 (+692 product), largest108742/admin56558; bounded625500/568950.
 - Remaining W9: readable structured sync conflicts and final spec reconciliation; no automatic rebase or conversion of recorded workouts. No backend changes or deployment.
+
+
+## W9g4 — readable synchronization conflicts
+
+- Structured 409 failures explain that the server record changed and local edits/results are retained; raw API diagnostics are not displayed. Preparation displays its own queue failure. Independent operations remain eligible for synchronization.
+- New helper RED missing module; final15 affected tests PASS after correcting the test navigator to explicitly online (Node's navigator has no onLine). Chromium26 preparation/customization scenarios PASS, including retained draft and readable conflict. Lint/types/build/PWA and bundle PASS:625181 total/568616 product gzip, within625500/568950.
+- W9 implementation complete. W10 whole-branch review, cross-browser/cold PWA acceptance, documentation and release remain; Android has not started.

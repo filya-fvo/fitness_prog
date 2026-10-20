@@ -81,7 +81,7 @@ test("validates descending drop weights and keeps configured steps after a faile
   await expect(page.getByRole("button", { name: "Сохранить подготовку", exact: true })).toBeDisabled();
   await row.getByLabel("Вес части 2 Разгибания на блоке", { exact: true }).fill("25");
   await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Подготовка сохранена на устройстве");
+  await expect(page.getByRole("alert")).toContainText("сохранены на устройстве");
   await expect(row.getByLabel("Вес части 2 Разгибания на блоке", { exact: true })).toHaveValue("25");
   await expect(page.getByRole("dialog")).toBeVisible();
 });

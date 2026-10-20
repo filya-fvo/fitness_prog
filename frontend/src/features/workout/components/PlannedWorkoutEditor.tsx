@@ -1,4 +1,4 @@
-import { loadWorkoutPreparation, findWorkoutPreparation, stageWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation } from "@/db/workoutCustomization";
+import { loadWorkoutPreparation, findWorkoutPreparation, stageWorkoutPreparation, readWorkoutPreparationDraft, readWorkoutPreparationFailure, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation } from "@/db/workoutCustomization";
 import { useUserStore } from "@/store/userStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -118,7 +118,7 @@ export function PlannedWorkoutEditor(props: Props) {
         if (isOnline() && getStoredToken() && owner) {
           const result = await flushSyncQueue(owner, { retryFailed: true });
           const draft = await readWorkoutPreparationDraft(pending.key, owner);
-          if (!draft?.receipt && result.failed) throw new Error("Подготовка сохранена на устройстве. Проверьте изменения в очереди синхронизации");
+          if (!draft?.receipt && result.failed) throw new Error(await readWorkoutPreparationFailure(pending.operationId, owner) ?? "Подготовка сохранена на устройстве. Отправка пока не завершена");
           if (!draft?.receipt) { if (current === generation.current) { close(); toast("Подготовка сохранена на устройстве и ожидает отправки"); } return; }
         } else { if (current === generation.current) { close(); toast("Подготовка сохранена на устройстве и будет отправлена при подключении"); } return; }
       } else {

@@ -70,7 +70,8 @@ test("keeps added exercise draft when the server reports a revision conflict", a
   await dialog.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
   await dialog.getByRole("button", { name: /Добавить.*Скручивания/ }).click();
   await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
-  await expect(dialog.getByRole("alert")).toBeVisible();
+  await expect(dialog.getByRole("alert")).toContainText("изменились на сервере");
+  await expect(dialog.getByRole("alert")).toContainText("сохранены на устройстве");
   await expect(dialog.getByText("Скручивания", { exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Сохранить подготовку" })).toBeEnabled();
 });

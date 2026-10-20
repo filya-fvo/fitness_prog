@@ -1,3 +1,4 @@
+import { workoutSyncError } from "@/utils/workoutSyncErrors";
 import { reconcilePreparedCreate, orderWorkoutQueue } from "./preparedWorkoutStart";
 import { toast } from "@/store/toastStore";
 import { syncWorkoutPreparation } from "./workoutCustomization";
@@ -473,7 +474,7 @@ export async function flushSyncQueue(
         if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
         if (structured) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
-        const message = err instanceof Error ? err.message : "sync failed";
+        const message = structured ? workoutSyncError(err) : err instanceof Error ? err.message : "sync failed";
         const attempts = (item.attempts || 0) + 1;
         await db.syncQueue.update(item.id, {
           attempts: Math.min(attempts, MAX_SYNC_ATTEMPTS),
