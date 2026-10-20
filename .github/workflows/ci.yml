@@ -86,6 +86,7 @@ jobs:
           pytest -q tests/test_workout_customization.py tests/test_workout_customization_locks.py
           tests/test_workout_execution.py tests/test_workout_method_metrics.py tests/test_workout_plan_identity.py
           tests/test_workout_preparation.py tests/test_workout_recovery_contract.py tests/test_workout_skips.py
+            tests/test_workout_migration_runner.py
   frontend:
     name: Frontend (test + build)
     runs-on: ubuntu-latest

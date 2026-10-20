@@ -6,8 +6,8 @@ const programId = "33333333-3333-4333-8333-333333333333";
 const exerciseId = "44444444-4444-4444-8444-444444444444";
 const program = { id: programId, name: "Офлайн программа", is_template: true, publication_status: "published", is_current: true, version: 1, workout_type: "strength", structure: { schedule: [{ day_index: 1, name: "Жим", exercises: [{ exercise_id: exerciseId, name_ru: "Жим лёжа", sets: 3, reps: "10" }] }] } };
 const profile = { id: owner, telegram_id: null, username: "offline-qa", anthropometry: {}, goals: { onboarding_completed: true, active_program_id: programId, active_program_next_day: 1, active_program_week_phase: "medium", active_program_phase_source: "manual", activation_checklist: { version: 1, started_at: "2026-09-01T00:00:00Z", dismissed_at: "2026-09-02T00:00:00Z", signals: [] } }, subscription_status: "free", stars_balance: 0, onboarding_completed: true, legal_status: acceptedLegalStatus(owner) };
-const exercise = { id: exerciseId, name_ru: "Жим лёжа", muscle_group: "грудь", equipment: "штанга", difficulty: 2, tags: [] };
-const plan = { title: "Жим", day_index: 1, week_phase: "medium", exercises: [{ exercise_id: exerciseId, name_ru: "Жим лёжа", order: 1, target_sets: 3, target_reps: "10", rest_sec: 60 }] };
+const exercise = { id: exerciseId, name_ru: "Жим лёжа", muscle_group: "грудь", equipment: "штанга", difficulty: 2, tags: ["load:weight_reps"] };
+const plan = { execution_version: 2, title: "Жим", day_index: 1, week_phase: "medium", exercises: [{ exercise_id: exerciseId, name_ru: "Жим лёжа", order: 1, target_sets: 3, target_reps: "4", rest_sec: 60, set_methods: [{ set_number: 1, kind: "cluster", parts: [0, 1, 2].map(i => ({ target_reps: 4, target_weight: 50, pause_after_sec: i < 2 ? 20 : 0 })) }] }] };
 const schedule = { requested_date: "2026-10-09", current: { original_date: "2026-10-09", target_date: "2026-10-09", start_time: "06:00:00", title: "Жим", program_id: programId, day_index: 1, status: "scheduled", is_override: false, can_reschedule: false }, next: null };
 let server: Server;
 let requests = 0;
@@ -30,7 +30,7 @@ test.beforeAll(async () => {
     else if (path === "/programs/mine") data = { items: [], total: 0 };
     else if (path === `/programs/${programId}`) data = program;
     else if (path === "/exercises") data = { items: [exercise], total: 1, page: 1, page_size: 200 };
-    else if (path === "/workouts/offline-context") data = { version: 1, owner, schedule_fingerprint: "0".repeat(64), prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09", program, days: [{ requested_date: "2026-10-09", schedule }], plans: [{ scheduled_date: "2026-10-09", day_index: 1, week_phase: "medium", readiness: "normal", plan }] };
+    else if (path === "/workouts/offline-context") data = { version: 1, owner, schedule_fingerprint: "0".repeat(64), prepared_at: "2026-10-09T08:00:00Z", start: "2026-10-09", end: "2026-10-09", program, days: [{ requested_date: "2026-10-09", schedule }], plans: [{ scheduled_date: "2026-10-09", day_index: 1, week_phase: "medium", readiness: "normal", preparation_fingerprint: "1".repeat(64), exercise_defaults: { target_reps: "8-10", rest_sec: 60 }, plan }] };
     else if (path === "/workouts/load-hints") data = { items: [{ exercise_id: exerciseId, weight: 50, reps: 10, duration_sec: null, weight_mode: "total", machine_params: null, rpe: 7, completed_date: "2026-10-08", phase_loads: {} }] };
     else if (path === "/workouts/schedule/overview") data = schedule;
     else if (path === "/workouts/schedule/settings") data = { version: 1, days: [0, 2, 4], start_time: "06:00:00" };
@@ -65,6 +65,16 @@ for (const width of [320, 393, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByRole("link", { name: /Программы тренировок.*Выбрать программу/ }).click();
     await expect(page.getByText("Офлайн программа", { exact: true }).first()).toBeVisible();
+    await page.goto("/train");
+    await page.getByRole("button", { name: /Начать ·/ }).click();
+    await page.getByRole("button", { name: "Пропустить всё", exact: true }).click();
+    await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");
+    await page.reload();
+    await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");
+    await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
+    await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
     expect(requests).toBe(before);
   });
 }

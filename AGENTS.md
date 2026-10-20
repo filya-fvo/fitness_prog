@@ -251,8 +251,9 @@ services → SQLAlchemy models → PostgreSQL
 - `frontend/src/db/syncQueue.ts` — IndexedDB, общая очередь тренировок, профиля и
   замеров, а также снимок активной сессии; `db/bodyMeasurements.ts` —
   пользовательский кэш и объединение операций замера по дате.
-- `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` — замены
-  упражнений на будущую дату без запуска таймера тренировки.
+- `frontend/src/features/workout/components/PlannedWorkoutEditor.tsx` и `WorkoutDayComposer.tsx` — личные/разовые состав, методы и связки будущего дня без запуска тренировки.
+- `backend/app/services/workout_customization.py` — owner-scoped delta после фазы/readiness; `workout_execution.py` — единая REST/native запись v2 частей с ревизиями и receipts; `workout_load_rows.py` — выполненные обычные подходы и части для объёма, без compound 1ПМ.
+- `frontend/src/utils/workoutExecution.ts` / `workoutRest.ts` — общие порядок/паузы/deadline; `db/workoutExecution.ts` атомарно сохраняет факты, курсор, отдых и outbox. `db/workoutCustomization.ts` хранит подготовку; `preparedWorkoutStart.ts` упорядочивает зависимости; `features/workout/services/programWorkoutStart.ts` — общий online/offline start. Не создавать вторую математику/последовательность для Android.
 - `frontend/src/features/progress/pages/ExerciseExplorerPage.tsx` — поиск по
   прогрессу упражнения, группы мышц, недавние и закреплённые.
 - `frontend/src/features/progress/pages/StrengthTrendSets.tsx` — три объяснимых

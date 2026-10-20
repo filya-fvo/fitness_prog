@@ -51,11 +51,11 @@
 
 Результат: изолированный checkout актуального web, краткий baseline и выбранный scope первого этапа.
 
-- [ ] Прочитать AGENTS обоих репозиториев и актуальный Android HANDOFF; сверить HEAD, status, worktrees, shared pin, origin production branch и сведения VPS read-only.
-- [ ] Учесть обнаруженное расхождение `85d5974`/`a2cb5cc`; взять основу с уже выпущенными offline/android_sync. Не начинать от старого checkout и не менять pinned submodule напрямую.
-- [ ] Выбрать чистую существующую worktree либо создать `codex/personal-workout-methods`; не включать чужие dirty-файлы.
-- [ ] Пройти текущие сценарии подготовки/замены/старта и применимые tests; сохранить реальные исходные провалы отдельно от новых ошибок.
-- [ ] Зафиксировать baseline и границы в документе работ, отдельный docs-коммит `docs: record workout customization implementation baseline`.
+- [x] Прочитать AGENTS обоих репозиториев и актуальный Android HANDOFF; сверить HEAD, status, worktrees, shared pin, origin production branch и сведения VPS read-only.
+- [x] Учесть обнаруженное расхождение `85d5974`/`a2cb5cc`; взять основу с уже выпущенными offline/android_sync. Не начинать от старого checkout и не менять pinned submodule напрямую.
+- [x] Выбрать чистую существующую worktree либо создать `codex/personal-workout-methods`; не включать чужие dirty-файлы.
+- [x] Пройти текущие сценарии подготовки/замены/старта и применимые tests; сохранить реальные исходные провалы отдельно от новых ошибок.
+- [x] Зафиксировать baseline и границы в документе работ, отдельный docs-коммит `docs: record workout customization implementation baseline`.
 
 ### W1. Серверный слой персональных изменений дня
 
@@ -179,26 +179,27 @@ UI показывает часть/раунд/следующий шаг и пр�
 personal patch queue precedes dependent workout create; fingerprint включает revision правок.
 Изменение серверного контракта подготовки — web/backend работа; native адаптация только после W10.
 
-- [ ] Failing recovery tests: reload между частями/упражнениями/раундами, закончился отдых в фоне, новый аккаунт, поздний save предыдущей версии.
-- [ ] Добавить durable-сохранение персональных и разовых drafts и паузы в существующее хранилище. При upgrade Dexie не удалять прежнюю сессию/очередь.
-- [ ] Проверить offline edit ранее загруженного дня → start → части → reload → complete → reconnect; ровно одна тренировка и все факты на сервере.
-- [ ] Конфликт двух вкладок/устройств и смена серверного дня во время offline: результат остаётся локально, нет молчаливой перезаписи, несвязанные записи синхронизируются.
-- [ ] Проверить bounded offline preparation: лимит ответа 6 MiB и native transport 8 MiB сохраняются; большой личный план предлагает меньший диапазон дней, не обрезает части.
-- [ ] Старый snapshot без v2 восстанавливается как обычный; неизвестная новая версия не конвертируется молча.
-- [ ] Проверки; только при ошибках — исправления и повторные проверки; после успеха — документация и `feat: recover customized workouts and rest timers offline`.
+- [x] Failing recovery tests: reload между частями/упражнениями/раундами, закончился отдых в фоне, новый аккаунт, поздний save предыдущей версии.
+- [x] Добавить durable-сохранение персональных и разовых drafts и паузы в существующее хранилище. При upgrade Dexie не удалять прежнюю сессию/очередь.
+- [x] Проверить offline edit ранее загруженного дня → start → части → reload → complete → reconnect; ровно одна тренировка и все факты на сервере.
+- [x] Конфликт двух вкладок/устройств и смена серверного дня во время offline: результат остаётся локально, нет молчаливой перезаписи, несвязанные записи синхронизируются.
+- [x] Проверить bounded offline preparation: лимит ответа 6 MiB и native transport 8 MiB сохраняются; большой личный план предлагает меньший диапазон дней, не обрезает части.
+- [x] Старый snapshot без v2 восстанавливается как обычный; неизвестная новая версия не конвертируется молча.
+- [x] Проверки; только при ошибках — исправления и повторные проверки; после успеха — документация и `feat: recover customized workouts and rest timers offline`.
 
 ### W10. Полная web-приёмка и выпуск
 
 **Files:** e2e suites, USER_GUIDE/CHANGELOG/AGENTS по изменившимся утверждениям, новый датированный QA report.
 
-- [ ] Пройти все 10 критериев spec, кроме отдельной installed Android-приёмки; проверить существующие custom program, scheduler, illness recovery, replacement и reconnect scenarios.
-- [ ] Выполнить применимые backend tests/Ruff, frontend unit/lint/build/bundle, Chromium/Firefox/WebKit E2E. Финальный полный набор запускать на собранном web scope, не после каждого микрошагa.
-- [ ] Миграции применить к копии тестовой существующей схемы, повторный runner не применяет дважды. Проверить REST и SQL roundtrip, не ограничиваться mocks.
-- [ ] Проверить PWA обновление во время активной тренировки, старую вкладку/старый APK с новым сервером и отсутствие потери очереди.
-- [ ] Для фактически недоступной среды оставить открытый gate; skip/setup failure не считать PASS.
-- [ ] Исправить выявленное отдельными небольшими циклами; после зелёных проверок diff review, документация и `test: verify personalized workout methods on web`.
+- [x] Пройти все 10 критериев spec, кроме отдельной installed Android-приёмки; проверить существующие custom program, scheduler, illness recovery, replacement и reconnect scenarios.
+- [x] Выполнить применимые backend tests/Ruff, frontend unit/lint/build/bundle, Chromium/Firefox/WebKit E2E. Финальный полный набор запускать на собранном web scope, не после каждого микрошагa.
+- [x] Миграции применить к копии тестовой существующей схемы, повторный runner не применяет дважды. Проверить REST и SQL roundtrip, не ограничиваться mocks.
+- [x] Проверить PWA обновление во время активной тренировки, старую вкладку/старый APK с новым сервером и отсутствие потери очереди.
+- [x] Для фактически недоступной среды оставить открытый gate; skip/setup failure не считать PASS.
+- [x] Исправить выявленное отдельными небольшими циклами; после зелёных проверок diff review, документация и `test: verify personalized workout methods on web`.
 - [ ] При исполнении утверждённой доработки выпустить web по постоянному разрешению владельца: production branch push → проверенный backup/restore → VPS pull --ff-only/rebuild/migrate/up → health/site/затронутые live scenarios. Точный runbook — `docs/TIMEWEB_DOMAIN_CUTOVER.md`. В задаче подготовки плана выпуск не запускать.
 - [ ] Зафиксировать точный проверенный web SHA и отчёт. Только после закрытия web-gate переходить к A1.
+
 
 ### A1. Обновить Android shared без второй реализации
 

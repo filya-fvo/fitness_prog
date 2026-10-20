@@ -187,3 +187,29 @@ W10 own-input navigation: valid browser RED showed A2 facts saved but view remai
 W10 review P3 Continue: RED confirms completed-rest Continue did nothing with autoAdvance off. Button now explicitly shows the pending step after confirmed completion; active/uncertain rest still uses restAction.9 crossbrowser timer/correction/one-signal/auto-off cases PASS. No facts or deadlines changed by navigation.
 
 W10 review P2 readiness: RED2 client tests created sessions without confirmation; server RED unexpected preview readiness parameter. GREEN16 affected web tests,17 backend/Ruff/types. Online canonical readiness preview and exact offline prepared variant share platform confirmation; refusal has no create/outbox, acceptance preserves100kg. Browser6 prior offline-start cases PASS and actual confirm/dismiss2 Chromium/Firefox +final1 WebKit PASS (fixture schedule completeness and wait-for-ready corrected, schema checks retained). Uses existing Telegram/browser confirmAction; message fits Telegram256 chars. All three final-review findings closed; auto/custom-copy/restructure scope intentionally excluded per spec.
+
+
+## W10 final assembled scope
+
+- Fresh whole-branch review cf7b50a..20681f5 found2 P2 and1 P3; all reproduced and fixed separately (reset cache1d849f2, intensity4c56842, Continuecfb2599). Additional acceptance found Safari focus20f9d7d and own-input projectiona1eee17. Declined behaviors: Android installed acceptance follows web; automatic rebase/custom-copy and started-plan restructuring excluded by spec/ruling. No critical finding reported.
+- Final backend1062 PASS (including actual production migration runner twice/history preservation), Ruff PASS; web875 PASS, lint/types/build/PWA PASS. One preexisting Starlette/httpx deprecation warning.58 migrations checker PASS.
+- First226-case browser matrix207PASS/19FAIL:8 WebKit opener focus (fixed42crossbrowser),8 exact seconds after reload (controlled test clocks),3 own-input view failures (fixed). Final affected runs and release matrix recorded below; no failure counted as PASS.
+- Final code bundle625547 total/568990 product gzip vs20681f5 baseline625181/568616: +374 product bytes for review fixes and readiness warning, same dependencies/vendor108742/admin56557. Old gate exceeded47/40 bytes; bounded caps626050/569500 (~0.5KiB headroom), unchanged admin/largest gates.
+- Cold production-build PWA:4 PASS. Actual service worker control + network offline reload at320/393/1440 → start prepared v2 cluster → save first part → reload → next pending part; no API requests while offline. Catalog outage also passes. Earlier dev tests alone were not used as this proof.
+
+- Final post-review matrix95 PASS: methods/timers/recovery/offline start in Chromium, Firefox, iPhone WebKit; existing cycle-readiness and personal-program scenarios included where configured. Prior matrix already covered calendar/illness return/replacement/reconnect/stale-release; resolved failures explicitly rerun.42 preparation,36 composer (33 +final3),9 continuation cases also green after fixes.
+- Final code cold PWA4 PASS; range320/393 light/dark screenshots inspected after theme application/animation completion; no horizontal overflow, readable enabled controls. Installed mobile PWA lifecycle/real phone notifications are separate device evidence and not claimed by browser emulation. Android installed acceptance remains A3/A4.
+- Local Graphify rebuilt code-only/no external LLM:7985 nodes,22747 unique edges,410 communities. Portable tracked graph/report/html/manifest regenerated per AGENTS; not a runtime dependency.
+
+| Spec acceptance | Web evidence |
+|---|---|
+| 1–2 personal abs, dates/scopes/reset/privacy/phases | customization SQL/API + composer/reset/calendar browser |
+| 3 groups and round order | preparation/timing vectors + three browser engines |
+| 4–5 drop660/cluster1200 and20/20/120 | real SQL metrics + shared engine vectors + runtime timers |
+| 6 partial/skip/undo/replay/finish | execution SQL/receipts + transactional IndexedDB + browser recovery |
+| 7 history/dashboard/AI/hints/competition meaning | metrics/progress/strength/regularity tests + history browsers |
+| 8 offline/reload/reconnect/deadline | real cold PWA + actual DB queue integration + browser clocks |
+| 9 widths/themes/focus/back |320/375/393/1440 preparation/history/timing axe/layout and existing Telegram navigation tests |
+| 10 Android | pending A1–A4; never inferred from web tests |
+
+Web source acceptance green; publication and live checks pending next step. No production data or original dirty checkout changed by these tests.

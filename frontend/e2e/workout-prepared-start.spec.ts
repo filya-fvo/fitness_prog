@@ -53,7 +53,17 @@ for (const shortRange of [false, true]) test(`real Training page prepares offlin
   });
   await page.setViewportSize({ width: 393, height: 740 });
   await page.goto("/train");
-  if (shortRange) await page.getByRole("button", { name: "На 1 день", exact: true }).click();
+  if (shortRange) {
+    const range = page.getByRole("button", { name: "На 1 день", exact: true });
+    await expect(range).toBeVisible();
+    for (const width of [320, 393]) for (const colorScheme of ["light", "dark"] as const) {
+      await page.setViewportSize({ width, height: 740 }); await page.emulateMedia({ colorScheme });
+      await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: `artifacts/workout-methods/range-${width}-${colorScheme}.png`, fullPage: true, animations: "disabled" });
+    }
+    await range.click();
+  }
   await expect(page.getByRole("status").filter({ hasText: "Планы сохранены на устройстве" })).toBeVisible();
   await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
   const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });

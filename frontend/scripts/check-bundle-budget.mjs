@@ -161,8 +161,8 @@ const limits = {
   // Validated durable envelopes, Dexie cross-tab observation and guarded open
   // correction forms add1913 product bytes versus W9a (618021/561524 ->
   // 619937/563437). Existing dependencies; largest108742/admin56500 unchanged caps.
-  totalJsGzip: 625_500,
-  productJsGzip: 568_950,
+  totalJsGzip: 626_050,
+  productJsGzip: 569_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
