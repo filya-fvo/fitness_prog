@@ -50,7 +50,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   for (const day of [1, 2]) {
     await page.getByRole("button", { name: new RegExp(`День ${day}`) }).click();
     await page.getByRole("searchbox", { name: "Добавить упражнение" }).fill("Жим гантелей");
-    await page.getByRole("button", { name: /Жим гантелей лёжа/ }).click();
+    await page.getByRole("button", { name: "Добавить Жим гантелей лёжа", exact: true }).click();
   }
   await expect(page.getByRole("button", { name: "Создать программу" })).toBeEnabled();
   expect(await page.getByRole("button", { name: /День 2 · 1/ }).evaluate((element) => getComputedStyle(element).backgroundImage)).toContain("linear-gradient");

@@ -6,6 +6,7 @@ type CollapsibleFilterPanelProps = {
   summary?: string;
   className?: string;
   defaultExpanded?: boolean;
+  autoCollapseOnScroll?: boolean;
 };
 
 export function CollapsibleFilterPanel({
@@ -14,13 +15,14 @@ export function CollapsibleFilterPanel({
   summary,
   className = "",
   defaultExpanded = true,
+  autoCollapseOnScroll = true,
 }: CollapsibleFilterPanelProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const openedAtScrollRef = useRef(0);
   const manuallyOpenedRef = useRef(false);
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!expanded || !autoCollapseOnScroll) return;
     openedAtScrollRef.current = window.scrollY;
 
     function onScroll() {
@@ -30,7 +32,7 @@ export function CollapsibleFilterPanel({
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [expanded]);
+  }, [autoCollapseOnScroll, expanded]);
 
   function toggle() {
     setExpanded((current) => {

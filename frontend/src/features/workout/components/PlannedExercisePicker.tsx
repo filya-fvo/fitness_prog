@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import type { Exercise } from "@/types/workout";
 import { rankEquivalentExercises } from "@/utils/exerciseAlternatives";
@@ -12,7 +13,9 @@ type Props = {
   source: Exercise | null;
   catalog: Exercise[];
   occupiedIds: Set<string>;
-  onBack: () => void;
+  onBack?: () => void;
+  collapsibleFilters?: boolean;
+  searchLabel?: string;
   onChoose: (exercise: Exercise) => void;
   onOpenDetail: (exercise: Exercise) => void;
 };
@@ -34,6 +37,8 @@ export function PlannedExercisePicker({
   onBack,
   onChoose,
   onOpenDetail,
+  collapsibleFilters = false,
+  searchLabel,
 }: Props) {
   const searchId = useId();
   const [mode, setMode] = useState<Mode>(source ? "recommended" : "catalog");
@@ -86,11 +91,64 @@ export function PlannedExercisePicker({
   const candidates = mode === "recommended" ? recommended : fullCatalog;
   const visibleCandidates = candidates.slice(0, visibleCount);
 
+  const filters = <>
+      <label htmlFor={searchId} className="sr-only">{searchLabel ?? (source ? "Поиск замены упражнения" : "Поиск упражнения")}</label>
+      <input
+        id={searchId}
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={mode === "recommended" ? "Поиск среди рекомендаций" : "Поиск по всему каталогу"}
+        className="app-field mt-3 px-3 py-3 text-base"
+      />
+
+      {mode === "catalog" ? (
+        <>
+          {source ? <p className="app-status app-status-warning mt-2 text-[11px]">
+            Свободный выбор может изменить целевую мышечную группу. Подходы и повторы исходного упражнения сохранятся.
+          </p> : null}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <label className="text-[11px] text-tg-hint">
+              Группа мышц
+              <select value={muscle} onChange={(event) => setMuscle(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
+                <option value="">Все группы</option>
+                {muscleGroups.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-tg-hint">
+              Оборудование
+              <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
+                <option value="">Любое</option>
+                {equipmentOptions.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-tg-hint">
+              Сложность
+              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
+                <option value="">Любая</option>
+                {[1, 2, 3, 4, 5].map((item) => <option key={item} value={item}>{item} из 5</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-tg-hint">
+              Сортировка
+              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)} className="app-field mt-1 px-2 py-2 text-base">
+                <option value="name">По названию</option>
+                <option value="muscle">По группе</option>
+                <option value="difficulty">По сложности</option>
+              </select>
+            </label>
+          </div>
+        </>
+      ) : null}
+
+      {query || muscle || equipment || difficulty || sortOrder !== "name" ? <button type="button" onClick={() => { setQuery(""); setMuscle(""); setEquipment(""); setDifficulty(""); setSortOrder("name"); }} className="min-h-11 text-sm text-tg-link">Сбросить фильтры</button> : null}
+  </>;
+
   return (
     <div>
-      <button type="button" onClick={onBack} className="mb-2 min-h-[44px] text-sm text-tg-link">
+      {onBack ? <button type="button" onClick={onBack} className="mb-2 min-h-[44px] text-sm text-tg-link">
         ← К плану
-      </button>
+      </button> : null}
 
       {source ? <div className="app-card app-card-ember flex items-center gap-3 p-3">
         <ExerciseThumbnail exercise={source} />
@@ -125,54 +183,9 @@ export function PlannedExercisePicker({
         </button>
       </div> : null}
 
-      <label htmlFor={searchId} className="sr-only">{source ? "Поиск замены упражнения" : "Поиск упражнения"}</label>
-      <input
-        id={searchId}
-        type="search"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder={mode === "recommended" ? "Поиск среди рекомендаций" : "Поиск по всему каталогу"}
-        className="app-field mt-3 px-3 py-3 text-base"
-      />
-
-      {mode === "catalog" ? (
-        <>
-          <p className="app-status app-status-warning mt-2 text-[11px]">
-            Свободный выбор может изменить целевую мышечную группу. Подходы и повторы исходного упражнения сохранятся.
-          </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <label className="text-[11px] text-tg-hint">
-              Группа мышц
-              <select value={muscle} onChange={(event) => setMuscle(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
-                <option value="">Все группы</option>
-                {muscleGroups.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
-              </select>
-            </label>
-            <label className="text-[11px] text-tg-hint">
-              Оборудование
-              <select value={equipment} onChange={(event) => setEquipment(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
-                <option value="">Любое</option>
-                {equipmentOptions.map((item) => <option key={item} value={item}>{enumLabel(item)}</option>)}
-              </select>
-            </label>
-            <label className="text-[11px] text-tg-hint">
-              Сложность
-              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="app-field mt-1 px-2 py-2 text-base">
-                <option value="">Любая</option>
-                {[1, 2, 3, 4, 5].map((item) => <option key={item} value={item}>{item} из 5</option>)}
-              </select>
-            </label>
-            <label className="text-[11px] text-tg-hint">
-              Сортировка
-              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)} className="app-field mt-1 px-2 py-2 text-base">
-                <option value="name">По названию</option>
-                <option value="muscle">По группе</option>
-                <option value="difficulty">По сложности</option>
-              </select>
-            </label>
-          </div>
-        </>
-      ) : null}
+      {collapsibleFilters ? <CollapsibleFilterPanel autoCollapseOnScroll={false} activeCount={[query, muscle, equipment, difficulty].filter(Boolean).length} summary={`Найдено: ${candidates.length}`}>
+        {filters}
+      </CollapsibleFilterPanel> : filters}
 
       <p className="mt-3 text-[11px] text-tg-hint">Найдено: {candidates.length}</p>
       <div className="mt-2 space-y-2">

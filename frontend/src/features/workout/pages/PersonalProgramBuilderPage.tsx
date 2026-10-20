@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createMyProgram, type PersonalProgramInput } from "@/api/programs";
-import { fetchExercises } from "@/api/exercises";
+import { fetchExerciseCatalog } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
+import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import type { Exercise } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
@@ -34,7 +36,9 @@ export function PersonalProgramBuilderPage() {
   const [days, setDays] = useState<DayDraft[]>([newDay(0), newDay(1), newDay(2)]);
   const [dayCount, setDayCount] = useState(3);
   const [activeDay, setActiveDay] = useState(0);
-  const [query, setQuery] = useState("");
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [catalog, setCatalog] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,31 +54,27 @@ export function PersonalProgramBuilderPage() {
     restore: (draft) => {
       setName(draft.name); setLocation(draft.location); setProgression(draft.progression);
       setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(draft.dayCount);
-      setActiveDay(draft.activeDay); setStep(draft.step); setQuery("");
+      setActiveDay(draft.activeDay); setStep(draft.step);
     },
   });
 
   useEffect(() => {
     let cancelled = false;
-    void fetchExercises({ pageSize: 200 }).then((result) => {
-      if (!cancelled) setCatalog(result.items);
-    }).catch((cause: unknown) => {
-      if (!cancelled) setError(toUserMessage(cause, "Не удалось загрузить упражнения"));
+    setLoading(true);
+    setCatalogError(null);
+    void fetchExerciseCatalog().then((items) => {
+      if (!cancelled) setCatalog(items);
+    }).catch(() => {
+      if (!cancelled) setCatalogError("Не удалось загрузить упражнения. Попробуйте ещё раз");
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [catalogAttempt]);
 
   const byId = useMemo(() => new Map(catalog.map((exercise) => [exercise.id, exercise])), [catalog]);
   const visibleDays = days.slice(0, dayCount);
   const selected = days[activeDay];
-  const matches = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase("ru-RU");
-    if (!term) return [];
-    const used = new Set(selected.exercises.map((item) => item.exercise_id));
-    return catalog.filter((item) => !used.has(item.id) && item.name_ru.toLocaleLowerCase("ru-RU").includes(term)).slice(0, 8);
-  }, [catalog, query, selected.exercises]);
   const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
 
   function changeDayCount(count: number) {
@@ -88,11 +88,10 @@ export function PersonalProgramBuilderPage() {
   }
 
   function addExercise(exercise: Exercise) {
-    editDay((day) => ({ ...day, exercises: [
+    editDay((day) => day.exercises.length >= 12 || day.exercises.some((item) => item.exercise_id === exercise.id) ? day : ({ ...day, exercises: [
       ...day.exercises,
       { exercise_id: exercise.id, sets: 3, reps: "8-12", rest_sec: 60 },
     ] }));
-    setQuery("");
   }
 
   function updateExercise(exerciseId: string, changes: Partial<ExerciseDraft>) {
@@ -167,7 +166,7 @@ export function PersonalProgramBuilderPage() {
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleDays.map((day, index) => <button key={index} type="button" aria-pressed={activeDay === index} onClick={() => { setActiveDay(index); setQuery(""); }}
+        {visibleDays.map((day, index) => <button key={index} type="button" aria-pressed={activeDay === index} onClick={() => { setActiveDay(index); }}
           className={activeDay === index ? "app-button app-gradient-action min-h-11 shrink-0 rounded-full px-3 text-white" : "app-chip app-card-inset min-h-11 shrink-0 px-3 text-tg-text"}>
           День {index + 1}{day.exercises.length ? ` · ${day.exercises.length}` : ""}
         </button>)}
@@ -191,14 +190,10 @@ export function PersonalProgramBuilderPage() {
           </div>)}
         </div>
         {selected.exercises.length < 12 ? <div className="mt-4">
-          <label className="block text-sm font-semibold">Добавить упражнение
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Начните вводить название" className="app-field mt-2 w-full text-base" />
-          </label>
-          {query.trim() ? <div className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl bg-tg-secondary p-2">
-            {matches.length ? matches.map((exercise) => <button key={exercise.id} type="button" onClick={() => addExercise(exercise)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-white/10">
-              <ExerciseThumbnail exercise={exercise} size="sm" /><span>{exercise.name_ru}</span><span className="ml-auto text-tg-link">+</span>
-            </button>) : <p className="p-2 text-xs text-tg-hint">Подходящих упражнений не найдено</p>}
-          </div> : null}
+          <h2 className="mb-2 text-sm font-semibold">Добавить упражнение</h2>
+          {loading ? <p role="status" className="text-sm text-tg-hint">Загружаем упражнения…</p> : catalogError ? <div role="alert" className="app-status app-status-warning text-sm">
+            <p>{catalogError}</p><button type="button" onClick={() => setCatalogAttempt((value) => value + 1)} className="min-h-11 text-tg-link">Повторить загрузку упражнений</button>
+          </div> : <PlannedExercisePicker key={activeDay} source={null} catalog={catalog} occupiedIds={new Set(selected.exercises.map((item) => item.exercise_id))} onChoose={addExercise} onOpenDetail={setDetailExercise} searchLabel="Добавить упражнение" collapsibleFilters />}
         </div> : null}
       </div>
       <p className="text-xs text-tg-hint">Добавьте хотя бы одно упражнение в каждый день. В линейной программе повторы остаются заданными; в программе с уровнями сложности они меняются по неделям.</p>
@@ -208,5 +203,6 @@ export function PersonalProgramBuilderPage() {
     {error ? <p role="alert" className="mt-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-3 text-sm">{error}</p> : null}
     <Link to="/programs" className="mt-4 inline-flex min-h-11 items-center text-sm text-tg-link">← К программам</Link>
     </fieldset>
+    {detailExercise ? <ExerciseDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} showExplorerLink={false} showProgress={false} /> : null}
   </section>;
 }

@@ -35,7 +35,7 @@ async function startProgram(page: Page) {
 async function addExerciseToDay(page: Page, day: number) {
   await page.getByRole("button", { name: new RegExp(`^День ${day}`) }).click();
   await page.getByRole("searchbox", { name: "Добавить упражнение" }).fill("Жим гантелей");
-  await page.getByRole("button", { name: /Жим гантелей лёжа/ }).click();
+  await page.getByRole("button", { name: "Добавить Жим гантелей лёжа", exact: true }).click();
 }
 
 test("restores the configured third day after reducing and increasing program days", async ({ page }) => {
