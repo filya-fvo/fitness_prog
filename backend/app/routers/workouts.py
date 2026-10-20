@@ -447,6 +447,7 @@ async def planned_workout_plan(
     scheduled_date: date,
     day_index: int = Query(..., ge=1),
     week_phase: str | None = Query(default=None, pattern=r"^(light|medium|heavy)$"),
+    cycle_readiness: Literal["normal", "caution", "reduce", "rest"] | None = None,
     include_saved_override: bool = True,
     include_personal_override: bool = True,
     session: AsyncSession = Depends(get_db),
@@ -459,6 +460,7 @@ async def planned_workout_plan(
         day_index=day_index,
         scheduled_date=scheduled_date,
         week_phase=week_phase,
+        cycle_readiness=cycle_readiness,
         include_saved_override=include_saved_override,
         include_personal_override=include_personal_override,
     )

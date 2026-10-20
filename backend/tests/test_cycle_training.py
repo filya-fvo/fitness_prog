@@ -223,3 +223,16 @@ async def test_reduced_heavy_phase_is_repeated_before_cycle_advances() -> None:
     assert user.goals["active_program_week_phase"] == "heavy"
     assert user.goals["active_program_workouts_in_phase"] == 0
     assert "active_program_repeat_phase" not in user.goals
+
+
+@pytest.mark.asyncio
+async def test_preview_forwards_readiness_before_start(monkeypatch):
+    program = Program(id=uuid.uuid4(), name="Программа", publication_status="published", is_current=True, is_template=True)
+    user = User(id=uuid.uuid4(), goals={})
+    session = AsyncMock()
+    session.scalar.return_value = program
+    builder = AsyncMock(return_value={"exercises": [], "week_phase": "light"})
+    monkeypatch.setattr(workout_service, "build_program_plan_for_user", builder)
+    await workout_service.preview_program_plan(session, user, program_id=program.id, day_index=1,
+        scheduled_date=date(2026, 10, 20), week_phase="heavy", cycle_readiness="reduce")
+    assert builder.call_args.kwargs["cycle_readiness"] == "reduce"

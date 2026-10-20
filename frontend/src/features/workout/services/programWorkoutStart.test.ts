@@ -9,6 +9,7 @@ import { saveOfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { useUserStore } from "@/store/userStore";
 import { startProgramSession } from "./programWorkoutStart";
 import { apiClient } from "@/api/client";
+import * as telegram from "@/lib/telegram";
 const owner = "22222222-2222-4222-8222-222222222222", programId = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333";
 const date = "2026-10-20";
 const profile = { id: owner, goals: { active_program_id: programId, active_program_week_phase: "medium", active_program_phase_source: "manual" }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true };
@@ -108,4 +109,27 @@ it("uses prepared server defaults for an added exercise without freezing the per
   await stageWorkoutPreparation(context, loaded, edited, "program_day");
   const session = await startProgramSession(context);
   expect((session.workout.plan as import("@/types/workout").WorkoutPlan).exercises[1]).toMatchObject({ target_reps: "8-10", rest_sec: 60 });
+});
+
+for (const online of [false, true]) it(`requires confirmation before reduced-readiness explicit methods start; online=${online}`, async () => {
+  const reducedPlan = { ...plan, week_phase: "light" };
+  await saveOfflineWorkoutContext(owner, { ...bundle, plans: [{ ...bundle.plans[0], readiness: "reduce", plan: reducedPlan }] }, profile, [], []);
+  vi.stubGlobal("navigator", { onLine: online });
+  vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+  const confirm = vi.spyOn(telegram, "confirmAction").mockResolvedValue(false);
+  const get = vi.spyOn(apiClient, "get").mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? reducedPlan : { items: [] } }));
+  const post = vi.spyOn(apiClient, "post").mockResolvedValue({ data: { id: crypto.randomUUID(), user_id: owner, program_id: programId, scheduled_date: date,
+    status: "planned", plan: reducedPlan, sets: [], started_at: null, completed_at: null, ai_notes: null, rpe: null } });
+  const input = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" as const, cycleReadiness: "reduce" as const };
+  await expect(startProgramSession(input)).rejects.toThrow("Старт отменён");
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(confirm.mock.calls[0][0]).toContain("не облегчаются");
+  expect(await db.sessions.count()).toBe(0);
+  expect(await db.syncQueue.count()).toBe(0);
+  expect(post).not.toHaveBeenCalled();
+  confirm.mockResolvedValue(true);
+  const session = await startProgramSession(input);
+  expect((session.workout.plan as typeof plan).exercises[0].set_methods[0].parts[0].target_weight).toBe(100);
+  expect(await db.sessions.count()).toBe(1);
+  if (online) expect(get).toHaveBeenCalledWith("/workouts/planned-plan", expect.objectContaining({ params: expect.objectContaining({ cycle_readiness: "reduce" }) }));
 });

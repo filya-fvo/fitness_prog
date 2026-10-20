@@ -701,6 +701,7 @@ export async function cancelScheduledWorkout(scheduledDate: string): Promise<Wor
 }
 
 export type PlannedWorkoutPlanInput = {
+  cycleReadiness?: "normal" | "caution" | "reduce" | "rest";
   programId: string;
   scheduledDate: string;
   dayIndex: number;
@@ -716,6 +717,7 @@ export async function fetchPlannedWorkoutPlan(
     params: {
       ...(input.includeSavedOverride === false ? { include_saved_override: false } : {}),
       ...(input.includePersonalOverride === false ? { include_personal_override: false } : {}),
+      ...(input.cycleReadiness ? { cycle_readiness: input.cycleReadiness } : {}),
       program_id: input.programId,
       scheduled_date: input.scheduledDate,
       day_index: input.dayIndex,

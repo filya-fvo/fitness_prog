@@ -380,6 +380,7 @@ async def preview_program_plan(
     day_index: int,
     scheduled_date: date,
     week_phase: str | None,
+    cycle_readiness: object = None,
     include_saved_override: bool = True,
     include_personal_override: bool = True,
 ) -> dict[str, Any]:
@@ -399,6 +400,7 @@ async def preview_program_plan(
         day_index=day_index,
         scheduled_date=scheduled_date,
         week_phase=week_phase,
+        cycle_readiness=cycle_readiness,
         include_saved_override=include_saved_override,
         include_personal_override=include_personal_override,
     )

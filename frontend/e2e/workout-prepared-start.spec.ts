@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installTimingApi } from "./fixtures/workout-execution-api";
 import { acceptedLegalStatus } from "./legal-fixture";
 const owner = "22222222-2222-4222-8222-222222222222", program = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333", server = "55555555-5555-4555-8555-555555555555";
 for (const shortRange of [false, true]) test(`real Training page prepares offline, starts, restores a cluster and syncs in order; shortRange=${shortRange}`, async ({ page }) => {
@@ -74,4 +75,40 @@ for (const shortRange of [false, true]) test(`real Training page prepares offlin
   expect(events).toEqual([]);
   await page.evaluate(() => { localStorage.removeItem("prepared-e2e-offline"); Object.defineProperty(navigator, "onLine", { configurable: true, get: () => true }); window.dispatchEvent(new Event("online")); });
   await expect.poll(() => events).toEqual(["preparation", "create", "parts", "finish"]);
+});
+
+test("reduced readiness confirms preserved explicit weights before offline start", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00Z"));
+  await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
+  const messages: string[] = [];
+  page.on("dialog", async dialog => { messages.push(dialog.message()); if (messages.length === 1) await dialog.dismiss(); else await dialog.accept(); });
+  const result = await page.evaluate(async () => {
+    const storagePath = "/src/db/offlineWorkoutContext.ts", startPath = "/src/features/workout/services/programWorkoutStart.ts", dbPath = "/src/db/schema.ts";
+    const { saveOfflineWorkoutContext } = await import(/* @vite-ignore */ storagePath);
+    const { startProgramSession } = await import(/* @vite-ignore */ startPath);
+    const { db } = await import(/* @vite-ignore */ dbPath);
+    const owner = "22222222-2222-4222-8222-222222222222", programId = "99999999-9999-4999-8999-999999999999", date = "2026-10-20";
+    const current = (await db.sessions.toArray())[0];
+    const plan = { ...current.workout.plan, week_phase: "light" };
+    await saveOfflineWorkoutContext(owner, { version: 1, owner, prepared_at: "2026-10-20T09:00:00Z", schedule_fingerprint: "0".repeat(64), start: date, end: date,
+      program: { id: programId, name: "Проверка нагрузки", version: 1, structure: { days: [{ day: 1 }] } }, days: [{ requested_date: date, schedule: { requested_date: date, current: null, next: null } }],
+      plans: [{ scheduled_date: date, day_index: 1, week_phase: "heavy", readiness: "reduce", preparation_fingerprint: "1".repeat(64), plan }] },
+      { id: owner, goals: { active_program_id: programId }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true }, [], []);
+    Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });
+    const before = await db.sessions.count();
+    const input = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "heavy", cycleReadiness: "reduce" };
+    let cancelled = "";
+    try { await startProgramSession(input); } catch (error) { cancelled = String(error); }
+    const afterCancel = await db.sessions.count();
+    const started = await startProgramSession(input);
+    return { cancelled, before, afterCancel, afterConfirm: await db.sessions.count(), weight: started.workout.plan.exercises[0].set_methods[0].parts[0].target_weight };
+  });
+  expect(messages).toHaveLength(2);
+  expect(messages[0]).toContain("не облегчаются автоматически");
+  expect(result.cancelled).toContain("Старт отменён");
+  expect(result.afterCancel).toBe(result.before);
+  expect(result.afterConfirm).toBe(result.before + 1);
+  expect(result.weight).toBe(100);
 });

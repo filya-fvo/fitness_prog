@@ -1,4 +1,6 @@
 /** One start path for Home, Training and Programs; durable writes precede navigation. */
+import { fetchPlannedWorkoutPlan } from "@/api/workouts";
+import { confirmAction } from "@/lib/telegram";
 import { startProgramWorkout } from "@/api/programs";
 import { getStoredToken } from "@/api/client";
 import { db, type LocalWorkoutSession } from "@/db/schema";
@@ -15,6 +17,12 @@ import { isOnline } from "@/utils/network";
 
 type Input = Parameters<typeof startProgramWorkout>[0] & { warmupLocation?: string; ownerUserId?: string };
 const starts = new Map<string, Promise<LocalWorkoutSession>>();
+async function confirmIntensity(owner: string, plan: WorkoutPlan, readiness: Input["cycleReadiness"]): Promise<void> {
+  if (!readiness || readiness === "normal" || (!plan.groups?.length && !plan.customization_scopes?.length && !plan.exercises.some(row => row.set_methods?.length))) return;
+  const accepted = await confirmAction("Вы выбрали снижение нагрузки. Явно заданные методы, веса и повторы не облегчаются автоматически. При необходимости измените их в подготовке. Начать с этими настройками?");
+  checkOwner(owner);
+  if (!accepted) throw new Error("Старт отменён. Проверьте личные настройки в подготовке тренировки");
+}
 function checkOwner(owner: string): void { if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Откройте тренировку снова"); }
 export function startProgramSession(input: Input): Promise<LocalWorkoutSession> {
   const owner = useUserStore.getState().user?.id;
@@ -46,6 +54,11 @@ async function start(owner: string, day: string, input: Input): Promise<LocalWor
   let workout: Workout;
   let queued: Record<string, unknown> | null = null;
   if (isOnline() && getStoredToken() && (!proposal || proposal.receipt)) {
+    if (input.cycleReadiness && input.cycleReadiness !== "normal") {
+      const preview = await fetchPlannedWorkoutPlan({ ...context, cycleReadiness: input.cycleReadiness });
+      checkOwner(owner);
+      await confirmIntensity(owner, preview, input.cycleReadiness);
+    }
     workout = await startProgramWorkout(input);
     checkOwner(owner);
     if (workout.user_id !== owner) throw new Error("Не удалось проверить владельца тренировки");
@@ -70,6 +83,7 @@ async function start(owner: string, day: string, input: Input): Promise<LocalWor
       }) } as WorkoutPlan;
       dependency = `workout-preparation:v1:${owner}:op:${proposal.operationId}`;
     }
+    await confirmIntensity(owner, plan, readiness);
     const confirmedAt = new Date().toISOString();
     workout = { id: clientId, user_id: owner, program_id: input.programId, scheduled_date: day, status: "planned", plan, sets: [], started_at: confirmedAt, completed_at: null, ai_notes: null, rpe: null };
     queued = { scheduledDate: day, programId: input.programId, dayIndex: context.dayIndex, weekPhase: phase, cycleReadiness: readiness,
