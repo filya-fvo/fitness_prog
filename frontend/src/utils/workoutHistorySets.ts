@@ -89,6 +89,7 @@ export function historySetLoad(row: WorkoutSet): string {
 
 
 export function exerciseDiarySetLoad(row: ExerciseProgressDiarySet): string {
+  if (!row.executionKind || row.executionKind === "standard") return `${row.weight ?? "—"} кг${row.weightMode === "per_hand" ? "/руку" : ""} × ${row.reps ?? "—"} повт.`;
   return historySetLoad({ id: "diary", workout_id: "diary", exercise_id: "diary", set_number: row.setNumber,
     execution_kind: row.executionKind, parts: row.parts, reps: row.reps, weight: row.weight, weight_mode: row.weightMode,
     is_completed: row.isCompleted ?? true, rest_time_sec: null });

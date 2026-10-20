@@ -19,9 +19,10 @@ export async function readCachedLoadHints(
   exerciseIds: string[],
   ownerUserId = currentOwnerId(),
 ): Promise<Map<string, ExerciseHistoryBest>> {
-  if (!ownerUserId || !exerciseIds.length) return new Map();
+  if (!ownerUserId || !exerciseIds.length || currentOwnerId() !== ownerUserId) return new Map();
   const wanted = new Set(exerciseIds);
   const rows = await db.workoutLoadHints.where("ownerUserId").equals(ownerUserId).toArray();
+  if (currentOwnerId() !== ownerUserId) return new Map();
   return new Map(
     rows
       .filter((row) => wanted.has(row.exerciseId))
@@ -34,9 +35,10 @@ export async function cacheLoadHints(
   ownerUserId = currentOwnerId(),
   requestedExerciseIds: string[] = hints.map((hint) => hint.exerciseId),
 ): Promise<void> {
-  if (!ownerUserId) return;
+  if (!ownerUserId || currentOwnerId() !== ownerUserId) return;
   const updatedAt = Date.now();
   await db.transaction("rw", db.workoutLoadHints, async () => {
+    if (currentOwnerId() !== ownerUserId) throw new Error("Аккаунт изменился");
     if (requestedExerciseIds.length) {
       await db.workoutLoadHints.bulkDelete(
         requestedExerciseIds.map((exerciseId) => key(ownerUserId, exerciseId)),
@@ -50,21 +52,26 @@ export async function cacheLoadHints(
         updatedAt,
       })));
     }
+    if (currentOwnerId() !== ownerUserId) throw new Error("Аккаунт изменился");
   });
 }
 
 export async function loadExerciseHints(
   exerciseIds: string[],
 ): Promise<Map<string, ExerciseHistoryBest>> {
+  const owner = currentOwnerId();
   const uniqueIds = [...new Set(exerciseIds)].slice(0, 100);
-  const cached = await readCachedLoadHints(uniqueIds);
+  const cached = await readCachedLoadHints(uniqueIds, owner);
+  if (currentOwnerId() !== owner) return new Map();
   if (!uniqueIds.length || !isOnline() || !getStoredToken()) return cached;
   try {
     const fresh = await fetchWorkoutLoadHints(uniqueIds);
-    await cacheLoadHints(fresh, currentOwnerId(), uniqueIds);
+    if (currentOwnerId() !== owner) return new Map();
+    await cacheLoadHints(fresh, owner, uniqueIds);
+    if (currentOwnerId() !== owner) return new Map();
     return new Map(fresh.map((hint) => [hint.exerciseId, hint]));
   } catch {
-    return cached;
+    return currentOwnerId() === owner ? cached : new Map();
   }
 }
 
@@ -74,6 +81,7 @@ export async function cacheCompletedDraftHints(
   rpe: number | null,
   phase: "light" | "medium" | "heavy" | null = null,
 ): Promise<void> {
+  const owner = currentOwnerId();
   const best = new Map<string, WorkoutLoadHint>();
   for (const draft of drafts) {
     if (!draft.isCompleted) continue;
@@ -103,7 +111,8 @@ export async function cacheCompletedDraftHints(
   }
   const hints = [...best.values()];
   if (phase && hints.length) {
-    const cached = await readCachedLoadHints(hints.map((hint) => hint.exerciseId));
+    const cached = await readCachedLoadHints(hints.map((hint) => hint.exerciseId), owner);
+    if (currentOwnerId() !== owner) return;
     for (const hint of hints) {
       hint.phaseLoads = {
         ...cached.get(hint.exerciseId)?.phaseLoads,
@@ -119,5 +128,5 @@ export async function cacheCompletedDraftHints(
       };
     }
   }
-  await cacheLoadHints(hints);
+  await cacheLoadHints(hints, owner);
 }

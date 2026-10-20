@@ -1,3 +1,4 @@
+import { useUserStore } from "@/store/userStore";
 import { z } from "zod";
 import { executionPartSchema, setMethodSchema, workoutGroupSchema } from "./workoutExecutionSchemas";
 import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
@@ -284,9 +285,14 @@ export function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
 const workoutRequestsInFlight = new Map<string, Promise<Workout>>();
 const recentWorkoutResponses = new Map<string, { workout: Workout; expiresAt: number }>();
 const WORKOUT_RESPONSE_GRACE_MS = 5_000;
+const workoutResponseRevisions = new Map<string, number>();
+const workoutResponseKey = (id: string, owner = useUserStore.getState().user?.id) => `${owner ?? ""}:${id}`;
 
 function invalidateWorkoutResponse(workoutId: string): void {
-  recentWorkoutResponses.delete(workoutId);
+  const key = workoutResponseKey(workoutId);
+  recentWorkoutResponses.delete(key);
+  workoutRequestsInFlight.delete(key);
+  workoutResponseRevisions.set(key, (workoutResponseRevisions.get(key) ?? 0) + 1);
 }
 
 export async function createWorkout(input: {
@@ -323,25 +329,31 @@ export async function createWorkout(input: {
 }
 
 export function fetchWorkout(workoutId: string): Promise<Workout> {
-  const cached = recentWorkoutResponses.get(workoutId);
+  const owner = useUserStore.getState().user?.id;
+  const key = workoutResponseKey(workoutId, owner);
+  const revision = workoutResponseRevisions.get(key) ?? 0;
+  const cached = recentWorkoutResponses.get(key);
   if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.workout);
-  if (cached) recentWorkoutResponses.delete(workoutId);
+  if (cached) recentWorkoutResponses.delete(key);
 
-  const existing = workoutRequestsInFlight.get(workoutId);
+  const existing = workoutRequestsInFlight.get(key);
   if (existing) return existing;
 
   const request = apiClient
     .get(`/workouts/${workoutId}`)
     .then(({ data }) => {
+      if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Откройте тренировку снова");
+      if ((workoutResponseRevisions.get(key) ?? 0) !== revision) throw new Error("Запись тренировки изменилась. Откройте её снова");
       const workout = mapWorkout(workoutSchema.parse(data));
-      recentWorkoutResponses.set(workoutId, {
+      if (owner && workout.user_id !== owner) throw new Error("Не удалось проверить владельца тренировки");
+      recentWorkoutResponses.set(key, {
         workout,
         expiresAt: Date.now() + WORKOUT_RESPONSE_GRACE_MS,
       });
       return workout;
     })
-    .finally(() => workoutRequestsInFlight.delete(workoutId));
-  workoutRequestsInFlight.set(workoutId, request);
+    .finally(() => { if (workoutRequestsInFlight.get(key) === request) workoutRequestsInFlight.delete(key); });
+  workoutRequestsInFlight.set(key, request);
   return request;
 }
 

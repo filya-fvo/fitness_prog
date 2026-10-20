@@ -42,6 +42,7 @@ const limits = {
   // W9e measured +0.5 KB gzip product with unchanged dependencies.
   // W9f shares prepared starts and orders proposal/create/facts, adding 2.0 KB.
   // Explicit smaller-range preparation after 413 adds 0.8 KB across existing routes.
+  // Account-scoped cache/hints, bounded timer recovery and diary units add 0.7 KB.
   // Axios 1.18.1 -> 1.20.0 security fixes increase measured JS gzip from
   // 558147 to 559939 bytes (product: 501753 -> 503540); retain a narrow margin.
   // Durable measurement sync adds about 2.7 KB gzip to the already lazy storage
@@ -159,8 +160,8 @@ const limits = {
   // Validated durable envelopes, Dexie cross-tab observation and guarded open
   // correction forms add1913 product bytes versus W9a (618021/561524 ->
   // 619937/563437). Existing dependencies; largest108742/admin56500 unchanged caps.
-  totalJsGzip: 624_200,
-  productJsGzip: 567_650,
+  totalJsGzip: 624_850,
+  productJsGzip: 568_300,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

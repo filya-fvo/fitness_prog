@@ -4,7 +4,7 @@ import { executionFactsFromDrafts, draftsFromWorkoutSnapshot } from "./workoutSe
 import { restoreExecutionRest, type ClockSnapshot } from "./workoutRest";
 import { executionPartSchema } from "@/api/workoutExecutionSchemas";
 import type { ExecutionProgress } from "./workoutExecution";
-import { buildExecutionSteps } from "./workoutExecution";
+import { buildExecutionSteps, MAX_EXECUTION_ACTIONS } from "./workoutExecution";
 import type { LocalSetDraft, Workout, WorkoutPlan } from "@/types/workout";
 
 export type WorkoutExecutionEnvelope = {
@@ -84,7 +84,7 @@ export function assertExecutionSessionSnapshot(session: LocalWorkoutSession, own
   const byId = new Map(steps.map(step => [step.id, step]));
   const progress = value!.progress;
   if (!progress.facts || Object.keys(progress.facts).length !== steps.length || typeof progress.manualContinue !== "boolean" ||
-    !Array.isArray(progress.processedActionIds) || progress.processedActionIds.length > 16000 ||
+    !Array.isArray(progress.processedActionIds) || progress.processedActionIds.length > MAX_EXECUTION_ACTIONS ||
     progress.processedActionIds.some(id => typeof id !== "string" || !id.length || id.length > 128) ||
     new Set(progress.processedActionIds).size !== progress.processedActionIds.length ||
     (value!.viewStepId !== null && !byId.has(value!.viewStepId))) invalid();

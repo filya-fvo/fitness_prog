@@ -186,3 +186,17 @@ it("an ordinary participant skip persists in root, outbox and restored facts", a
   await flushSyncQueue(owner);
   expect(post).toHaveBeenCalledWith(`/workouts/${client}/sets`, expect.objectContaining({ is_skipped: true, is_completed: false }));
 });
+
+it("can end rest and finish at the bounded action history without corrupting recovery", async () => {
+  await seed();
+  const recorded = await commitExecutionAction(action());
+  const session = recorded.session;
+  session.execution!.progress.processedActionIds = [...session.execution!.progress.processedActionIds, ...Array.from({ length: 15999 }, (_, index) => `history-${index}`)];
+  await db.sessions.put(session);
+  const { changeExecutionRest } = await import("./workoutExecution");
+  const changed = await changeExecutionRest({ owner, clientWorkoutId: client, transitionId: session.execution!.progress.rest!.transitionId, actionId: crypto.randomUUID(), now: clock, autoAdvance: true });
+  expect(changed.execution!.progress.processedActionIds.length).toBeLessThanOrEqual(16000);
+  const finished = await finishExecutionSession({ owner, clientWorkoutId: client, actionId: crypto.randomUUID(), now: clock, rpe: 7, aiNotes: null });
+  expect(finished.execution!.progress.processedActionIds.length).toBeLessThanOrEqual(16000);
+  expect((await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout, drafts: [], now: clock })).workout.status).toBe("completed");
+});

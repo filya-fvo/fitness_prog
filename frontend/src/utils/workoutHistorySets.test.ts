@@ -58,3 +58,10 @@ describe("set result comparison", () => {
     expect(historySetOutcome(current, previous)).toBe(expected);
   });
 });
+
+it("keeps repetition units and per-hand notation in ordinary exercise diary", async () => {
+  const { exerciseDiarySetLoad } = await import("./workoutHistorySets");
+  const row = { setNumber: 1, reps: 6, weight: 87.5, totalWeight: 87.5, weightMode: null };
+  expect(exerciseDiarySetLoad(row)).toBe("87.5 кг × 6 повт.");
+  expect(exerciseDiarySetLoad({ ...row, weightMode: "per_hand" })).toBe("87.5 кг/руку × 6 повт.");
+});

@@ -2,10 +2,10 @@
 import { db, type LocalWorkoutSession, type SyncQueueItem } from "./schema";
 import { useUserStore } from "@/store/userStore";
 import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
-import { buildExecutionSteps, executionStepId, resolveExecutionTransition, type ExecutionProgress, type TransitionInput } from "@/utils/workoutExecution";
+import { MAX_EXECUTION_ACTIONS, buildExecutionSteps, executionStepId, resolveExecutionTransition, type ExecutionProgress, type TransitionInput } from "@/utils/workoutExecution";
 import { executionFactsFromDrafts } from "@/utils/workoutSession";
 import { ensureExecutionDrafts, executionSnapshotKey, assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
-import { adjustExecutionRest, claimRestCompletion, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
+import { remainingRestMs, adjustExecutionRest, claimRestCompletion, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
 
 export type ExecutionValues = { baseSetRevision?: number; reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
   durationSec: number | null; note?: string | null; machineParams?: Record<string, string | number> | null };
@@ -200,8 +200,13 @@ export async function changeExecutionRest(input: { owner: string; clientWorkoutI
     if (execution.progress.processedActionIds.includes(input.actionId)) return session;
     const rest = execution.progress.rest;
     if (!rest || rest.transitionId !== input.transitionId) throw new Error("Эта пауза уже закончилась");
-    execution.progress.rest = input.deltaSeconds === undefined ? finishExecutionRest(rest, input.now) : adjustExecutionRest(rest, input.deltaSeconds, input.now);
-    execution.progress.processedActionIds = [...execution.progress.processedActionIds, input.actionId]; execution.revision += 1;
+    if (input.deltaSeconds === undefined && rest.completionNotified && !rest.requiresConfirmation && remainingRestMs(rest, input.now) === 0) return session;
+    const next = input.deltaSeconds === undefined ? finishExecutionRest(rest, input.now) : adjustExecutionRest(rest, input.deltaSeconds, input.now);
+    if (next === rest) return session;
+    if (input.deltaSeconds !== undefined && execution.progress.processedActionIds.length >= MAX_EXECUTION_ACTIONS) throw new Error("Достигнут лимит действий. Можно закончить отдых или тренировку");
+    execution.progress.rest = next;
+    if (execution.progress.processedActionIds.length < MAX_EXECUTION_ACTIONS) execution.progress.processedActionIds = [...execution.progress.processedActionIds, input.actionId];
+    execution.revision += 1;
     if (input.deltaSeconds === undefined) jumpToCursor(session, input.autoAdvance);
     await writeSession(session);
     return session;
@@ -221,7 +226,7 @@ export async function finishExecutionSession(input: { owner: string; clientWorko
     session.workout = { ...session.workout, status: "completed", completed_at: completedAt, rpe: input.rpe,
       ai_notes: input.aiNotes, duration_sec: Math.max(0, Math.floor((input.now.wallMs - startedAt) / 1000)) };
     execution.progress.rest = null;
-    execution.progress.processedActionIds = [...execution.progress.processedActionIds, input.actionId];
+    if (execution.progress.processedActionIds.length < MAX_EXECUTION_ACTIONS) execution.progress.processedActionIds = [...execution.progress.processedActionIds, input.actionId];
     execution.revision += 1;
     const queued: SyncQueueItem = { id: input.actionId, ownerUserId: input.owner, clientWorkoutId: input.clientWorkoutId,
       type: "complete_workout", createdAt: queueTime(session), attempts: 0, lastError: null,

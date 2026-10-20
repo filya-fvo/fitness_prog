@@ -2,6 +2,8 @@
 import type { WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 import { createExecutionRest, remainingRestMs, executionRestNeedsConfirmation, type ClockSnapshot, type RestKind, type RestState } from "./workoutRest";
 
+export const MAX_EXECUTION_ACTIONS = 16_000;
+
 export type ExecutionStep = {
   id: string;
   blockId: string;
@@ -152,7 +154,7 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
   };
   if (!["complete", "skip", "skip_participant", "correct", "undo"].includes(input.action)) return { ...base, blockedReason: "invalid_action" };
   if (processed.includes(input.actionId)) return { ...base, blockedReason: "duplicate" };
-  if (!input.actionId || processed.length >= 16_000) return { ...base, blockedReason: "history_limit" };
+  if (!input.actionId || processed.length >= MAX_EXECUTION_ACTIONS) return { ...base, blockedReason: "history_limit" };
   const source = steps.find(step => step.id === input.stepId);
   if (!source) return { ...base, blockedReason: "stale_step" };
   const accepted = { accepted: true, processedActionIds: [...processed, input.actionId] };

@@ -1,0 +1,21 @@
+import "fake-indexeddb/auto";
+import { afterEach, expect, it, vi } from "vitest";
+import { db } from "./schema";
+import { useUserStore } from "@/store/userStore";
+import { apiClient } from "@/api/client";
+import { loadExerciseHints } from "./workoutLoadHints";
+afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await db.delete(); useUserStore.setState({ user: null }); });
+it("does not cache or expose a late previous-weight response after account switch", async () => {
+  await db.open();
+  const a = "22222222-2222-4222-8222-222222222222", b = "33333333-3333-4333-8333-333333333333", exercise = "44444444-4444-4444-8444-444444444444";
+  useUserStore.setState({ user: { id: a, subscription_status: "plus", onboarding_completed: true } });
+  vi.stubGlobal("navigator", { onLine: true }); vi.stubGlobal("localStorage", { getItem: () => "synthetic-token" });
+  let release!: (value: { data: unknown }) => void;
+  vi.spyOn(apiClient, "post").mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+  const loading = loadExerciseHints([exercise]);
+  await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+  useUserStore.setState({ user: { id: b, subscription_status: "plus", onboarding_completed: true } });
+  release({ data: { items: [{ exercise_id: exercise, weight: 50, reps: 8, duration_sec: null, weight_mode: "total", machine_params: null, rpe: 7, completed_date: "2026-10-19" }] } });
+  expect((await loading).size).toBe(0);
+  expect(await db.workoutLoadHints.count()).toBe(0);
+});

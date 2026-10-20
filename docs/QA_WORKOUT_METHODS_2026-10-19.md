@@ -152,3 +152,11 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Initial Chromium RED:413 had no range choice. Final Chromium2 full offline start/reconnect scenarios PASS, including explicit1-day retry after14-day413;12 cache/API tests, types/lint/build/PWA PASS. No automatic truncation of exercise/part data.
 - UI offers smaller7/3/1-day ranges only, with disabled buttons while preparing and a clear message when even one day exceeds the limit. Saved preparedDays keeps subsequent automatic refresh within the selected cached range. Backend6 MiB/native8 MiB bounds unchanged.
 - Bundle623603/567048 (+790 product), largest108742/admin56555; bounded624200/567650. No backend changes. Conflict recovery and owner/cache audit still open; no deployment.
+
+
+## W9g2 — account isolation and bounded recovery
+
+- Valid RED5: cached workout across account switch, shared in-flight request across owners, stale pre-write GET repopulating cache, late hint cached under new owner, timer action history overflowing16000. GREEN42 targeted; full868 web PASS, lint/types/build/PWA PASS.
+- Cache keys include authenticated owner; read captures mutation revision and rejects a stale response. Hints capture owner before awaits and validate it inside cache transactions. At history limit, adjustments stop safely while end-rest and finish remain possible without an invalid snapshot; no-op adjustments do not consume IDs.
+- Browser acceptance found an earlier W8 regression: ordinary exercise diary dropped repetition units. Confirmed against W7 source and independent RED test; restored previous ordinary format including per-hand notation. Final40 affected unit and Chromium14 recovery/history PASS, including consented deep-link restore and legacy completion.
+- Bundle624284/567717 (+669 product), largest108742/admin56567; bounded624850/568300. Remaining history-edit/notes callback audit and explicit failed-proposal recovery. No backend changes or deployment.
