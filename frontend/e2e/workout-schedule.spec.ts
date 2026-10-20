@@ -671,6 +671,7 @@ legal_status: acceptedLegalStatus(USER_ID),
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(savedPlan ?? plan) });
   });
 
+  await page.route("**/workouts/customizations**", route => route.fulfill({ json: { program_id: PROGRAM_ID, day_index: 1, scope: "program_day", scheduled_date: null, revision: 0, program_version: 1, patch: {} } }));
   await page.goto("/");
   await expect(page.getByText(/^Следующая тренировка/)).toBeVisible();
   await expect(page.getByRole("button", { name: /^Начать ·/ })).toHaveCount(0);
@@ -679,7 +680,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
   await expect(dialog).toHaveClass(/app-card/);
   await expect(dialog.locator(".app-card")).toHaveCount(1);
-  await expect(dialog.getByText("Тяга верхнего блока")).toBeVisible();
+  await expect(dialog.getByText("Тяга верхнего блока", { exact: true })).toBeVisible();
   await expect(dialog.locator(".exercise-thumbnail").first()).toBeVisible();
   await dialog.getByRole("button", { name: "Заменить" }).click();
   await expect(dialog.getByRole("button", { name: "Рекомендуемые" })).toHaveAttribute("aria-pressed", "true");
@@ -687,7 +688,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   await expect(dialog.getByPlaceholder("Поиск среди рекомендаций")).toHaveClass(/app-field/);
   const recommendedCard = dialog.getByRole("button", { name: "Посмотреть Подтягивания в тренажёре" }).locator("..");
   await expect(recommendedCard).toHaveClass(/app-card-ocean/);
-  await recommendedCard.getByRole("button", { name: "Выбрать" }).click();
+  await recommendedCard.getByRole("button", { name: "Выбрать Подтягивания в тренажёре" }).click();
   await dialog.getByRole("button", { name: "Заменить" }).click();
   await dialog.getByRole("button", { name: "Весь каталог" }).click();
   await expect(dialog.getByRole("button", { name: "Весь каталог" })).toHaveClass(/app-gradient-action/);
@@ -700,7 +701,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   await expect(detail.getByText("Свободная замена из другой мышечной группы.")).toBeVisible();
   await detail.getByRole("button", { name: "Закрыть" }).click();
   const freeChoiceCard = dialog.getByRole("button", { name: "Посмотреть Болгарские выпады с гантелями" }).locator("..");
-  await freeChoiceCard.getByRole("button", { name: "Выбрать" }).click();
+  await freeChoiceCard.getByRole("button", { name: "Выбрать Болгарские выпады с гантелями" }).click();
   await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
 
   await expect(dialog).toHaveCount(0);

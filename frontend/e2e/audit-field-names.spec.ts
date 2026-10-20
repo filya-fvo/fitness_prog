@@ -76,7 +76,7 @@ for (const field of [
   test(`real component keeps its field name after input: ${field.name}`, async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.goto(`/e2e/fixtures/audit-fields.html?fixture=${field.fixture}`);
-    if (field.fixture === "planned") await expect(page.getByRole("button", { name: "Выбрать", exact: true })).toBeVisible();
+    if (field.fixture === "planned") await expect(page.getByRole("button", { name: "Выбрать Жим гантелей лёжа", exact: true })).toBeVisible();
     if (field.fixture === "import") await page.getByText("Предварительная проверка импорта", { exact: true }).click();
     await typeAndCheckName(page, field.placeholder, field.name, field.value);
     if (field.name === "Поиск пользователя") {

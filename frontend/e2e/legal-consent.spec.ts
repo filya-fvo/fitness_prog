@@ -63,6 +63,7 @@ test("legal network failure keeps choices and allows retry", async ({ page }) =>
   const state = await setup(page, false, true);
   await page.goto("/profile");
   const dialog = page.getByRole("dialog", { name: "Документы FilFit" });
+  await expect(dialog.getByRole("checkbox")).toHaveCount(3);
   for (const check of await dialog.getByRole("checkbox").all()) await check.check();
   await dialog.getByRole("button", { name: "Подтвердить и продолжить" }).click();
   await expect(dialog.getByRole("alert")).toBeVisible();
