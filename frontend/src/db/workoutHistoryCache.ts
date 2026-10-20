@@ -1,3 +1,4 @@
+import { cacheWorkout } from "./syncQueue";
 import { db } from "@/db/schema";
 import { useUserStore } from "@/store/userStore";
 import type { Workout } from "@/types/workout";
@@ -33,4 +34,13 @@ export async function cacheWorkoutHistory(owner: string, items: Workout[], windo
     check();
     return db.workouts.where("user_id").equals(owner).toArray();
   });
+}
+
+
+/** Server acknowledgement is separate from derived local-cache success. */
+export async function cacheAcknowledgedWorkout(owner: string, workout: Workout): Promise<string | null> {
+  const check = () => { if (useUserStore.getState().user?.id !== owner || workout.user_id !== owner) throw new Error("Аккаунт изменился во время сохранения дневника"); };
+  check();
+  try { await cacheWorkout(workout); check(); return null; }
+  catch { check(); console.warn("Тренировка сохранена на сервере; локальный дневник нужно обновить"); return "Изменения сохранены на сервере. Обновите дневник при подключении"; }
 }

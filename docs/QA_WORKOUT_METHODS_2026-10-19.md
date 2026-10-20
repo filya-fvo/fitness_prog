@@ -160,3 +160,12 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Cache keys include authenticated owner; read captures mutation revision and rejects a stale response. Hints capture owner before awaits and validate it inside cache transactions. At history limit, adjustments stop safely while end-rest and finish remain possible without an invalid snapshot; no-op adjustments do not consume IDs.
 - Browser acceptance found an earlier W8 regression: ordinary exercise diary dropped repetition units. Confirmed against W7 source and independent RED test; restored previous ordinary format including per-hand notation. Final40 affected unit and Chromium14 recovery/history PASS, including consented deep-link restore and legacy completion.
 - Bundle624284/567717 (+669 product), largest108742/admin56567; bounded624850/568300. Remaining history-edit/notes callback audit and explicit failed-proposal recovery. No backend changes or deployment.
+
+
+## W9g3 — history callbacks and acknowledged changes
+
+- Valid initial browser RED2: late part correction updated the next account; cache failure after acknowledged correction falsely kept an error form. GREEN: owner/generation checks before and after awaits, owner-checked cache transactions and immediate hiding of a foreign history sheet.
+- Notes had the same acknowledgement/cache coupling. Corrected test locator to the textbox's accessible name and waited for completion before confirming valid RED; notes now share acknowledgement-aware cache handling. Confirmed deletion also updates the view even if local removal fails, with a clear refresh warning.
+- Full web871 PASS; final lint clean (rewrote ref increments to avoid misleading cleanup warnings), types/build/PWA PASS. Chromium13 history/notes cases PASS: ordinary and compound edits, unchanged request identity after failure, delayed response after account change, cache failure for part/note/deletion, pending-note edit exclusion and mobile/theme accessibility.
+- Storage tests prove account switch inside creating/deleting hooks rolls back local changes; an acknowledged cache failure warns without claiming the server write failed. Final bundle624967/568409 (+692 product), largest108742/admin56558; bounded625500/568950.
+- Remaining W9: readable structured sync conflicts and final spec reconciliation; no automatic rebase or conversion of recorded workouts. No backend changes or deployment.

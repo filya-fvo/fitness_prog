@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { cacheAcknowledgedWorkout } from "@/db/workoutHistoryCache";
+import { useUserStore } from "@/store/userStore";
+import { toast } from "@/store/toastStore";
+import { useEffect, useRef, useState } from "react";
 import { deleteWorkout, updateWorkout } from "@/api/workouts";
-import { cacheWorkout, enqueueSync, removeCachedWorkout } from "@/db/syncQueue";
+import { enqueueSync, removeCachedWorkout } from "@/db/syncQueue";
 import type { Workout } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
 import { isOnline } from "@/utils/network";
@@ -9,6 +12,10 @@ export function WorkoutNotesForm({ workout, onChanged, disabled, onBusyChange }:
   workout: Workout; onChanged: (workout: Workout | null, deletedId?: string) => void;
   disabled: boolean; onBusyChange: (busy: boolean) => void;
 }) {
+  const owner = useUserStore(state => state.user?.id);
+  const generation = useRef(0), busyRef = useRef(false);
+  useEffect(() => { generation.current += 1; busyRef.current = false; return () => { generation.current += 1; }; }, [owner, workout.id]);
+  const current = (run: number) => generation.current === run && useUserStore.getState().user?.id === workout.user_id;
   const [editing, setEditing] = useState(false);
   const [rpe, setRpe] = useState(workout.rpe);
   const [notes, setNotes] = useState(workout.ai_notes ?? "");
@@ -16,24 +23,39 @@ export function WorkoutNotesForm({ workout, onChanged, disabled, onBusyChange }:
   const [error, setError] = useState<string | null>(null);
   function cancel() { if (!busy) { setRpe(workout.rpe); setNotes(workout.ai_notes ?? ""); setError(null); setEditing(false); } }
   async function save() {
-    if (busy || disabled) return;
-    setBusy(true); onBusyChange(true); setError(null);
+    if (busyRef.current || disabled || !current(generation.current)) return;
+    const run = generation.current;
+    busyRef.current = true; setBusy(true); onBusyChange(true); setError(null);
     try {
       const fresh = await updateWorkout({ workoutId: workout.id, rpe, aiNotes: notes.trim() || null });
-      await cacheWorkout(fresh); onChanged(fresh); setEditing(false);
-    } catch (err) { setError(toUserMessage(err, "Не удалось сохранить заметку")); }
-    finally { setBusy(false); onBusyChange(false); }
+      if (!current(run)) return;
+      if (fresh.id !== workout.id || fresh.user_id !== workout.user_id) throw new Error("Ответ относится к другой тренировке");
+      const warning = await cacheAcknowledgedWorkout(workout.user_id, fresh);
+      if (!current(run)) return;
+      if (warning) toast(warning, "error", 7000);
+      onChanged(fresh); setEditing(false);
+    } catch (err) { if (current(run)) setError(toUserMessage(err, "Не удалось сохранить заметку")); }
+    finally { if (current(run)) { busyRef.current = false; setBusy(false); onBusyChange(false); } }
   }
   async function remove() {
-    if (busy || disabled || !window.confirm("Удалить эту тренировку? Она исчезнет из прогресса и серии.")) return;
-    setBusy(true); onBusyChange(true); setError(null);
+    if (busyRef.current || disabled || !current(generation.current) || !window.confirm("Удалить эту тренировку? Она исчезнет из прогресса и серии.")) return;
+    const run = generation.current;
+    busyRef.current = true; setBusy(true); onBusyChange(true); setError(null);
     try {
       if (isOnline()) await deleteWorkout(workout.id);
       else await enqueueSync({ type: "delete_workout", clientWorkoutId: workout.id, payload: {} });
-      await removeCachedWorkout(workout.id); onChanged(null, workout.id);
-    } catch (err) { setError(toUserMessage(err, "Не удалось удалить тренировку")); }
-    finally { setBusy(false); onBusyChange(false); }
+      if (!current(run)) return;
+      try { await removeCachedWorkout(workout.id); }
+      catch {
+        if (!current(run)) return;
+        console.warn("Удаление тренировки сохранено; локальный дневник нужно обновить");
+        toast("Удаление сохранено. Обновите дневник при подключении", "error", 7000);
+      }
+      if (current(run)) onChanged(null, workout.id);
+    } catch (err) { if (current(run)) setError(toUserMessage(err, "Не удалось удалить тренировку")); }
+    finally { if (current(run)) { busyRef.current = false; setBusy(false); onBusyChange(false); } }
   }
+  if (workout.user_id !== owner) return null;
   return <div className="mt-4 border-t border-[var(--border-subtle)] pt-2">
     {workout.ai_notes && !editing ? <p className="mb-2 rounded-xl bg-tg-bg p-3 text-xs text-tg-hint">{workout.ai_notes}</p> : null}
     {!editing ? <button type="button" disabled={disabled} className="app-button app-ghost-action w-full text-xs" onClick={() => { setRpe(workout.rpe); setNotes(workout.ai_notes ?? ""); setError(null); setEditing(true); }}>Заметки и тяжесть тренировки</button>

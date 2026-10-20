@@ -335,11 +335,21 @@ export async function readOperationalCachedWorkouts(
 }
 
 export async function cacheWorkout(item: Workout): Promise<void> {
-  await db.workouts.put(item);
+  const owner = useUserStore.getState().user?.id;
+  const check = () => { if (!owner || item.user_id !== owner || useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился во время сохранения дневника"); };
+  check();
+  await db.transaction("rw", db.workouts, async () => { check(); await db.workouts.put(item); check(); });
 }
 
 export async function removeCachedWorkout(workoutId: string): Promise<void> {
-  await db.workouts.delete(workoutId);
+  const owner = useUserStore.getState().user?.id;
+  const check = () => { if (!owner || useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился во время обновления дневника"); };
+  check();
+  await db.transaction("rw", db.workouts, async () => {
+    check(); const saved = await db.workouts.get(workoutId);
+    if (saved && saved.user_id !== owner) throw new Error("Тренировка принадлежит другому аккаунту");
+    await db.workouts.delete(workoutId); check();
+  });
 }
 
 export async function saveLocalSession(input: {

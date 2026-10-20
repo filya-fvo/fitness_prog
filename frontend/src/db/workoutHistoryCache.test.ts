@@ -1,13 +1,13 @@
 import "fake-indexeddb/auto";
-import { beforeEach, afterEach, expect, it } from "vitest";
+import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { db } from "@/db/schema";
 import { useUserStore } from "@/store/userStore";
 import type { Workout } from "@/types/workout";
-import { cacheWorkoutHistory, installWorkoutHistoryProtection } from "./workoutHistoryCache";
+import { cacheAcknowledgedWorkout, cacheWorkoutHistory, installWorkoutHistoryProtection } from "./workoutHistoryCache";
 const owner="00000000-0000-4000-8000-000000000001";
 const workout=(id:string,date:string):Workout=>({id,user_id:owner,program_id:null,scheduled_date:date,status:"completed",sets:[],plan:{exercises:[]},title:id,workout_type:"custom",rpe:null,ai_notes:null,started_at:null,completed_at:date+"T08:00:00Z",duration_sec:0});
 beforeEach(async()=>{await db.delete();await db.open();useUserStore.setState({user:{id:owner,subscription_status:"plus",onboarding_completed:true}});installWorkoutHistoryProtection(async()=>({pendingIds:[],deletedIds:[]}));});
-afterEach(async()=>{await db.delete();useUserStore.setState({user:null});installWorkoutHistoryProtection(async()=>({pendingIds:[],deletedIds:[]}));});
+afterEach(async()=>{vi.restoreAllMocks();await db.delete();useUserStore.setState({user:null});installWorkoutHistoryProtection(async()=>({pendingIds:[],deletedIds:[]}));});
 
 it("reconciles complete windows while preserving outside history and unsent legacy edits after reopen",async()=>{
  await db.workouts.bulkPut([workout("deleted","2026-10-13"),workout("outside","2026-05-13"),workout("pending","2026-10-14")]);
@@ -38,4 +38,28 @@ it("rejects foreign rows and rolls back if the owner changes during protection r
  installWorkoutHistoryProtection(async()=>{useUserStore.setState({user:null});return {pendingIds:[],deletedIds:[]};});
  await expect(cacheWorkoutHistory(owner,[],[{start:"2026-10-01",end:"2026-10-31"}])).rejects.toThrow("Аккаунт изменился");
  expect(await db.workouts.count()).toBe(1);
+});
+
+it("separates acknowledged writes from cache failure while rejecting an owner race", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const fail = () => { throw new Error("synthetic cache failure"); };
+  db.workouts.hook("creating", fail);
+  try { expect(await cacheAcknowledgedWorkout(owner, workout("ack", "2026-10-20"))).toContain("сохранены на сервере"); }
+  finally { db.workouts.hook("creating").unsubscribe(fail); }
+  const change = () => { useUserStore.setState({ user: null }); };
+  db.workouts.hook("creating", change);
+  try { await expect(cacheAcknowledgedWorkout(owner, workout("late", "2026-10-20"))).rejects.toThrow("Аккаунт изменился"); }
+  finally { db.workouts.hook("creating").unsubscribe(change); }
+  expect(await db.workouts.count()).toBe(0);
+});
+it("does not remove another owner's cached workout or commit a removal after logout", async () => {
+  const { removeCachedWorkout } = await import("./syncQueue");
+  await db.workouts.put({ ...workout("foreign", "2026-10-20"), user_id: "other" });
+  await expect(removeCachedWorkout("foreign")).rejects.toThrow("другому аккаунту");
+  await db.workouts.put(workout("own", "2026-10-20"));
+  const change = () => { useUserStore.setState({ user: null }); };
+  db.workouts.hook("deleting", change);
+  try { await expect(removeCachedWorkout("own")).rejects.toThrow("Аккаунт изменился"); }
+  finally { db.workouts.hook("deleting").unsubscribe(change); }
+  expect(await db.workouts.count()).toBe(2);
 });

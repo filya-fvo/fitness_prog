@@ -1,3 +1,4 @@
+import { useUserStore } from "@/store/userStore";
 import { HistoryWorkoutCard } from "@/features/progress/components/HistoryWorkoutCard";
 import { useHistorySetEditor } from "@/features/progress/hooks/useHistorySetEditor";
 import { CompoundHistorySetModal } from "@/features/progress/components/CompoundHistorySetModal";
@@ -5,7 +6,7 @@ import { isCompoundSet } from "@/utils/workoutLoad";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import type { Exercise, Workout } from "@/types/workout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   date: string; workouts: Workout[]; history?: Workout[]; catalog: Exercise[];
@@ -15,11 +16,15 @@ function dateTitle(date: string): string {
   return new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T12:00:00`));
 }
 export function WorkoutDayDetails({ date, workouts, history = workouts, catalog, onClose, onChanged }: Props) {
+  const owner = useUserStore(state => state.user?.id);
+  const visible = !!owner && workouts.every(workout => workout.user_id === owner);
   const [notesBusy, setNotesBusy] = useState(false);
+  useEffect(() => { setNotesBusy(false); }, [owner]);
   const editor = useHistorySetEditor(workouts, onChanged);
   const close = () => { if (!notesBusy && !editor.busy) onClose(); };
-  const dialogRef = useModalAccessibility(true, close);
+  const dialogRef = useModalAccessibility(visible, close);
   const selected = editor.selection;
+  if (!visible) return null;
   return <>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-3 sm:items-center" aria-hidden={selected ? true : undefined}
       onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>

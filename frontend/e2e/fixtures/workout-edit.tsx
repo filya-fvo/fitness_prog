@@ -1,3 +1,4 @@
+import { useUserStore } from "../../src/store/userStore";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { WorkoutDayDetails } from "../../src/features/progress/pages/WorkoutDayDetails";
@@ -8,6 +9,7 @@ import { initializeTheme } from "../../src/theme/theme";
 initializeTheme();
 const workoutId = "11111111-1111-4111-8111-111111111111";
 const userId = "22222222-2222-4222-8222-222222222222";
+useUserStore.setState({ user: { id: userId, subscription_status: "plus", onboarding_completed: true }, isAuthenticated: true });
 const weightId = "33333333-3333-4333-8333-333333333333";
 const timedId = "44444444-4444-4444-8444-444444444444";
 const cardioId = "55555555-5555-4555-8555-555555555555";
@@ -61,7 +63,7 @@ function Fixture() {
   return <main className="mx-auto max-w-xl p-4">
     <button onClick={() => setOpen(true)}>Открыть день</button>
     {open && <WorkoutDayDetails date={saved.scheduled_date} workouts={[workout]} history={[previous, workout]} catalog={currentCatalog}
-      onClose={() => setOpen(false)} onChanged={next => { if (next) setWorkout(next); }} />}
+      onClose={() => setOpen(false)} onChanged={next => { if (next) setWorkout(next); else setOpen(false); }} />}
     <output className={methodKind ? "sr-only" : "block break-all"} aria-label="Сохранённая тренировка">{JSON.stringify(workout)}</output>
   </main>;
 }
