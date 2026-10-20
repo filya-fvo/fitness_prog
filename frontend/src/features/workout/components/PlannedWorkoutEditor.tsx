@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExerciseCatalog } from "@/api/exercises";
-import { fetchPlannedWorkoutPlan, savePlannedWorkoutPlan, type PlannedWorkoutPlanInput } from "@/api/workouts";
+import { savePlannedWorkoutPlan, type PlannedWorkoutPlanInput } from "@/api/workouts";
 import { cacheExercises, readCachedExercises, flushSyncQueue } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
 import { PlannedExercisePicker } from "./PlannedExercisePicker";
@@ -148,7 +148,7 @@ export function PlannedWorkoutEditor(props: Props) {
       await clearAcknowledgedWorkoutPreparation(context);
       if (current !== generation.current) return;
       setPlan(null); setLoading(true);
-      const fresh = await fetchPlannedWorkoutPlan(context);
+      const fresh = await loadWorkoutPreparation(context);
       if (current !== generation.current) return;
       loadedPlan.current = fresh; setPlan(fresh); setStructuralEdit(false);
       toast(value === "program_day" ? "Личные изменения дня сброшены" : "Подготовка этой даты сброшена");

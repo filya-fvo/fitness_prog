@@ -135,6 +135,13 @@ test("saves a personal program day and resets it separately from date preparatio
   await dialog.getByRole("button", { name: "Сбросить личные изменения дня", exact: true }).click();
   await expect(dialog.getByText("Скручивания", { exact: true })).toHaveCount(0);
   await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
+  await dialog.getByRole("radio", { name: "Мои следующие тренировки этого дня", exact: true }).check();
+  await dialog.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
+  await dialog.getByRole("button", { name: /Добавить.*Скручивания/ }).click();
+  await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  await expect(dialog.getByText("Скручивания", { exact: true })).toBeVisible();
 });
 
 test("retains a local preparation across reload while offline and sends no write", async ({ page }) => {
