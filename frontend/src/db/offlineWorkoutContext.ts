@@ -18,6 +18,7 @@ export type OfflineWorkoutContext = {
   profile: z.infer<typeof profileSchema>;
   schedule: z.infer<typeof headerSchema>["bundle"]["days"][number]["schedule"];
   plans: z.infer<typeof preparedProgramPlanSchema>[];
+  preparedDays: number;
   preparedAt: string;
   scheduleFingerprint: string;
 };
@@ -87,18 +88,18 @@ export async function readOfflineWorkoutContext(owner: string, day: string, sour
     const recovery = goals.workout_illness_recovery;
     const afterRecovery = plans.some(row => row.after_recovery) && !(recovery && typeof recovery === "object" && (recovery as Record<string, unknown>).light_cycle_active === true);
     const effectivePlans = plans.filter(row => row.after_recovery === afterRecovery);
-    return { program, profile: { ...header.profile, goals }, schedule, plans: effectivePlans, preparedAt: header.bundle.prepared_at, scheduleFingerprint: header.bundle.schedule_fingerprint };
+    return { program, profile: { ...header.profile, goals }, schedule, plans: effectivePlans, preparedDays: header.bundle.days.length, preparedAt: header.bundle.prepared_at, scheduleFingerprint: header.bundle.schedule_fingerprint };
   });
 }
 const running = new Map<string, Promise<{ preparedAt: string }>>();
-export function prepareOfflineWorkoutContext(owner: string, start: string): Promise<{ preparedAt: string }> {
-  const key = `${owner}:${start}`;
+export function prepareOfflineWorkoutContext(owner: string, start: string, days = 14): Promise<{ preparedAt: string }> {
+  const key = `${owner}:${start}:${days}`;
   const existing = running.get(key);
   if (existing) return existing;
   const task = (async () => {
     checkOwner(owner);
     if (!await canPrepareOfflineWorkoutContext(owner)) throw new Error("Сначала отправьте сохранённые изменения");
-    const [bundle, profile] = await Promise.all([fetchOfflineWorkoutContext(start), fetchMyProfile(undefined, "fresh")]);
+    const [bundle, profile] = await Promise.all([fetchOfflineWorkoutContext(start, days), fetchMyProfile(undefined, "fresh")]);
     checkOwner(owner);
     const exerciseIds = [...new Set(bundle.plans.flatMap(plan => plan.plan.exercises.map(ex => ex.exercise_id)))];
     const exercises: Exercise[] = [];

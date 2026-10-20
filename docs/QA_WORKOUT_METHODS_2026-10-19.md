@@ -145,3 +145,10 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - RED exposed missing server defaults for an added exercise; one canonical server helper now supplies phase reps/rest in prepared context (light60/medium60/heavy90). Delta remains unspecified for later phases; current offline snapshot uses supplied values. Both server/client regressions GREEN.
 - Backend1060 full/Ruff PASS; web862 full PASS plus one obsolete static boundary assertion, updated to follow shared service and final2 PASS; final21 targeted storage/execution PASS, lint/types/build/PWA PASS. Chromium9 start/readiness/preparation +26 timer/recovery PASS. Actual Training page completed edit/start/part/reload/deadline/early-finish/reconnect; application offline gate used with dev assets reachable. Cold PWA validation remains W10.
 - Bundle622811/566258 (+2008 product vsW9e), largest108742/admin56553; bounded623400/566850, same dependencies. Remaining W9 smaller-range selection, explicit proposal conflict resolution, wider owner/cache audit and bounded action history. No release or Android source changes.
+
+
+## W9g1 — bounded preparation choice
+
+- Initial Chromium RED:413 had no range choice. Final Chromium2 full offline start/reconnect scenarios PASS, including explicit1-day retry after14-day413;12 cache/API tests, types/lint/build/PWA PASS. No automatic truncation of exercise/part data.
+- UI offers smaller7/3/1-day ranges only, with disabled buttons while preparing and a clear message when even one day exceeds the limit. Saved preparedDays keeps subsequent automatic refresh within the selected cached range. Backend6 MiB/native8 MiB bounds unchanged.
+- Bundle623603/567048 (+790 product), largest108742/admin56555; bounded624200/567650. No backend changes. Conflict recovery and owner/cache audit still open; no deployment.

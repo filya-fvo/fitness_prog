@@ -637,7 +637,7 @@ export function HomePage() {
         title={user?.username ? `Привет, ${user.username.replace(/^@/, "")}` : "Ваш день"}
         subtitle="Сегодня — ещё один шаг к сильной версии себя"
       />
-      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} tooLarge={offline.tooLarge} preparing={offline.preparing} preparationDays={offline.preparationDays} onPrepareRange={offline.prepareRange} />
       <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 [&>*]:min-w-0">
         {error ? <div className="rounded-xl bg-tg-secondary p-3 text-sm">{error}</div> : null}
 

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
 import { getStoredToken } from "@/api/client";
 import { canPrepareOfflineWorkoutContext, prepareOfflineWorkoutContext, readOfflineWorkoutContext, type OfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { isOnline } from "@/utils/network";
@@ -10,10 +11,19 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
   const [loading, setLoading] = useState(true);
   const [preparedAt, setPreparedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [request, setRequest] = useState({ owner: "", day: "", days: 14, revision: 0 });
+  const [tooLarge, setTooLarge] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [preparationDays, setPreparationDays] = useState(14);
+  const prepareRange = useCallback((days: number) => {
+    if (owner && Number.isInteger(days) && days >= 1 && days <= 14) setRequest(previous => ({ owner, day, days, revision: previous.revision + 1 }));
+  }, [owner, day]);
   useEffect(() => {
     let cancelled = false;
-    let dirty = false;
-    setContext(null); setPreparedAt(null); setError(null); setLoading(true);
+    const manual = request.owner === owner && request.day === day && request.revision > 0;
+    let dirty = manual;
+    let refreshing = false;
+    setContext(null); setPreparedAt(null); setError(null); setTooLarge(false); setPreparing(false); setLoading(true);
     const read = async () => {
       if (!owner) return;
       try {
@@ -30,17 +40,25 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
     };
     const refresh = async () => {
       if (!owner) { setLoading(false); return; }
+      if (refreshing) return;
+      refreshing = true;
       const cached = await read();
       if (!cancelled) setLoading(false);
       try {
         if (cancelled || !isOnline() || !getStoredToken() || !await canPrepareOfflineWorkoutContext(owner)) return;
         if (!dirty && cached && Date.now() - Date.parse(cached.preparedAt) < 300_000) return;
-        await prepareOfflineWorkoutContext(owner, day);
+        const days = manual ? request.days : cached?.preparedDays ?? 14;
+        if (!cancelled) { setPreparationDays(days); setPreparing(true); }
+        await prepareOfflineWorkoutContext(owner, day, days);
         dirty = false;
-        if (!cancelled) { setError(null); await read(); }
+        if (!cancelled) { setError(null); setTooLarge(false); await read(); }
       } catch (err) {
-        if (!cancelled) setError(toUserMessage(err, "Не удалось подготовить планы без сети"));
-      }
+        if (!cancelled) {
+          const large = axios.isAxiosError(err) && err.response?.status === 413;
+          setTooLarge(large);
+          setError(large ? "Планы слишком большие. Выберите меньше дней" : toUserMessage(err, "Не удалось подготовить планы без сети"));
+        }
+      } finally { refreshing = false; if (!cancelled) setPreparing(false); }
     };
     void refresh();
     const onPrepared = () => { void read(); };
@@ -61,6 +79,6 @@ export function useOfflineWorkoutContext(owner: string | null, day: string) {
       window.removeEventListener("fitness:offline-prepared", onPrepared);
       window.removeEventListener("fitness:native-change", onPrepared);
     };
-  }, [owner, day]);
-  return { context, loading, error, preparedAt };
+  }, [owner, day, request]);
+  return { context, loading, error, preparedAt, tooLarge, preparing, preparationDays, prepareRange };
 }

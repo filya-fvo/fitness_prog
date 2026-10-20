@@ -315,7 +315,7 @@ export function TrainHubPage() {
   return (
     <section>
       <Header title="Упражнения" subtitle="Программы тренировок и свой день" />
-      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} />
+      <OfflineWorkoutPreparationStatus preparedAt={offline.preparedAt} error={offline.error} tooLarge={offline.tooLarge} preparing={offline.preparing} preparationDays={offline.preparationDays} onPrepareRange={offline.prepareRange} />
       <div className="space-y-3">
         {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
         {loading ? <p className="text-sm text-tg-hint">Загрузка…</p> : null}

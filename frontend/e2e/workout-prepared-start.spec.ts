@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { acceptedLegalStatus } from "./legal-fixture";
 const owner = "22222222-2222-4222-8222-222222222222", program = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333", server = "55555555-5555-4555-8555-555555555555";
-test("real Training page prepares offline, starts, restores a cluster and syncs in order", async ({ page }) => {
+for (const shortRange of [false, true]) test(`real Training page prepares offline, starts, restores a cluster and syncs in order; shortRange=${shortRange}`, async ({ page }) => {
   await page.clock.install({ time: new Date("2026-10-20T09:00:00Z") });
   const day = "2026-10-20";
   const profile = { id: owner, goals: { onboarding_completed: true, active_program_id: program, active_program_next_day: 1, active_program_week_phase: "medium", active_program_phase_source: "manual" }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true, legal_status: acceptedLegalStatus(owner) };
@@ -32,6 +32,7 @@ test("real Training page prepares offline, starts, restores a cluster and syncs 
       const scope = request.method() === "GET" ? new URL(request.url()).searchParams.get("scope") : "occurrence";
       data = { program_id: program, day_index: 1, scope, scheduled_date: scope === "occurrence" ? day : null, revision: scope === "occurrence" ? revision : 0, program_version: 1, patch: {} };
     }
+    else if (path === "/workouts/offline-context" && shortRange && Number(new URL(request.url()).searchParams.get("days")) > 1) { await route.fulfill({ status: 413, json: { detail: "Планы слишком большие. Подготовьте меньше дней" } }); return; }
     else if (path === "/workouts/offline-context") data = { version: 1, owner, prepared_at: "2026-10-20T09:00:00Z", schedule_fingerprint: "0".repeat(64), start: day, end: day, program: programRow,
       days: [{ requested_date: day, schedule }], plans: [{ scheduled_date: day, day_index: 1, week_phase: "medium", readiness: "normal", preparation_fingerprint: String(revision + 1).repeat(64), exercise_defaults: { target_reps: "8-10", rest_sec: 60 }, plan: currentPlan() }] };
     else if (path === "/workouts/schedule/overview") data = schedule;
@@ -48,7 +49,9 @@ test("real Training page prepares offline, starts, restores a cluster and syncs 
     else return route.fallback();
     await route.fulfill({ json: data });
   });
+  await page.setViewportSize({ width: 393, height: 740 });
   await page.goto("/train");
+  if (shortRange) await page.getByRole("button", { name: "На 1 день", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Планы сохранены на устройстве" })).toBeVisible();
   await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
   const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
