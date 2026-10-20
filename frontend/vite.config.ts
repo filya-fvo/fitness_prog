@@ -75,6 +75,7 @@ export default defineConfig({
       };
       return {
         "/auth": { ...toApi },
+        "/guides": { target, changeOrigin: true },
         "/exercises": { ...toApi },
         "/exercise-media": { ...toApi },
         "/programs": { ...toApi },

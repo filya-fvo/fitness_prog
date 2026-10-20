@@ -15,6 +15,7 @@ import {
 } from "@/api/admin";
 import { getStoredToken } from "@/api/client";
 import { fetchAdminNutritionCorrections } from "@/api/adminNutrition";
+import { GuideDownloads } from "@/features/help/GuideDownloads";
 import { Header } from "@/components/layout/Header";
 import { clearCurrentUserLocalData } from "@/features/admin-user/adminLocalCleanup";
 import {
@@ -240,12 +241,7 @@ export function AdminPage() {
       {error ? <div role="alert" className="app-status app-status-danger mb-3">{error}</div> : null}
       {okNote ? <div role="status" className="app-status app-status-success mb-3">{okNote}</div> : null}
 
-      <div className="app-card app-card-ocean mb-3 px-4 py-3 text-sm">
-        <p className="font-medium text-tg-text">Инструкция администратора</p>
-        <p className="mt-1 text-xs text-tg-hint">
-          Отправьте боту скрытую команду <code className="text-tg-link">/admin</code> — он пришлёт актуальное руководство файлом.
-        </p>
-      </div>
+      <GuideDownloads />
 
       <Link
         to="/admin/system"

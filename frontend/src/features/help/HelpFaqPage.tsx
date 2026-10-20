@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { GuideDownloads } from "./GuideDownloads";
 import { Header } from "@/components/layout/Header";
 import { FaqArticleCard } from "./FaqArticleCard";
 import {
@@ -68,6 +69,8 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
         title={defaultTab === "knowledge" ? "Питание без лишних правил" : "Помощь и FAQ"}
         subtitle={defaultTab === "knowledge" ? "Практический гид по рациону и прогрессу" : "Действия в приложении, тренировки и питание"}
       />
+
+      {defaultTab === "howto" ? <GuideDownloads /> : null}
 
       <label className="faq-search">
         Поиск ответа
