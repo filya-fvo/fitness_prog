@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import { fetchGuide, type GuideKind } from "@/api/guides";
+import { saveGuideFile } from "@/lib/guideFileDownload";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUser } from "@/utils/adminAccess";
 
@@ -19,14 +20,7 @@ export function GuideDownloads() {
     try {
       const blob = await fetchGuide(kind);
       if (kind === "admin" && (useUserStore.getState().user?.id !== owner || getStoredToken() !== token)) return;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = kind === "admin" ? "Fitness_Mini_App_Admin_Instrukciya.md" : "Fitness_Mini_App_Instrukciya.md";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      await saveGuideFile(kind, blob);
     } catch {
       if (kind === "user" || useUserStore.getState().user?.id === owner) setError("Не удалось скачать инструкцию. Попробуйте ещё раз");
     } finally {

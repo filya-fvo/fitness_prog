@@ -267,6 +267,7 @@ services → SQLAlchemy models → PostgreSQL
   `lib/browserSession.ts` — преобразование профиля и классификация проверки
   сохранённой браузерной сессии.
 - `frontend/src/sw.ts` — service worker и offline navigation.
+- `frontend/src/features/help/GuideDownloads.tsx`, `api/guides.ts` и `lib/guideFileDownload.ts` — общая карточка руководств, HTTP и заменяемая платформой граница сохранения файла; административный файл требует серверных прав.
 - `frontend/src/lib/appUpdate.ts` и публичный `version.json` — обнаружение новой
   сборки и безопасное автообновление без прерывания тренировки или
   несохранённой формы.
