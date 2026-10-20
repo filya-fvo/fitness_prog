@@ -197,8 +197,8 @@ personal patch queue precedes dependent workout create; fingerprint включа
 - [x] Проверить PWA обновление во время активной тренировки, старую вкладку/старый APK с новым сервером и отсутствие потери очереди.
 - [x] Для фактически недоступной среды оставить открытый gate; skip/setup failure не считать PASS.
 - [x] Исправить выявленное отдельными небольшими циклами; после зелёных проверок diff review, документация и `test: verify personalized workout methods on web`.
-- [ ] При исполнении утверждённой доработки выпустить web по постоянному разрешению владельца: production branch push → проверенный backup/restore → VPS pull --ff-only/rebuild/migrate/up → health/site/затронутые live scenarios. Точный runbook — `docs/TIMEWEB_DOMAIN_CUTOVER.md`. В задаче подготовки плана выпуск не запускать.
-- [ ] Зафиксировать точный проверенный web SHA и отчёт. Только после закрытия web-gate переходить к A1.
+- [x] При исполнении утверждённой доработки выпустить web по постоянному разрешению владельца: production branch push → проверенный backup/restore → VPS pull --ff-only/rebuild/migrate/up → health/site/затронутые live scenarios. Точный runbook — `docs/TIMEWEB_DOMAIN_CUTOVER.md`. В задаче подготовки плана выпуск не запускать.
+- [x] Зафиксировать точный проверенный web SHA и отчёт. Только после закрытия web-gate переходить к A1.
 
 
 ### A1. Обновить Android shared без второй реализации
