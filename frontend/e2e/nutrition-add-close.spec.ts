@@ -443,7 +443,8 @@ for (const boundary of ["source read", "first write"] as const) {
       const entries: SavedEntry[] = [];
       const dates = await fixtureDates(page);
       for (const quantity of [100, 200]) saveEntry(entries, { product_id: PRODUCT_ID, quantity_grams: quantity, meal_type: "breakfast", date: dates[1] });
-      const gate = deferred();
+      const gate = deferred(), navigation = deferred();
+      if (transition === "unmount") await page.route("**/src/pages/KnowledgeBasePage.tsx*", async route => { await navigation.promise; await route.continue(); });
       let held = false;
       const writes: string[] = [];
       await page.route("**/nutrition/log", async (route) => {
@@ -469,13 +470,15 @@ for (const boundary of ["source read", "first write"] as const) {
           await page.getByRole("dialog", { name: "Добавить продукт", exact: true }).press("Escape");
           await page.getByRole("link", { name: "Гид по питанию", exact: false }).click();
           await expect(page).toHaveURL(/\/knowledge/);
-          await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveCount(0);
+          // A lazy route can retain the old page while its module loads.
+          // Once navigation starts, copying must stop even before unmount.
         }
         gate.resolve();
         await page.waitForTimeout(500);
         expect(writes).toHaveLength(boundary === "first write" ? 1 : 0);
         expect(writes).not.toContain("Bearer new-owner-token");
-      } finally { gate.resolve(); }
+      } finally { gate.resolve(); navigation.resolve(); }
+      if (transition === "unmount") await expect(page.getByRole("meter", { name: "Калории за день" })).toHaveCount(0);
     });
   }
 }

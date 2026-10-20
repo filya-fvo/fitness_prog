@@ -139,10 +139,11 @@ export function DailyLog() {
   const ownerId = useUserStore((state) => state.user?.id);
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 60_000 } } }));
   const [catalogRevision, setCatalogRevision] = useState(0);
-  const scope = useMemo(() => ({ day, ownerId }), [day, ownerId]);
+  const scope = useMemo(() => ({ day, ownerId, path: window.location.pathname }), [day, ownerId]);
   const activeScope = useRef<typeof scope | null>(scope);
   activeScope.current = scope;
   const isCurrentScope = useCallback(() => activeScope.current === scope
+    && window.location.pathname === scope.path
     && useUserStore.getState().user?.id === scope.ownerId, [scope]);
   const readSequence = useRef(0);
   const invalidateReads = useCallback(() => { ++readSequence.current; }, []);
