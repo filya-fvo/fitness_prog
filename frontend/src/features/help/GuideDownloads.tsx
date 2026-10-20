@@ -36,7 +36,7 @@ export function GuideDownloads() {
 
   return <div className="app-card app-card-ocean mb-4 p-4">
     <h2 className="text-sm font-semibold">Полные инструкции</h2>
-    <p className="mt-1 text-xs text-tg-hint">Сохраните руководство файлом, чтобы читать без интернета. Формат Markdown (.md).</p>
+    <p className="mt-1 text-xs text-tg-hint">Сохраните руководство файлом, чтобы читать без интернета. Текстовый файл (.md).</p>
     <div className="mt-3 flex flex-col gap-2">
       <button type="button" disabled={Boolean(loading)} onClick={() => void download("user")} className="app-button app-secondary-action px-3 py-2 text-sm">{loading === "user" ? "Скачивание…" : "Скачать инструкцию пользователя"}</button>
       {isAdminUser(user) ? <button type="button" disabled={Boolean(loading)} onClick={() => void download("admin")} className="app-button app-secondary-action px-3 py-2 text-sm">{loading === "admin" ? "Скачивание…" : "Скачать инструкцию администратора"}</button> : null}
