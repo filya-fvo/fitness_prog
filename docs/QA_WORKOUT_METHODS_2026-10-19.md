@@ -127,3 +127,12 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Backend1059 full PASS; final58 affected SQL/contract PASS after goals refresh under user lock; Ruff PASS. Web850 full +final26 affected PASS, lint/types/build/PWA PASS. Bundle620202/563704 stays below620550/564050; same dependencies.
 - CI PostgreSQL18 job now runs all8 private-plan/structured-execution test modules with WORKOUT_METHODS_TEST_URL, so real transaction checks no longer silently skip there. Hosted CI execution will occur after push.
 - Legacy native preparation unchanged; modern nested stamp is ready for web durable start and later Android adaptation. Web durable proposal queue/start UI and smaller-range choice remain next; no release yet.
+
+
+## W9e — durable private preparation
+
+- IndexedDB proposals preserve owner/context/scope/program version/original+edited plans. The full canonical request is stored before PUT; an ambiguous response repeats exactly that request and ID. Receipt persistence precedes derived-cache invalidation.
+- Eight storage tests cover close/reopen, lost response replay, stale program, late account change, explicit same-proposal resubmission, cache failure after acknowledgement, concurrent tabs and guarded reset. Full web858 PASS, lint/types/build/PWA PASS; Chromium30 preparation/layout cases PASS (including reload with application offline gate; real cold PWA entry remains W10).
+- Changed the old server-outage assertion to the intended durable-save message; configured values remain visible. New fixture authenticates the same synthetic owner as production requires. Existing legacy preparation routes still pass.
+- Final bundle620816/564250, largest108742/admin56566; bounded caps621250/564650, same dependencies. No backend changes in this substep.
+- Exact offline context is retained rather than recalculated on the client. Dependent program start, fingerprint reconciliation, conflict resolution UI and remaining owner/cache audit are still W9; no deployment or Android source changes.

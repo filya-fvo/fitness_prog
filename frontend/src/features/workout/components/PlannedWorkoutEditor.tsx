@@ -1,16 +1,18 @@
+import { loadWorkoutPreparation, findWorkoutPreparation, stageWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation } from "@/db/workoutCustomization";
+import { useUserStore } from "@/store/userStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getStoredToken } from "@/api/client";
 import { fetchExerciseCatalog } from "@/api/exercises";
 import { fetchPlannedWorkoutPlan, savePlannedWorkoutPlan, type PlannedWorkoutPlanInput } from "@/api/workouts";
-import { cacheExercises, readCachedExercises } from "@/db/syncQueue";
+import { cacheExercises, readCachedExercises, flushSyncQueue } from "@/db/syncQueue";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
 import { PlannedExercisePicker } from "./PlannedExercisePicker";
 import { replacePreparedExercise, workoutPreparationError } from "@/utils/workoutMethods";
 import { inferLoadType, defaultTimedSeconds } from "@/utils/exerciseLoadType";
 import { WorkoutDayComposer } from "./WorkoutDayComposer";
 import { WorkoutCustomizationScope } from "./WorkoutCustomizationScope";
-import { savePreparedWorkoutChanges, resetPreparedWorkoutChanges } from "../services/workoutCustomizationActions";
+import { resetPreparedWorkoutChanges } from "../services/workoutCustomizationActions";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { toast } from "@/store/toastStore";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
@@ -23,6 +25,7 @@ function formatDate(value: string): string {
 }
 
 export function PlannedWorkoutEditor(props: Props) {
+  const owner = useUserStore(state => state.user?.id);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,7 +45,7 @@ export function PlannedWorkoutEditor(props: Props) {
     generation.current += 1;
     setPendingGroup(false); setOpen(false); setLoading(false); setSaving(false); setAdding(false); setEditingId(null); setDetailExercise(null);
   }, []);
-  useEffect(close, [close, props.programId, props.dayIndex, props.scheduledDate, props.weekPhase]);
+  useEffect(close, [close, props.programId, props.dayIndex, props.scheduledDate, props.weekPhase, owner]);
   const dialogRef = useModalAccessibility(open, close);
   const byId = useMemo(() => new Map(catalog.map(row => [row.id, row])), [catalog]);
   const editingItem = plan?.exercises.find(row => row.exercise_id === editingId);
@@ -58,12 +61,14 @@ export function PlannedWorkoutEditor(props: Props) {
       const cached = await readCachedExercises();
       if (current !== generation.current) return;
       if (cached.length) setCatalog(cached);
-      const [prepared, fresh] = await Promise.all([
-        fetchPlannedWorkoutPlan(openedContext.current),
+      const [prepared, fresh, pending] = await Promise.all([
+        loadWorkoutPreparation(openedContext.current),
         isOnline() && getStoredToken() ? fetchExerciseCatalog().catch(() => null) : Promise.resolve(null),
+        findWorkoutPreparation(openedContext.current),
       ]);
       if (current !== generation.current) return;
       setPlan(prepared); loadedPlan.current = prepared;
+      if (pending && !pending.receipt) { setScope(pending.scope); setStructuralEdit(true); }
       if (fresh === null && !cached.length) setError("Не удалось загрузить каталог упражнений. Откройте подготовку снова");
       if (fresh?.length) { setCatalog(fresh); await cacheExercises(fresh); }
     } catch (err) {
@@ -108,8 +113,14 @@ export function PlannedWorkoutEditor(props: Props) {
     const context = openedContext.current;
     setSaving(true); setError(null);
     try {
-      if (scope === "program_day" || structuralEdit || plan.execution_version === 2 || Object.keys(plan.customization_revisions ?? {}).length > 0) {
-        await savePreparedWorkoutChanges(context, loadedPlan.current ?? plan, plan, scope);
+      if (scope === "program_day" || structuralEdit || plan.execution_version === 2 || Object.keys(plan.customization_revisions ?? {}).length > 0 || !isOnline()) {
+        const pending = await stageWorkoutPreparation(context, loadedPlan.current ?? plan, plan, scope);
+        if (isOnline() && getStoredToken() && owner) {
+          const result = await flushSyncQueue(owner, { retryFailed: true });
+          const draft = await readWorkoutPreparationDraft(pending.key, owner);
+          if (!draft?.receipt && result.failed) throw new Error("Подготовка сохранена на устройстве. Проверьте изменения в очереди синхронизации");
+          if (!draft?.receipt) { if (current === generation.current) { close(); toast("Подготовка сохранена на устройстве и ожидает отправки"); } return; }
+        } else { if (current === generation.current) { close(); toast("Подготовка сохранена на устройстве и будет отправлена при подключении"); } return; }
       } else {
         const replacements = plan.exercises.flatMap(row => row.original_exercise_id && row.original_exercise_id !== row.exercise_id
           ? [{ fromExerciseId: row.original_exercise_id, toExerciseId: row.exercise_id }] : []);
@@ -130,8 +141,11 @@ export function PlannedWorkoutEditor(props: Props) {
     let saved = false;
     setSaving(true); setError(null);
     try {
-      await resetPreparedWorkoutChanges(context, loadedPlan.current ?? plan, value);
+      await guardWorkoutPreparationReset(context);
+      const warning = await resetPreparedWorkoutChanges(context, loadedPlan.current ?? plan, value);
+      if (warning && current === generation.current) toast(warning, "error", 7000);
       saved = true;
+      await clearAcknowledgedWorkoutPreparation(context);
       if (current !== generation.current) return;
       setPlan(null); setLoading(true);
       const fresh = await fetchPlannedWorkoutPlan(context);

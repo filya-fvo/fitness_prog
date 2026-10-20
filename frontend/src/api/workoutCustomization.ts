@@ -23,15 +23,15 @@ export type WorkoutDayPatch = z.infer<typeof workoutDayPatchSchema>;
 export type WorkoutCustomizationContext = {
   program_id: string; day_index: number; scope: "occurrence" | "program_day"; scheduled_date?: string | null;
 };
-const responseSchema = z.object({
+export const workoutCustomizationSchema = z.object({
   program_id: z.string().uuid(), day_index: z.number().int(), scope: z.enum(["occurrence", "program_day"]),
   scheduled_date: z.string().nullable(), revision: z.number().int().nonnegative(), program_version: z.number().int().positive(),
   patch: workoutDayPatchSchema,
 });
-export type WorkoutCustomization = z.infer<typeof responseSchema>;
+export type WorkoutCustomization = z.infer<typeof workoutCustomizationSchema>;
 export async function fetchWorkoutCustomization(context: WorkoutCustomizationContext): Promise<WorkoutCustomization> {
   const { data } = await apiClient.get("/workouts/customizations", { params: context });
-  return responseSchema.parse(data);
+  return workoutCustomizationSchema.parse(data);
 }
 export type WorkoutCustomizationGuards = {
   base_program_day_revision?: number; promote_date?: string; base_occurrence_revision?: number;
@@ -40,11 +40,13 @@ export async function saveWorkoutCustomization(input: WorkoutCustomizationContex
   base_revision: number; operation_id: string; patch: WorkoutDayPatch;
 }): Promise<WorkoutCustomization> {
   const { data } = await apiClient.put("/workouts/customizations", input);
-  return responseSchema.parse(data);
+  return workoutCustomizationSchema.parse(data);
 }
 export async function resetWorkoutCustomization(input: WorkoutCustomizationContext & WorkoutCustomizationGuards & {
   base_revision: number; operation_id: string;
 }): Promise<WorkoutCustomization> {
   const { data } = await apiClient.delete("/workouts/customizations", { data: input });
-  return responseSchema.parse(data);
+  return workoutCustomizationSchema.parse(data);
 }
+
+export type WorkoutCustomizationWrite = Parameters<typeof saveWorkoutCustomization>[0];

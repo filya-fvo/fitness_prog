@@ -1,3 +1,5 @@
+import { toast } from "@/store/toastStore";
+import { syncWorkoutPreparation } from "./workoutCustomization";
 import { mergeExecutionWorkoutMetadata } from "@/utils/workoutExecutionState";
 /**
  * Background sync queue — Sprint 3+.
@@ -488,6 +490,11 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
     useUserStore.getState().user?.id !== ownerUserId
   ) {
     throw new Error("Authenticated user changed during synchronization");
+  }
+  if (item.type === "customize_workout") {
+    const warning = await syncWorkoutPreparation(String(item.payload.draftKey), ownerUserId);
+    if (warning && typeof window !== "undefined" && useUserStore.getState().user?.id === ownerUserId) toast(warning, "error", 7000);
+    return;
   }
   if (item.type === "create_workout") {
     const payload = item.payload as {

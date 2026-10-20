@@ -9,6 +9,7 @@ import type { BodyMeasurement } from "@/api/bodyMeasurements";
 import type { Exercise, LocalSetDraft, Workout, WorkoutLoadHint } from "@/types/workout";
 
 export type SyncOpType =
+  | "customize_workout"
   | "create_workout"
   | "update_plan"
   | "add_set"

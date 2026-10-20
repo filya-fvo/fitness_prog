@@ -135,3 +135,25 @@ test("saves a personal program day and resets it separately from date preparatio
   await expect(dialog.getByText("Скручивания", { exact: true })).toHaveCount(0);
   await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
 });
+
+test("retains a local preparation across reload while offline and sends no write", async ({ page }) => {
+  await installComposerApi(page);
+  const writes: string[] = [];
+  page.on("request", request => { if (request.method() === "PUT") writes.push(request.url()); });
+  await page.goto("/e2e/fixtures/workout-composer.html");
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  let dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
+  await page.evaluate(() => Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false }));
+  await dialog.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
+  await dialog.getByRole("button", { name: /Добавить.*Скручивания/ }).click();
+  await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
+  await expect(dialog).toHaveCount(0);
+  // Dev assets stay reachable; application network access is disabled by its real network gate.
+  await page.addInitScript(() => Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false }));
+  await page.reload();
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  await expect(dialog.getByText("Скручивания", { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(0);
+});

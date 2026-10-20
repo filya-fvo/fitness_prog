@@ -405,7 +405,7 @@ export function TrainHubPage() {
                 scheduledDate={preparedDate}
                 dayIndex={preparedDayIndex}
                 weekPhase={weekPhase}
-                disabled={!isOnline()}
+                disabled={starting}
               />
             ) : null}
           </AppCard>
@@ -443,11 +443,11 @@ export function TrainHubPage() {
               scheduledDate={preparedDate}
               dayIndex={preparedDayIndex}
               weekPhase={weekPhase}
-              disabled={starting || !isOnline()}
+              disabled={starting}
             />
             {!isOnline() ? (
               <p className="mt-1 text-center text-[11px] text-tg-hint">
-                Подготовка замен доступна после подключения к интернету.
+                Ранее загруженный день можно подготовить без сети. Изменения отправим при подключении.
               </p>
             ) : null}
             <Link to="/" className="mt-2 block text-center text-xs text-tg-link">

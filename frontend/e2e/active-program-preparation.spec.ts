@@ -59,6 +59,7 @@ legal_status: acceptedLegalStatus(USER_ID),
     await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({ json: {
       items: [], total: 0, page: 1, page_size: 200,
     } }));
+    await page.route("**/workouts/customizations**", route => route.fulfill({ json: { program_id: PROGRAM_ID, day_index: 3, scope: "program_day", scheduled_date: null, program_version: 1, revision: 0, patch: {} } }));
     await page.route("**/workouts/planned-plan**", (route) => {
       const url = new URL(route.request().url());
       expect(url.searchParams.get("program_id")).toBe(PROGRAM_ID);
