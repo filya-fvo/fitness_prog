@@ -179,7 +179,7 @@ async def exercise_progress_summary(
     phase: Literal["all", "light", "medium", "heavy"] = Query(default="all"),
     diary_limit: int = Query(default=1, ge=1, le=25),
     diary_cursor: str | None = Query(default=None, max_length=200),
-    execution_version: Literal[1, 2] | None = Query(default=None),
+    execution_version: int | None = Query(default=None, ge=1, le=2),
     session: AsyncSession = Depends(get_db),
     user: User = Depends(require_plus("exercise_history", _EXERCISE_HISTORY_MESSAGE)),
 ) -> ExerciseProgressResponse:
@@ -435,7 +435,7 @@ async def assign_workout_occurrence(
 async def offline_workout_context(
     start: date,
     days: int = Query(default=14, ge=1, le=14),
-    execution_version: Literal[1, 2] | None = None,
+    execution_version: int | None = Query(default=None, ge=1, le=2),
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> OfflineWorkoutContext:
