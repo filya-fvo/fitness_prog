@@ -354,7 +354,7 @@ export async function saveLocalSession(input: {
     if (existing?.execution) {
       // Dedicated execution transactions own v2 facts. Late generic saves only
       // update identity/navigation and the existing warmup completion metadata.
-      const preserved = { ...existing, serverId, currentExerciseIndex: input.currentExerciseIndex ?? existing.currentExerciseIndex,
+      const preserved = { ...existing, serverId,
         workout: mergeExecutionWorkoutMetadata(existing.workout, input.workout, serverId ?? existing.workout.id), updatedAt: Date.now() };
       await db.sessions.put(preserved);
       await db.workouts.put(preserved.workout);

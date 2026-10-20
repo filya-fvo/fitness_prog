@@ -270,7 +270,9 @@ export function ActiveWorkout() {
         session &&
         (session.clientId === routeId || session.serverId === routeId || session.workout.id === routeId)
       ) {
-        await restoreSessionIntoStore(session, authenticatedUserId);
+        if (cancelled) return;
+        try { await restoreSessionIntoStore(session, authenticatedUserId); }
+        catch (err) { if (!cancelled) { setError(toUserMessage(err, "Не удалось восстановить тренировку")); setBooting(false); } return; }
         if (!cancelled) {
           setBooting(false);
           markWorkoutTimerStart();
@@ -291,6 +293,7 @@ export function ActiveWorkout() {
             if (plusAccess) setBooting(true);
           }
           const remoteWorkout = await fetchWorkout(routeId);
+          if (cancelled || useUserStore.getState().user?.id !== remoteWorkout.user_id) return;
           const remoteDrafts = draftsFromWorkoutSnapshot(remoteWorkout);
 
 

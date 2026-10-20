@@ -152,8 +152,11 @@ const limits = {
   // Compound volume/history/part correction add2601 product gzip bytes versus
   // W7 (615345/558870 -> 617972/561471). Same dependencies/largest108742;
   // retain <0.6KB aggregate margin and unchanged admin/largest limits.
-  totalJsGzip: 618_550,
-  productJsGzip: 562_050,
+  // Validated durable envelopes, Dexie cross-tab observation and guarded open
+  // correction forms add1913 product bytes versus W9a (618021/561524 ->
+  // 619937/563437). Existing dependencies; largest108742/admin56500 unchanged caps.
+  totalJsGzip: 620_550,
+  productJsGzip: 564_050,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

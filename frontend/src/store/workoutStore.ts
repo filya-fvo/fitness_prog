@@ -1,3 +1,4 @@
+import { useUserStore } from "./userStore";
 import type { LocalWorkoutSession } from "@/db/schema";
 import { mergeExecutionWorkoutMetadata, type WorkoutExecutionEnvelope } from "@/utils/workoutExecutionState";
 import { remainingRestMs, executionRestNeedsConfirmation, workoutClockSnapshot, type ClockSnapshot } from "@/utils/workoutRest";
@@ -126,7 +127,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   execution: null,
   applyExecutionSession: (session, clock = workoutClockSnapshot()) => {
     const current = get();
-    if (!session.execution || current.clientWorkoutId !== session.clientId || current.activeWorkout?.user_id !== session.ownerUserId) return false;
+    if (useUserStore.getState().user?.id !== session.ownerUserId || !session.execution || current.clientWorkoutId !== session.clientId || current.activeWorkout?.user_id !== session.ownerUserId) return false;
+    if (current.execution && current.execution.revision > session.execution.revision) return false;
     set({ activeWorkout: session.workout, serverWorkoutId: session.serverId, drafts: session.drafts,
       currentExerciseIndex: session.currentExerciseIndex ?? 0, execution: session.execution,
       ...projectedExecutionRest(session.execution, clock) });
@@ -144,6 +146,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   ...restoredRest(),
   setCatalog: (catalog) => set({ catalog }),
   setActiveWorkout: (activeWorkout) => {
+    const owner = useUserStore.getState().user?.id;
+    if (activeWorkout && owner && activeWorkout.user_id !== owner) return;
     const current = get();
     if (current.execution && activeWorkout && current.activeWorkout?.id === activeWorkout.id) {
       set({ activeWorkout: mergeExecutionWorkoutMetadata(current.activeWorkout, activeWorkout) });

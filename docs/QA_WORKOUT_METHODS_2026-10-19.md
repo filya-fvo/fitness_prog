@@ -101,3 +101,12 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Valid RED3: equivalent decimal weights caused a topology conflict; offline completion used server receipt time; occurrence patch survived start. All fixed and SQL-checked, with constant personal-day revision and rejection of late writes to the started date.
 - Complete confirmation pair is aware/bounded, future>5min rejected before completion, retry retains original finish/duration. Full web outbox-to-REST assertion verifies both fields.
 - Backend1045 PASS/Ruff PASS; web836 unit/lint/types/build/PWA PASS; Chromium2 completion regressions PASS. Remaining W9 durable preparation/envelope/conflict work is still open; no deployment or Android source changes.
+
+
+## W9b — durable envelope and two-tab recovery
+
+- Valid RED5: wrong planned rest target and inconsistent cursor/future envelope were accepted; reordered equivalent snapshot keys failed; older local revision and unknown API version could apply. Fixed with strict session validation and semantic key matching. Additional real RED: authentication changed before store cleanup; old-owner response now rejected.
+- Valid RED: old open correction could overwrite a newer parent when the shared envelope revision had already updated. Added baseSetRevision guard; entered fields remain visible, explicit form refresh loads the new value. Clock-only updates do not conflict with a parent result.
+- Full web847 unit/lint/types/build/PWA PASS. Final Chromium25 PASS: reload12s remainder, throttled late return, one signal across tabs, concurrent part recording, corrupted target retained/blocked, ambiguous wall-clock continuation, stale correction proposal plus all earlier timing/layout/a11y vectors. Unit coverage also verifies account change during read, out-of-order restore requests and ordinary legacy recovery.
+- W9a bundle618021/561524 ->619937/563437 (+1913 product gzip bytes); existing dependencies and unchanged largest108742/admin56500 caps. Aggregate bounds620550/564050 retain <0.7KB headroom.
+- Remaining W9: durable personal/date preparation and ordered dependent create, cross-device standard skipped representation, prepared fingerprint/capability/bounds, post-commit cache warnings and wider async owner audit, PostgreSQL CI wiring. Not deployed; Android waits for W10.

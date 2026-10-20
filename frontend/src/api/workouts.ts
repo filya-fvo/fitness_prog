@@ -259,6 +259,8 @@ function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
 }
 
 export function mapWorkout(item: z.infer<typeof workoutSchema>): Workout {
+  if (item.plan.execution_version != null && item.plan.execution_version !== 1 && item.plan.execution_version !== 2)
+    throw new Error("Обновите приложение, чтобы открыть сохранённую тренировку. Данные сохранены");
   return {
     id: item.id,
     user_id: item.user_id,

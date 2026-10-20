@@ -5,6 +5,8 @@ import { db, type LocalWorkoutSession } from "@/db/schema";
 import { readCachedExercises } from "@/db/syncQueue";
 import { sessionBelongsToUser } from "@/db/userScope";
 import { useUserStore } from "@/store/userStore";
+import { initializeExecutionSession } from "@/db/workoutExecution";
+import { workoutClockSnapshot } from "@/utils/workoutRest";
 import { useWorkoutStore } from "@/store/workoutStore";
 
 export async function findResumableSession(
@@ -20,6 +22,8 @@ export async function findResumableSession(
   );
 }
 
+let restoreRequest = 0;
+
 export async function restoreSessionIntoStore(
   session: LocalWorkoutSession,
   ownerUserId = useUserStore.getState().user?.id,
@@ -28,21 +32,23 @@ export async function restoreSessionIntoStore(
   if (!sessionBelongsToUser(session, ownerUserId)) {
     throw new Error("Refusing to restore another user's workout session");
   }
+  const request = ++restoreRequest;
+  const check = () => {
+    if (request !== restoreRequest || useUserStore.getState().user?.id !== ownerUserId) throw new Error("Аккаунт или тренировка изменились. Откройте тренировку снова");
+  };
+  check();
+  const version = (session.workout.plan as { execution_version?: unknown } | null)?.execution_version;
+  if (version != null && version !== 1 && version !== 2) throw new Error("Обновите приложение, чтобы открыть сохранённую тренировку. Данные сохранены");
+  const cached = useWorkoutStore.getState().catalog.length ? [] : await readCachedExercises();
+  check();
+  const restored = version === 2 ? await initializeExecutionSession({ owner: ownerUserId, clientWorkoutId: session.clientId,
+    serverWorkoutId: session.serverId, workout: session.workout, drafts: session.drafts, now: workoutClockSnapshot() }) : session;
+  check();
   const store = useWorkoutStore.getState();
-  if (!store.catalog.length) {
-    const cached = await readCachedExercises();
-    if (cached.length) {
-      store.setCatalog(cached);
-    }
-  }
-  store.hydrateSession({
-    clientId: session.clientId,
-    serverId: session.serverId,
-    workout: session.workout,
-    drafts: session.drafts,
-    currentExerciseIndex: session.currentExerciseIndex ?? 0,
-    execution: session.execution,
-  });
+  if (cached.length) store.setCatalog(cached);
+  store.hydrateSession({ clientId: restored.clientId, serverId: restored.serverId, workout: restored.workout, drafts: restored.drafts,
+    currentExerciseIndex: restored.currentExerciseIndex ?? 0, execution: restored.execution });
+
 }
 
 export async function clearSession(clientId: string): Promise<void> {

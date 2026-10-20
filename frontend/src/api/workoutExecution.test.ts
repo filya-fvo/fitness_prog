@@ -60,3 +60,8 @@ it("round-trips compound exercise diary without flattening nullable parent value
   expect(result.diary[0].sets[0]).toMatchObject({ executionKind: "cluster", weight: null, reps: null, parts: [{ status: "completed", weight: 100, reps: 4 }] });
   expect(apiClient.get).toHaveBeenCalledWith(`/workouts/exercises/${exerciseId}/progress`, expect.objectContaining({ params: expect.objectContaining({ execution_version: 2 }) }));
 });
+
+it("refuses an unknown workout execution version without silently showing it as ordinary", async () => {
+  vi.spyOn(apiClient, "get").mockResolvedValue({ data: { ...workout, id: "77777777-7777-4777-8777-777777777777", plan: { ...plan, execution_version: 3 } } });
+  await expect(fetchWorkout("77777777-7777-4777-8777-777777777777")).rejects.toThrow();
+});

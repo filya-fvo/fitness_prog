@@ -1,4 +1,5 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { useUserStore } from "./userStore";
 import { useWorkoutStore } from "./workoutStore";
 import type { LocalWorkoutSession } from "@/db/schema";
 import { createExecutionRest } from "@/utils/workoutRest";
@@ -11,7 +12,8 @@ const session: LocalWorkoutSession = { clientId: "workout", ownerUserId: "owner"
   drafts: [], currentExerciseIndex: 0, updatedAt: 1000, execution: { version: 1, owner: "owner", clientWorkoutId: "workout", snapshotKey: "test", viewStepId: step.id, revision: 1, lastQueuedAt: 0,
     progress: { cursor: step.id, facts: {}, manualContinue: false, processedActionIds: ["action"], lastAction: null,
       rest: createExecutionRest({ owner: "owner", clientWorkoutId: "workout", sourceActionId: "action", targetStep: step, restKind: "between_sets", durationSec: 20, confirmedAt: clock }) } } };
-afterEach(() => { useWorkoutStore.getState().resetSession(); vi.restoreAllMocks(); });
+beforeEach(() => { useUserStore.setState({ user: { id: "owner", subscription_status: "plus", onboarding_completed: true } }); });
+afterEach(() => { useUserStore.setState({ user: null }); useWorkoutStore.getState().resetSession(); vi.restoreAllMocks(); });
 
 it("projects a durable v2 pause into existing notification fields without another clock", () => {
   useWorkoutStore.getState().hydrateSession({ clientId: "workout", serverId: "workout", workout, drafts: [] });
@@ -33,4 +35,21 @@ it("does not apply a late execution snapshot into another session", () => {
   useWorkoutStore.getState().hydrateSession({ clientId: "other", serverId: null, workout: { ...workout, id: "other", user_id: "other-owner" }, drafts: [] });
   expect(useWorkoutStore.getState().applyExecutionSession(session, clock)).toBe(false);
   expect(useWorkoutStore.getState().activeWorkout?.id).toBe("other");
+});
+
+it("does not regress execution after a late response with an older local revision", () => {
+  useWorkoutStore.getState().hydrateSession({ clientId: "workout", serverId: "workout", workout, drafts: [] });
+  useWorkoutStore.getState().applyExecutionSession(session, clock);
+  const late = { ...session, execution: { ...session.execution!, revision: 0, progress: { ...session.execution!.progress, rest: null } } };
+  expect(useWorkoutStore.getState().applyExecutionSession(late, clock)).toBe(false);
+  expect(useWorkoutStore.getState().execution?.revision).toBe(1);
+  expect(useWorkoutStore.getState().restEndsAtMs).toBe(21000);
+});
+
+
+it("cannot apply an old owner's snapshot after authentication changes before store cleanup", () => {
+  useWorkoutStore.getState().hydrateSession({ clientId: "workout", serverId: "workout", workout, drafts: [] });
+  useUserStore.setState({ user: { id: "other-owner", subscription_status: "plus", onboarding_completed: true } });
+  expect(useWorkoutStore.getState().applyExecutionSession(session, clock)).toBe(false);
+  expect(useWorkoutStore.getState().execution).toBeNull();
 });

@@ -1,3 +1,6 @@
+import { liveQuery } from "dexie";
+import { db } from "@/db/schema";
+import { assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, changeExecutionRest, finishExecutionSession, showExecutionStep,
   type ExecutionValues } from "@/db/workoutExecution";
@@ -34,7 +37,11 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
 
   const apply = useCallback((session: LocalWorkoutSession, current: number) => {
     if (current !== generation.current || useUserStore.getState().user?.id !== owner || session.clientId !== client) return false;
-    return useWorkoutStore.getState().applyExecutionSession(session, workoutClockSnapshot());
+    const store = useWorkoutStore.getState();
+    const viewStepId = store.execution?.viewStepId;
+    const projected = editing.current && viewStepId && session.execution ? { ...session, currentExerciseIndex: store.currentExerciseIndex,
+      execution: { ...session.execution, viewStepId } } : session;
+    return store.applyExecutionSession(projected, workoutClockSnapshot());
   }, [owner, client]);
   const sync = useCallback(() => {
     const current = generation.current;
@@ -87,6 +94,20 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("pageshow", resume); window.removeEventListener("focus", resume); };
   }, [apply, client, enabled, owner, ready, reload]);
+
+  useEffect(() => {
+    if (!enabled || !ready || !owner || !client) return;
+    const current = generation.current;
+    const subscription = liveQuery(() => db.sessions.get(client)).subscribe({
+      next: session => {
+        if (!session?.execution || current !== generation.current || useUserStore.getState().user?.id !== owner) return;
+        try { assertExecutionSessionSnapshot(session, owner, workoutClockSnapshot()); apply(session, current); }
+        catch (err) { setError(toUserMessage(err, "Не удалось проверить сохранённое выполнение")); setReady(false); }
+      },
+      error: (err: unknown) => { if (current === generation.current) setError(toUserMessage(err, "Не удалось обновить тренировку")); },
+    });
+    return () => subscription.unsubscribe();
+  }, [apply, client, enabled, owner, ready]);
 
   const act = useCallback(async (action: TransitionInput["action"], stepId: string, values?: ExecutionValues, undoActionId?: string) => {
     if (!enabled || !owner || !client || busyRef.current) return false;

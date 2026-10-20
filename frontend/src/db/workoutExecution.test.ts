@@ -136,3 +136,39 @@ it("outbox preserves offline completion confirmation and duration through the RE
   expect(put).toHaveBeenCalledWith(`/workouts/${client}/complete`, expect.objectContaining({ execution_version: 2, completed_at: completedAt, duration_sec: 600 }));
   expect(await db.syncQueue.count()).toBe(0);
 });
+
+it("refuses a persisted rest targeting the wrong planned part without deleting facts", async () => {
+  await seed(); await commitExecutionAction(action());
+  const saved = (await db.sessions.get(client))!;
+  saved.execution!.progress.rest!.targetStep = buildExecutionSteps(plan)[2];
+  await db.sessions.put(saved);
+  await expect(seed()).rejects.toThrow();
+  expect((await db.sessions.get(client))!.drafts[0].parts?.[0].status).toBe("completed");
+  expect(await db.syncQueue.count()).toBe(1);
+});
+it("refuses an unknown persisted envelope version and a cursor contradicting actual parts", async () => {
+  await seed(); await commitExecutionAction(action());
+  const saved = (await db.sessions.get(client))!;
+  await db.sessions.put({ ...saved, execution: { ...saved.execution!, version: 2 } } as unknown as typeof saved);
+  await expect(seed()).rejects.toThrow();
+  saved.execution!.progress.cursor = buildExecutionSteps(plan)[2].id;
+  await db.sessions.put(saved);
+  await expect(seed()).rejects.toThrow();
+});
+it("accepts a semantically identical durable snapshot key with different object key order", async () => {
+  await seed();
+  const saved = (await db.sessions.get(client))!;
+  const key = JSON.parse(saved.execution!.snapshotKey);
+  saved.execution!.snapshotKey = JSON.stringify(Object.fromEntries(Object.entries(key).reverse()));
+  await db.sessions.put(saved);
+  await expect(seed()).resolves.toMatchObject({ clientId: client });
+});
+
+it("an old correction form cannot overwrite a newer recorded parent revision", async () => {
+  await seed(); await commitExecutionAction(action());
+  await commitExecutionAction({ ...action(), action: "correct", actionId: crypto.randomUUID(), expectedRevision: 1, values: { ...action().values, reps: "3" } });
+  await expect(commitExecutionAction({ ...action(), action: "correct", actionId: crypto.randomUUID(), expectedRevision: 2,
+    values: { ...action().values, reps: "5", baseSetRevision: 1 } })).rejects.toThrow();
+  expect((await db.sessions.get(client))!.drafts[0].parts?.[0].reps).toBe(3);
+  expect(await db.syncQueue.count()).toBe(2);
+});

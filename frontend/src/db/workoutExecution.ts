@@ -4,10 +4,10 @@ import { useUserStore } from "@/store/userStore";
 import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 import { buildExecutionSteps, executionStepId, resolveExecutionTransition, type ExecutionProgress, type TransitionInput } from "@/utils/workoutExecution";
 import { executionFactsFromDrafts } from "@/utils/workoutSession";
-import { ensureExecutionDrafts, executionSnapshotKey } from "@/utils/workoutExecutionState";
-import { adjustExecutionRest, claimRestCompletion, finishExecutionRest, restoreExecutionRest, type ClockSnapshot } from "@/utils/workoutRest";
+import { ensureExecutionDrafts, executionSnapshotKey, assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
+import { adjustExecutionRest, claimRestCompletion, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
 
-export type ExecutionValues = { reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
+export type ExecutionValues = { baseSetRevision?: number; reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
   durationSec: number | null; note?: string | null; machineParams?: Record<string, string | number> | null };
 export type ExecutionAction = Pick<TransitionInput, "owner" | "clientWorkoutId" | "action" | "actionId" | "stepId" | "confirmedAt" | "undoActionId"> & {
   expectedRevision: number; values?: ExecutionValues; autoAdvance: boolean;
@@ -21,7 +21,7 @@ function assertSession(session: LocalWorkoutSession | undefined, owner: string):
   requireOwner(owner);
   if (!session || session.ownerUserId !== owner || session.workout.user_id !== owner || !session.execution || session.execution.owner !== owner || session.execution.clientWorkoutId !== session.clientId)
     throw new Error("Не удалось проверить сохранённую тренировку");
-  if (session.execution.snapshotKey !== executionSnapshotKey(session.workout.plan as WorkoutPlan)) throw new Error("План начатой тренировки изменился. Результат сохранён на устройстве");
+  assertExecutionSessionSnapshot(session, owner, workoutClockSnapshot());
 }
 function progressOf(decision: ExecutionProgress): ExecutionProgress {
   return { facts: decision.facts, cursor: decision.cursor, rest: decision.rest, manualContinue: decision.manualContinue,
@@ -68,8 +68,10 @@ export async function initializeExecutionSession(input: { owner: string; clientW
         } };
     }
     assertSession(session, input.owner);
-    if (session.execution!.progress.rest) session.execution!.progress.rest = restoreExecutionRest(session.execution!.progress.rest,
-      { owner: input.owner, clientWorkoutId: input.clientWorkoutId }, input.now);
+    if (session.execution!.progress.rest) {
+      session.execution!.progress.rest = restoreExecutionRest(session.execution!.progress.rest, { owner: input.owner, clientWorkoutId: input.clientWorkoutId }, input.now);
+      session.execution!.revision += 1;
+    }
     await writeSession(session);
     return session;
   });
@@ -129,6 +131,8 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
     const step = buildExecutionSteps(session.workout.plan as WorkoutPlan).find(step => step.id === input.stepId)!;
     const draft = structuredClone(session.drafts.find(row => row.exerciseId === step.exerciseId && row.setNumber === step.setNumber)!);
     if (!draft) throw new Error("Подход не найден");
+    if (input.values?.baseSetRevision !== undefined && input.values.baseSetRevision !== (draft.executionRevision ?? 0))
+      throw new Error("Подход изменён в другой вкладке. Введённые значения остались в форме; обновите её перед сохранением");
     if (input.values && (input.action === "complete" || input.action === "correct")) {
       draft.weightMode = input.values.weightMode ?? draft.weightMode ?? null;
       if (input.values.note !== undefined) draft.note = input.values.note;
@@ -176,6 +180,7 @@ export async function claimExecutionSignal(owner: string, client: string, now: C
     const result = claimRestCompletion(progress.rest, now);
     if (!result.shouldNotify) return { session, claimed: false };
     progress.rest = result.rest;
+    session.execution!.revision += 1;
     jumpToCursor(session, autoAdvance);
     await writeSession(session);
     return { session, claimed: true };
@@ -234,6 +239,7 @@ export async function showExecutionStep(owner: string, client: string, stepId: s
     const step = buildExecutionSteps(session.workout.plan as WorkoutPlan).find(step => step.id === stepId);
     if (!step) throw new Error("Шаг отсутствует в плане");
     session.execution!.viewStepId = step.id;
+    session.execution!.revision += 1;
     session.currentExerciseIndex = [...(session.workout.plan as WorkoutPlan).exercises].sort((a, b) => a.order - b.order).findIndex(row => row.exercise_id === step.exerciseId);
     await writeSession(session);
     return session;

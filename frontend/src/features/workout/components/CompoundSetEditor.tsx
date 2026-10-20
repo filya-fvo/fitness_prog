@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { Exercise, LocalSetDraft, WorkoutPlanExercise } from "@/types/workout";
 import type { ExecutionStep } from "@/utils/workoutExecution";
 import type { WorkoutExecutionController } from "../hooks/useWorkoutExecution";
@@ -21,12 +21,23 @@ export function CompoundSetEditor({ controller, step, draft, row, exercise, bloc
   const load = inferLoadType(exercise);
   const timed = load === "timed" || load === "cardio_machine";
   const priorClusterWeight = step.kind === "cluster" ? draft.parts?.find(item => item.status === "completed")?.weight : null;
-  const [reps, setReps] = useState(String((recorded ? part?.reps ?? draft.reps : target?.target_reps ?? draft.reps) || row.target_reps?.match(/^\d+/)?.[0] || "10"));
-  const [weight, setWeight] = useState(String((recorded ? part?.weight ?? draft.weight : priorClusterWeight ?? target?.target_weight ?? draft.weight) || row.suggested_weight || ""));
-  const [duration, setDuration] = useState(String((recorded ? part?.duration_sec ?? draft.durationSec : draft.durationSec) ?? preparedTimeSeconds(row, exercise)));
+  const initialReps = String((part?.reps ?? (recorded ? draft.reps : target?.target_reps ?? draft.reps)) || row.target_reps?.match(/^\d+/)?.[0] || "10");
+  const initialWeight = String((recorded ? part?.weight ?? draft.weight : priorClusterWeight ?? part?.weight ?? target?.target_weight ?? draft.weight) || row.suggested_weight || "");
+  const initialDuration = String((recorded ? part?.duration_sec ?? draft.durationSec : draft.durationSec) ?? preparedTimeSeconds(row, exercise));
+  const [reps, setReps] = useState(initialReps);
+  const [weight, setWeight] = useState(initialWeight);
+  const [duration, setDuration] = useState(initialDuration);
   const [note, setNote] = useState(draft.note ?? "");
   const [machine, setMachine] = useState(() => initialCardioParamValues(draft.machineParams));
   const [dirty, setDirty] = useState(false);
+  const [baseRevision, setBaseRevision] = useState(draft.executionRevision ?? 0);
+  const rootRevision = draft.executionRevision ?? 0;
+  const outdated = baseRevision !== rootRevision;
+  useEffect(() => {
+    if (dirty || baseRevision === rootRevision) return;
+    setReps(initialReps); setWeight(initialWeight); setDuration(initialDuration); setNote(draft.note ?? "");
+    setMachine(initialCardioParamValues(draft.machineParams)); setBaseRevision(rootRevision);
+  }, [baseRevision, dirty, rootRevision, initialReps, initialWeight, initialDuration, draft.note, draft.machineParams]);
   const weightInput = exerciseWeightInput(exercise, recorded ? draft.weightMode ?? null : draft.weightMode ?? undefined);
   const machineKind = inferCardioMachineKind(exercise);
   const fieldClass = "mt-1 min-h-11 w-full rounded-xl border border-tg-hint/30 bg-tg-bg px-3 text-base text-tg-text";
@@ -34,13 +45,15 @@ export function CompoundSetEditor({ controller, step, draft, row, exercise, bloc
   async function submit() {
     if (recorded && !dirty) return;
     const accepted = await controller.act(recorded ? "correct" : "complete", step.id, {
-      reps: timed ? "" : reps, weight: load === "weight_reps" || compound ? weight : "",
+      baseSetRevision: baseRevision, reps: timed ? "" : reps, weight: load === "weight_reps" || compound ? weight : "",
       weightMode: weightInput.mode, durationSec: timed ? Number(duration) : null, note: note || null,
       machineParams: load === "cardio_machine" ? buildCardioMachineParams(machineKind, machine) : null,
     });
-    if (accepted) setDirty(false);
+    if (accepted) { setDirty(false); setBaseRevision(baseRevision + 1); }
   }
   return <form className="space-y-3" onSubmit={event => { event.preventDefault(); void submit(); }} aria-label={compound ? "Результат части" : "Результат подхода"}>
+    {outdated && dirty ? <div role="alert" className="app-card-inset space-y-2 p-3 text-sm"><p>Подход изменён в другой вкладке. Введённые значения остались в форме.</p>
+      <button type="button" className="min-h-11 rounded-xl border border-tg-hint/30 px-3 py-2" onClick={() => { setDirty(false); controller.markEditing(false); }}>Обновить форму</button></div> : null}
     <fieldset disabled={controller.busy || status === "skipped"} className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         {!timed ? <label htmlFor={`${id}-reps`} className="text-sm text-tg-hint">Повторы<input id={`${id}-reps`} type="number" inputMode="numeric" min={1} max={100000} required value={reps} className={fieldClass} onChange={event => { setReps(event.target.value); changed(); }} /></label> : null}
