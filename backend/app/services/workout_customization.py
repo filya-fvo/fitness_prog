@@ -54,9 +54,14 @@ async def get_customization(session: AsyncSession, user: User, **kwargs) -> Work
     return _response(program, context, row)
 
 
-async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: WorkoutDayPatch) -> dict:
+def added_exercise_defaults(plan: dict) -> dict:
     from app.services.workout_service import phase_meta_from_name
+    phase = str(plan.get("week_phase") or "medium")
+    targets = phase_meta_from_name(phase if phase in {"light", "medium", "heavy"} else "medium")
+    return {"target_reps": targets["target_reps"], "rest_sec": 90 if phase == "heavy" else 60}
 
+
+async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: WorkoutDayPatch) -> dict:
     plan = deepcopy(base_plan)
     exercises = plan.get("exercises", [])
     by_id = {UUID(str(item["exercise_id"])): item for item in exercises}
@@ -73,14 +78,13 @@ async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: Workout
         catalog = {row.id: row for row in rows.all()}
         if set(catalog) != needed:
             raise HTTPException(422, "Одно из упражнений больше недоступно. Выберите другое")
-    phase = str(plan.get("week_phase") or "medium")
-    targets = phase_meta_from_name(phase if phase in {"light", "medium", "heavy"} else "medium")
+    defaults = added_exercise_defaults(plan)
     for added in patch.added_exercises:
         if added.exercise_id in by_id:
             raise HTTPException(422, "Упражнение уже есть в этом дне")
         item = added.model_dump(mode="json", exclude_none=True)
-        item["target_reps"] = added.target_reps or targets["target_reps"]
-        item["rest_sec"] = added.rest_sec if added.rest_sec is not None else (90 if phase == "heavy" else 60)
+        item["target_reps"] = added.target_reps or defaults["target_reps"]
+        item["rest_sec"] = added.rest_sec if added.rest_sec is not None else defaults["rest_sec"]
         item["name_ru"] = catalog[added.exercise_id].name_ru
         exercises.append(item)
         by_id[added.exercise_id] = item

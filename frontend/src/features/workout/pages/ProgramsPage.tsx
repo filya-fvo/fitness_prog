@@ -1,3 +1,4 @@
+import { startProgramSession } from "@/features/workout/services/programWorkoutStart";
 import { localDateKey } from "@/utils/loadProgression";
 import { useUserStore } from "@/store/userStore";
 import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
@@ -5,18 +6,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
-import { fetchExercises } from "@/api/exercises";
-import { fetchMyPrograms, fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchExercises, fetchExerciseCatalog } from "@/api/exercises";
+import { fetchMyPrograms, fetchPrograms } from "@/api/programs";
 import { fetchMyProfile } from "@/api/users";
 import { Header } from "@/components/layout/Header";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import {
   cacheExercises,
   readCachedExercises,
-  rememberWorkoutId,
-  saveLocalSession,
 } from "@/db/syncQueue";
-import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
 import { ProgramWeekPreview } from "@/features/workout/components/ProgramWeekPreview";
@@ -27,11 +25,7 @@ import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutRe
 import { trackEvent } from "@/lib/analytics";
 import { confirmAction } from "@/lib/telegram";
 import { useWorkoutStore } from "@/store/workoutStore";
-import type { Exercise, LocalSetDraft, Program, Workout, WorkoutPlan } from "@/types/workout";
-import {
-  draftsWithSuggestions,
-  resolveWeekPhase,
-} from "@/utils/loadProgression";
+import type { Exercise, Program } from "@/types/workout";
 import { isOnline } from "@/utils/network";
 import { enumLabel, exercisesCount, programDayLabel } from "@/utils/localization";
 import { compareProgramToProfile, programMismatchSummary } from "@/utils/programCompatibility";
@@ -69,31 +63,6 @@ function readProgramsUi(): ProgramsUiState {
   } catch {
     return {};
   }
-}
-
-function draftsFromWorkout(
-  workout: {
-    plan?: WorkoutPlan | Record<string, unknown> | null;
-    sets: { exercise_id: string; set_number: number; rest_time_sec: number | null }[];
-  },
-  history: Map<string, import("@/utils/loadProgression").ExerciseHistoryBest>,
-): LocalSetDraft[] {
-  const plan = (workout.plan || {}) as WorkoutPlan;
-  if (Array.isArray(plan.exercises) && plan.exercises.length) {
-    return draftsWithSuggestions({
-      exercises: plan.exercises,
-      history,
-      phase: resolveWeekPhase(null),
-    });
-  }
-  return (workout.sets || []).map((s) => ({
-    exerciseId: s.exercise_id,
-    setNumber: s.set_number,
-    reps: "",
-    weight: "",
-    isCompleted: false,
-    restTimeSec: s.rest_time_sec ?? 60,
-  }));
 }
 
 function profileLimits(goals: Record<string, unknown>): string[] {
@@ -245,10 +214,6 @@ export function ProgramsPage() {
         ? "Не нашли программу, которая одновременно подходит под ограничения и доступный инвентарь. Анкета сохранена — выберите программу вручную."
         : null;
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
-  const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
-  const setDrafts = useWorkoutStore((s) => s.setDrafts);
-  const setIdMapping = useWorkoutStore((s) => s.setIdMapping);
-  const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [items, setItems] = useState<Program[]>([]);
   const [myItems, setMyItems] = useState<Program[]>([]);
@@ -465,41 +430,31 @@ export function ProgramsPage() {
       if (!ok) return;
     }
 
+    const startOwner = useUserStore.getState().user?.id;
+    if (!startOwner) return;
     const cycleReadiness = await readiness.requestReadiness();
     if (cycleReadiness === null) return;
 
     setStartingKey(key);
     setError(null);
     try {
+      if (useUserStore.getState().user?.id !== startOwner) return;
       if (isOnline() && getStoredToken()) {
-        const ex = await fetchExercises({ pageSize: 200 });
-        await cacheExercises(ex.items);
-        setCatalog(ex.items);
-        setExerciseCatalog(ex.items);
+        const ex = await fetchExerciseCatalog();
+        await cacheExercises(ex);
+        setCatalog(ex);
+        setExerciseCatalog(ex);
       }
 
-      const workout = await startProgramWorkout({
+      const session = await startProgramSession({
+        ownerUserId: startOwner,
         programId: program.id,
         dayIndex,
         cycleReadiness,
       });
-      const clientId = crypto.randomUUID();
-      const exerciseIds = (((workout as Workout).plan as WorkoutPlan | null)?.exercises || [])
-        .map((item) => item.exercise_id);
-      const history = await loadExerciseHints(exerciseIds);
-      const drafts = draftsFromWorkout(workout as Workout, history);
-      await rememberWorkoutId(clientId, workout.id);
-      await saveLocalSession({
-        clientId,
-        serverId: workout.id,
-        workout,
-        drafts,
-        currentExerciseIndex: 0,
-      });
-      setIdMapping(clientId, workout.id);
-      setActiveWorkout(workout);
-      setDrafts(drafts);
-      setCurrentExerciseIndex(0);
+      if (useUserStore.getState().user?.id !== session.ownerUserId) return;
+      useWorkoutStore.getState().hydrateSession(session);
+      const { clientId, drafts } = session;
       trackEvent("program_started", {
         program_id: program.id,
         day_index: dayIndex,

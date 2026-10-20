@@ -136,3 +136,12 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Changed the old server-outage assertion to the intended durable-save message; configured values remain visible. New fixture authenticates the same synthetic owner as production requires. Existing legacy preparation routes still pass.
 - Final bundle620816/564250, largest108742/admin56566; bounded caps621250/564650, same dependencies. No backend changes in this substep.
 - Exact offline context is retained rather than recalculated on the client. Dependent program start, fingerprint reconciliation, conflict resolution UI and remaining owner/cache audit are still W9; no deployment or Android source changes.
+
+
+## W9f — prepared web start and dependent queue
+
+- Shared start replaces three duplicated session builders; exact cached variants start atomically offline, concurrent repeat resumes one session. Hints preserve recorded server facts. Complete catalog loading replaces first-page-only start loading.
+- Real IndexedDB scenario: offline private edit → cluster part → finish → DB reopen → deliberately reversed queue times → reconnect. Accepted path sends proposal/create/parts/finish once; conflict retains all four dependent operations and completed local facts while unrelated profile update succeeds. Original part UUID and confirmation time preserved.
+- RED exposed missing server defaults for an added exercise; one canonical server helper now supplies phase reps/rest in prepared context (light60/medium60/heavy90). Delta remains unspecified for later phases; current offline snapshot uses supplied values. Both server/client regressions GREEN.
+- Backend1060 full/Ruff PASS; web862 full PASS plus one obsolete static boundary assertion, updated to follow shared service and final2 PASS; final21 targeted storage/execution PASS, lint/types/build/PWA PASS. Chromium9 start/readiness/preparation +26 timer/recovery PASS. Actual Training page completed edit/start/part/reload/deadline/early-finish/reconnect; application offline gate used with dev assets reachable. Cold PWA validation remains W10.
+- Bundle622811/566258 (+2008 product vsW9e), largest108742/admin56553; bounded623400/566850, same dependencies. Remaining W9 smaller-range selection, explicit proposal conflict resolution, wider owner/cache audit and bounded action history. No release or Android source changes.

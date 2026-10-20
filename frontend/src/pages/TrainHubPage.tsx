@@ -1,3 +1,4 @@
+import { startProgramSession } from "@/features/workout/services/programWorkoutStart";
 import { OfflineWorkoutPreparationStatus } from "@/features/workout/components/OfflineWorkoutPreparationStatus";
 import { useUserStore } from "@/store/userStore";
 import { useOfflineWorkoutContext } from "@/features/workout/hooks/useOfflineWorkoutContext";
@@ -9,8 +10,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getStoredToken } from "@/api/client";
 import { preferredScrollBehavior } from "@/utils/motion";
-import { fetchExercises } from "@/api/exercises";
-import { fetchMyPrograms, fetchProgram, fetchPrograms, startProgramWorkout } from "@/api/programs";
+import { fetchExercises, fetchExerciseCatalog } from "@/api/exercises";
+import { fetchMyPrograms, fetchProgram, fetchPrograms } from "@/api/programs";
 import { fetchMyProfile, updateMyProfile } from "@/api/users";
 import {
   fetchPlannedWorkoutPlan,
@@ -32,17 +33,13 @@ import { usePreWorkoutReadiness } from "@/features/workout/hooks/usePreWorkoutRe
 import {
   cacheExercises,
   readCachedExercises,
-  rememberWorkoutId,
-  saveLocalSession,
 } from "@/db/syncQueue";
-import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { trackEvent } from "@/lib/analytics";
 import { findResumableSession, restoreSessionIntoStore } from "@/lib/sessionRestore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { buttonClass } from "@/theme/visualStyles";
-import type { Exercise, LocalSetDraft, Program, WorkoutPlan } from "@/types/workout";
+import type { Exercise, Program, WorkoutPlan } from "@/types/workout";
 import {
-  draftsWithSuggestions,
   ensureProgramStartDate,
   localDateKey,
   type WeekPhase,
@@ -64,29 +61,6 @@ import {
   startableWorkoutOccurrence,
 } from "@/utils/workoutSchedule";
 
-function draftsFromWorkout(workout: {
-  plan?: WorkoutPlan | Record<string, unknown> | null;
-  sets: {
-    exercise_id: string;
-    set_number: number;
-    rest_time_sec: number | null;
-    is_completed?: boolean;
-  }[];
-}): LocalSetDraft[] {
-  const completed = (workout.sets || []).filter((s) => Boolean(s.is_completed));
-  if (completed.length) {
-    return completed.map((s) => ({
-      exerciseId: s.exercise_id,
-      setNumber: s.set_number,
-      reps: "",
-      weight: "",
-      isCompleted: true,
-      restTimeSec: s.rest_time_sec ?? 60,
-    }));
-  }
-  return [];
-}
-
 export function TrainHubPage() {
   const owner = useUserStore((state) => state.user?.id ?? null);
   const offline = useOfflineWorkoutContext(owner, localDateKey());
@@ -95,10 +69,6 @@ export function TrainHubPage() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const clientWorkoutId = useWorkoutStore((s) => s.clientWorkoutId);
   const setCatalog = useWorkoutStore((s) => s.setCatalog);
-  const setActiveWorkout = useWorkoutStore((s) => s.setActiveWorkout);
-  const setDrafts = useWorkoutStore((s) => s.setDrafts);
-  const setIdMapping = useWorkoutStore((s) => s.setIdMapping);
-  const setCurrentExerciseIndex = useWorkoutStore((s) => s.setCurrentExerciseIndex);
 
   const [program, setProgram] = useState<Program | null>(null);
   const [goals, setGoals] = useState<Record<string, unknown>>({});
@@ -267,21 +237,25 @@ export function TrainHubPage() {
       navigate(`/workouts/active/${resumeId}`);
       return;
     }
+    const startOwner = useUserStore.getState().user?.id;
+    if (!startOwner) return;
     const cycleReadiness = await readiness.requestReadiness();
     if (cycleReadiness === null) return;
     setStarting(true);
     setError(null);
     const startDayIndex = startableOccurrence?.day_index ?? dayIndex;
     try {
+      if (useUserStore.getState().user?.id !== startOwner) return;
       if (isOnline() && getStoredToken()) {
-        const ex = await fetchExercises({ pageSize: 200 });
-        await cacheExercises(ex.items);
-        setCatalog(ex.items);
+        const ex = await fetchExerciseCatalog();
+        await cacheExercises(ex);
+        setCatalog(ex);
       } else {
         const cached = await readCachedExercises();
         if (cached.length) setCatalog(cached);
       }
 
+      if (useUserStore.getState().user?.id !== startOwner) return;
       const { start, goalsPatch: startPatch } = ensureProgramStartDate(goals, program.id);
       const cursorPatch = cursorGoalsPatch(
         program.id,
@@ -298,15 +272,19 @@ export function TrainHubPage() {
       if (isOnline() && getStoredToken()) {
         try {
           const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
+          if (useUserStore.getState().user?.id !== startOwner) return;
           setGoals((profile.goals as Record<string, unknown>) || goalsMerged);
         } catch {
+          if (useUserStore.getState().user?.id !== startOwner) return;
           setGoals(goalsMerged);
         }
       } else {
         setGoals(goalsMerged);
       }
 
-      const workout = await startProgramWorkout({
+      const session = await startProgramSession({
+        ownerUserId: startOwner,
+        warmupLocation: String(goals.location || "gym"),
         programId: program.id,
         dayIndex: startDayIndex,
         scheduledDate:
@@ -314,41 +292,11 @@ export function TrainHubPage() {
         weekPhase,
         cycleReadiness,
       });
-      const clientId = crypto.randomUUID();
-      const plan = (workout.plan || {}) as WorkoutPlan;
+      if (useUserStore.getState().user?.id !== session.ownerUserId) return;
+      useWorkoutStore.getState().hydrateSession(session);
+      const { workout, clientId } = session;
+      const plan = workout.plan as WorkoutPlan;
       const effectivePhase = phaseFromPlan(plan, weekPhase);
-      const phaseMeta = phaseMetaFromName(effectivePhase);
-      const planWithWarmup = {
-        ...plan,
-        warmup_pending: true,
-        warmup_location: String(goals.location || "gym"),
-      } as WorkoutPlan & { warmup_pending?: boolean; warmup_location?: string };
-      const workoutWithPlan = { ...workout, plan: planWithWarmup };
-
-      const historyMap = await loadExerciseHints(
-        Array.isArray(plan.exercises) ? plan.exercises.map((item) => item.exercise_id) : [],
-      );
-      const drafts =
-        Array.isArray(plan.exercises) && plan.exercises.length
-          ? draftsWithSuggestions({
-              exercises: plan.exercises,
-              history: historyMap,
-              phase: phaseMeta,
-            })
-          : draftsFromWorkout(workout);
-
-      await rememberWorkoutId(clientId, workout.id);
-      await saveLocalSession({
-        clientId,
-        serverId: workout.id,
-        workout: workoutWithPlan,
-        drafts,
-        currentExerciseIndex: 0,
-      });
-      setIdMapping(clientId, workout.id);
-      setActiveWorkout(workoutWithPlan);
-      setDrafts(drafts);
-      setCurrentExerciseIndex(0);
       trackEvent("program_started", {
         program_id: program.id,
         day_index: startDayIndex,

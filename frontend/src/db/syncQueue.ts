@@ -1,3 +1,4 @@
+import { reconcilePreparedCreate, orderWorkoutQueue } from "./preparedWorkoutStart";
 import { toast } from "@/store/toastStore";
 import { syncWorkoutPreparation } from "./workoutCustomization";
 import { mergeExecutionWorkoutMetadata } from "@/utils/workoutExecutionState";
@@ -422,7 +423,7 @@ export async function flushSyncQueue(
   let dropped = 0;
 
   try {
-    const items = await db.syncQueue.where("ownerUserId").equals(owner).sortBy("createdAt");
+    const items = orderWorkoutQueue(await db.syncQueue.where("ownerUserId").equals(owner).sortBy("createdAt"));
     if (options.retryFailed) {
       const failedIds = items
         .filter((item) => (item.attempts || 0) >= MAX_SYNC_ATTEMPTS)
@@ -440,20 +441,26 @@ export async function flushSyncQueue(
       }
     }
     const blockedWorkouts = new Set<string>();
+    const blockedPreparations = new Set<string>();
     for (const item of items) {
+      if (typeof item.payload.preparationDraftKey === "string" && blockedPreparations.has(item.payload.preparationDraftKey)) blockedWorkouts.add(item.clientWorkoutId);
       if (blockedWorkouts.has(item.clientWorkoutId)) { failed += 1; continue; }
       const structured = item.payload.executionVersion === 2 || (item.payload.plan && typeof item.payload.plan === "object" && (item.payload.plan as { execution_version?: unknown }).execution_version === 2);
       if (useUserStore.getState().user?.id !== owner) break;
       if ((item.attempts || 0) >= MAX_SYNC_ATTEMPTS) {
+        if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
         if (structured) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         continue;
       }
       try {
         await processQueueItem(item, owner);
+        if (useUserStore.getState().user?.id !== owner) break;
         await db.syncQueue.delete(item.id);
         processed += 1;
       } catch (err) {
+        if (useUserStore.getState().user?.id !== owner) break;
+        if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
         if (structured) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         const message = err instanceof Error ? err.message : "sync failed";
@@ -497,30 +504,16 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
     return;
   }
   if (item.type === "create_workout") {
-    const payload = item.payload as {
-      scheduledDate: string;
-      exerciseIds: string[];
-      programId?: string | null;
-      title?: string | null;
-      workoutType?: string | null;
-      setsPerExercise?: number;
-      plan?: WorkoutPlan | null;
-    };
-    const workout = await createWorkout({
-      clientWorkoutId: item.clientWorkoutId,
-      scheduledDate: payload.scheduledDate,
-      exerciseIds: payload.exerciseIds,
-      programId: payload.programId ?? null,
-      title: payload.title ?? null,
-      workoutType: payload.workoutType ?? null,
-      setsPerExercise: payload.setsPerExercise ?? 3,
-      plan: payload.plan ?? null,
-    });
+    const payload = await reconcilePreparedCreate(item, ownerUserId);
+    if (useUserStore.getState().user?.id !== ownerUserId) throw new Error("Аккаунт изменился");
+    const workout = await createWorkout({ ...payload, clientWorkoutId: item.clientWorkoutId });
+    if (useUserStore.getState().user?.id !== ownerUserId || workout.user_id !== ownerUserId) throw new Error("Аккаунт изменился");
     await rememberWorkoutId(item.clientWorkoutId, workout.id, ownerUserId);
     const session = await db.sessions.get(item.clientWorkoutId);
     if (session?.ownerUserId === ownerUserId) {
       const updated: Workout = {
         ...workout,
+        status: session.workout.status, started_at: session.workout.started_at, completed_at: session.workout.completed_at,
         sets: session.workout.sets.map((s) => ({ ...s, workout_id: workout.id })),
       };
       await saveLocalSession({

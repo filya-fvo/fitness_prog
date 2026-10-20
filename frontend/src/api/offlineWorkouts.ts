@@ -5,6 +5,7 @@ import { scheduleOverviewSchema, workoutPlanSchema } from "@/api/workouts";
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const preparedWorkoutPlanSchema = workoutPlanSchema.extend({ exercises: z.array(workoutPlanSchema.shape.exercises.element.extend({ suggested_weight: z.union([z.number(), z.string()]).transform(Number).pipe(z.number().finite().nonnegative()).nullable().optional() })) });
 export const preparedProgramPlanSchema = z.object({
+  exercise_defaults: z.object({ target_reps: z.string().min(1).max(30), rest_sec: z.number().int().min(0).max(600) }).nullable().optional(),
   preparation_fingerprint: z.string().regex(/^[a-f0-9]{64}$/).nullable().optional(),
   scheduled_date: day, day_index: z.number().int().min(1).max(7),
   week_phase: z.enum(["light", "medium", "heavy"]),

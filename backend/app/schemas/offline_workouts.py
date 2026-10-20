@@ -16,7 +16,13 @@ class OfflineWorkoutDay(BaseModel):
     schedule: WorkoutScheduleOverview
 
 
+class AddedExerciseDefaults(BaseModel):
+    target_reps: str = Field(min_length=1, max_length=30)
+    rest_sec: int = Field(ge=0, le=600)
+
+
 class PreparedProgramPlan(BaseModel):
+    exercise_defaults: AddedExerciseDefaults | None = None
     scheduled_date: date
     day_index: int = Field(ge=1, le=7)
     week_phase: Literal["light", "medium", "heavy"]

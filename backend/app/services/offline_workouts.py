@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.offline_schedule import schedule_fingerprint
 from app.services.workout_preparation import plan_fingerprint
+from app.services.workout_customization import added_exercise_defaults
 from app.services.workout_execution import require_execution_version
 from app.models.user import User
 from app.schemas.offline_workouts import (
@@ -136,6 +137,7 @@ async def prepare_context(
                                     after_recovery=after_recovery,
                                     plan=WorkoutPlan.model_validate(plan),
                                     preparation_fingerprint=fingerprint,
+                                    exercise_defaults=added_exercise_defaults(plan) if execution_version == 2 else None,
                                 )
                             )
     # Native transport is bounded to 8MiB. Leave room for encoding and middleware.

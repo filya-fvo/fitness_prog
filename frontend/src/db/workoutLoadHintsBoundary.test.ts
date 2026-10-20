@@ -6,6 +6,7 @@ const freeWorkoutEntryPoints = [
   "src/pages/HomePage.tsx",
   "src/pages/TrainHubPage.tsx",
   "src/features/workout/pages/ProgramsPage.tsx",
+  "src/features/workout/services/programWorkoutStart.ts",
   "src/features/workout/pages/WorkoutCatalogPage.tsx",
   "src/features/workout/pages/ActiveWorkout.tsx",
 ];
@@ -14,7 +15,7 @@ describe("FREE workout history boundary", () => {
   it("uses limited load hints in every workout start and session entry point", () => {
     for (const relativePath of freeWorkoutEntryPoints) {
       const source = readFileSync(resolve(process.cwd(), relativePath), "utf8");
-      expect(source, relativePath).toContain("loadExerciseHints");
+      expect(source, relativePath).toContain(["src/pages/HomePage.tsx", "src/pages/TrainHubPage.tsx", "src/features/workout/pages/ProgramsPage.tsx"].includes(relativePath) ? "startProgramSession" : "loadExerciseHints");
       expect(source, relativePath).not.toContain("fetchWorkoutHistory");
       expect(source, relativePath).not.toContain('"/workouts/history"');
     }

@@ -97,3 +97,13 @@ def test_fingerprint_is_semantic_and_owner_scoped():
     assert plan_fingerprint(SimpleNamespace(id=uuid4()), program, plan, **kwargs) != first
     plan.customization_revisions = {"program_day": 1}
     assert plan_fingerprint(owner, program, plan, **kwargs) != first
+
+@pytest.mark.asyncio
+async def test_capable_bundle_carries_canonical_added_exercise_defaults(scenario):
+    from unittest.mock import AsyncMock
+    from app.services import offline_workouts
+    user, _, _ = scenario
+    result = await offline_workouts.prepare_context(AsyncMock(), user, start=date(2026, 10, 19), days=1, execution_version=2)
+    for row in result.plans:
+        defaults = row.model_dump().get("exercise_defaults")
+        assert defaults == {"target_reps": {"light": "12-15", "medium": "8-10", "heavy": "5-8"}[row.week_phase], "rest_sec": 90 if row.week_phase == "heavy" else 60}
