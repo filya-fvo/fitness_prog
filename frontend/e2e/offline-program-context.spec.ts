@@ -67,6 +67,7 @@ for (const width of [320, 393, 1440]) {
     await expect(page.getByText("Офлайн программа", { exact: true }).first()).toBeVisible();
     await page.goto("/train");
     await page.getByRole("button", { name: /Начать ·/ }).click();
+    await expect(page.getByRole("heading", { name: "Жим", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Пропустить всё", exact: true }).click();
     await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Записать часть", exact: true }).click();

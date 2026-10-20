@@ -13,7 +13,7 @@ import * as telegram from "@/lib/telegram";
 const owner = "22222222-2222-4222-8222-222222222222", programId = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333";
 const date = "2026-10-20";
 const profile = { id: owner, goals: { active_program_id: programId, active_program_week_phase: "medium", active_program_phase_source: "manual" }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true };
-const plan = { execution_version: 2, day_index: 1, week_phase: "medium", title: "Кластер", exercises: [{ exercise_id: exercise, order: 1, target_sets: 1, rest_sec: 120,
+const plan = { execution_version: 2, day_index: 1, week_phase: "medium", title: "Кластер", workout_type: "strength", exercises: [{ exercise_id: exercise, order: 1, target_sets: 1, rest_sec: 120,
   set_methods: [{ set_number: 1, kind: "cluster", parts: [{ target_reps: 4, target_weight: 100, pause_after_sec: 20 }, { target_reps: 4, target_weight: 100, pause_after_sec: 0 }] }] }] };
 const bundle = { version: 1, owner, prepared_at: "2026-10-20T04:00:00Z", schedule_fingerprint: "0".repeat(64), start: date, end: date,
   program: { id: programId, name: "Программа", version: 1, structure: { days: [{ day: 1 }] } }, days: [{ requested_date: date, schedule: { requested_date: date, current: null, next: null } }],
@@ -31,6 +31,8 @@ it("atomically starts a prepared plan offline and a concurrent second start resu
   expect(a.clientId).toBe(b.clientId);
   expect(a.serverId).toBeNull();
   expect(a.workout.plan).toMatchObject(plan);
+  expect(a.workout.title).toBe(plan.title);
+  expect(a.workout.workout_type).toBe(plan.workout_type);
   expect(a.drafts).toHaveLength(1);
   expect(await db.sessions.count()).toBe(1);
   const queue = await db.syncQueue.toArray();

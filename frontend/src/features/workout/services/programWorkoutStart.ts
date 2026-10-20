@@ -85,7 +85,7 @@ async function start(owner: string, day: string, input: Input): Promise<LocalWor
     }
     await confirmIntensity(owner, plan, readiness);
     const confirmedAt = new Date().toISOString();
-    workout = { id: clientId, user_id: owner, program_id: input.programId, scheduled_date: day, status: "planned", plan, sets: [], started_at: confirmedAt, completed_at: null, ai_notes: null, rpe: null };
+    workout = { id: clientId, user_id: owner, program_id: input.programId, scheduled_date: day, status: "planned", title: plan.title ?? null, workout_type: plan.workout_type ?? null, plan, sets: [], started_at: confirmedAt, completed_at: null, ai_notes: null, rpe: null };
     queued = { scheduledDate: day, programId: input.programId, dayIndex: context.dayIndex, weekPhase: phase, cycleReadiness: readiness,
       executionVersion: 2, plan, preparationDraftKey: dependency,
       preparation: { prepared_at: bundle.preparedAt, schedule_fingerprint: bundle.scheduleFingerprint, plan_fingerprint: prepared.preparation_fingerprint } };
