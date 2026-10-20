@@ -1,88 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { resolveApiAssetUrl } from "@/api/client";
-import { listAdminExercises, type AdminExercise } from "@/api/adminExercises";
+import { mapExercise } from "@/api/exercises";
+import type { AdminExercise } from "@/api/adminExercises";
+import { fetchAdminExerciseCatalog } from "@/api/adminExerciseCatalog";
+import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
+import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
+import type { Exercise } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
 
-type Props = {
-  selectedIds: Set<string>;
-  onPick: (exercise: AdminExercise) => void;
-};
+type Props = { selectedIds: Set<string>; onPick: (exercise: AdminExercise) => void };
 
 export function ProgramExercisePicker({ selectedIds, onPick }: Props) {
-  const [query, setQuery] = useState("");
   const [items, setItems] = useState<AdminExercise[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  async function search() {
+  const [attempt, setAttempt] = useState(0);
+  const [detail, setDetail] = useState<Exercise | null>(null);
+  const catalog = useMemo(() => items.map(mapExercise), [items]);
+  const byId = useMemo(() => new Map(items.map(item => [item.id, item])), [items]);
+  useEffect(() => {
+    let active = true;
     setLoading(true);
     setError(null);
-    try {
-      const result = await listAdminExercises({
-        page: 1,
-        pageSize: 20,
-        q: query.trim() || undefined,
-      });
-      setItems(result.items);
-    } catch (reason) {
-      setError(toUserMessage(reason, "Не удалось найти упражнения."));
-    } finally {
-      setLoading(false);
-    }
-  }
+    void fetchAdminExerciseCatalog().then(result => { if (active) setItems(result); })
+      .catch((cause: unknown) => { if (active) setError(toUserMessage(cause, "Не удалось загрузить упражнения")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [attempt]);
 
-  return (
-    <div className="rounded-xl border border-black/10 bg-tg-bg p-3">
-      <div className="flex gap-2">
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter") void search(); }}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-black/10 bg-tg-secondary px-3 text-base"
-          placeholder="Название упражнения"
-          aria-label="Поиск упражнения"
-        />
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void search()}
-          className="min-h-11 rounded-xl app-gradient-action px-4 text-sm font-semibold disabled:opacity-50"
-        >
-          {loading ? "…" : "Найти"}
-        </button>
-      </div>
-      {error ? <p role="alert" className="mt-2 text-xs text-red-500">{error}</p> : null}
-      {items.length ? (
-        <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
-          {items.map((item) => {
-            const selected = selectedIds.has(item.id);
-            const rawMedia = item.thumbnail_url || item.animation_url;
-            const media = resolveApiAssetUrl(rawMedia) ?? rawMedia;
-            return (
-              <li key={item.id} className="flex items-center gap-3 rounded-xl bg-tg-secondary p-2">
-                {media ? (
-                  <img src={media} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" />
-                ) : (
-                  <span aria-hidden="true" className="grid h-12 w-12 place-items-center rounded-lg bg-tg-bg text-lg">🏋️</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.name_ru}</p>
-                  <p className="truncate text-xs text-tg-hint">{item.muscle_group}{item.equipment ? ` · ${item.equipment}` : ""}</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={selected}
-                  onClick={() => onPick(item)}
-                  className="min-h-11 rounded-lg px-3 text-sm font-medium text-tg-link disabled:text-tg-hint"
-                >
-                  {selected ? "Добавлено" : "Добавить"}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-    </div>
-  );
+  return <div className="app-card-inset p-3">
+    {loading ? <p role="status" className="text-sm text-tg-hint">Загружаем упражнения…</p> : error ? <div role="alert" className="app-status app-status-warning text-sm">
+      <p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)} className="min-h-11 text-tg-link">Повторить загрузку упражнений</button>
+    </div> : <PlannedExercisePicker source={null} catalog={catalog} occupiedIds={selectedIds} onChoose={item => { const row = byId.get(item.id); if (row && !selectedIds.has(row.id)) onPick(row); }} onOpenDetail={setDetail} collapsibleFilters />}
+    {detail ? <ExerciseDetailModal exercise={detail} onClose={() => setDetail(null)} showExplorerLink={false} showProgress={false} /> : null}
+  </div>;
 }

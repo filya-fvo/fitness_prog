@@ -121,8 +121,7 @@ test("admin edits, previews, publishes and rolls back a program", async ({ page 
   expect(selectNameAudit.violations, JSON.stringify(selectNameAudit.violations, null, 2)).toEqual([]);
   await page.getByRole("button", { name: "Редактировать" }).click();
   await page.getByLabel("Поиск упражнения").fill("Жим");
-  await page.getByRole("button", { name: "Найти" }).click();
-  await page.getByRole("button", { name: "Добавить", exact: true }).click();
+  await page.getByRole("button", { name: "Добавить Жим гантелей", exact: true }).click();
   await page.getByRole("button", { name: "Сохранить черновик" }).click();
 
   await expect.poll(() => savedSchedule.length).toBe(1);
