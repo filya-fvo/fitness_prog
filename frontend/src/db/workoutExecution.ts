@@ -109,7 +109,7 @@ function setFromDraft(session: LocalWorkoutSession, draft: LocalSetDraft): Worko
   return { id: previous?.id ?? crypto.randomUUID(), workout_id: session.workout.id, exercise_id: draft.exerciseId, set_number: draft.setNumber,
     execution_kind: draft.executionKind ?? "standard", execution_revision: draft.executionRevision ?? 0, parts: draft.parts ?? [],
     reps: draft.executionKind === "standard" ? numberValue(draft.reps) : null, weight: draft.executionKind === "standard" ? numberValue(draft.weight) : null,
-    weight_mode: draft.weightMode ?? null, is_completed: draft.isCompleted, rest_time_sec: draft.restTimeSec,
+    weight_mode: draft.weightMode ?? null, is_skipped: draft.isSkipped ?? false, is_completed: draft.isCompleted, rest_time_sec: draft.restTimeSec,
     duration_sec: draft.durationSec ?? null, note: draft.note ?? null, machine_params: draft.machineParams ?? null };
 }
 
@@ -141,7 +141,10 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
       else draft.parts = draft.parts!.map(part => part.ordinal === step.partOrdinal ? { ...part,
         reps: numberValue(input.values!.reps), weight: numberValue(input.values!.weight), duration_sec: input.values!.durationSec } : part);
     }
-    if (step.partOrdinal === null) draft.isCompleted = decision.facts[step.id] === "completed";
+    if (step.partOrdinal === null) {
+      draft.isCompleted = decision.facts[step.id] === "completed";
+      draft.isSkipped = decision.facts[step.id] === "skipped";
+    }
     else {
       draft.parts = draft.parts!.map(part => ({ ...part, status: decision.facts[executionStepId(step.exerciseId, step.setNumber, part.ordinal)] ?? "pending" }));
       draft.isCompleted = draft.parts.every(part => part.status !== "pending") && draft.parts.some(part => part.status === "completed");
@@ -161,7 +164,7 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
         executionVersion: 2, executionKind: draft.executionKind, baseExecutionRevision: baseRevision, clientOperationId: input.actionId,
         exerciseId: draft.exerciseId, setNumber: draft.setNumber, reps: result.reps, weight: result.weight, weightMode: result.weight_mode,
         restTimeSec: result.rest_time_sec, durationSec: result.duration_sec, note: result.note, machineParams: result.machine_params,
-        isCompleted: result.is_completed, parts: result.parts,
+        isCompleted: result.is_completed, isSkipped: result.is_skipped ?? false, parts: result.parts,
       } };
     await writeSession(session);
     await db.syncQueue.add(queued);

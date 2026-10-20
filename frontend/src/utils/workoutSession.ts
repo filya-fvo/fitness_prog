@@ -14,6 +14,7 @@ function draftFromSet(row: WorkoutSet, fallbackRestSec = 60): LocalSetDraft {
     weight: row.weight == null ? "" : String(row.weight),
     weightMode: row.weight_mode ?? null,
     isCompleted: row.is_completed,
+    ...(row.is_skipped !== undefined ? { isSkipped: row.is_skipped } : {}),
     restTimeSec: row.rest_time_sec ?? fallbackRestSec,
     durationSec: row.duration_sec ?? null,
     note: row.note ?? null,
@@ -147,7 +148,7 @@ export function executionFactsFromDrafts(plan: WorkoutPlan, drafts: LocalSetDraf
   for (const step of buildExecutionSteps(plan)) {
     const draft = bySlot.get(setKey(step.exerciseId, step.setNumber));
     facts[step.id] = step.partOrdinal === null
-      ? draft?.isCompleted ? "completed" : retained[step.id] === "skipped" ? "skipped" : "pending"
+      ? draft?.isCompleted ? "completed" : draft?.isSkipped || (draft?.isSkipped === undefined && retained[step.id] === "skipped") ? "skipped" : "pending"
       : draft?.parts?.find(part => part.ordinal === step.partOrdinal)?.status ?? retained[step.id] ?? "pending";
   }
   return facts;

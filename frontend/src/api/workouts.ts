@@ -46,6 +46,7 @@ export const workoutPlanSchema = z.object({
 });
 
 const setSchema = z.object({
+  is_skipped: z.boolean().default(false),
   execution_kind: z.enum(["standard", "drop", "cluster"]).nullable().optional(),
   execution_revision: z.number().int().nonnegative().nullable().optional(),
   parts: z.array(executionPartSchema).max(8).default([]),
@@ -240,6 +241,7 @@ export type IllnessPause = z.infer<typeof illnessPauseSchema>;
 
 function mapSet(item: z.infer<typeof setSchema>): WorkoutSet {
   return {
+    ...(item.is_skipped ? { is_skipped: true } : {}),
     execution_kind: item.execution_kind ?? "standard",
     execution_revision: item.execution_revision ?? 0,
     parts: item.parts,
@@ -363,11 +365,12 @@ export async function addWorkoutSet(input: {
   note?: string | null;
   machineParams?: Record<string, string | number> | null;
   isCompleted?: boolean;
+  isSkipped?: boolean;
 }): Promise<WorkoutSet> {
   invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.post(`/workouts/${input.workoutId}/sets`, {
     ...(input.executionVersion === 2 ? {
-      execution_version: 2, execution_kind: input.executionKind ?? "standard",
+      is_skipped: input.isSkipped ?? false, execution_version: 2, execution_kind: input.executionKind ?? "standard",
       base_execution_revision: input.baseExecutionRevision, client_operation_id: input.clientOperationId,
       parts: input.parts ?? [],
     } : {}),

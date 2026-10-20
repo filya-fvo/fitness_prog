@@ -95,7 +95,7 @@ export function assertExecutionSessionSnapshot(session: LocalWorkoutSession, own
     if (!draft || !Number.isSafeInteger(draft.executionRevision) || draft.executionRevision! < 0) invalid();
     const method = row.set_methods?.find(method => method.set_number === number);
     if (draft!.executionKind !== (method?.kind ?? "standard")) invalid();
-    if (!method) { if (draft!.parts?.length) invalid(); continue; }
+    if (!method) { if (draft!.parts?.length || (draft!.isSkipped && draft!.isCompleted)) invalid(); continue; }
     const parts = draft!.parts;
     if (!parts || parts.length !== method.parts.length || new Set(parts.map(part => part.id)).size !== parts.length) invalid();
     for (const [index, part] of parts!.entries()) {

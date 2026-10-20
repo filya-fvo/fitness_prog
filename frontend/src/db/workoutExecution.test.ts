@@ -172,3 +172,17 @@ it("an old correction form cannot overwrite a newer recorded parent revision", a
   expect((await db.sessions.get(client))!.drafts[0].parts?.[0].reps).toBe(3);
   expect(await db.syncQueue.count()).toBe(2);
 });
+
+it("an ordinary participant skip persists in root, outbox and restored facts", async () => {
+  const ordinaryPlan: WorkoutPlan = { execution_version: 2, exercises: [{ exercise_id: exercise, order: 1, target_sets: 2, rest_sec: 60 }] };
+  const ordinary = { ...workout, plan: ordinaryPlan };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: ordinary, drafts: draftsFromWorkoutSnapshot(ordinary), now: clock });
+  const saved = await commitExecutionAction({ ...action(), action: "skip", stepId: buildExecutionSteps(ordinaryPlan)[0].id, values: undefined });
+  expect(saved.session.workout.sets[0]).toMatchObject({ is_skipped: true, is_completed: false });
+  const payload = (await db.syncQueue.toArray())[0].payload;
+  expect(payload).toMatchObject({ executionVersion: 2, executionKind: "standard", isSkipped: true, isCompleted: false });
+  vi.stubGlobal("navigator", { onLine: true });
+  const post = vi.spyOn(apiClient, "post").mockResolvedValue({ data: saved.session.workout.sets[0] });
+  await flushSyncQueue(owner);
+  expect(post).toHaveBeenCalledWith(`/workouts/${client}/sets`, expect.objectContaining({ is_skipped: true, is_completed: false }));
+});

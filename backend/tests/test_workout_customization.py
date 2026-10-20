@@ -46,6 +46,7 @@ async def database():
             await raw.driver_connection.execute(migration().read_text(encoding="utf-8"))
             execution_migration = migration().with_name("20261019000001_structured_workout_execution.sql")
             await raw.driver_connection.execute(execution_migration.read_text(encoding="utf-8-sig"))
+            await raw.driver_connection.execute(migration().with_name("20261020000000_workout_set_skips.sql").read_text(encoding="utf-8-sig"))
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
             owner, other = User(), User()
             exercise = Exercise(name_ru="Пресс", muscle_group="Пресс", difficulty=1)

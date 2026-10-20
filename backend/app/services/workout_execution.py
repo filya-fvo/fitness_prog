@@ -55,7 +55,8 @@ async def save_execution_set(session, user, workout_id, data):
     parent = next((row for row in workout.sets if row.exercise_id == data.exercise_id and row.set_number == data.set_number and not row.is_deleted), None)
     if parent is None:
         raise HTTPException(409, "Подход не найден. Обновите сохранённую тренировку")
-    digest = sha256(data.model_dump_json().encode()).hexdigest()
+    # Preserve hashes of queued pre-skip v2 operations when the new flag is false.
+    digest = sha256(data.model_dump_json(exclude={"is_skipped"} if not data.is_skipped else set()).encode()).hexdigest()
     receipt = await session.get(WorkoutSetExecutionReceipt, (parent.id, data.client_operation_id))
     if receipt is not None:
         if receipt.request_hash != digest:
@@ -94,6 +95,7 @@ async def save_execution_set(session, user, workout_id, data):
         parent.reps, parent.weight, parent.is_completed = data.reps, data.weight, data.is_completed
     for key in ("weight_mode", "rest_time_sec", "duration_sec", "note", "machine_params"):
         setattr(parent, key, getattr(data, key))
+    parent.is_skipped = data.is_skipped if kind == "standard" else False
     parent.execution_kind = kind
     parent.execution_revision += 1
     await session.flush()

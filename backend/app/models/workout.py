@@ -106,6 +106,7 @@ class WorkoutSet(Base, TimestampSoftDeleteMixin):
     weight: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
     weight_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_skipped: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     rest_time_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)

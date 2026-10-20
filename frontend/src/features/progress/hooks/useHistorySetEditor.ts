@@ -34,6 +34,7 @@ export function useHistorySetEditor(workouts: Workout[], onChanged: (workout: Wo
         note: changed("note") ? draft.note : row.note,
         machineParams: changed("machineParams") ? draft.machineParams ? { ...row.machine_params, ...draft.machineParams } : null : row.machine_params,
         isCompleted: changed("isCompleted") ? draft.isCompleted ?? selection.adding : row.is_completed,
+        isSkipped: row.is_skipped === true && !(changed("isCompleted") ? draft.isCompleted ?? selection.adding : row.is_completed),
         ...((workout.plan as WorkoutPlan | null)?.execution_version === 2 ? { executionVersion: 2, executionKind: "standard", baseExecutionRevision: row.execution_revision ?? 0 } : {}),
       };
       if (payload.executionVersion === 2) {

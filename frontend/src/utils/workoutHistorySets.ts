@@ -61,6 +61,7 @@ export function historySetOutcome(row: WorkoutSet, previous?: WorkoutSet): SetOu
   if (isCompoundSet(row)) return row.parts?.some(part => part.status === "pending")
     ? hasRecordedWork(row) ? "partial" : "missing" : hasRecordedWork(row) ? "unknown" : "skipped";
   if (previous && isCompoundSet(previous)) return row.is_completed ? "unknown" : "missing";
+  if (row.is_skipped) return "skipped";
   if (!row.is_completed) return "missing";
   if (!previous?.is_completed || row.exercise_id !== previous.exercise_id || row.machine_params || previous.machine_params) return "unknown";
   if (row.duration_sec != null || previous.duration_sec != null) {

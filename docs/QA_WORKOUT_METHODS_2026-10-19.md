@@ -110,3 +110,12 @@ W5 final build/PWA PASS; bundle598290/541813, largest108742/admin56477 within un
 - Full web847 unit/lint/types/build/PWA PASS. Final Chromium25 PASS: reload12s remainder, throttled late return, one signal across tabs, concurrent part recording, corrupted target retained/blocked, ambiguous wall-clock continuation, stale correction proposal plus all earlier timing/layout/a11y vectors. Unit coverage also verifies account change during read, out-of-order restore requests and ordinary legacy recovery.
 - W9a bundle618021/561524 ->619937/563437 (+1913 product gzip bytes); existing dependencies and unchanged largest108742/admin56500 caps. Aggregate bounds620550/564050 retain <0.7KB headroom.
 - Remaining W9: durable personal/date preparation and ordered dependent create, cross-device standard skipped representation, prepared fingerprint/capability/bounds, post-commit cache warnings and wider async owner audit, PostgreSQL CI wiring. Not deployed; Android waits for W10.
+
+
+## W9c — ordinary participant skip roundtrip
+
+- Explicit v2 `is_skipped` flag survives REST fetch, local drafts/outbox and history; legacy defaults remain false. Completed and skipped cannot both be true; compound slots use part statuses.
+- Actual PostgreSQL roundtrip covers skip/undo/replay and compatibility with existing operation hashes. Append-only migration preserves ordinary IDs/reps/weight/completion; transactional rollback checked.
+- Full backend:1050 PASS and one test-harness failure (raw DDL executed before lazy SAVEPOINT). Materialized the SAVEPOINT; all6 skip tests now PASS. Ruff and58-migration checker PASS. Web849 unit/lint/types/build/PWA PASS.
+- Bundle620261/563741 below620550/564050, same dependencies and largest108742/admin56520. Chromium25 timing/recovery PASS; new skip test initially had an invalid text encoding, corrected and independently PASS (1).
+- Remaining W9 durable preparation/start, fingerprints/bounds, cache/owner audit and CI SQL wiring. No deployment or Android source changes.

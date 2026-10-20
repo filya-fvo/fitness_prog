@@ -34,6 +34,7 @@ export type WorkoutExecutionPart = {
 };
 
 export type WorkoutSet = {
+  is_skipped?: boolean;
   execution_kind?: "standard" | "drop" | "cluster";
   execution_revision?: number;
   parts?: WorkoutExecutionPart[];
@@ -160,6 +161,7 @@ export type ExerciseProgress = {
 };
 
 export type LocalSetDraft = {
+  isSkipped?: boolean;
   executionKind?: "standard" | "drop" | "cluster";
   executionRevision?: number;
   parts?: WorkoutExecutionPart[];

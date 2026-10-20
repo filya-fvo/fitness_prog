@@ -194,3 +194,21 @@ test("early finish saves partial work immediately and sends completion after its
   expect(api.writes).toHaveLength(1);
   expect(api.writes[0].parts.map(part => part.status)).toEqual(["completed", "pending", "pending"]);
 });
+
+
+test("ordinary group skip persists without starting round rest", async ({ page }) => {
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  for (let ordinal = 1; ordinal <= 3; ordinal++) {
+    await expect(page.getByText(`Часть ${ordinal} из 3`, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    if (ordinal < 3) await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
+  }
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Пропустить подход", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(4);
+  expect(api.writes[3].is_skipped).toBe(true);
+  expect(api.writes[3].is_completed).toBe(false);
+  await expect(page.getByRole("status").filter({ hasText: "Шаг пропущен." })).toBeVisible();
+  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
+});

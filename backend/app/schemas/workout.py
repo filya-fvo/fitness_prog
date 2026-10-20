@@ -157,6 +157,13 @@ class WorkoutSetCreate(BaseModel):
     note: str | None = Field(default=None, max_length=1000)
     machine_params: dict[str, str | int | float] | None = None
     is_completed: bool = False
+    is_skipped: bool = False
+
+    @model_validator(mode="after")
+    def validate_skip(self):
+        if self.is_skipped and (self.execution_version != 2 or self.is_completed or self.execution_kind != "standard"):
+            raise ValueError("Пропуск доступен для обычного участника сложной тренировки; части пропускаются отдельно")
+        return self
 
 
 class WorkoutSetResponse(BaseModel):
@@ -172,6 +179,7 @@ class WorkoutSetResponse(BaseModel):
     reps: int | None = None
     weight: Decimal | None = None
     weight_mode: str | None = None
+    is_skipped: bool = False
     is_completed: bool
     rest_time_sec: int | None = None
     duration_sec: int | None = None
