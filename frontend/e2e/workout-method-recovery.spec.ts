@@ -10,7 +10,7 @@ async function signals(page: Page) {
 async function signalCount(page: Page) { return page.evaluate(() => (window as unknown as { executionSignals: number }).executionSignals); }
 
 test("reload between cluster parts retains facts and original deadline", async ({ page }) => {
-  await page.clock.install({ time: initialTime });
+  await page.clock.install({ time: initialTime }); await page.clock.pauseAt(new Date(initialTime.getTime() + 1000));
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
   await page.getByRole("button", { name: "Записать часть", exact: true }).click();
@@ -110,4 +110,39 @@ test("an old correction form keeps entered values and cannot overwrite another t
   expect(one.writes.length + two.writes.length).toBe(2);
   await page.getByRole("button", { name: "Обновить форму", exact: true }).click();
   await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("2");
+});
+
+
+test("reload between exercises and rounds keeps the next pending slot and round deadline", async ({ page }) => {
+  await page.clock.install({ time: initialTime }); await page.clock.pauseAt(new Date(initialTime.getTime() + 1000));
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  for (let part = 1; part <= 3; part++) {
+    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    if (part < 3) await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
+  }
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await expect.poll(() => api.writes.length).toBe(3);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
+  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("30");
+  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(4);
+  await page.clock.runFor(10000);
+  await page.reload();
+  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("1:20");
+  await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
+  await expect(page.getByText("Суперсет · круг 2 из 2", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Жим штанги лёжа", exact: true })).toBeVisible();
+  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("100");
+  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await expect.poll(() => api.writes.length).toBe(5);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await expect(page.getByText("Суперсет · круг 2 из 2", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(5);
+  expect(api.writes[2].parts.map(part => part.status)).toEqual(["completed", "completed", "completed"]);
 });

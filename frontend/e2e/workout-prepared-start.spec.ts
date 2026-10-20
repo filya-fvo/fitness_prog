@@ -3,6 +3,7 @@ import { acceptedLegalStatus } from "./legal-fixture";
 const owner = "22222222-2222-4222-8222-222222222222", program = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333", server = "55555555-5555-4555-8555-555555555555";
 for (const shortRange of [false, true]) test(`real Training page prepares offline, starts, restores a cluster and syncs in order; shortRange=${shortRange}`, async ({ page }) => {
   await page.clock.install({ time: new Date("2026-10-20T09:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-10-20T09:00:01Z"));
   const day = "2026-10-20";
   const profile = { id: owner, goals: { onboarding_completed: true, active_program_id: program, active_program_next_day: 1, active_program_week_phase: "medium", active_program_phase_source: "manual" }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true, legal_status: acceptedLegalStatus(owner) };
   const programRow = { id: program, name: "Программа кластеров", version: 1, structure: { schedule: [{ day_index: 1, exercises: [{ exercise_id: exercise, sets: 1 }] }] } };

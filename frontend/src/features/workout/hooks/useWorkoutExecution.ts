@@ -120,8 +120,9 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     try {
       const result = await commitExecutionAction({ owner, clientWorkoutId: client, actionId, stepId, action, confirmedAt,
         values, undoActionId, expectedRevision: state.execution.revision, autoAdvance: preference.current });
+      if (result.accepted && current === generation.current) editing.current = false;
       if (!apply(result.session, current)) return false;
-      if (result.accepted) { editing.current = false; sync(); }
+      if (result.accepted) sync();
       return result.accepted;
     } catch (err) {
       if (current === generation.current) { setError(toUserMessage(err, "Не удалось сохранить результат. Повторите действие")); void reload(); }
