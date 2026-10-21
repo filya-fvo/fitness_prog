@@ -12,6 +12,7 @@ export type TimerNotification = {
 };
 export interface NotificationPlatform {
   status(): Promise<PlatformNotificationStatus>;
+  settingsUpdated(): Promise<void>;
   requestPermission(): Promise<PlatformNotificationStatus>;
   enable(): Promise<void>;
   disable(): Promise<void>;
@@ -30,6 +31,7 @@ const unsupported = async () => { throw new Error("Откройте настро
 export const notificationPlatform: NotificationPlatform = {
   status: async () => ({ ...unavailableNotificationStatus, blockedCategories: [] }),
   requestPermission: async () => ({ ...unavailableNotificationStatus, blockedCategories: [] }),
+  settingsUpdated: async () => undefined,
   enable: unsupported, disable: unsupported, test: unsupported,
   requestExactAlarmAccess: unsupported, setRestEnabled: unsupported, setTimer: async () => undefined,
 };

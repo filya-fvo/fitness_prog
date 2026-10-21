@@ -79,7 +79,11 @@ legal_status: acceptedLegalStatus(USER_ID),
   await expect(page.getByRole("radio", { name: "Только Telegram" })).toHaveAttribute("aria-checked", "true");
   const browserChannel = page.getByRole("radio", { name: "Только браузер" });
   await expect(browserChannel).toBeDisabled();
-  await expect(browserChannel).toHaveAttribute("title", "Браузерные уведомления временно недоступны.");
+  const browserSupportsPush = await page.evaluate(() =>
+    "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
+  await expect(browserChannel).toHaveAttribute("title", browserSupportsPush
+    ? "Браузерные уведомления временно недоступны."
+    : "Откройте приложение в обычном браузере: Telegram не поддерживает Web Push.");
   await expect(page.getByText("Браузерные уведомления временно недоступны.")).toHaveCount(0);
   await expect(page.getByText("Пн, Ср, Пт · 18:30").first()).toBeVisible();
   await expect(page.getByText("Успешных доставок пока нет")).toBeVisible();

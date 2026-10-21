@@ -14,13 +14,13 @@ const settings = {
   calories: { enabled: true, times: ["14:00", "20:00"] }, service_messages: { email_enabled: false },
 };
 
-async function fixture(page: Page, native = false, telegram = true) {
+async function fixture(page: Page, native = false, telegram = true, prepared = false) {
   const writes: Array<Record<string, unknown>> = [];
   let legacyTests = 0;
   let androidEnables = 0;
   let currentSettings = structuredClone(settings);
-  let android = { enabled: !native, device_id: native ? null as string | null : DEVICE,
-    revision: native ? 0 : 1, confirmed_at: native ? null as string | null : "2026-10-10T07:00:00Z" };
+  let android = { enabled: !native || prepared, device_id: native && !prepared ? null as string | null : DEVICE,
+    revision: native && !prepared ? 0 : 1, confirmed_at: native && !prepared ? null as string | null : "2026-10-10T07:00:00Z" };
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "android-notification-ui-qa"));
   await page.route("**/users/me", (route) => route.fulfill({ json: {
     legal_status: acceptedLegalStatus(OWNER), id: OWNER, telegram_id: telegram ? 80808080 : null,
@@ -53,10 +53,19 @@ async function fixture(page: Page, native = false, telegram = true) {
       export const unavailableNotificationStatus = { available: false, owner: null, deviceId: null,
         permission: "prompt", exactAllowed: false, active: false, pending: false,
         preparedUntil: null, error: null, restEnabled: false, blockedCategories: [] };
-      const state = { ...unavailableNotificationStatus, available: true, owner: "${OWNER}", deviceId: "${DEVICE}" };
+      const state = { ...unavailableNotificationStatus, available: true, owner: "${OWNER}", deviceId: "${DEVICE}",
+        active: ${prepared}, permission: "${prepared ? "granted" : "prompt"}",
+        preparedUntil: ${prepared ? '"2026-11-04T00:00:00Z"' : "null"} };
       window.__notificationTestState = state;
       export const notificationPlatform = {
         status: async () => ({ ...state }),
+        settingsUpdated: async () => {
+          window.__notificationRefreshCalls = (window.__notificationRefreshCalls || 0) + 1;
+          if (window.__notificationRefreshHold) await new Promise((resolve, reject) => {
+            window.__notificationRefreshResolve = resolve;
+            window.__notificationRefreshReject = () => reject(new Error("network unavailable"));
+          });
+        },
         requestPermission: async () => { state.permission = window.__notificationTestGrant ? "granted" : "denied"; return { ...state }; },
         enable: async () => { await fetch("/notifications/android-delivery", { method: "PUT" });
           state.pending = true; state.active = false; },
@@ -178,3 +187,41 @@ test("three exclusive channels share one card and app details open only for that
   await expect(page.getByText("Доставка и тихие часы сохранены")).toBeVisible();
   expect(state.writes.at(-1)?.delivery_channel).toBe("telegram");
 });
+
+
+for (const section of ["water", "delivery"] as const) for (const fails of [false, true]) {
+  test(`saving ${section} ${fails ? "retries a failed" : "awaits the"} phone plan acknowledgement`, async ({ page }) => {
+    const state = await fixture(page, true, true, true);
+    await page.goto("/notifications");
+    await expect(page.getByRole("region", { name: "Приложение Android" })).toContainText("Включено на этом телефоне");
+    await page.evaluate(() => Reflect.set(window, "__notificationRefreshHold", true));
+    const water = page.locator("details").filter({ hasText: "Вода и дневной чек-ин" });
+    if (section === "water") {
+      await water.locator("summary").click();
+      await water.getByLabel("Начать").fill("09:45");
+    }
+    const button = section === "water"
+      ? water.getByRole("button")
+      : page.getByRole("region", { name: "Куда присылать" }).getByRole("button", { name: /^(Сохранить доставку и тишину|Сохраняем…)$/ });
+    const success = page.getByText(section === "water" ? "Раздел сохранён" : "Доставка и тихие часы сохранены", { exact: true });
+    await button.click();
+    await expect.poll(() => page.evaluate(() => Reflect.get(window, "__notificationRefreshCalls"))).toBe(1);
+    expect(state.writes).toHaveLength(1);
+    await expect(button).toBeDisabled();
+    await expect(success).toHaveCount(0);
+    if (fails) await page.context().setOffline(true);
+    await page.evaluate((fail) => Reflect.get(window, fail ? "__notificationRefreshReject" : "__notificationRefreshResolve")(), fails);
+    if (fails) {
+      await expect(page.getByRole("alert")).toContainText("Настройки сохранены, но напоминания на телефоне ещё не подтверждены");
+      await expect(success).toHaveCount(0);
+      await expect(button).toBeEnabled();
+      if (section === "water") await expect(water.getByLabel("Начать")).toHaveValue("09:45");
+      await page.context().setOffline(false);
+      await page.evaluate(() => Reflect.set(window, "__notificationRefreshHold", false));
+      await button.click();
+    }
+    await expect(success).toBeVisible();
+    await expect(button).toBeEnabled();
+    expect(state.writes).toHaveLength(fails ? 2 : 1);
+  });
+}

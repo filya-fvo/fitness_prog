@@ -19,6 +19,7 @@ import { NotificationCategories } from "@/features/notifications/components/Noti
 import { NotificationDeliveryCard } from "@/features/notifications/components/NotificationDeliveryCard";
 import { detectedTimezone } from "@/features/notifications/notificationSettings";
 import { toUserMessage } from "@/utils/errors";
+import { notificationPlatform } from "@/lib/notificationPlatform";
 import {
   disableWebPush,
   enableWebPush,
@@ -110,6 +111,16 @@ export function NotificationSettingsPage() {
     return () => { cancelled = true; };
   }, [reloadKey]);
 
+  async function confirmPhonePreparation() {
+    try {
+      await notificationPlatform.settingsUpdated();
+      return true;
+    } catch {
+      setError("Настройки сохранены, но напоминания на телефоне ещё не подтверждены. Подключитесь к интернету и повторите сохранение.");
+      return false;
+    }
+  }
+
   async function saveCategory(category: Category) {
     if (!settings) return;
     setBusy(true);
@@ -120,8 +131,8 @@ export function NotificationSettingsPage() {
       setSettings((current) => current
         ? { ...current, [category]: saved.settings[category] }
         : saved.settings);
+      if (!await confirmPhonePreparation()) return;
       setOk("Раздел сохранён");
-      window.dispatchEvent(new Event("fitness:notification-settings-updated"));
     } catch (caught) {
       setError(toUserMessage(caught, "Не удалось сохранить раздел"));
     } finally {
@@ -171,7 +182,7 @@ export function NotificationSettingsPage() {
         quiet_hours: saved.settings.quiet_hours,
         service_messages: saved.settings.service_messages,
       } : saved.settings);
-      window.dispatchEvent(new Event("fitness:notification-settings-updated"));
+      if (!await confirmPhonePreparation()) return false;
       if (showMessage) setOk("Доставка и тихие часы сохранены");
       return true;
     } catch (caught) {
