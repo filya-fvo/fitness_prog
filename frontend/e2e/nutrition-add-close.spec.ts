@@ -91,6 +91,9 @@ legal_status: acceptedLegalStatus(USER_ID),
   });
   await page.goto("/nutrition");
   await page.getByRole("button", { name: "+ Добавить продукт", exact: true }).click();
+  // Wait for the modal's deferred initial focus before entering data in WebKit.
+  await expect(page.getByRole("dialog", { name: "Добавить продукт", exact: true })
+    .getByRole("button", { name: "Как вчера", exact: true })).toBeFocused();
 }
 
 async function choose(page: Page, grams: string) {
@@ -510,7 +513,9 @@ for (const action of ["edit", "add override"] as const) {
       await addDialog.press("Escape");
       await page.getByRole("button", { name: "Изменить", exact: true }).click();
       const editDialog = page.getByRole("dialog", { name: "Изменить запись", exact: true });
+      await expect(editDialog.getByRole("button", { name: "Закрыть", exact: true })).toBeFocused();
       await editDialog.getByLabel("Ккал на 100 г", { exact: true }).fill("125");
+      await expect(editDialog.getByLabel("Ккал на 100 г", { exact: true })).toHaveValue("125");
       await editDialog.getByRole("button", { name: "Сохранить", exact: true }).click();
       await expect.poll(() => started).toBe(true);
       await editDialog.getByRole("button", { name: "Закрыть", exact: true }).click();
@@ -832,8 +837,10 @@ for (const source of ["template", "barcode", "label"] as const) {
         } else {
           await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
           const scanner = page.getByRole("dialog", { name: "Сканер штрихкода", exact: true });
+          await expect(scanner.getByRole("button", { name: "Закрыть сканер", exact: true })).toBeFocused();
           if (source === "barcode") {
             await scanner.getByLabel(/Код вручную/).fill("4601234567890");
+            await expect(scanner.getByLabel(/Код вручную/)).toHaveValue("4601234567890");
             await scanner.getByRole("button", { name: "Найти", exact: true }).click();
           } else {
             await scanner.getByRole("button", { name: /Этикетка/ }).click();
@@ -871,7 +878,9 @@ for (const source of ["template", "barcode", "label"] as const) {
         if (source === "barcode" && scenario === "day success") {
           await page.getByRole("button", { name: /Сканировать штрихкод/ }).click();
           const scanner = page.getByRole("dialog", { name: "Сканер штрихкода", exact: true });
+          await expect(scanner.getByRole("button", { name: "Закрыть сканер", exact: true })).toBeFocused();
           await scanner.getByLabel(/Код вручную/).fill("4601234567890");
+          await expect(scanner.getByLabel(/Код вручную/)).toHaveValue("4601234567890");
           await scanner.getByRole("button", { name: "Найти", exact: true }).click();
           await expect(page.getByLabel("Граммы", { exact: true })).toHaveValue("137");
         }
