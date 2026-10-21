@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/api/client";
+import { readPolicyConfig, type ReadPolicy } from "@/api/readPolicy";
 import { androidDeliveryStateSchema } from "@/api/androidDeliverySchema";
 export { androidDeliveryStateSchema } from "@/api/androidDeliverySchema";
 
@@ -65,8 +66,8 @@ export type AndroidNotificationPlan = z.infer<typeof androidNotificationPlanSche
 export type AndroidDeliveryState = z.infer<typeof androidDeliveryStateSchema>;
 export type AndroidDeliveryUpdate = z.infer<typeof androidDeliveryUpdateSchema>;
 
-export async function fetchAndroidNotificationPlan(): Promise<AndroidNotificationPlan> {
-  const { data } = await apiClient.get<unknown>("/notifications/android-plan");
+export async function fetchAndroidNotificationPlan(policy?: ReadPolicy): Promise<AndroidNotificationPlan> {
+  const { data } = await apiClient.get<unknown>("/notifications/android-plan", readPolicyConfig(policy));
   if (new TextEncoder().encode(JSON.stringify(data)).byteLength > 1024 * 1024) {
     throw new Error("План напоминаний слишком большой");
   }

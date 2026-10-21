@@ -38,6 +38,14 @@ describe("notification settings API", () => {
     expect(result.last_delivery?.channel).toBe("telegram");
   });
 
+  it("fresh delivery confirmation cannot fall back to previous cached settings", async () => {
+    vi.spyOn(apiClient, "get").mockImplementation(async (_url, config) => {
+      if (config?.headers?.["Cache-Control"] === "no-cache") throw new Error("transport unavailable");
+      return { data: { settings, defaults: settings, timezone_configured: true } };
+    });
+    await expect(fetchNotificationSettings("fresh")).rejects.toThrow("transport unavailable");
+  });
+
   it("sends only the requested settings category", async () => {
     vi.spyOn(apiClient, "put").mockResolvedValue({ data: {
       settings: { ...settings, water: { ...settings.water, enabled: true } },

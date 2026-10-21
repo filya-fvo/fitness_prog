@@ -62,8 +62,8 @@ export type NotificationSettingsPayload = z.infer<typeof settingsSchema>;
 export type NotificationSettings = z.infer<typeof settingsValueSchema>;
 export type PushConfig = z.infer<typeof pushConfigSchema>;
 
-export async function fetchNotificationSettings(): Promise<NotificationSettingsPayload> {
-  const { data } = await apiClient.get("/notifications/settings");
+export async function fetchNotificationSettings(policy?: ReadPolicy): Promise<NotificationSettingsPayload> {
+  const { data } = await apiClient.get("/notifications/settings", readPolicyConfig(policy));
   return settingsSchema.parse(data);
 }
 

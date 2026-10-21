@@ -30,3 +30,11 @@ it("sends the exact operation, device, revision and fingerprint", async () => {
   expect(await saveAndroidDelivery(body)).toEqual(state);
   expect(put).toHaveBeenCalledWith("/notifications/android-delivery", body);
 });
+
+it("fresh preparation propagates a transport failure instead of accepting an older cached plan", async () => {
+  vi.spyOn(apiClient, "get").mockImplementation(async (_url, config) => {
+    if (config?.headers?.["Cache-Control"] === "no-cache") throw new Error("transport unavailable");
+    return { data: plan };
+  });
+  await expect(fetchAndroidNotificationPlan("fresh")).rejects.toThrow("transport unavailable");
+});
