@@ -4,7 +4,12 @@ import re
 from loguru import logger
 from app.core.database import AsyncSessionLocal
 from app.services.android_login import claim_login, approve_login
-from app.services.telegram_bot import TelegramBotError, send_message, answer_callback_query, edit_message_text
+from app.services.telegram_bot import (
+    TelegramBotError,
+    send_message,
+    answer_callback_query,
+    edit_message_text,
+)
 
 TOKEN = r"[A-Za-z0-9_-]{43}"
 
@@ -43,9 +48,9 @@ def parse_login_update(update: dict):
     if not isinstance(raw, str):
         return None
     pattern = (
-        r"al:(" + TOKEN + r")"
+        r"(al|tl):(" + TOKEN + r")"
         if callback
-        else r"/start(?:@[A-Za-z0-9_]{5,32})? android_login_(" + TOKEN + r")"
+        else r"/start(?:@[A-Za-z0-9_]{5,32})? (android_login|telegram_link)_(" + TOKEN + r")"
     )
     found = re.fullmatch(pattern, raw)
     if not found:
@@ -57,7 +62,8 @@ def parse_login_update(update: dict):
     ):
         return None
     return {
-        "token": found[1],
+        "token": found[2],
+        "purpose": "link" if found[1] in {"tl", "telegram_link"} else "login",
         "actor": bounded,
         "callback_id": query["id"] if callback else None,
         "message_id": message.get("message_id"),
@@ -69,21 +75,30 @@ async def handle_login_update(settings, update) -> bool:
     if parsed is None:
         return False
     actor_id = parsed["actor"]["id"]
+    linking = parsed["purpose"] == "link"
     async with AsyncSessionLocal() as session:
         if parsed["callback_id"]:
-            accepted = await approve_login(session, parsed["token"], actor_id)
+            accepted = await approve_login(
+                session, parsed["token"], actor_id, purpose=parsed["purpose"]
+            )
             try:
                 await answer_callback_query(
                     settings,
                     callback_query_id=parsed["callback_id"],
-                    text="Вход подтверждён" if accepted else "Время входа истекло",
+                    text=("Подключение подтверждено" if linking else "Вход подтверждён")
+                    if accepted
+                    else "Ссылка больше недоступна",
                 )
                 if accepted:
                     await edit_message_text(
                         settings,
                         chat_id=actor_id,
                         message_id=parsed["message_id"],
-                        text="Вход в FilFit подтверждён. Вернитесь в Android-приложение и нажмите «Продолжить».",
+                        text=(
+                            "Подключение Telegram подтверждено. Вернитесь в профиль FilFit и нажмите «Продолжить»."
+                            if linking
+                            else "Вход в FilFit подтверждён. Вернитесь в Android-приложение и нажмите «Продолжить»."
+                        ),
                         reply_markup={"inline_keyboard": []},
                     )
             except TelegramBotError as error:
@@ -91,15 +106,29 @@ async def handle_login_update(settings, update) -> bool:
                     "native_login_bot_receipt_failed error_type={}", type(error).__name__
                 )
         else:
-            accepted = await claim_login(session, parsed["token"], parsed["actor"])
+            accepted = await claim_login(
+                session, parsed["token"], parsed["actor"], purpose=parsed["purpose"]
+            )
             if accepted:
                 await send_message(
                     settings,
                     chat_id=actor_id,
-                    text="Подтвердить вход в Android-приложение FilFit?\nЕсли вы не начинали вход, не нажимайте кнопку и никому не пересылайте эту ссылку.",
+                    text=(
+                        "Подключить этот Telegram к вашему аккаунту FilFit?\nЕсли вы не начинали подключение в профиле, не нажимайте кнопку и никому не пересылайте ссылку."
+                        if linking
+                        else "Подтвердить вход в Android-приложение FilFit?\nЕсли вы не начинали вход, не нажимайте кнопку и никому не пересылайте эту ссылку."
+                    ),
                     reply_markup={
                         "inline_keyboard": [
-                            [{"text": "Подтвердить вход", "callback_data": "al:" + parsed["token"]}]
+                            [
+                                {
+                                    "text": "Подключить Telegram"
+                                    if linking
+                                    else "Подтвердить вход",
+                                    "callback_data": ("tl:" if linking else "al:")
+                                    + parsed["token"],
+                                }
+                            ]
                         ]
                     },
                 )
@@ -107,6 +136,8 @@ async def handle_login_update(settings, update) -> bool:
                 await send_message(
                     settings,
                     chat_id=actor_id,
-                    text="Эта ссылка входа уже недоступна. Начните вход заново в Android-приложении.",
+                    text="Эта ссылка больше недоступна. Начните подключение заново в профиле FilFit."
+                    if linking
+                    else "Эта ссылка входа уже недоступна. Начните вход заново в Android-приложении.",
                 )
     return True

@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import BigInteger, DateTime, JSON, String
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, JSON, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -10,7 +10,19 @@ from app.core.database import Base
 
 class AndroidLogin(Base):
     __tablename__ = "android_login_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "(purpose = 'login' AND owner_user_id IS NULL) OR (purpose = 'link' AND owner_user_id IS NOT NULL)",
+            name="android_login_request_purpose",
+        ),
+    )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    purpose: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="login", server_default="login"
+    )
+    owner_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), index=True
+    )
     link_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     challenge: Mapped[str] = mapped_column(String(64), nullable=False)
     source_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)

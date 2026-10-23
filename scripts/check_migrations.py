@@ -66,6 +66,7 @@ REQUIRED_FILES = [
     "20261019000000_personal_workout_customizations.sql",
     "20261019000001_structured_workout_execution.sql",
     "20261020000000_workout_set_skips.sql",
+    "20261023090000_telegram_link_requests.sql",
 ]
 
 REQUIRED_TABLES = [
@@ -181,6 +182,10 @@ REQUIRED_SNIPPETS = [
     "uq_legal_acceptance_revision",
     "CREATE TABLE android_login_requests",
     "ix_android_login_requests_expires_at",
+    "ADD COLUMN purpose varchar(16) NOT NULL DEFAULT 'login'",
+    "ADD COLUMN owner_user_id uuid REFERENCES users(id)",
+    "android_login_request_purpose",
+    "(purpose = 'link' AND owner_user_id IS NOT NULL)",
     "uq_user_program_day_overrides_slot UNIQUE NULLS NOT DISTINCT",
     "last_operation_hash TEXT NOT NULL",
     "ck_workout_sets_compound_parent",

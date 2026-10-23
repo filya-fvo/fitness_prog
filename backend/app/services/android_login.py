@@ -38,7 +38,14 @@ async def cleanup_login(session):
     await session.commit()
 
 
-async def start_login(session, challenge: str, bot_username: str, source_hash: str) -> dict:
+async def start_login(
+    session,
+    challenge: str,
+    bot_username: str,
+    source_hash: str,
+    *,
+    owner_user_id: uuid.UUID | None = None,
+) -> dict:
     if not re.fullmatch(r"[0-9a-f]{64}", challenge):
         raise HTTPException(422, "Не удалось начать вход")
     if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", bot_username):
@@ -70,6 +77,8 @@ async def start_login(session, challenge: str, bot_username: str, source_hash: s
     row = AndroidLogin(
         id=uuid.uuid4(),
         link_hash=digest(token),
+        purpose="link" if owner_user_id else "login",
+        owner_user_id=owner_user_id,
         challenge=challenge,
         source_hash=source_hash,
         created_at=now,
@@ -79,12 +88,12 @@ async def start_login(session, challenge: str, bot_username: str, source_hash: s
     await session.commit()
     return {
         "request_id": row.id,
-        "bot_url": f"https://t.me/{bot_username}?start=android_login_{token}",
+        "bot_url": f"https://t.me/{bot_username}?start={'telegram_link' if owner_user_id else 'android_login'}_{token}",
         "expires_in_sec": TTL_SECONDS,
     }
 
 
-async def claim_login(session, token: str, actor: dict) -> bool:
+async def claim_login(session, token: str, actor: dict, *, purpose: str = "login") -> bool:
     identity = {
         key: actor.get(key)
         for key in ("id", "username", "first_name", "last_name", "language_code")
@@ -93,6 +102,7 @@ async def claim_login(session, token: str, actor: dict) -> bool:
         update(AndroidLogin)
         .where(
             AndroidLogin.link_hash == digest(token),
+            AndroidLogin.purpose == purpose,
             *pending(),
             AndroidLogin.approved_at.is_(None),
             or_(AndroidLogin.telegram_id.is_(None), AndroidLogin.telegram_id == identity["id"]),
@@ -105,11 +115,12 @@ async def claim_login(session, token: str, actor: dict) -> bool:
     return found
 
 
-async def approve_login(session, token: str, actor_id: int) -> bool:
+async def approve_login(session, token: str, actor_id: int, *, purpose: str = "login") -> bool:
     result = await session.execute(
         update(AndroidLogin)
         .where(
             AndroidLogin.link_hash == digest(token),
+            AndroidLogin.purpose == purpose,
             *pending(),
             AndroidLogin.telegram_id == actor_id,
         )
@@ -121,15 +132,27 @@ async def approve_login(session, token: str, actor_id: int) -> bool:
     return found
 
 
-def proof(request_id, verifier):
+def proof(request_id, verifier, *, owner_user_id: uuid.UUID | None = None):
     if not re.fullmatch(r"[A-Za-z0-9_-]{43,128}", verifier):
         raise unavailable()
-    return (AndroidLogin.id == request_id, AndroidLogin.challenge == digest(verifier), *pending())
+    return (
+        AndroidLogin.id == request_id,
+        AndroidLogin.challenge == digest(verifier),
+        AndroidLogin.purpose == ("link" if owner_user_id else "login"),
+        AndroidLogin.owner_user_id == owner_user_id
+        if owner_user_id
+        else AndroidLogin.owner_user_id.is_(None),
+        *pending(),
+    )
 
 
-async def login_status(session, request_id: uuid.UUID, verifier: str) -> dict:
+async def login_status(
+    session, request_id: uuid.UUID, verifier: str, *, owner_user_id: uuid.UUID | None = None
+) -> dict:
     row = (
-        await session.execute(select(AndroidLogin).where(*proof(request_id, verifier)))
+        await session.execute(
+            select(AndroidLogin).where(*proof(request_id, verifier, owner_user_id=owner_user_id))
+        )
     ).scalar_one_or_none()
     if row is None:
         raise unavailable()
@@ -156,10 +179,12 @@ async def consume_login(session, request_id: uuid.UUID, verifier: str) -> Telegr
     return TelegramUser(**actor)
 
 
-async def cancel_login(session, request_id: uuid.UUID, verifier: str) -> None:
+async def cancel_login(
+    session, request_id: uuid.UUID, verifier: str, *, owner_user_id: uuid.UUID | None = None
+) -> None:
     await session.execute(
         update(AndroidLogin)
-        .where(*proof(request_id, verifier))
+        .where(*proof(request_id, verifier, owner_user_id=owner_user_id))
         .values(consumed_at=datetime.now(timezone.utc))
     )
     await session.commit()

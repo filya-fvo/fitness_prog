@@ -275,3 +275,147 @@ async def test_invalid_native_proof_is_not_returned_or_logged(monkeypatch):
             assert secret not in "".join(events)
     finally:
         logger.remove(sink)
+
+
+@pytest.mark.asyncio
+async def test_link_proof_is_bound_to_owner_and_cannot_be_consumed_as_login(db):
+    import uuid
+
+    owner, stranger = uuid.uuid4(), uuid.uuid4()
+    s = service()
+    r = await s.start_login(db, challenge(), "fitness_test_bot", "a" * 64, owner_user_id=owner)
+    link_token = r["bot_url"].split("telegram_link_")[1]
+    assert len("telegram_link_" + link_token) <= 64
+    assert not await s.claim_login(db, link_token, ACTOR)
+    assert await s.claim_login(db, link_token, ACTOR, purpose="link")
+    assert not await s.approve_login(db, link_token, ACTOR["id"])
+    assert not await s.approve_login(db, link_token, 999, purpose="link")
+    assert await s.approve_login(db, link_token, ACTOR["id"], purpose="link")
+    for wrong_owner in [None, stranger]:
+        with pytest.raises(Exception) as failure:
+            await s.login_status(db, r["request_id"], VERIFIER, owner_user_id=wrong_owner)
+        assert failure.value.status_code == 410
+    with pytest.raises(Exception) as failure:
+        await s.consume_login(db, r["request_id"], VERIFIER)
+    assert failure.value.status_code == 410
+    await s.cancel_login(db, r["request_id"], VERIFIER)  # anonymous transport cannot cancel link
+    assert (await s.login_status(db, r["request_id"], VERIFIER, owner_user_id=owner))[
+        "state"
+    ] == "ready"
+    await s.cancel_login(db, r["request_id"], VERIFIER, owner_user_id=owner)
+    assert not await s.approve_login(db, link_token, ACTOR["id"], purpose="link")
+
+
+@pytest.mark.asyncio
+async def test_link_requests_expire_and_cannot_reassign_actor(db):
+    import uuid
+    from app.models.android_login import AndroidLogin
+
+    s = service()
+    owner = uuid.uuid4()
+    r = await s.start_login(db, challenge(), "fitness_test_bot", "a" * 64, owner_user_id=owner)
+    link_token = r["bot_url"].split("telegram_link_")[1]
+    assert await s.claim_login(db, link_token, ACTOR, purpose="link")
+    assert not await s.claim_login(db, link_token, {**ACTOR, "id": 999}, purpose="link")
+    with pytest.raises(Exception) as failure:
+        await s.login_status(db, r["request_id"], "x" * 43, owner_user_id=owner)
+    assert failure.value.status_code == 410
+    db.session.get(AndroidLogin, r["request_id"]).expires_at = datetime.now(
+        timezone.utc
+    ) - timedelta(seconds=1)
+    db.session.commit()
+    assert not await s.approve_login(db, link_token, ACTOR["id"], purpose="link")
+    with pytest.raises(Exception) as failure:
+        await s.login_status(db, r["request_id"], VERIFIER, owner_user_id=owner)
+    assert failure.value.status_code == 410
+
+
+def test_bot_link_prompt_has_distinct_purpose_and_callback():
+    handler = importlib.import_module("app.services.telegram_android_login")
+    parsed = handler.parse_login_update(
+        {
+            "message": {
+                "chat": {"type": "private", "id": ACTOR["id"]},
+                "from": ACTOR,
+                "text": "/start telegram_link_" + "x" * 43,
+            }
+        }
+    )
+    assert parsed is not None and parsed["purpose"] == "link"
+    parsed = handler.parse_login_update(
+        {
+            "callback_query": {
+                "id": "fixture",
+                "from": ACTOR,
+                "data": "tl:" + "x" * 43,
+                "message": {"message_id": 1, "chat": {"type": "private", "id": ACTOR["id"]}},
+            }
+        }
+    )
+    assert parsed is not None and parsed["purpose"] == "link"
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_owner_on_anonymous_request(db):
+    import uuid
+    from sqlalchemy.exc import IntegrityError
+    from app.models.android_login import AndroidLogin
+
+    r = await begin(db)
+    row = db.session.get(AndroidLogin, r["request_id"])
+    row.owner_user_id = uuid.uuid4()
+    with pytest.raises(IntegrityError):
+        await db.commit()
+    await db.rollback()
+
+
+@pytest.mark.asyncio
+async def test_bot_link_flow_prompts_for_linking_instead_of_login(db, monkeypatch):
+    import uuid
+    from contextlib import asynccontextmanager
+
+    handler = importlib.import_module("app.services.telegram_android_login")
+    r = await service().start_login(
+        db, challenge(), "fitness_test_bot", "a" * 64, owner_user_id=uuid.uuid4()
+    )
+    link_token = r["bot_url"].split("telegram_link_")[1]
+
+    @asynccontextmanager
+    async def session_factory():
+        yield db
+
+    sent = []
+
+    async def send(_settings, **kwargs):
+        sent.append(kwargs)
+
+    monkeypatch.setattr(handler, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(handler, "send_message", send)
+    monkeypatch.setattr(handler, "edit_message_text", send)
+    monkeypatch.setattr(handler, "answer_callback_query", send)
+    assert await handler.handle_login_update(
+        None,
+        {
+            "message": {
+                "chat": {"type": "private", "id": ACTOR["id"]},
+                "from": ACTOR,
+                "text": "/start telegram_link_" + link_token,
+            }
+        },
+    )
+    assert "Подключить этот Telegram" in sent[0]["text"]
+    button = sent[0]["reply_markup"]["inline_keyboard"][0][0]
+    assert button["text"] == "Подключить Telegram" and button["callback_data"] == "tl:" + link_token
+    assert await handler.handle_login_update(
+        None,
+        {
+            "callback_query": {
+                "id": "fixture",
+                "from": ACTOR,
+                "data": button["callback_data"],
+                "message": {"message_id": 1, "chat": {"type": "private", "id": ACTOR["id"]}},
+            }
+        },
+    )
+    assert sent[1]["text"] == "Подключение подтверждено"
+    assert "Вернитесь в профиль" in sent[2]["text"]
