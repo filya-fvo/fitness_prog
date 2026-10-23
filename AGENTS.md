@@ -155,6 +155,7 @@ services → SQLAlchemy models → PostgreSQL
 - `backend/app/schemas/` — Pydantic request/response contracts.
 - `backend/app/routers/` — HTTP-слой: валидация контекста, статус, вызов service.
 - `backend/app/services/` — бизнес-логика и внешние интеграции.
+- `backend/app/services/telegram_link.py` и `routers/telegram_link.py` — подключение Telegram к действующему аккаунту через owner/purpose-bound bot challenge; свободная привязка сохраняет user ID, объединение требует preview и явного выбора через существующий account merge.
 - `backend/app/services/invite_service.py` — HMAC-хэши приглашений, срок/лимиты,
   preview и dual-mode принятие: новый аккаунт получает referral attribution,
   существующий — явное предложение дружбы и частного соревнования.
