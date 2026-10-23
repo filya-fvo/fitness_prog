@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getStoredToken } from "@/api/client";
 import { fetchGuide, type GuideKind } from "@/api/guides";
@@ -6,20 +6,15 @@ import { useUserStore } from "@/store/userStore";
 import { isAdminUser } from "@/utils/adminAccess";
 import { GuideDownloads } from "./GuideDownloads";
 import { GuideDocument } from "./GuideDocument";
+import { useStoredToken } from "@/hooks/useStoredToken";
 
 type ReadResult = { identity: string; text?: string; error?: string };
-function subscribeCredential(listener: () => void) {
-  const events = ["storage", "fitness:session-change", "focus", "pageshow"];
-  for (const event of events) window.addEventListener(event, listener);
-  return () => { for (const event of events) window.removeEventListener(event, listener); };
-}
-
 export function GuideReaderPage({ guideKind }: { guideKind?: GuideKind } = {}) {
   const { kind: routeKind } = useParams();
   const parameter = guideKind ?? routeKind;
   const kind: GuideKind | null = parameter === "user" || parameter === "admin" ? parameter : null;
   const user = useUserStore(state => state.user);
-  const token = useSyncExternalStore(subscribeCredential, getStoredToken);
+  const token = useStoredToken();
   const allowed = kind !== "admin" || (Boolean(token) && isAdminUser(user));
   const identity = kind === "admin" ? `${kind}:${user?.id ?? ""}:${token ?? ""}` : "user";
   const [result, setResult] = useState<ReadResult | null>(null);

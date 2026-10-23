@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const visualRegressionEnabled =
   process.platform === "win32" || process.env.PLAYWRIGHT_VISUAL_QA === "1";
-const workoutMethodsTests = /(?:workout-group-focus|admin-program-filters|guide-downloads|personal-program-filters|workout-customization|workout-method-(?:preparation|timing|recovery|history)|workout-prepared-start)\.spec\.ts/;
+const workoutMethodsTests = /(?:workout-group-focus|admin-program-filters|guide-downloads|telegram-link|personal-program-filters|workout-customization|workout-method-(?:preparation|timing|recovery|history)|workout-prepared-start)\.spec\.ts/;
 const notificationSettingsTests = /(?:android-notification-settings|notification-settings)\.spec\.ts/;
 const auditRegressionTests =
   /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|measurement-chart-values|wheel-picker-accessibility|workout-ux-followup|workout-day-sets|warmup-media|active-program-preparation|nutrition-add-close)\.spec\.ts/;

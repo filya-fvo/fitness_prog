@@ -6,6 +6,7 @@ import { HubLinkCard } from "@/components/ui/HubLinkCard";
 import { StatusNotice } from "@/components/ui/StatusNotice";
 import { ProfileHeroCard } from "@/features/profile/components/ProfileHeroCard";
 import { LegalLinks } from "@/features/legal/components/LegalLinks";
+import { LinkTelegramCard } from "@/features/profile/components/LinkTelegramCard";
 import { ThemeSelector } from "@/features/theme/ThemeSelector";
 import { useUserStore } from "@/store/userStore";
 import { isAdminUser } from "@/utils/adminAccess";
@@ -30,6 +31,7 @@ export function ProfileHubPage() {
     <section>
       <Header title="Профиль" subtitle="Аккаунт, настройки и ваши связи" />
       <ProfileHeroCard user={user} profile={profile} />
+      <LinkTelegramCard />
       {profileError ? <StatusNotice tone="info" className="mb-3 text-xs">Показаны данные аккаунта. Вес и рост обновятся после подключения.</StatusNotice> : null}
       <div className="space-y-3">
         <HubLinkCard to="/profile/settings" title="Настройки профиля" description="Цели, программа, питание, добавки и аккаунт" icon="settings" tone="plum" />

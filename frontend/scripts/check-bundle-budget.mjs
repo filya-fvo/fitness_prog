@@ -165,8 +165,10 @@ const limits = {
   // measured3.1 KB gzip total /3.0 KB product; no vendor dependency growth.
   // Canonical guide reader adds 2.9 KB gzip in its lazy route, with no new
   // dependencies or vendor growth. Retain the previous narrow headroom.
-  totalJsGzip: 632_150,
-  productJsGzip: 575_500,
+  // Owner-bound Telegram linking and explicit merge add 2.7 KB gzip to the
+  // lazy Profile route; authentication vendors remain unchanged.
+  totalJsGzip: 635_150,
+  productJsGzip: 578_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

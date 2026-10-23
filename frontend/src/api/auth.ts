@@ -120,7 +120,7 @@ export async function loginWithEmailCode(email: string, code: string): Promise<A
   return parsed;
 }
 
-const emailLinkResultSchema = z.object({
+export const emailLinkResultSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
   user: authUserSchema.nullable().optional(),
