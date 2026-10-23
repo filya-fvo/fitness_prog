@@ -6,7 +6,7 @@ import json
 
 from fastapi import HTTPException
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.body_measurement import BodyMeasurement
@@ -73,7 +73,11 @@ async def build_android_notification_plan(
         SupplementIntake.status, SupplementIntake.snoozed_until, SupplementIntake.notified_at,
     ).where(
         SupplementIntake.user_id == user.id, SupplementIntake.is_deleted.is_(False),
-        SupplementIntake.scheduled_at >= start, SupplementIntake.scheduled_at < until,
+        or_(
+            and_(SupplementIntake.scheduled_at >= start, SupplementIntake.scheduled_at < until),
+            and_(SupplementIntake.status == "pending", SupplementIntake.notified_at.is_(None),
+                 SupplementIntake.snoozed_until >= start, SupplementIntake.snoozed_until < until),
+        ),
     ))).all()
     blocked_workouts = {row[0] for row in workouts if row[1] != "planned" or row[2] is not None}
     intake_state = {(row[0], row[1].astimezone(UTC)): row for row in intakes}
@@ -99,6 +103,27 @@ async def build_android_notification_plan(
         if len(events) > 2048:
             raise HTTPException(422, "Не удалось подготовить полный план напоминаний")
 
+    if settings["supplements"]["enabled"]:
+        # A snooze belongs to its effective local date, including across refresh
+        # at midnight. Group globally so it can share a slot with tomorrow's dose.
+        supplement_days = {first + timedelta(days=offset) for offset in range(14)}
+        supplement_days.update(row[1].astimezone(zone).date() for row in intakes if row[3])
+        groups: dict[datetime, set[str]] = {}
+        for day in sorted(supplement_days):
+            for row in supplement_intakes.scheduled_rows(user, day):
+                stamp = row["scheduled_at"]
+                prior = intake_state.get((row["supplement_entry_id"], stamp))
+                if prior and (prior[2] != "pending" or prior[4] is not None):
+                    continue
+                if prior and prior[3]:
+                    stamp = prior[3].astimezone(UTC)
+                groups.setdefault(stamp, set()).add(row["supplement_entry_id"])
+        for stamp, entries in groups.items():
+            expiry = resolve_local_slot(stamp.astimezone(zone).date() + timedelta(days=1),
+                                        time.min, timezone_name)
+            add(f"supplements:{stamp.isoformat()}", "supplements", stamp, expiry,
+                "supplements", {"supplement_entry_ids": sorted(entries)})
+
     for offset in range(15):
         day = first + timedelta(days=offset)
         day_end = resolve_local_slot(day + timedelta(days=1), time.min, timezone_name)
@@ -114,19 +139,6 @@ async def build_android_notification_plan(
                                  "starts_at": starts_at, "zero_lead": zero_lead})
         if day >= end_day:
             continue
-        if settings["supplements"]["enabled"]:
-            groups: dict[datetime, set[str]] = {}
-            for row in supplement_intakes.scheduled_rows(user, day):
-                stamp = row["scheduled_at"]
-                prior = intake_state.get((row["supplement_entry_id"], stamp))
-                if prior and (prior[2] != "pending" or prior[4] is not None):
-                    continue
-                if prior and prior[3]:
-                    stamp = prior[3].astimezone(UTC)
-                groups.setdefault(stamp, set()).add(row["supplement_entry_id"])
-            for stamp, entries in groups.items():
-                add(f"supplements:{stamp.isoformat()}", "supplements", stamp, day_end,
-                    "supplements", {"supplement_entry_ids": sorted(entries)})
         cfg = settings["water"]
         if cfg["enabled"] and water_ml_for_day(goals, day) < cfg["daily_ml"]:
             marks = state.get("water_marks") or {}

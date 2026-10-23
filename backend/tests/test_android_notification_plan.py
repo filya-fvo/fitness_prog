@@ -127,6 +127,67 @@ async def test_taken_skipped_snoozed_supplements_are_read_without_materializatio
     session.commit.assert_not_awaited()
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("now", [
+    datetime(2026, 10, 10, 20, 50, tzinfo=UTC),  # 23:50 Moscow, before midnight.
+    datetime(2026, 10, 10, 21, 5, tzinfo=UTC),  # 00:05 Moscow, after midnight.
+])
+async def test_cross_midnight_supplement_snooze_survives_plan_refresh(now, monkeypatch):
+    import sqlite3
+    from sqlalchemy.dialects import sqlite
+    from app.services import supplement_intakes
+
+    user = make_user(supplements=[{
+        "id": "evening", "schedule": [{"slot": "23:45", "days": "every"}],
+    }, {
+        "id": "night", "schedule": [{"slot": "00:15", "days": "every"}],
+    }])
+    original = deepcopy(user.goals)
+    scheduled = datetime(2026, 10, 10, 20, 45, tzinfo=UTC)
+    snoozed = datetime(2026, 10, 10, 21, 15, tzinfo=UTC)
+    intake = ("evening", scheduled, "pending", snoozed, None)
+    session = empty_session()
+    connection = sqlite3.connect(":memory:")
+    connection.execute("""CREATE TABLE supplement_intakes (
+        user_id TEXT, is_deleted BOOLEAN, supplement_entry_id TEXT,
+        scheduled_at TEXT, status TEXT, snoozed_until TEXT, notified_at TEXT)""")
+    connection.execute("INSERT INTO supplement_intakes VALUES (?, ?, ?, ?, ?, ?, ?)", (
+        user.id.hex, False, "evening",
+        scheduled.replace(tzinfo=None).isoformat(" ", timespec="microseconds"), "pending",
+        snoozed.replace(tzinfo=None).isoformat(" ", timespec="microseconds"), None,
+    ))
+
+    def read_sources(statement):
+        if statement.get_final_froms()[0].name != "supplement_intakes":
+            return SimpleNamespace(all=lambda: [])
+        # Exercise the emitted date/owner filters, not an unconditional mocked row.
+        sql = str(statement.compile(dialect=sqlite.dialect(),
+                                    compile_kwargs={"literal_binds": True}))
+        rows = connection.execute(sql).fetchall()
+        return SimpleNamespace(all=lambda: [intake] if rows else [])
+
+    session.execute.side_effect = read_sources
+    materialize = AsyncMock()
+    monkeypatch.setattr(supplement_intakes, "ensure_day", materialize)
+
+    try:
+        plan = await prepare(user, session, now=now)
+    finally:
+        connection.close()
+
+    matches = [event for event in plan.events
+               if event.category == "supplements" and event.due_at == snoozed]
+    assert len(matches) == 1
+    assert matches[0].local_date == date(2026, 10, 11)
+    assert matches[0].expires_at == datetime(2026, 10, 11, 21, tzinfo=UTC)
+    assert matches[0].context.supplement_entry_ids == ["evening", "night"]
+    assert user.goals == original
+    session.add.assert_not_called()
+    session.commit.assert_not_awaited()
+    session.delete.assert_not_awaited()
+    materialize.assert_not_awaited()
+
+
 def test_plan_rejects_2049_events_or_1mib_without_partial_success():
     from pydantic import ValidationError
     from app.schemas.android_notifications import AndroidNotificationPlan, AndroidReminder

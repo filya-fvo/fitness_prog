@@ -1,3 +1,11 @@
+## 23.10.2026 — отсрочка добавок через полночь в Android
+
+Подготовка Android-напоминаний сохраняет отложенный на следующую дату приём
+добавки до и после полуночи. Срок напоминания считается по новой локальной дате,
+а совпадающие по времени приёмы объединяются; календарь остаётся только чтением.
+Проверка: RED2 → GREEN27 plan/delivery; полный backend1037 passed/76 skipped,
+Ruff PASS. Проверка фоновой доставки установленным APK выполняется отдельно.
+
 ## 23.10.2026 — проверка выпуска руководств и Telegram link
 
 Web runtime6903b47 опубликован после backup/двух isolated restore; health/site/live guide и четыре synthetic live UI сценария PASS, публичный APK23 неизменён. Локальный original-key APK24 прошёл exact installed cold/restart,3 vault tests, системные ссылки, production reader и explicit merge с настоящим SQLite/cold restart. APK24 не опубликован; телефон/реальный owner bot flow не проверялись. Hosted CI выявил устаревшие FAQ/help screenshot baselines: RED2, обновлены только два PNG без изменения порогов. Отчёт QA_GUIDES_LINKS_TELEGRAM_2026-10-23.md.
