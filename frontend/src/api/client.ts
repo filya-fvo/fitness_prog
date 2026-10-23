@@ -36,10 +36,12 @@ export function getStoredToken(): string | null {
 
 export function setStoredToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("fitness:session-change"));
 }
 
 export function clearStoredToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("fitness:session-change"));
 }
 
 apiClient.interceptors.request.use((config) => {

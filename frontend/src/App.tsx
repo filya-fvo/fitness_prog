@@ -4,6 +4,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Shell } from "@/components/layout/Shell";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 
+const GuideReaderPage = lazy(() => import("@/features/help/GuideReaderPage").then(module => ({ default: module.GuideReaderPage })));
+
 const Chat = lazy(() =>
   import("@/features/ai-chat/pages/Chat").then((module) => ({ default: module.Chat })),
 );
@@ -161,6 +163,7 @@ export function App() {
       >
         <Routes>
           <Route path="legal/:documentId" element={<LegalDocumentPage />} />
+          <Route path="help/instructions/:kind" element={<GuideReaderPage />} />
           <Route
             path="help"
             element={(
@@ -186,6 +189,7 @@ export function App() {
             )}
           />
           <Route element={<Shell />}>
+            <Route path="help/instructions/admin" element={<GuideReaderPage guideKind="admin" />} />
             <Route index element={<HomePage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
             <Route path="train" element={<TrainHubPage />} />

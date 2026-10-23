@@ -163,8 +163,10 @@ const limits = {
   // 619937/563437). Existing dependencies; largest108742/admin56500 unchanged caps.
   // Explicit group entries, guide downloads and shared catalog filters add
   // measured3.1 KB gzip total /3.0 KB product; no vendor dependency growth.
-  totalJsGzip: 629_150,
-  productJsGzip: 572_500,
+  // Canonical guide reader adds 2.9 KB gzip in its lazy route, with no new
+  // dependencies or vendor growth. Retain the previous narrow headroom.
+  totalJsGzip: 632_150,
+  productJsGzip: 575_500,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
