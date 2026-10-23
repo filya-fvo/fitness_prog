@@ -87,6 +87,26 @@ jobs:
           tests/test_workout_execution.py tests/test_workout_method_metrics.py tests/test_workout_plan_identity.py
           tests/test_workout_preparation.py tests/test_workout_recovery_contract.py tests/test_workout_skips.py
           tests/test_workout_migration_runner.py
+      - name: Test owner-bound Telegram linking, merge and concurrent confirmations
+        working-directory: backend
+        env:
+          TELEGRAM_LINK_TEST_URL: postgresql+asyncpg://fitness_android_test@127.0.0.1:55439/filfit_link_test
+          BOT_TOKEN: ci-test-bot-token
+          JWT_SECRET: ci-test-jwt-secret-not-for-production
+          ENVIRONMENT: test
+        run: |
+          python - <<'PY'
+          import asyncio
+          import asyncpg
+          async def main():
+              connection = await asyncpg.connect("postgresql://fitness_android_test@127.0.0.1:55439/fitness_android_sync_test")
+              try:
+                  await connection.execute("CREATE DATABASE filfit_link_test")
+              finally:
+                  await connection.close()
+          asyncio.run(main())
+          PY
+          pytest -q tests/test_telegram_link.py
   frontend:
     name: Frontend (test + build)
     runs-on: ubuntu-latest

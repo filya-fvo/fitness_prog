@@ -1,5 +1,10 @@
 # Changelog — Fitness Telegram Mini App
 
+## 23.10.2026 — PostgreSQL-проверки подключения в CI
+
+- Новый набор owner/merge/race/migration тестов включён в существующий isolated PostgreSQL job CI на отдельной disposable БД filfit_link_test. Обычный backend unit job сохраняет запуск без PostgreSQL; production данные не используются. Локально17 integration и полный backend1051 уже прошли.
+
+
 ## 23.10.2026 — Android-ссылки и безопасный перенос общего сценария
 
 - Native commits2d0237c/3d99a27 переносят shared8a133d5, дополняют owner-bound merge атомарным сохранением native diary/outbox и добавляют внешние ссылки на бота/сайт на входе и в Профиле.
