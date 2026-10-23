@@ -71,7 +71,10 @@ async function fixture(page: Page, native = false, telegram = true, prepared = f
           state.pending = true; state.active = false; },
         disable: async () => { state.active = false; state.pending = false; },
         test: async () => { window.__notificationTestPosts = (window.__notificationTestPosts || 0) + 1; },
-        requestExactAlarmAccess: async () => { window.__notificationExactRequests = (window.__notificationExactRequests || 0) + 1; },
+        requestExactAlarmAccess: async () => {
+          window.__notificationExactRequests = (window.__notificationExactRequests || 0) + 1;
+          state.exactAllowed = window.__notificationExactGrant === true;
+        },
         setRestEnabled: async (enabled) => { state.restEnabled = enabled; }, setTimer: async () => {}
       };
     `,
@@ -161,8 +164,20 @@ test("explicit permission refusal, pending acknowledgement and local test", asyn
   await phone.getByRole("button", { name: "Проверить уведомление" }).click();
   await expect(phone).toContainText("Телефон принял тестовое уведомление");
   expect(state.legacyTests()).toBe(0);
-  await phone.getByRole("button", { name: "Разрешить точный таймер" }).click();
+  await expect(phone).toContainText("Без дополнительного доступа напоминания могут задержаться");
+  expect(await page.evaluate(() => Reflect.get(window, "__notificationExactRequests") ?? 0)).toBe(0);
+  const exactAccess = phone.getByRole("button", { name: "Разрешить точные напоминания" });
+  await exactAccess.click();
   expect(await page.evaluate(() => Reflect.get(window, "__notificationExactRequests"))).toBe(1);
+  await expect(phone).not.toContainText("Точное время напоминаний разрешено");
+  await expect(exactAccess).toBeEnabled();
+  await page.evaluate(() => Reflect.set(window, "__notificationExactGrant", true));
+  await exactAccess.click();
+  expect(await page.evaluate(() => Reflect.get(window, "__notificationExactRequests"))).toBe(2);
+  await expect(phone).toContainText("Точное время напоминаний разрешено");
+  await expect(phone).not.toContainText("Без дополнительного доступа напоминания могут задержаться");
+  await expect(exactAccess).toHaveCount(0);
+  await expect(phone).toContainText("ограничения батареи");
 });
 
 test("three exclusive channels share one card and app details open only for that choice", async ({ page }) => {
