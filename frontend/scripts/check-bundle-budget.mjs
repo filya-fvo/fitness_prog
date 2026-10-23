@@ -167,8 +167,11 @@ const limits = {
   // dependencies or vendor growth. Retain the previous narrow headroom.
   // Owner-bound Telegram linking and explicit merge add 2.7 KB gzip to the
   // lazy Profile route; authentication vendors remain unchanged.
-  totalJsGzip: 635_150,
-  productJsGzip: 578_500,
+  // Public lazy download route and practical Android FAQ add measured 2087 total /
+  // 2081 product gzip bytes (634597/577934 -> 636684/580015). No new dependencies;
+  // largest vendor108742 is unchanged. Keep narrow headroom for this requested content.
+  totalJsGzip: 636_900,
+  productJsGzip: 580_250,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

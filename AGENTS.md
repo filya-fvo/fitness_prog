@@ -215,7 +215,9 @@ services → SQLAlchemy models → PostgreSQL
 
 ### Frontend
 
-- `frontend/src/App.tsx` — lazy routes и публичные `/help`, `/knowledge`.
+- `frontend/src/App.tsx` — lazy routes и публичные `/help`, `/knowledge`, `/download`.
+  `features/help/DownloadPage.tsx` — публичный APK download без авторизации;
+  используется существующий `/android/latest.apk`, Android сохраняет штатный updater.
   Пять корневых разделов: `/` — Главная, `/train` — Упражнения,
   `/progress` — Дневник, `/help-center` — Помощь, `/profile` — Профиль.
   `/nutrition` относится к Главной; `/workouts` и `/programs` — к Упражнениям;

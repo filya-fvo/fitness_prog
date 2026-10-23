@@ -3,7 +3,7 @@
  * Sprint 1 — TZ §7, §8, §10.
  */
 import { lazy, Suspense, useEffect } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { hasSession, loginWithLocalTestUser, loginWithTelegram, type AuthUser } from "@/api/auth";
 import { getStoredToken, clearStoredToken } from "@/api/client";
@@ -345,6 +345,7 @@ export function Shell() {
             ) : null}
             <TelegramBrowserLogin onSuccess={completeBrowserLogin} />
             <EmailLoginForm onSuccess={completeBrowserLogin} />
+            {import.meta.env.MODE !== "android" ? <Link to="/download" className="my-3 flex min-h-11 items-center justify-center text-sm text-tg-link">Скачать для Android</Link> : null}
             <LegalLinks />
           </>
         ) : null}

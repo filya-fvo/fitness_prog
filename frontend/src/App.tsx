@@ -5,6 +5,7 @@ import { Shell } from "@/components/layout/Shell";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 
 const GuideReaderPage = lazy(() => import("@/features/help/GuideReaderPage").then(module => ({ default: module.GuideReaderPage })));
+const DownloadPage = lazy(() => import("@/features/help/DownloadPage").then(module => ({ default: module.DownloadPage })));
 
 const Chat = lazy(() =>
   import("@/features/ai-chat/pages/Chat").then((module) => ({ default: module.Chat })),
@@ -162,6 +163,7 @@ export function App() {
         }
       >
         <Routes>
+          <Route path="download" element={<DownloadPage />} />
           <Route path="legal/:documentId" element={<LegalDocumentPage />} />
           <Route path="help/instructions/:kind" element={<GuideReaderPage />} />
           <Route

@@ -71,6 +71,7 @@ export function HelpFaqPage({ defaultTab = "howto" }: { defaultTab?: FaqTab }) {
       />
 
       {defaultTab === "howto" ? <GuideDownloads /> : null}
+      {defaultTab === "howto" && import.meta.env.MODE !== "android" ? <Link to="/download" className="app-button app-secondary-action mb-4 flex min-h-11 items-center justify-center px-3 py-3 text-sm">Скачать для Android</Link> : null}
 
       <label className="faq-search">
         Поиск ответа
