@@ -243,11 +243,15 @@ async def build_plan_from_program_day(
         target_sets = int(item.get("sets") or item.get("target_sets") or 3)
         # Prefer phase-based reps (3-week cycle) over static seed reps
         target_reps = str(item.get("reps") or phase["target_reps"]) if linear_progression else phase["target_reps"]
-        rest_sec = int(item.get("rest_sec") or day.get("rest_sec_default") or 60)
-        if phase["week_phase"] == "heavy":
-            rest_sec = max(rest_sec, 90)
-        elif phase["week_phase"] == "light":
-            rest_sec = min(rest_sec, 75)
+        rest_value = item.get("rest_sec")
+        if rest_value is None:
+            rest_value = day.get("rest_sec_default")
+        rest_sec = int(rest_value if rest_value is not None else 60)
+        if rest_sec != 0:
+            if phase["week_phase"] == "heavy":
+                rest_sec = max(rest_sec, 90)
+            elif phase["week_phase"] == "light":
+                rest_sec = min(rest_sec, 75)
         plan_exercises.append(
             {
                 "exercise_id": str(exercise.id),

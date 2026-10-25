@@ -24,7 +24,7 @@ class PersonalProgramExercise(BaseModel):
     exercise_id: uuid.UUID
     sets: int = Field(ge=1, le=8)
     reps: str = Field(min_length=1, max_length=20, pattern=r"^[0-9\-–сs ]+$")
-    rest_sec: int = Field(default=60, ge=15, le=300)
+    rest_sec: int = Field(default=60, ge=0, le=300)
 
     @field_validator("reps")
     @classmethod

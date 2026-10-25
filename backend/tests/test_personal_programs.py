@@ -144,3 +144,79 @@ async def test_schedule_cannot_show_someone_elses_personal_program() -> None:
     )
     assert result[0] is None
     assert "Чужой" not in result[2]
+
+
+@pytest.mark.parametrize("rest_sec", [0, 300])
+def test_personal_program_accepts_rest_boundaries(rest_sec: int) -> None:
+    data = payload(uuid.uuid4()).model_dump(mode="json")
+    data["days"][0]["exercises"][0]["rest_sec"] = rest_sec
+    validated = PersonalProgramCreate.model_validate(data)
+    assert validated.days[0].exercises[0].rest_sec == rest_sec
+
+
+@pytest.mark.parametrize("rest_sec", [-1, 301])
+def test_personal_program_rejects_out_of_range_rest(rest_sec: int) -> None:
+    data = payload(uuid.uuid4()).model_dump(mode="json")
+    data["days"][0]["exercises"][0]["rest_sec"] = rest_sec
+    with pytest.raises(ValidationError):
+        PersonalProgramCreate.model_validate(data)
+
+
+def test_personal_program_omitted_rest_defaults_to_sixty() -> None:
+    data = payload(uuid.uuid4()).model_dump(mode="json")
+    del data["days"][0]["exercises"][0]["rest_sec"]
+    validated = PersonalProgramCreate.model_validate(data)
+    assert validated.days[0].exercises[0].rest_sec == 60
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("progression", ["linear", "phased"])
+@pytest.mark.parametrize("week_phase", ["light", "medium", "heavy"])
+async def test_personal_program_create_to_plan_preserves_zero_rest(
+    progression: str, week_phase: str,
+) -> None:
+    exercise = SimpleNamespace(id=uuid.uuid4(), name_ru="Жим гантелей лёжа")
+    data = payload(exercise.id, progression=progression).model_dump(mode="json")
+    data["days"][0]["exercises"][0]["rest_sec"] = 0
+    session = Session(exercise)
+    program = await program_service.create_personal_program(
+        session, user_id=uuid.uuid4(), data=PersonalProgramCreate.model_validate(data)
+    )  # type: ignore[arg-type]
+    assert program.structure["schedule"][0]["exercises"][0]["rest_sec"] == 0
+    plan = await workout_service.build_plan_from_program_day(
+        session, program, 1, today=date(2026, 9, 28), week_phase=week_phase,
+    )  # type: ignore[arg-type]
+    assert plan["exercises"][0]["rest_sec"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("progression", ["linear", "phased"])
+@pytest.mark.parametrize("week_phase,phase_index", [("light", 0), ("medium", 1), ("heavy", 2)])
+@pytest.mark.parametrize("exercise_rest,day_rest,expected", [
+    ({"rest_sec": 0}, {"rest_sec_default": 120}, (0, 0, 0)),
+    ({}, {"rest_sec_default": 0}, (0, 0, 0)),
+    ({"rest_sec": None}, {"rest_sec_default": 0}, (0, 0, 0)),
+    ({}, {}, (60, 60, 90)),
+    ({"rest_sec": None}, {"rest_sec_default": None}, (60, 60, 90)),
+    ({}, {"rest_sec_default": 120}, (75, 120, 120)),
+    ({"rest_sec": 30}, {"rest_sec_default": 120}, (30, 30, 90)),
+    ({"rest_sec": 120}, {}, (75, 120, 120)),
+])
+async def test_program_plan_rest_fallback_and_legacy_phase_rules(
+    progression: str, week_phase: str, phase_index: int,
+    exercise_rest: dict, day_rest: dict, expected: tuple[int, int, int],
+) -> None:
+    exercise = SimpleNamespace(id=uuid.uuid4(), name_ru="Жим гантелей лёжа")
+    program = Program(
+        name="Сохранённая программа", structure={
+            "progression": progression,
+            "schedule": [{
+                "day_index": 1, "name": "Верх тела", **day_rest,
+                "exercises": [{"exercise_id": str(exercise.id), **exercise_rest}],
+            }],
+        },
+    )
+    plan = await workout_service.build_plan_from_program_day(
+        Session(exercise), program, 1, today=date(2026, 9, 28), week_phase=week_phase,
+    )  # type: ignore[arg-type]
+    assert plan["exercises"][0]["rest_sec"] == expected[phase_index]
