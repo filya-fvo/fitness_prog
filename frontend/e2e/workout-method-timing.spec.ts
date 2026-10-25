@@ -159,7 +159,7 @@ for (const kind of ["triset", "circuit"]) {
 }
 
 for (const theme of ["light", "dark"]) for (const width of [320, 375, 393, 1440]) {
-  test(`execution controls fit ${width} ${theme} with accessible result fields`, async ({ page }) => {
+  test(`execution controls fit ${width} ${theme} with accessible result fields`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 740 });
     await installTimingApi(page);
     await page.addInitScript(value => localStorage.setItem("fitness_theme_preference", value), theme);
@@ -170,7 +170,7 @@ for (const theme of ["light", "dark"]) for (const width of [320, 375, 393, 1440]
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const axe = await new AxeBuilder({ page }).include('[aria-label="Выполнение тренировки"]').analyze();
     expect(axe.violations).toEqual([]);
-    if (width === 393) await page.screenshot({ path: `C:/fitness_prog/artifacts/workout-methods-20261019/execution-${theme}.png`, fullPage: true });
+    if (width === 393) await page.screenshot({ path: testInfo.outputPath(`execution-${theme}.png`), fullPage: true });
   });
 }
 
