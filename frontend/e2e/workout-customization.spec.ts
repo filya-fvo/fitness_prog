@@ -35,7 +35,7 @@ async function installComposerApi(page: Page, failSave = false) {
 }
 
 for (const width of [320, 375, 393, 1440]) for (const theme of ["light", "dark"] as const) {
-test(`adds abs and restores the composition at ${width}px ${theme}`, async ({ page }) => {
+test(`adds abs and restores the composition at ${width}px ${theme}`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: width === 393 ? 600 : 820 });
   await page.emulateMedia({ colorScheme: theme });
   await installComposerApi(page);
@@ -51,7 +51,7 @@ test(`adds abs and restores the composition at ${width}px ${theme}`, async ({ pa
   await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
   await expect(page.getByRole("dialog").getByText("Скручивания", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  if (width === 393) await page.screenshot({ path: `C:/fitness_prog/artifacts/workout-methods-20261019/composer-${theme}.png` });
+  if (width === 393) await page.screenshot({ path: testInfo.outputPath(`composer-${theme}.png`) });
   await dialog.getByRole("button", { name: "Поднять Скручивания", exact: true }).click();
   await expect(dialog.locator("section").first()).toHaveAttribute("aria-label", "Скручивания");
   await dialog.getByRole("button", { name: "Убрать Скручивания", exact: true }).click();

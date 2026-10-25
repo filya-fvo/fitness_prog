@@ -52,7 +52,7 @@ test("failed part correction keeps form and retries the same operation identity"
   expect(writes[0].client_operation_id).toBe(writes[1].client_operation_id);
 });
 
-for (const theme of ["light", "dark"]) test(`compound history is usable at mobile and desktop widths in ${theme}`, async ({ page }) => {
+for (const theme of ["light", "dark"]) test(`compound history is usable at mobile and desktop widths in ${theme}`, async ({ page }, testInfo) => {
   await page.addInitScript(value => localStorage.setItem("fitness_theme_preference", value), theme);
   await page.goto("/e2e/fixtures/workout-edit.html?method=cluster");
   await page.getByRole("button", { name: "Изменить подход 1: Гакк-приседания", exact: true }).click();
@@ -64,7 +64,7 @@ for (const theme of ["light", "dark"]) test(`compound history is usable at mobil
   }
   await page.setViewportSize({ width: 393, height: 740 });
   expect((await new AxeBuilder({ page }).include('[aria-labelledby="compound-history-title"]').analyze()).violations).toEqual([]);
-  await page.screenshot({ path: `C:/fitness_prog/artifacts/workout-methods-20261019/history-${theme}.png`, fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath(`history-${theme}.png`), fullPage: true });
 });
 
 

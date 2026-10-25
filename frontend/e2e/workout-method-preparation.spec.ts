@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { installMethodApi, methodIds } from "./fixtures/workout-method-api";
 
 for (const width of [320, 375, 393, 1440]) for (const theme of ["light", "dark"] as const) {
-  test(`prepares and reopens a personal biceps superset ${width}px ${theme}`, async ({ page }) => {
+  test(`prepares and reopens a personal biceps superset ${width}px ${theme}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width === 393 ? 600 : 820 });
     await page.emulateMedia({ colorScheme: theme });
     const api = await installMethodApi(page);
@@ -26,7 +26,7 @@ for (const width of [320, 375, 393, 1440]) for (const theme of ["light", "dark"]
     await weight.fill("100");
     expect(await weight.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
     expect(await page.getByRole("dialog").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
-    if (width === 393) await page.screenshot({ path: `C:/fitness_prog/artifacts/workout-methods-20261019/methods-${theme}.png` });
+    if (width === 393) await page.screenshot({ path: testInfo.outputPath(`methods-${theme}.png`) });
     await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(api.writes[0].groups?.[0]).toMatchObject({ kind: "superset", rounds: 3, transition_sec: 0, round_rest_sec: 90,
