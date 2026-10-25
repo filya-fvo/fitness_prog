@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +27,7 @@ from app.schemas.workout import (
 )
 from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization, workout_execution
 from app.services.workout_notifications import mark_occurrence_started
-from app.services.program_day_targets import apply_exercise_intent, execution_fields
+from app.services.program_day_targets import apply_exercise_intent, execution_fields, with_readable_target_notes
 
 
 async def _get_workout_for_user(
@@ -363,7 +364,7 @@ async def build_program_plan_for_user(
             scheduled_date=scheduled_date, base_plan=plan, scopes=("program_day",),
         )
     if not include_saved_override:
-        return plan
+        return with_readable_target_notes(plan)
     plan = await planned_workout.apply_saved_override(
         session,
         user_id=user.id,
@@ -373,10 +374,11 @@ async def build_program_plan_for_user(
         base_plan=plan,
         consume=consume_saved_override,
     )
-    return await workout_customization.apply_customizations(
+    plan = await workout_customization.apply_customizations(
         session, user_id=user.id, program_id=program.id, day_index=day_index,
         scheduled_date=scheduled_date, base_plan=plan, scopes=("occurrence",),
     )
+    return with_readable_target_notes(plan)
 
 
 async def preview_program_plan(
@@ -1032,8 +1034,14 @@ async def update_workout_plan(
             detail="План завершённой тренировки нельзя изменить",
         )
 
-    plan = _normalize_plan(data)
+    from app.services.workout_target_compatibility import restore_omitted_targets
+
+    plan = _normalize_plan(restore_omitted_targets(data, workout.plan or {}))
     workout_execution.validate_plan_edit(workout.plan or {}, plan)
+    try:
+        plan = _normalize_plan(with_readable_target_notes(plan))
+    except ValidationError as exc:
+        raise HTTPException(422, "Сократите заметку: вместе с описанием цели она слишком длинная") from exc
     exercise_ids = [uuid.UUID(str(item["exercise_id"])) for item in plan["exercises"]]
     if len(exercise_ids) != len(set(exercise_ids)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="В плане повторяются упражнения")

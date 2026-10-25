@@ -119,3 +119,26 @@ it("keeps another program's prepared context when browsing a different program",
   await invalidateOfflineWorkoutContext(owner, "00000000-0000-4000-8000-000000000099");
   expect((await readOfflineWorkoutContext(owner, "2026-10-09"))?.program?.id).toBe(programId);
 });
+
+
+it("preserves a typed goal snapshot across reopen when a corrupt replacement is rejected", async () => {
+  const plan = { title: "Цель", execution_version: 2, exercises: [{
+    exercise_id: exerciseId, order: 1, target_sets: 3, rest_sec: 60, target_reps: "8-12",
+    target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: "40.00" },
+    note: "Моя заметка\nЦель: 40 кг на руку", weight_mode: "per_hand",
+    set_methods: [{ set_number: 3, kind: "drop", parts: [
+      { target_reps: 8, target_weight: "40.00", pause_after_sec: 5 },
+      { target_reps: 6, target_weight: "30.00", pause_after_sec: 0 },
+    ] }],
+  }] };
+  const bundle = { ...snapshot(), plans: [{ ...snapshot().plans[0], plan }] };
+  await saveOfflineWorkoutContext(owner, bundle, profile, [], []);
+  const corrupt = structuredClone(bundle);
+  corrupt.plans[0].plan.exercises[0].set_methods[0].parts[0].target_weight = "broken";
+  await expect(saveOfflineWorkoutContext(owner, corrupt, profile, [], [])).rejects.toThrow();
+  db.close(); await db.open();
+  const saved = await readOfflineWorkoutContext(owner, "2026-10-09");
+  expect(saved?.plans[0].plan.exercises[0].target).toEqual({ kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 40 });
+  expect(saved?.plans[0].plan.exercises[0].note).toBe("Моя заметка\nЦель: 40 кг на руку");
+  expect(saved?.plans[0].plan.exercises[0].set_methods?.[0].parts[0].target_weight).toBe(40);
+});

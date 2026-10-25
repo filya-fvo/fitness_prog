@@ -52,6 +52,7 @@ def apply_exercise_intent(item: dict[str, Any], row: dict[str, Any]) -> None:
                 str(target.reps_min) if target.reps_min == target.reps_max
                 else f"{target.reps_min}-{target.reps_max}"
             )
+        apply_legacy_target_note(row)
     if item.get("set_methods"):
         row["set_methods"] = item["set_methods"]
 
@@ -62,3 +63,25 @@ def execution_fields(day: dict[str, Any], rows: list[dict[str, Any]]) -> dict[st
     for row in rows:
         row.setdefault("set_methods", [])
     return {"execution_version": 2, "groups": day.get("groups") or []}
+
+
+def apply_legacy_target_note(row: dict[str, Any]) -> None:
+    """Readable manual-entry goal for clients whose plan parser predates target."""
+    if row.get("target") is None:
+        return
+    target = _TARGET.validate_python(row["target"])
+    if target.kind != "weight_reps" or target.target_weight is None:
+        return
+    weight = format(target.target_weight.normalize(), "f")
+    mode = {"per_hand": " на руку", "total": " суммарно"}.get(row.get("weight_mode"), "")
+    suffix = f"Цель: {weight} кг{mode}"
+    note = row.get("note") or ""
+    if note != suffix and not note.endswith("\n" + suffix):
+        row["note"] = f"{note}\n{suffix}" if note else suffix
+
+
+def with_readable_target_notes(plan: dict[str, Any]) -> dict[str, Any]:
+    """Finalize after private note overrides, before stamps or set-slot seeding."""
+    for row in plan.get("exercises", []):
+        apply_legacy_target_note(row)
+    return plan

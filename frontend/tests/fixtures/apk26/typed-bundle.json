@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "owner": "00000000-0000-4000-8000-000000000001",
+  "prepared_at": "2026-10-25T08:00:00Z",
+  "schedule_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "start": "2026-10-25",
+  "end": "2026-10-25",
+  "program": {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "name": "Мой план"
+  },
+  "days": [
+    {
+      "requested_date": "2026-10-25",
+      "schedule": {
+        "requested_date": "2026-10-25"
+      }
+    }
+  ],
+  "plans": [
+    {
+      "scheduled_date": "2026-10-25",
+      "day_index": 1,
+      "week_phase": "medium",
+      "readiness": "normal",
+      "preparation_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "plan": {
+        "execution_version": 2,
+        "groups": [
+          {
+            "id": "00000000-0000-4000-8000-000000000005",
+            "kind": "superset",
+            "exercise_ids": [
+              "00000000-0000-4000-8000-000000000003",
+              "00000000-0000-4000-8000-000000000004"
+            ],
+            "rounds": 3,
+            "transition_sec": 5,
+            "round_rest_sec": 90
+          }
+        ],
+        "customization_scopes": [
+          "program_day"
+        ],
+        "customization_revisions": {
+          "program_day": 2
+        },
+        "title": null,
+        "workout_type": null,
+        "day_index": 1,
+        "week_phase": "medium",
+        "week_in_cycle": null,
+        "week_label": null,
+        "week_rir": null,
+        "base_week_phase": null,
+        "load_adjustment": null,
+        "load_adjustment_label": null,
+        "location": null,
+        "equipment": [],
+        "limitations": [],
+        "exercises": [
+          {
+            "target": {
+              "kind": "weight_reps",
+              "reps_min": 8,
+              "reps_max": 12,
+              "target_weight": "40.00"
+            },
+            "set_methods": [
+              {
+                "set_number": 3,
+                "kind": "drop",
+                "parts": [
+                  {
+                    "target_reps": 8,
+                    "target_weight": "40.00",
+                    "pause_after_sec": 5
+                  },
+                  {
+                    "target_reps": 6,
+                    "target_weight": "30.00",
+                    "pause_after_sec": 0
+                  }
+                ]
+              }
+            ],
+            "exercise_id": "00000000-0000-4000-8000-000000000003",
+            "order": 1,
+            "target_sets": 3,
+            "target_reps": "8-12",
+            "rest_sec": 60,
+            "name_ru": null,
+            "suggested_weight": "17.50",
+            "original_exercise_id": null,
+            "weight_mode": "per_hand",
+            "note": "Моя заметка\nЦель: 40 кг на руку"
+          },
+          {
+            "target": {
+              "kind": "timed",
+              "duration_sec": 30
+            },
+            "set_methods": [],
+            "exercise_id": "00000000-0000-4000-8000-000000000004",
+            "order": 2,
+            "target_sets": 3,
+            "target_reps": "30с",
+            "rest_sec": 0,
+            "name_ru": null,
+            "suggested_weight": null,
+            "original_exercise_id": null,
+            "weight_mode": null,
+            "note": null
+          }
+        ]
+      }
+    }
+  ]
+}

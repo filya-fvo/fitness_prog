@@ -1,0 +1,16 @@
+// c399250:frontend/src/db/offlineWorkoutContext.ts:35-39
+function row(key: string, data: unknown): MetaRow {
+  const value = JSON.stringify(data);
+  if (new TextEncoder().encode(value).length > 1900000) throw new Error("План слишком большой для сохранения");
+  return { key, value, updatedAt: Date.now() };
+}
+
+// c399250:frontend/src/db/offlineWorkoutContext.ts:42-46
+  const bundle = offlineWorkoutContextSchema.parse(input);
+  const profile = profileSchema.parse(rawProfile);
+  if (bundle.owner !== owner || profile.id !== owner || String(profile.goals.active_program_id || "") !== (bundle.program?.id || "")) throw new Error("Программа изменилась. Повторите подготовку");
+  const root = prefix(owner);
+  const rows = bundle.plans.map((plan, i) => row(`${root}plan:${i}`, plan));
+
+// c399250:frontend/src/db/offlineWorkoutContext.ts:76-76
+    const plans = rows.map(item => preparedProgramPlanSchema.parse(JSON.parse(item!.value)));

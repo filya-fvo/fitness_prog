@@ -1,0 +1,57 @@
+// c399250:frontend/src/api/workouts.ts:16-47
+export const workoutPlanSchema = z.object({
+  execution_version: z.union([z.literal(1), z.literal(2)]).optional(),
+  groups: z.array(workoutGroupSchema).max(10).optional(),
+  customization_scopes: z.array(z.enum(["program_day", "occurrence"])).max(2).optional(),
+  customization_revisions: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  title: z.string().nullable().optional(),
+  workout_type: z.string().nullable().optional(),
+  day_index: z.number().nullable().optional(),
+  week_phase: z.string().nullable().optional(),
+  week_in_cycle: z.number().nullable().optional(),
+  week_label: z.string().nullable().optional(),
+  week_rir: z.string().nullable().optional(),
+  base_week_phase: z.string().nullable().optional(),
+  load_adjustment: z.string().nullable().optional(),
+  load_adjustment_label: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  equipment: z.array(z.string()).default([]),
+  limitations: z.array(z.string()).default([]),
+  exercises: z.array(z.object({
+    exercise_id: z.string().uuid(),
+    set_methods: z.array(setMethodSchema).max(20).optional(),
+    order: z.number(),
+    target_sets: z.number(),
+    target_reps: z.string().nullable().optional(),
+    rest_sec: z.number().nullable().optional(),
+    name_ru: z.string().nullable().optional(),
+    suggested_weight: z.union([z.number(), z.string()]).nullable().optional(),
+    original_exercise_id: z.string().uuid().nullable().optional(),
+    weight_mode: z.enum(["total", "per_hand"]).nullable().optional(),
+    note: z.string().nullable().optional(),
+  })),
+});
+
+// c399250:frontend/src/api/workouts.ts:85-106
+const scheduleOccurrenceSchema = z.object({
+  original_date: z.string(),
+  target_date: z.string(),
+  start_time: z.string(),
+  title: z.string(),
+  program_id: z.string().uuid().nullable().optional(),
+  day_index: z.number().nullable().optional(),
+  status: z.enum(["scheduled", "moved", "missed", "completed", "cancelled", "paused"]),
+  is_override: z.boolean(),
+  is_assignment: z.boolean().default(false),
+  can_reschedule: z.boolean(),
+  reschedule_until: z.string().nullable().optional(),
+  can_cancel: z.boolean().default(false),
+  cancel_to: z.string().nullable().optional(),
+});
+
+export const scheduleOverviewSchema = z.object({
+  requested_date: z.string(),
+  current: scheduleOccurrenceSchema.nullable().optional(),
+  next: scheduleOccurrenceSchema.nullable().optional(),
+  last_completed_date: z.string().nullable().optional(),
+});

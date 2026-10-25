@@ -26,7 +26,8 @@ class WorkoutPlanExercise(BaseModel):
     suggested_weight: Decimal | None = Field(default=None, ge=0)
     original_exercise_id: uuid.UUID | None = None
     weight_mode: str | None = Field(default=None, pattern=r"^(total|per_hand)$")
-    note: str | None = Field(default=None, max_length=500)
+    # Up to 500 user characters plus the bounded readable goal suffix.
+    note: str | None = Field(default=None, max_length=600)
 
 
 class WorkoutPlan(BaseModel):

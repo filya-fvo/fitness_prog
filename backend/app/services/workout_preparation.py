@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.models.workout import Workout
 from app.schemas.workout import WorkoutPlan
 from app.services.offline_schedule import schedule_fingerprint
+from app.services.workout_target_compatibility import restore_omitted_targets
 
 
 def plan_fingerprint(user, program, plan, *, scheduled_date, day_index, week_phase, cycle_readiness):
@@ -29,6 +30,8 @@ def plan_fingerprint(user, program, plan, *, scheduled_date, day_index, week_pha
 
 
 async def validate_prepared_start(session, user, program, data, expected):
+    if data.plan is not None:
+        data.plan = restore_omitted_targets(data.plan, expected)
     stamp = data.preparation
     if stamp is None:
         return
