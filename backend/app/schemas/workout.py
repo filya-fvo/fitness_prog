@@ -10,10 +10,12 @@ from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 
+from app.schemas.workout_target import ExplicitWorkoutTarget
 from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod, WorkoutExecutionPart, WorkoutExecutionPartResponse
 
 
 class WorkoutPlanExercise(BaseModel):
+    target: ExplicitWorkoutTarget | None = None
     set_methods: list[WorkoutSetMethod] = Field(default_factory=list, max_length=20)
     exercise_id: uuid.UUID
     order: int = Field(..., ge=1)

@@ -1,3 +1,4 @@
+import { explicitWorkoutTargetSchema } from "./workoutTargetSchemas";
 import { useUserStore } from "@/store/userStore";
 import { z } from "zod";
 import { executionPartSchema, setMethodSchema, workoutGroupSchema } from "./workoutExecutionSchemas";
@@ -37,6 +38,7 @@ export const workoutPlanSchema = z.object({
     order: z.number(),
     target_sets: z.number(),
     target_reps: z.string().nullable().optional(),
+    target: explicitWorkoutTargetSchema.nullable().optional(),
     rest_sec: z.number().nullable().optional(),
     name_ru: z.string().nullable().optional(),
     suggested_weight: z.union([z.number(), z.string()]).nullable().optional(),

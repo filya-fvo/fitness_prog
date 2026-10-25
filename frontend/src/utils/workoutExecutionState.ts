@@ -1,3 +1,4 @@
+import { explicitWorkoutTargetSchema } from "@/api/workoutTargetSchemas";
 /** Durable session metadata; result UUIDs are independent of logical step keys. */
 import type { LocalWorkoutSession } from "@/db/schema";
 import { executionFactsFromDrafts, draftsFromWorkoutSnapshot } from "./workoutSession";
@@ -29,6 +30,7 @@ export function executionSnapshotKey(plan: WorkoutPlan): string {
     week_phase: plan.week_phase ?? null, revisions: [plan.customization_revisions?.program_day ?? 0, plan.customization_revisions?.occurrence ?? 0],
     groups: [...(plan.groups ?? [])].sort((a, b) => a.id.localeCompare(b.id)),
     exercises: [...plan.exercises].sort((a, b) => a.order - b.order).map(row => ({ exercise_id: row.exercise_id, order: row.order,
+      ...(row.target == null ? {} : { target: explicitWorkoutTargetSchema.parse(row.target) }),
       target_sets: row.target_sets, target_reps: row.target_reps ?? null, rest_sec: row.rest_sec ?? 60, weight_mode: row.weight_mode ?? null,
       set_methods: [...(row.set_methods ?? [])].sort((a, b) => a.set_number - b.set_number).map(method => ({ ...method,
         parts: method.parts.map(part => ({ ...part, target_weight: part.target_weight == null ? null : Number(part.target_weight) })) })),

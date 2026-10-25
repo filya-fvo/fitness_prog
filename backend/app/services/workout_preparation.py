@@ -17,6 +17,8 @@ def plan_fingerprint(user, program, plan, *, scheduled_date, day_index, week_pha
     content["exercises"].sort(key=lambda row: row["order"])
     content["groups"].sort(key=lambda row: str(row["id"]))
     for row in content["exercises"]:
+        if row.get("target") is None:
+            row.pop("target", None)
         row["set_methods"].sort(key=lambda method: method["set_number"])
     def encode(value):
         return str(value.normalize()) if isinstance(value, Decimal) else str(value)

@@ -114,7 +114,7 @@ def validate_plan_edit(old_plan, new_plan):
         def topology(plan):
             parsed = WorkoutPlan.model_validate(plan)
             return (sorted(parsed.groups, key=lambda group: str(group.id)), [
-                (row.exercise_id, row.order, row.target_sets, row.target_reps, row.rest_sec, row.weight_mode,
+                (row.exercise_id, row.order, row.target_sets, row.target_reps, row.rest_sec, row.weight_mode, row.target,
                  sorted(row.set_methods, key=lambda method: method.set_number))
                 for row in sorted(parsed.exercises, key=lambda row: row.order)])
         if topology(old_plan) != topology(new_plan):

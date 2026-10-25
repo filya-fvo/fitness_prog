@@ -1,3 +1,6 @@
+import type { ExplicitWorkoutTarget } from "@/api/workoutTargetSchemas";
+export type { ExplicitWorkoutTarget } from "@/api/workoutTargetSchemas";
+
 export type Exercise = {
   id: string;
   name_ru: string;
@@ -56,6 +59,7 @@ export type WorkoutSet = {
 };
 
 export type WorkoutPlanExercise = {
+  target?: ExplicitWorkoutTarget | null;
   set_methods?: WorkoutSetMethod[];
   exercise_id: string;
   order: number;
