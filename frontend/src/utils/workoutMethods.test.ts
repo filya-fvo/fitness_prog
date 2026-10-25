@@ -50,3 +50,39 @@ it("does not leave methods attached to removed future set slots", () => {
   expect(next.exercises[0].set_methods).toEqual([]);
   expect(() => updatePreparedExerciseSets(configureWorkoutGroup(base, group), "A", 4)).toThrow();
 });
+
+
+it.each([
+  [{ kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 40 }, "timed"],
+  [{ kind: "reps_only", reps_min: 8, reps_max: 12 }, "weight_reps"],
+  [{ kind: "timed", duration_sec: 95 }, "reps_only"],
+  [{ kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: null }, "cardio_machine"],
+] as const)("rejects incompatible preserved explicit goal %j on %s without changing the draft", (target, kind) => {
+  const draft: WorkoutPlan = { ...base, exercises: [{ ...base.exercises[0], target, suggested_weight: 17.5 }] };
+  const before = structuredClone(draft);
+  expect(() => replacePreparedExercise(draft, "A", exercise("D", [`load:${kind}`]))).toThrow(/нагруз/);
+  expect(draft).toEqual(before);
+});
+
+it.each([
+  [{ kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 40 }, "weight_reps"],
+  [{ kind: "reps_only", reps_min: 8, reps_max: 12 }, "reps_only"],
+  [{ kind: "timed", duration_sec: 95 }, "timed"],
+  [{ kind: "timed", duration_sec: 95 }, "cardio_machine"],
+] as const)("retains a compatible explicit goal %j on %s and clears only history hint", (target, kind) => {
+  const methods = kind === "weight_reps" ? [{ set_number: 1, kind: "cluster" as const, parts: [
+    { target_reps: 4, target_weight: 40, pause_after_sec: 20 },
+    { target_reps: 3, target_weight: 40, pause_after_sec: 0 },
+  ] }] : [];
+  const draft: WorkoutPlan = { ...base, exercises: [{ ...base.exercises[0], target, weight_mode: "per_hand", set_methods: methods, suggested_weight: 17.5 }] };
+  const before = structuredClone(draft);
+  const next = replacePreparedExercise(draft, "A", exercise("D", [`load:${kind}`]));
+  expect(next.exercises[0]).toMatchObject({ exercise_id: "D", target, rest_sec: 120, weight_mode: "per_hand", set_methods: methods, suggested_weight: null });
+  expect(draft).toEqual(before);
+});
+
+it("keeps a legacy no-target replacement across load kinds", () => {
+  const next = replacePreparedExercise(base, "A", exercise("D", ["load:timed"]));
+  expect(next.exercises[0].target).toBeUndefined();
+  expect(next.exercises[0].rest_sec).toBe(120);
+});

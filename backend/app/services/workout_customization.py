@@ -16,6 +16,7 @@ from app.schemas.workout_customization import (
     WorkoutCustomizationContext, WorkoutCustomizationRequest, WorkoutCustomizationResponse, WorkoutDayPatch,
 )
 from app.services import program_service
+from app.services.program_day_targets import validate_exercise_catalog_intent, validate_plan_catalog_intent
 
 
 def _slot(context: WorkoutCustomizationContext):
@@ -98,6 +99,7 @@ async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: Workout
             target = override.replacement_exercise_id
             if target in by_id:
                 raise HTTPException(422, "Упражнение уже есть в этом дне")
+            validate_exercise_catalog_intent(item.get("target"), item.get("set_methods"), catalog[target])
             by_id.pop(override.exercise_id)
             by_id[target] = item
             item.update(exercise_id=str(target), original_exercise_id=str(override.exercise_id), name_ru=catalog[target].name_ru)
@@ -184,15 +186,14 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
         if data.base_program_day_revision != (inherited.revision if inherited else 0):
             raise HTTPException(409, "Личный план уже изменён. Откройте подготовку снова")
     base = await workout_service.build_plan_from_program_day(session, program, data.day_index)
+    if data.scope == "occurrence":
+        base = await apply_customizations(session, user_id=user.id, program_id=program.id,
+            day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
     if not reset:
-        if data.scope == "occurrence":
-            base = await apply_customizations(session, user_id=user.id, program_id=program.id,
-                day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
         proposed = await apply_day_patch(session, base, data.patch)
-        from app.services.workout_execution import validate_method_exercises
-        await validate_method_exercises(session, proposed)
     else:
         proposed = base
+    await validate_plan_catalog_intent(session, proposed)
     if data.scope == "program_day":
         from app.services.workout_customization_conflicts import validate_occurrences, promote_occurrence
         await validate_occurrences(session, user.id, program.id, data.day_index, proposed, data.promote_date)

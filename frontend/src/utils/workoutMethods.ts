@@ -42,7 +42,9 @@ export function replacePreparedExercise(plan: WorkoutPlan, sourceId: string, tar
   if (sourceId === target.id) return plan;
   const source = plan.exercises.find(row => row.exercise_id === sourceId);
   if (!source || plan.exercises.some(row => row.exercise_id === target.id)) throw new Error("Упражнение уже есть в этом дне");
-  if (source.set_methods?.length && inferLoadType(target) !== "weight_reps") throw new Error("Сначала уберите дроп-сет или кластер: для замены нужны вес и повторы");
+  const load = inferLoadType(target);
+  if (source.target && source.target.kind !== (load === "cardio_machine" ? "timed" : load)) throw new Error("Цель не соответствует типу нагрузки упражнения. Выберите упражнение с совместимым типом нагрузки");
+  if (source.set_methods?.length && load !== "weight_reps") throw new Error("Сначала уберите дроп-сет или кластер: для замены нужны вес и повторы");
   return { ...plan, groups: plan.groups?.map(group => ({ ...group, exercise_ids: group.exercise_ids.map(id => id === sourceId ? target.id : id) })),
     exercises: plan.exercises.map(row => row.exercise_id !== sourceId ? row : { ...row, exercise_id: target.id, name_ru: target.name_ru,
       original_exercise_id: restoring ? null : row.original_exercise_id || row.exercise_id, suggested_weight: null }) };

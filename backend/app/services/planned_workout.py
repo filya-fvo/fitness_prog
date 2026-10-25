@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.models.user_program_day_override import UserProgramDayOverride
 from app.schemas.workout import PlannedWorkoutReplacement
+from app.services.program_day_targets import validate_exercise_catalog_intent
 
 
 async def _find_override(
@@ -105,6 +106,7 @@ async def apply_replacements(
         target = mapping.get(source)
         if target is None or target == source:
             continue
+        validate_exercise_catalog_intent(item.get("target"), item.get("set_methods"), targets[target])
         item["exercise_id"] = str(target)
         item["original_exercise_id"] = str(source)
         item["name_ru"] = targets[target].name_ru
