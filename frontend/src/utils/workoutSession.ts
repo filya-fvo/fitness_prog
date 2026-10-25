@@ -1,5 +1,6 @@
 import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutPlanExercise, WorkoutSet } from "@/types/workout";
 import { buildExecutionSteps, type ExecutionFacts } from "./workoutExecution";
+import { resolveInitialWorkoutTarget } from "./workoutTargets";
 
 function setKey(exerciseId: string, setNumber: number): string {
   return `${exerciseId}:${setNumber}`;
@@ -47,6 +48,7 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
       ...savedRows.map(row => row.set_number),
     ])].sort((a, b) => a - b);
     const restSec = exercise.rest_sec ?? 60;
+    const initial = resolveInitialWorkoutTarget({ row: exercise });
 
     for (const setNumber of setNumbers) {
       const saved = savedByKey.get(setKey(exercise.exercise_id, setNumber));
@@ -56,12 +58,12 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
           : {
               exerciseId: exercise.exercise_id,
               setNumber,
-              reps: "",
-              weight: "",
+              reps: initial.reps,
+              weight: initial.weight,
+              durationSec: initial.durationSec,
               weightMode: exercise.weight_mode ?? null,
               isCompleted: false,
               restTimeSec: restSec,
-              durationSec: null,
               note: exercise.note ?? null,
               machineParams: null,
             },

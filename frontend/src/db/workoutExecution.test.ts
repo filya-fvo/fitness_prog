@@ -26,6 +26,22 @@ const action = () => ({ owner, clientWorkoutId: client, action: "complete" as co
 beforeEach(async () => { await db.delete(); await db.open(); useUserStore.setState({ user: { id: owner, subscription_status: "plus", onboarding_completed: true } }); });
 afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await db.delete(); useUserStore.setState({ user: null }); });
 
+it("never replaces a valid durable typed session with a damaged incoming target snapshot", async () => {
+  const typedWorkout = structuredClone(workout);
+  (typedWorkout.plan as WorkoutPlan).exercises[0].target = { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: typedWorkout,
+    drafts: draftsFromWorkoutSnapshot(typedWorkout), now: clock });
+  await commitExecutionAction(action());
+  const valid = (await db.sessions.get(client))!;
+  const damaged = structuredClone(typedWorkout);
+  (damaged.plan as WorkoutPlan).exercises[0].target = { kind: "timed", duration_sec: 0 };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: damaged, drafts: [], now: clock });
+  const restored = (await db.sessions.get(client))!;
+  expect(restored.workout).toEqual(valid.workout);
+  expect(restored.drafts).toEqual(valid.drafts);
+  expect(restored.execution!.snapshotKey).toEqual(valid.execution!.snapshotKey);
+});
+
 it("commits part, cursor, pause and complete queue payload atomically from confirmation time", async () => {
   await seed();
   const saved = await commitExecutionAction(action());

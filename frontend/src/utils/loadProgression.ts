@@ -6,6 +6,7 @@
  */
 
 import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
+import { resolveInitialWorkoutTarget } from "./workoutTargets";
 
 export type WeekPhase = "light" | "medium" | "heavy";
 
@@ -350,16 +351,17 @@ export function draftsWithSuggestions(input: {
       history: input.history.get(item.exercise_id),
       phase: input.phase,
     });
+    const initial = resolveInitialWorkoutTarget({ row: item, fallback: sug });
     for (let n = 1; n <= sets; n += 1) {
       drafts.push({
         exerciseId: item.exercise_id,
         setNumber: n,
-        reps: sug.reps || "",
-        weight: sug.weight || "",
+        reps: initial.reps,
+        weight: initial.weight,
         weightMode: sug.weightMode,
         isCompleted: false,
         restTimeSec: item.rest_sec ?? 60,
-        durationSec: sug.durationSec,
+        durationSec: initial.durationSec,
         machineParams: sug.machineParams,
       });
     }

@@ -8,7 +8,7 @@ import { readOfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { findWorkoutPreparation } from "@/db/workoutCustomization";
 import { loadExerciseHints } from "@/db/workoutLoadHints";
 import { useUserStore } from "@/store/userStore";
-import type { Workout, WorkoutPlan } from "@/types/workout";
+import type { Workout, WorkoutPlan, WorkoutPlanExercise, WorkoutSet } from "@/types/workout";
 import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
 import { ensureExecutionDrafts } from "@/utils/workoutExecutionState";
 import { draftsWithSuggestions, localDateKey } from "@/utils/loadProgression";
@@ -41,6 +41,14 @@ async function existingSession(owner: string, program: string, day: string): Pro
   checkOwner(owner);
   if (workouts.some(row => row.status === "completed")) throw new Error("Тренировка этой программы на эту дату уже завершена");
   return (await db.sessions.where("ownerUserId").equals(owner).filter(row => row.workout.program_id === program && row.workout.scheduled_date === day && row.workout.status === "planned").first()) ?? null;
+}
+/** Backend seeds empty revision0 slots; every v2 result edit advances that revision. */
+function pristineServerSlot(row: WorkoutPlanExercise, saved: WorkoutSet): boolean {
+  return saved.execution_revision === 0 && saved.execution_kind === "standard" && !saved.parts?.length &&
+    !row.set_methods?.some(method => method.set_number === saved.set_number) && !saved.is_completed && !saved.is_skipped &&
+    saved.reps === null && saved.weight === null && saved.duration_sec === null && saved.machine_params == null &&
+    (saved.note ?? null) === (row.note || null) && (saved.weight_mode ?? null) === (row.weight_mode ?? null) &&
+    saved.rest_time_sec === (row.rest_sec ?? 60);
 }
 async function start(owner: string, day: string, input: Input): Promise<LocalWorkoutSession> {
   const existing = await existingSession(owner, input.programId, day);
@@ -96,7 +104,11 @@ async function start(owner: string, day: string, input: Input): Promise<LocalWor
   const phase = rawPlan.week_phase === "light" || rawPlan.week_phase === "heavy" ? rawPlan.week_phase : "medium";
   const suggestions = draftsWithSuggestions({ exercises: rawPlan.exercises, history, phase: phaseMetaFromName(phase) });
   let drafts = draftsFromWorkoutSnapshot(workout).map(draft => {
-    if (draft.isCompleted || draft.isSkipped || draft.parts?.some(part => part.status !== "pending")) return draft;
+    // Only pristine v2 server seeds can receive intentions; saved edits stay authoritative.
+    const row = rawPlan.exercises.find(row => row.exercise_id === draft.exerciseId);
+    const saved = workout.sets.find(saved => saved.exercise_id === draft.exerciseId && saved.set_number === draft.setNumber);
+    if (draft.isCompleted || draft.isSkipped || draft.parts?.some(part => part.status !== "pending") ||
+      (row?.target && saved && !(rawPlan.execution_version === 2 && pristineServerSlot(row, saved)))) return draft;
     const suggestion = suggestions.find(row => row.exerciseId === draft.exerciseId && row.setNumber === draft.setNumber);
     return { ...draft, reps: draft.reps || suggestion?.reps || "", weight: draft.weight || suggestion?.weight || "", weightMode: draft.weightMode ?? suggestion?.weightMode,
       durationSec: draft.durationSec ?? suggestion?.durationSec, machineParams: draft.machineParams ?? suggestion?.machineParams };

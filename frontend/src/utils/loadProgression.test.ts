@@ -277,3 +277,15 @@ it("prefills all twenty planned slots", () => {
     history: new Map(), phase: resolveWeekPhase("2026-10-19", new Date(2026, 9, 19)) });
   expect(drafts.map(row => row.setNumber)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
 });
+
+it("initializes explicit row goals before conflicting phase and history suggestions", () => {
+  const drafts = draftsWithSuggestions({ exercises: [
+    { exercise_id: "bench", order: 1, target_sets: 1, target_reps: "5-8", target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 } },
+    { exercise_id: "pushup", order: 2, target_sets: 1, target: { kind: "reps_only", reps_min: 12, reps_max: 15 } },
+    { exercise_id: "plank", order: 3, target_sets: 1, target: { kind: "timed", duration_sec: 95 } },
+  ], history: new Map(["bench", "pushup", "plank"].map(exerciseId => [exerciseId, { exerciseId, lastWeight: 80, lastReps: 6, lastDurationSec: 30, lastDate: "2026-10-19" }])),
+    phase: resolveWeekPhase("2026-10-01", new Date(2026, 9, 15)) });
+  expect(drafts[0]).toMatchObject({ reps: "12", weight: "40", isCompleted: false });
+  expect(drafts[1]).toMatchObject({ reps: "12", weight: "", isCompleted: false });
+  expect(drafts[2]).toMatchObject({ durationSec: 95, isCompleted: false });
+});

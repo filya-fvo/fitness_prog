@@ -53,6 +53,7 @@ import {
 } from "@/utils/loadProgression";
 import { isOnline } from "@/utils/network";
 import { inferLoadType, formatDurationLabel, defaultTimedSeconds } from "@/utils/exerciseLoadType";
+import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
 import {
   buildBulkReplacementPlan,
   equipmentGroup,
@@ -467,6 +468,8 @@ export function ActiveWorkout() {
   const targetReps =
     plan.exercises.find((e) => e.exercise_id === currentExerciseId)?.target_reps ??
     weekPhase.defaultReps;
+  const currentPlanRow = plan.exercises.find(e => e.exercise_id === currentExerciseId);
+  const explicitGoal = currentPlanRow ? resolveInitialWorkoutTarget({ row: currentPlanRow }).label : null;
 
   const showWarmup = Boolean((plan as { warmup_pending?: boolean }).warmup_pending) && !warmupDone;
   const warmupPlanBuilt = useMemo(() => {
@@ -500,7 +503,7 @@ export function ActiveWorkout() {
           return;
         }
         const next = drafts.map((d) => {
-          if (d.exerciseId !== currentExerciseId || d.isCompleted) return d;
+          if (d.exerciseId !== currentExerciseId || d.isCompleted || currentPlanRow?.target) return d;
           return {
             ...d,
             weight: d.weight || sug.weight,
@@ -1640,7 +1643,7 @@ export function ActiveWorkout() {
                   : "Группа мышц не указана"}
               </p>
               <p className="mt-1 text-xs text-tg-hint">
-                {currentLoadType === "timed" || currentLoadType === "cardio_machine"
+                {explicitGoal ? `Цель: ${explicitGoal}` : currentLoadType === "timed" || currentLoadType === "cardio_machine"
                   ? "Формат: по времени"
                   : currentLoadType === "reps_only"
                     ? `Цель: ${targetReps} повт.`
@@ -2063,7 +2066,7 @@ export function ActiveWorkout() {
           ) : null}
           <p className="text-[11px] text-tg-hint">
             План: {plan.exercises.find((e) => e.exercise_id === currentExercise.id)?.target_sets ?? "—"}{" "}
-            подх. × {targetReps}. «Готово» — если поля заполнены; иначе «Править».
+            подх. × {explicitGoal ?? targetReps}. «Готово» — если поля заполнены; иначе «Править».
           </p>
 
           {addSetOpen ? (
@@ -2079,10 +2082,12 @@ export function ActiveWorkout() {
                     : null;
                 const openDraft = currentSets.find((d) => !d.isCompleted);
                 const base = editing || openDraft || currentSets[0];
+                const initial = resolveInitialWorkoutTarget({ row: currentPlanRow ?? { exercise_id: currentExercise.id, order: 1, target_sets: 1 },
+                  existing: base, fallback: { durationSec: defaultTimedSeconds(currentExercise) } });
                 return {
-                  reps: base?.reps || "",
-                  weight: base?.weight || "",
-                  durationSec: base?.durationSec || defaultTimedSeconds(currentExercise),
+                  reps: initial.reps,
+                  weight: initial.weight,
+                  durationSec: currentPlanRow?.target ? initial.durationSec : base?.durationSec || defaultTimedSeconds(currentExercise),
                   restTimeSec: base?.restTimeSec || currentRestSec,
                   machineParams: base?.machineParams || null,
                   note: base?.note || "",

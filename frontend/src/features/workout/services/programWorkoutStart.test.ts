@@ -10,6 +10,7 @@ import { useUserStore } from "@/store/userStore";
 import { startProgramSession } from "./programWorkoutStart";
 import { apiClient } from "@/api/client";
 import * as telegram from "@/lib/telegram";
+import type { ExplicitWorkoutTarget, Workout, WorkoutSet } from "@/types/workout";
 const owner = "22222222-2222-4222-8222-222222222222", programId = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333";
 const date = "2026-10-20";
 const profile = { id: owner, goals: { active_program_id: programId, active_program_week_phase: "medium", active_program_phase_source: "manual" }, anthropometry: {}, subscription_status: "free", stars_balance: 0, onboarding_completed: true };
@@ -24,6 +25,88 @@ beforeEach(async () => {
   await saveOfflineWorkoutContext(owner, bundle, profile, [], []);
 });
 afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await db.delete(); useUserStore.setState({ user: null }); });
+it("initializes explicit goals once and resumes deliberately blank editable slots verbatim", async () => {
+  const explicit = { ...plan, exercises: [{ exercise_id: exercise, order: 1, target_sets: 2, rest_sec: 120,
+    target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 } }] };
+  await saveOfflineWorkoutContext(owner, { ...bundle, plans: [{ ...bundle.plans[0], plan: explicit }] }, profile, [], []);
+  const input = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" as const };
+  const session = await startProgramSession(input);
+  expect(session.drafts[0]).toMatchObject({ reps: "12", weight: "40", isCompleted: false });
+  session.drafts[0] = { ...session.drafts[0], reps: "", weight: "", durationSec: null };
+  session.drafts[1] = { ...session.drafts[1], reps: "9", weight: "35", isCompleted: true };
+  await db.sessions.put(session);
+  db.close(); await db.open();
+  const resumed = await startProgramSession(input);
+  expect(resumed.drafts).toEqual(session.drafts);
+});
+it("preserves an edited revision1 server blank typed slot while initializing a genuinely missing slot", async () => {
+  vi.stubGlobal("navigator", { onLine: true });
+  vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+  const explicit = { ...plan, exercises: [{ exercise_id: exercise, order: 1, target_sets: 2, rest_sec: 120,
+    target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 } }] };
+  vi.spyOn(apiClient, "post").mockResolvedValue({ data: { id: crypto.randomUUID(), user_id: owner, program_id: programId, scheduled_date: date,
+    status: "planned", plan: explicit, sets: [{ id: crypto.randomUUID(), workout_id: crypto.randomUUID(), exercise_id: exercise, set_number: 1, execution_kind: "standard", execution_revision: 1, reps: null, weight: null, duration_sec: null, rest_time_sec: 120, is_completed: false }],
+    started_at: null, completed_at: null, ai_notes: null, rpe: null } });
+  const session = await startProgramSession({ programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" });
+  expect(session.drafts[0]).toMatchObject({ reps: "", weight: "", durationSec: null });
+  expect(session.drafts[1]).toMatchObject({ reps: "12", weight: "40", isCompleted: false });
+});
+
+function serverSeedSet(workoutId: string, setNumber: number): WorkoutSet {
+  return { id: crypto.randomUUID(), workout_id: workoutId, exercise_id: exercise, set_number: setNumber,
+    execution_kind: "standard", execution_revision: 0, parts: [], reps: null, weight: null, duration_sec: null,
+    weight_mode: null, machine_params: null, note: null, rest_time_sec: 120, is_completed: false, is_skipped: false };
+}
+const targetCases: Array<{ target: ExplicitWorkoutTarget; expected: { reps: string; weight: string; durationSec?: number } }> = [
+  { target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 }, expected: { reps: "12", weight: "40" } },
+  { target: { kind: "reps_only", reps_min: 12, reps_max: 15 }, expected: { reps: "12", weight: "" } },
+  { target: { kind: "timed", duration_sec: 95 }, expected: { reps: "", weight: "", durationSec: 95 } },
+];
+for (const { target, expected } of targetCases) it(`initializes ${target.kind} after online start returns every pristine server slot, before conflicting history`, async () => {
+  vi.stubGlobal("navigator", { onLine: true });
+  vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+  const id = crypto.randomUUID();
+  const response: Workout = { id, user_id: owner, program_id: programId, scheduled_date: date, status: "planned", ai_notes: null, rpe: null,
+    started_at: "2026-10-20T09:00:00Z", completed_at: null,
+    plan: { execution_version: 2, week_phase: "heavy", exercises: [{ exercise_id: exercise, order: 1, target_sets: 2, rest_sec: 120, target_reps: "5-8", target }] },
+    sets: [serverSeedSet(id, 1), serverSeedSet(id, 2)] };
+  const post = vi.spyOn(apiClient, "post").mockImplementation(async url => ({ data: url === "/workouts/load-hints"
+    ? { items: [{ exercise_id: exercise, weight: 80, reps: 6, duration_sec: 30, completed_date: "2026-10-19", weight_mode: null, machine_params: null, rpe: null }] }
+    : response }));
+  const session = await startProgramSession({ programId, scheduledDate: date, dayIndex: 1, weekPhase: "heavy" });
+  expect(post).toHaveBeenCalledWith("/workouts/load-hints", { exercise_ids: [exercise] });
+  expect(session.drafts).toHaveLength(response.sets.length);
+  for (const draft of session.drafts) expect(draft).toMatchObject({ ...expected, isCompleted: false, executionRevision: 0 });
+  for (const set of session.workout.sets) expect(set).toMatchObject({ reps: null, weight: null, duration_sec: null, is_completed: false, execution_revision: 0 });
+  expect(await db.syncQueue.count()).toBe(0);
+});
+
+for (const changed of [
+  { execution_revision: 1 }, { is_completed: true }, { is_skipped: true }, { reps: 0 }, { weight: 0 }, { duration_sec: 0 },
+  { machine_params: {} }, { note: "Сохранённая заметка" }, { rest_time_sec: 90 }, { weight_mode: "per_hand" as const },
+]) it(`does not initialize an edited or ambiguous typed server slot: ${JSON.stringify(changed)}`, async () => {
+  vi.stubGlobal("navigator", { onLine: true });
+  vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+  const id = crypto.randomUUID(), saved = { ...serverSeedSet(id, 1), ...changed };
+  vi.spyOn(apiClient, "post").mockImplementation(async url => ({ data: url === "/workouts/load-hints" ? { items: [] } : {
+    id, user_id: owner, program_id: programId, scheduled_date: date, status: "planned", ai_notes: null, rpe: null, started_at: null, completed_at: null,
+    plan: { execution_version: 2, exercises: [{ exercise_id: exercise, order: 1, target_sets: 1, rest_sec: 120,
+      target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 } }] }, sets: [saved] } }));
+  const session = await startProgramSession({ programId, scheduledDate: date, dayIndex: 1 });
+  expect(session.drafts[0]).toMatchObject({ reps: saved.reps == null ? "" : String(saved.reps), weight: saved.weight == null ? "" : String(saved.weight), durationSec: saved.duration_sec });
+});
+it("keeps legacy incomplete server values while filling only their missing suggestions", async () => {
+  vi.stubGlobal("navigator", { onLine: true });
+  vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+  const legacy = { ...plan, exercises: [{ exercise_id: exercise, order: 1, target_sets: 2, rest_sec: 120 }] };
+  vi.spyOn(apiClient, "post").mockResolvedValue({ data: { id: crypto.randomUUID(), user_id: owner, program_id: programId, scheduled_date: date,
+    status: "planned", plan: legacy, sets: [{ id: crypto.randomUUID(), workout_id: crypto.randomUUID(), exercise_id: exercise, set_number: 1,
+      reps: 11, weight: 55, duration_sec: 42, machine_params: { level: 7 }, rest_time_sec: 120, is_completed: false }],
+    started_at: null, completed_at: null, ai_notes: null, rpe: null } });
+  const session = await startProgramSession({ programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" });
+  expect(session.drafts[0]).toMatchObject({ reps: "11", weight: "55", durationSec: 42, machineParams: { level: 7 } });
+  expect(session.drafts[1].reps).not.toBe("");
+});
 it("atomically starts a prepared plan offline and a concurrent second start resumes it", async () => {
   const post = vi.spyOn(apiClient, "post");
   const input = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" as const, cycleReadiness: "normal" as const };

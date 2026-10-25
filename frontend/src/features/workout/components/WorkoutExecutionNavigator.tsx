@@ -5,6 +5,7 @@ import { executionRestNeedsConfirmation, remainingRestMs, type RestKind } from "
 import { useWorkoutExecution } from "../hooks/useWorkoutExecution";
 import { CompoundSetEditor } from "./CompoundSetEditor";
 import { ExerciseMediaTabs } from "./ExerciseMediaTabs";
+import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
 
 const restLabels: Record<RestKind, string> = { cluster: "Между кластерами", drop_transition: "Смена веса", group_transition: "Переход к упражнению", round: "После круга", between_sets: "Между подходами", between_blocks: "Перед следующим блоком" };
 const groupLabels = { superset: "Суперсет", triset: "Трисет", circuit: "Круговая тренировка" };
@@ -43,7 +44,8 @@ export function WorkoutExecutionNavigator({ autoAdvance }: { autoAdvance: boolea
     {step && row && draft ? <article className="app-card space-y-3 p-4" aria-label="Текущий шаг">
       <div><p className="text-xs text-tg-hint">{group ? `${groupLabels[group.kind]} · круг ${step.round} из ${group.rounds}` : `Подход ${step.setNumber} из ${row.target_sets}`}</p>
         <h2 className="mt-1 text-lg font-semibold">{row.name_ru ?? exercise?.name_ru ?? "Упражнение"}</h2>
-        {step.partOrdinal ? <><p className="mt-2 font-medium">Часть {step.partOrdinal} из {draft.parts?.length}</p><p className="text-xs text-tg-hint">{step.kind === "cluster" ? "Кластер" : "Дроп-сет"} · подход {step.setNumber}</p></> : null}</div>
+        {step.partOrdinal ? <><p className="mt-2 font-medium">Часть {step.partOrdinal} из {draft.parts?.length}</p><p className="text-xs text-tg-hint">{step.kind === "cluster" ? "Кластер" : "Дроп-сет"} · подход {step.setNumber}</p></> : null}
+        {row.target ? <p className="mt-1 text-xs text-tg-hint">Цель: {resolveInitialWorkoutTarget({ row, part: step.partOrdinal == null ? undefined : row.set_methods?.find(method => method.set_number === step.setNumber)?.parts[step.partOrdinal - 1] }).label}</p> : null}</div>
       {exercise ? <CompoundSetEditor key={step.id} controller={controller} step={step} row={row} exercise={exercise} draft={draft} blocked={blockedRest || controller.next?.id !== step.id} /> : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
       {execution.progress.facts[step.id] === "pending" && step.id === controller.next?.id ? <div className="flex flex-wrap gap-2"><button className={btn} disabled={controller.busy || blockedRest} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
         {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}

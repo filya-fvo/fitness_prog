@@ -1,10 +1,19 @@
 import { expect, it } from "vitest";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { configureWorkoutGroup, dissolveWorkoutGroup, replacePreparedExercise, removePreparedExercise, updatePreparedExerciseSets } from "./workoutMethods";
+import { configureWorkoutGroup, dissolveWorkoutGroup, replacePreparedExercise, removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "./workoutMethods";
 import { reorderWorkoutExercise } from "./workoutCustomization";
 const base: WorkoutPlan = { exercises: ["A", "B", "C"].map((id, i) => ({ exercise_id: id, order: i + 1, target_sets: i + 2, rest_sec: 120 })) };
 const group = { id: "group", kind: "superset" as const, exercise_ids: ["A", "C"], rounds: 3, transition_sec: 0, round_rest_sec: 90 };
 const exercise = (id: string, tags = ["load:weight_reps"]) => ({ id, name_ru: id, muscle_group: "biceps", equipment: null, tags }) as Exercise;
+
+it("uses typed time before an exact legacy target and catalog default", () => {
+  const row = { ...base.exercises[0], target_reps: "30 с", target: { kind: "timed" as const, duration_sec: 95 } };
+  expect(preparedTimeSeconds(row, exercise("plank", ["load:timed"]))).toBe(95);
+  for (const target of [undefined, null]) {
+    expect(preparedTimeSeconds({ ...row, target }, exercise("plank", ["load:timed"]))).toBe(30);
+    expect(preparedTimeSeconds({ ...row, target, target_reps: "30-45 с" }, exercise("plank", ["load:timed"]))).toBe(45);
+  }
+});
 
 it("makes nonadjacent selected exercises one contiguous group and aligns rounds explicitly", () => {
   const next = configureWorkoutGroup(base, group);

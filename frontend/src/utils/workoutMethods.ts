@@ -2,6 +2,7 @@
 import type { Exercise, WorkoutGroup, WorkoutPlan } from "@/types/workout";
 import { buildExecutionSteps } from "./workoutExecution";
 import { inferLoadType, defaultTimedSeconds } from "./exerciseLoadType";
+import { resolveInitialWorkoutTarget } from "./workoutTargets";
 
 export const workoutGroupLabels = { superset: "Суперсет", triset: "Трисет", circuit: "Круговая тренировка" } as const;
 export const workoutMethodLabels = { standard: "Обычные подходы", drop: "Дроп-сет", cluster: "Кластеры" } as const;
@@ -54,9 +55,9 @@ export function workoutPreparationError(plan: WorkoutPlan): string | null {
 }
 
 
-/** Legacy plans encode a timed target in the existing human-readable target_reps field. */
+/** Typed time wins; legacy plans retain their exact string and catalog fallback. */
 export function preparedTimeSeconds(row: WorkoutPlan["exercises"][number], exercise: Exercise): number {
   const match = /^\s*(\d+)\s*(?:с|сек|секунд|sec)?\s*$/.exec(row.target_reps ?? "");
   const seconds = match ? Number(match[1]) : 0;
-  return seconds >= 1 && seconds <= 86400 ? seconds : defaultTimedSeconds(exercise);
+  return resolveInitialWorkoutTarget({ row, fallback: { durationSec: seconds >= 1 && seconds <= 86400 ? seconds : defaultTimedSeconds(exercise) } }).durationSec!;
 }

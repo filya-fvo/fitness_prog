@@ -5,6 +5,7 @@ import type { WorkoutExecutionController } from "../hooks/useWorkoutExecution";
 import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { inferLoadType, inferCardioMachineKind } from "@/utils/exerciseLoadType";
 import { preparedTimeSeconds } from "@/utils/workoutMethods";
+import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
 import { buildCardioMachineParams, cardioMachineFields, initialCardioParamValues } from "@/utils/cardioMachineParams";
 
 /** Form state is a proposal. Only the atomic execution writer can change recorded facts. */
@@ -21,9 +22,18 @@ export function CompoundSetEditor({ controller, step, draft, row, exercise, bloc
   const load = inferLoadType(exercise);
   const timed = load === "timed" || load === "cardio_machine";
   const priorClusterWeight = step.kind === "cluster" ? draft.parts?.find(item => item.status === "completed")?.weight : null;
-  const initialReps = String((part?.reps ?? (recorded ? draft.reps : target?.target_reps ?? draft.reps)) || row.target_reps?.match(/^\d+/)?.[0] || "10");
-  const initialWeight = String((recorded ? part?.weight ?? draft.weight : priorClusterWeight ?? part?.weight ?? target?.target_weight ?? draft.weight) || row.suggested_weight || "");
-  const initialDuration = String((recorded ? part?.duration_sec ?? draft.durationSec : draft.durationSec) ?? preparedTimeSeconds(row, exercise));
+  const initial = resolveInitialWorkoutTarget({ row, part: compound ? target : undefined,
+    existing: compound ? {
+      ...(part && (part.status !== "pending" || part.reps !== null) ? { reps: part.reps == null ? "" : String(part.reps) } : {}),
+      ...(part && part.status !== "pending" ? { weight: part.weight == null ? "" : String(part.weight), durationSec: part.duration_sec }
+        : priorClusterWeight != null || part?.weight != null ? { weight: String(priorClusterWeight ?? part?.weight) } : {}),
+    } : row.target ? draft : undefined,
+    fallback: { reps: draft.reps || row.target_reps?.match(/^\d+/)?.[0] || "10", weight: draft.weight || (row.suggested_weight == null ? "" : String(row.suggested_weight)),
+      durationSec: draft.durationSec ?? preparedTimeSeconds(row, exercise) },
+  });
+  const initialReps = initial.reps;
+  const initialWeight = initial.weight;
+  const initialDuration = initial.durationSec == null ? "" : String(initial.durationSec);
   const [reps, setReps] = useState(initialReps);
   const [weight, setWeight] = useState(initialWeight);
   const [duration, setDuration] = useState(initialDuration);

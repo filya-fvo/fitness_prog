@@ -42,6 +42,21 @@ function workoutFixture(overrides: Partial<Workout> = {}): Workout {
 }
 
 describe("draftsFromWorkoutSnapshot", () => {
+  it("fills only missing explicit-target slots and retains saved blank, skipped and completed facts", () => {
+    const workout = workoutFixture();
+    (workout.plan as WorkoutPlan).exercises[0].target = { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 };
+    (workout.plan as WorkoutPlan).exercises[0].target_sets = 4;
+    workout.sets = [
+      { id: "blank", workout_id: workout.id, exercise_id: "exercise-1", set_number: 1, reps: null, weight: null, duration_sec: null, is_completed: false, rest_time_sec: 90 },
+      { id: "done", workout_id: workout.id, exercise_id: "exercise-1", set_number: 2, reps: 9, weight: 35, is_completed: true, rest_time_sec: 90 },
+      { id: "skip", workout_id: workout.id, exercise_id: "exercise-1", set_number: 3, reps: null, weight: null, is_completed: false, is_skipped: true, rest_time_sec: 90 },
+    ];
+    const drafts = draftsFromWorkoutSnapshot(workout);
+    expect(drafts[0]).toMatchObject({ reps: "", weight: "", durationSec: null });
+    expect(drafts[1]).toMatchObject({ reps: "9", weight: "35", isCompleted: true });
+    expect(drafts[2]).toMatchObject({ reps: "", weight: "", isSkipped: true });
+    expect(drafts[3]).toMatchObject({ reps: "12", weight: "40", isCompleted: false });
+  });
   it("creates planned slots when the server has no logged sets", () => {
     const drafts = draftsFromWorkoutSnapshot(workoutFixture());
 
