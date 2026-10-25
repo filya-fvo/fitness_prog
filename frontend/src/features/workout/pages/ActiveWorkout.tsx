@@ -19,6 +19,8 @@ import {
 } from "@/db/syncQueue";
 import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHints";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
+import { WorkoutRestControl } from "@/features/workout/components/WorkoutRestControl";
+import { validProgramNumber } from "@/features/workout/components/programNumbers";
 import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTabs";
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
@@ -198,6 +200,7 @@ export function ActiveWorkout() {
     return true;
   });
   const [moreOpen, setMoreOpen] = useState(false);
+  const [restInputDrafts, setRestInputDrafts] = useState<Record<string, string>>({});
   const [finishOpen, setFinishOpen] = useState(false);
   const finishDialogRef = useModalAccessibility(finishOpen, () => setFinishOpen(false));
   const bulkReplaceDialogRef = useModalAccessibility(
@@ -459,10 +462,13 @@ export function ActiveWorkout() {
   const currentRestSec = useMemo(() => {
     const open = currentSets.find((d) => !d.isCompleted);
     const any = open ?? currentSets[currentSets.length - 1];
-    return any?.restTimeSec && any.restTimeSec > 0 ? any.restTimeSec : 60;
+    return any?.restTimeSec ?? 60;
   }, [currentSets]);
 
-  const REST_PRESETS = [45, 60, 75, 90, 120, 150, 180] as const;
+  function restInputKey(exerciseId: string) {
+    return JSON.stringify([authenticatedUserId ?? null, stableClientId, exerciseId]);
+  }
+  const invalidRestInput = currentExerciseId != null && restInputDrafts[restInputKey(currentExerciseId)] !== undefined;
 
 
   const targetReps =
@@ -833,7 +839,7 @@ export function ActiveWorkout() {
   const applyRestForCurrentExercise = useCallback(
     (sec: number) => {
       if (!currentExerciseId) return;
-      const clamped = Math.max(15, Math.min(600, Math.round(sec)));
+      const clamped = Math.max(0, Math.min(600, Math.round(sec)));
       setExerciseRest(currentExerciseId, clamped);
       const next = useWorkoutStore.getState();
       if (next.activeWorkout) {
@@ -1114,7 +1120,7 @@ export function ActiveWorkout() {
       machineParams: Record<string, string | number> | null;
     }>,
   ) {
-    if (!activeWorkout) return;
+    if (!activeWorkout || restInputDrafts[restInputKey(exerciseId)] !== undefined) return;
     const restWasActiveAtSubmit = useWorkoutStore.getState().isResting;
     let setNumber = setNumberInput;
     // Always read latest drafts from store (modal apply must not race with stale closure).
@@ -1175,7 +1181,7 @@ export function ActiveWorkout() {
       )
         ? "per_hand"
         : "total");
-    const restTimeSec = draft.restTimeSec || 60;
+    const restTimeSec = draft.restTimeSec ?? 60;
     const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
 
     try {
@@ -1756,93 +1762,21 @@ export function ActiveWorkout() {
           ) : null}
 
           {!simpleMode || moreOpen ? (
-            <div className="rounded-xl bg-tg-bg p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-tg-hint">Отдых между подходами</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {Math.floor(currentRestSec / 60)}:{String(currentRestSec % 60).padStart(2, "0")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                  onClick={() => applyRestForCurrentExercise(currentRestSec - 15)}
-                  aria-label="Уменьшить отдых на 15 секунд"
-                >
-                  −15
-                </button>
-                <button
-                  type="button"
-                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                  onClick={() => applyRestForCurrentExercise(currentRestSec - 30)}
-                  aria-label="Уменьшить отдых на 30 секунд"
-                >
-                  −30
-                </button>
-                <input
-                  type="number"
-                  min={15}
-                  max={600}
-                  step={15}
-                  value={currentRestSec}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (Number.isFinite(n)) applyRestForCurrentExercise(n);
-                  }}
-                  className="app-field min-w-0 flex-1 text-center"
-                  aria-label="Отдых в секундах"
-                />
-                <button
-                  type="button"
-                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                  onClick={() => applyRestForCurrentExercise(currentRestSec + 30)}
-                  aria-label="Увеличить отдых на 30 секунд"
-                >
-                  +30
-                </button>
-                <button
-                  type="button"
-                  className="h-9 w-12 rounded-lg bg-tg-secondary text-sm font-semibold"
-                  onClick={() => applyRestForCurrentExercise(currentRestSec + 15)}
-                  aria-label="Увеличить отдых на 15 секунд"
-                >
-                  +15
-                </button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {REST_PRESETS.map((sec) => {
-                  const label =
-                    sec < 60
-                      ? `${sec}с`
-                      : sec % 60 === 0
-                        ? `${sec / 60}м`
-                        : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
-                  return (
-                    <button
-                      key={sec}
-                      type="button"
-                      onClick={() => applyRestForCurrentExercise(sec)}
-                      className={[
-                        "rounded-full px-2.5 py-1 text-[11px]",
-                        currentRestSec === sec
-                          ? "app-gradient-action text-white"
-                          : "bg-tg-secondary text-tg-hint",
-                      ].join(" ")}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-1.5 text-[10px] text-tg-hint">
-                Применяется к незавершённым подходам этого упражнения.
-              </p>
-            </div>
+            <WorkoutRestControl key={restInputKey(currentExercise.id)} seconds={currentRestSec} draft={restInputDrafts[restInputKey(currentExercise.id)]}
+              onChange={value => {
+                const valid = validProgramNumber(value, 0, 600);
+                setRestInputDrafts(previous => {
+                  const next = { ...previous };
+                  if (valid) delete next[restInputKey(currentExercise.id)];
+                  else next[restInputKey(currentExercise.id)] = value;
+                  return next;
+                });
+                if (valid) applyRestForCurrentExercise(Number(value));
+              }} />
           ) : (
             <p className="text-xs text-tg-hint">
-              Отдых {Math.floor(currentRestSec / 60)}:
-              {String(currentRestSec % 60).padStart(2, "0")} · после «Готово» таймер сам
+              {invalidRestInput ? "Исправьте отдых в настройках «Ещё»." : currentRestSec === 0 ? "Без отдыха · таймер не запускается" :
+                `Отдых ${Math.floor(currentRestSec / 60)}:${String(currentRestSec % 60).padStart(2, "0")} · после «Готово» таймер запускается автоматически.`}
             </p>
           )}
 
@@ -1887,6 +1821,7 @@ export function ActiveWorkout() {
                         <button
                           type="button"
                           className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          disabled={invalidRestInput}
                           onClick={() => {
                             setEditingSetNumber(draft.setNumber);
                             setAddSetOpen(true);
@@ -1900,6 +1835,7 @@ export function ActiveWorkout() {
                         <button
                           type="button"
                           className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          disabled={invalidRestInput}
                           onClick={() => {
                             setEditingSetNumber(draft.setNumber);
                             setAddSetOpen(true);
@@ -1909,7 +1845,7 @@ export function ActiveWorkout() {
                         </button>
                         <button
                           type="button"
-                          disabled={savingKey === key || !ready}
+                          disabled={savingKey === key || !ready || invalidRestInput}
                           onClick={() => {
                             if (!ready) {
                               setEditingSetNumber(draft.setNumber);
@@ -1959,6 +1895,7 @@ export function ActiveWorkout() {
                 startRest(currentRestSec);
               }}
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-tg-bg text-lg"
+              disabled={invalidRestInput}
               aria-label="Таймер отдыха"
               title="Таймер"
             >
@@ -1966,6 +1903,7 @@ export function ActiveWorkout() {
             </button>
             <button
               type="button"
+              disabled={invalidRestInput}
               onClick={() => {
                 // Repeat last completed set values into a new draft, then open modal if empty
                 const done = [...currentSets].filter((d) => d.isCompleted).sort((a, b) => b.setNumber - a.setNumber)[0];
@@ -2023,6 +1961,7 @@ export function ActiveWorkout() {
             {(!simpleMode || moreOpen) ? (
               <button
                 type="button"
+                disabled={invalidRestInput}
                 onClick={() => {
                   setEditingSetNumber(null);
                   setAddSetOpen(true);
@@ -2088,7 +2027,7 @@ export function ActiveWorkout() {
                   reps: initial.reps,
                   weight: initial.weight,
                   durationSec: currentPlanRow?.target ? initial.durationSec : base?.durationSec || defaultTimedSeconds(currentExercise),
-                  restTimeSec: base?.restTimeSec || currentRestSec,
+                  restTimeSec: base?.restTimeSec ?? currentRestSec,
                   machineParams: base?.machineParams || null,
                   note: base?.note || "",
                 };

@@ -42,6 +42,14 @@ function workoutFixture(overrides: Partial<Workout> = {}): Workout {
 }
 
 describe("draftsFromWorkoutSnapshot", () => {
+  it("restores explicit zero from server records independently of the next planned rest", () => {
+    const workout = workoutFixture({ sets: [{ id: "zero", workout_id: "workout-1", exercise_id: "exercise-1",
+      set_number: 1, reps: 10, weight: 40, is_completed: true, rest_time_sec: 0 }] });
+    expect(draftsFromWorkoutSnapshot(workout).map(row => row.restTimeSec)).toEqual([0, 90, 90]);
+    (workout.plan as WorkoutPlan).exercises[0].rest_sec = 0;
+    expect(draftsFromWorkoutSnapshot(workout).map(row => row.restTimeSec)).toEqual([0, 0, 0]);
+  });
+
   it("fills only missing explicit-target slots and retains saved blank, skipped and completed facts", () => {
     const workout = workoutFixture();
     (workout.plan as WorkoutPlan).exercises[0].target = { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 };
