@@ -7,14 +7,16 @@ import { Header } from "@/components/layout/Header";
 import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { ProgramNumberField } from "../components/ProgramNumberField";
+import { validProgramNumber, migrateProgramNumbers } from "../components/programNumbers";
 import type { Exercise } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
 
-type DayDraft = PersonalProgramInput["days"][number];
-type ExerciseDraft = DayDraft["exercises"][number];
+type ExerciseDraft = Omit<PersonalProgramInput["days"][number]["exercises"][number], "sets" | "rest_sec"> & { sets: string; rest_sec: string };
+type DayDraft = { name: string; exercises: ExerciseDraft[] };
 
 const LOCATION_OPTIONS = [
   { value: "gym", label: "Зал", image: "/app-media/training-programs-hero.webp" },
@@ -32,7 +34,7 @@ export function PersonalProgramBuilderPage() {
   const [name, setName] = useState("");
   const [location, setLocation] = useState<PersonalProgramInput["location"]>("gym");
   const [progression, setProgression] = useState<PersonalProgramInput["progression"]>("phased");
-  const [durationWeeks, setDurationWeeks] = useState(8);
+  const [durationWeeks, setDurationWeeks] = useState("8");
   const [days, setDays] = useState<DayDraft[]>([newDay(0), newDay(1), newDay(2)]);
   const [dayCount, setDayCount] = useState(3);
   const [activeDay, setActiveDay] = useState(0);
@@ -47,10 +49,11 @@ export function PersonalProgramBuilderPage() {
   const recovery = useRecoverableDraft({
     owner, context: "personal-program", ready: !loading,
     value: { name, location, progression, durationWeeks, days, dayCount, activeDay, step },
+    migrate: migrateProgramNumbers,
     validate: (draft) => Number.isInteger(draft.dayCount) && draft.days.length >= draft.dayCount && draft.dayCount >= 1 && draft.dayCount <= 7
       && Number.isInteger(draft.activeDay) && draft.activeDay >= 0 && draft.activeDay < draft.dayCount
       && draft.days.every((day) => day.exercises.every((item) => typeof item.exercise_id === "string"
-        && typeof item.reps === "string" && typeof item.sets === "number" && typeof item.rest_sec === "number")),
+        && typeof item.reps === "string" && typeof item.sets === "string" && typeof item.rest_sec === "string")),
     restore: (draft) => {
       setName(draft.name); setLocation(draft.location); setProgression(draft.progression);
       setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(draft.dayCount);
@@ -90,7 +93,7 @@ export function PersonalProgramBuilderPage() {
   function addExercise(exercise: Exercise) {
     editDay((day) => day.exercises.length >= 12 || day.exercises.some((item) => item.exercise_id === exercise.id) ? day : ({ ...day, exercises: [
       ...day.exercises,
-      { exercise_id: exercise.id, sets: 3, reps: "8-12", rest_sec: 60 },
+      { exercise_id: exercise.id, sets: "3", reps: "8-12", rest_sec: "60" },
     ] }));
   }
 
@@ -98,12 +101,17 @@ export function PersonalProgramBuilderPage() {
     editDay((day) => ({ ...day, exercises: day.exercises.map((item) => item.exercise_id === exerciseId ? { ...item, ...changes } : item) }));
   }
 
+  const weeksValid = validProgramNumber(durationWeeks, 1, 52);
+  const numbersValid = weeksValid && visibleDays.every((day) => day.exercises.every((item) => validProgramNumber(item.sets, 1, 8) && validProgramNumber(item.rest_sec, 0, 300)));
+
+  function openDays() { if (name.trim().length >= 3 && weeksValid) setStep("days"); }
+
   async function save() {
-    if (saving || !allDaysReady || name.trim().length < 3) return;
+    if (saving || !numbersValid || !allDaysReady || name.trim().length < 3) return;
     setSaving(true);
     setError(null);
     try {
-      const program = await createMyProgram({ name: name.trim(), location, progression, duration_weeks: durationWeeks, days: visibleDays });
+      const program = await createMyProgram({ name: name.trim(), location, progression, duration_weeks: Number(durationWeeks), days: visibleDays.map((day) => ({ ...day, exercises: day.exercises.map((item) => ({ ...item, sets: Number(item.sets), rest_sec: Number(item.rest_sec) })) })) });
       recovery.clear();
       navigate(`/programs?view=mine&id=${program.id}`, { replace: true });
     } catch (cause) {
@@ -128,7 +136,7 @@ export function PersonalProgramBuilderPage() {
 
     <div className="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="Шаг создания программы">
       <button type="button" onClick={() => setStep("setup")} className={step === "setup" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>1 · Основа</button>
-      <button type="button" onClick={() => name.trim().length >= 3 && setStep("days")} className={step === "days" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>2 · Дни</button>
+      <button type="button" onClick={openDays} className={step === "days" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>2 · Дни</button>
     </div>
 
     {step === "setup" ? <div className="app-card space-y-4 p-4">
@@ -147,9 +155,7 @@ export function PersonalProgramBuilderPage() {
           {Array.from({ length: 7 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
         </select>
       </label>
-      <label className="block text-sm font-semibold">Длительность, недель
-        <input type="number" min={1} max={52} value={durationWeeks} onChange={(event) => setDurationWeeks(Math.max(1, Math.min(52, Number(event.target.value) || 1)))} className="app-field mt-2 w-full text-base" />
-      </label>
+      <ProgramNumberField label="Длительность, недель" value={durationWeeks} onChange={setDurationWeeks} min={1} max={52} />
       <div><p className="mb-2 text-sm font-semibold">Как меняется нагрузка</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" aria-pressed={progression === "linear"} onClick={() => setProgression("linear")}
@@ -162,7 +168,7 @@ export function PersonalProgramBuilderPage() {
           </button>
         </div>
       </div>
-      <button type="button" disabled={name.trim().length < 3} onClick={() => setStep("days")}
+      <button type="button" disabled={name.trim().length < 3} onClick={openDays}
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -182,10 +188,10 @@ export function PersonalProgramBuilderPage() {
               <p className="min-w-0 flex-1 text-sm font-semibold">{index + 1}. {byId.get(item.exercise_id)?.name_ru ?? "Упражнение"}</p>
               <button type="button" aria-label="Убрать упражнение" onClick={() => editDay((day) => ({ ...day, exercises: day.exercises.filter((entry) => entry.exercise_id !== item.exercise_id) }))} className="min-h-11 min-w-11 text-tg-link">✕</button>
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <label className="text-xs text-tg-hint">Подходы<input type="number" min={1} max={8} value={item.sets} onChange={(event) => updateExercise(item.exercise_id, { sets: Math.max(1, Math.min(8, Number(event.target.value) || 1)) })} className="app-field mt-1 w-full text-base" /></label>
-              <label className="text-xs text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={(event) => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 w-full text-base" /></label>
-              <label className="text-xs text-tg-hint">Отдых, с<input type="number" min={15} max={300} value={item.rest_sec} onChange={(event) => updateExercise(item.exercise_id, { rest_sec: Math.max(15, Math.min(300, Number(event.target.value) || 15)) })} className="app-field mt-1 w-full text-base" /></label>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <ProgramNumberField label="Подходы" value={item.sets} min={1} max={8} onChange={(sets) => updateExercise(item.exercise_id, { sets })} />
+              <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={(event) => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 w-full text-base" /></label>
+              <ProgramNumberField label="Отдых, с" value={item.rest_sec} min={0} max={300} onChange={(rest_sec) => updateExercise(item.exercise_id, { rest_sec })} presets={[0, 30, 60, 90, 120]} />
             </div>
           </div>)}
         </div>
@@ -197,7 +203,12 @@ export function PersonalProgramBuilderPage() {
         </div> : null}
       </div>
       <p className="text-xs text-tg-hint">Добавьте хотя бы одно упражнение в каждый день. В линейной программе повторы остаются заданными; в программе с уровнями сложности они меняются по неделям.</p>
-      <button type="button" disabled={!allDaysReady || saving || name.trim().length < 3 || loading} onClick={() => void save()}
+      {!numbersValid ? <div className="text-sm text-[var(--app-danger)]">
+        {!weeksValid ? <button type="button" onClick={() => setStep("setup")} className="min-h-11 underline">Исправить длительность программы</button> : null}
+        {visibleDays.map((day, index) => day.exercises.some((item) => !validProgramNumber(item.sets, 1, 8) || !validProgramNumber(item.rest_sec, 0, 300))
+          ? <button key={index} type="button" onClick={() => setActiveDay(index)} className="block min-h-11 underline">Исправить числа: День {index + 1}</button> : null)}
+      </div> : null}
+      <button type="button" disabled={!numbersValid || !allDaysReady || saving || name.trim().length < 3 || loading} onClick={() => void save()}
         className="app-button app-gradient-action w-full disabled:opacity-50">{saving ? "Сохраняем…" : "Создать программу"}</button>
     </div>}
     {error ? <p role="alert" className="mt-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-3 text-sm">{error}</p> : null}

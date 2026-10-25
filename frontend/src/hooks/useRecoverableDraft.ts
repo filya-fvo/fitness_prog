@@ -7,6 +7,7 @@ type Options<T> = {
   value: T;
   restore: (value: T) => void;
   validate?: (value: T) => boolean;
+  migrate?: (value: unknown) => unknown;
 };
 
 function compatible(template: unknown, candidate: unknown): boolean {
@@ -19,7 +20,7 @@ function compatible(template: unknown, candidate: unknown): boolean {
 }
 
 /** Account-scoped recovery; only explicitly selected, non-secret form fields belong here. */
-export function useRecoverableDraft<T>({ owner, context, ready, value, restore, validate }: Options<T>) {
+export function useRecoverableDraft<T>({ owner, context, ready, value, restore, validate, migrate }: Options<T>) {
   const key = owner ? `fitness_form_draft:v1:${owner}:${context}` : null;
   const serialized = JSON.stringify(value);
   const current = useRef({ key: null as string | null, baseline: serialized });
@@ -29,6 +30,8 @@ export function useRecoverableDraft<T>({ owner, context, ready, value, restore, 
   restoreRef.current = restore;
   const valueRef = useRef(value);
   valueRef.current = value;
+  const migrateRef = useRef(migrate);
+  migrateRef.current = migrate;
   const validateRef = useRef(validate);
   validateRef.current = validate;
   const [dirty, setDirty] = useState(false);
@@ -45,7 +48,8 @@ export function useRecoverableDraft<T>({ owner, context, ready, value, restore, 
         setDirty(false);
         const saved = localStorage.getItem(key);
         if (saved) {
-          const parsed: unknown = JSON.parse(saved);
+          const raw: unknown = JSON.parse(saved);
+          const parsed: unknown = migrateRef.current ? migrateRef.current(raw) : raw;
           if (saved.length <= 100_000 && compatible(valueRef.current, parsed) && (!validateRef.current || validateRef.current(parsed as T))) {
             if (JSON.stringify(parsed) !== serialized) {
               hasChanges.current = true;
