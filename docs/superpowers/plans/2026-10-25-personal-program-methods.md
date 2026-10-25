@@ -66,6 +66,14 @@ Server variants extra=forbid, discriminator kind. Reps integer1..100000,min<=max
 - [ ] Исправить initial missing-draft prefilling и timed modal через один helper. Не считать цель completion; не перезаполнять существующий blank draft на reload.
 - [ ] GREEN unit/start/prepared runtime/recovery; invalid snapshot не заменяет valid durable record. Review+fix+commit.
 
+### Task N02: linear rest is fixed across weeks
+
+After B02b, before B03, separately from explicit-target persistence. Existing linear programs describe fixed weekly targets, but nonzero rest still follows heavy/light clamps. B01a intentionally preserved this until its own test/fix step.
+
+- [ ] RED real plan construction: linear exercise30 inheavy must stay30, linear120 inlight stays120; missing rest defaults60 inallphases. Existing phased values retain legacy75/90 clamp behavior. Keep0casesGREEN.
+- [ ] Apply phase rest adjustment only to phased legacy plan; explicit newtarget rest policy already protected by B02b. Update earlier literal B01a regression expectations specifically for intended linear fix, not globally weakening assertions.
+- [ ] GREEN personal/plan/cycle regression, Ruff; USER_GUIDE/CHANGELOG exact linear rule, independent review and separate commit. No DB/history rewrites.
+
 ### Task B03: one day composer in personal builder
 
 **Files:** PersonalProgramBuilderPage.tsx, новый personalProgramDraft.ts/adapter+tests рядом; WorkoutDayComposer.tsx и reusable numeric/target editors; WorkoutGroupEditor.tsx/WorkoutMethodEditor.tsx только если требуется current contract; personal-program-methods E2E/fixtures; USER_GUIDE/CHANGELOG.
