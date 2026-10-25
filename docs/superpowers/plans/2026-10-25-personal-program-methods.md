@@ -76,15 +76,23 @@ After B02b, before B03, separately from explicit-target persistence. Existing li
 
 ### Task N09: compatible goals on exercise replacement
 
+Completed 3f4c9b8 after scoped review/fix/re-review; inherited occurrence-reset validation included.
+
 Separate source-discovered candidate, validate with actual RED before fixing. Before composer integration, test frontend replacement plus both backend prepared replacement paths. Incompatible target/load replacement must reject before saving with a clear explanation to change/remove the goal, rather than silently dropping or converting it. Reuse infer_load_type and common intent validation; compatible goals, methods, rest and weight mode survive. Missing/private/duplicate exercise guards stay. Preserve no-target legacy behavior. Independent review and separate commit.
 
 ### Task N10: zero rest through execution UI
 
+Completed ade532a after independent review; invalid rest drafts are owner/session/exercise scoped.
+
 Separate source-discovered candidate, actual browser RED first. ActiveWorkout currently converts zero to60 at display/modal/completion boundaries and clamps runtime edit to15. Preserve explicit0 through display, edit, save and reload; no nonzero timer after completing such a set. Missing fallback60 and positive values stay; shared compound clocks/auto-transition rules unchanged. Reuse bounded stringdraft numeric UX where needed. Synthetic fixtures only, no real notification delivery. Independent review and separate commit.
+
+### Task N13/N13b: test artifact isolation
+
+Completed a39c786 and cf999b8 after independent review: execution, composer, preparation and history diagnostic screenshots use Playwright per-test output. Corrected runs left main-artifact hashes unchanged. Earlier two execution PNG overwrites are recorded; no original restoration claim. No product behavior changed.
 
 ### Task B03: one day composer in personal builder
 
-Execute as two independently checked commits: B03a pure lossless adapter + bounded recovery/N08; B03b composer integration and limits. Preserve invalid/blank string drafts and block saving instead of silently normalizing them. Run N07 compatibility, N09 and N10 before exposing the new constructor.
+Execute as three independently checked commits: B03a pure lossless adapter + bounded recovery/N08; B03b composer integration and limits; B03c/N12 raw numeric methods/groups. Preserve invalid/blank string drafts and block saving instead of silently normalizing them. Run N07 compatibility, N09 and N10 before exposing the new constructor.
 
 **Files:** PersonalProgramBuilderPage.tsx, новый personalProgramDraft.ts/adapter+tests рядом; WorkoutDayComposer.tsx и reusable numeric/target editors; WorkoutGroupEditor.tsx/WorkoutMethodEditor.tsx только если требуется current contract; personal-program-methods E2E/fixtures; USER_GUIDE/CHANGELOG.
 
@@ -92,9 +100,15 @@ Execute as two independently checked commits: B03a pure lossless adapter + bound
 - [ ] Переиспользовать composer, передав limits personal8/12; pending group edit блокирует общее save. Проверить максимальный допустимый методный draft против shared recovery100000-character cap (N08): увеличить только ограниченный context budget либо явно предотвратить тихую потерю допустимого draft; обычные аккаунты/контексты не расширять без причины. Атомарные reorder/remove/replace используют existing utilities. Сохранить numeric UX B01b и old drafts.
 - [ ] GREEN backend roundtrip уже B02b + browser payload/reopen; не объявлять mock-echo проверкой сервера. Review+fix+commit.
 
+### Task B03c/N12: raw numeric fields in methods and groups
+
+Every numeric input in the approved constructor must retain raw text. Existing group transition/round rest and method pause/repetition/weight handlers eagerly convert input. Add recoverable identity-bound buffers and validity/pending reporting to the shared editors, preserving group/method invariants and optional blank weight. Regress erase, unfinished decimals, invalid integers, selection changes, day switch and reload. This is a separate RED/GREEN/review/commit and release gate after B03b, before B04. No duplicate personal-only editor.
+
 ### Task B04: target controls and final WEB vertical check
 
 **Files:** scoped shared target editor компоненты/helpers; builder/composer интеграция; relevant e2e/visual fixtures; docs.
+
+N11 scope ruling: typed goals are editable during new personal-program creation through the atomic personal API. In existing preparation, a typed program goal is read-only with an explanation; suppress legacy reps/time controls that runtime would ignore. No-target rows retain existing editing. Do not invent a target-delta protocol implicitly.
 
 - [ ] RED обычные reps представлены двумя полями,min<=max; timed — время/единица/пресеты; вес необязателен и учитывает существующий weight_mode. Методы частей сохраняют exact reps. Все numeric controls свободно очищаются/вводятся и не подменяются eager clamp.
 - [ ] Реализовать контролы в нынешней дизайн-системе; неподдерживаемые load modes объясняются, не маскируются работающим selector. Не делать новый rest-pause kind.
@@ -105,11 +119,11 @@ Execute as two independently checked commits: B03a pure lossless adapter + bound
 
 **Files:** backend preparation/start and plan-edit services; focused old-client fixture tests; legacy-readable target label helper. No native source changes.
 
-- [ ] RED: pass new target-bearing bundle through exact APK26 stripping Zod schema and old offline context round-trip; server receives target-less plan with retained canonical stamp. Reproduce prepared offline and native online-prepared route contract; do not claim device execution.
-- [ ] Restore ONLY truly omitted target from authoritative expected server plan before full fingerprint validation; match exercise identity/order, never accept changed non-target topology or an explicitly supplied mismatching/null target. Preserve distinction absent vs explicitnull through Pydantic/model_dump boundaries. Fingerprint itself remains full-strength canonical.
-- [ ] Whole-plan edit from old client: omitted target retains existing server target; explicit change/null of active target still rejects. Never replace actual facts with goals.
-- [ ] Legacy fields keep readable reps/time and derived human note for explicit weight, without repurposing suggested_weight. APK26 will require manual goal entry; new WEB provides full initial-target behavior. No claim of new embedded native capability before APK phase.
-- [ ] GREEN tests exact legacy parser stripping+server expected restore; corruption/target tampering409; old session/fingerprint unchanged; canonical target remains after GET/reload and omission update. Review+fix+commit. Gate this before stage publication even if UI finished.
+- [x] RED: pass new target-bearing bundle through exact APK26 stripping Zod schema and old offline context round-trip; server receives target-less plan with retained canonical stamp. Reproduce prepared offline and native online-prepared route contract; do not claim device execution.
+- [x] Restore ONLY truly omitted target from authoritative expected server plan before full fingerprint validation; match exercise identity/order, never accept changed non-target topology or an explicitly supplied mismatching/null target. Preserve distinction absent vs explicitnull through Pydantic/model_dump boundaries. Fingerprint itself remains full-strength canonical.
+- [x] Whole-plan edit from old client: omitted target retains existing server target; explicit change/null of active target still rejects. Never replace actual facts with goals.
+- [x] Legacy fields keep readable reps/time and derived human note for explicit weight, without repurposing suggested_weight. APK26 will require manual goal entry; new WEB provides full initial-target behavior. No claim of new embedded native capability before APK phase.
+- [x] GREEN tests exact legacy parser stripping+server expected restore; corruption/target tampering409; old session/fingerprint unchanged; canonical target remains after GET/reload and omission update. Review+fix+commit. Gate this before stage publication even if UI finished.
 
 ## Следующий этап
 
