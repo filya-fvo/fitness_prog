@@ -42,39 +42,49 @@ Server variants extra=forbid, discriminator kind. Reps integer1..100000,min<=max
 **Files:** новый backend/app/schemas/workout_target.py; backend/app/schemas/workout.py; backend/app/services/workout_preparation.py; backend/app/services/workout_execution.py; frontend/src/types/workout.ts; новый frontend/src/api/workoutTargetSchemas.ts; frontend/src/api/workouts.ts; frontend/src/utils/workoutExecutionState.ts; соответствующие schema/execution/preparation/snapshot tests.
 **Produces:** backend ExplicitWorkoutTarget union, frontend ExplicitWorkoutTarget type + explicitWorkoutTargetSchema.
 
-- [ ] До изменения зафиксировать deterministic legacy fingerprint/snapshot key в regression fixture. Добавить RED tests всех union variants, bad ranges/unknown fields/precision, optional absent compatibility и target edit rejection.
-- [ ] Ввести поле и mirrored schema. При канонизации исключать только absent/null target (не глобальный exclude_none); новые поля включать в immutable comparison. Существующий snapshot без target побайтово прежний.
-- [ ] GREEN focused schemas/keys/fingerprint/plan-edit tests, backend lint и TS/lint. Никакого UI/новых методов здесь.
-- [ ] Review+fix+commit отдельного контракта.
+- [x] До изменения зафиксировать deterministic legacy fingerprint/snapshot key в regression fixture. Добавить RED tests всех union variants, bad ranges/unknown fields/precision, optional absent compatibility и target edit rejection.
+- [x] Ввести поле и mirrored schema. При канонизации исключать только absent/null target (не глобальный exclude_none); новые поля включать в immutable comparison. Существующий snapshot без target побайтово прежний.
+- [x] GREEN focused schemas/keys/fingerprint/plan-edit tests, backend lint и TS/lint. Никакого UI/новых методов здесь.
+- [x] Review+fix+commit отдельного контракта.
 
 ### Task B02b: atomic personal-day methods and goals round-trip
 
 **Files:** backend/app/schemas/program.py; backend/app/services/program_service.py; backend/app/services/workout_service.py (либо извлечённый personal-day helper, если большой файл); frontend/src/api/programs.ts; backend/tests/test_personal_programs.py; frontend/src/api/programs.test.ts; docs/USER_GUIDE.md/CHANGELOG.
 **Consumes:** target B02a и existing WorkoutSetMethod/WorkoutGroup; **Produces:** PersonalProgramInput.days[].groups?, exercises[].target?/set_methods?/weight_mode?.
 
-- [ ] RED create→serialized structure→actual plan assembly для трёх целей, superset и последнего drop/cluster; набор negative tests topology/load types/private owner/unknown fields.
-- [ ] Serialize optional fields atomically в Program.structure.schedule, не делать второй customization POST. Проверить полный день common WorkoutPlan validator, затем catalog load type. Не переносить методы неподходящему упражнению.
-- [ ] При explicit target сохранить его и rest в linear/phased; без target прежние программы следуют старым фазовым правилам. groups и methods передаются в execution_version2 snapshot. Валидация не только client-side.
-- [ ] GREEN personal/program/start tests и соответствующие API tests; сохранить privacy. Review+fix+commit.
+- [x] RED create→serialized structure→actual plan assembly для трёх целей, superset и последнего drop/cluster; набор negative tests topology/load types/private owner/unknown fields.
+- [x] Serialize optional fields atomically в Program.structure.schedule, не делать второй customization POST. Проверить полный день common WorkoutPlan validator, затем catalog load type. Не переносить методы неподходящему упражнению.
+- [x] При explicit target сохранить его и rest в linear/phased; без target прежние программы следуют старым фазовым правилам. groups и methods передаются в execution_version2 snapshot. Валидация не только client-side.
+- [x] GREEN personal/program/start tests и соответствующие API tests; сохранить privacy. Review+fix+commit.
 
 ### Task B02c: explicit target reaches editable execution
 
 **Files:** frontend/src/utils/workoutTargets.ts (один pure resolver), utils/loadProgression.ts, utils/workoutMethods.ts, utils/workoutSession.ts при необходимости, features/workout/services/programWorkoutStart.ts и ActiveWorkout.tsx (узкий вызов helper вместо нового независимого блока). Relevant tests рядом и workout-prepared-start fixture.
 **Produces:** pure initial-draft target resolver; preparedTimeSeconds читает explicit timed, затем legacy string; совместимая видимая подпись цели.
 
-- [ ] RED explicit reps_min/weight/time выигрывают phase/history, но existing draft/completed fact не заменяются. В обычной форме reps prefill=min, рядом полный диапазон; duration из target. Для parts приоритет specific method target.
-- [ ] Исправить initial missing-draft prefilling и timed modal через один helper. Не считать цель completion; не перезаполнять существующий blank draft на reload.
-- [ ] GREEN unit/start/prepared runtime/recovery; invalid snapshot не заменяет valid durable record. Review+fix+commit.
+- [x] RED explicit reps_min/weight/time выигрывают phase/history, но existing draft/completed fact не заменяются. В обычной форме reps prefill=min, рядом полный диапазон; duration из target. Для parts приоритет specific method target.
+- [x] Исправить initial missing-draft prefilling и timed modal через один helper. Не считать цель completion; не перезаполнять существующий blank draft на reload.
+- [x] GREEN unit/start/prepared runtime/recovery; invalid snapshot не заменяет valid durable record. Review+fix+commit.
 
 ### Task N02: linear rest is fixed across weeks
 
 After B02b, before B03, separately from explicit-target persistence. Existing linear programs describe fixed weekly targets, but nonzero rest still follows heavy/light clamps. B01a intentionally preserved this until its own test/fix step.
 
-- [ ] RED real plan construction: linear exercise30 inheavy must stay30, linear120 inlight stays120; missing rest defaults60 inallphases. Existing phased values retain legacy75/90 clamp behavior. Keep0casesGREEN.
-- [ ] Apply phase rest adjustment only to phased legacy plan; explicit newtarget rest policy already protected by B02b. Update earlier literal B01a regression expectations specifically for intended linear fix, not globally weakening assertions.
-- [ ] GREEN personal/plan/cycle regression, Ruff; USER_GUIDE/CHANGELOG exact linear rule, independent review and separate commit. No DB/history rewrites.
+- [x] RED real plan construction: linear exercise30 inheavy must stay30, linear120 inlight stays120; missing rest defaults60 inallphases. Existing phased values retain legacy75/90 clamp behavior. Keep0casesGREEN.
+- [x] Apply phase rest adjustment only to phased legacy plan; explicit newtarget rest policy already protected by B02b. Update earlier literal B01a regression expectations specifically for intended linear fix, not globally weakening assertions.
+- [x] GREEN personal/plan/cycle regression, Ruff; USER_GUIDE/CHANGELOG exact linear rule, independent review and separate commit. No DB/history rewrites.
+
+### Task N09: compatible goals on exercise replacement
+
+Separate source-discovered candidate, validate with actual RED before fixing. Before composer integration, test frontend replacement plus both backend prepared replacement paths. Incompatible target/load replacement must reject before saving with a clear explanation to change/remove the goal, rather than silently dropping or converting it. Reuse infer_load_type and common intent validation; compatible goals, methods, rest and weight mode survive. Missing/private/duplicate exercise guards stay. Preserve no-target legacy behavior. Independent review and separate commit.
+
+### Task N10: zero rest through execution UI
+
+Separate source-discovered candidate, actual browser RED first. ActiveWorkout currently converts zero to60 at display/modal/completion boundaries and clamps runtime edit to15. Preserve explicit0 through display, edit, save and reload; no nonzero timer after completing such a set. Missing fallback60 and positive values stay; shared compound clocks/auto-transition rules unchanged. Reuse bounded stringdraft numeric UX where needed. Synthetic fixtures only, no real notification delivery. Independent review and separate commit.
 
 ### Task B03: one day composer in personal builder
+
+Execute as two independently checked commits: B03a pure lossless adapter + bounded recovery/N08; B03b composer integration and limits. Preserve invalid/blank string drafts and block saving instead of silently normalizing them. Run N07 compatibility, N09 and N10 before exposing the new constructor.
 
 **Files:** PersonalProgramBuilderPage.tsx, новый personalProgramDraft.ts/adapter+tests рядом; WorkoutDayComposer.tsx и reusable numeric/target editors; WorkoutGroupEditor.tsx/WorkoutMethodEditor.tsx только если требуется current contract; personal-program-methods E2E/fixtures; USER_GUIDE/CHANGELOG.
 
