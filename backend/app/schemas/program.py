@@ -6,7 +6,11 @@ import uuid
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.schemas.workout import WorkoutPlan, WorkoutPlanExercise
+from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod
+from app.schemas.workout_target import ExplicitWorkoutTarget
 
 
 class ProgramCreate(BaseModel):
@@ -21,10 +25,15 @@ class ProgramCreate(BaseModel):
 
 
 class PersonalProgramExercise(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     exercise_id: uuid.UUID
     sets: int = Field(ge=1, le=8)
     reps: str = Field(min_length=1, max_length=20, pattern=r"^[0-9\-–сs ]+$")
     rest_sec: int = Field(default=60, ge=0, le=300)
+    target: ExplicitWorkoutTarget | None = None
+    set_methods: list[WorkoutSetMethod] = Field(default_factory=list, max_length=8)
+    weight_mode: Literal["total", "per_hand"] | None = None
 
     @field_validator("reps")
     @classmethod
@@ -36,8 +45,35 @@ class PersonalProgramExercise(BaseModel):
 
 
 class PersonalProgramDay(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(min_length=1, max_length=80)
     exercises: list[PersonalProgramExercise] = Field(min_length=1, max_length=12)
+    groups: list[WorkoutGroup] = Field(default_factory=list, max_length=6)
+
+    @model_validator(mode="after")
+    def validate_topology(self):
+        ids = [item.exercise_id for item in self.exercises]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Упражнения дня не должны повторяться")
+        WorkoutPlan(
+            execution_version=2,
+            groups=self.groups,
+            exercises=[
+                WorkoutPlanExercise(
+                    exercise_id=item.exercise_id,
+                    order=order,
+                    target_sets=item.sets,
+                    target_reps=item.reps,
+                    rest_sec=item.rest_sec,
+                    target=item.target,
+                    set_methods=item.set_methods,
+                    weight_mode=item.weight_mode,
+                )
+                for order, item in enumerate(self.exercises, start=1)
+            ],
+        )
+        return self
 
     @field_validator("name")
     @classmethod
@@ -49,6 +85,8 @@ class PersonalProgramDay(BaseModel):
 
 
 class PersonalProgramCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(min_length=3, max_length=80)
     location: Literal["gym", "home", "outdoor"]
     progression: Literal["linear", "phased"] = "phased"

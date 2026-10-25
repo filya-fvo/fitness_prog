@@ -13,6 +13,7 @@ from app.models.program import Program
 from app.models.exercise import Exercise
 from app.schemas.program import PersonalProgramCreate, ProgramCreate, ProgramUpdate
 from app.services import admin_audit, program_publication
+from app.services.program_day_targets import serialize_exercise_intent, validate_catalog_intent
 
 
 async def list_programs(
@@ -85,11 +86,13 @@ async def create_personal_program(
         select(Exercise).where(Exercise.id.in_(exercise_ids), Exercise.is_deleted.is_(False))
     )
     by_id = {exercise.id: exercise for exercise in result.all()}
-    if len(by_id) != len(exercise_ids):
+    if set(by_id) != exercise_ids:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Одно из упражнений больше недоступно. Выберите другое.",
         )
+
+    validate_catalog_intent(data.days, by_id)
 
     schedule = [
         {
@@ -102,9 +105,11 @@ async def create_personal_program(
                     "sets": item.sets,
                     "reps": item.reps.strip(),
                     "rest_sec": item.rest_sec,
+                    **serialize_exercise_intent(item),
                 }
                 for item in day.exercises
             ],
+            **({"groups": [group.model_dump(mode="json") for group in day.groups]} if day.groups else {}),
         }
         for day_index, day in enumerate(data.days, start=1)
     ]

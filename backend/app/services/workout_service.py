@@ -26,6 +26,7 @@ from app.schemas.workout import (
 )
 from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization, workout_execution
 from app.services.workout_notifications import mark_occurrence_started
+from app.services.program_day_targets import apply_exercise_intent, execution_fields
 
 
 async def _get_workout_for_user(
@@ -247,7 +248,7 @@ async def build_plan_from_program_day(
         if rest_value is None:
             rest_value = day.get("rest_sec_default")
         rest_sec = int(rest_value if rest_value is not None else 60)
-        if rest_sec != 0:
+        if rest_sec != 0 and item.get("target") is None:
             if phase["week_phase"] == "heavy":
                 rest_sec = max(rest_sec, 90)
             elif phase["week_phase"] == "light":
@@ -264,6 +265,7 @@ async def build_plan_from_program_day(
                 "note": str(item.get("note") or "").strip() or None,
             }
         )
+        apply_exercise_intent(item, plan_exercises[-1])
         order += 1
 
     if not plan_exercises:
@@ -281,6 +283,7 @@ async def build_plan_from_program_day(
         or "custom"
     )
     return {
+        **execution_fields(day, plan_exercises),
         "title": phase_title,
         "workout_type": workout_type,
         "day_index": day_index,

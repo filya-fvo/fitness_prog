@@ -3,7 +3,7 @@ import { workoutSchema, mapWorkout } from "./workouts";
 import { readPolicyConfig, type ReadPolicy } from "./readPolicy";
 
 import { apiClient } from "@/api/client";
-import type { Program, Workout } from "@/types/workout";
+import type { ExplicitWorkoutTarget, Program, Workout, WorkoutGroup, WorkoutSetMethod } from "@/types/workout";
 import type { CycleReadiness } from "@/utils/cycleTraining";
 
 export const programSchema = z.object({
@@ -78,7 +78,16 @@ export type PersonalProgramInput = {
   duration_weeks: number;
   days: Array<{
     name: string;
-    exercises: Array<{ exercise_id: string; sets: number; reps: string; rest_sec: number }>;
+    groups?: WorkoutGroup[];
+    exercises: Array<{
+      exercise_id: string;
+      sets: number;
+      reps: string;
+      rest_sec: number;
+      target?: ExplicitWorkoutTarget | null;
+      set_methods?: WorkoutSetMethod[];
+      weight_mode?: "total" | "per_hand" | null;
+    }>;
   }>;
 };
 
