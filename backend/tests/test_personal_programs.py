@@ -195,19 +195,23 @@ async def test_personal_program_create_to_plan_preserves_zero_rest(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("progression", ["linear", "phased"])
 @pytest.mark.parametrize("week_phase,phase_index", [("light", 0), ("medium", 1), ("heavy", 2)])
-@pytest.mark.parametrize("exercise_rest,day_rest,expected", [
-    ({"rest_sec": 0}, {"rest_sec_default": 120}, (0, 0, 0)),
-    ({}, {"rest_sec_default": 0}, (0, 0, 0)),
-    ({"rest_sec": None}, {"rest_sec_default": 0}, (0, 0, 0)),
-    ({}, {}, (60, 60, 90)),
-    ({"rest_sec": None}, {"rest_sec_default": None}, (60, 60, 90)),
-    ({}, {"rest_sec_default": 120}, (75, 120, 120)),
-    ({"rest_sec": 30}, {"rest_sec_default": 120}, (30, 30, 90)),
-    ({"rest_sec": 120}, {}, (75, 120, 120)),
+@pytest.mark.parametrize("exercise_rest,day_rest,linear_expected,phased_expected", [
+    ({"rest_sec": 0}, {"rest_sec_default": 120}, 0, (0, 0, 0)),
+    ({}, {"rest_sec_default": 0}, 0, (0, 0, 0)),
+    ({"rest_sec": None}, {"rest_sec_default": 0}, 0, (0, 0, 0)),
+    ({}, {}, 60, (60, 60, 90)),
+    ({}, {"rest_sec_default": None}, 60, (60, 60, 90)),
+    ({"rest_sec": None}, {}, 60, (60, 60, 90)),
+    ({"rest_sec": None}, {"rest_sec_default": None}, 60, (60, 60, 90)),
+    ({}, {"rest_sec_default": 120}, 120, (75, 120, 120)),
+    ({"rest_sec": None}, {"rest_sec_default": 120}, 120, (75, 120, 120)),
+    ({"rest_sec": 30}, {"rest_sec_default": 120}, 30, (30, 30, 90)),
+    ({"rest_sec": 120}, {}, 120, (75, 120, 120)),
 ])
 async def test_program_plan_rest_fallback_and_legacy_phase_rules(
     progression: str, week_phase: str, phase_index: int,
-    exercise_rest: dict, day_rest: dict, expected: tuple[int, int, int],
+    exercise_rest: dict, day_rest: dict, linear_expected: int,
+    phased_expected: tuple[int, int, int],
 ) -> None:
     exercise = SimpleNamespace(id=uuid.uuid4(), name_ru="Жим гантелей лёжа")
     program = Program(
@@ -222,7 +226,8 @@ async def test_program_plan_rest_fallback_and_legacy_phase_rules(
     plan = await workout_service.build_plan_from_program_day(
         Session(exercise), program, 1, today=date(2026, 9, 28), week_phase=week_phase,
     )  # type: ignore[arg-type]
-    assert plan["exercises"][0]["rest_sec"] == expected[phase_index]
+    expected = linear_expected if progression == "linear" else phased_expected[phase_index]
+    assert plan["exercises"][0]["rest_sec"] == expected
 
 
 def method(kind: str = "drop", *, slot: int = 4) -> dict:

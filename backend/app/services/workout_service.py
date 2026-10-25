@@ -248,7 +248,7 @@ async def build_plan_from_program_day(
         if rest_value is None:
             rest_value = day.get("rest_sec_default")
         rest_sec = int(rest_value if rest_value is not None else 60)
-        if rest_sec != 0 and item.get("target") is None:
+        if not linear_progression and rest_sec != 0 and item.get("target") is None:
             if phase["week_phase"] == "heavy":
                 rest_sec = max(rest_sec, 90)
             elif phase["week_phase"] == "light":
