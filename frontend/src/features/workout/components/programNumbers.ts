@@ -1,3 +1,6 @@
+import { setMethodSchema } from "@/api/workoutExecutionSchemas";
+import { explicitWorkoutTargetSchema } from "@/api/workoutTargetSchemas";
+
 export function validProgramNumber(value: string, min: number, max: number) {
   return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
 }
@@ -13,7 +16,13 @@ export function migrateProgramNumbers(value: unknown): unknown {
       return { ...entry, exercises: Array.isArray(entry.exercises) ? entry.exercises.map((exercise: unknown) => {
         if (!exercise || typeof exercise !== "object") return exercise;
         const item = exercise as Record<string, unknown>;
-        return { ...item, sets: typeof item.sets === "number" ? String(item.sets) : item.sets,
+        const target = explicitWorkoutTargetSchema.safeParse(item.target);
+        const methods = Array.isArray(item.set_methods) ? item.set_methods.map(method => {
+          const parsed = setMethodSchema.safeParse(method);
+          return parsed.success ? parsed.data : method;
+        }) : item.set_methods;
+        return { ...item, ...(target.success ? { target: target.data } : {}),
+          ...(methods !== undefined ? { set_methods: methods } : {}), sets: typeof item.sets === "number" ? String(item.sets) : item.sets,
           rest_sec: typeof item.rest_sec === "number" ? String(item.rest_sec) : item.rest_sec };
       }) : entry.exercises };
     }) : draft.days };

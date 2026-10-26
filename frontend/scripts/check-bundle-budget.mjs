@@ -170,8 +170,13 @@ const limits = {
   // Public lazy download route and practical Android FAQ add measured 2087 total /
   // 2081 product gzip bytes (634597/577934 -> 636684/580015). No new dependencies;
   // largest vendor108742 is unchanged. Keep narrow headroom for this requested content.
-  totalJsGzip: 636_900,
-  productJsGzip: 580_250,
+  // B03a, same-lock immutable baseline 3b104b1: 640026 total / 583347 product
+  // already includes earlier approved audit stages above the preceding caps.
+  // Personal draft adapter/recovery adds 3328 / 3312 -> 643354 / 586659.
+  // No dependency/vendor growth; retain 246 / 241 bytes aggregate headroom.
+  // Personal route remains lazy; admin and largest-chunk caps are unchanged.
+  totalJsGzip: 643_600,
+  productJsGzip: 586_900,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

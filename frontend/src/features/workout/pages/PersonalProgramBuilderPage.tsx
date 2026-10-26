@@ -14,9 +14,10 @@ import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
+import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
 
-type ExerciseDraft = Omit<PersonalProgramInput["days"][number]["exercises"][number], "sets" | "rest_sec"> & { sets: string; rest_sec: string };
-type DayDraft = { name: string; exercises: ExerciseDraft[] };
+type ExerciseDraft = PersonalExerciseDraft;
+type DayDraft = PersonalDayDraft;
 
 const LOCATION_OPTIONS = [
   { value: "gym", label: "Зал", image: "/app-media/training-programs-hero.webp" },
@@ -50,10 +51,7 @@ export function PersonalProgramBuilderPage() {
     owner, context: "personal-program", ready: !loading,
     value: { name, location, progression, durationWeeks, days, dayCount, activeDay, step },
     migrate: migrateProgramNumbers,
-    validate: (draft) => Number.isInteger(draft.dayCount) && draft.days.length >= draft.dayCount && draft.dayCount >= 1 && draft.dayCount <= 7
-      && Number.isInteger(draft.activeDay) && draft.activeDay >= 0 && draft.activeDay < draft.dayCount
-      && draft.days.every((day) => day.exercises.every((item) => typeof item.exercise_id === "string"
-        && typeof item.reps === "string" && typeof item.sets === "string" && typeof item.rest_sec === "string")),
+    maxChars: PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parse: parsePersonalProgramDraft,
     restore: (draft) => {
       setName(draft.name); setLocation(draft.location); setProgression(draft.progression);
       setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(draft.dayCount);
@@ -108,10 +106,12 @@ export function PersonalProgramBuilderPage() {
 
   async function save() {
     if (saving || !numbersValid || !allDaysReady || name.trim().length < 3) return;
+    const input = personalProgramInput({ name, location, progression, durationWeeks, days, dayCount, activeDay, step }, catalog);
+    if (!input.ok) { setError(Object.values(input.errors)[0]); return; }
     setSaving(true);
     setError(null);
     try {
-      const program = await createMyProgram({ name: name.trim(), location, progression, duration_weeks: Number(durationWeeks), days: visibleDays.map((day) => ({ ...day, exercises: day.exercises.map((item) => ({ ...item, sets: Number(item.sets), rest_sec: Number(item.rest_sec) })) })) });
+      const program = await createMyProgram(input.value);
       recovery.clear();
       navigate(`/programs?view=mine&id=${program.id}`, { replace: true });
     } catch (cause) {
