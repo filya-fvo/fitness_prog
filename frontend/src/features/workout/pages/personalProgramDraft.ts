@@ -105,7 +105,7 @@ function compatibilityReps(target: InputExercise["target"], legacy: string): str
 }
 
 /** External-data boundary: shared schemas normalize API Decimal strings exactly once. */
-export function personalDayFromPlan(plan: unknown, name: string, previous?: PersonalDayDraft, edited: readonly string[] = []): DraftResult<PersonalDayDraft> {
+export function personalDayFromPlan(plan: unknown, name: string, previous?: PersonalDayDraft, edited: readonly string[] = [], options: { allowInvalidTopology?: boolean } = {}): DraftResult<PersonalDayDraft> {
   const schema = z.object({
     groups: z.array(groupSchema).max(6).optional(),
     exercises: z.array(z.object({
@@ -119,7 +119,9 @@ export function personalDayFromPlan(plan: unknown, name: string, previous?: Pers
   const source = schema.data;
   const normalized: WorkoutPlan = { ...source, execution_version: 2 };
   const topology = workoutPreparationError(normalized);
-  if (topology) return fail({ exercises: topology });
+  // An editor may temporarily have non-descending drop weights while changing
+  // individual parts. Keep that recoverable proposal; ToPlan/Input still reject it.
+  if (topology && !options.allowInvalidTopology) return fail({ exercises: topology });
   const changed = new Set(edited);
   const day: PersonalDayDraft = {
     name,

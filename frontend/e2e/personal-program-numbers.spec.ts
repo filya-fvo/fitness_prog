@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const OWNER = "22222222-2222-4222-8222-222222222222";
 const EXERCISE = "11111111-1111-4111-8111-111111111111";
 async function openBuilder(page: Page) {
-  await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({ json: { items: [], total: 0, page: 1, page_size: 200 } }));
+  await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({ json: { items: [{ id: EXERCISE, name_ru: "Жим гантелей", muscle_group: "Грудь", equipment: "гантели", tags: ["load:weight_reps"], difficulty: 1, media_source: "none" }], total: 1, page: 1, page_size: 200 } }));
   await page.addInitScript(({ owner, exercise }) => {
     if (!localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)) localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program`, JSON.stringify({
       name: "Проверка чисел", location: "gym", progression: "linear", durationWeeks: 8,
@@ -83,7 +83,7 @@ test("invalid string survives day switch and reload; removing field removes its 
   await expect(rest).toHaveValue("");
   await page.reload();
   await expect(rest).toHaveValue("");
-  await page.getByRole("button", { name: "Убрать упражнение", exact: true }).click();
+  await page.getByRole("button", { name: "Убрать Жим гантелей", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 

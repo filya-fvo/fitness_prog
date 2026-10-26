@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { createMyProgram, type PersonalProgramInput } from "@/api/programs";
@@ -6,15 +6,17 @@ import { fetchExerciseCatalog } from "@/api/exercises";
 import { Header } from "@/components/layout/Header";
 import { PlannedExercisePicker } from "@/features/workout/components/PlannedExercisePicker";
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
-import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { WorkoutDayComposer } from "../components/WorkoutDayComposer";
 import { ProgramNumberField } from "../components/ProgramNumberField";
 import { validProgramNumber, migrateProgramNumbers } from "../components/programNumbers";
-import type { Exercise } from "@/types/workout";
+import type { Exercise, WorkoutPlan } from "@/types/workout";
+import { removePreparedExercise, replacePreparedExercise, updatePreparedExerciseSets } from "@/utils/workoutMethods";
+import { inferLoadType } from "@/utils/exerciseLoadType";
 import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
-import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
+import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
 
 type ExerciseDraft = PersonalExerciseDraft;
 type DayDraft = PersonalDayDraft;
@@ -30,6 +32,11 @@ function newDay(index: number): DayDraft {
 }
 
 export function PersonalProgramBuilderPage() {
+  const owner = useUserStore(state => state.user?.id);
+  return <PersonalProgramBuilderForm key={owner ?? "signed-out"} />;
+}
+
+function PersonalProgramBuilderForm() {
   const navigate = useNavigate();
   const [step, setStep] = useState<"setup" | "days">("setup");
   const [name, setName] = useState("");
@@ -46,7 +53,12 @@ export function PersonalProgramBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingGroup, setPendingGroup] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(true);
+  const mounted = useRef(true);
   const owner = useUserStore((state) => state.user?.id);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const recovery = useRecoverableDraft({
     owner, context: "personal-program", ready: !loading,
     value: { name, location, progression, durationWeeks, days, dayCount, activeDay, step },
@@ -76,6 +88,21 @@ export function PersonalProgramBuilderPage() {
   const byId = useMemo(() => new Map(catalog.map((exercise) => [exercise.id, exercise])), [catalog]);
   const visibleDays = days.slice(0, dayCount);
   const selected = days[activeDay];
+  const converted = personalDayToPlan(selected, catalog);
+  const basicReady = selected.exercises.every(item => validProgramNumber(item.sets, 1, 8) && validProgramNumber(item.rest_sec, 0, 300));
+  // This incomplete view is deliberately not a valid execution/submission plan.
+  // NaN marks missing numbers; owning raw fields stay mounted, all conflicting
+  // actions and timing math are disabled. Never persist or submit this view.
+  const view: WorkoutPlan = converted.ok ? converted.value : {
+    execution_version: 2, groups: selected.groups, exercises: selected.exercises.map((item, index) => ({
+      exercise_id: item.exercise_id, order: index + 1,
+      target_sets: validProgramNumber(item.sets, 1, 8) ? Number(item.sets) : NaN,
+      target_reps: item.reps, rest_sec: validProgramNumber(item.rest_sec, 0, 300) ? Number(item.rest_sec) : NaN,
+      target: item.target, set_methods: item.set_methods, weight_mode: item.weight_mode,
+    })),
+  };
+  const presentation = { ...view, exercises: view.exercises.map(row => ({ ...row, name_ru: byId.get(row.exercise_id)?.name_ru ?? "Упражнение" })) };
+  const input = personalProgramInput({ name, location, progression, durationWeeks, days, dayCount, activeDay, step }, catalog);
   const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
 
   function changeDayCount(count: number) {
@@ -88,6 +115,22 @@ export function PersonalProgramBuilderPage() {
     setDays((current) => current.map((day, index) => index === activeDay ? updater(day) : day));
   }
 
+  function changePlan(next: WorkoutPlan) {
+    const result = personalDayFromPlan(next, selected.name, selected, [], { allowInvalidTopology: true });
+    if (result.ok) { editDay(() => result.value); setError(null); }
+    else setError(Object.values(result.errors)[0]);
+  }
+
+  function chooseExercise(exercise: Exercise) {
+    if (pendingGroup) return;
+    if (editingId) {
+      if (!converted.ok) return;
+      try { changePlan(replacePreparedExercise(converted.value, editingId, exercise)); }
+      catch (cause) { setError(toUserMessage(cause, "Не удалось заменить упражнение")); return; }
+      setEditingId(null);
+    } else addExercise(exercise);
+  }
+
   function addExercise(exercise: Exercise) {
     editDay((day) => day.exercises.length >= 12 || day.exercises.some((item) => item.exercise_id === exercise.id) ? day : ({ ...day, exercises: [
       ...day.exercises,
@@ -96,7 +139,24 @@ export function PersonalProgramBuilderPage() {
   }
 
   function updateExercise(exerciseId: string, changes: Partial<ExerciseDraft>) {
-    editDay((day) => ({ ...day, exercises: day.exercises.map((item) => item.exercise_id === exerciseId ? { ...item, ...changes } : item) }));
+    editDay((day) => {
+      const row = day.exercises.find(item => item.exercise_id === exerciseId)!;
+      // Reuse the shared set-count edit, which removes methods beyond the new
+      // count. A one-row valid input lets another unfinished field stay untouched.
+      const methods = changes.sets !== undefined && validProgramNumber(changes.sets, 1, 8)
+        ? updatePreparedExerciseSets({ exercises: [{ exercise_id: exerciseId, order: 1, target_sets: Number(changes.sets), set_methods: row.set_methods }] }, exerciseId, Number(changes.sets)).exercises[0].set_methods
+        : row.set_methods;
+      const exercises = day.exercises.map(item => item.exercise_id === exerciseId ? { ...item, ...changes, ...(methods === undefined ? {} : { set_methods: methods }) } : item);
+      const removedSlots = new Set(row.set_methods?.filter(method => !methods?.some(next => next.set_number === method.set_number)).map(method => `${exerciseId}/method/${method.set_number}/`));
+      return { ...day, exercises, ...(day.raw ? { raw: Object.fromEntries(Object.entries(day.raw).filter(([key]) => ![...removedSlots].some(prefix => key.startsWith(prefix)))) } : {}) };
+    });
+  }
+
+  function removeExercise(exerciseId: string) {
+    if (pendingGroup || selected.groups?.some(group => group.exercise_ids.includes(exerciseId))) return;
+    if (converted.ok && selected.exercises.length > 1) changePlan(removePreparedExercise(converted.value, exerciseId));
+    else editDay(day => ({ ...day, exercises: day.exercises.filter(item => item.exercise_id !== exerciseId),
+      ...(day.raw ? { raw: Object.fromEntries(Object.entries(day.raw).filter(([key]) => !key.startsWith(`${exerciseId}/`))) } : {}) }));
   }
 
   const weeksValid = validProgramNumber(durationWeeks, 1, 52);
@@ -105,19 +165,21 @@ export function PersonalProgramBuilderPage() {
   function openDays() { if (name.trim().length >= 3 && weeksValid) setStep("days"); }
 
   async function save() {
-    if (saving || !numbersValid || !allDaysReady || name.trim().length < 3) return;
-    const input = personalProgramInput({ name, location, progression, durationWeeks, days, dayCount, activeDay, step }, catalog);
+    if (saving || pendingGroup || !numbersValid || !allDaysReady || name.trim().length < 3) return;
     if (!input.ok) { setError(Object.values(input.errors)[0]); return; }
     setSaving(true);
     setError(null);
     try {
       const program = await createMyProgram(input.value);
+      // Acknowledgement belongs to this captured owner/snapshot even after
+      // unmount. The recovery hook protects any newer writer for that owner.
       recovery.clear();
+      if (!mounted.current || useUserStore.getState().user?.id !== owner) return;
       navigate(`/programs?view=mine&id=${program.id}`, { replace: true });
     } catch (cause) {
-      setError(toUserMessage(cause, "Не удалось сохранить программу"));
+      if (mounted.current && useUserStore.getState().user?.id === owner) setError(toUserMessage(cause, "Не удалось сохранить программу"));
     } finally {
-      setSaving(false);
+      if (mounted.current && useUserStore.getState().user?.id === owner) setSaving(false);
     }
   }
 
@@ -126,7 +188,7 @@ export function PersonalProgramBuilderPage() {
   return <section className="pb-28">
     <Header title="Своя программа" subtitle="Выберите дни и упражнения под свой ритм" />
     <fieldset disabled={loading || saving} className="min-w-0">
-    <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} onDiscard={recovery.discard} disabled={saving} />
+    <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} onDiscard={() => { setEditingId(null); setPickerOpen(true); recovery.discard(); }} disabled={saving || pendingGroup} />
     <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cover bg-center p-5 text-white"
       style={{ backgroundImage: `linear-gradient(90deg, rgba(7, 18, 37, .96), rgba(7, 18, 37, .7)), url(${hero.image})` }}>
       <p className="text-xs font-semibold uppercase tracking-[.14em] text-cyan-300">Ваш план</p>
@@ -135,8 +197,8 @@ export function PersonalProgramBuilderPage() {
     </div>
 
     <div className="mb-4 grid grid-cols-2 gap-2" role="group" aria-label="Шаг создания программы">
-      <button type="button" onClick={() => setStep("setup")} className={step === "setup" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>1 · Основа</button>
-      <button type="button" onClick={openDays} className={step === "days" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>2 · Дни</button>
+      <button type="button" disabled={pendingGroup} onClick={() => setStep("setup")} className={step === "setup" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>1 · Основа</button>
+      <button type="button" disabled={pendingGroup} onClick={openDays} className={step === "days" ? "app-button app-gradient-action" : "app-button app-secondary-action"}>2 · Дни</button>
     </div>
 
     {step === "setup" ? <div className="app-card space-y-4 p-4">
@@ -172,7 +234,7 @@ export function PersonalProgramBuilderPage() {
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleDays.map((day, index) => <button key={index} type="button" aria-pressed={activeDay === index} onClick={() => { setActiveDay(index); }}
+        {visibleDays.map((day, index) => <button key={index} type="button" disabled={pendingGroup} aria-pressed={activeDay === index} onClick={() => { setEditingId(null); setPickerOpen(true); setActiveDay(index); }}
           className={activeDay === index ? "app-button app-gradient-action min-h-11 shrink-0 rounded-full px-3 text-white" : "app-chip app-card-inset min-h-11 shrink-0 px-3 text-tg-text"}>
           День {index + 1}{day.exercises.length ? ` · ${day.exercises.length}` : ""}
         </button>)}
@@ -181,38 +243,55 @@ export function PersonalProgramBuilderPage() {
         <label className="block text-sm font-semibold">Название дня
           <input value={selected.name} onChange={(event) => editDay((day) => ({ ...day, name: event.target.value }))} maxLength={80} className="app-field mt-2 w-full text-base" />
         </label>
-        <div className="mt-4 space-y-2">
-          {selected.exercises.map((item, index) => <div key={item.exercise_id} className="rounded-xl border border-[var(--border-subtle)] bg-tg-secondary p-3">
-            <div className="flex items-center gap-2">
-              {byId.get(item.exercise_id) ? <ExerciseThumbnail exercise={byId.get(item.exercise_id)!} size="sm" /> : null}
-              <p className="min-w-0 flex-1 text-sm font-semibold">{index + 1}. {byId.get(item.exercise_id)?.name_ru ?? "Упражнение"}</p>
-              <button type="button" aria-label="Убрать упражнение" onClick={() => editDay((day) => ({ ...day, exercises: day.exercises.filter((entry) => entry.exercise_id !== item.exercise_id) }))} className="min-h-11 min-w-11 text-tg-link">✕</button>
-            </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <ProgramNumberField label="Подходы" value={item.sets} min={1} max={8} onChange={(sets) => updateExercise(item.exercise_id, { sets })} />
-              <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={(event) => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 w-full text-base" /></label>
-              <ProgramNumberField label="Отдых, с" value={item.rest_sec} min={0} max={300} onChange={(rest_sec) => updateExercise(item.exercise_id, { rest_sec })} presets={[0, 30, 60, 90, 120]} />
-            </div>
-          </div>)}
+        <div className="mt-4">
+          <WorkoutDayComposer key={activeDay} plan={presentation} catalog={catalog} limits={{ sets: 8, exercises: 12, rest: 300, rounds: 8 }}
+            disabled={saving} incomplete={!basicReady} previewReady={converted.ok} hideAdd={pickerOpen || editingId !== null}
+            groupSaveHint="После настройки нажмите «Создать программу», чтобы сохранить все дни."
+            onPendingChange={setPendingGroup} onChange={changePlan} onAdd={() => setPickerOpen(true)}
+            onReplace={row => { setEditingId(row.exercise_id); setPickerOpen(true); }} onRemove={row => removeExercise(row.exercise_id)} onOpenDetail={setDetailExercise}
+            renderSummary={row => {
+              const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
+              return <>{validProgramNumber(item.sets, 1, 8) ? item.sets : "—"} × {item.reps || "—"}</>;
+            }}
+            renderFields={(row, { locked, grouped }) => {
+              const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
+              const group = selected.groups?.find(entry => entry.exercise_ids.includes(row.exercise_id));
+              return <fieldset disabled={locked} className="mt-3 grid min-w-0 gap-3 md:grid-cols-3">
+                <fieldset disabled={grouped && validProgramNumber(item.sets, 1, 8) && Number(item.sets) === group?.rounds} className="min-w-0">
+                  <ProgramNumberField label="Подходы" value={item.sets} min={1} max={8} onChange={sets => updateExercise(item.exercise_id, { sets })} />
+                </fieldset>
+                <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={event => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 min-h-11 w-full text-base" /></label>
+                <fieldset disabled={grouped && validProgramNumber(item.rest_sec, 0, 300)} className="min-w-0">
+                  <ProgramNumberField label="Отдых, с" value={item.rest_sec} min={0} max={300} onChange={rest_sec => updateExercise(item.exercise_id, { rest_sec })} presets={[0, 30, 60, 90, 120]} />
+                </fieldset>
+              </fieldset>;
+            }} />
         </div>
-        {selected.exercises.length < 12 ? <div className="mt-4">
-          <h2 className="mb-2 text-sm font-semibold">Добавить упражнение</h2>
+        {!converted.ok && basicReady && selected.exercises.length > 0 && !loading ? <p role="alert" className="app-status app-status-danger mt-3 text-sm">{Object.values(converted.errors)[0]}</p> : null}
+        {pendingGroup ? <p role="status" className="mt-3 text-sm text-tg-hint">Примените или отмените настройку связки, чтобы перейти к другому дню или сохранить программу.</p> : null}
+        {selected.exercises.length < 12 || editingId ? <fieldset disabled={pendingGroup || (!basicReady && selected.exercises.length > 0)} className="mt-4 min-w-0">
           {loading ? <p role="status" className="text-sm text-tg-hint">Загружаем упражнения…</p> : catalogError ? <div role="alert" className="app-status app-status-warning text-sm">
-            <p>{catalogError}</p><button type="button" onClick={() => setCatalogAttempt((value) => value + 1)} className="min-h-11 text-tg-link">Повторить загрузку упражнений</button>
-          </div> : <PlannedExercisePicker key={activeDay} source={null} catalog={catalog} occupiedIds={new Set(selected.exercises.map((item) => item.exercise_id))} onChoose={addExercise} onOpenDetail={setDetailExercise} searchLabel="Добавить упражнение" collapsibleFilters />}
-        </div> : null}
+            <p>{catalogError}</p><button type="button" onClick={() => setCatalogAttempt(value => value + 1)} className="min-h-11 text-tg-link">Повторить загрузку упражнений</button>
+          </div> : pickerOpen || editingId ? <>
+            <h2 className="mb-2 text-sm font-semibold">{editingId ? "Заменить упражнение" : "Добавить упражнение"}</h2>
+            <PlannedExercisePicker key={`${activeDay}/${editingId ?? "add"}`} source={editingId ? byId.get(editingId) ?? null : null}
+              catalog={editingId && selected.exercises.find(item => item.exercise_id === editingId)?.set_methods?.length ? catalog.filter(item => inferLoadType(item) === "weight_reps") : catalog}
+              occupiedIds={new Set(selected.exercises.map(item => item.exercise_id))} onChoose={chooseExercise} onOpenDetail={setDetailExercise}
+              onBack={editingId ? () => setEditingId(null) : undefined} searchLabel={editingId ? "Поиск замены" : "Добавить упражнение"} collapsibleFilters />
+          </> : null}
+        </fieldset> : null}
       </div>
       <p className="text-xs text-tg-hint">Добавьте хотя бы одно упражнение в каждый день. В линейной программе повторы остаются заданными; в программе с уровнями сложности они меняются по неделям.</p>
       {!numbersValid ? <div className="text-sm text-[var(--app-danger)]">
-        {!weeksValid ? <button type="button" onClick={() => setStep("setup")} className="min-h-11 underline">Исправить длительность программы</button> : null}
+        {!weeksValid ? <button type="button" disabled={pendingGroup} onClick={() => setStep("setup")} className="min-h-11 underline">Исправить длительность программы</button> : null}
         {visibleDays.map((day, index) => day.exercises.some((item) => !validProgramNumber(item.sets, 1, 8) || !validProgramNumber(item.rest_sec, 0, 300))
-          ? <button key={index} type="button" onClick={() => setActiveDay(index)} className="block min-h-11 underline">Исправить числа: День {index + 1}</button> : null)}
+          ? <button key={index} type="button" disabled={pendingGroup} onClick={() => { setEditingId(null); setActiveDay(index); }} className="block min-h-11 underline">Исправить числа: День {index + 1}</button> : null)}
       </div> : null}
-      <button type="button" disabled={!numbersValid || !allDaysReady || saving || name.trim().length < 3 || loading} onClick={() => void save()}
+      <button type="button" disabled={!input.ok || pendingGroup || saving || loading} onClick={() => void save()}
         className="app-button app-gradient-action w-full disabled:opacity-50">{saving ? "Сохраняем…" : "Создать программу"}</button>
     </div>}
     {error ? <p role="alert" className="mt-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-3 text-sm">{error}</p> : null}
-    <Link to="/programs" className="mt-4 inline-flex min-h-11 items-center text-sm text-tg-link">← К программам</Link>
+    <Link to="/programs" aria-disabled={pendingGroup} onClick={event => { if (pendingGroup) event.preventDefault(); }} className="mt-4 inline-flex min-h-11 items-center text-sm text-tg-link">← К программам</Link>
     </fieldset>
     {detailExercise ? <ExerciseDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} showExplorerLink={false} showProgress={false} /> : null}
   </section>;

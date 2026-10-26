@@ -18,6 +18,18 @@ function form(): PersonalProgramDraft {
 }
 
 describe("personal program draft boundary", () => {
+  it("retains an editable intermediate drop topology without allowing submission", () => {
+    const draft = form();
+    const next = structuredClone(plan);
+    next.exercises[0].set_methods![0].parts[1].target_weight = 20;
+    const converted = personalDayFromPlan(next, "День", draft.days[0], [], { allowInvalidTopology: true });
+    expect(converted.ok).toBe(true);
+    if (!converted.ok) return;
+    expect(converted.value.exercises[0].set_methods![0].parts[1].target_weight).toBe(20);
+    expect(parsePersonalProgramDraft({ ...draft, days: [converted.value] })).not.toBeNull();
+    expect(personalProgramInput({ ...draft, days: [converted.value] }, catalog).ok).toBe(false);
+    expect(personalDayFromPlan(next, "День").ok).toBe(false);
+  });
   it("roundtrips complete methods, typed targets, day-only groups, modes and zero through one atomic payload", () => {
     const draft = form();
     expect(personalDayToPlan(draft.days[0], catalog)).toEqual({ ok: true, value: plan });

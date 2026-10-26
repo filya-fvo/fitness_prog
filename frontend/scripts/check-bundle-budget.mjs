@@ -175,8 +175,13 @@ const limits = {
   // Personal draft adapter/recovery adds 3328 / 3312 -> 643354 / 586659.
   // No dependency/vendor growth; retain 246 / 241 bytes aggregate headroom.
   // Personal route remains lazy; admin and largest-chunk caps are unchanged.
-  totalJsGzip: 643_600,
-  productJsGzip: 586_900,
+  // B03b, measured against committed 3a4b209 with the same dependencies:
+  // shared composer integration adds 3360 total / 3359 product gzip bytes
+  // (643354 / 586659 -> 646714 / 590018). Composer extraction is shared by
+  // lazy PersonalProgramBuilder and TrainHub; vendor sizes are unchanged.
+  // Retain narrow aggregate headroom; admin/largest limits stay unchanged.
+  totalJsGzip: 646_950,
+  productJsGzip: 590_250,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
