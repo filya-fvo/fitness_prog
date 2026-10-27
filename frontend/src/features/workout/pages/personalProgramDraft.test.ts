@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { personalDayFromPlan, personalDayToPlan, personalProgramInput, parsePersonalProgramDraft, type PersonalProgramDraft } from "./personalProgramDraft";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
+import { maximumPersonalDraft } from "../../../../e2e/fixtures/personal-draft-data";
+import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS } from "./personalProgramDraft";
 
 const a = "11111111-1111-4111-8111-111111111111";
 const b = "22222222-2222-4222-8222-222222222222";
@@ -18,6 +20,153 @@ function form(): PersonalProgramDraft {
 }
 
 describe("personal program draft boundary", () => {
+  it("recovers minute text and submits integer seconds without rewriting the raw unit", () => {
+    const draft = form();
+    const day = draft.days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 };
+    delete day.exercises[0].set_methods;
+    Object.assign(day, { timeUnits: { [a]: "minutes" }, raw: { [`${a}/target/duration_sec`]: "1,5" } });
+    expect(parsePersonalProgramDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
+    const result = personalDayToPlan(day);
+    expect(result.ok && result.value.exercises[0].target).toEqual({ kind: "timed", duration_sec: 90 });
+    expect(day.raw?.[`${a}/target/duration_sec`]).toBe("1,5");
+  });
+  it.each([false, true])("keeps displayed minute text and units through canonicalization and reorder with raw snapshot %j", snapshot => {
+    const day = form().days[0]; day.groups = [];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: "01,500" };
+    const canonical = personalDayToPlan(day);
+    if (!canonical.ok) throw new Error("fixture");
+    canonical.value.exercises.reverse().forEach((row, index) => { row.order = index + 1; });
+    const result = personalDayFromPlan(canonical.value, day.name, day, [], snapshot ? { raw: day.raw } : {});
+    expect(result.ok && result.value.raw).toEqual(day.raw);
+    expect(result.ok && result.value.timeUnits).toEqual({ [a]: "minutes" });
+    expect(result.ok && result.value.exercises[1].target).toEqual({ kind: "timed", duration_sec: 90 });
+    if (result.ok) {
+      const next = personalDayToPlan(result.value);
+      expect(next.ok && next.value.exercises[1].target).toEqual({ kind: "timed", duration_sec: 90 });
+    }
+  });
+  it.each(["", "-", "-1", "0", "1,", "1.", "0.01", "1441", "1e1"])("recovers and rejects unfinished/invalid minute text %j before coercion", raw => {
+    const draft = form(); const day = draft.days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: raw };
+    expect(parsePersonalProgramDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
+    expect(personalDayToPlan(day).ok).toBe(false);
+    expect(personalProgramInput(draft, catalog).ok).toBe(false);
+    expect(day.raw[`${a}/target/duration_sec`]).toBe(raw);
+  });
+  it("rejects foreign, non-timed and oversized unit owners and unknown unit values", () => {
+    for (const timeUnits of [{ [a]: "minutes" }, { foreign: "seconds" }, { [a]: "hours" }, Object.fromEntries(Array.from({ length: 13 }, (_, i) => [String(i), "seconds"]))]) {
+      const draft = form(); Object.assign(draft.days[0], { timeUnits });
+      expect(parsePersonalProgramDraft(draft)).toBeNull();
+      expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
+    }
+  });
+  it("rejects minutes metadata without displayed raw text while a seconds fallback stays canonical", () => {
+    const draft = form(); const day = draft.days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 61 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" };
+    expect(parsePersonalProgramDraft(draft)).toBeNull();
+    expect(personalDayToPlan(day).ok).toBe(false);
+    day.timeUnits[a] = "seconds";
+    expect(parsePersonalProgramDraft(draft)).toEqual(draft);
+    const result = personalDayToPlan(day);
+    expect(result.ok && result.value.exercises[0].target).toEqual({ kind: "timed", duration_sec: 61 });
+    Object.assign(day, { timeUnits: { [a]: "hours" }, raw: { [`${a}/target/duration_sec`]: "1" } });
+    expect(parsePersonalProgramDraft(draft)).toBeNull();
+    expect(personalDayToPlan(day).ok).toBe(false);
+  });
+  it.each([["", "12"], ["-1", "12"], ["1.5", "12"], ["1,", "12"], ["0", "12"], ["8", "100001"], ["15", "12"]])("preserves and rejects invalid raw repetition bounds %j / %j", (min, max) => {
+    const draft = form();
+    draft.days[0].raw = { [`${a}/target/reps_min`]: min, [`${a}/target/reps_max`]: max };
+    expect(parsePersonalProgramDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
+    expect(personalProgramInput(draft, catalog).ok).toBe(false);
+    expect(draft.days[0].raw).toEqual({ [`${a}/target/reps_min`]: min, [`${a}/target/reps_max`]: max });
+  });
+  it("prunes a minute marker with its raw buffer on an explicit canonical duration edit", () => {
+    const day = form().days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: "1,5" };
+    const canonical = personalDayToPlan(day);
+    if (!canonical.ok) throw new Error("fixture");
+    canonical.value.exercises[0].target = { kind: "timed", duration_sec: 61 };
+    const result = personalDayFromPlan(canonical.value, day.name, day, [`${a}/target/duration_sec`]);
+    expect(result.ok && result.value.raw).toEqual({});
+    expect(result.ok && result.value.timeUnits).toEqual({});
+  });
+  it.each([false, true])("does not reinstate a stale minute snapshot after a canonical edit with explicit field list %j", explicit => {
+    const day = form().days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    const key = `${a}/target/duration_sec`;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [key]: "1,5" };
+    const canonical = personalDayToPlan(day);
+    if (!canonical.ok) throw new Error("fixture");
+    canonical.value.exercises[0].target = { kind: "timed", duration_sec: 61 };
+    const result = personalDayFromPlan(canonical.value, day.name, day, explicit ? [key] : [], { raw: day.raw });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const next = personalDayToPlan(result.value);
+    expect(next.ok && next.value.exercises[0].target).toEqual({ kind: "timed", duration_sec: 61 });
+    expect(result.value.raw).toEqual({});
+    expect(result.value.timeUnits).toEqual({});
+  });
+  it.each(["", "1,", "-"])("preserves genuinely changed unfinished minute text %j alongside a canonical edit", raw => {
+    const draft = form(); const day = draft.days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    const key = `${a}/target/duration_sec`;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [key]: "1,5" };
+    const canonical = personalDayToPlan(day);
+    if (!canonical.ok) throw new Error("fixture");
+    canonical.value.exercises[0].target = { kind: "timed", duration_sec: 61 };
+    const result = personalDayFromPlan(canonical.value, day.name, day, [key], { raw: { [key]: raw } });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.raw).toEqual({ [key]: raw });
+    expect(result.value.timeUnits).toEqual({ [a]: "minutes" });
+    expect(parsePersonalProgramDraft({ ...draft, days: [result.value] })).not.toBeNull();
+    expect(personalDayToPlan(result.value).ok).toBe(false);
+  });
+  it("prunes time units and duration raw only when their timed owner disappears or changes kind", () => {
+    const day = form().days[0]; day.groups = [];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: "1,", [`${b}/target/reps_min`]: "08" };
+    const source = structuredClone(plan); source.groups = [];
+    for (const exercises of [source.exercises.slice(1), source.exercises]) {
+      const result = personalDayFromPlan({ exercises: exercises.map((row, i) => ({ ...row, order: i + 1 })) }, day.name, day);
+      expect(result.ok && result.value.timeUnits).toEqual({});
+      expect(result.ok && result.value.raw).toEqual({ [`${b}/target/reps_min`]: "08" });
+    }
+  });
+  it("sends only canonical seconds for a phased program with zero rest", () => {
+    const draft = form(); const day = draft.days[0];
+    day.exercises[0].target = { kind: "timed", duration_sec: 60 }; delete day.exercises[0].set_methods;
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: "1,15" };
+    const result = personalProgramInput(draft, catalog.map(row => row.id === a ? { ...row, tags: ["load:timed"] } : row));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.progression).toBe("phased");
+    expect(result.value.days[0].exercises[0]).toMatchObject({ target: { kind: "timed", duration_sec: 69 }, reps: "69с", rest_sec: 0 });
+    expect(result.value.days[0]).not.toHaveProperty("raw");
+    expect(result.value.days[0]).not.toHaveProperty("timeUnits");
+  });
+  it("keeps the existing maximum method draft and maximum timed-unit draft below the unchanged recovery budget", () => {
+    const max = maximumPersonalDraft();
+    const timed = structuredClone(max);
+    for (const day of timed.days) {
+      day.timeUnits = {};
+      day.raw = Object.fromEntries(Object.entries(day.raw ?? {}).filter(([key]) => !key.includes("/target/") && !key.includes("/method/")));
+      for (const row of day.exercises) {
+        row.target = { kind: "timed", duration_sec: 86400 }; delete row.set_methods;
+        day.timeUnits[row.exercise_id] = "minutes"; day.raw[`${row.exercise_id}/target/duration_sec`] = "1440.0000";
+      }
+    }
+    for (const draft of [max, timed]) {
+      expect(parsePersonalProgramDraft(draft)).toEqual(draft);
+      expect(JSON.stringify(draft).length).toBeLessThan(PERSONAL_PROGRAM_DRAFT_MAX_CHARS);
+    }
+    expect(Object.keys(timed.days[0].timeUnits!)).toHaveLength(12);
+  });
   for (const consumer of ["method", "target"] as const) {
     it.each(["12.", "1.2e1", "0xc", " 12 ", "+12", ".12", "12.123456", "0.0001"])(`rejects invalid owning ${consumer} weight syntax or precision %j`, raw => {
       const draft = form();

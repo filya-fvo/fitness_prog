@@ -5,7 +5,7 @@ import { explicitWorkoutTargetSchema } from "@/api/workoutTargetSchemas";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { inferLoadType } from "@/utils/exerciseLoadType";
 import { workoutPreparationError } from "@/utils/workoutMethods";
-import { validProgramNumber, validProgramWeight } from "../components/programNumbers";
+import { programTimeSeconds, validProgramNumber, validProgramWeight, type ProgramTimeUnit } from "../components/programNumbers";
 import type { GroupProposal } from "../components/workoutEditorDraft";
 
 /** Includes all seven retained days, methods, groups, targets and owning raw buffers.
@@ -26,6 +26,10 @@ export type PersonalDayDraft = {
    * There is no second copy of the canonical day or reducer here.
    */
   raw?: Record<string, string>;
+  /** Canonical target stays seconds. Minutes require an owning displayed raw
+   * string, including blank/incomplete text; metadata alone is ambiguous.
+   */
+  timeUnits?: Record<string, ProgramTimeUnit>;
   groupProposal?: GroupProposal | null;
 };
 export type PersonalProgramDraft = {
@@ -50,6 +54,7 @@ const exerciseSchema = z.object({
 const daySchema = z.object({
   name: z.string().max(80), exercises: z.array(exerciseSchema).max(12),
   groups: z.array(groupSchema).max(6).optional(), raw: z.record(text).optional(),
+  timeUnits: z.record(z.enum(["seconds", "minutes"])).optional(),
   groupProposal: z.object({ id: z.string().uuid(), kind: workoutGroupSchema.shape.kind,
     exercise_ids: z.array(z.string().uuid()).max(12), rounds: text, transition_sec: text, round_rest_sec: text, isNew: z.boolean(),
   }).strict().nullable().optional(),
@@ -80,6 +85,11 @@ function rawValues(day: PersonalDayDraft): Map<string, number | null | undefined
   return fields;
 }
 
+function validTimeUnitOwner(day: PersonalDayDraft, id: string, unit: ProgramTimeUnit): boolean {
+  return day.exercises.some(row => row.exercise_id === id && row.target?.kind === "timed")
+    && (unit === "seconds" || day.raw?.[`${id}/target/duration_sec`] !== undefined);
+}
+
 /** Shape validation deliberately accepts incomplete numeric text and empty days.
  * Submission validity (topology, required values, catalog) is a separate boundary.
  */
@@ -91,6 +101,7 @@ export function parsePersonalProgramDraft(value: unknown): PersonalProgramDraft 
   for (const day of draft.days) {
     const owners = rawValues(day);
     if (Object.keys(day.raw ?? {}).some(key => !owners.has(key))) return null;
+    if (Object.entries(day.timeUnits ?? {}).some(([id, unit]) => !validTimeUnitOwner(day, id, unit))) return null;
     if (new Set(day.exercises.map(row => row.exercise_id)).size !== day.exercises.length) return null;
     if (new Set(day.groups?.map(group => group.id)).size !== (day.groups?.length ?? 0)) return null;
     const proposal = day.groupProposal;
@@ -158,12 +169,19 @@ export function personalDayFromPlan(plan: unknown, name: string, previous?: Pers
   if (previous?.raw) {
     const owners = rawValues(day);
     const prior = rawValues(previous);
-    day.raw = Object.fromEntries(Object.entries(previous.raw).filter(([key]) => owners.has(key) && !changed.has(key) && owners.get(key) === prior.get(key)));
+    day.raw = Object.fromEntries(Object.entries(previous.raw).filter(([key, value]) => owners.has(key) && !changed.has(key)
+      && (owners.get(key) === prior.get(key) || (key.endsWith("/target/duration_sec")
+        && programTimeSeconds(value, previous.timeUnits?.[key.split("/")[0]] ?? "seconds") === owners.get(key)))));
   }
   if (options.raw) {
     const owners = rawValues(day);
-    day.raw = Object.fromEntries(Object.entries(options.raw).filter(([key]) => owners.has(key)));
+    // A forwarded unchanged time snapshot must respect the pruning above.
+    // A different string is new input, including recoverable unfinished text.
+    const retained = day.raw;
+    day.raw = Object.fromEntries(Object.entries(options.raw).filter(([key, value]) => owners.has(key)
+      && (!key.endsWith("/target/duration_sec") || value !== previous?.raw?.[key] || retained?.[key] !== undefined)));
   }
+  if (previous?.timeUnits) day.timeUnits = Object.fromEntries(Object.entries(previous.timeUnits).filter(([id, unit]) => validTimeUnitOwner(day, id, unit)));
   return { ok: true, value: day };
 }
 
@@ -185,6 +203,7 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
   if (!day.exercises.length) errors.exercises = "Добавьте упражнение";
   const owners = rawValues(day);
   if (Object.keys(day.raw ?? {}).some(key => !owners.has(key))) errors.raw = "Проверьте черновик";
+  if (Object.entries(day.timeUnits ?? {}).some(([id, unit]) => !validTimeUnitOwner(day, id, unit))) errors.timeUnits = "Проверьте единицу времени";
   // API Decimal parsers accept spellings such as 12.; unfinished user input must
   // fail before those parsers run, for both ordinary targets and method parts.
   for (const [key, raw] of Object.entries(day.raw ?? {})) {
@@ -206,6 +225,10 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
     if (target) {
       const input = Object.fromEntries(Object.entries(target).map(([key, value]) => [key, key === "kind" ? value
         : buffered(day, `${row.exercise_id}/target/${key}`, value as number | null, key === "target_weight")]));
+      if (target.kind === "timed") {
+        const raw = day.raw?.[`${row.exercise_id}/target/duration_sec`];
+        if (raw !== undefined) input.duration_sec = programTimeSeconds(raw, day.timeUnits?.[row.exercise_id] ?? "seconds");
+      }
       const parsed = explicitWorkoutTargetSchema.safeParse(input);
       if (parsed.success) target = parsed.data;
       else Object.assign(errors, schemaErrors(parsed.error, `${prefix}target.`));

@@ -185,8 +185,11 @@ const limits = {
   // Final after blur-layout fix: 647818 / 591133 (+1104 / +1115 vs baseline).
   // No new dependencies; vendor hashes/sizes and largest chunk unchanged.
   // Root-approved narrow aggregate caps; admin/largest limits stay unchanged.
-  totalJsGzip: 648_150,
-  productJsGzip: 591_450,
+  // G1 exact duration conversion and owning raw recovery: 647945 / 591265 ->
+  // 648429 / 591737 (+484 total / +472 product); vendors and lock unchanged.
+  // Root-approved measured allowance; admin/largest caps remain unchanged.
+  totalJsGzip: 648_650,
+  productJsGzip: 591_950,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
