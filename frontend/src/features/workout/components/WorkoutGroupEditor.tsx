@@ -2,14 +2,18 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { pluralRu, setsCount } from "@/utils/localization";
 import type { WorkoutGroup, WorkoutPlan } from "@/types/workout";
 import { configureWorkoutGroup, dissolveWorkoutGroup, workoutGroupLabels } from "@/utils/workoutMethods";
+import { ProgramNumberField } from "./ProgramNumberField";
+import { validProgramNumber } from "./programNumbers";
+import type { GroupProposal, WorkoutRaw } from "./workoutEditorDraft";
 
-type Props = { plan: WorkoutPlan; disabled?: boolean; maxRounds?: number; saveHint?: string; onChange: (plan: WorkoutPlan) => void; onEditingChange: (editing: boolean) => void };
+type Props = { plan: WorkoutPlan; disabled?: boolean; maxRounds?: number; saveHint?: string; raw?: WorkoutRaw; proposal?: GroupProposal | null; onProposalChange?: (proposal: GroupProposal | null) => void; onChange: (plan: WorkoutPlan, appliedId?: string) => void; onEditingChange: (editing: boolean) => void };
 const field = "app-field mt-1 min-h-[44px] w-full px-2 py-2 text-base";
 export type WorkoutGroupEditorHandle = { startWith: (exerciseId: string) => void };
-export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(function WorkoutGroupEditor({ plan, disabled, maxRounds = 20, saveHint = "После создания связки сохраните подготовку тренировки.", onChange, onEditingChange }, ref) {
+export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(function WorkoutGroupEditor({ plan, disabled, maxRounds = 20, saveHint = "После создания связки сохраните подготовку тренировки.", raw, proposal, onProposalChange, onChange, onEditingChange }, ref) {
   const editor = useRef<HTMLElement>(null);
-  const [draft, setDraft] = useState<WorkoutGroup | null>(null);
-  const [isNew, setIsNew] = useState(false);
+  const [localDraft, setLocalDraft] = useState<GroupProposal | null>(null);
+  const draft = proposal === undefined ? localDraft : proposal;
+  function setDraft(value: GroupProposal | null) { if (onProposalChange) onProposalChange(value); else setLocalDraft(value); }
   const [error, setError] = useState<string | null>(null);
   const names = new Map(plan.exercises.map(row => [row.exercise_id, row.name_ru || "Упражнение"]));
   const draftId = draft?.id;
@@ -20,20 +24,24 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
   }, [draftId]);
   function begin(group?: WorkoutGroup, kind: WorkoutGroup["kind"] = "superset", exerciseId?: string) {
     if (disabled || draft) return;
-    setDraft(group ? { ...group, exercise_ids: [...group.exercise_ids] } : { id: crypto.randomUUID(), kind,
-      exercise_ids: exerciseId ? [exerciseId] : [], rounds: plan.exercises.find(row => row.exercise_id === exerciseId)?.target_sets ?? 3, transition_sec: 0, round_rest_sec: 90 });
-    setIsNew(!group); setError(null); onEditingChange(true);
+    const next = group ?? { id: crypto.randomUUID(), kind, exercise_ids: exerciseId ? [exerciseId] : [],
+      rounds: plan.exercises.find(row => row.exercise_id === exerciseId)?.target_sets ?? 3, transition_sec: 0, round_rest_sec: 90 };
+    setDraft({ ...next, exercise_ids: [...next.exercise_ids], rounds: raw?.[`${next.id}/rounds`] ?? String(next.rounds),
+      transition_sec: raw?.[`${next.id}/transition_sec`] ?? String(next.transition_sec), round_rest_sec: raw?.[`${next.id}/round_rest_sec`] ?? String(next.round_rest_sec), isNew: !group });
+    setError(null); onEditingChange(true);
   }
   useImperativeHandle(ref, () => ({ startWith: exerciseId => begin(undefined, "superset", exerciseId) }));
   function cancel() { setDraft(null); setError(null); onEditingChange(false); }
   function apply() {
-    if (!draft || !validRounds) return;
-    try { onChange(configureWorkoutGroup(plan, draft)); cancel(); }
+    if (!draft || !validNumbers) return;
+    const group: WorkoutGroup = { id: draft.id, kind: draft.kind, exercise_ids: draft.exercise_ids,
+      rounds: Number(draft.rounds), transition_sec: Number(draft.transition_sec), round_rest_sec: Number(draft.round_rest_sec) };
+    try { onChange(configureWorkoutGroup(plan, group), group.id); cancel(); }
     catch (err) { setError(err instanceof Error ? err.message : "Проверьте участников и раунды связки"); }
   }
   const required = draft?.kind === "superset" ? 2 : draft?.kind === "triset" ? 3 : null;
   const validCount = draft && (required ? draft.exercise_ids.length === required : draft.exercise_ids.length >= 2);
-  const validRounds = draft && Number.isInteger(draft.rounds) && draft.rounds >= 1 && draft.rounds <= maxRounds;
+  const validNumbers = draft && validProgramNumber(draft.rounds, 1, maxRounds) && validProgramNumber(draft.transition_sec, 0, 600) && validProgramNumber(draft.round_rest_sec, 0, 600);
   const available = plan.exercises.filter(row => !(plan.groups ?? []).some(group => group.exercise_ids.includes(row.exercise_id))).length;
   return <div className="space-y-2">
     <h4 className="text-sm font-semibold">Суперсеты, трисеты и круги</h4>
@@ -61,16 +69,16 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
           </label>;
         })}
       </fieldset>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-tg-hint">Раунды<input aria-label="Раунды" type="number" inputMode="numeric" min={1} max={maxRounds} disabled={disabled} value={draft.rounds || ""} onChange={event => setDraft({ ...draft, rounds: Number(event.target.value) })} className={field} /></label>
-        <label className="text-xs text-tg-hint">Переход, с<input aria-label="Переход между упражнениями, с" type="number" inputMode="numeric" min={0} max={600} disabled={disabled} value={draft.transition_sec} onChange={event => setDraft({ ...draft, transition_sec: Number(event.target.value) })} className={field} /></label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ProgramNumberField label="Раунды" min={1} max={maxRounds} disabled={disabled} value={draft.rounds} onChange={rounds => setDraft({ ...draft, rounds })} />
+        <ProgramNumberField label="Переход, с" ariaLabel="Переход между упражнениями, с" min={0} max={600} disabled={disabled} value={draft.transition_sec} onChange={transition_sec => setDraft({ ...draft, transition_sec })} presets={[0, 15, 30]} />
       </div>
-      <label className="block text-xs text-tg-hint">Отдых после раунда, с<input aria-label="Отдых после раунда, с" type="number" inputMode="numeric" min={0} max={600} disabled={disabled} value={draft.round_rest_sec} onChange={event => setDraft({ ...draft, round_rest_sec: Number(event.target.value) })} className={field} /></label>
-      <p className="text-xs text-tg-hint">У каждого участника будет {draft.rounds ? setsCount(draft.rounds) : "…"}. Выбранные упражнения соберутся в один блок; настройки лишних подходов будут убраны.</p>
+      <ProgramNumberField label="Отдых после раунда, с" min={0} max={600} disabled={disabled} value={draft.round_rest_sec} onChange={round_rest_sec => setDraft({ ...draft, round_rest_sec })} presets={[0, 60, 90, 120]} />
+      <p className="text-xs text-tg-hint">У каждого участника будет {validProgramNumber(draft.rounds, 1, maxRounds) ? setsCount(Number(draft.rounds)) : "…"}. Выбранные упражнения соберутся в один блок; настройки лишних подходов будут убраны.</p>
       <p className="text-xs text-tg-hint">{saveHint}</p>
       {error ? <p role="alert" className="app-status app-status-danger text-xs">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={disabled || !validCount || !validRounds} onClick={apply} className="app-button app-secondary-action px-3 text-sm">{isNew ? "Создать связку" : "Сохранить связку"}</button>
+        <button type="button" disabled={disabled || !validCount || !validNumbers} onClick={apply} className="app-button app-secondary-action px-3 text-sm">{draft.isNew ? "Создать связку" : "Сохранить связку"}</button>
         <button type="button" disabled={disabled} onClick={cancel} className="min-h-[44px] px-3 text-sm text-tg-hint">Отменить настройку связки</button>
       </div>
     </section> : <div className="space-y-2">

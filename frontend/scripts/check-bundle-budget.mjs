@@ -180,8 +180,13 @@ const limits = {
   // (643354 / 586659 -> 646714 / 590018). Composer extraction is shared by
   // lazy PersonalProgramBuilder and TrainHub; vendor sizes are unchanged.
   // Retain narrow aggregate headroom; admin/largest limits stay unchanged.
-  totalJsGzip: 646_950,
-  productJsGzip: 590_250,
+  // B03c shared raw/proposal editors, same lock: 646714 / 590018 ->
+  // 647869 / 591170 (+1155 total / +1152 product before the blur-layout fix).
+  // Final after blur-layout fix: 647818 / 591133 (+1104 / +1115 vs baseline).
+  // No new dependencies; vendor hashes/sizes and largest chunk unchanged.
+  // Root-approved narrow aggregate caps; admin/largest limits stay unchanged.
+  totalJsGzip: 648_150,
+  productJsGzip: 591_450,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

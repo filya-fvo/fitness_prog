@@ -53,6 +53,26 @@ test("maximum valid personal topology and every raw buffer survive actual storag
   expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual(expected);
 });
 
+test("maximum draft plus pending group proposal metadata remains recoverable within the finite budget", async ({ page }) => {
+  const expected = maximumPersonalDraft();
+  for (const day of expected.days) day.groupProposal = { ...day.groups![0], isNew: false, exercise_ids: day.exercises.map(row => row.exercise_id),
+    rounds: "", transition_sec: "-", round_rest_sec: "1," };
+  const serialized = JSON.stringify(expected);
+  expect(serialized.length).toBeLessThan(4_000_000);
+  await test.info().attach("maximum-proposal-draft-size", { body: JSON.stringify({ chars: serialized.length, proposals: 7, numericRawFields: 16506 }), contentType: "application/json" });
+  await openFixture(page, `${fixture}?domain`);
+  await page.evaluate(draft => Reflect.get(window, "draftHarness").setValue(draft), expected);
+  await expect(page.locator("output")).toHaveText("true:true");
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key)?.length, key)).toBe(serialized.length);
+  await page.reload();
+  await expect(page.locator("output")).toHaveText("true:true");
+  expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual(expected);
+  expect(await page.evaluate(() => {
+    const draft = Reflect.get(window, "draftHarness").value;
+    return Reflect.get(window, "personalProgramInput")(draft, Reflect.get(window, "personalDraftCatalog")(draft)).ok;
+  })).toBe(false);
+});
+
 test("default budget remains 100000 and rejects an oversized saved value before parsing it", async ({ page }) => {
   await page.addInitScript(({ key }) => {
     localStorage.setItem(key, JSON.stringify({ text: "x".repeat(100_000) }));

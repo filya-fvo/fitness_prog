@@ -5,7 +5,8 @@ import { explicitWorkoutTargetSchema } from "@/api/workoutTargetSchemas";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { inferLoadType } from "@/utils/exerciseLoadType";
 import { workoutPreparationError } from "@/utils/workoutMethods";
-import { validProgramNumber } from "../components/programNumbers";
+import { validProgramNumber, validProgramWeight } from "../components/programNumbers";
+import type { GroupProposal } from "../components/workoutEditorDraft";
 
 /** Includes all seven retained days, methods, groups, targets and owning raw buffers.
  * The maximal canonical fixture (including every numeric buffer) is below two
@@ -25,6 +26,7 @@ export type PersonalDayDraft = {
    * There is no second copy of the canonical day or reducer here.
    */
   raw?: Record<string, string>;
+  groupProposal?: GroupProposal | null;
 };
 export type PersonalProgramDraft = {
   name: string; location: PersonalProgramInput["location"]; progression: PersonalProgramInput["progression"];
@@ -48,6 +50,9 @@ const exerciseSchema = z.object({
 const daySchema = z.object({
   name: z.string().max(80), exercises: z.array(exerciseSchema).max(12),
   groups: z.array(groupSchema).max(6).optional(), raw: z.record(text).optional(),
+  groupProposal: z.object({ id: z.string().uuid(), kind: workoutGroupSchema.shape.kind,
+    exercise_ids: z.array(z.string().uuid()).max(12), rounds: text, transition_sec: text, round_rest_sec: text, isNew: z.boolean(),
+  }).strict().nullable().optional(),
 }).strict();
 const formSchema = z.object({
   name: z.string().max(80), location: z.enum(["gym", "home", "outdoor"]), progression: z.enum(["linear", "phased"]),
@@ -88,6 +93,10 @@ export function parsePersonalProgramDraft(value: unknown): PersonalProgramDraft 
     if (Object.keys(day.raw ?? {}).some(key => !owners.has(key))) return null;
     if (new Set(day.exercises.map(row => row.exercise_id)).size !== day.exercises.length) return null;
     if (new Set(day.groups?.map(group => group.id)).size !== (day.groups?.length ?? 0)) return null;
+    const proposal = day.groupProposal;
+    if (proposal && (new Set(proposal.exercise_ids).size !== proposal.exercise_ids.length
+      || proposal.exercise_ids.some(id => !day.exercises.some(row => row.exercise_id === id))
+      || proposal.isNew === Boolean(day.groups?.some(group => group.id === proposal.id)))) return null;
   }
   return draft;
 }
@@ -105,7 +114,7 @@ function compatibilityReps(target: InputExercise["target"], legacy: string): str
 }
 
 /** External-data boundary: shared schemas normalize API Decimal strings exactly once. */
-export function personalDayFromPlan(plan: unknown, name: string, previous?: PersonalDayDraft, edited: readonly string[] = [], options: { allowInvalidTopology?: boolean } = {}): DraftResult<PersonalDayDraft> {
+export function personalDayFromPlan(plan: unknown, name: string, previous?: PersonalDayDraft, edited: readonly string[] = [], options: { allowInvalidTopology?: boolean; raw?: Record<string, string> } = {}): DraftResult<PersonalDayDraft> {
   const schema = z.object({
     groups: z.array(groupSchema).max(6).optional(),
     exercises: z.array(z.object({
@@ -125,6 +134,7 @@ export function personalDayFromPlan(plan: unknown, name: string, previous?: Pers
   const changed = new Set(edited);
   const day: PersonalDayDraft = {
     name,
+    ...(previous?.groupProposal === undefined ? {} : { groupProposal: previous.groupProposal }),
     ...(source.groups === undefined ? {} : { groups: source.groups }),
     exercises: [...source.exercises].sort((a, b) => a.order - b.order).map(row => {
       const old = previous?.exercises.find(item => item.exercise_id === row.exercise_id);
@@ -150,6 +160,10 @@ export function personalDayFromPlan(plan: unknown, name: string, previous?: Pers
     const prior = rawValues(previous);
     day.raw = Object.fromEntries(Object.entries(previous.raw).filter(([key]) => owners.has(key) && !changed.has(key) && owners.get(key) === prior.get(key)));
   }
+  if (options.raw) {
+    const owners = rawValues(day);
+    day.raw = Object.fromEntries(Object.entries(options.raw).filter(([key]) => owners.has(key)));
+  }
   return { ok: true, value: day };
 }
 
@@ -157,7 +171,8 @@ export function personalDayFromPlan(plan: unknown, name: string, previous?: Pers
 function buffered(day: PersonalDayDraft, key: string, value: number | null | undefined, optionalWeight = false): unknown {
   const raw = day.raw?.[key];
   if (raw === undefined) return value;
-  if (optionalWeight) return raw === "" ? null : raw;
+  // Raw weight syntax has already passed the owning-field check in ToPlan.
+  if (optionalWeight) return raw === "" ? null : raw.replace(",", ".");
   return /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : raw;
 }
 
@@ -165,10 +180,16 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
   const shape = daySchema.safeParse(day);
   if (!shape.success) return fail(schemaErrors(shape.error));
   const errors: Record<string, string> = {};
+  if (day.groupProposal) errors.groupProposal = "Завершите или отмените настройку связки";
   if (!day.name.trim()) errors.name = "Укажите название дня";
   if (!day.exercises.length) errors.exercises = "Добавьте упражнение";
   const owners = rawValues(day);
   if (Object.keys(day.raw ?? {}).some(key => !owners.has(key))) errors.raw = "Проверьте черновик";
+  // API Decimal parsers accept spellings such as 12.; unfinished user input must
+  // fail before those parsers run, for both ordinary targets and method parts.
+  for (const [key, raw] of Object.entries(day.raw ?? {})) {
+    if (key.endsWith("/target_weight") && !validProgramWeight(raw)) errors[`raw.${key}`] = "Проверьте вес";
+  }
   const numbers = day.exercises.map((row, index) => {
     const setsValid = validProgramNumber(row.sets, 1, 8);
     const restValid = validProgramNumber(row.rest_sec, 0, 300);
@@ -228,6 +249,7 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
 export function personalProgramInput(draft: PersonalProgramDraft, catalog: readonly Exercise[]): DraftResult<PersonalProgramInput> {
   const parsed = parsePersonalProgramDraft(draft);
   if (!parsed) return fail({ draft: "Проверьте черновик программы" });
+  if (draft.days.some(day => day.groupProposal)) return fail({ groupProposal: "Завершите или отмените настройку связки" });
   const errors: Record<string, string> = {};
   if (draft.name.trim().length < 3) errors.name = "Название должно содержать от 3 до 80 символов";
   if (!validProgramNumber(draft.durationWeeks, 1, 52)) errors.durationWeeks = "Укажите от 1 до 52 недель";

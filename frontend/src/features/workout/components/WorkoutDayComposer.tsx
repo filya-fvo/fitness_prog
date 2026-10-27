@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { inferLoadType } from "@/utils/exerciseLoadType";
 import type { Exercise, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 import { WorkoutMethodEditor } from "./WorkoutMethodEditor";
@@ -7,6 +7,7 @@ import { WorkoutTimingPreview } from "./WorkoutTimingPreview";
 import { removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "@/utils/workoutMethods";
 import { ExerciseThumbnail } from "./ExerciseThumbnail";
 import { reorderWorkoutExercise, updateWorkoutExercise } from "@/utils/workoutCustomization";
+import { invalidMethodRaw, retainMethodRaw, type GroupProposal, type WorkoutRaw } from "./workoutEditorDraft";
 
 type Props = {
   plan: WorkoutPlan; catalog: Exercise[]; disabled?: boolean;
@@ -20,21 +21,39 @@ type Props = {
   hideAdd?: boolean;
   groupSaveHint?: string;
   onPendingChange?: (pending: boolean) => void;
-  onChange: (plan: WorkoutPlan) => void; onAdd: () => void;
+  raw?: WorkoutRaw;
+  groupProposal?: GroupProposal | null;
+  onProposalChange?: (proposal: GroupProposal | null) => void;
+  onChange: (plan: WorkoutPlan, raw?: WorkoutRaw) => void; onAdd: () => void;
   onReplace: (row: WorkoutPlanExercise) => void; onOpenDetail: (exercise: Exercise) => void;
 };
-export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, onReplace, onOpenDetail, onPendingChange,
+export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanChange, onAdd, onReplace, onOpenDetail, onPendingChange, raw: owningRaw, groupProposal, onProposalChange,
   limits = { sets: 20, exercises: 20, rest: 600, rounds: 20 }, incomplete, previewReady = true, renderFields, renderSummary, onRemove, hideAdd, groupSaveHint }: Props) {
   const groupEditor = useRef<WorkoutGroupEditorHandle>(null);
-  const [groupDraft, setGroupDraft] = useState(false);
+  const [localGroupDraft, setGroupDraft] = useState(false);
+  const [localRaw, setLocalRaw] = useState<WorkoutRaw>({});
+  const raw = owningRaw ?? retainMethodRaw(plan, localRaw);
+  const groupDraft = groupProposal === undefined ? localGroupDraft : Boolean(groupProposal);
+  const invalidRaw = invalidMethodRaw(raw);
+  const pending = groupDraft || (owningRaw === undefined && invalidRaw);
+  useEffect(() => { onPendingChange?.(pending); }, [onPendingChange, pending]);
+  function onChange(next: WorkoutPlan, nextRaw = raw) {
+    const retained = retainMethodRaw(next, nextRaw);
+    if (owningRaw === undefined) setLocalRaw(retained);
+    onPlanChange(next, retained);
+  }
   const locked = disabled || groupDraft;
-  const structureLocked = locked || incomplete;
+  const structureLocked = locked || incomplete || (owningRaw === undefined && invalidRaw);
   const byId = new Map(catalog.map(row => [row.id, row]));
   function change(id: string, values: Partial<WorkoutPlanExercise>) {
     onChange(updateWorkoutExercise(plan, id, values));
   }
   return <div className="space-y-3">
-    <WorkoutGroupEditor ref={groupEditor} plan={plan} maxRounds={limits.rounds} saveHint={groupSaveHint} disabled={disabled || incomplete} onChange={onChange} onEditingChange={value => { setGroupDraft(value); onPendingChange?.(value); }} />
+    <WorkoutGroupEditor ref={groupEditor} plan={plan} raw={raw} maxRounds={limits.rounds} saveHint={groupSaveHint} proposal={groupProposal} onProposalChange={onProposalChange} disabled={disabled || incomplete} onChange={(next, appliedId) => {
+      const changed = new Set((plan.groups ?? []).filter(group => JSON.stringify(group) !== JSON.stringify(next.groups?.find(item => item.id === group.id))).map(group => group.id));
+      if (appliedId) changed.add(appliedId);
+      onChange(next, Object.fromEntries(Object.entries(raw).filter(([key]) => !changed.has(key.split("/")[0]))));
+    }} onEditingChange={setGroupDraft} />
     {plan.exercises.map((row, index) => {
       const exercise = byId.get(row.exercise_id);
       const timed = exercise && ["timed", "cardio_machine"].includes(inferLoadType(exercise));
@@ -62,8 +81,8 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
         </div>}
         {grouped ? <p className="mt-2 text-xs text-tg-hint">Подходы и отдых задаются в связке. Перед удалением участника измените или распустите её.</p> : null}
-        <WorkoutMethodEditor row={row} exercise={exercise} disabled={structureLocked} onChange={methods => onChange({ ...plan, execution_version: 2,
-          exercises: plan.exercises.map(item => item.exercise_id === row.exercise_id ? { ...item, set_methods: methods } : item) })} />
+        <WorkoutMethodEditor row={row} exercise={exercise} raw={raw} disabled={locked || incomplete} onChange={(methods, nextRaw) => onChange({ ...plan, execution_version: 2,
+          exercises: plan.exercises.map(item => item.exercise_id === row.exercise_id ? { ...item, set_methods: methods } : item) }, nextRaw)} />
         {!grouped ? <button type="button" disabled={structureLocked || plan.exercises.length < 2} onClick={() => groupEditor.current?.startWith(row.exercise_id)} className="min-h-[44px] px-2 text-sm font-medium text-tg-link">Суперсет / трисет</button> : null}
         <div className="mt-2 flex flex-wrap items-center gap-1">
           <button type="button" disabled={structureLocked} onClick={() => onReplace(row)} className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
@@ -75,7 +94,7 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange, onAdd, o
       </section>;
     })}
     {!hideAdd ? <button type="button" disabled={structureLocked || plan.exercises.length >= limits.exercises || catalog.length === 0} onClick={onAdd} className="app-button app-secondary-action w-full">Добавить упражнение</button> : null}
-    {!incomplete && previewReady && plan.exercises.length ? <WorkoutTimingPreview plan={plan} catalog={catalog} /> : null}
+    {!incomplete && !invalidRaw && previewReady && plan.exercises.length ? <WorkoutTimingPreview plan={plan} catalog={catalog} /> : null}
     <p className="text-xs text-tg-hint">Изменения сохранятся только для вас.</p>
   </div>;
 }

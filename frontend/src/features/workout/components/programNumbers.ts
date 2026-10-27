@@ -5,6 +5,10 @@ export function validProgramNumber(value: string, min: number, max: number) {
   return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
 }
 
+export function validProgramWeight(value: string) {
+  return value === "" || (/^\d+(?:[.,]\d+)?$/.test(value) && Number(value.replace(",", ".")) > 0 && Number(value.replace(",", ".")) <= 10000);
+}
+
 /** Earlier personal-program drafts stored numbers; preserve the shared recovery lifecycle. */
 export function migrateProgramNumbers(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;

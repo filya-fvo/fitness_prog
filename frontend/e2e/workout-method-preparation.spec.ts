@@ -1,6 +1,25 @@
 import { expect, test } from "@playwright/test";
 import { installMethodApi, methodIds } from "./fixtures/workout-method-api";
 
+test("shared preparation keeps unfinished method numbers editable and blocks save", async ({ page }) => {
+  const api = await openPrepared(page);
+  const row = page.getByRole("region", { name: "Сгибания со штангой", exact: true });
+  await row.locator("summary").click();
+  await row.getByLabel("Способ выполнения Сгибания со штангой", { exact: true }).selectOption("cluster");
+  const pause = row.getByLabel("Пауза после части 1 Сгибания со штангой", { exact: true });
+  await pause.fill(""); await pause.blur();
+  await expect(pause).toHaveValue(""); await expect(pause).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Сохранить подготовку", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Добавить упражнение", exact: true })).toBeDisabled();
+  await row.getByLabel("Рабочий вес Сгибания со штангой", { exact: true }).fill("12,50");
+  await expect(pause).toHaveValue("");
+  expect(api.writes).toHaveLength(0);
+  await pause.fill("0");
+  await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(api.writes[0].exercise_overrides.find(row => row.exercise_id === methodIds.curl)?.set_methods?.[0].parts[0]).toMatchObject({ pause_after_sec: 0, target_weight: 12.5 });
+});
+
 for (const width of [320, 375, 393, 1440]) for (const theme of ["light", "dark"] as const) {
   test(`prepares and reopens a personal biceps superset ${width}px ${theme}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width === 393 ? 600 : 820 });

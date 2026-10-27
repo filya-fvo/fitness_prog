@@ -17,6 +17,7 @@ import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
 import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
+import type { WorkoutRaw } from "../components/workoutEditorDraft";
 
 type ExerciseDraft = PersonalExerciseDraft;
 type DayDraft = PersonalDayDraft;
@@ -53,7 +54,7 @@ function PersonalProgramBuilderForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingGroup, setPendingGroup] = useState(false);
+  const pendingGroup = days.some(day => Boolean(day.groupProposal));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(true);
   const mounted = useRef(true);
@@ -65,9 +66,10 @@ function PersonalProgramBuilderForm() {
     migrate: migrateProgramNumbers,
     maxChars: PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parse: parsePersonalProgramDraft,
     restore: (draft) => {
+      const proposals = draft.days.flatMap((day, index) => day.groupProposal ? [index] : []);
       setName(draft.name); setLocation(draft.location); setProgression(draft.progression);
-      setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(draft.dayCount);
-      setActiveDay(draft.activeDay); setStep(draft.step);
+      setDurationWeeks(draft.durationWeeks); setDays(draft.days); setDayCount(Math.max(draft.dayCount, ...proposals.map(index => index + 1)));
+      setActiveDay(proposals[0] ?? draft.activeDay); setStep(proposals.length ? "days" : draft.step);
     },
   });
 
@@ -115,8 +117,8 @@ function PersonalProgramBuilderForm() {
     setDays((current) => current.map((day, index) => index === activeDay ? updater(day) : day));
   }
 
-  function changePlan(next: WorkoutPlan) {
-    const result = personalDayFromPlan(next, selected.name, selected, [], { allowInvalidTopology: true });
+  function changePlan(next: WorkoutPlan, raw?: WorkoutRaw) {
+    const result = personalDayFromPlan(next, selected.name, selected, [], { allowInvalidTopology: true, raw });
     if (result.ok) { editDay(() => result.value); setError(null); }
     else setError(Object.values(result.errors)[0]);
   }
@@ -234,7 +236,7 @@ function PersonalProgramBuilderForm() {
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleDays.map((day, index) => <button key={index} type="button" disabled={pendingGroup} aria-pressed={activeDay === index} onClick={() => { setEditingId(null); setPickerOpen(true); setActiveDay(index); }}
+        {visibleDays.map((day, index) => <button key={index} type="button" disabled={pendingGroup && (Boolean(selected.groupProposal) || !day.groupProposal)} aria-pressed={activeDay === index} onClick={() => { setEditingId(null); setPickerOpen(true); setActiveDay(index); }}
           className={activeDay === index ? "app-button app-gradient-action min-h-11 shrink-0 rounded-full px-3 text-white" : "app-chip app-card-inset min-h-11 shrink-0 px-3 text-tg-text"}>
           День {index + 1}{day.exercises.length ? ` · ${day.exercises.length}` : ""}
         </button>)}
@@ -247,7 +249,8 @@ function PersonalProgramBuilderForm() {
           <WorkoutDayComposer key={activeDay} plan={presentation} catalog={catalog} limits={{ sets: 8, exercises: 12, rest: 300, rounds: 8 }}
             disabled={saving} incomplete={!basicReady} previewReady={converted.ok} hideAdd={pickerOpen || editingId !== null}
             groupSaveHint="После настройки нажмите «Создать программу», чтобы сохранить все дни."
-            onPendingChange={setPendingGroup} onChange={changePlan} onAdd={() => setPickerOpen(true)}
+            raw={selected.raw ?? {}} groupProposal={selected.groupProposal ?? null} onProposalChange={groupProposal => editDay(day => ({ ...day, groupProposal }))}
+            onChange={changePlan} onAdd={() => setPickerOpen(true)}
             onReplace={row => { setEditingId(row.exercise_id); setPickerOpen(true); }} onRemove={row => removeExercise(row.exercise_id)} onOpenDetail={setDetailExercise}
             renderSummary={row => {
               const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;

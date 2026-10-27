@@ -18,6 +18,56 @@ function form(): PersonalProgramDraft {
 }
 
 describe("personal program draft boundary", () => {
+  for (const consumer of ["method", "target"] as const) {
+    it.each(["12.", "1.2e1", "0xc", " 12 ", "+12", ".12", "12.123456", "0.0001"])(`rejects invalid owning ${consumer} weight syntax or precision %j`, raw => {
+      const draft = form();
+      draft.days[0].exercises[0].set_methods![0].parts[1].target_weight = null;
+      const key = consumer === "method" ? `${a}/method/1/part/1/target_weight` : `${a}/target/target_weight`;
+      draft.days[0].raw = { [key]: raw };
+      expect(parsePersonalProgramDraft(draft)).toEqual(draft);
+      expect(personalDayToPlan(draft.days[0], catalog).ok).toBe(false);
+      expect(personalProgramInput(draft, catalog).ok).toBe(false);
+      expect(draft.days[0].raw[key]).toBe(raw);
+    });
+    it.each([["", null], ["12.50", 12.5], ["12,50", 12.5], ["12.5000", 12.5], ["0.0100", 0.01]] as const)(`preserves legitimate owning ${consumer} weight %j`, (raw, expected) => {
+      const draft = form();
+      draft.days[0].exercises[0].set_methods![0].parts[1].target_weight = null;
+      const key = consumer === "method" ? `${a}/method/1/part/1/target_weight` : `${a}/target/target_weight`;
+      draft.days[0].raw = { [key]: raw };
+      const result = personalProgramInput(draft, catalog);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const row = result.value.days[0].exercises[0];
+      expect(consumer === "method" ? row.set_methods![0].parts[0].target_weight : row.target?.kind === "weight_reps" ? row.target.target_weight : undefined).toBe(expected);
+      expect(draft.days[0].raw[key]).toBe(raw);
+    });
+  }
+  it("normalizes a complete comma weight only at the canonical boundary", () => {
+    const draft = form();
+    draft.days[0].raw = { [`${a}/method/1/part/1/target_weight`]: "12,50" };
+    const result = personalProgramInput(draft, catalog);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.days[0].exercises[0].set_methods![0].parts[0].target_weight).toBe(12.5);
+    expect(draft.days[0].raw[`${a}/method/1/part/1/target_weight`]).toBe("12,50");
+  });
+  it("recovers an unfinished group proposal without applying it or permitting submission", () => {
+    const draft = form();
+    const pending = { ...draft, days: [{ ...draft.days[0], groupProposal: { ...group, isNew: false, rounds: "2", transition_sec: "", round_rest_sec: "1," } }] };
+    expect(parsePersonalProgramDraft(JSON.parse(JSON.stringify(pending)))).toEqual(pending);
+    expect(personalProgramInput(pending, catalog).ok).toBe(false);
+    expect(pending.days[0].groups![0].transition_sec).toBe(0);
+  });
+  it("rejects foreign, duplicate and unknown proposal ownership without rejecting unfinished text", () => {
+    const draft = form();
+    const proposal = { ...group, isNew: false, rounds: "-", transition_sec: "1.5", round_rest_sec: "601" };
+    for (const changed of [{ ...proposal, exercise_ids: [a, a] }, { ...proposal, exercise_ids: ["44444444-4444-4444-8444-444444444444"] },
+      { ...proposal, isNew: true }, { ...proposal, unexpected: "value" }]) {
+      expect(parsePersonalProgramDraft({ ...draft, days: [{ ...draft.days[0], groupProposal: changed }] })).toBeNull();
+    }
+    draft.days.push({ ...structuredClone(draft.days[0]), groupProposal: proposal });
+    expect(parsePersonalProgramDraft(draft)).toEqual(draft);
+    expect(personalProgramInput(draft, catalog).ok).toBe(false);
+  });
   it("retains an editable intermediate drop topology without allowing submission", () => {
     const draft = form();
     const next = structuredClone(plan);
