@@ -9,6 +9,8 @@ type Props = { row: WorkoutPlanExercise; exercise?: Exercise; disabled?: boolean
 const field = "app-field mt-1 min-h-[44px] w-full px-2 py-2 text-base";
 export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: Props) {
   const [selection, setSelection] = useState("last");
+  // Adjust before committing children; an incomplete count must not erase the selection.
+  if (Number.isInteger(row.target_sets) && row.target_sets > 0 && Number(selection) > row.target_sets) setSelection(String(row.target_sets));
   const slots = selection === "all" ? Array.from({ length: row.target_sets }, (_, i) => i + 1)
     : [selection === "last" ? row.target_sets : Math.min(row.target_sets, Number(selection))];
   const methods = row.set_methods ?? [];

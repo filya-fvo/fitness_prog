@@ -162,6 +162,51 @@ test("last all and specific method edits isolate buffers and prune only removed 
   expect(methods[0].parts.map(part => part.pause_after_sec)).toEqual([0, 20, 0]);
 });
 
+for (const context of ["personal", "preparation"] as const) test(`numbered method selection follows removed approaches in ${context}`, async ({ page }) => {
+  if (context === "personal") await open(page);
+  else {
+    await installMethodApi(page);
+    await page.goto("/e2e/fixtures/workout-composer.html");
+    await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  }
+  const name = context === "personal" ? names[0] : "Сгибания со штангой";
+  const row = page.getByRole("region", { name, exact: true });
+  await row.locator("summary").click();
+  const selection = row.getByLabel(`Для подходов ${name}`, { exact: true });
+  const kind = row.getByLabel(`Способ выполнения ${name}`, { exact: true });
+  const reps = row.getByLabel(`Повторы части 1 ${name}`, { exact: true });
+  const weight = row.getByLabel(`Рабочий вес ${name}`, { exact: true });
+  const count = row.getByLabel("Подходы", { exact: true });
+  await selection.selectOption("all"); await kind.selectOption("cluster");
+  await selection.selectOption("1"); await reps.fill("");
+  await selection.selectOption("2"); await weight.fill("12,50");
+  await selection.selectOption("3"); await reps.fill("-");
+  if (context === "personal") {
+    await count.fill(""); await count.fill("3");
+    await expect(selection).toHaveValue("3"); await expect(reps).toHaveValue("-");
+    await count.fill("");
+  }
+  await count.fill("2");
+  await expect(selection).toHaveValue("2");
+  await expect(selection.locator("option:checked")).toHaveText("Подход 2");
+  await expect(weight).toHaveValue("12,50");
+  await reps.fill("7");
+  await count.fill("3");
+  await expect(selection).toHaveValue("2");
+  await expect(reps).toHaveValue("7");
+  await selection.selectOption("1"); await expect(reps).toHaveValue(""); await reps.fill("5");
+  await selection.selectOption("3"); await expect(kind).toHaveValue("standard");
+  await selection.selectOption("last"); await count.fill("2");
+  await expect(selection).toHaveValue("last"); await expect(reps).toHaveValue("7");
+  await selection.selectOption("all"); await count.fill("3");
+  await expect(selection).toHaveValue("all"); await expect(kind).toHaveValue("mixed");
+  await count.fill("2"); await expect(selection).toHaveValue("all");
+  await expect(reps).toHaveAttribute("placeholder", "Разные значения");
+  await selection.selectOption("1"); await expect(reps).toHaveValue("5");
+  await selection.selectOption("2"); await expect(reps).toHaveValue("7");
+  await expect(weight).toHaveValue("12,50");
+});
+
 test("blank existing group proposal preserves applied rounds and methods until explicit apply", async ({ page }) => {
   const writes = await open(page);
   const row = page.getByRole("region", { name: names[0], exact: true });
