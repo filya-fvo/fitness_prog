@@ -5,7 +5,7 @@ const visualRegressionEnabled =
 const workoutMethodsTests = /(?:download|workout-group-focus|admin-program-filters|guide-downloads|telegram-link|personal-program-filters|workout-customization|workout-zero-rest|workout-method-(?:preparation|timing|recovery|history)|workout-prepared-start)\.spec\.ts/;
 const notificationSettingsTests = /(?:android-notification-settings|notification-settings)\.spec\.ts/;
 const auditRegressionTests =
-  /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|personal-draft-recovery|personal-program-composer|personal-program-range-weight|personal-program-replacement|measurement-chart-values|wheel-picker-accessibility|workout-ux-followup|workout-day-sets|warmup-media|active-program-preparation|nutrition-add-close)\.spec\.ts/;
+  /(?:audit-(?:field-names|presentation|ux-fixes)|charts-accessibility|draft-retention|long-draft-recovery|personal-draft-recovery|personal-program-composer|personal-program-range-weight|personal-program-replacement|prepared-goals|measurement-chart-values|wheel-picker-accessibility|workout-ux-followup|workout-day-sets|warmup-media|active-program-preparation|nutrition-add-close)\.spec\.ts/;
 
 /**
  * E2E critical path (TZ §11).

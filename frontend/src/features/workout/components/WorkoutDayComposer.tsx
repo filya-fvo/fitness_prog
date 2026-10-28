@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { inferLoadType } from "@/utils/exerciseLoadType";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
+import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
 import type { Exercise, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 import { WorkoutMethodEditor } from "./WorkoutMethodEditor";
 import { WorkoutGroupEditor, type WorkoutGroupEditorHandle } from "./WorkoutGroupEditor";
@@ -59,19 +61,24 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanCh
       const timed = exercise && ["timed", "cardio_machine"].includes(inferLoadType(exercise));
       const grouped = Boolean(plan.groups?.some(group => group.exercise_ids.includes(row.exercise_id)));
       const name = row.name_ru || exercise?.name_ru || "Упражнение";
+      const typedGoal = row.target ? resolveInitialWorkoutTarget({ row }).label : null;
       return <section key={row.exercise_id} className="app-card app-card-ocean p-3" aria-label={name}>
         <div className="flex items-center gap-3">
           {exercise ? <ExerciseThumbnail exercise={exercise} /> : null}
           <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{name}</p>
-            <p className="mt-1 text-xs text-tg-hint">{renderSummary ? renderSummary(row) : <>{row.target_sets} × {row.target_reps || "по плану"}</>}</p>
+            <p className="mt-1 text-xs text-tg-hint">{renderSummary ? renderSummary(row) : <>{row.target_sets} × {typedGoal || row.target_reps || "по плану"}</>}</p>
             {row.original_exercise_id ? <p className="mt-1 text-xs text-tg-link">Подготовлена замена</p> : null}
           </div>
         </div>
-        {renderFields ? renderFields(row, { locked: Boolean(locked), grouped }) : <div className="mt-3 grid grid-cols-3 gap-2">
+        {!renderFields && typedGoal ? <div className="mt-2 text-xs text-tg-hint">
+          {row.target?.kind === "weight_reps" && row.target.target_weight != null && exercise ? <p>{exerciseWeightInput(exercise, row.weight_mode).label}</p> : null}
+          <p>Цель из программы не меняется при подготовке. Подходы, отдых и доступные методы можно настроить ниже.</p>
+        </div> : null}
+        {renderFields ? renderFields(row, { locked: Boolean(locked), grouped }) : <div className={`mt-3 grid ${typedGoal ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
           <label className="text-xs text-tg-hint">Подходы<input type="number" inputMode="numeric" min={1} max={limits.sets} value={row.target_sets} disabled={locked || grouped} onChange={event => {
             const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= limits.sets) onChange(updatePreparedExerciseSets(plan, row.exercise_id, value));
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
-          {timed && exercise ? <label className="text-xs text-tg-hint">Время, с<input type="number" inputMode="numeric" min={1} max={86400} value={preparedTimeSeconds(row, exercise)} disabled={locked} onChange={event => {
+          {typedGoal ? null : timed && exercise ? <label className="text-xs text-tg-hint">Время, с<input type="number" inputMode="numeric" min={1} max={86400} value={preparedTimeSeconds(row, exercise)} disabled={locked} onChange={event => {
             const value = Number(event.target.value);
             if (Number.isInteger(value) && value >= 1 && value <= 86400) change(row.exercise_id, { target_reps: `${value} с` });
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label> : <label className="text-xs text-tg-hint">Повторы<input value={row.target_reps ?? ""} placeholder="По плану" maxLength={30} disabled={locked} onChange={event => change(row.exercise_id, { target_reps: event.target.value || null })} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>}
