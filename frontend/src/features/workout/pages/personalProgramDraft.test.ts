@@ -34,8 +34,18 @@ describe("personal program draft boundary", () => {
     delete draft.days[0].raw;
     delete draft.days[0].exercises[0].target;
     expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
-    draft.days[0].exercises[0].target = { kind: "timed", duration_sec: 45 };
-    expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
+  });
+  it.each(["", "прежний текст"])("uses the explicit timed goal with preserved hidden legacy fallback %j", legacy => {
+    const draft = form(); const day = draft.days[0]; day.groups = [];
+    day.exercises = [{ exercise_id: a, sets: "3", reps: legacy, rest_sec: "0", target: { kind: "timed", duration_sec: 45 } }];
+    day.timeUnits = { [a]: "minutes" }; day.raw = { [`${a}/target/duration_sec`]: "1,5" };
+    const result = personalProgramInput(draft, [{ ...catalog[0], name_ru: "Планка", tags: ["load:timed"] }]);
+    expect(result.ok && result.value.days[0].exercises[0]).toMatchObject({ reps: "90с", target: { kind: "timed", duration_sec: 90 }, rest_sec: 0 });
+    expect(day.exercises[0].reps).toBe(legacy);
+    day.raw[`${a}/target/duration_sec`] = "";
+    expect(personalDayToPlan(day).ok).toBe(false);
+    delete day.raw; delete day.timeUnits; delete day.exercises[0].target;
+    expect(personalDayToPlan(day).ok).toBe(false);
   });
   it("recovers minute text and submits integer seconds without rewriting the raw unit", () => {
     const draft = form();

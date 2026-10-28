@@ -4,14 +4,14 @@ import type { PersonalProgramInput } from "../src/api/programs";
 
 const owner = "22222222-2222-4222-8222-222222222222";
 const secondOwner = "55555555-5555-4555-8555-555555555555";
-const ids = [1, 2, 3, 4].map(n => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`);
-const names = ["Жим гантелей", "Отжимания", "Жим штанги", "Планка"];
-const catalog = ids.map((id, i) => ({ id, name_ru: names[i], muscle_group: "Грудь", equipment: i === 0 ? "гантели" : i === 2 ? "штанга" : "свой вес",
-  tags: [`load:${i === 1 ? "reps_only" : i === 3 ? "timed" : "weight_reps"}`], weight_rule: i === 0 ? "per_hand" : "total", difficulty: 1, media_source: "none" }));
+const ids = [1, 2, 3, 4, 5].map(n => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`);
+const names = ["Жим гантелей", "Отжимания", "Жим штанги", "Планка", "Беговая дорожка"];
+const catalog = ids.map((id, i) => ({ id, name_ru: names[i], muscle_group: i === 4 ? "Кардио" : "Грудь", equipment: i === 0 ? "гантели" : i === 2 ? "штанга" : i === 4 ? "тренажёр" : "свой вес",
+  tags: [`load:${i === 1 ? "reps_only" : i >= 3 ? "timed" : "weight_reps"}`], weight_rule: i === 0 ? "per_hand" : "total", difficulty: 1, media_source: "none" }));
 
 async function open(page: Page, typed = true) {
   const writes: PersonalProgramInput[] = [];
-  await page.route(/\/exercises(?:\?|$)/, route => route.fulfill({ json: { items: catalog, total: 4, page: 1, page_size: 200 } }));
+  await page.route(/\/exercises(?:\?|$)/, route => route.fulfill({ json: { items: catalog, total: catalog.length, page: 1, page_size: 200 } }));
   await page.route("**/programs/mine", route => {
     writes.push(route.request().postDataJSON());
     return route.fulfill({ status: 500, json: { detail: "Synthetic request capture" } });
@@ -137,13 +137,13 @@ test("raw goal text belongs to its row, day and owner through reorder and reload
   expect(writes[0].days[1].exercises[0].target).toMatchObject({ reps_min: 8, reps_max: 12, target_weight: null });
 });
 
-test("new compatible rows get typed defaults while legacy and timed rows keep their controls", async ({ page }) => {
+test("new compatible rows get typed defaults while no-target legacy keeps its controls", async ({ page }) => {
   const writes = await open(page, false);
   const legacy = page.getByRole("region", { name: names[0], exact: true });
   await expect(legacy.getByLabel("Повторы", { exact: true })).toHaveValue("8-12");
   await expect(legacy.getByLabel("От", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: `Убрать ${names[1]}`, exact: true }).click();
-  for (const name of names.slice(1)) {
+  for (const name of names.slice(1, 4)) {
     await page.getByRole("searchbox", { name: "Добавить упражнение", exact: true }).fill(name);
     await page.getByRole("button", { name: `Добавить ${name}`, exact: true }).click();
   }
@@ -151,8 +151,16 @@ test("new compatible rows get typed defaults while legacy and timed rows keep th
     const row = page.getByRole("region", { name, exact: true });
     await expect(row.getByLabel("От", { exact: true })).toHaveValue("8"); await expect(row.getByLabel("До", { exact: true })).toHaveValue("12");
   }
-  await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Повторы", { exact: true })).toHaveValue("8-12");
+  await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Время работы", { exact: true })).toHaveValue("45");
   await page.getByRole("region", { name: names[2], exact: true }).getByLabel("Рабочий вес, кг", { exact: true }).fill("20.25");
+  await page.evaluate(({ owner, id }) => {
+    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const draft = JSON.parse(localStorage.getItem(key)!);
+    delete draft.days[0].exercises.find((row: { exercise_id: string }) => row.exercise_id === id).target;
+    localStorage.setItem(key, JSON.stringify(draft));
+  }, { owner, id: ids[3] });
+  await page.reload();
+  await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Повторы", { exact: true })).toHaveValue("8-12");
   await page.evaluate(({ owner, id }) => {
     const key = `fitness_form_draft:v1:${owner}:personal-program`;
     const draft = JSON.parse(localStorage.getItem(key)!);
@@ -160,7 +168,7 @@ test("new compatible rows get typed defaults while legacy and timed rows keep th
     localStorage.setItem(key, JSON.stringify(draft));
   }, { owner, id: ids[3] });
   await page.reload();
-  await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Повторы", { exact: true })).toHaveValue("8-12");
+  await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Время работы", { exact: true })).toHaveValue("45");
   await page.getByRole("button", { name: "Создать программу", exact: true }).click(); await expect.poll(() => writes.length).toBe(1);
   expect(writes[0].days[0].exercises.map(row => row.target)).toEqual([undefined, { kind: "reps_only", reps_min: 8, reps_max: 12 }, { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 20.25 }, { kind: "timed", duration_sec: 45 }]);
   expect(writes[0].days[0].exercises[2].weight_mode).toBe("total");
@@ -186,4 +194,129 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) tes
   const axe = await new AxeBuilder({ page }).include(`section[aria-label="${names[0]}"]`).withRules(["color-contrast", "label", "button-name"]).analyze();
   expect(axe.violations).toEqual([]);
   await row.screenshot({ path: testInfo.outputPath(`goal-controls-${width}-${theme}.png`) });
+});
+
+async function openTimed(page: Page, legacy = "8-12") {
+  await page.addInitScript(({ owner, ids, legacy }) => {
+    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "План времени", location: "gym", progression: "phased", durationWeeks: "8", dayCount: 2, activeDay: 0, step: "days",
+      days: [1, 2].map(day => ({ name: `День ${day}`, exercises: [
+        { exercise_id: ids[3], sets: "3", reps: legacy, rest_sec: "0", target: { kind: "timed", duration_sec: 90 } },
+        { exercise_id: ids[1], sets: "3", reps: "8-12", rest_sec: "60", target: { kind: "reps_only", reps_min: 8, reps_max: 12 } },
+      ] })) }));
+  }, { owner, ids, legacy });
+  return open(page);
+}
+
+test("work time uses exact units, bounds, presets and decimal steps in canonical requests", async ({ page }) => {
+  const writes = await openTimed(page);
+  const row = page.getByRole("region", { name: names[3], exact: true });
+  const time = row.getByLabel("Время работы", { exact: true });
+  const save = page.getByRole("button", { name: "Создать программу", exact: true });
+  await expect(time).toHaveValue("90"); await expect(time).toHaveAttribute("inputmode", "numeric");
+  const unitBackground = (name: string) => row.getByRole("button", { name, exact: true }).evaluate(el => getComputedStyle(el).backgroundColor);
+  expect(await unitBackground("Секунды")).not.toBe(await unitBackground("Минуты"));
+  await expect(row.getByLabel("Повторы", { exact: true })).toHaveCount(0);
+  for (const invalid of ["0", "86401", "1.5"]) {
+    await time.fill(invalid); await expect(time).toHaveValue(invalid); await expect(save).toBeDisabled();
+  }
+  await time.fill("90"); await row.getByRole("button", { name: "Минуты", exact: true }).click();
+  await expect(time).toHaveValue("1.5"); await expect(time).toHaveAttribute("inputmode", "decimal");
+  expect(await unitBackground("Минуты")).not.toBe(await unitBackground("Секунды"));
+  for (const invalid of ["0", "1440.05", "0.01", "1.001"]) {
+    await time.fill(invalid); await expect(time).toHaveValue(invalid); await expect(save).toBeDisabled();
+    await expect(row).toContainText("3 × —");
+    await expect(page.getByLabel("Порядок и паузы", { exact: true })).toHaveCount(0);
+  }
+  await time.fill("1,5"); await expect(row).toContainText("3 × 1:30"); await save.click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].days[0].exercises[0]).toMatchObject({ reps: "90с", rest_sec: 0, target: { kind: "timed", duration_sec: 90 } });
+  await page.getByLabel("Порядок и паузы", { exact: true }).locator("summary").click();
+  await expect(page.getByRole("list", { name: "Шаги тренировки", exact: true })).toContainText("90 с работы");
+  await row.getByRole("button", { name: "Секунды", exact: true }).click(); await expect(time).toHaveValue("90");
+  await time.fill("1"); await row.getByRole("button", { name: "Минуты", exact: true }).click();
+  await expect(time).toHaveValue("1"); await expect(row.getByRole("button", { name: "Секунды", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(row.getByText(/очистите.*новое время/i)).toBeVisible(); await expect(save).toBeEnabled();
+  await time.fill(""); await row.getByRole("button", { name: "Минуты", exact: true }).click();
+  await expect(time).toHaveValue(""); await expect(save).toBeDisabled();
+  await time.fill("1.1"); await row.getByRole("button", { name: "Уменьшить: Время работы", exact: true }).click();
+  await expect(time).toHaveValue("0.1"); await expect(row).toContainText("3 × 6 с"); await expect(save).toBeEnabled();
+  await save.click(); await expect.poll(() => writes.length).toBe(2);
+  expect(writes[1].days[0].exercises[0].target).toEqual({ kind: "timed", duration_sec: 6 });
+  await row.getByRole("button", { name: "Увеличить: Время работы", exact: true }).click(); await expect(time).toHaveValue("1.1");
+  await row.getByRole("group", { name: "Быстрый выбор: Время работы", exact: true }).getByRole("button", { name: "2", exact: true }).click();
+  await expect(time).toHaveValue("2"); await row.getByRole("button", { name: "Секунды", exact: true }).click(); await expect(time).toHaveValue("120");
+  await row.getByRole("group", { name: "Быстрый выбор: Время работы", exact: true }).getByRole("button", { name: "30", exact: true }).click();
+  await expect(time).toHaveValue("30"); await expect(row.getByLabel("Отдых, с", { exact: true })).toHaveValue("0");
+});
+
+for (const legacy of ["", "прежний текст"]) test(`timed goal owns save with hidden legacy ${JSON.stringify(legacy)}`, async ({ page }) => {
+  const writes = await openTimed(page, legacy);
+  const time = page.getByRole("region", { name: names[3], exact: true }).getByLabel("Время работы", { exact: true });
+  const save = page.getByRole("button", { name: "Создать программу", exact: true });
+  await expect(save).toBeEnabled(); await time.fill(""); await expect(save).toBeDisabled(); await time.fill("90");
+  await save.click(); await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].days[0].exercises[0]).toMatchObject({ reps: "90с", target: { kind: "timed", duration_sec: 90 } });
+  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0].exercises[0].reps, owner)).toBe(legacy);
+});
+
+test("work time raw unit belongs to its row, day and owner and survives invalid reloads", async ({ page }) => {
+  await openTimed(page);
+  const row = page.getByRole("region", { name: names[3], exact: true });
+  const time = row.getByLabel("Время работы", { exact: true });
+  const save = page.getByRole("button", { name: "Создать программу", exact: true });
+  await time.fill("-"); await row.getByRole("button", { name: "Минуты", exact: true }).click();
+  await expect(time).toHaveValue("-"); await expect(time).toHaveAttribute("inputmode", "decimal");
+  await time.fill("1,"); await time.blur(); await expect(row).toContainText("3 × —"); await expect(save).toBeDisabled();
+  await expect(time).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(`[id="${await time.getAttribute("aria-describedby")}"]`)).toContainText("Время работы");
+  await page.reload(); await expect(time).toHaveValue("1,"); await expect(time).toHaveAttribute("inputmode", "decimal");
+  await time.fill(""); await page.reload(); await expect(time).toHaveValue(""); await expect(save).toBeDisabled();
+  await expect(row.getByRole("button", { name: "Минуты", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await time.fill("01,500"); await page.getByRole("button", { name: `Опустить ${names[3]}`, exact: true }).click();
+  await expect(time).toHaveValue("01,500");
+  await page.getByRole("button", { name: /^День 2/ }).click(); await expect(time).toHaveValue("90");
+  await page.getByRole("button", { name: /^День 1/ }).click(); await page.reload(); await expect(time).toHaveValue("01,500");
+  await page.evaluate(second => window.dispatchEvent(new CustomEvent("fixture-owner", { detail: second })), secondOwner);
+  await expect(page.getByLabel("Название программы", { exact: true })).toHaveValue("");
+  await page.evaluate(owner => window.dispatchEvent(new CustomEvent("fixture-owner", { detail: owner })), owner);
+  await expect(time).toHaveValue("01,500"); await expect(time).toHaveAttribute("inputmode", "decimal");
+  await page.getByRole("button", { name: `Убрать ${names[3]}`, exact: true }).click();
+  expect(await page.evaluate(({ owner, id }) => {
+    const day = JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0];
+    return { unit: day.timeUnits?.[id], raw: day.raw?.[`${id}/target/duration_sec`] };
+  }, { owner, id: ids[3] })).toEqual({ unit: undefined, raw: undefined });
+});
+
+test("new cardio machine uses the catalog default with its runtime load semantics", async ({ page }) => {
+  const writes = await open(page);
+  await page.getByRole("searchbox", { name: "Добавить упражнение", exact: true }).fill(names[4]);
+  await page.getByRole("button", { name: `Добавить ${names[4]}`, exact: true }).click();
+  const row = page.getByRole("region", { name: names[4], exact: true });
+  await expect(row.getByLabel("Время работы", { exact: true })).toHaveValue("300");
+  await expect(row.getByLabel("Повторы", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Создать программу", exact: true }).click(); await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].days[0].exercises[2].target).toEqual({ kind: "timed", duration_sec: 300 });
+  expect(writes[0].days[0].exercises[2].weight_mode).toBeUndefined();
+});
+
+for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) test(`work time controls fit ${width} ${theme} without blur shift`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 852 });
+  await page.addInitScript(theme => localStorage.setItem("fitness_theme_preference", theme), theme);
+  await openTimed(page);
+  const row = page.getByRole("region", { name: names[3], exact: true });
+  const time = row.getByLabel("Время работы", { exact: true });
+  await row.getByRole("button", { name: "Минуты", exact: true }).click(); await time.fill("1,");
+  const preset = row.getByRole("group", { name: "Быстрый выбор: Время работы", exact: true }).getByRole("button", { name: "2", exact: true });
+  const before = await preset.boundingBox(); await time.blur(); const after = await preset.boundingBox();
+  expect(after!.y).toBe(before!.y);
+  expect(await time.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+  expect((await time.boundingBox())!.width).toBeGreaterThanOrEqual(60);
+  for (const name of ["Минуты", "Секунды", "Уменьшить: Время работы", "Увеличить: Время работы"]) {
+    const box = await row.getByRole("button", { name, exact: true }).boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44); expect(box!.width).toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).include(`section[aria-label="${names[3]}"]`).withRules(["color-contrast", "label", "button-name"]).analyze()).violations).toEqual([]);
+  await row.screenshot({ path: testInfo.outputPath(`work-time-${width}-${theme}.png`) });
 });
