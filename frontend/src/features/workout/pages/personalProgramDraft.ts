@@ -116,6 +116,22 @@ function schemaErrors(error: z.ZodError, prefix = ""): Record<string, string> {
   return Object.fromEntries(error.issues.map(issue => [`${prefix}${issue.path.join(".")}`, "Проверьте значение"]));
 }
 function validReps(value: string) { return /^[0-9\-–сs ]{1,20}$/.test(value) && /\d/.test(value); }
+/** Only the explicit UI action installs this target; parsing never changes the legacy owner. */
+export function personalLegacyTarget(value: string, exercise: Exercise): InputExercise["target"] | null {
+  if (value.length > 20) return null;
+  const load = inferLoadType(exercise);
+  if (load === "timed" || load === "cardio_machine") {
+    // Plain legacy numbers mean seconds, as in preparedTimeSeconds.
+    const match = /^\s*(\d+(?:[.,]\d+)?)\s*(с|s|сек|секунд|sec|мин|минут|min)?\s*$/i.exec(value);
+    const seconds = match && programTimeSeconds(match[1], /^(мин|min)/i.test(match[2] ?? "") ? "minutes" : "seconds");
+    return seconds ? { kind: "timed", duration_sec: seconds } : null;
+  }
+  const match = /^\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*$/.exec(value);
+  if (!match || !validProgramNumber(match[1], 1, 100000) || !validProgramNumber(match[2] ?? match[1], 1, 100000)) return null;
+  const reps_min = Number(match[1]), reps_max = Number(match[2] ?? match[1]);
+  return reps_min > reps_max ? null : load === "weight_reps"
+    ? { kind: load, reps_min, reps_max, target_weight: null } : { kind: load, reps_min, reps_max };
+}
 function fail<T>(errors: Record<string, string>): DraftResult<T> { return { ok: false, errors }; }
 /** Match the server's compatibility field; the owning raw draft stays untouched. */
 function compatibilityReps(target: InputExercise["target"], legacy: string): string {
@@ -214,7 +230,12 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
     const restValid = validProgramNumber(row.rest_sec, 0, 300);
     if (!setsValid) errors[`exercises.${index}.sets`] = "Укажите от 1 до 8 подходов";
     if (!restValid) errors[`exercises.${index}.rest_sec`] = "Укажите отдых от 0 до 300 секунд";
-    if (!row.target && !validReps(row.reps)) errors[`exercises.${index}.reps`] = "Укажите повторы";
+    const exercise = catalog?.find(item => item.id === row.exercise_id);
+    if (!row.target) {
+      const parsed = exercise ? personalLegacyTarget(row.reps, exercise) : null;
+      if (exercise && !parsed || !exercise && !validReps(row.reps)) errors[`exercises.${index}.reps`] = "Исправьте исходную запись: укажите повторы или время для этого упражнения";
+      else if (!validReps(row.reps)) errors[`exercises.${index}.reps`] = "Перенесите исходную запись в поля цели";
+    }
     return { sets: setsValid ? Number(row.sets) : undefined, rest: restValid ? Number(row.rest_sec) : undefined };
   });
   // Do not even construct a numeric plan from a blank/invalid required field.

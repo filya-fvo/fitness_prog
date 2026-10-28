@@ -17,7 +17,7 @@ import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
-import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
+import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalLegacyTarget, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
 import type { WorkoutRaw } from "../components/workoutEditorDraft";
 import { PersonalGoalFields } from "./PersonalGoalFields";
 import { personalRepeatSummary } from "./personalRepeatSummary";
@@ -108,7 +108,7 @@ function PersonalProgramBuilderForm() {
   };
   const presentation = { ...view, exercises: view.exercises.map(row => ({ ...row, name_ru: byId.get(row.exercise_id)?.name_ru ?? "Упражнение" })) };
   const input = personalProgramInput({ name, location, progression, durationWeeks, days, dayCount, activeDay, step }, catalog);
-  const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => item.target || /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
+  const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0);
 
   function changeDayCount(count: number) {
     setDayCount(count);
@@ -276,11 +276,20 @@ function PersonalProgramBuilderForm() {
               const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
               const group = selected.groups?.find(entry => entry.exercise_ids.includes(row.exercise_id));
               const typedGoal = Boolean(item.target);
+              const exercise = byId.get(item.exercise_id);
+              const legacyTarget = !typedGoal && exercise ? personalLegacyTarget(item.reps, exercise) : null;
               return <fieldset disabled={locked} className={`mt-3 grid min-w-0 gap-3 ${typedGoal ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                 <fieldset disabled={grouped && validProgramNumber(item.sets, 1, 8) && Number(item.sets) === group?.rounds} className="min-w-0">
                   <ProgramNumberField label="Подходы" value={item.sets} min={1} max={8} onChange={sets => updateExercise(item.exercise_id, { sets })} />
                 </fieldset>
-                {!typedGoal ? <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={event => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 min-h-11 w-full text-base" /></label> : null}
+                {!typedGoal ? <div className="min-w-0 space-y-2">
+                  <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={event => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 min-h-11 w-full text-base" /></label>
+                  <button type="button" disabled={!legacyTarget} onClick={() => {
+                    if (legacyTarget && exercise) updateExercise(item.exercise_id, { target: legacyTarget,
+                      ...(legacyTarget.kind === "weight_reps" ? { weight_mode: exerciseWeightInput(exercise, item.weight_mode).mode } : {}) });
+                  }} className="app-button app-secondary-action w-full">Перенести в поля цели</button>
+                  {!legacyTarget ? <p className="app-field-error text-sm">Исправьте исходную запись: {exercise && ["timed", "cardio_machine"].includes(inferLoadType(exercise)) ? "время, например 60с или 1,5мин" : "повторы, например 8 или 8–12"}.</p> : null}
+                </div> : null}
                 <fieldset disabled={grouped && validProgramNumber(item.rest_sec, 0, 300)} className="min-w-0">
                   <ProgramNumberField label="Отдых, с" value={item.rest_sec} min={0} max={300} onChange={rest_sec => updateExercise(item.exercise_id, { rest_sec })} presets={[0, 30, 60, 90, 120]} />
                 </fieldset>

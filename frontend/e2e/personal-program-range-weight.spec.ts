@@ -320,3 +320,61 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) tes
   expect((await new AxeBuilder({ page }).include(`section[aria-label="${names[3]}"]`).withRules(["color-contrast", "label", "button-name"]).analyze()).violations).toEqual([]);
   await row.screenshot({ path: testInfo.outputPath(`work-time-${width}-${theme}.png`) });
 });
+
+async function openLegacy(page: Page, texts = [" 08 – 12 ", "10-10", "60с", "1,5мин"]) {
+  await page.addInitScript(({ owner, ids, texts }) => {
+    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "Старый план", location: "gym", progression: "phased", durationWeeks: 8, dayCount: 1, activeDay: 0, step: "days",
+      days: [{ name: "День 1", exercises: [ids[0], ids[1], ids[3], ids[4]].map((exercise_id, i) => ({ exercise_id, sets: 2, reps: texts[i], rest_sec: 0 })) }] }));
+  }, { owner, ids, texts });
+  return open(page);
+}
+
+test("legacy goals convert only by explicit action and keep exact fallbacks after reload", async ({ page }) => {
+  const writes = await openLegacy(page);
+  const legacyNames = [names[0], names[1], names[3], names[4]];
+  const rows = legacyNames.map(name => page.getByRole("region", { name, exact: true }));
+  const originals = [" 08 – 12 ", "10-10", "60с", "1,5мин"];
+  await expect(page.getByRole("button", { name: "Создать программу", exact: true })).toBeDisabled();
+  await expect(rows[3].getByRole("button", { name: "Перенести в поля цели", exact: true })).toBeEnabled();
+  for (let i = 0; i < rows.length; i++) {
+    await expect(rows[i].getByLabel("Повторы", { exact: true })).toHaveValue(originals[i]);
+    await expect(rows[i].getByLabel("От", { exact: true })).toHaveCount(0);
+    await rows[i].getByRole("button", { name: "Перенести в поля цели", exact: true }).click();
+  }
+  await expect(rows[0].getByLabel("От", { exact: true })).toHaveValue("8");
+  await expect(rows[0].getByLabel("До", { exact: true })).toHaveValue("12");
+  await expect(rows[1].getByLabel("До", { exact: true })).toHaveValue("10");
+  await expect(rows[2].getByLabel("Время работы", { exact: true })).toHaveValue("60");
+  await expect(rows[3].getByLabel("Время работы", { exact: true })).toHaveValue("90");
+  await page.reload();
+  await expect(rows[3].getByLabel("Время работы", { exact: true })).toHaveValue("90");
+  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0].exercises.map((row: { reps: string }) => row.reps), owner)).toEqual(originals);
+  await page.getByRole("button", { name: "Создать программу", exact: true }).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].days[0].exercises).toMatchObject([
+    { sets: 2, rest_sec: 0, reps: "8-12", weight_mode: "per_hand", target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: null } },
+    { reps: "10", target: { kind: "reps_only", reps_min: 10, reps_max: 10 } },
+    { reps: "60с", target: { kind: "timed", duration_sec: 60 } },
+    { reps: "90с", target: { kind: "timed", duration_sec: 90 } },
+  ]);
+});
+
+test("legacy invalid text stays repairable after reload and blocks conversion and save", async ({ page }) => {
+  const writes = await openLegacy(page, ["мой старый текст", "10", "60с", "90с"]);
+  const row = page.getByRole("region", { name: names[0], exact: true });
+  const text = row.getByLabel("Повторы", { exact: true });
+  const action = row.getByRole("button", { name: "Перенести в поля цели", exact: true });
+  await expect(text).toHaveValue("мой старый текст"); await expect(text).toHaveAttribute("maxlength", "20");
+  await expect(action).toBeDisabled();
+  await expect(row).toContainText("Исправьте исходную запись");
+  await expect(page.getByRole("button", { name: "Создать программу", exact: true })).toBeDisabled();
+  await page.reload(); await expect(text).toHaveValue("мой старый текст");
+  await text.fill("12-8"); await expect(action).toBeDisabled();
+  await text.fill("8-12"); await expect(action).toBeEnabled();
+  await expect(row.getByLabel("От", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Создать программу", exact: true }).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].days[0].exercises[0].target).toBeUndefined();
+  await action.click(); await expect(row.getByLabel("От", { exact: true })).toHaveValue("8");
+});

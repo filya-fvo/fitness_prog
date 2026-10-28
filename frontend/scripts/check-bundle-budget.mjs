@@ -194,8 +194,10 @@ const limits = {
   // G3 work-time controls: same-lock 649504 / 592824 -> 650208 / 593511
   // (+704 total / +687 product), with unchanged vendors and largest chunk.
   // Root-approved narrow allowance; admin/largest caps remain unchanged.
-  totalJsGzip: 650_450,
-  productJsGzip: 593_750,
+  // G4 explicit legacy conversion: 650208 / 593511 -> 650681 / 593984
+  // (+473 each), lazy builder +456; vendors/lock unchanged. Root-approved margin.
+  totalJsGzip: 650_950,
+  productJsGzip: 594_250,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
