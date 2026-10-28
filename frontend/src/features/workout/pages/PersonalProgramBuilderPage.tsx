@@ -12,12 +12,15 @@ import { validProgramNumber, migrateProgramNumbers } from "../components/program
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { removePreparedExercise, replacePreparedExercise, updatePreparedExerciseSets } from "@/utils/workoutMethods";
 import { inferLoadType } from "@/utils/exerciseLoadType";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
 import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
 import type { WorkoutRaw } from "../components/workoutEditorDraft";
+import { PersonalGoalFields } from "./PersonalGoalFields";
+import { personalRepeatSummary } from "./personalRepeatSummary";
 
 type ExerciseDraft = PersonalExerciseDraft;
 type DayDraft = PersonalDayDraft;
@@ -105,7 +108,7 @@ function PersonalProgramBuilderForm() {
   };
   const presentation = { ...view, exercises: view.exercises.map(row => ({ ...row, name_ru: byId.get(row.exercise_id)?.name_ru ?? "Упражнение" })) };
   const input = personalProgramInput({ name, location, progression, durationWeeks, days, dayCount, activeDay, step }, catalog);
-  const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
+  const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0 && day.exercises.every((item) => item.target?.kind === "weight_reps" || item.target?.kind === "reps_only" || /^[0-9\-–сs ]{1,20}$/.test(item.reps) && /\d/.test(item.reps)));
 
   function changeDayCount(count: number) {
     setDayCount(count);
@@ -134,10 +137,20 @@ function PersonalProgramBuilderForm() {
   }
 
   function addExercise(exercise: Exercise) {
+    const load = inferLoadType(exercise);
+    const goal = load === "weight_reps" ? { target: { kind: "weight_reps" as const, reps_min: 8, reps_max: 12, target_weight: null }, weight_mode: exerciseWeightInput(exercise).mode }
+      : load === "reps_only" ? { target: { kind: "reps_only" as const, reps_min: 8, reps_max: 12 } } : {};
     editDay((day) => day.exercises.length >= 12 || day.exercises.some((item) => item.exercise_id === exercise.id) ? day : ({ ...day, exercises: [
       ...day.exercises,
-      { exercise_id: exercise.id, sets: "3", reps: "8-12", rest_sec: "60" },
+      { exercise_id: exercise.id, sets: "3", reps: "8-12", rest_sec: "60", ...goal },
     ] }));
+  }
+
+  function updateGoal(item: ExerciseDraft, field: "reps_min" | "reps_max" | "target_weight", value: string) {
+    const exercise = byId.get(item.exercise_id);
+    editDay(day => ({ ...day, raw: { ...day.raw, [`${item.exercise_id}/target/${field}`]: value },
+      exercises: field === "target_weight" && exercise ? day.exercises.map(row => row.exercise_id === item.exercise_id
+        ? { ...row, weight_mode: exerciseWeightInput(exercise, row.weight_mode).mode } : row) : day.exercises }));
   }
 
   function updateExercise(exerciseId: string, changes: Partial<ExerciseDraft>) {
@@ -254,19 +267,21 @@ function PersonalProgramBuilderForm() {
             onReplace={row => { setEditingId(row.exercise_id); setPickerOpen(true); }} onRemove={row => removeExercise(row.exercise_id)} onOpenDetail={setDetailExercise}
             renderSummary={row => {
               const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
-              return <>{validProgramNumber(item.sets, 1, 8) ? item.sets : "—"} × {item.reps || "—"}</>;
+              return <>{validProgramNumber(item.sets, 1, 8) ? item.sets : "—"} × {personalRepeatSummary(item, selected.raw ?? {})}</>;
             }}
             renderFields={(row, { locked, grouped }) => {
               const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
               const group = selected.groups?.find(entry => entry.exercise_ids.includes(row.exercise_id));
-              return <fieldset disabled={locked} className="mt-3 grid min-w-0 gap-3 md:grid-cols-3">
+              const repeatGoal = item.target && item.target.kind !== "timed";
+              return <fieldset disabled={locked} className={`mt-3 grid min-w-0 gap-3 ${repeatGoal ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                 <fieldset disabled={grouped && validProgramNumber(item.sets, 1, 8) && Number(item.sets) === group?.rounds} className="min-w-0">
                   <ProgramNumberField label="Подходы" value={item.sets} min={1} max={8} onChange={sets => updateExercise(item.exercise_id, { sets })} />
                 </fieldset>
-                <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={event => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 min-h-11 w-full text-base" /></label>
+                {!repeatGoal ? <label className="block text-sm text-tg-hint">Повторы<input value={item.reps} maxLength={20} onChange={event => updateExercise(item.exercise_id, { reps: event.target.value })} className="app-field mt-1 min-h-11 w-full text-base" /></label> : null}
                 <fieldset disabled={grouped && validProgramNumber(item.rest_sec, 0, 300)} className="min-w-0">
                   <ProgramNumberField label="Отдых, с" value={item.rest_sec} min={0} max={300} onChange={rest_sec => updateExercise(item.exercise_id, { rest_sec })} presets={[0, 30, 60, 90, 120]} />
                 </fieldset>
+                {repeatGoal ? <PersonalGoalFields item={item} exercise={byId.get(item.exercise_id)} raw={selected.raw ?? {}} onChange={(field, value) => updateGoal(item, field, value)} /> : null}
               </fieldset>;
             }} />
         </div>
@@ -284,7 +299,7 @@ function PersonalProgramBuilderForm() {
           </> : null}
         </fieldset> : null}
       </div>
-      <p className="text-xs text-tg-hint">Добавьте хотя бы одно упражнение в каждый день. В линейной программе повторы остаются заданными; в программе с уровнями сложности они меняются по неделям.</p>
+      <p className="text-xs text-tg-hint">Добавьте хотя бы одно упражнение в каждый день. Явно заданные цели сохраняются и в программе с уровнями сложности; рекомендации недели их не заменяют.</p>
       {!numbersValid ? <div className="text-sm text-[var(--app-danger)]">
         {!weeksValid ? <button type="button" disabled={pendingGroup} onClick={() => setStep("setup")} className="min-h-11 underline">Исправить длительность программы</button> : null}
         {visibleDays.map((day, index) => day.exercises.some((item) => !validProgramNumber(item.sets, 1, 8) || !validProgramNumber(item.rest_sec, 0, 300))

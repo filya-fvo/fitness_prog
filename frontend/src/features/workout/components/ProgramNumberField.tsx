@@ -2,8 +2,8 @@ import { useId, useState } from "react";
 
 import { validProgramNumber, validProgramWeight } from "./programNumbers";
 
-type Props = { label: string; ariaLabel?: string; value: string; min: number; max: number; onChange: (value: string) => void; presets?: number[]; weight?: boolean; disabled?: boolean; mixed?: boolean };
-export function ProgramNumberField({ label, ariaLabel = label, value, min, max, onChange, presets, weight, disabled, mixed }: Props) {
+type Props = { label: string; ariaLabel?: string; value: string; min: number; max: number; onChange: (value: string) => void; presets?: number[]; weight?: boolean; clearAtZero?: boolean; disabled?: boolean; mixed?: boolean };
+export function ProgramNumberField({ label, ariaLabel = label, value, min, max, onChange, presets, weight, clearAtZero, disabled, mixed }: Props) {
   const id = useId();
   const [editing, setEditing] = useState(false);
   const valid = weight ? validProgramWeight(value) : validProgramNumber(value, min, max);
@@ -11,7 +11,8 @@ export function ProgramNumberField({ label, ariaLabel = label, value, min, max, 
   function adjust(delta: number) {
     // An explicit action may replace an incomplete draft, while typing never does.
     const current = valid && value !== "" ? Number(value.replace(",", ".")) : min;
-    onChange(String(Math.max(min, Math.min(max, current + delta * (weight ? 0.5 : 1)))));
+    const next = Math.max(min, Math.min(max, current + delta * (weight ? 0.5 : 1)));
+    onChange(weight && clearAtZero && next === 0 ? "" : String(next));
   }
   return <div className="min-w-0">
     <label htmlFor={id} className="block text-sm font-semibold">{label}</label>

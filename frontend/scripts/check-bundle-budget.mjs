@@ -188,8 +188,11 @@ const limits = {
   // G1 exact duration conversion and owning raw recovery: 647945 / 591265 ->
   // 648429 / 591737 (+484 total / +472 product); vendors and lock unchanged.
   // Root-approved measured allowance; admin/largest caps remain unchanged.
-  totalJsGzip: 648_650,
-  productJsGzip: 591_950,
+  // G2 repeat ranges and optional planned weight: same-lock 648461 / 591761 ->
+  // 649504 / 592824 (+1043 total / +1063 product); vendors/lock unchanged.
+  // Root-approved narrow allowance; admin/largest caps remain unchanged.
+  totalJsGzip: 649_800,
+  productJsGzip: 593_100,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

@@ -20,6 +20,23 @@ function form(): PersonalProgramDraft {
 }
 
 describe("personal program draft boundary", () => {
+  it.each(["", "прежний текст"])("uses the explicit repeat goal with preserved legacy fallback %j", legacy => {
+    const draft = form(); draft.days[0].groups = [];
+    for (const row of draft.days[0].exercises) {
+      row.reps = legacy; delete row.set_methods;
+    }
+    draft.days[0].exercises[1].target = { kind: "reps_only", reps_min: 10, reps_max: 10 };
+    const result = personalProgramInput(draft, [catalog[0], { ...catalog[1], tags: ["load:reps_only"] }]);
+    expect(result.ok && result.value.days[0].exercises.map(row => row.reps)).toEqual(["8-12", "10"]);
+    expect(draft.days[0].exercises.map(row => row.reps)).toEqual([legacy, legacy]);
+    draft.days[0].raw = { [`${a}/target/reps_min`]: "" };
+    expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
+    delete draft.days[0].raw;
+    delete draft.days[0].exercises[0].target;
+    expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
+    draft.days[0].exercises[0].target = { kind: "timed", duration_sec: 45 };
+    expect(personalDayToPlan(draft.days[0]).ok).toBe(false);
+  });
   it("recovers minute text and submits integer seconds without rewriting the raw unit", () => {
     const draft = form();
     const day = draft.days[0];

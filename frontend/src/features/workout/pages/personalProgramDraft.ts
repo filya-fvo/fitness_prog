@@ -214,7 +214,7 @@ export function personalDayToPlan(day: PersonalDayDraft, catalog?: readonly Exer
     const restValid = validProgramNumber(row.rest_sec, 0, 300);
     if (!setsValid) errors[`exercises.${index}.sets`] = "Укажите от 1 до 8 подходов";
     if (!restValid) errors[`exercises.${index}.rest_sec`] = "Укажите отдых от 0 до 300 секунд";
-    if (!validReps(row.reps)) errors[`exercises.${index}.reps`] = "Укажите повторы";
+    if (row.target?.kind !== "weight_reps" && row.target?.kind !== "reps_only" && !validReps(row.reps)) errors[`exercises.${index}.reps`] = "Укажите повторы";
     return { sets: setsValid ? Number(row.sets) : undefined, rest: restValid ? Number(row.rest_sec) : undefined };
   });
   // Do not even construct a numeric plan from a blank/invalid required field.
