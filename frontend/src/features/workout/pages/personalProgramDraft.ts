@@ -3,8 +3,9 @@ import type { PersonalProgramInput } from "@/api/programs";
 import { setMethodSchema, workoutGroupSchema } from "@/api/workoutExecutionSchemas";
 import { explicitWorkoutTargetSchema } from "@/api/workoutTargetSchemas";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { inferLoadType } from "@/utils/exerciseLoadType";
-import { workoutPreparationError } from "@/utils/workoutMethods";
+import { defaultTimedSeconds, inferLoadType } from "@/utils/exerciseLoadType";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
+import { replacePreparedExercise, workoutPreparationError, workoutReplacementError } from "@/utils/workoutMethods";
 import { programTimeSeconds, validProgramNumber, validProgramWeight, type ProgramTimeUnit } from "../components/programNumbers";
 import type { GroupProposal } from "../components/workoutEditorDraft";
 
@@ -133,6 +134,51 @@ export function personalLegacyTarget(value: string, exercise: Exercise): InputEx
     ? { kind: load, reps_min, reps_max, target_weight: null } : { kind: load, reps_min, reps_max };
 }
 function fail<T>(errors: Record<string, string>): DraftResult<T> { return { ok: false, errors }; }
+/** The same catalog defaults for a new row and an explicitly reset replacement. */
+export function personalExerciseGoal(exercise: Exercise): Pick<PersonalExerciseDraft, "target" | "weight_mode"> {
+  const load = inferLoadType(exercise);
+  return load === "weight_reps" ? { target: { kind: load, reps_min: 8, reps_max: 12, target_weight: null }, weight_mode: exerciseWeightInput(exercise).mode }
+    : load === "reps_only" ? { target: { kind: load, reps_min: 8, reps_max: 12 } }
+    : { target: { kind: "timed", duration_sec: defaultTimedSeconds(exercise) } };
+}
+export function personalReplacementError(source: PersonalExerciseDraft, exercise: Exercise, catalog: readonly Exercise[]): string | null {
+  const original = catalog.find(item => item.id === source.exercise_id);
+  // A legacy number still belongs to its source load. Do not reinterpret old
+  // repetitions as seconds merely because the replacement has a different load.
+  return workoutReplacementError({ ...source, target: source.target ?? (original ? personalExerciseGoal(original).target : undefined) }, exercise);
+}
+/** Validate a proposal before mutation; raw text belongs to the preserved draft,
+ * rather than a roundtrip through the numeric plan. Only a confirmed reset
+ * removes the source's goal/method buffers and time-unit ownership.
+ */
+export function replacePersonalExercise(day: PersonalDayDraft, sourceId: string, exercise: Exercise, catalog: readonly Exercise[], reset = false): DraftResult<PersonalDayDraft> {
+  const source = day.exercises.find(row => row.exercise_id === sourceId);
+  if (!source) return fail({ replacement: "Выберите упражнение из этого дня" });
+  const incompatible = personalReplacementError(source, exercise, catalog);
+  if (!reset && incompatible) return fail({ replacement: incompatible });
+  const goal = personalExerciseGoal(exercise);
+  const prepared: PersonalDayDraft = reset ? { ...day,
+    exercises: day.exercises.map(row => row !== source ? row : { exercise_id: sourceId, sets: row.sets, rest_sec: row.rest_sec,
+      reps: compatibilityReps(goal.target, "8-12"), ...goal }),
+    ...(day.raw ? { raw: Object.fromEntries(Object.entries(day.raw).filter(([key]) => !key.startsWith(`${sourceId}/`))) } : {}),
+    ...(day.timeUnits ? { timeUnits: Object.fromEntries(Object.entries(day.timeUnits).filter(([id]) => id !== sourceId)) } : {}),
+  } : day;
+  // During a reset the new goal still has the old ID until the shared helper
+  // updates both the row and group references. The final boundary checks catalog.
+  const converted = personalDayToPlan(prepared, reset ? undefined : catalog);
+  if (!converted.ok) return converted;
+  let replaced: WorkoutPlan;
+  try { replaced = replacePreparedExercise(converted.value, sourceId, exercise); }
+  catch (cause) { return fail({ replacement: cause instanceof Error ? cause.message : "Не удалось заменить упражнение" }); }
+  const next: PersonalDayDraft = { ...prepared,
+    exercises: prepared.exercises.map(row => row.exercise_id === sourceId ? { ...row, exercise_id: exercise.id } : row),
+    ...(prepared.groups ? { groups: prepared.groups.map(group => ({ ...group, exercise_ids: replaced.groups!.find(next => next.id === group.id)!.exercise_ids })) } : {}),
+    ...(prepared.raw ? { raw: Object.fromEntries(Object.entries(prepared.raw).map(([key, value]) => [key.startsWith(`${sourceId}/`) ? `${exercise.id}${key.slice(sourceId.length)}` : key, value])) } : {}),
+    ...(prepared.timeUnits ? { timeUnits: Object.fromEntries(Object.entries(prepared.timeUnits).map(([id, unit]) => [id === sourceId ? exercise.id : id, unit])) } : {}),
+  };
+  const valid = personalDayToPlan(next, catalog);
+  return valid.ok ? { ok: true, value: next } : valid;
+}
 /** Match the server's compatibility field; the owning raw draft stays untouched. */
 function compatibilityReps(target: InputExercise["target"], legacy: string): string {
   if (!target) return legacy;

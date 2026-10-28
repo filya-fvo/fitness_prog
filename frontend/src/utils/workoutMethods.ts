@@ -38,13 +38,18 @@ export function updatePreparedExerciseSets(plan: WorkoutPlan, exerciseId: string
     ...row, target_sets: count, ...(row.set_methods ? { set_methods: row.set_methods.filter(method => method.set_number <= count) } : {}),
   }) };
 }
+export function workoutReplacementError(source: Pick<WorkoutPlan["exercises"][number], "target" | "set_methods">, target: Exercise): string | null {
+  const load = inferLoadType(target);
+  if (source.target && source.target.kind !== (load === "cardio_machine" ? "timed" : load)) return "Цель не соответствует типу нагрузки упражнения. Выберите упражнение с совместимым типом нагрузки";
+  if (source.set_methods?.length && load !== "weight_reps") return "Сначала уберите дроп-сет или кластер: для замены нужны вес и повторы";
+  return null;
+}
 export function replacePreparedExercise(plan: WorkoutPlan, sourceId: string, target: Exercise, restoring = false): WorkoutPlan {
   if (sourceId === target.id) return plan;
   const source = plan.exercises.find(row => row.exercise_id === sourceId);
   if (!source || plan.exercises.some(row => row.exercise_id === target.id)) throw new Error("Упражнение уже есть в этом дне");
-  const load = inferLoadType(target);
-  if (source.target && source.target.kind !== (load === "cardio_machine" ? "timed" : load)) throw new Error("Цель не соответствует типу нагрузки упражнения. Выберите упражнение с совместимым типом нагрузки");
-  if (source.set_methods?.length && load !== "weight_reps") throw new Error("Сначала уберите дроп-сет или кластер: для замены нужны вес и повторы");
+  const incompatible = workoutReplacementError(source, target);
+  if (incompatible) throw new Error(incompatible);
   return { ...plan, groups: plan.groups?.map(group => ({ ...group, exercise_ids: group.exercise_ids.map(id => id === sourceId ? target.id : id) })),
     exercises: plan.exercises.map(row => row.exercise_id !== sourceId ? row : { ...row, exercise_id: target.id, name_ru: target.name_ru,
       original_exercise_id: restoring ? null : row.original_exercise_id || row.exercise_id, suggested_weight: null }) };

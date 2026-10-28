@@ -16,6 +16,7 @@ type Props = {
   onBack?: () => void;
   collapsibleFilters?: boolean;
   searchLabel?: string;
+  replacementHint?: string;
   onChoose: (exercise: Exercise) => void;
   onOpenDetail: (exercise: Exercise) => void;
 };
@@ -39,6 +40,7 @@ export function PlannedExercisePicker({
   onOpenDetail,
   collapsibleFilters = false,
   searchLabel,
+  replacementHint,
 }: Props) {
   const searchId = useId();
   const [mode, setMode] = useState<Mode>(source ? "recommended" : "catalog");
@@ -105,7 +107,7 @@ export function PlannedExercisePicker({
       {mode === "catalog" ? (
         <>
           {source ? <p className="app-status app-status-warning mt-2 text-[11px]">
-            Свободный выбор может изменить целевую мышечную группу. Подходы и повторы исходного упражнения сохранятся.
+            {replacementHint ?? "Свободный выбор может изменить целевую мышечную группу. Подходы и повторы исходного упражнения сохранятся."}
           </p> : null}
           <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="text-[11px] text-tg-hint">

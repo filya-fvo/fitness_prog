@@ -196,8 +196,11 @@ const limits = {
   // Root-approved narrow allowance; admin/largest caps remain unchanged.
   // G4 explicit legacy conversion: 650208 / 593511 -> 650681 / 593984
   // (+473 each), lazy builder +456; vendors/lock unchanged. Root-approved margin.
-  totalJsGzip: 650_950,
-  productJsGzip: 594_250,
+  // G5 explicit replacement reset: 650681 / 593984 -> 651969 / 595260
+  // (+1288 total / +1276 product), lazy builder +1157; vendors/lock unchanged.
+  // Root-approved narrow allowance; admin/largest caps remain unchanged.
+  totalJsGzip: 652_250,
+  productJsGzip: 595_550,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

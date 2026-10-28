@@ -10,14 +10,14 @@ import { WorkoutDayComposer } from "../components/WorkoutDayComposer";
 import { ProgramNumberField } from "../components/ProgramNumberField";
 import { validProgramNumber, migrateProgramNumbers, type ProgramTimeUnit } from "../components/programNumbers";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { removePreparedExercise, replacePreparedExercise, updatePreparedExerciseSets } from "@/utils/workoutMethods";
-import { defaultTimedSeconds, inferLoadType } from "@/utils/exerciseLoadType";
+import { removePreparedExercise, updatePreparedExerciseSets } from "@/utils/workoutMethods";
+import { inferLoadType } from "@/utils/exerciseLoadType";
 import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { toUserMessage } from "@/utils/errors";
 import { useRecoverableDraft } from "@/hooks/useRecoverableDraft";
 import { DraftRecoveryNotice } from "@/components/ui/DraftRecoveryNotice";
 import { useUserStore } from "@/store/userStore";
-import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalLegacyTarget, personalProgramInput, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
+import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalExerciseGoal, personalLegacyTarget, personalProgramInput, personalReplacementError, replacePersonalExercise, type PersonalDayDraft, type PersonalExerciseDraft } from "./personalProgramDraft";
 import type { WorkoutRaw } from "../components/workoutEditorDraft";
 import { PersonalGoalFields } from "./PersonalGoalFields";
 import { personalRepeatSummary } from "./personalRepeatSummary";
@@ -59,6 +59,9 @@ function PersonalProgramBuilderForm() {
   const [error, setError] = useState<string | null>(null);
   const pendingGroup = days.some(day => Boolean(day.groupProposal));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [resetChoice, setResetChoice] = useState<{ exercise: Exercise; sourceId: string; day: number } | null>(null);
+  const resetNotice = useRef<HTMLElement>(null);
+  useEffect(() => { if (resetChoice) resetNotice.current?.focus(); }, [resetChoice]);
   const [pickerOpen, setPickerOpen] = useState(true);
   const mounted = useRef(true);
   const owner = useUserStore((state) => state.user?.id);
@@ -111,6 +114,7 @@ function PersonalProgramBuilderForm() {
   const allDaysReady = visibleDays.every((day) => day.name.trim().length > 0 && day.exercises.length > 0);
 
   function changeDayCount(count: number) {
+    setEditingId(null); setResetChoice(null);
     setDayCount(count);
     setDays((current) => Array.from({ length: Math.max(current.length, count) }, (_, index) => current[index] ?? newDay(index)));
     setActiveDay((current) => Math.min(current, count - 1));
@@ -129,18 +133,33 @@ function PersonalProgramBuilderForm() {
   function chooseExercise(exercise: Exercise) {
     if (pendingGroup) return;
     if (editingId) {
-      if (!converted.ok) return;
-      try { changePlan(replacePreparedExercise(converted.value, editingId, exercise)); }
-      catch (cause) { setError(toUserMessage(cause, "Не удалось заменить упражнение")); return; }
-      setEditingId(null);
+      const source = selected.exercises.find(row => row.exercise_id === editingId);
+      if (source && personalReplacementError(source, exercise, catalog)) {
+        setError(null); setResetChoice({ exercise, sourceId: editingId, day: activeDay });
+      } else { setResetChoice(null); applyReplacement(exercise); }
     } else addExercise(exercise);
   }
 
+  function applyReplacement(exercise: Exercise, reset = false) {
+    if (!editingId || pendingGroup || (reset && (resetChoice?.sourceId !== editingId || resetChoice.day !== activeDay))) return;
+    const result = replacePersonalExercise(selected, editingId, exercise, catalog, reset);
+    if (!result.ok) {
+      const [key, message] = Object.entries(result.errors)[0];
+      const index = /^exercises\.(\d+)/.exec(key)?.[1];
+      const id = key.startsWith("raw.") ? key.slice(4).split("/")[0] : index !== undefined ? selected.exercises[Number(index)]?.exercise_id : null;
+      const groupIndex = /^groups\.(\d+)/.exec(key)?.[1];
+      const group = groupIndex !== undefined ? Number(groupIndex) : selected.groups?.findIndex(group => group.id === id) ?? -1;
+      const label = (id ? byId.get(id)?.name_ru : null) ?? (group >= 0 ? `Связка ${group + 1}` : selected.name);
+      const field = key.split(/[./]/).at(-1) ?? "";
+      const fieldLabels: Record<string, string> = { reps_min: "повторы «От»", reps_max: "повторы «До»", target_weight: "вес", duration_sec: "время", sets: "подходы", rest_sec: "отдых", rounds: "раунды", transition_sec: "переход", round_rest_sec: "отдых между раундами" };
+      setError(`${label}: исправьте ${fieldLabels[field] ?? "поле"} перед заменой. ${message}`);
+      return;
+    }
+    editDay(() => result.value); setError(null); setEditingId(null); setResetChoice(null);
+  }
+
   function addExercise(exercise: Exercise) {
-    const load = inferLoadType(exercise);
-    const goal = load === "weight_reps" ? { target: { kind: "weight_reps" as const, reps_min: 8, reps_max: 12, target_weight: null }, weight_mode: exerciseWeightInput(exercise).mode }
-      : load === "reps_only" ? { target: { kind: "reps_only" as const, reps_min: 8, reps_max: 12 } }
-      : { target: { kind: "timed" as const, duration_sec: defaultTimedSeconds(exercise) } };
+    const goal = personalExerciseGoal(exercise);
     editDay((day) => day.exercises.length >= 12 || day.exercises.some((item) => item.exercise_id === exercise.id) ? day : ({ ...day, exercises: [
       ...day.exercises,
       { exercise_id: exercise.id, sets: "3", reps: "8-12", rest_sec: "60", ...goal },
@@ -206,7 +225,7 @@ function PersonalProgramBuilderForm() {
   return <section className="pb-28">
     <Header title="Своя программа" subtitle="Выберите дни и упражнения под свой ритм" />
     <fieldset disabled={loading || saving} className="min-w-0">
-    <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} onDiscard={() => { setEditingId(null); setPickerOpen(true); recovery.discard(); }} disabled={saving || pendingGroup} />
+    <DraftRecoveryNotice dirty={recovery.dirty} available={recovery.available} onDiscard={() => { setEditingId(null); setResetChoice(null); setPickerOpen(true); recovery.discard(); }} disabled={saving || pendingGroup} />
     <div className="mb-4 rounded-2xl border border-cyan-300/20 bg-cover bg-center p-5 text-white"
       style={{ backgroundImage: `linear-gradient(90deg, rgba(7, 18, 37, .96), rgba(7, 18, 37, .7)), url(${hero.image})` }}>
       <p className="text-xs font-semibold uppercase tracking-[.14em] text-cyan-300">Ваш план</p>
@@ -252,7 +271,7 @@ function PersonalProgramBuilderForm() {
         className="app-button app-gradient-action w-full disabled:opacity-50">Выбрать упражнения →</button>
     </div> : <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleDays.map((day, index) => <button key={index} type="button" disabled={pendingGroup && (Boolean(selected.groupProposal) || !day.groupProposal)} aria-pressed={activeDay === index} onClick={() => { setEditingId(null); setPickerOpen(true); setActiveDay(index); }}
+        {visibleDays.map((day, index) => <button key={index} type="button" disabled={pendingGroup && (Boolean(selected.groupProposal) || !day.groupProposal)} aria-pressed={activeDay === index} onClick={() => { setEditingId(null); setResetChoice(null); setPickerOpen(true); setActiveDay(index); }}
           className={activeDay === index ? "app-button app-gradient-action min-h-11 shrink-0 rounded-full px-3 text-white" : "app-chip app-card-inset min-h-11 shrink-0 px-3 text-tg-text"}>
           День {index + 1}{day.exercises.length ? ` · ${day.exercises.length}` : ""}
         </button>)}
@@ -267,7 +286,7 @@ function PersonalProgramBuilderForm() {
             groupSaveHint="После настройки нажмите «Создать программу», чтобы сохранить все дни."
             raw={selected.raw ?? {}} groupProposal={selected.groupProposal ?? null} onProposalChange={groupProposal => editDay(day => ({ ...day, groupProposal }))}
             onChange={changePlan} onAdd={() => setPickerOpen(true)}
-            onReplace={row => { setEditingId(row.exercise_id); setPickerOpen(true); }} onRemove={row => removeExercise(row.exercise_id)} onOpenDetail={setDetailExercise}
+            onReplace={row => { setEditingId(row.exercise_id); setResetChoice(null); setError(null); setPickerOpen(true); }} onRemove={row => removeExercise(row.exercise_id)} onOpenDetail={setDetailExercise}
             renderSummary={row => {
               const item = selected.exercises.find(entry => entry.exercise_id === row.exercise_id)!;
               return <>{validProgramNumber(item.sets, 1, 8) ? item.sets : "—"} × {personalRepeatSummary(item, selected.raw ?? {}, selected.timeUnits?.[item.exercise_id])}</>;
@@ -304,10 +323,18 @@ function PersonalProgramBuilderForm() {
             <p>{catalogError}</p><button type="button" onClick={() => setCatalogAttempt(value => value + 1)} className="min-h-11 text-tg-link">Повторить загрузку упражнений</button>
           </div> : pickerOpen || editingId ? <>
             <h2 className="mb-2 text-sm font-semibold">{editingId ? "Заменить упражнение" : "Добавить упражнение"}</h2>
+            {resetChoice && resetChoice.day === activeDay && resetChoice.sourceId === editingId ? <section ref={resetNotice} tabIndex={-1} aria-label="Сброс настроек упражнения" className="app-status app-status-warning mb-3 space-y-3 p-3 text-sm">
+              <p>Для «{resetChoice.exercise.name_ru}» нужны другие настройки. Сбросятся цель, методы подходов и введённые значения этого упражнения, включая режим веса и единицу времени. Будет задана начальная цель нового упражнения. Число подходов, отдых и связки сохранятся.</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => applyReplacement(resetChoice.exercise, true)} className="app-button app-gradient-action">Сбросить и заменить</button>
+                <button type="button" onClick={() => setResetChoice(null)} className="app-button app-secondary-action">Отмена</button>
+              </div>
+            </section> : null}
             <PlannedExercisePicker key={`${activeDay}/${editingId ?? "add"}`} source={editingId ? byId.get(editingId) ?? null : null}
-              catalog={editingId && selected.exercises.find(item => item.exercise_id === editingId)?.set_methods?.length ? catalog.filter(item => inferLoadType(item) === "weight_reps") : catalog}
+              catalog={catalog}
+              replacementHint="Совместимая замена сохранит цели и методы. Для другого типа нагрузки потребуется подтвердить сброс настроек."
               occupiedIds={new Set(selected.exercises.map(item => item.exercise_id))} onChoose={chooseExercise} onOpenDetail={setDetailExercise}
-              onBack={editingId ? () => setEditingId(null) : undefined} searchLabel={editingId ? "Поиск замены" : "Добавить упражнение"} collapsibleFilters />
+              onBack={editingId ? () => { setEditingId(null); setResetChoice(null); } : undefined} searchLabel={editingId ? "Поиск замены" : "Добавить упражнение"} collapsibleFilters />
           </> : null}
         </fieldset> : null}
       </div>
@@ -315,7 +342,7 @@ function PersonalProgramBuilderForm() {
       {!numbersValid ? <div className="text-sm text-[var(--app-danger)]">
         {!weeksValid ? <button type="button" disabled={pendingGroup} onClick={() => setStep("setup")} className="min-h-11 underline">Исправить длительность программы</button> : null}
         {visibleDays.map((day, index) => day.exercises.some((item) => !validProgramNumber(item.sets, 1, 8) || !validProgramNumber(item.rest_sec, 0, 300))
-          ? <button key={index} type="button" disabled={pendingGroup} onClick={() => { setEditingId(null); setActiveDay(index); }} className="block min-h-11 underline">Исправить числа: День {index + 1}</button> : null)}
+          ? <button key={index} type="button" disabled={pendingGroup} onClick={() => { setEditingId(null); setResetChoice(null); setActiveDay(index); }} className="block min-h-11 underline">Исправить числа: День {index + 1}</button> : null)}
       </div> : null}
       <button type="button" disabled={!input.ok || pendingGroup || saving || loading} onClick={() => void save()}
         className="app-button app-gradient-action w-full disabled:opacity-50">{saving ? "Сохраняем…" : "Создать программу"}</button>
