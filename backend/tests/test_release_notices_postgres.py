@@ -244,3 +244,76 @@ async def test_overlay_for_all_channels_is_independent_of_external_delivery(data
         with pytest.raises(HTTPException) as denied:
             await service().mark_seen(session, outsider.id, notice_id)
         assert denied.value.status_code == 404
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("inject_clock", [False, True])
+async def test_batch_rechecks_quiet_hours_before_each_recipient(database, monkeypatch, inject_clock):
+    """Earlier network latency must not carry later sends into quiet hours."""
+    factory, actor, android, browser, _ = database
+    clock = [datetime(2026, 10, 29, 21, 59, 59, tzinfo=UTC)]
+    class Clock:
+        @staticmethod
+        def now(tz=None):
+            return clock[0]
+    if not inject_clock:
+        monkeypatch.setattr(sender(), "datetime", Clock)
+    async with factory() as session:
+        for identity in (actor, android, browser):
+            owner = await session.get(User, identity.id)
+            owner.goals = {"notification_settings": {"timezone": "UTC", "quiet_hours": {
+                "enabled": True, "start_time": "22:00", "end_time": "08:00"}}}
+        await session.commit()
+        notice = await service().publish_notice(session, payload(), actor_id=actor.id,
+            settings=Settings(admin_telegram_ids=str(actor.telegram_id)), now=clock[0])
+    calls = []
+    async def send(*args):
+        calls.append(clock[0])
+        clock[0] = datetime(2026, 10, 29, 22, 0, 1, tzinfo=UTC)
+        return "sent", None
+    monkeypatch.setattr(sender(), "send_external", send)
+    await sender().deliver_pending(factory, Settings(), **({"clock": lambda: clock[0]} if inject_clock else {}))
+    assert len(calls) == 1
+    async with factory() as session:
+        assert await service().notice_counts(session, notice.id) == {"sent": 1, "pending": 2}
+        receipt_type = importlib.import_module("app.models.release_notice").ReleaseNoticeReceipt
+        pending = list(await session.scalars(select(receipt_type).where(receipt_type.status == "pending")))
+        assert all(row.attempted_at is None and row.next_attempt_at > clock[0] for row in pending)
+
+
+@pytest.mark.asyncio
+async def test_final_lock_wait_crossing_quiet_boundary_defers_without_transport(database, monkeypatch):
+    factory, actor, _, _, _ = database
+    clock = [datetime(2026, 10, 29, 21, 59, 59, tzinfo=UTC)]
+    class Clock:
+        @staticmethod
+        def now(tz=None):
+            return clock[0]
+    monkeypatch.setattr(sender(), "datetime", Clock)
+    async with factory() as session:
+        owner = await session.get(User, actor.id)
+        owner.goals = {"notification_settings": {"timezone": "UTC", "quiet_hours": {
+            "enabled": True, "start_time": "22:00", "end_time": "08:00"}}}
+        await session.commit()
+        notice = await service().publish_notice(session, payload(), actor_id=actor.id,
+            settings=Settings(admin_telegram_ids=str(actor.telegram_id)), now=clock[0])
+        notice_id = notice.id
+    original_lock = sender()._lock_user_receipt
+    async def lock_wait(session, notice_id, user_id, **kwargs):
+        result = await original_lock(session, notice_id, user_id, **kwargs)
+        if user_id == actor.id and kwargs.get("skip_locked") is False:
+            # Simulate the time spent waiting for the actual final settings row lock.
+            clock[0] = datetime(2026, 10, 29, 22, 0, 1, tzinfo=UTC)
+        return result
+    monkeypatch.setattr(sender(), "_lock_user_receipt", lock_wait)
+    sent_owners = []
+    async def send(session, settings, owner, notice, channel):
+        sent_owners.append(owner.id)
+        return "sent", None
+    monkeypatch.setattr(sender(), "send_external", send)
+    await sender().deliver_pending(factory, Settings())
+    assert actor.id not in sent_owners
+    async with factory() as session:
+        receipt_type = importlib.import_module("app.models.release_notice").ReleaseNoticeReceipt
+        receipt = await session.get(receipt_type, (notice_id, actor.id))
+        assert receipt.status == "pending" and receipt.attempted_at is None
+        assert receipt.next_attempt_at > clock[0]

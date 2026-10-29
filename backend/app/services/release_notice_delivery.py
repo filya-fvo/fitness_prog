@@ -1,6 +1,7 @@
 """Bounded claim-before-send delivery using existing Telegram and Web Push."""
 import asyncio
 import html
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -84,37 +85,51 @@ async def _lock_user_receipt(session: AsyncSession, notice_id: UUID, user_id: UU
     return user, receipt
 
 
+def _delivery_clock(now: datetime | None, clock: Callable[[], datetime] | None) -> Callable[[], datetime]:
+    if clock is not None:
+        return clock
+    if now is not None:
+        return lambda: now  # Existing deterministic test injection, never used by cron.
+    return lambda: datetime.now(UTC)
+
+
 async def _deliver_one(factory: async_sessionmaker, settings: Settings, notice_id: UUID,
-                       user_id: UUID, now: datetime) -> None:
+                       user_id: UUID, now: datetime | None = None, *,
+                       clock: Callable[[], datetime] | None = None) -> None:
+    read_clock = _delivery_clock(now, clock)
     async with factory() as session:
         user, receipt = await _lock_user_receipt(session, notice_id, user_id)
-        if receipt is None or receipt.status not in {"pending", "awaiting_open"} or receipt.next_attempt_at > now:
+        checked_at = read_clock()
+        if receipt is None or receipt.status not in {"pending", "awaiting_open"} or receipt.next_attempt_at > checked_at:
             return
-        if _defer_or_skip(receipt, user, now):
+        if _defer_or_skip(receipt, user, checked_at):
             await session.commit()
             return
         receipt.status = "sending"
-        receipt.attempted_at = now
+        receipt.attempted_at = checked_at
         await session.commit()  # Durable BEFORE external request; never replay sending.
     async with factory() as session:
         user, receipt = await _lock_user_receipt(session, notice_id, user_id, skip_locked=False)
         if receipt is None or receipt.status != "sending":
             return
-        # Recheck after the claim commit, with the same lock used by preference changes.
-        if _defer_or_skip(receipt, user, now):
+        notice = await session.get(ReleaseNotice, notice_id)
+        # Network/row-lock waits may have crossed a quiet-hours boundary. Refresh
+        # after all database waits and immediately before this recipient transport.
+        if _defer_or_skip(receipt, user, read_clock()):
             receipt.attempted_at = None  # No external call occurred.
             await session.commit()
             return
-        notice = await session.get(ReleaseNotice, notice_id)
         receipt.status, receipt.error_code = await send_external(session, settings, user, notice, receipt.channel)
         if receipt.status in {"sent", "partial"}:
-            receipt.delivered_at = datetime.now(UTC)
+            receipt.delivered_at = read_clock()
         await session.commit()
 
 
 async def deliver_pending(factory: async_sessionmaker, settings: Settings, *,
-                          now: datetime | None = None, batch_size: int = 20) -> dict[str, int]:
-    now = now or datetime.now(UTC)
+                          now: datetime | None = None, batch_size: int = 20,
+                          clock: Callable[[], datetime] | None = None) -> dict[str, int]:
+    read_clock = _delivery_clock(now, clock)
+    now = read_clock()
     async with factory() as session:
         # A job can run for up to 900s. Older claims represent an interrupted request,
         # not a safe retry. A successful late sender cannot race this recovery because
@@ -131,7 +146,7 @@ async def deliver_pending(factory: async_sessionmaker, settings: Settings, *,
             .order_by(ReleaseNoticeReceipt.next_attempt_at, ReleaseNoticeReceipt.notice_id, ReleaseNoticeReceipt.user_id)
             .limit(min(100, max(1, batch_size))))).all()
     for index, (notice_id, user_id) in enumerate(candidates):
-        await _deliver_one(factory, settings, notice_id, user_id, now)
+        await _deliver_one(factory, settings, notice_id, user_id, clock=read_clock)
         if index + 1 < len(candidates):
             await asyncio.sleep(0.06)  # Respect existing Telegram broadcast rate.
     return {"processed": len(candidates), "uncertain_recovered": len(stale)}
