@@ -1,5 +1,6 @@
 import { acceptedLegalStatus } from "./legal-fixture";
 import { expect, test, type Page } from "@playwright/test";
+import type { PersonalProgramInput } from "../src/api/programs";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const EXERCISE_ID = "22222222-2222-4222-8222-222222222222";
@@ -43,7 +44,9 @@ test("restores the configured third day after reducing and increasing program da
   await addExerciseToDay(page, 3);
   await page.getByRole("textbox", { name: "Название дня" }).fill("Моя тяжёлая тренировка");
   await page.getByLabel("Подходы", { exact: true }).fill("4");
-  await page.getByLabel("Повторы", { exact: true }).fill("6-8");
+  const repeats = page.getByRole("group", { name: "Повторы", exact: true });
+  await repeats.getByLabel("От", { exact: true }).fill("6");
+  await repeats.getByLabel("До", { exact: true }).fill("8");
   await page.getByLabel("Отдых, с", { exact: true }).fill("90");
   await page.getByRole("button", { name: "1 · Основа" }).click();
   await page.getByRole("combobox", { name: "Тренировочных дней в неделю" }).selectOption("2");
@@ -52,7 +55,8 @@ test("restores the configured third day after reducing and increasing program da
   await page.getByRole("button", { name: /^День 3/ }).click();
   await expect(page.getByRole("textbox", { name: "Название дня" })).toHaveValue("Моя тяжёлая тренировка");
   await expect(page.getByLabel("Подходы", { exact: true })).toHaveValue("4");
-  await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("6-8");
+  await expect(repeats.getByLabel("От", { exact: true })).toHaveValue("6");
+  await expect(repeats.getByLabel("До", { exact: true })).toHaveValue("8");
   await expect(page.getByLabel("Отдых, с", { exact: true })).toHaveValue("90");
 });
 
@@ -61,7 +65,9 @@ test("validates and submits only the selected two program days", async ({ page }
   await addExerciseToDay(page, 1);
   await addExerciseToDay(page, 2);
   await addExerciseToDay(page, 3);
-  await page.getByLabel("Повторы", { exact: true }).fill("invalid");
+  const repeats = page.getByRole("group", { name: "Повторы", exact: true });
+  await repeats.getByLabel("От", { exact: true }).fill("13");
+  await repeats.getByLabel("До", { exact: true }).fill("8");
   await expect(page.getByRole("button", { name: "Создать программу" })).toBeDisabled();
   await page.getByRole("button", { name: "1 · Основа" }).click();
   await page.getByRole("combobox", { name: "Тренировочных дней в неделю" }).selectOption("2");
@@ -76,11 +82,19 @@ test("validates and submits only the selected two program days", async ({ page }
   } }));
   await page.getByRole("button", { name: "Создать программу" }).click();
   const request = await requestPromise;
-  expect(request.postDataJSON()).toMatchObject({ days: [
+  const input: PersonalProgramInput = request.postDataJSON();
+  expect(input).toMatchObject({ days: [
     { name: "День 1", exercises: [{ exercise_id: EXERCISE_ID, sets: 3, reps: "8-12", rest_sec: 60 }] },
     { name: "День 2", exercises: [{ exercise_id: EXERCISE_ID, sets: 3, reps: "8-12", rest_sec: 60 }] },
   ] });
-  expect(request.postDataJSON().days).toHaveLength(2);
+  expect(input.days).toHaveLength(2);
+  for (const day of input.days) {
+    expect(day.exercises).toHaveLength(1);
+    expect(day.exercises[0].target).toEqual({
+      kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: null,
+    });
+    expect(day.exercises[0].weight_mode).toBe("total");
+  }
 });
 
 const savedWorkout = {
