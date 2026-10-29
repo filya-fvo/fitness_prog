@@ -199,8 +199,11 @@ const limits = {
   // G5 explicit replacement reset: 650681 / 593984 -> 651969 / 595260
   // (+1288 total / +1276 product), lazy builder +1157; vendors/lock unchanged.
   // Root-approved narrow allowance; admin/largest caps remain unchanged.
-  totalJsGzip: 652_250,
-  productJsGzip: 595_550,
+  // Requested universal release overlay adds 2498 B gzip net (2257 B lazy
+  // chunk): owner-bound read ACKs/offline close, no new dependency or largest
+  // chunk growth. Root-approved +2400 B uses the prior small headroom.
+  totalJsGzip: 654_650,
+  productJsGzip: 597_950,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

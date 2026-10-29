@@ -43,6 +43,8 @@ const OfflineBanner = lazy(() =>
 
 const LegalConsentGate = lazy(() => import("@/features/legal/components/LegalConsentGate").then((module) => ({ default: module.LegalConsentGate })));
 
+const ReleaseSummaryOverlay = lazy(() => import("@/features/notifications/components/ReleaseSummaryOverlay").then(module => ({ default: module.ReleaseSummaryOverlay })));
+
 export function Shell() {
   useTelegramExitGesture();
   const navigate = useNavigate();
@@ -357,6 +359,7 @@ export function Shell() {
         ) : null}
 
         {!isAuthLoading && user && !requiresLegal && !isFocusedFlow ? <BetaPlusNotice user={user} /> : null}
+        {!isAuthLoading && !authError && user?.onboarding_completed && !requiresLegal && location.pathname === "/" ? <Suspense fallback={null}><ReleaseSummaryOverlay key={user.id} owner={user.id} /></Suspense> : null}
 
         {!isAuthLoading && user && requiresLegal ? <Suspense fallback={<p>Загружаем документы…</p>}><LegalConsentGate key={user.id} user={user} /></Suspense> : null}
         {!isAuthLoading && !requiresLegal && (user || import.meta.env.DEV) ? <Suspense fallback={<PageSkeleton />}><Outlet /></Suspense> : null}
