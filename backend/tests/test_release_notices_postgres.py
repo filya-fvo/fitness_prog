@@ -317,3 +317,71 @@ async def test_final_lock_wait_crossing_quiet_boundary_defers_without_transport(
         receipt = await session.get(receipt_type, (notice_id, actor.id))
         assert receipt.status == "pending" and receipt.attempted_at is None
         assert receipt.next_attempt_at > clock[0]
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["GET", "POST"])
+async def test_http_expected_owner_rejects_native_credential_transition(database, method):
+    """Same campaign ID belongs to A and B; old A intent cannot use a new B JWT."""
+    import httpx
+    from app.main import app
+    from app.core.database import get_db
+    from app.deps import get_current_user
+    from app.models.release_notice import ReleaseNoticeReceipt
+    factory, actor, android, browser, _ = database
+    async with factory() as session:
+        notice = await service().publish_notice(session, payload(), actor_id=actor.id,
+            settings=Settings(admin_telegram_ids=str(actor.telegram_id)))
+    async def db():
+        async with factory() as session:
+            yield session
+    async def authenticated_new_owner():
+        return browser
+    previous = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = authenticated_new_owner
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            path = "/notifications/release-notices" + (f"/{notice.id}/seen" if method == "POST" else "")
+            response = await client.request(method, path, params={"expected_owner": str(android.id)})
+        assert response.status_code == 409
+        async with factory() as session:
+            assert (await session.get(ReleaseNoticeReceipt, (notice.id, browser.id))).seen_at is None
+            assert (await session.get(ReleaseNoticeReceipt, (notice.id, android.id))).seen_at is None
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(previous)
+
+
+@pytest.mark.asyncio
+async def test_http_summary_requires_expected_owner_and_accepts_matching_owner(database):
+    import httpx
+    from app.main import app
+    from app.core.database import get_db
+    from app.deps import get_current_user
+    from app.models.release_notice import ReleaseNoticeReceipt
+    factory, actor, android, browser, _ = database
+    async with factory() as session:
+        notice = await service().publish_notice(session, payload(), actor_id=actor.id,
+            settings=Settings(admin_telegram_ids=str(actor.telegram_id)))
+    async def db():
+        async with factory() as session:
+            yield session
+    async def authenticated_owner():
+        return android
+    previous = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = authenticated_owner
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            assert (await client.get("/notifications/release-notices")).status_code == 422
+            params = {"expected_owner": str(android.id)}
+            read = await client.get("/notifications/release-notices", params=params)
+            assert read.status_code == 200 and read.json()["items"][0]["id"] == str(notice.id)
+            assert (await client.post(f"/notifications/release-notices/{notice.id}/seen", params=params)).status_code == 200
+            assert (await client.get("/notifications/release-notices", params=params)).json() == {"items": []}
+        async with factory() as session:
+            assert (await session.get(ReleaseNoticeReceipt, (notice.id, android.id))).seen_at is not None
+            assert (await session.get(ReleaseNoticeReceipt, (notice.id, browser.id))).seen_at is None
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(previous)
