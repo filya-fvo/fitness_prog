@@ -6,8 +6,10 @@ const USER_ID = "82222222-2222-4222-8222-222222222222";
 const PROGRAM_ID = "83333333-3333-4333-8333-333333333333";
 const WORKOUT_ID = "84444444-4444-4444-8444-444444444444";
 
-async function mockHome(page: Page, sex: "female" | "male", today = new Date().toISOString().slice(0, 10)) {
+async function mockHome(page: Page, sex: "female" | "male", today = new Date().toISOString().slice(0, 10), explicitTarget = false) {
   const startPayloads: Array<Record<string, unknown>> = [];
+  const exercises = explicitTarget ? [{ exercise_id: "85555555-5555-4555-8555-555555555555", name_ru: "Жим лёжа", order: 1,
+    target_sets: 1, rest_sec: 120, target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 40 } }] : [];
   const profile = {
 legal_status: acceptedLegalStatus(USER_ID),
     id: USER_ID,
@@ -79,7 +81,7 @@ legal_status: acceptedLegalStatus(USER_ID),
         title: reduced ? "Всё тело · Лёгкая" : "Всё тело · Тяжёлая",
         workout_type: "strength",
         plan: {
-          exercises: [],
+          exercises,
           day_index: 1,
           week_phase: reduced ? "light" : "heavy",
           base_week_phase: "heavy",
@@ -137,7 +139,7 @@ legal_status: acceptedLegalStatus(USER_ID),
       week_rir: "1 до отказа",
       equipment: [],
       limitations: [],
-      exercises: [],
+      exercises,
     }),
   }));
   await page.route("**/metrics/daily**", (route) => route.fulfill({
@@ -250,3 +252,24 @@ for (const entry of [
     expect(startPayloads[0].cycle_readiness).toBe("normal");
   });
 }
+
+test("target-only reduced-readiness start warns and explains unchanged goals in the active workout", async ({ page }) => {
+  const startPayloads = await mockHome(page, "female", undefined, true);
+  await page.route("**/workouts/load-hints", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [] }) }));
+  await page.goto("/");
+  await page.getByRole("button", { name: /Начать тренировку/ }).click();
+  const readiness = page.getByRole("dialog", { name: "Как вы себя чувствуете перед тренировкой?" });
+  const confirmation = page.waitForEvent("dialog", { timeout: 10000 });
+  await readiness.getByRole("button", { name: /Нужна лёгкая/ }).click({ noWaitAfter: true });
+  const warning = await confirmation;
+  expect(warning.message()).toContain("не облегчаются автоматически");
+  expect(warning.message()).not.toMatch(/измените.*подготовке/);
+  expect(startPayloads).toHaveLength(0);
+  await warning.accept();
+  await expect.poll(() => startPayloads.length).toBe(1);
+  await expect(page).toHaveURL(new RegExp("/workouts/active/"));
+  const banner = page.getByText("По самочувствию: лёгкая нагрузка").locator("..");
+  await expect(banner).toContainText("Явные цели сохранены без снижения");
+  await expect(banner).not.toContainText("План облегчён");
+  await expect(banner).toContainText("Базовая фаза сохранена");
+});

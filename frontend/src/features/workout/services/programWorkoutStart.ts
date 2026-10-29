@@ -18,10 +18,10 @@ import { isOnline } from "@/utils/network";
 type Input = Parameters<typeof startProgramWorkout>[0] & { warmupLocation?: string; ownerUserId?: string };
 const starts = new Map<string, Promise<LocalWorkoutSession>>();
 async function confirmIntensity(owner: string, plan: WorkoutPlan, readiness: Input["cycleReadiness"]): Promise<void> {
-  if (!readiness || readiness === "normal" || (!plan.groups?.length && !plan.customization_scopes?.length && !plan.exercises.some(row => row.set_methods?.length))) return;
-  const accepted = await confirmAction("Вы выбрали снижение нагрузки. Явно заданные методы, веса и повторы не облегчаются автоматически. При необходимости измените их в подготовке. Начать с этими настройками?");
+  if (!readiness || readiness === "normal" || (!plan.groups?.length && !plan.customization_scopes?.length && !plan.exercises.some(row => row.target || row.set_methods?.length))) return;
+  const accepted = await confirmAction("Вы выбрали снижение нагрузки. Явные цели (вес, повторы, время) и методы не облегчаются автоматически. Начать с этими настройками?");
   checkOwner(owner);
-  if (!accepted) throw new Error("Старт отменён. Проверьте личные настройки в подготовке тренировки");
+  if (!accepted) throw new Error("Старт отменён. Проверьте нагрузку перед тренировкой");
 }
 function checkOwner(owner: string): void { if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Откройте тренировку снова"); }
 export function startProgramSession(input: Input): Promise<LocalWorkoutSession> {

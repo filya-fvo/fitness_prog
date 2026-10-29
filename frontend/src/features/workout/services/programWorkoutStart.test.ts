@@ -218,3 +218,55 @@ for (const online of [false, true]) it(`requires confirmation before reduced-rea
   expect(await db.sessions.count()).toBe(1);
   if (online) expect(get).toHaveBeenCalledWith("/workouts/planned-plan", expect.objectContaining({ params: expect.objectContaining({ cycle_readiness: "reduce" }) }));
 });
+
+for (const online of [false, true]) for (const readiness of ["caution", "reduce", "rest"] as const) {
+  for (const { target, expected } of targetCases) it(`requires acknowledgement for ${target.kind} with ${readiness}; online=${online}`, async () => {
+    const reducedPlan = { ...plan, week_phase: "light", base_week_phase: "heavy", load_adjustment: "cycle_reduce",
+      exercises: [{ exercise_id: exercise, order: 1, target_sets: 1, rest_sec: 120, target }] };
+    await saveOfflineWorkoutContext(owner, { ...bundle, plans: [{ ...bundle.plans[0], readiness, plan: reducedPlan }] }, profile, [], []);
+    vi.stubGlobal("navigator", { onLine: online });
+    vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+    const confirm = vi.spyOn(telegram, "confirmAction").mockResolvedValue(false);
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: reducedPlan });
+    const id = crypto.randomUUID();
+    const post = vi.spyOn(apiClient, "post").mockImplementation(async url => ({ data: url === "/workouts/load-hints" ? { items: [] } : {
+      id, user_id: owner, program_id: programId, scheduled_date: date, status: "planned", plan: reducedPlan,
+      sets: [serverSeedSet(id, 1)], started_at: null, completed_at: null, ai_notes: null, rpe: null } }));
+    const input = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" as const, cycleReadiness: readiness };
+    await expect(startProgramSession(input)).rejects.toThrow("Старт отменён");
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm.mock.calls[0][0]).toContain("не облегчаются автоматически");
+    expect(confirm.mock.calls[0][0]).not.toMatch(/измените.*подготовке/);
+    expect(post).not.toHaveBeenCalled();
+    for (const table of [db.sessions, db.workouts, db.syncQueue, db.workoutIdMap]) expect(await table.count()).toBe(0);
+    confirm.mockResolvedValue(true);
+    const session = await startProgramSession(input);
+    expect(session.workout.plan).toMatchObject(reducedPlan);
+    expect(session.drafts[0]).toMatchObject({ ...expected, isCompleted: false, executionRevision: 0 });
+    expect(session.drafts[0].isSkipped).not.toBe(true);
+    for (const set of session.workout.sets) expect(set).toMatchObject({ reps: null, weight: null, duration_sec: null, is_completed: false });
+    expect(await db.sessions.count()).toBe(1);
+    const queue = await db.syncQueue.toArray();
+    expect(queue).toHaveLength(online ? 0 : 1);
+    if (!online) expect(queue[0].payload).toMatchObject({ cycleReadiness: readiness, plan: reducedPlan });
+  });
+}
+for (const online of [false, true]) for (const kind of ["normal-target", "legacy-reduce", "legacy-rest"] as const) {
+  it(`does not add a readiness confirmation for ${kind}; online=${online}`, async () => {
+    const readiness = kind === "normal-target" ? "normal" : kind === "legacy-rest" ? "rest" : "reduce";
+    const startPlan = { ...plan, exercises: [{ exercise_id: exercise, order: 1, target_sets: 1, rest_sec: 120,
+      ...(kind === "normal-target" ? { target: targetCases[0].target } : {}) }] };
+    await saveOfflineWorkoutContext(owner, { ...bundle, plans: [{ ...bundle.plans[0], readiness, plan: startPlan }] }, profile, [], []);
+    vi.stubGlobal("navigator", { onLine: online });
+    vi.stubGlobal("localStorage", { getItem: () => "qa-token" });
+    const confirm = vi.spyOn(telegram, "confirmAction").mockResolvedValue(false);
+    vi.spyOn(apiClient, "get").mockResolvedValue({ data: startPlan });
+    vi.spyOn(apiClient, "post").mockImplementation(async url => ({ data: url === "/workouts/load-hints" ? { items: [] } : {
+      id: crypto.randomUUID(), user_id: owner, program_id: programId, scheduled_date: date, status: "planned", plan: startPlan,
+      sets: [], started_at: null, completed_at: null, ai_notes: null, rpe: null } }));
+    const session = await startProgramSession({ programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium", cycleReadiness: readiness });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(session.workout.plan).toMatchObject(startPlan);
+    expect(await db.sessions.count()).toBe(1);
+  });
+}

@@ -1486,7 +1486,9 @@ export function ActiveWorkout() {
         <div className="app-card app-card-warning mb-3 p-3">
           <p className="text-sm font-medium">{plan.load_adjustment_label}</p>
           <p className="mt-1 text-xs leading-5 text-tg-hint">
-            План облегчён по вашей сегодняшней отметке. Ориентируйтесь на самочувствие.
+            {plan.exercises.some(row => row.target)
+              ? "Явные цели сохранены без снижения."
+              : "План облегчён по вашей сегодняшней отметке."} Ориентируйтесь на самочувствие.
             Базовая фаза сохранена, а облегчённая тяжёлая фаза не считается пройденной.
           </p>
         </div>
