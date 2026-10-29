@@ -69,6 +69,7 @@ async def send_user_web_push(
     url: str,
     tag: str,
     commit: bool = True,
+    timeout: float | None = None,
 ) -> int:
     if not web_push_configured(
         settings.web_push_vapid_public_key,
@@ -104,6 +105,7 @@ async def send_user_web_push(
                 ),
                 vapid_claims={"sub": settings.web_push_vapid_subject},
                 ttl=3600,
+                **({"timeout": timeout} if timeout is not None else {}),
             )
             subscription.last_success_at = datetime.now(UTC)
             subscription.failure_count = 0
@@ -122,7 +124,7 @@ async def send_user_web_push(
         except Exception as exc:  # noqa: BLE001 — one bad device must not stop dispatch
             # An unexpected local/configuration failure says nothing about the
             # browser endpoint. Do not permanently disable a valid subscription.
-            logger.warning("web_push_failed subscription={} err={}", subscription.id, exc)
+            logger.warning("web_push_failed subscription={} err_type={}", subscription.id, type(exc).__name__)
     if commit:
         await session.commit()
     return sent

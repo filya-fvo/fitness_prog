@@ -101,3 +101,18 @@ async def test_local_push_error_does_not_disable_browser_subscription(monkeypatc
     assert subscription.failure_count == 2
     assert subscription.disabled_at is None
     assert session.commits == 1
+
+@pytest.mark.asyncio
+async def test_release_browser_call_can_bound_transport_timeout(monkeypatch) -> None:
+    public, private = vapid_pair()
+    subscription = SimpleNamespace(id=uuid4(), endpoint="https://push.example.test/one", p256dh="x", auth="x",
+        failure_count=0, disabled_at=None, last_success_at=None)
+    captured = {}
+    def push(**kwargs):
+        captured.update(kwargs)
+    monkeypatch.setattr(web_push, "webpush", push)
+    sent = await web_push.send_user_web_push(FakeSession(subscription), Settings(web_push_vapid_public_key=public,
+        web_push_vapid_private_key=private, web_push_vapid_subject="mailto:a@b.test"), user_id=uuid4(),
+        title="Обновление", body="Изменения", url="/", tag="release", timeout=10.0)
+    assert sent == 1
+    assert captured["timeout"] == 10.0

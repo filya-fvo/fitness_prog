@@ -224,6 +224,7 @@ def _sanitize_snapshot(object_type: str, value: dict[str, object]) -> dict[str, 
         "support_ticket": _SUPPORT_TICKET_FIELDS,
         "program": _PROGRAM_FIELDS,
         "broadcast": _BROADCAST_FIELDS,
+        "release_notice": {"expected", "status"},
         "audit_export": _AUDIT_EXPORT_FIELDS,
         "nutrition_product": _NUTRITION_PRODUCT_FIELDS,
     }.get(object_type, set())

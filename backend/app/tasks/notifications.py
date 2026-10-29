@@ -274,6 +274,12 @@ async def send_timer_finished_task(
     return {"ok": delivered > 0, "delivered": delivered}
 
 
+async def dispatch_release_notices_task(ctx: dict[str, Any]) -> dict[str, int]:
+    """Only explicitly published receipts are eligible; no automatic campaigns."""
+    from app.services.release_notice_delivery import deliver_pending
+    return await deliver_pending(AsyncSessionLocal, notification_settings())
+
+
 async def send_broadcast_batch_task(ctx: dict[str, Any], broadcast_id: str) -> dict[str, Any]:
     """Deliver one rate-limited broadcast batch; the service schedules the next batch."""
     return await deliver_batch(ctx, uuid.UUID(broadcast_id))
@@ -357,9 +363,11 @@ class WorkerSettings:
         repair_telegram_webhook_task,
         send_timer_finished_task,
         send_broadcast_batch_task,
+        dispatch_release_notices_task,
         send_support_reply_task,
     ]
     cron_jobs = [
+        cron(dispatch_release_notices_task, minute=set(range(60)), second={10, 40}),
         cron(cleanup_android_login_task, minute={7}, second={0}),
         cron(dispatch_scheduled_notifications_task, minute=set(range(60)), second={0}),
         cron(snapshot_admin_system_task, minute={0, 15, 30, 45}, second={30}),

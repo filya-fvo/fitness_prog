@@ -25,6 +25,7 @@ from app.routers import admin_system as admin_system_router
 from app.routers import admin_support as admin_support_router
 from app.routers import admin_user_detail as admin_user_detail_router
 from app.routers import ai as ai_router
+from app.routers import release_notices as release_notices_router
 from app.routers import android_notifications as android_notifications_router
 from app.routers import android_sync as android_sync_router
 from app.routers import android_auth as android_auth_router
@@ -118,6 +119,7 @@ app.include_router(supplements_router.router)
 app.include_router(ai_router.router)
 app.include_router(notifications_router.router)
 app.include_router(android_notifications_router.router)
+app.include_router(release_notices_router.router)
 app.include_router(support_router.router)
 app.include_router(telegram_router.router)
 

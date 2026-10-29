@@ -21,6 +21,7 @@ from app.models.social import Competition, CompetitionParticipant, Friendship
 from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.models.support import SupportAttachment, SupportMessage, SupportTicket
 from app.models.legal_acceptance import LegalAcceptance
+from app.models.release_notice import ReleaseNotice, ReleaseNoticeReceipt
 from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.models.user_exercise_pin import UserExercisePin
@@ -35,6 +36,8 @@ __all__ = [
     "AndroidSyncEntity",
     "AndroidSyncEvent",
     "AndroidSyncReceipt",
+    "ReleaseNotice",
+    "ReleaseNoticeReceipt",
     "User",
     "LegalAcceptance",
     "UserEntitlement",
