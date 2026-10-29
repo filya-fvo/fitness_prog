@@ -8,7 +8,7 @@ import { PlannedExercisePicker } from "@/features/workout/components/PlannedExer
 import { ExerciseDetailModal } from "@/features/workout/components/ExerciseDetailModal";
 import { WorkoutDayComposer } from "../components/WorkoutDayComposer";
 import { ProgramNumberField } from "../components/ProgramNumberField";
-import { validProgramNumber, migrateProgramNumbers, type ProgramTimeUnit } from "../components/programNumbers";
+import { validProgramNumber, type ProgramTimeUnit } from "../components/programNumbers";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { removePreparedExercise, updatePreparedExerciseSets } from "@/utils/workoutMethods";
 import { inferLoadType } from "@/utils/exerciseLoadType";
@@ -66,10 +66,16 @@ function PersonalProgramBuilderForm() {
   const mounted = useRef(true);
   const owner = useUserStore((state) => state.user?.id);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    if (!owner) return;
+    try {
+      // The obsolete personal form is intentionally discarded, never restored.
+      localStorage.removeItem(`fitness_form_draft:v1:${owner}:personal-program`);
+    } catch { /* Restricted storage must not prevent editing; recovery reports availability. */ }
+  }, [owner]);
   const recovery = useRecoverableDraft({
-    owner, context: "personal-program", ready: !loading,
+    owner, context: "personal-program:v2", ready: !loading,
     value: { name, location, progression, durationWeeks, days, dayCount, activeDay, step },
-    migrate: migrateProgramNumbers,
     maxChars: PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parse: parsePersonalProgramDraft,
     restore: (draft) => {
       const proposals = draft.days.flatMap((day, index) => day.groupProposal ? [index] : []);

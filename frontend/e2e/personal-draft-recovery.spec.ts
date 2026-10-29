@@ -2,11 +2,26 @@ import { expect, test, type Page } from "@playwright/test";
 import { emptyPersonalDraft, maximumPersonalDraft } from "./fixtures/personal-draft-data";
 
 const fixture = "/e2e/fixtures/personal-draft-recovery.html";
-const key = "fitness_form_draft:v1:synthetic-a:personal-program";
+const key = "fitness_form_draft:v1:synthetic-a:personal-program:v2";
 async function openFixture(page: Page, url = fixture) {
   await page.goto(url);
   await expect(page.locator('[data-instance="a"]')).toBeVisible();
 }
+
+test("private denied storage keeps editable memory and a visible recovery warning", async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => { throw new DOMException("denied", "SecurityError"); };
+    Storage.prototype.setItem = () => { throw new DOMException("denied", "SecurityError"); };
+  });
+  await openFixture(page, `${fixture}?domain`);
+  const draft = { ...emptyPersonalDraft(), name: "В памяти" };
+  await page.evaluate(draft => Reflect.get(window, "draftHarness").setValue(draft), draft);
+  await expect(page.locator("output")).toHaveText("true:false");
+  expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual(draft);
+  expect(await page.evaluate(() => {
+    const event = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(event); return event.defaultPrevented;
+  })).toBe(true);
+});
 
 test("caller recovery budget restores a draft beyond the shared default", async ({ page }) => {
   await openFixture(page);
@@ -107,21 +122,6 @@ test("account and context keys restore only their own draft", async ({ page }) =
   await openFixture(page);
   await expect(page.locator("output")).toHaveText("true:true");
   expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual({ text: "account a" });
-});
-
-test("old numeric drafts migrate and target variants restore independently of populated current keys", async ({ page }) => {
-  const draft = emptyPersonalDraft();
-  draft.name = "Старый черновик"; draft.step = "days";
-  draft.days[0].exercises = [{ exercise_id: "11111111-1111-4111-8111-111111111111", sets: "8", reps: "60 с", rest_sec: "0", target: { kind: "timed", duration_sec: 60 } },
-    { exercise_id: "22222222-2222-4222-8222-222222222222", sets: "2", reps: "8-12", rest_sec: "300", target: { kind: "reps_only", reps_min: 8, reps_max: 12 } },
-    { exercise_id: "33333333-3333-4333-8333-333333333333", sets: "2", reps: "8", rest_sec: "300", target: null },
-    { exercise_id: "44444444-4444-4444-8444-444444444444", sets: "2", reps: "8", rest_sec: "300" }];
-  const old = { ...draft, durationWeeks: 8, days: draft.days.map(day => ({ ...day, exercises: day.exercises.map(row => ({ ...row, sets: Number(row.sets), rest_sec: Number(row.rest_sec) })) })) };
-  await page.addInitScript(({ key, old }) => localStorage.setItem(key, JSON.stringify(old)), { key, old });
-  await openFixture(page, `${fixture}?domain&populated`);
-  await expect(page.locator("output")).toHaveText("true:true");
-  expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual(draft);
-  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key)).toEqual(draft);
 });
 
 for (const bad of ["malformed", "unknown", "oversized"] as const) {
@@ -324,4 +324,19 @@ test("canonical roundtrip and reorder retain owning raw reps through hook reload
     const plan = Reflect.get(window, "personalDayToPlan")(day);
     return { raw: day.exercises.map((row: { reps: string }) => row.reps), canonical: plan.value.exercises.map((row: { target_reps: string }) => row.target_reps), target: day.exercises[1].target };
   })).toEqual({ raw: ["7-9", "6-8"], canonical: ["95с", "6-8"], target: null });
+});
+
+test("current private draft preserves incomplete minute text and its time unit through reload", async ({ page }) => {
+  const draft = emptyPersonalDraft(); draft.name = "Незавершённое время";
+  const id = "11111111-1111-4111-8111-111111111111";
+  draft.days[0].exercises = [{ exercise_id: id, sets: "", reps: "60с", rest_sec: "-", target: { kind: "timed", duration_sec: 60 } }];
+  draft.days[0].raw = { [`${id}/target/duration_sec`]: "1," };
+  draft.days[0].timeUnits = { [id]: "minutes" };
+  await openFixture(page, `${fixture}?domain`);
+  await page.evaluate(draft => Reflect.get(window, "draftHarness").setValue(draft), draft);
+  await expect(page.locator("output")).toHaveText("true:true");
+  await page.reload();
+  await expect(page.locator("output")).toHaveText("true:true");
+  expect(await page.evaluate(() => Reflect.get(window, "draftHarness").value)).toEqual(draft);
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key)).toEqual(draft);
 });

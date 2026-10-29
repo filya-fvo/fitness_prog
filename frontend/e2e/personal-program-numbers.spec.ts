@@ -5,9 +5,9 @@ const EXERCISE = "11111111-1111-4111-8111-111111111111";
 async function openBuilder(page: Page) {
   await page.route(/\/exercises(?:\?|$)/, (route) => route.fulfill({ json: { items: [{ id: EXERCISE, name_ru: "Жим гантелей", muscle_group: "Грудь", equipment: "гантели", tags: ["load:weight_reps"], difficulty: 1, media_source: "none" }], total: 1, page: 1, page_size: 200 } }));
   await page.addInitScript(({ owner, exercise }) => {
-    if (!localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)) localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program`, JSON.stringify({
-      name: "Проверка чисел", location: "gym", progression: "linear", durationWeeks: 8,
-      days: [1, 2].map((day) => ({ name: `День ${day}`, exercises: [{ exercise_id: exercise, sets: 3, reps: "8-12", rest_sec: 60 }] })),
+    if (!localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)) localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program:v2`, JSON.stringify({
+      name: "Проверка чисел", location: "gym", progression: "linear", durationWeeks: "8",
+      days: [1, 2].map((day) => ({ name: `День ${day}`, exercises: [{ exercise_id: exercise, sets: "3", reps: "8-12", rest_sec: "60" }] })),
       dayCount: 2, activeDay: 0, step: "days",
     }));
   }, { owner: OWNER, exercise: EXERCISE });
@@ -125,7 +125,7 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) {
 }
 
 test("weeks and sets drafts survive reload without borrowing another owner draft", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("fitness_form_draft:v1:other-owner:personal-program", JSON.stringify({ name: "Чужой план", durationWeeks: "52" })));
+  await page.addInitScript(() => localStorage.setItem("fitness_form_draft:v1:other-owner:personal-program:v2", JSON.stringify({ name: "Чужой план", durationWeeks: "52" })));
   await openBuilder(page);
   const sets = page.getByLabel("Подходы", { exact: true });
   await sets.fill("");
@@ -143,7 +143,7 @@ test("weeks and sets drafts survive reload without borrowing another owner draft
   await expect(page.getByRole("button", { name: "Уменьшить: Подходы", exact: true })).toBeDisabled();
   await sets.fill("8");
   await expect(page.getByRole("button", { name: "Увеличить: Подходы", exact: true })).toBeDisabled();
-  expect(await page.evaluate(() => localStorage.getItem("fitness_form_draft:v1:other-owner:personal-program"))).toContain("Чужой план");
+  expect(await page.evaluate(() => localStorage.getItem("fitness_form_draft:v1:other-owner:personal-program:v2"))).toContain("Чужой план");
 });
 
 for (const theme of ["light", "dark"]) {

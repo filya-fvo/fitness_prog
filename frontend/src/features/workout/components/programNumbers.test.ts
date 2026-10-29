@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { changeProgramTimeUnit, migrateProgramNumbers, programTimeSeconds, validProgramWeight } from "./programNumbers";
+import { changeProgramTimeUnit, programTimeSeconds, validProgramWeight } from "./programNumbers";
 
 it.each([
   ["1", "seconds", 1], ["86400", "seconds", 86400], ["00090", "seconds", 90],
@@ -34,23 +34,3 @@ it("retains the exact seconds for every representable time in the full valid ran
 });
 it.each(["", "12,50", "12.5000", "0.0100", "10000"])("keeps complete optional weight %j", value => expect(validProgramWeight(value)).toBe(true));
 it.each(["12.", "12,", "0", "-1", "10000.01", "1.001", "0.0001", "1e1", " 12 "])("rejects invalid weight %j before API coercion", value => expect(validProgramWeight(value)).toBe(false));
-
-it("normalizes external Decimal method and target weights without dropping groups, modes or zero", () => {
-  const group = { id: "11111111-1111-4111-8111-111111111111", kind: "superset", exercise_ids: ["a", "b"], rounds: 2, transition_sec: 0, round_rest_sec: 0 };
-  const actual = migrateProgramNumbers({ durationWeeks: 8, days: [{ name: "День", groups: [group], exercises: [{
-    exercise_id: "a", sets: 2, rest_sec: 0, reps: "8-12", weight_mode: "per_hand",
-    target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: "12.50" },
-    set_methods: [{ set_number: 1, kind: "drop", parts: [
-      { target_reps: 8, target_weight: "12.50", pause_after_sec: 0 },
-      { target_reps: 8, target_weight: "10.25", pause_after_sec: 0 },
-    ] }],
-  }] }] });
-  expect(actual).toEqual({ durationWeeks: "8", days: [{ name: "День", groups: [group], exercises: [{
-    exercise_id: "a", sets: "2", rest_sec: "0", reps: "8-12", weight_mode: "per_hand",
-    target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: 12.5 },
-    set_methods: [{ set_number: 1, kind: "drop", parts: [
-      { target_reps: 8, target_weight: 12.5, pause_after_sec: 0 },
-      { target_reps: 8, target_weight: 10.25, pause_after_sec: 0 },
-    ] }],
-  }] }] });
-});

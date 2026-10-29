@@ -4,7 +4,7 @@ import type { PersonalProgramInput } from "../src/api/programs";
 import type { PersonalProgramDraft } from "../src/features/workout/pages/personalProgramDraft";
 
 const owner = "22222222-2222-4222-8222-222222222222";
-const key = `fitness_form_draft:v1:${owner}:personal-program`;
+const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
 const ids = [1, 2, 3, 4, 5, 6].map(n => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`);
 const names = ["Жим гантелей", "Отжимания", "Удержание", "Планка", "Подтягивания", "Жим штанги"];
 const catalog = ids.map((id, i) => ({ id, name_ru: names[i], muscle_group: "Грудь", equipment: i === 0 ? "гантели" : i === 5 ? "штанга" : "свой вес",

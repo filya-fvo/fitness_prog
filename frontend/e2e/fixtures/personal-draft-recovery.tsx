@@ -2,7 +2,6 @@ import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useRecoverableDraft } from "../../src/hooks/useRecoverableDraft";
 import { PERSONAL_PROGRAM_DRAFT_MAX_CHARS, parsePersonalProgramDraft, personalDayFromPlan, personalDayToPlan, personalProgramInput } from "../../src/features/workout/pages/personalProgramDraft";
-import { migrateProgramNumbers } from "../../src/features/workout/components/programNumbers";
 import { emptyPersonalDraft, maximumPersonalDraft, personalDraftCatalog } from "./personal-draft-data";
 
 function Form({ instance = "a" }: { instance?: string }) {
@@ -11,10 +10,10 @@ function Form({ instance = "a" }: { instance?: string }) {
   const [value, setValue] = useState<unknown>(domain ? (params.has("populated") ? maximumPersonalDraft() : emptyPersonalDraft()) : { text: "" });
   const [tick, setTick] = useState(0);
   const recovery = useRecoverableDraft({
-    owner: params.get("owner") ?? "synthetic-a", context: params.get("context") ?? "personal-program",
+    owner: params.get("owner") ?? "synthetic-a", context: params.get("context") ?? "personal-program:v2",
     ready: true, value, restore: setValue,
     ...(!params.has("default") ? { maxChars: domain ? PERSONAL_PROGRAM_DRAFT_MAX_CHARS : 2_000_000 } : {}),
-    ...(domain ? { parse: parsePersonalProgramDraft, migrate: migrateProgramNumbers } : {}),
+    ...(domain ? { parse: parsePersonalProgramDraft } : {}),
   });
   const harness = { value, recovery, setValue, rerender: () => setTick(current => current + 1), tick };
   Reflect.set(window, `draftHarness_${instance}`, harness);

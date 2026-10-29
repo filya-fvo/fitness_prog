@@ -15,7 +15,7 @@ async function open(page: Page, count = 3) {
     await route.fulfill({ status: 500, json: { detail: "Synthetic capture; no server persistence" } });
   });
   await page.addInitScript(({ owner, ids, count }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "Мой составной план", location: "gym", progression: "linear", durationWeeks: "52", dayCount: 2, activeDay: 0, step: "days",
       days: [1, 2].map(day => ({ name: `День ${day}`, exercises: ids.slice(0, count).map(exercise_id => ({ exercise_id, sets: "3", reps: "8-12", rest_sec: "0" })) })) }));
   }, { owner, ids, count });
@@ -57,7 +57,7 @@ test("numeric proposal keeps blank pauses and pending membership through reload"
 for (const count of [1, 2]) test(`recovery opens a pending proposal on another retained day with ${count} visible days`, async ({ page }) => {
   await open(page);
   await page.evaluate(({ owner, ids, count }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     draft.dayCount = count; draft.activeDay = 0; draft.step = "setup";
     draft.days[1].groupProposal = { id: "77777777-7777-4777-8777-777777777777", kind: "superset", exercise_ids: ids.slice(0, 2), isNew: true, rounds: "", transition_sec: "0", round_rest_sec: "90" };
@@ -227,7 +227,7 @@ test("blank existing group proposal preserves applied rounds and methods until e
   await page.getByLabel("Отдых после раунда, с", { exact: true }).fill("");
   await page.reload();
   await expect(page.getByText("Суперсет · 3 раунда", { exact: true })).toBeVisible();
-  const stored = await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0], owner);
+  const stored = await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!).days[0], owner);
   expect(stored.exercises[0].set_methods).toHaveLength(3);
   expect(stored.groups[0].rounds).toBe(3);
   expect(writes).toHaveLength(0);
@@ -351,7 +351,7 @@ test("twelve-exercise limit and eight sets are enforced without losing the last 
 for (const restored of ["", "2"]) test(`restored grouped count ${restored || "blank"} remains repairable`, async ({ page }) => {
   await open(page);
   await page.evaluate(({ owner, ids, restored }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     draft.days[0].groups = [{ id: "33333333-3333-4333-8333-333333333333", kind: "superset", exercise_ids: ids.slice(0, 2), rounds: 3, transition_sec: 0, round_rest_sec: 90 }];
     draft.days[0].exercises[0].sets = restored;
@@ -387,7 +387,7 @@ test("recovered Decimal targets, weight mode and methods survive unrelated reord
   let customizationWrites = 0;
   await page.route("**/workouts/customizations**", route => { customizationWrites++; return route.fulfill({ status: 500 }); });
   await page.evaluate(({ owner }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     Object.assign(draft.days[0].exercises[0], { target: { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: "12.50" }, weight_mode: "per_hand",
       set_methods: [{ kind: "cluster", set_number: 3, parts: [{ target_reps: 4, target_weight: "12.50", pause_after_sec: 20 }, { target_reps: 4, target_weight: "12.50", pause_after_sec: 0 }] }] });
@@ -412,9 +412,9 @@ test("owner switch drops pending editor and ignores the prior owner's accepted s
   });
   const second = "55555555-5555-4555-8555-555555555555";
   await page.evaluate(({ owner, second }) => {
-    const draft = JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!);
+    const draft = JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!);
     draft.name = "План второго аккаунта";
-    localStorage.setItem(`fitness_form_draft:v1:${second}:personal-program`, JSON.stringify(draft));
+    localStorage.setItem(`fitness_form_draft:v1:${second}:personal-program:v2`, JSON.stringify(draft));
   }, { owner, second });
   await page.getByRole("button", { name: "Создать суперсет", exact: true }).click();
   await page.evaluate(second => window.dispatchEvent(new CustomEvent("fixture-owner", { detail: second })), second);
@@ -429,8 +429,8 @@ test("owner switch drops pending editor and ignores the prior owner's accepted s
   release();
   await expect(page.getByRole("heading", { name: "План второго аккаунта", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/personal-program.html$/);
-  await expect.poll(() => page.evaluate(second => localStorage.getItem(`fitness_form_draft:v1:${second}:personal-program`), second)).toContain("План второго аккаунта");
-  await expect.poll(() => page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`), owner)).toBeNull();
+  await expect.poll(() => page.evaluate(second => localStorage.getItem(`fitness_form_draft:v1:${second}:personal-program:v2`), second)).toContain("План второго аккаунта");
+  await expect.poll(() => page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), owner)).toBeNull();
 });
 
 test("preparation retains its twenty-set and twenty-round defaults", async ({ page }) => {
@@ -465,7 +465,7 @@ test("late accepted save preserves a newer draft after switching back to the ori
   await page.getByLabel("Название дня", { exact: true }).fill("Более новый день");
   release();
   await expect(page.getByLabel("Название дня", { exact: true })).toHaveValue("Более новый день");
-  await expect.poll(() => page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`), owner)).toContain("Более новый день");
+  await expect.poll(() => page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), owner)).toContain("Более новый день");
   await expect(page).toHaveURL(/personal-program.html$/);
 });
 
@@ -491,4 +491,38 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) tes
   await page.getByLabel(`Рабочий вес ${names[0]}`, { exact: true }).fill("12.5");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath(`composer-method-${width}-${theme}.png`), fullPage: true });
+});
+
+for (const obsolete of ["valid", "malformed", "oversized"] as const) test(`obsolete personal draft ${obsolete} is deleted without restoration or unrelated storage changes`, async ({ page }) => {
+  const oldKey = `fitness_form_draft:v1:${owner}:personal-program`;
+  const untouched = {
+    [`fitness_form_draft:v1:other-owner:personal-program`]: "other owner",
+    [`fitness_form_draft:v1:other-owner:personal-program:v2`]: "other current draft",
+    [`fitness_form_draft:v1:${owner}:profile`]: "another form",
+    "saved-programs": "saved data",
+  };
+  await page.route(/\/exercises(?:\?|$)/, route => route.fulfill({ json: { items: catalog, total: catalog.length, page: 1, page_size: 200 } }));
+  await page.addInitScript(({ oldKey, obsolete, untouched }) => {
+    localStorage.setItem(oldKey, obsolete === "valid" ? JSON.stringify({ name: "Не восстанавливать", location: "gym", progression: "linear", durationWeeks: 8,
+      days: [{ name: "Старый день", exercises: [] }], dayCount: 1, activeDay: 0, step: "setup" }) : obsolete === "malformed" ? "{broken" : " ".repeat(4_000_001));
+    for (const [key, value] of Object.entries(untouched)) localStorage.setItem(key, value);
+  }, { oldKey, obsolete, untouched });
+  await page.goto("/e2e/fixtures/personal-program.html");
+  await expect(page.getByLabel("Название программы", { exact: true })).toBeEnabled();
+  await expect(page.getByLabel("Название программы", { exact: true })).toHaveValue("");
+  expect(await page.evaluate(key => localStorage.getItem(key) === null, oldKey)).toBe(true);
+  expect(await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)])), Object.keys(untouched))).toEqual(untouched);
+  expect(await page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), owner)).toBeNull();
+});
+
+test("obsolete personal draft deletion preserves the current private draft exactly", async ({ page }) => {
+  const oldKey = `fitness_form_draft:v1:${owner}:personal-program`;
+  await page.addInitScript(key => localStorage.setItem(key, "{obsolete"), oldKey);
+  await open(page);
+  const expected = await page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), owner);
+  expect(expected).toContain("Мой составной план");
+  expect(await page.evaluate(key => localStorage.getItem(key) === null, oldKey)).toBe(true);
+  await page.reload();
+  await expect(page.getByLabel("Название дня", { exact: true })).toHaveValue("День 1");
+  expect(await page.evaluate(owner => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), owner)).toBe(expected);
 });

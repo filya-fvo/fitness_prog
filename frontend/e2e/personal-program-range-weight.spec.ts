@@ -17,7 +17,7 @@ async function open(page: Page, typed = true) {
     return route.fulfill({ status: 500, json: { detail: "Synthetic request capture" } });
   });
   await page.addInitScript(({ owner, ids, typed }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "План с целями", location: "gym", progression: "phased", durationWeeks: "8", dayCount: 2, activeDay: 0, step: "days",
       days: [1, 2].map(day => ({ name: `День ${day}`, exercises: ids.slice(0, 2).map((exercise_id, i) => ({ exercise_id, sets: "3", reps: "8-12", rest_sec: "60",
         ...(typed ? { target: i === 0 ? { kind: "weight_reps", reps_min: 8, reps_max: 12, target_weight: null } : { kind: "reps_only", reps_min: 8, reps_max: 12 } } : {}) })) })) }));
@@ -70,7 +70,7 @@ test("typed ranges and optional weights gate the canonical request", async ({ pa
 for (const legacy of ["", "прежний текст"]) test(`recovered repeat goals preserve hidden legacy ${JSON.stringify(legacy)} without blocking save`, async ({ page }) => {
   const writes = await open(page);
   await page.evaluate(({ owner, legacy }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     for (const row of draft.days[0].exercises) row.reps = legacy;
     localStorage.setItem(key, JSON.stringify(draft));
@@ -83,10 +83,10 @@ for (const legacy of ["", "прежний текст"]) test(`recovered repeat g
   await min.fill(""); await expect(save).toBeDisabled(); await min.fill("8");
   await save.click(); await expect.poll(() => writes.length).toBe(1);
   expect(writes[0].days[0].exercises.map(row => row.reps)).toEqual(["8-12", "8-12"]);
-  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0].exercises.map((row: { reps: string }) => row.reps), owner)).toEqual([legacy, legacy]);
+  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!).days[0].exercises.map((row: { reps: string }) => row.reps), owner)).toEqual([legacy, legacy]);
   // Removing a typed goal leaves the same old text visible and blocking.
   await page.evaluate(({ owner }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     delete draft.days[0].exercises[0].target;
     delete draft.days[0].raw;
@@ -154,7 +154,7 @@ test("new compatible rows get typed defaults while no-target legacy keeps its co
   await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Время работы", { exact: true })).toHaveValue("45");
   await page.getByRole("region", { name: names[2], exact: true }).getByLabel("Рабочий вес, кг", { exact: true }).fill("20.25");
   await page.evaluate(({ owner, id }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     delete draft.days[0].exercises.find((row: { exercise_id: string }) => row.exercise_id === id).target;
     localStorage.setItem(key, JSON.stringify(draft));
@@ -162,7 +162,7 @@ test("new compatible rows get typed defaults while no-target legacy keeps its co
   await page.reload();
   await expect(page.getByRole("region", { name: names[3], exact: true }).getByLabel("Повторы", { exact: true })).toHaveValue("8-12");
   await page.evaluate(({ owner, id }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     const draft = JSON.parse(localStorage.getItem(key)!);
     draft.days[0].exercises.find((row: { exercise_id: string }) => row.exercise_id === id).target = { kind: "timed", duration_sec: 45 };
     localStorage.setItem(key, JSON.stringify(draft));
@@ -198,7 +198,7 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) tes
 
 async function openTimed(page: Page, legacy = "8-12") {
   await page.addInitScript(({ owner, ids, legacy }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "План времени", location: "gym", progression: "phased", durationWeeks: "8", dayCount: 2, activeDay: 0, step: "days",
       days: [1, 2].map(day => ({ name: `День ${day}`, exercises: [
         { exercise_id: ids[3], sets: "3", reps: legacy, rest_sec: "0", target: { kind: "timed", duration_sec: 90 } },
@@ -257,7 +257,7 @@ for (const legacy of ["", "прежний текст"]) test(`timed goal owns sa
   await expect(save).toBeEnabled(); await time.fill(""); await expect(save).toBeDisabled(); await time.fill("90");
   await save.click(); await expect.poll(() => writes.length).toBe(1);
   expect(writes[0].days[0].exercises[0]).toMatchObject({ reps: "90с", target: { kind: "timed", duration_sec: 90 } });
-  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0].exercises[0].reps, owner)).toBe(legacy);
+  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!).days[0].exercises[0].reps, owner)).toBe(legacy);
 });
 
 test("work time raw unit belongs to its row, day and owner and survives invalid reloads", async ({ page }) => {
@@ -283,7 +283,7 @@ test("work time raw unit belongs to its row, day and owner and survives invalid 
   await expect(time).toHaveValue("01,500"); await expect(time).toHaveAttribute("inputmode", "decimal");
   await page.getByRole("button", { name: `Убрать ${names[3]}`, exact: true }).click();
   expect(await page.evaluate(({ owner, id }) => {
-    const day = JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0];
+    const day = JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!).days[0];
     return { unit: day.timeUnits?.[id], raw: day.raw?.[`${id}/target/duration_sec`] };
   }, { owner, id: ids[3] })).toEqual({ unit: undefined, raw: undefined });
 });
@@ -323,9 +323,9 @@ for (const theme of ["light", "dark"]) for (const width of [320, 393, 1440]) tes
 
 async function openLegacy(page: Page, texts = [" 08 – 12 ", "10-10", "60с", "1,5мин"]) {
   await page.addInitScript(({ owner, ids, texts }) => {
-    const key = `fitness_form_draft:v1:${owner}:personal-program`;
-    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "Старый план", location: "gym", progression: "phased", durationWeeks: 8, dayCount: 1, activeDay: 0, step: "days",
-      days: [{ name: "День 1", exercises: [ids[0], ids[1], ids[3], ids[4]].map((exercise_id, i) => ({ exercise_id, sets: 2, reps: texts[i], rest_sec: 0 })) }] }));
+    const key = `fitness_form_draft:v1:${owner}:personal-program:v2`;
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ name: "Старый план", location: "gym", progression: "phased", durationWeeks: "8", dayCount: 1, activeDay: 0, step: "days",
+      days: [{ name: "День 1", exercises: [ids[0], ids[1], ids[3], ids[4]].map((exercise_id, i) => ({ exercise_id, sets: "2", reps: texts[i], rest_sec: "0" })) }] }));
   }, { owner, ids, texts });
   return open(page);
 }
@@ -349,7 +349,7 @@ test("legacy goals convert only by explicit action and keep exact fallbacks afte
   await expect(rows[3].getByLabel("Время работы", { exact: true })).toHaveValue("90");
   await page.reload();
   await expect(rows[3].getByLabel("Время работы", { exact: true })).toHaveValue("90");
-  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`)!).days[0].exercises.map((row: { reps: string }) => row.reps), owner)).toEqual(originals);
+  expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`)!).days[0].exercises.map((row: { reps: string }) => row.reps), owner)).toEqual(originals);
   await page.getByRole("button", { name: "Создать программу", exact: true }).click();
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0].days[0].exercises).toMatchObject([

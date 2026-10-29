@@ -67,7 +67,7 @@ test("personal program survives browser back and forward with its configured day
 
 test("malformed stored program draft does not replace the working form", async ({ page }) => {
   await setup(page);
-  await page.addInitScript((owner) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program`, JSON.stringify({ days: [null], name: 42 })), USER);
+  await page.addInitScript((owner) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program:v2`, JSON.stringify({ days: [null], name: 42 })), USER);
   await page.goto("/programs/new");
   await expect(page.getByRole("textbox", { name: "Название программы" })).toHaveValue("");
   await page.getByRole("textbox", { name: "Название программы" }).fill("Рабочая программа");
@@ -77,14 +77,14 @@ test("malformed stored program draft does not replace the working form", async (
 
 test("stored program draft matching the baseline is removed without marking changes", async ({ page }) => {
   await setup(page);
-  await page.addInitScript((owner) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program`, JSON.stringify({
-    name: "", location: "gym", progression: "phased", durationWeeks: 8,
+  await page.addInitScript((owner) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program:v2`, JSON.stringify({
+    name: "", location: "gym", progression: "phased", durationWeeks: "8",
     days: [1, 2, 3].map((day) => ({ name: `День ${day}`, exercises: [] })),
     dayCount: 3, activeDay: 0, step: "setup",
   })), USER);
   await page.goto("/programs/new");
   await expect(page.getByRole("textbox", { name: "Название программы" })).toHaveValue("");
-  await expect.poll(() => page.evaluate((owner) => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program`), USER)).toBeNull();
+  await expect.poll(() => page.evaluate((owner) => localStorage.getItem(`fitness_form_draft:v1:${owner}:personal-program:v2`), USER)).toBeNull();
   await expect(page.getByRole("button", { name: "Отменить изменения", exact: true })).toHaveCount(0);
 });
 
@@ -114,8 +114,8 @@ test("seven-day personal program draft survives reload", async ({ page }) => {
 for (const field of ["dayCount", "activeDay"]) {
   test(`fractional stored ${field} cannot replace the personal program form`, async ({ page }) => {
     await setup(page);
-    await page.addInitScript(({ owner, fractionalField }) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program`, JSON.stringify({
-      name: "Дробный черновик", location: "gym", progression: "phased", durationWeeks: 8,
+    await page.addInitScript(({ owner, fractionalField }) => localStorage.setItem(`fitness_form_draft:v1:${owner}:personal-program:v2`, JSON.stringify({
+      name: "Дробный черновик", location: "gym", progression: "phased", durationWeeks: "8",
       days: [1, 2, 3].map((day) => ({ name: `День ${day}`, exercises: [] })),
       dayCount: 3, activeDay: 0, step: "setup", [fractionalField]: 1.5,
     })), { owner: USER, fractionalField: field });

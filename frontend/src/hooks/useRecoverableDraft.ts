@@ -53,25 +53,29 @@ export function useRecoverableDraft<T>({ owner, context, ready, value, restore, 
         current.current = { key, baseline: serialized, owned: null, protected: null };
         hasChanges.current = false;
         setDirty(false);
+        const decode = (saved: string | null): T | null => {
+          if (!saved || saved.length > budget) return null;
+          let parsed: unknown = null;
+          try {
+            const raw: unknown = JSON.parse(saved);
+            const migrated = migrateRef.current ? migrateRef.current(raw) : raw;
+            parsed = parseRef.current ? parseRef.current(migrated) : migrated;
+          } catch { /* Malformed data is discarded without disabling usable storage. */ }
+          return parsed !== null && (parseRef.current || compatible(valueRef.current, parsed)) && (!validateRef.current || validateRef.current(parsed as T)) ? parsed as T : null;
+        };
         const saved = localStorage.getItem(key);
         if (saved) {
-          let parsed: unknown = null;
-          if (saved.length <= budget) {
-            try {
-              const raw: unknown = JSON.parse(saved);
-              const migrated = migrateRef.current ? migrateRef.current(raw) : raw;
-              parsed = parseRef.current ? parseRef.current(migrated) : migrated;
-            } catch { /* Malformed data is discarded without disabling usable storage. */ }
-          }
-          if (parsed !== null && (parseRef.current || compatible(valueRef.current, parsed)) && (!validateRef.current || validateRef.current(parsed as T))) {
+          const parsed = decode(saved);
+          if (parsed !== null) {
+            current.current.owned = saved;
             if (JSON.stringify(parsed) !== serialized) {
-              current.current.owned = saved;
               hasChanges.current = true;
               restoreRef.current(parsed as T);
               return;
             }
           }
           localStorage.removeItem(key);
+          current.current.owned = null;
         }
       } else if (refreshed && !hasChanges.current) {
         current.current.baseline = serialized;
