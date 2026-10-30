@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import { useEffect, useRef, useState } from "react";
 import { fetchReleaseNotices, markReleaseNoticeSeen, type ReleaseNotice } from "@/api/releaseNotices";
 import { getStoredToken } from "@/api/client";
@@ -35,14 +36,23 @@ export function ReleaseSummaryOverlay({ owner }: { owner: string }) {
       if (running) { queued = true; return; }
       running = true;
       try {
-        for (const id of pendingReleaseReads(owner)) {
-          if (!isCurrent()) return;
-          await markReleaseNoticeSeen(owner, id, isCurrent);
-          if (!isCurrent()) return;
-          confirmReleaseRead(owner, id);
-        }
-        const found = await fetchReleaseNotices(owner, isCurrent);
-        if (isCurrent()) { setItems(found.filter(item => !isReleaseDismissed(owner, item.id))); showWhenSafe(); }
+        const acknowledge = async () => {
+          for (const id of pendingReleaseReads(owner)) {
+            if (!isCurrent()) return;
+            try { await markReleaseNoticeSeen(owner, id, isCurrent); }
+            catch (error) {
+              if (!isCurrent()) return;
+              if (!isAxiosError(error) || error.response?.status !== 404) continue;
+            }
+            if (isCurrent()) confirmReleaseRead(owner, id);
+          }
+        };
+        const load = async () => {
+          const found = await fetchReleaseNotices(owner, isCurrent);
+          if (isCurrent()) { setItems(found.filter(item => !isReleaseDismissed(owner, item.id))); showWhenSafe(); }
+        };
+        // A missing/slow old ACK must not hold up an independent unread GET.
+        await Promise.allSettled([acknowledge(), load()]);
       } catch { /* Keep the application usable; retry on the next online/open event. */ }
       finally {
         running = false;

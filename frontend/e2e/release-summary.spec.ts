@@ -203,3 +203,34 @@ test("a delayed summary does not steal focus while switching Home input fields",
   await expect(page.getByRole("dialog", { name: "Обновление FilFit" })).toBeVisible();
   await expect(first).toHaveValue("Продолжаю вводить");
 });
+
+for (const status of [404, 503, 409]) test(`old read ACK ${status} cannot block a newer summary`, async ({ page }) => {
+  await profile(page);
+  const old = "44444444-4444-4444-8444-444444444444";
+  await page.addInitScript(({ owner, old }) => localStorage.setItem(`fitness_release_reads:v1:${owner}`, JSON.stringify([old])), { owner: A, old });
+  let attempts = 0, gets = 0;
+  await page.route("**/notifications/release-notices?*", route => { gets++; return route.fulfill({ json: { items: [notice("Новые изменения")] } }); });
+  await page.route(`**/notifications/release-notices/${old}/seen?*`, route => { attempts++; return route.fulfill({ status, json: { detail: "old receipt unavailable" } }); });
+  await page.goto(fixture);
+  await expect(page.getByRole("dialog", { name: "Обновление FilFit" })).toContainText("Новые изменения");
+  const pending = () => page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_release_reads:v1:${owner}`) || "[]"), A);
+  await expect.poll(pending).toEqual(status === 404 ? [] : [old]);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect.poll(() => gets).toBe(2);
+  expect(attempts).toBe(status === 404 ? 1 : 2);
+});
+
+test("a slow old read ACK cannot delay a healthy newer summary", async ({ page }) => {
+  await profile(page);
+  const old = "44444444-4444-4444-8444-444444444444";
+  await page.addInitScript(({ owner, old }) => localStorage.setItem(`fitness_release_reads:v1:${owner}`, JSON.stringify([old])), { owner: A, old });
+  let finish!: () => void;
+  const held = new Promise<void>(resolve => { finish = resolve; });
+  await page.route(`**/notifications/release-notices/${old}/seen?*`, async route => { await held; await route.fulfill({ status: 503, json: { detail: "temporarily unavailable" } }).catch(() => {}); });
+  await page.route("**/notifications/release-notices?*", route => route.fulfill({ json: { items: [notice("Показано до завершения ACK")] } }));
+  try {
+    await page.goto(fixture);
+    await expect(page.getByRole("dialog", { name: "Обновление FilFit" })).toContainText("Показано до завершения ACK");
+    expect(await page.evaluate(owner => JSON.parse(localStorage.getItem(`fitness_release_reads:v1:${owner}`) || "[]"), A)).toEqual([old]);
+  } finally { finish(); }
+});
