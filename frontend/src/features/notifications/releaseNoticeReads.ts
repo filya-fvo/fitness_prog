@@ -8,26 +8,30 @@ function state(owner: string) {
     let pending: string[] = [];
     try {
       const raw = localStorage.getItem(key(owner));
-      const value: unknown = raw && raw.length <= 4096 ? JSON.parse(raw) : [];
-      if (Array.isArray(value)) pending = [...new Set(value.filter((id): id is string => typeof id === "string" && uuid.test(id)))].slice(-64);
+      const value: unknown = raw && raw.length <= 1_048_576 ? JSON.parse(raw) : [];
+      if (Array.isArray(value)) pending = [...new Set(value.filter((id): id is string => typeof id === "string" && uuid.test(id)))];
     } catch { /* Private WebViews retain the close intent in memory. */ }
     current = { pending, closed: new Set(pending) }; states.set(owner, current);
   }
   return current;
 }
 function persist(owner: string) {
-  try { localStorage.setItem(key(owner), JSON.stringify(state(owner).pending)); } catch { /* Session fallback. */ }
+  try {
+    const raw = JSON.stringify(state(owner).pending);
+    if (raw.length > 1_048_576) return false;
+    localStorage.setItem(key(owner), raw); return true;
+  } catch { return false; /* Session fallback without evicting shown IDs. */ }
 }
 export const pendingReleaseReads = (owner: string) => [...state(owner).pending];
 export const isReleaseDismissed = (owner: string, id: string) => state(owner).closed.has(id);
-export function dismissReleaseNotice(owner: string, id: string) {
-  if (!uuid.test(id)) return;
+export function dismissReleaseNotices(owner: string, ids: string[]) {
+  const valid = ids.filter(id => uuid.test(id));
   const current = state(owner);
-  current.closed.add(id);
-  current.closed = new Set([...current.closed].slice(-64));
-  current.pending = [...new Set([...current.pending, id])].slice(-64);
-  persist(owner);
+  for (const id of valid) current.closed.add(id);
+  current.pending = [...new Set([...current.pending, ...valid])];
+  return persist(owner);
 }
+export const dismissReleaseNotice = (owner: string, id: string) => dismissReleaseNotices(owner, [id]);
 export function confirmReleaseRead(owner: string, id: string) {
   const current = state(owner);
   current.pending = current.pending.filter(item => item !== id);

@@ -14,11 +14,12 @@ router = APIRouter(prefix="/notifications/release-notices", tags=["notifications
 
 
 @router.get("", response_model=ReleaseNoticesResponse)
-async def list_release_notices(expected_owner: UUID, session: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def list_release_notices(expected_owner: UUID, cursor: UUID | None = None, session: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     if expected_owner != user.id:
         raise HTTPException(409, "Аккаунт изменился")
-    items = await pending_notices(session, user.id)
-    return ReleaseNoticesResponse(items=[ReleaseNoticeItem.model_validate(item) for item in items])
+    items = await pending_notices(session, user.id, cursor=cursor)
+    return ReleaseNoticesResponse(items=[ReleaseNoticeItem.model_validate(item) for item in items[:20]],
+                                  next_cursor=items[19].id if len(items) > 20 else None)
 
 
 @router.post("/{notice_id}/seen")

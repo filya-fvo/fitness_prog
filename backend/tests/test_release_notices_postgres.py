@@ -378,10 +378,69 @@ async def test_http_summary_requires_expected_owner_and_accepts_matching_owner(d
             read = await client.get("/notifications/release-notices", params=params)
             assert read.status_code == 200 and read.json()["items"][0]["id"] == str(notice.id)
             assert (await client.post(f"/notifications/release-notices/{notice.id}/seen", params=params)).status_code == 200
-            assert (await client.get("/notifications/release-notices", params=params)).json() == {"items": []}
+            assert (await client.get("/notifications/release-notices", params=params)).json() == {"items": [], "next_cursor": None}
         async with factory() as session:
             assert (await session.get(ReleaseNoticeReceipt, (notice.id, android.id))).seen_at is not None
             assert (await session.get(ReleaseNoticeReceipt, (notice.id, browser.id))).seen_at is None
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(previous)
+
+@pytest.mark.asyncio
+async def test_http_pages_all_unread_with_tied_dates_and_owned_seen_anchor(database):
+    import httpx
+    from app.main import app
+    from app.core.database import get_db
+    from app.deps import get_current_user
+    from app.models.release_notice import ReleaseNoticeReceipt
+    factory, actor, android, browser, _ = database
+    ids = []
+    versions = {}
+    async with factory() as session:
+        for number in range(26):
+            notice = await service().publish_notice(session, payload(release_key=f"page-{number}",
+                apk_version=100 + number, apk_sha256=f"{number + 1:064x}"), actor_id=actor.id,
+                settings=Settings(admin_telegram_ids=str(actor.telegram_id)), now=datetime(2026, 10, 30, tzinfo=UTC))
+            ids.append(notice.id)
+            versions[str(notice.id)] = notice.apk_version
+    async def db():
+        async with factory() as session:
+            yield session
+    current = {"user": android}
+    async def authenticated():
+        return current["user"]
+    previous = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = db
+    app.dependency_overrides[get_current_user] = authenticated
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            all_ids, cursor = [], None
+            while True:
+                params = {"expected_owner": str(android.id), **({"cursor": cursor} if cursor else {})}
+                response = await client.get("/notifications/release-notices", params=params)
+                assert response.status_code == 200
+                page = response.json()
+                assert all(item["apk_version"] == versions[item["id"]] for item in page["items"])
+                assert len(page["items"]) <= 20
+                all_ids.extend(item["id"] for item in page["items"])
+                cursor = page.get("next_cursor")
+                if not cursor:
+                    break
+                assert cursor == page["items"][-1]["id"]
+                # A concurrent read ACK cannot invalidate the owned pagination anchor.
+                assert (await client.post(f"/notifications/release-notices/{cursor}/seen", params={"expected_owner": str(android.id)})).status_code == 200
+            assert len(all_ids) == 26
+            assert all_ids == [str(value) for value in sorted(ids, reverse=True)]
+            assert len(set(all_ids)) == 26
+            anchor = ids[0]
+            async with factory() as session:
+                await session.delete(await session.get(ReleaseNoticeReceipt, (anchor, browser.id)))
+                await session.commit()
+            current["user"] = browser
+            for value in [str(anchor), str(uuid4())]:
+                response = await client.get("/notifications/release-notices", params={"expected_owner": str(browser.id), "cursor": value})
+                assert response.status_code == 404
+                assert "items" not in response.json()
     finally:
         app.dependency_overrides.clear()
         app.dependency_overrides.update(previous)

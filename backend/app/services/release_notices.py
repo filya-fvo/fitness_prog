@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -102,14 +102,21 @@ async def _active_owner(session: AsyncSession, user_id: UUID) -> bool:
     return user is not None
 
 
-async def pending_notices(session: AsyncSession, user_id: UUID) -> list[ReleaseNotice]:
+async def pending_notices(session: AsyncSession, user_id: UUID, *, cursor: UUID | None = None) -> list[ReleaseNotice]:
     if not await _active_owner(session, user_id):
         await session.commit()
         return []
+    boundary = []
+    if cursor is not None:
+        anchor = await session.scalar(select(ReleaseNotice).join(ReleaseNoticeReceipt).where(
+            ReleaseNotice.id == cursor, ReleaseNoticeReceipt.user_id == user_id))
+        if anchor is None:
+            raise HTTPException(404, "Список изменений недоступен")
+        boundary = [tuple_(ReleaseNotice.created_at, ReleaseNotice.id) < (anchor.created_at, anchor.id)]
     items = list(await session.scalars(select(ReleaseNotice).join(ReleaseNoticeReceipt)
         .where(ReleaseNoticeReceipt.user_id == user_id,
-               ReleaseNoticeReceipt.seen_at.is_(None))
-        .order_by(ReleaseNotice.created_at.desc()).limit(20)))
+               ReleaseNoticeReceipt.seen_at.is_(None), *boundary)
+        .order_by(ReleaseNotice.created_at.desc(), ReleaseNotice.id.desc()).limit(21)))
     # Reading never acknowledges a notice. A failed/offline ACK can be retried.
     await session.commit()
     return items

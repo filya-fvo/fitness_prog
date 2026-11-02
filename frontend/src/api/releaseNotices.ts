@@ -2,24 +2,24 @@ import { z } from "zod";
 import { apiClient } from "@/api/client";
 
 export const releaseNoticeSchema = z.object({
-  id: z.string().uuid(), release_key: z.string().min(1).max(80),
+  id: z.string().uuid(), apk_version: z.number().int().positive(), release_key: z.string().min(1).max(80),
   title: z.string().min(1).max(80), message_text: z.string().min(1).max(2000),
   apk_url: z.literal("https://app.filfitclub.ru/android/latest.apk"),
   created_at: z.string().datetime({ offset: true }),
 });
 export type ReleaseNotice = z.infer<typeof releaseNoticeSchema>;
-const response = z.object({ items: z.array(releaseNoticeSchema).max(20) });
+const response = z.object({ items: z.array(releaseNoticeSchema).max(20), next_cursor: z.string().uuid().nullable() });
 function requestGuard(isCurrent: () => boolean) {
   return (data: unknown) => {
     if (!isCurrent()) throw new Error("Session changed");
     return data;
   };
 }
-export async function fetchReleaseNotices(owner: string, isCurrent: () => boolean) {
+export async function fetchReleaseNotices(owner: string, isCurrent: () => boolean, cursor?: string | null) {
   const { data } = await apiClient.get("/notifications/release-notices", {
-    params: { expected_owner: owner }, timeout: 8000, headers: { "Cache-Control": "no-cache" }, transformRequest: [requestGuard(isCurrent)],
+    params: { expected_owner: owner, ...(cursor ? { cursor } : {}) }, timeout: 8000, headers: { "Cache-Control": "no-cache" }, transformRequest: [requestGuard(isCurrent)],
   });
-  return response.parse(data).items;
+  return response.parse(data);
 }
 export async function markReleaseNoticeSeen(owner: string, id: string, isCurrent: () => boolean) {
   const { data } = await apiClient.post(`/notifications/release-notices/${z.string().uuid().parse(id)}/seen`, undefined, {

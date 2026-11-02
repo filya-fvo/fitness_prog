@@ -202,8 +202,12 @@ const limits = {
   // Requested universal release overlay adds 2498 B gzip net (2257 B lazy
   // chunk): owner-bound read ACKs/offline close, no new dependency or largest
   // chunk growth. Root-approved +2400 B uses the prior small headroom.
-  totalJsGzip: 654_650,
-  productJsGzip: 597_950,
+  // Aggregating all unread pages and checking actual WEB runtime brings the
+  // total requested-feature delta to +3254 total / +3237 product B gzip.
+  // Root-approved +3300 from original caps retains ~0.4 KB of headroom;
+  // dependencies and largest/admin caps are unchanged; lazy overlay is 3049 B.
+  totalJsGzip: 655_550,
+  productJsGzip: 598_850,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

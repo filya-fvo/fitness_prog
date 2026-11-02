@@ -39,6 +39,7 @@ class ReleaseNoticePublish(BaseModel):
 class ReleaseNoticeItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
+    apk_version: int
     release_key: str
     title: str
     message_text: str
@@ -48,3 +49,4 @@ class ReleaseNoticeItem(BaseModel):
 
 class ReleaseNoticesResponse(BaseModel):
     items: list[ReleaseNoticeItem]
+    next_cursor: UUID | None = None
