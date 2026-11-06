@@ -596,7 +596,7 @@ async def _enrich_due_item(session: AsyncSession, user: User, item: dict[str, An
 async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings: Settings) -> int:
     """Dispatch legacy reminders plus idempotent supplement intake groups."""
     user = await lock_notification_user(session, user.id if isinstance(user, User) else user)
-    goals = user.goals or {}
+    goals = await scheduler_service.goals_with_completed_assignments(session, user)
     if android_delivery_state(goals).enabled:
         return 0
     notification_settings = _merged_notification_settings(goals)

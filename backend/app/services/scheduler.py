@@ -363,7 +363,31 @@ def _schedule_overrides(goals: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
         except ValueError:
             continue
-        rows.append(dict(item))
+        row = dict(item)
+        # An early assignment keeps the source slot, but once the program cursor
+        # advances its old day/title snapshot must not schedule that day twice.
+        active = str(goals.get("active_program_id") or "")
+        try:
+            cursor = int(goals.get("active_program_next_day") or 0)
+            old_day = int(row.get("day_index") or 0)
+        except (TypeError, ValueError):
+            cursor, old_day = 0, 0
+        if active and cursor > 0 and old_day > 0 and cursor != old_day and (
+            not row.get("program_id") or str(row["program_id"]) == active
+        ):
+            for assignment in _schedule_assignments(goals):
+                if (
+                    assignment.get("source_original_date") == row["original_date"]
+                    and assignment.get("source_target_date") == row["target_date"]
+                    and str(assignment.get("program_id") or active) == active
+                    and str(assignment.get("day_index") or "") == str(old_day)
+                    and assignment["scheduled_date"] < row["target_date"]
+                    and assignment.get("_source_completed") is True
+                ):
+                    row.pop("day_index", None)
+                    row.pop("title", None)
+                    break
+        rows.append(row)
     return rows
 
 
@@ -423,6 +447,57 @@ def _assignment_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | No
         ),
         None,
     )
+
+
+async def goals_with_completed_assignments(session: AsyncSession, user: User) -> dict[str, Any]:
+    """Build a read-only schedule view using confirmed completed early workouts."""
+    goals = user.goals or {}
+    assignments = _schedule_assignments(goals)
+    active = str(goals.get("active_program_id") or "")
+    try:
+        program_id = uuid.UUID(active)
+        cursor = int(goals.get("active_program_next_day") or 0)
+    except (ValueError, TypeError):
+        return goals
+    overrides = goals.get(OVERRIDES_KEY)
+    sources = {
+        (str(row.get("original_date") or ""), str(row.get("target_date") or ""), str(row.get("day_index") or ""))
+        for row in overrides if isinstance(row, dict)
+    } if isinstance(overrides, list) else set()
+    candidates = []
+    for assignment in assignments:
+        try:
+            day = int(assignment.get("day_index") or 0)
+        except (ValueError, TypeError):
+            continue
+        source = (assignment["source_original_date"], assignment["source_target_date"], str(day))
+        if day > 0 and cursor > 0 and day != cursor and source in sources and str(assignment.get("program_id") or active) == active:
+            candidates.append(assignment)
+    if not candidates:
+        return goals
+    dates = {date.fromisoformat(row["scheduled_date"]) for row in candidates}
+    workouts = (await session.scalars(select(Workout).where(
+        Workout.user_id == user.id, Workout.program_id == program_id,
+        Workout.scheduled_date.in_(dates), Workout.status == "completed", Workout.is_deleted.is_(False),
+    ))).all()
+    completed = set()
+    for workout in workouts:
+        plan = workout.plan if isinstance(workout.plan, dict) else {}
+        try:
+            completed.add((workout.scheduled_date.isoformat(), int(plan.get("day_index") or 0)))
+        except (ValueError, TypeError):
+            continue
+    result = []
+    for row in assignments:
+        copied = {key: value for key, value in row.items() if key != "_source_completed"}
+        try:
+            key = (row["scheduled_date"], int(row.get("day_index") or 0))
+        except (ValueError, TypeError):
+            key = ("", 0)
+        if str(row.get("program_id") or active) == active and key in completed:
+            copied["_source_completed"] = True
+        result.append(copied)
+    return {**goals, ASSIGNMENTS_KEY: result}
 
 
 def _cancellation_for_day(goals: dict[str, Any], day: date) -> dict[str, Any] | None:
@@ -694,7 +769,7 @@ async def get_schedule_overview(
 ) -> dict[str, Any]:
     from app.services.illness_pause import is_illness_day
 
-    goals = user.goals or {}
+    goals = await goals_with_completed_assignments(session, user)
     overview = schedule_overview(goals, requested_day)
     current = overview.get("current")
     if isinstance(current, dict) and current.get("status") in {"scheduled", "paused"}:

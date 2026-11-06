@@ -18,7 +18,7 @@ from app.schemas.android_notifications import (
     AndroidReminder,
     AndroidReminderContext,
 )
-from app.services import supplement_intakes, workout_notifications
+from app.services import scheduler, supplement_intakes, workout_notifications
 from app.services.notification_calendar import resolve_local_slot
 from app.services.notification_prefs import (
     _resolve_tz,
@@ -49,7 +49,7 @@ async def build_android_notification_plan(
     if now.tzinfo is None:
         raise ValueError("Timezone required")
     now = now.astimezone(UTC)
-    goals = user.goals or {}
+    goals = await scheduler.goals_with_completed_assignments(session, user)
     settings = merge_notification_settings(goals.get("notification_settings"))
     timezone_name = settings["timezone"]
     zone = _resolve_tz(timezone_name)

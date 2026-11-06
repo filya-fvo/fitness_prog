@@ -95,6 +95,55 @@ def _schedule_goals(*, override: dict | None = None, lead: int = 60) -> dict:
     return goals
 
 
+def test_completed_early_assignment_does_not_repeat_old_program_day_on_source_slot() -> None:
+    program = str(uuid.uuid4())
+    goals = _schedule_goals(override={"original_date": "2026-11-06", "target_date": "2026-11-07", "target_time": "07:55", "program_id": program, "day_index": 4, "title": "День 4"})
+    goals.update({"active_program_id": program, "active_program_next_day": 1, "workout_schedule_assignments": [{"scheduled_date": "2026-11-06", "source_original_date": "2026-11-06", "source_target_date": "2026-11-07", "target_time": "07:55", "program_id": program, "day_index": 4, "assignment": True, "_source_completed": True}]})
+    result = schedule_overview(goals, date(2026, 11, 7))["current"]
+    assert result["target_date"] == date(2026, 11, 7)
+    assert result["day_index"] == 1
+    assert result["title"] == "День 1"
+    assert goals["workout_schedule_overrides"][0]["day_index"] == 4
+    due = due_workout_notification(goals, now=datetime(2026, 11, 7, 3, 55, tzinfo=timezone.utc))
+    assert due is not None
+    assert due["meta"]["day_index"] == 1
+
+
+def test_uncompleted_early_assignment_preserves_original_source_plan() -> None:
+    program = str(uuid.uuid4())
+    goals = _schedule_goals(override={"original_date": "2026-11-06", "target_date": "2026-11-07", "target_time": "07:55", "program_id": program, "day_index": 4, "title": "День 4"})
+    goals.update({"active_program_id": program, "active_program_next_day": 1, "workout_schedule_assignments": [{"scheduled_date": "2026-11-06", "source_original_date": "2026-11-06", "source_target_date": "2026-11-07", "target_time": "07:55", "program_id": program, "day_index": 4, "assignment": True}]})
+    result = schedule_overview(goals, date(2026, 11, 7))["current"]
+    assert result["day_index"] == 4
+    assert result["title"] == "День 4"
+
+
+@pytest.mark.asyncio
+async def test_overview_checks_that_early_assignment_really_completed() -> None:
+    from app.services.scheduler import goals_with_completed_assignments
+    program = uuid.uuid4()
+    goals = _schedule_goals(override={"original_date": "2026-11-06", "target_date": "2026-11-07", "target_time": "07:55", "program_id": str(program), "day_index": 4, "title": "День 4"})
+    goals.update({"active_program_id": str(program), "active_program_next_day": 1, "workout_schedule_assignments": [{"scheduled_date": "2026-11-06", "source_original_date": "2026-11-06", "source_target_date": "2026-11-07", "target_time": "07:55", "program_id": str(program), "day_index": 4, "assignment": True}]})
+    session = AsyncMock()
+    user = SimpleNamespace(id=uuid.uuid4(), goals=goals)
+    session.scalars = AsyncMock(return_value=_FakeResult([SimpleNamespace(scheduled_date=date(2026, 11, 6), program_id=program, plan={"day_index": 4})]))
+    enriched = await goals_with_completed_assignments(session, user)
+    assert schedule_overview(enriched, date(2026, 11, 7))["current"]["day_index"] == 1
+    assert "_source_completed" not in user.goals["workout_schedule_assignments"][0]
+    session.scalars = AsyncMock(return_value=_FakeResult([]))
+    unchanged = await goals_with_completed_assignments(session, user)
+    assert schedule_overview(unchanged, date(2026, 11, 7))["current"]["day_index"] == 4
+
+
+def test_unrelated_assignment_does_not_change_a_moved_workout() -> None:
+    program = str(uuid.uuid4())
+    goals = _schedule_goals(override={"original_date": "2026-11-06", "target_date": "2026-11-07", "target_time": "07:55", "program_id": program, "day_index": 4, "title": "День 4"})
+    goals.update({"active_program_id": program, "active_program_next_day": 1, "workout_schedule_assignments": [{"scheduled_date": "2026-11-05", "source_original_date": "2026-11-09", "source_target_date": "2026-11-09", "target_time": "07:55", "program_id": program, "day_index": 4, "assignment": True}]})
+    result = schedule_overview(goals, date(2026, 11, 7))["current"]
+    assert result["day_index"] == 4
+    assert result["title"] == "День 4"
+
+
 def test_canonical_schedule_precedes_legacy_notification_fields() -> None:
     goals = _schedule_goals()
     goals["workout_schedule"] = {
