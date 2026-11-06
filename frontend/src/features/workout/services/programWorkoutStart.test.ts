@@ -133,10 +133,10 @@ it("replays an orphaned saved preparation before creating its workout", async ()
   await db.syncQueue.delete(pending.operationId);
   vi.stubGlobal("navigator", { onLine: true });
   const accepted = { ...edited, customization_scopes: ["occurrence"], customization_revisions: { occurrence: 1 } };
-  vi.spyOn(apiClient, "get").mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? loaded : url === "/workouts/offline-context" ? { ...bundle, plans: [{ ...bundle.plans[0], preparation_fingerprint: "2".repeat(64), plan: accepted }] } : { program_id: programId, day_index: 1, scope: "occurrence", scheduled_date: date, revision: 0, program_version: 1, patch: {} } }));
+  vi.spyOn(apiClient, "get").mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? loaded : url === "/workouts/offline-context" ? { ...bundle, schedule_fingerprint: "f".repeat(64), plans: [{ ...bundle.plans[0], preparation_fingerprint: "2".repeat(64), plan: accepted }] } : { program_id: programId, day_index: 1, scope: "occurrence", scheduled_date: date, revision: 0, program_version: 1, patch: {} } }));
   const events: string[] = [];
   vi.spyOn(apiClient, "put").mockImplementation(async () => { events.push("preparation"); return { data: { program_id: programId, day_index: 1, scope: "occurrence", scheduled_date: date, revision: 1, program_version: 1, patch: {} } }; });
-  vi.spyOn(apiClient, "post").mockImplementation(async () => { events.push("workout"); return { data: { ...started.workout, id: "55555555-5555-4555-8555-555555555555", plan: accepted } }; });
+  vi.spyOn(apiClient, "post").mockImplementation(async (_url, body) => { events.push("workout"); expect(body).toMatchObject({ preparation: { schedule_fingerprint: "f".repeat(64) } }); return { data: { ...started.workout, id: "55555555-5555-4555-8555-555555555555", plan: accepted } }; });
   const result = await flushSyncQueue(owner);
   expect(events).toEqual(["preparation", "workout"]);
   expect(result.failed).toBe(0);

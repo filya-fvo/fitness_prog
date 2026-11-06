@@ -42,6 +42,13 @@ describe("orphaned workout preparation", () => {
     await expect(reconcilePreparedCreate(item, owner)).rejects.toThrow();
     expect((await db.syncQueue.get(item.id))?.payload).toEqual(item.payload);
   });
+  it("keeps a saved result if both the schedule and the plan changed", async () => {
+    const item = makeItem(); item.payload.plan = { ...plan, title: "Моя тренировка" }; await db.syncQueue.put(item);
+    const changed = { ...bundle, schedule_fingerprint: "f".repeat(64) };
+    vi.spyOn(offlineApi, "fetchOfflineWorkoutContext").mockResolvedValue(changed as unknown as Awaited<ReturnType<typeof offlineApi.fetchOfflineWorkoutContext>>);
+    await expect(reconcilePreparedCreate(item, owner)).rejects.toThrow();
+    expect((await db.syncQueue.get(item.id))?.payload).toEqual(item.payload);
+  });
 
   it("does not bypass an unprocessed preparation", async () => {
     const item = makeItem(); await db.syncQueue.put(item);
