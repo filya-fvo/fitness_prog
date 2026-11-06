@@ -3,7 +3,7 @@ from datetime import date
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 from app.schemas.workout_execution import WorkoutGroup, WorkoutSetMethod
 
@@ -74,3 +74,11 @@ class WorkoutCustomizationResponse(WorkoutCustomizationContext):
     revision: int = Field(ge=0)
     program_version: int = Field(ge=1)
     patch: WorkoutDayPatch
+
+    @model_serializer(mode="wrap", when_used="json")
+    def serialize_for_existing_clients(self, handler):
+        result = handler(self)
+        for override in result["patch"]["exercise_overrides"]:
+            if override.get("target_sets") is None:
+                override.pop("target_sets", None)
+        return result

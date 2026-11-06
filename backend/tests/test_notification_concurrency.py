@@ -140,6 +140,63 @@ async def test_worker_status_contains_only_safe_operational_fields() -> None:
     assert set(notifications_status) == {"recorded_at", "processed", "sent", "errors"}
 
 
+@pytest.mark.asyncio
+async def test_uncertain_supplement_delivery_is_not_sent_again(monkeypatch) -> None:
+    from app.services.telegram_bot import TelegramDeliveryUncertain
+
+    user = User(id=uuid4(), telegram_id=1, goals={})
+    session = FakeNotificationSession(user)
+    item = SimpleNamespace(id=uuid4(), name_ru="Добавка", dose="", notified_at=None)
+    deliveries = []
+
+    async def due(_session, _user):
+        return [[item]] if item.notified_at is None else []
+
+    async def timeout(*_args, **_kwargs):
+        deliveries.append(1)
+        raise TelegramDeliveryUncertain("response lost")
+
+    async def mark(_session, rows):
+        for row in rows:
+            row.notified_at = True
+
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda *_args: None)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", due)
+    monkeypatch.setattr(notifications.supplement_intakes, "claim_notified", mark)
+    monkeypatch.setattr(notifications, "send_message", timeout)
+    settings = Settings(jwt_secret="test-secret", bot_token="configured")
+    await notifications._dispatch_user(session, user, settings)
+    await notifications._dispatch_user(session, user, settings)
+    assert len(deliveries) == 1
+    assert item.notified_at is True
+
+
+@pytest.mark.asyncio
+async def test_supplement_connection_failure_remains_retryable(monkeypatch) -> None:
+    user = User(id=uuid4(), telegram_id=1, goals={})
+    session = FakeNotificationSession(user)
+    item = SimpleNamespace(id=uuid4(), name_ru="Добавка", dose="", notified_at=None)
+    calls = []
+
+    async def due(_session, _user):
+        return [[item]]
+
+    async def fail(*_args, **_kwargs):
+        calls.append(1)
+        raise TelegramBotError("connection failed")
+
+    monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
+    monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda *_args: None)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", due)
+    monkeypatch.setattr(notifications, "send_message", fail)
+    settings = Settings(jwt_secret="test-secret", bot_token="configured")
+    await notifications._dispatch_user(session, user, settings)
+    await notifications._dispatch_user(session, user, settings)
+    assert len(calls) == 2
+    assert item.notified_at is None
+
+
 class FakeNotificationSession:
     def __init__(self, user) -> None:
         self.commits = 0

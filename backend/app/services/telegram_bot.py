@@ -18,6 +18,10 @@ class TelegramBotError(Exception):
     """Raised when Telegram Bot API call fails or bot is misconfigured."""
 
 
+class TelegramDeliveryUncertain(TelegramBotError):
+    """The request may have reached Telegram but its response was lost."""
+
+
 TELEGRAM_ALLOWED_UPDATES = ["message", "callback_query"]
 _telegram_ipv6_available: bool | None = None
 
@@ -80,9 +84,10 @@ async def bot_api(
                 _telegram_ipv6_available = False
                 continue
             raise TelegramBotError(f"Telegram transport error: {exc}") from exc
-        except (httpx.HTTPError, ValueError) as exc:
-            # Keep transport outages retryable by the notification dispatcher.
+        except httpx.PoolTimeout as exc:
             raise TelegramBotError(f"Telegram transport error: {exc}") from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            raise TelegramDeliveryUncertain(f"Telegram transport error: {exc}") from exc
         if prefer_ipv6:
             _telegram_ipv6_available = True
         break

@@ -11,6 +11,7 @@ const addedExerciseSchema = z.object({
 });
 const exerciseOverrideSchema = addedExerciseSchema.partial().extend({
   exercise_id: z.string().uuid(), replacement_exercise_id: z.string().uuid().nullable().optional(),
+  target_sets: z.number().int().min(1).max(20).nullable().optional(),
 }).omit({ weight_mode: true });
 export const workoutDayPatchSchema = z.object({
   added_exercises: z.array(addedExerciseSchema).max(20).default([]),

@@ -603,7 +603,7 @@ async def test_bot_api_does_not_retry_unknown_ipv6_delivery(
     monkeypatch.setattr(telegram_bot, "_telegram_ipv6_available", None)
     monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
 
-    with pytest.raises(telegram_bot.TelegramBotError):
+    with pytest.raises(telegram_bot.TelegramDeliveryUncertain):
         await telegram_bot.bot_api(Settings(bot_token="test-token"), "sendMessage")
 
     assert attempts == 1

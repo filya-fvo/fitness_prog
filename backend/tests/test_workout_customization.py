@@ -18,6 +18,30 @@ def test_customization_api_has_scope_and_revision_contract():
     assert set(path) == {"get", "put", "delete"}, "Personal workout customization is missing"
 
 
+def test_response_omits_only_empty_override_sets_for_existing_clients():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from app.schemas.workout_customization import WorkoutCustomizationResponse
+    program, first, second = uuid4(), uuid4(), uuid4()
+    payload = WorkoutCustomizationResponse(
+        program_id=program, day_index=1, scope="program_day", scheduled_date=None,
+        revision=1, program_version=1,
+        patch={"exercise_overrides": [
+            {"exercise_id": first}, {"exercise_id": second, "target_sets": 4},
+        ]},
+    )
+    app = FastAPI()
+
+    @app.get("/", response_model=WorkoutCustomizationResponse)
+    def get_response():
+        return payload
+
+    response = TestClient(app).get("/").json()
+    assert response["scheduled_date"] is None
+    assert "target_sets" not in response["patch"]["exercise_overrides"][0]
+    assert response["patch"]["exercise_overrides"][1]["target_sets"] == 4
+
+
 @pytest_asyncio.fixture
 async def database():
     url = os.environ.get("WORKOUT_METHODS_TEST_URL")

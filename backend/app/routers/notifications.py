@@ -54,6 +54,7 @@ from app.services.notification_prefs import (
 )
 from app.services.telegram_bot import (
     TelegramBotError,
+    TelegramDeliveryUncertain,
     send_app_notification,
     send_message,
     send_workout_reminder,
@@ -687,6 +688,7 @@ async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings
         ]
         text = "Добавки на сейчас:\n" + "\n".join(lines)
         delivered = 0
+        uncertain = False
         if channel == "telegram" and settings.bot_token and not settings.bot_token.startswith(
             "replace_with"
         ):
@@ -700,6 +702,12 @@ async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings
                     ),
                 )
                 delivered += 1
+            except TelegramDeliveryUncertain as exc:
+                # Telegram may already have accepted this message. Replaying an
+                # ambiguous delivery creates duplicates; keep the intake pending.
+                await supplement_intakes.claim_notified(session, group)
+                uncertain = True
+                logger.warning("supplement_delivery_uncertain user={} err={}", user.id, exc)
             except TelegramBotError as exc:
                 logger.warning("supplement_telegram_failed user={} err={}", user.id, exc)
         if channel == "browser":
@@ -722,7 +730,7 @@ async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings
             flag_modified(user, "goals")
             await session.commit()
             sent += delivered
-        else:
+        elif not uncertain:
             logger.info("supplement_notification_no_channel user={} count={}", user.id, len(group))
     return sent
 
