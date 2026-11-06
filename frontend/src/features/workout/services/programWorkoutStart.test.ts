@@ -123,6 +123,25 @@ it("atomically starts a prepared plan offline and a concurrent second start resu
   expect(queue[0].payload).toMatchObject({ executionVersion: 2, dayIndex: 1, weekPhase: "medium", cycleReadiness: "normal", preparation: { plan_fingerprint: "1".repeat(64) } });
   expect(post).not.toHaveBeenCalled();
 });
+
+it("replays an orphaned saved preparation before creating its workout", async () => {
+  const context = { programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium" as const };
+  const loaded = await loadWorkoutPreparation(context);
+  const edited = { ...loaded, exercises: loaded.exercises.map(row => ({ ...row, rest_sec: 150 })) };
+  const pending = await stageWorkoutPreparation(context, loaded, edited, "occurrence");
+  const started = await startProgramSession(context);
+  await db.syncQueue.delete(pending.operationId);
+  vi.stubGlobal("navigator", { onLine: true });
+  const accepted = { ...edited, customization_scopes: ["occurrence"], customization_revisions: { occurrence: 1 } };
+  vi.spyOn(apiClient, "get").mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? loaded : url === "/workouts/offline-context" ? { ...bundle, plans: [{ ...bundle.plans[0], preparation_fingerprint: "2".repeat(64), plan: accepted }] } : { program_id: programId, day_index: 1, scope: "occurrence", scheduled_date: date, revision: 0, program_version: 1, patch: {} } }));
+  const events: string[] = [];
+  vi.spyOn(apiClient, "put").mockImplementation(async () => { events.push("preparation"); return { data: { program_id: programId, day_index: 1, scope: "occurrence", scheduled_date: date, revision: 1, program_version: 1, patch: {} } }; });
+  vi.spyOn(apiClient, "post").mockImplementation(async () => { events.push("workout"); return { data: { ...started.workout, id: "55555555-5555-4555-8555-555555555555", plan: accepted } }; });
+  const result = await flushSyncQueue(owner);
+  expect(events).toEqual(["preparation", "workout"]);
+  expect(result.failed).toBe(0);
+  expect(await db.syncQueue.count()).toBe(0);
+});
 it("does not invent an unprepared readiness or silently flatten an old bundle", async () => {
   await expect(startProgramSession({ programId, scheduledDate: date, dayIndex: 1, weekPhase: "medium", cycleReadiness: "reduce" })).rejects.toThrow();
   const old = structuredClone(bundle); delete (old.plans[0] as { preparation_fingerprint?: string }).preparation_fingerprint;
