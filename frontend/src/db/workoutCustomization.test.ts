@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { db } from "./schema";
 import { apiClient } from "@/api/client";
 import { useUserStore } from "@/store/userStore";
-import { loadWorkoutPreparation, stageWorkoutPreparation, syncWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation } from "./workoutCustomization";
+import { loadWorkoutPreparation, stageWorkoutPreparation, syncWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation, cancelUnsentWorkoutPreparation, listPendingWorkoutPreparations } from "./workoutCustomization";
 import type { WorkoutPlan } from "@/types/workout";
 const owner = "22222222-2222-4222-8222-222222222222";
 const program = "11111111-1111-4111-8111-111111111111";
@@ -29,6 +29,80 @@ it("keeps an offline proposal and exact context after database reopen", async ()
   expect((await loadWorkoutPreparation(context)).exercises.map(row => row.exercise_id)).toEqual([exercise, extra]);
   expect((await db.syncQueue.toArray())[0].id).toBe(pending.operationId);
   await expect(stageWorkoutPreparation(context, plan, plan, "program_day")).rejects.toThrow();
+});
+it("cancels one unsent preparation and leaves unrelated queued actions", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await db.syncQueue.add({ id: "other", ownerUserId: owner, type: "update_profile", clientWorkoutId: "profile", payload: {}, createdAt: 1, attempts: 0, lastError: null });
+  await cancelUnsentWorkoutPreparation(pending.operationId, owner);
+  expect(await db.syncQueue.get(pending.operationId)).toBeUndefined();
+  expect(await db.syncQueue.get("other")).toBeDefined();
+  expect(await readWorkoutPreparationDraft(pending.key, owner)).toBeNull();
+});
+it("identifies the individual pending preparation by date", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  expect(await listPendingWorkoutPreparations(owner)).toEqual([{ operationId: pending.operationId, scheduledDate: context.scheduledDate, dayIndex: context.dayIndex }]);
+});
+it("does not cancel a preparation used by a saved workout", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await db.syncQueue.add({ id: "workout", ownerUserId: owner, type: "create_workout", clientWorkoutId: "workout", payload: { preparationDraftKey: pending.key }, createdAt: 2, attempts: 0, lastError: null });
+  await expect(cancelUnsentWorkoutPreparation(pending.operationId, owner)).rejects.toThrow();
+  expect(await db.syncQueue.count()).toBe(2);
+  expect(await readWorkoutPreparationDraft(pending.key, owner)).not.toBeNull();
+});
+it("does not cancel another account's preparation", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  useUserStore.setState({ user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", subscription_status: "free", onboarding_completed: true } });
+  await expect(cancelUnsentWorkoutPreparation(pending.operationId, owner)).rejects.toThrow();
+  expect(await db.syncQueue.count()).toBe(1);
+});
+for (const changed of [false, true]) it(`rechecks a newer occurrence before retrying; changed=${changed}`, async () => {
+  const loaded = { ...plan, customization_scopes: ["occurrence"] as const, customization_revisions: { occurrence: 1 } } as WorkoutPlan;
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? loaded : { program_id: program, day_index: 1, scope: "program_day", scheduled_date: null, revision: 0, program_version: 1, patch: {} } }));
+  await loadWorkoutPreparation(context);
+  const modified = { ...loaded, exercises: [...loaded.exercises, { exercise_id: extra, order: 2, target_sets: 3 }] };
+  const pending = await stageWorkoutPreparation(context, loaded, modified, "occurrence");
+  const current = { ...loaded, customization_revisions: { occurrence: 3 }, exercises: loaded.exercises.map(row => changed ? { ...row, target_sets: 4 } : row) };
+  vi.mocked(apiClient.get).mockImplementation(async (url, config) => {
+    const params = config?.params as { include_saved_override?: boolean } | undefined;
+    return { data: url === "/workouts/planned-plan" ? (params?.include_saved_override === false ? plan : current) : { program_id: program, day_index: 1, scope: "occurrence", scheduled_date: context.scheduledDate, revision: 3, program_version: 1, patch: {} } };
+  });
+  const put = vi.spyOn(apiClient, "put").mockResolvedValue({ data: { program_id: program, day_index: 1, scope: "occurrence", scheduled_date: context.scheduledDate, revision: 4, program_version: 1, patch: {} } });
+  if (changed) {
+    await expect(syncWorkoutPreparation(pending.key, owner)).rejects.toThrow("План уже изменён");
+    expect(put).not.toHaveBeenCalled();
+    expect(await db.syncQueue.count()).toBe(1);
+  } else {
+    await syncWorkoutPreparation(pending.key, owner);
+    expect(put.mock.calls[0][1]).toMatchObject({ base_revision: 3, operation_id: pending.operationId });
+  }
+});
+it("does not cancel after a request with an uncertain result", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  vi.spyOn(apiClient, "put").mockRejectedValue(new Error("lost response"));
+  await expect(syncWorkoutPreparation(pending.key, owner)).rejects.toThrow();
+  await expect(cancelUnsentWorkoutPreparation(pending.operationId, owner)).rejects.toThrow();
+  expect(await db.syncQueue.count()).toBe(1);
+  expect((await readWorkoutPreparationDraft(pending.key, owner))?.request).not.toBeNull();
+});
+it("does not send a preparation cancelled while its preview is loading", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  let release!: (response: { data: WorkoutPlan }) => void;
+  vi.mocked(apiClient.get).mockImplementation(url => url === "/workouts/planned-plan" ? new Promise(resolve => { release = resolve; }) : Promise.resolve({ data: { program_id: program, day_index: 1, scope: "occurrence", scheduled_date: context.scheduledDate, revision: 0, program_version: 1, patch: {} } }));
+  const put = vi.spyOn(apiClient, "put");
+  const syncing = syncWorkoutPreparation(pending.key, owner);
+  const failure = expect(syncing).rejects.toThrow();
+  await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+  await cancelUnsentWorkoutPreparation(pending.operationId, owner);
+  release({ data: plan });
+  await failure;
+  expect(put).not.toHaveBeenCalled();
+  expect(await db.syncQueue.count()).toBe(0);
 });
 it("persists the full request before sending and replays its ID after a lost response", async () => {
   await loadWorkoutPreparation(context);

@@ -4,6 +4,7 @@ import { invalidateOfflineWorkoutContext } from "@/db/offlineWorkoutContext";
 import { useUserStore } from "@/store/userStore";
 import type { WorkoutPlan } from "@/types/workout";
 import { buildWorkoutDayPatch } from "@/utils/workoutCustomization";
+import { savedWorkoutPlanContent } from "@/utils/savedWorkoutPlan";
 
 type Scope = "program_day" | "occurrence";
 function contextFor(context: PlannedWorkoutPlanInput, scope: Scope): WorkoutCustomizationContext {
@@ -31,7 +32,15 @@ export async function buildPreparedWorkoutChange(context: PlannedWorkoutPlanInpu
   ]);
   checkOwner(owner);
   if (programVersion !== undefined && stored.program_version !== programVersion) throw new Error("Программа изменилась. Подготовка сохранена на устройстве");
-  if (stored.revision !== (loaded.customization_revisions?.[scope] ?? 0)) throw new Error("План уже изменён. Откройте подготовку снова");
+  if (stored.revision !== (loaded.customization_revisions?.[scope] ?? 0)) {
+    if (scope !== "occurrence") throw new Error("План уже изменён. Откройте подготовку снова");
+    const current = await fetchPlannedWorkoutPlan(context);
+    checkOwner(owner);
+    if (savedWorkoutPlanContent(current) !== savedWorkoutPlanContent(loaded) ||
+        (current.customization_revisions?.occurrence ?? 0) !== stored.revision ||
+        (current.customization_revisions?.program_day ?? 0) !== (loaded.customization_revisions?.program_day ?? 0))
+      throw new Error("План уже изменён. Откройте подготовку снова");
+  }
   if (scope === "occurrence" && (base.customization_revisions?.program_day ?? 0) !== (loaded.customization_revisions?.program_day ?? 0)) throw new Error("Личный план уже изменён. Откройте подготовку снова");
   if (occurrence && occurrence.revision !== (loaded.customization_revisions?.occurrence ?? 0)) throw new Error("Разовая подготовка уже изменилась. Откройте её снова");
   const patch = buildWorkoutDayPatch(base, edited, { loaded, sources: occurrence ? [stored.patch, occurrence.patch] : [stored.patch] });

@@ -6,24 +6,11 @@ import type { createWorkout } from "@/api/workouts";
 import { executionSnapshotKey } from "@/utils/workoutExecutionState";
 import { useUserStore } from "@/store/userStore";
 import type { WorkoutPlan } from "@/types/workout";
+import { savedWorkoutPlanContent } from "@/utils/savedWorkoutPlan";
 export type PreparedCreatePayload = Parameters<typeof createWorkout>[0] & { preparationDraftKey?: string | null; preparationReconciled?: boolean };
 function content(plan: WorkoutPlan): string {
   return JSON.stringify([executionSnapshotKey({ ...plan, execution_version: 2, customization_revisions: {} }),
     [...plan.exercises].sort((a, b) => a.order - b.order).map(row => row.note ?? null)]);
-}
-function recoveryContent(plan: WorkoutPlan): string {
-  const normalized = { ...plan, customization_revisions: undefined,
-    exercises: plan.exercises.map(exercise => {
-      const row = { ...exercise };
-      delete row.name_ru;
-      delete row.suggested_weight;
-      return row;
-    }) };
-  return JSON.stringify(normalized, (_key, value: unknown) => {
-    if (value && typeof value === "object" && !Array.isArray(value))
-      return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
-    return value;
-  });
 }
 function checkOwner(owner: string) { if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Результат сохранён на устройстве"); }
 export async function reconcilePreparedCreate(item: SyncQueueItem, owner: string): Promise<PreparedCreatePayload> {
@@ -42,7 +29,7 @@ export async function reconcilePreparedCreate(item: SyncQueueItem, owner: string
     checkOwner(owner);
     const expected = bundle.plans.find(row => row.scheduled_date === payload.scheduledDate && row.day_index === payload.dayIndex && row.week_phase === payload.weekPhase && row.readiness === (payload.cycleReadiness ?? "normal") && !row.after_recovery);
     if (bundle.owner !== owner || bundle.program?.id !== payload.programId || bundle.schedule_fingerprint !== payload.preparation.schedule_fingerprint ||
-        !expected?.preparation_fingerprint || recoveryContent(expected.plan as WorkoutPlan) !== recoveryContent(payload.plan))
+        !expected?.preparation_fingerprint || savedWorkoutPlanContent(expected.plan as WorkoutPlan) !== savedWorkoutPlanContent(payload.plan))
       throw new Error("План изменился. Результат остался на устройстве");
     const next: PreparedCreatePayload = { ...payload, plan: expected.plan as WorkoutPlan, preparation: { ...payload.preparation, plan_fingerprint: expected.preparation_fingerprint }, preparationReconciled: true };
     await db.transaction("rw", db.syncQueue, async () => {

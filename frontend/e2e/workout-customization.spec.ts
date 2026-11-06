@@ -165,3 +165,25 @@ test("retains a local preparation across reload while offline and sends no write
   await expect(dialog.getByText("Скручивания", { exact: true })).toBeVisible();
   expect(writes).toHaveLength(0);
 });
+
+test("confirms cancellation of only the unsent preparation", async ({ page }) => {
+  await installComposerApi(page);
+  await page.goto("/e2e/fixtures/workout-composer.html");
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
+  await page.evaluate(() => Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false }));
+  await dialog.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
+  await dialog.getByRole("button", { name: /Добавить.*Скручивания/ }).click();
+  await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("fitness:native-change")));
+  const cancel = page.getByRole("button", { name: "Отменить изменение" });
+  await expect(cancel).toBeVisible();
+  page.once("dialog", prompt => prompt.dismiss());
+  await cancel.click();
+  await expect(cancel).toBeVisible();
+  page.once("dialog", prompt => prompt.accept());
+  await cancel.click();
+  await expect(cancel).toHaveCount(0);
+});

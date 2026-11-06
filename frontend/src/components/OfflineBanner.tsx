@@ -11,6 +11,7 @@ import {
 } from "@/db/syncQueue";
 import { isOnline } from "@/utils/network";
 import { confirmAction } from "@/lib/telegram";
+import { PendingPreparationActions } from "@/components/PendingPreparationActions";
 
 export function OfflineBanner() {
   const [online, setOnline] = useState(isOnline());
@@ -84,6 +85,7 @@ export function OfflineBanner() {
           Изменения сохраняются на устройстве
           {pending > 0 ? ` (${pending} в очереди)` : ""}. Отправим, когда появится интернет.
         </p>
+        {pending > 0 && <PendingPreparationActions />}
       </div>
     );
   }
@@ -104,6 +106,7 @@ export function OfflineBanner() {
           Последняя ошибка: {lastError}
         </p>
       ) : null}
+      <PendingPreparationActions />
       <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"

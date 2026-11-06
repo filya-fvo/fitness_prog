@@ -146,3 +146,42 @@ export async function readWorkoutPreparationFailure(operationId: string, owner: 
   if (!queued || queued.ownerUserId !== owner || queued.type !== "customize_workout") return null;
   return queued.lastError;
 }
+
+export async function listPendingWorkoutPreparations(owner: string): Promise<Array<{ operationId: string; scheduledDate: string; dayIndex: number }>> {
+  checkOwner(owner);
+  const items = await db.syncQueue.where("ownerUserId").equals(owner).filter(item => item.type === "customize_workout").sortBy("createdAt");
+  const results: Array<{ operationId: string; scheduledDate: string; dayIndex: number }> = [];
+  for (const item of items) {
+    if (typeof item.payload.draftKey !== "string") continue;
+    const draft = await readWorkoutPreparationDraft(item.payload.draftKey, owner);
+    if (draft && draft.operationId === item.id && !draft.receipt)
+      results.push({ operationId: item.id, scheduledDate: draft.context.scheduledDate, dayIndex: draft.context.dayIndex });
+  }
+  checkOwner(owner);
+  return results;
+}
+
+/** Cancel only a proposal that has never been sent and has no dependent workout. */
+export async function cancelUnsentWorkoutPreparation(operationId: string, owner: string): Promise<void> {
+  checkOwner(owner);
+  await db.transaction("rw", db.meta, db.syncQueue, async () => {
+    checkOwner(owner);
+    const queued = await db.syncQueue.get(operationId);
+    const key = `${prefix(owner)}op:${operationId}`;
+    if (!queued || queued.ownerUserId !== owner || queued.type !== "customize_workout" || queued.payload.draftKey !== key)
+      throw new Error("Изменение не найдено. Обновите экран");
+    const draft = await readWorkoutPreparationDraft(key, owner);
+    if (!draft || draft.operationId !== operationId) throw new Error("Подготовка не найдена. Изменения сохранены");
+    if (draft.request || draft.receipt) throw new Error("Отменить нельзя: изменение уже отправлялось. Повторите синхронизацию");
+    const dependent = await db.syncQueue.where("ownerUserId").equals(owner)
+      .filter(item => item.type === "create_workout" && item.payload.preparationDraftKey === key).first();
+    if (dependent) throw new Error("С этой подготовкой сохранена тренировка. Сначала синхронизируйте её");
+    const indexKey = dayKey(owner, draft.context);
+    const index = await db.meta.get(indexKey);
+    const previewKeys = await db.meta.where("key").startsWith(`${prefix(owner)}cache:${draft.context.programId}:${draft.context.dayIndex}:`).primaryKeys();
+    await db.meta.bulkDelete([key, ...previewKeys, ...(index && JSON.parse(index.value) === key ? [indexKey] : [])]);
+    await db.syncQueue.delete(operationId);
+    checkOwner(owner);
+  });
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("fitness:sync-complete"));
+}
