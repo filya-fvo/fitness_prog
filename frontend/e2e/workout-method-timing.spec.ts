@@ -3,6 +3,25 @@ import { expect, test } from "@playwright/test";
 import { installTimingApi } from "./fixtures/workout-execution-api";
 const owner = "22222222-2222-4222-8222-222222222222";
 
+test("manual selection shows every superset exercise and records a later one", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 740 });
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
+  await expect(navigation.getByRole("button", { name: /Жим штанги лёжа/ })).toBeVisible();
+  await navigation.getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("30");
+  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].is_completed).toBe(true);
+  await page.reload();
+  await expect(navigation.getByRole("button", { name: /Жим штанги лёжа/ })).toBeVisible();
+  await expect(navigation.getByRole("button", { name: /Сгибания со штангой/ })).toBeVisible();
+  await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
+  await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
+});
+
 test("slow network and double tap do not prolong cluster rest or complete the next part", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 740 });
   await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });

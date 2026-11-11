@@ -28,10 +28,21 @@ export function WorkoutExecutionNavigator({ autoAdvance }: { autoAdvance: boolea
   const blockedRest = Boolean(rest && (seconds > 0 || uncertain));
   const nextRow = plan.exercises.find(row => row.exercise_id === controller.next?.exerciseId);
   const group = plan.groups?.find(group => group.exercise_ids.includes(step?.exerciseId ?? ""));
+  const earlierPartPending = Boolean(step?.partOrdinal && controller.steps.some(item => item.exerciseId === step.exerciseId && item.setNumber === step.setNumber && item.partOrdinal !== null && item.partOrdinal < step.partOrdinal! && execution.progress.facts[item.id] === "pending"));
   const last = execution.progress.lastAction;
   const btn = "min-h-11 rounded-xl border border-tg-hint/25 px-3 py-2 text-sm disabled:opacity-40";
   return <section className="space-y-3" aria-label="Выполнение тренировки">
     {controller.error ? <p role="alert" className="app-card p-3 text-sm text-red-500">{controller.error}</p> : null}
+    <nav aria-label="Упражнения тренировки" className="flex gap-2 overflow-x-auto pb-1">
+      {[...plan.exercises].sort((a, b) => a.order - b.order).map((item, index) => {
+        const available = controller.steps.filter(candidate => candidate.exerciseId === item.exercise_id);
+        const target = available.find(candidate => execution.progress.facts[candidate.id] === "pending") ?? available[0];
+        const name = item.name_ru ?? catalog.find(candidate => candidate.id === item.exercise_id)?.name_ru ?? `Упражнение ${index + 1}`;
+        return <button key={item.exercise_id} type="button" disabled={!target} aria-current={item.exercise_id === step?.exerciseId ? "true" : undefined}
+          className={`${btn} shrink-0 ${item.exercise_id === step?.exerciseId ? "app-gradient-action text-white" : "bg-tg-secondary"}`}
+          onClick={() => { if (target) void controller.show(target.id); }}>{index + 1}. {name}</button>;
+      })}
+    </nav>
     {rest ? <section className="app-card app-card-hero space-y-2 p-4" aria-label="Отдых">
       <p className="text-xs font-semibold uppercase tracking-wide text-tg-hint">{restLabels[rest.restKind]}</p>
       {uncertain ? <p role="status" className="text-sm">Время устройства изменилось. Подтвердите окончание отдыха, чтобы продолжить.</p> : seconds > 0 ? <output aria-label="Осталось отдыха" className="block text-4xl font-semibold tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</output> : <p role="status" className="font-semibold">Отдых завершён</p>}
@@ -46,9 +57,10 @@ export function WorkoutExecutionNavigator({ autoAdvance }: { autoAdvance: boolea
         <h2 className="mt-1 text-lg font-semibold">{row.name_ru ?? exercise?.name_ru ?? "Упражнение"}</h2>
         {step.partOrdinal ? <><p className="mt-2 font-medium">Часть {step.partOrdinal} из {draft.parts?.length}</p><p className="text-xs text-tg-hint">{step.kind === "cluster" ? "Кластер" : "Дроп-сет"} · подход {step.setNumber}</p></> : null}
         {row.target ? <p className="mt-1 text-xs text-tg-hint">Цель: {resolveInitialWorkoutTarget({ row, part: step.partOrdinal == null ? undefined : row.set_methods?.find(method => method.set_number === step.setNumber)?.parts[step.partOrdinal - 1] }).label}</p> : null}</div>
-      {exercise ? <CompoundSetEditor key={step.id} controller={controller} step={step} row={row} exercise={exercise} draft={draft} blocked={blockedRest || controller.next?.id !== step.id} /> : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
-      {execution.progress.facts[step.id] === "pending" && step.id === controller.next?.id ? <div className="flex flex-wrap gap-2"><button className={btn} disabled={controller.busy || blockedRest} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
-        {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}
+      {earlierPartPending ? <p className="text-sm text-tg-hint">Сначала запишите или пропустите предыдущую часть этого подхода.</p> : null}
+      {exercise ? <CompoundSetEditor key={step.id} controller={controller} step={step} row={row} exercise={exercise} draft={draft} blocked={blockedRest || earlierPartPending} /> : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
+      {execution.progress.facts[step.id] === "pending" ? <div className="flex flex-wrap gap-2"><button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
+        {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}
       {exercise ? <details><summary className="flex min-h-11 cursor-pointer items-center text-sm text-tg-hint">Техника и материалы</summary><ExerciseMediaTabs exercise={exercise} compact showTechnique /></details> : null}
     </article> : null}
     {last ? <button className={`${btn} w-full`} disabled={controller.busy} onClick={() => void controller.act("undo", last.stepId, undefined, last.actionId)}>Отменить последнее действие</button> : null}

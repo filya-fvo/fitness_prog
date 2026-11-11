@@ -122,7 +122,8 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
     if (execution.progress.processedActionIds.includes(input.actionId)) return { session, accepted: false };
     if (execution.revision !== input.expectedRevision) throw new Error("Тренировка изменилась в другой вкладке. Повторите действие после обновления");
     if (session.workout.status !== "planned") throw new Error("Тренировка уже завершена");
-    const decision = resolveExecutionTransition({ ...input, ...execution.progress, plan: session.workout.plan as WorkoutPlan, rest: execution.progress.rest });
+    const decision = resolveExecutionTransition({ ...input, ...execution.progress, plan: session.workout.plan as WorkoutPlan, rest: execution.progress.rest,
+      allowOutOfOrder: execution.viewStepId === input.stepId });
     if (!decision.accepted) {
       if (decision.blockedReason === "active_rest") throw new Error("Сначала закончите текущий отдых");
       if (decision.blockedReason === "undo_unavailable") throw new Error("Это действие уже нельзя отменить");

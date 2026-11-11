@@ -22,6 +22,32 @@ function input(p: WorkoutPlan, index = 0): TransitionInput {
 const pauses = (p: WorkoutPlan) => buildExecutionSteps(p).map((_, i) => resolveExecutionTransition(input(p, i)).durationSec);
 
 describe("workout sequence and one contextual pause", () => {
+  it("allows manually recording another exercise without losing earlier pending steps", () => {
+    const p = plan([ex("A", 2), ex("B", 2)], [group(["A", "B"])]);
+    const steps = buildExecutionSteps(p);
+    const result = resolveExecutionTransition({ ...input(p), autoAdvance: false, allowOutOfOrder: true, stepId: steps[1].id });
+    expect(result.accepted).toBe(true);
+    expect(result.facts[steps[1].id]).toBe("completed");
+    expect(result.cursor).toBe(steps[0].id);
+    expect(result.rest).toBeNull();
+  });
+
+  it("keeps parts of a complex set ordered when manually selecting an exercise", () => {
+    const p = plan([ex("A"), { ...ex("B"), set_methods: [method("drop")] }]);
+    const steps = buildExecutionSteps(p);
+    const result = resolveExecutionTransition({ ...input(p), autoAdvance: false, allowOutOfOrder: true, stepId: steps[2].id });
+    expect(result.accepted).toBe(false);
+  });
+
+  it("preserves the cluster pause when a later exercise is selected manually", () => {
+    const p = plan([ex("A"), { ...ex("B"), set_methods: [method("cluster")] }]);
+    const steps = buildExecutionSteps(p);
+    const result = resolveExecutionTransition({ ...input(p), allowOutOfOrder: true, stepId: steps[1].id });
+    expect(result.accepted).toBe(true);
+    expect(result.cursor).toBe(steps[2].id);
+    expect(result.durationSec).toBe(20);
+    expect(result.facts[steps[0].id]).toBeUndefined();
+  });
   it.each([
     ["cluster before another full set", plan([{ ...ex("A", 2), set_methods: [method("cluster")] }]), [20, 20, 120, 0]],
     ["cluster at workout end", plan([{ ...ex("A"), set_methods: [method("cluster")] }]), [20, 20, 0]],

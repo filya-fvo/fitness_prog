@@ -13,6 +13,7 @@ import { remainingRestMs, executionRestNeedsConfirmation, workoutClockSnapshot }
 import type { WorkoutPlan } from "@/types/workout";
 import { toUserMessage } from "@/utils/errors";
 import { hapticNotification } from "@/lib/telegram";
+import { confirmAction } from "@/lib/telegram";
 import { useTimerNotificationDelivery } from "./useTimerNotificationDelivery";
 
 export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
@@ -144,6 +145,7 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
   }, [apply, client, owner]);
   const show = useCallback(async (stepId: string) => {
     if (!owner || !client || busyRef.current) return;
+    if (editing.current && useWorkoutStore.getState().execution?.viewStepId !== stepId && !await confirmAction("Введённые данные ещё не записаны. Перейти к другому подходу?")) return;
     const current = generation.current;
     try { apply(await showExecutionStep(owner, client, stepId), current); editing.current = false; }
     catch (err) { if (current === generation.current) setError(toUserMessage(err, "Не удалось открыть шаг")); }

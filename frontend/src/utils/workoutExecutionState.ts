@@ -110,7 +110,11 @@ export function assertExecutionSessionSnapshot(session: LocalWorkoutSession, own
   }
   const derived = executionFactsFromDrafts(plan, session.drafts, progress.facts);
   for (const step of steps) if (!["pending", "completed", "skipped"].includes(progress.facts[step.id]) || progress.facts[step.id] !== derived[step.id]) invalid();
-  if (progress.cursor !== (steps.find(step => progress.facts[step.id] === "pending")?.id ?? null)) invalid();
+  const cursor = progress.cursor === null ? null : byId.get(progress.cursor);
+  if (progress.cursor === null ? steps.some(step => progress.facts[step.id] === "pending") : !cursor || progress.facts[cursor.id] !== "pending") invalid();
+  const firstPending = steps.find(step => progress.facts[step.id] === "pending");
+  if (cursor && cursor.id !== firstPending?.id && (cursor.partOrdinal === null || cursor.partOrdinal < 2)) invalid();
+  if (cursor?.partOrdinal && steps.some(step => step.exerciseId === cursor.exerciseId && step.setNumber === cursor.setNumber && step.partOrdinal !== null && step.partOrdinal < cursor.partOrdinal! && progress.facts[step.id] === "pending")) invalid();
   const last = progress.lastAction;
   if (last) {
     const source = byId.get(last.stepId);

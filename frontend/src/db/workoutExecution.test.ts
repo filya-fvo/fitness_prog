@@ -8,7 +8,7 @@ import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
 import { buildExecutionSteps } from "@/utils/workoutExecution";
 import { remainingRestMs } from "@/utils/workoutRest";
 import type { Workout, WorkoutPlan } from "@/types/workout";
-import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, finishExecutionSession } from "./workoutExecution";
+import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, finishExecutionSession, showExecutionStep } from "./workoutExecution";
 
 const owner = "22222222-2222-4222-8222-222222222222";
 const client = "11111111-1111-4111-8111-111111111111";
@@ -25,6 +25,51 @@ const action = () => ({ owner, clientWorkoutId: client, action: "complete" as co
   values: { reps: "4", weight: "100", weightMode: "total" as const, durationSec: null }, autoAdvance: true });
 beforeEach(async () => { await db.delete(); await db.open(); useUserStore.setState({ user: { id: owner, subscription_status: "plus", onboarding_completed: true } }); });
 afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await db.delete(); useUserStore.setState({ user: null }); });
+
+it("records a manually chosen later superset exercise and restores unfinished earlier work", async () => {
+  const second = "55555555-5555-4555-8555-555555555555";
+  const grouped: WorkoutPlan = { execution_version: 2, exercises: [
+    { exercise_id: exercise, order: 1, target_sets: 1 }, { exercise_id: second, order: 2, target_sets: 1 },
+  ], groups: [{ id: "group", kind: "superset", exercise_ids: [exercise, second], rounds: 1, transition_sec: 0, round_rest_sec: 90 }] };
+  const groupedWorkout = { ...workout, plan: grouped };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: groupedWorkout,
+    drafts: draftsFromWorkoutSnapshot(groupedWorkout), now: clock });
+  const steps = buildExecutionSteps(grouped);
+  const selected = await showExecutionStep(owner, client, steps[1].id);
+  const saved = await commitExecutionAction({ ...action(), stepId: steps[1].id, expectedRevision: selected.execution!.revision, autoAdvance: false });
+  expect(saved.accepted).toBe(true);
+  expect(saved.session.execution!.progress.cursor).toBe(steps[0].id);
+  expect(saved.session.execution!.progress.facts[steps[1].id]).toBe("completed");
+  expect((await db.syncQueue.toArray())[0].payload).toMatchObject({ exerciseId: second, isCompleted: true });
+  db.close(); await db.open();
+  const restored = await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: groupedWorkout, drafts: [], now: clock });
+  expect(restored.execution!.progress.facts[steps[0].id]).toBe("pending");
+  expect(restored.execution!.progress.facts[steps[1].id]).toBe("completed");
+  const undone = await commitExecutionAction({ ...action(), action: "undo", actionId: crypto.randomUUID(), stepId: steps[1].id,
+    undoActionId: restored.execution!.progress.lastAction!.actionId, expectedRevision: restored.execution!.revision, autoAdvance: false });
+  expect(undone.session.execution!.progress.cursor).toBe(steps[0].id);
+  expect(undone.session.execution!.progress.facts[steps[1].id]).toBe("pending");
+});
+
+it("restores a manually selected later cluster part with its rest and earlier work pending", async () => {
+  const first = "55555555-5555-4555-8555-555555555555";
+  const combined: WorkoutPlan = { ...plan, exercises: [
+    { exercise_id: first, order: 1, target_sets: 1 }, { ...plan.exercises[0], order: 2 },
+  ] };
+  const sessionWorkout = { ...workout, plan: combined };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: sessionWorkout,
+    drafts: draftsFromWorkoutSnapshot(sessionWorkout), now: clock });
+  const steps = buildExecutionSteps(combined);
+  const selected = await showExecutionStep(owner, client, steps[1].id);
+  const saved = await commitExecutionAction({ ...action(), stepId: steps[1].id, expectedRevision: selected.execution!.revision, autoAdvance: false });
+  expect(saved.session.execution!.progress.cursor).toBe(steps[2].id);
+  expect(saved.session.execution!.progress.rest?.durationSec).toBe(20);
+  db.close(); await db.open();
+  const restored = await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: sessionWorkout, drafts: [], now: clock });
+  expect(restored.execution!.progress.facts[steps[0].id]).toBe("pending");
+  expect(restored.execution!.progress.facts[steps[1].id]).toBe("completed");
+  expect(restored.execution!.progress.cursor).toBe(steps[2].id);
+});
 
 it("never replaces a valid durable typed session with a damaged incoming target snapshot", async () => {
   const typedWorkout = structuredClone(workout);

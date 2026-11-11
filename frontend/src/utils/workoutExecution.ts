@@ -43,6 +43,7 @@ export type TransitionInput = {
   processedActionIds?: string[];
   lastAction?: ExecutionUndo | null;
   autoAdvance?: boolean;
+  allowOutOfOrder?: boolean;
   manualContinue?: boolean;
 };
 export type TransitionDecision = ExecutionProgress & {
@@ -163,10 +164,13 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
     const last = input.lastAction;
     if (!last || last.stepId !== source.id || last.actionId !== input.undoActionId) return { ...base, blockedReason: "undo_unavailable" };
     const rest = input.rest?.sourceActionId === last.actionId ? null : input.rest;
-    return { ...base, ...accepted, facts: { ...input.facts, ...last.previousFacts }, cursor: source.id,
-      nextStep: source, terminal: false, manualContinue: true, rest, restKind: rest?.restKind ?? null, durationSec: rest?.durationSec ?? 0, lastAction: null };
+    const restored = { ...input.facts, ...last.previousFacts };
+    const firstPending = steps.find(step => (restored[step.id] ?? "pending") === "pending") ?? null;
+    return { ...base, ...accepted, facts: restored, cursor: firstPending?.id ?? null,
+      nextStep: firstPending, terminal: firstPending === null, manualContinue: true, rest, restKind: rest?.restKind ?? null, durationSec: rest?.durationSec ?? 0, lastAction: null };
   }
-  if (source.id !== input.cursor || (input.facts[source.id] ?? "pending") !== "pending") return { ...base, blockedReason: "stale_step" };
+  if ((source.id !== input.cursor && !input.allowOutOfOrder) || (input.facts[source.id] ?? "pending") !== "pending") return { ...base, blockedReason: "stale_step" };
+  if (source.partOrdinal !== null && steps.some(step => step.exerciseId === source.exerciseId && step.setNumber === source.setNumber && step.partOrdinal !== null && step.partOrdinal < source.partOrdinal! && (input.facts[step.id] ?? "pending") === "pending")) return { ...base, blockedReason: "stale_step" };
   if (input.rest && (executionRestNeedsConfirmation(input.rest, input.confirmedAt) || remainingRestMs(input.rest, input.confirmedAt) > 0)) return { ...base, blockedReason: "active_rest" };
   const skipping = input.action === "skip" || input.action === "skip_participant";
   const changedSteps = input.action === "skip_participant"
@@ -174,8 +178,9 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
     : [source];
   const previousFacts = Object.fromEntries(changedSteps.map(step => [step.id, input.facts[step.id] ?? "pending"]));
   const facts = { ...input.facts, ...Object.fromEntries(changedSteps.map(step => [step.id, skipping ? "skipped" as const : "completed" as const])) };
-  const nextStep = steps.find(step => (facts[step.id] ?? "pending") === "pending") ?? null;
-  const pause = skipping ? { restKind: null, durationSec: 0 } : pauseFor(input.plan, source, nextStep);
+  const nextPart = source.partOrdinal === null ? null : steps.find(step => step.exerciseId === source.exerciseId && step.setNumber === source.setNumber && step.partOrdinal !== null && step.partOrdinal > source.partOrdinal! && (facts[step.id] ?? "pending") === "pending") ?? null;
+  const nextStep = nextPart ?? steps.find(step => (facts[step.id] ?? "pending") === "pending") ?? null;
+  const pause = skipping || (source.id !== input.cursor && !nextPart) ? { restKind: null, durationSec: 0 } : pauseFor(input.plan, source, nextStep);
   const rest = nextStep && pause.restKind ? createExecutionRest({
     owner: input.owner, clientWorkoutId: input.clientWorkoutId, sourceActionId: input.actionId,
     targetStep: nextStep, restKind: pause.restKind, durationSec: pause.durationSec, confirmedAt: input.confirmedAt,
