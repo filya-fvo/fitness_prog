@@ -1,5 +1,6 @@
 """Explicit conflict checks when a persistent day changes under date drafts."""
 from hashlib import sha256
+from datetime import date
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -10,25 +11,31 @@ from app.schemas.workout_customization import WorkoutDayPatch
 from app.services import planned_workout
 
 
-async def validate_occurrences(session, user_id, program_id, day_index, base_plan, skip_date=None):
+async def validate_occurrences(session, user_id, program_id, day_index, base_plan, skip_date=None, *, today=None):
     from app.services.workout_customization import apply_day_patch
+    today = today or date.today()
     condition = [UserProgramDayOverride.user_id == user_id, UserProgramDayOverride.program_id == program_id,
-        UserProgramDayOverride.day_index == day_index, UserProgramDayOverride.scheduled_date.is_not(None),
+        UserProgramDayOverride.day_index == day_index, UserProgramDayOverride.scheduled_date >= today,
         UserProgramDayOverride.is_deleted.is_(False)]
     if skip_date is not None:
         condition.append(UserProgramDayOverride.scheduled_date != skip_date)
     rows = await session.scalars(select(UserProgramDayOverride).where(*condition))
     for row in rows.all():
+        if row.scheduled_date is None or row.scheduled_date < today:
+            continue
         try:
             await apply_day_patch(session, base_plan, WorkoutDayPatch.model_validate(row.patch))
         except HTTPException as exc:
             raise HTTPException(409, f"На {row.scheduled_date:%d.%m.%Y} есть разовая подготовка. Проверьте её перед изменением личного плана") from exc
     condition = [WorkoutPlanOverride.user_id == user_id, WorkoutPlanOverride.program_id == program_id,
-        WorkoutPlanOverride.day_index == day_index, WorkoutPlanOverride.is_deleted.is_(False)]
+        WorkoutPlanOverride.day_index == day_index, WorkoutPlanOverride.is_deleted.is_(False),
+        WorkoutPlanOverride.scheduled_date >= today]
     if skip_date is not None:
         condition.append(WorkoutPlanOverride.scheduled_date != skip_date)
     legacy = await session.scalars(select(WorkoutPlanOverride).where(*condition))
     for row in legacy.all():
+        if row.scheduled_date < today:
+            continue
         try:
             await planned_workout.apply_replacements(session, base_plan, row.replacements)
         except HTTPException as exc:

@@ -18,6 +18,28 @@ def test_customization_api_has_scope_and_revision_contract():
     assert set(path) == {"get", "put", "delete"}, "Personal workout customization is missing"
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("offset,blocks", [(-1, False), (1, True)])
+async def test_persistent_change_ignores_past_but_checks_future_legacy_drafts(monkeypatch, offset, blocks):
+    from datetime import timedelta
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from app.services import planned_workout, workout_customization_conflicts
+
+    draft_date = date.today() + timedelta(days=offset)
+    session = SimpleNamespace(scalars=AsyncMock(side_effect=[
+        SimpleNamespace(all=lambda: []),
+        SimpleNamespace(all=lambda: [SimpleNamespace(scheduled_date=draft_date, replacements=[])]),
+    ]))
+    monkeypatch.setattr(planned_workout, "apply_replacements", AsyncMock(side_effect=HTTPException(409, "conflict")))
+    call = workout_customization_conflicts.validate_occurrences(session, uuid4(), uuid4(), 2, {})
+    if blocks:
+        with pytest.raises(HTTPException):
+            await call
+    else:
+        await call
+
+
 def test_response_omits_only_empty_override_sets_for_existing_clients():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient

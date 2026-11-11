@@ -121,7 +121,7 @@ export function OfflineBanner() {
           disabled={syncing}
           onClick={() => {
             void confirmAction(
-              "Удалить очередь локальных действий? Данные на сервере не затронем.",
+              "Удалить другие локальные действия? Подготовки тренировок останутся для проверки. Данные на сервере не затронем.",
             ).then((accepted) => {
               if (accepted) void clearSyncQueue().then(() => refresh());
             });

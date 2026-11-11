@@ -116,7 +116,7 @@ export async function dropFailedSyncItems(maxAttempts = MAX_SYNC_ATTEMPTS): Prom
   const items = await db.syncQueue.where("ownerUserId").equals(owner).toArray();
   let removed = 0;
   for (const item of items) {
-    if ((item.attempts || 0) >= maxAttempts) {
+    if (item.type !== "customize_workout" && (item.attempts || 0) >= maxAttempts) {
       await db.syncQueue.delete(item.id);
       removed += 1;
     }
@@ -127,7 +127,7 @@ export async function dropFailedSyncItems(maxAttempts = MAX_SYNC_ATTEMPTS): Prom
 export async function clearSyncQueue(): Promise<number> {
   const owner = currentOwnerUserId();
   if (!owner) return 0;
-  const items = await db.syncQueue.where("ownerUserId").equals(owner).toArray();
+  const items = (await db.syncQueue.where("ownerUserId").equals(owner).toArray()).filter(item => item.type !== "customize_workout");
   const n = items.length;
   const measurementDates = items
     .map(measurementDateFromQueueItem)

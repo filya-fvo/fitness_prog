@@ -5,6 +5,7 @@ import { apiClient } from "@/api/client";
 import { useUserStore } from "@/store/userStore";
 import { loadWorkoutPreparation, stageWorkoutPreparation, syncWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation, cancelUnsentWorkoutPreparation, listPendingWorkoutPreparations } from "./workoutCustomization";
 import type { WorkoutPlan } from "@/types/workout";
+import { clearSyncQueue } from "./syncQueue";
 const owner = "22222222-2222-4222-8222-222222222222";
 const program = "11111111-1111-4111-8111-111111111111";
 const exercise = "33333333-3333-4333-8333-333333333333";
@@ -38,6 +39,22 @@ it("cancels one unsent preparation and leaves unrelated queued actions", async (
   expect(await db.syncQueue.get(pending.operationId)).toBeUndefined();
   expect(await db.syncQueue.get("other")).toBeDefined();
   expect(await readWorkoutPreparationDraft(pending.key, owner)).toBeNull();
+});
+it("can cancel an unsent preparation after its queue entry was cleared", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await db.syncQueue.delete(pending.operationId);
+  await cancelUnsentWorkoutPreparation(pending.operationId, owner);
+  expect(await readWorkoutPreparationDraft(pending.key, owner)).toBeNull();
+  expect((await loadWorkoutPreparation(context)).exercises).toHaveLength(1);
+});
+it("keeps a preparation in the queue when clearing other actions", async () => {
+  vi.stubGlobal("localStorage", { removeItem: vi.fn() });
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await clearSyncQueue();
+  expect(await db.syncQueue.get(pending.operationId)).toBeDefined();
+  expect(await listPendingWorkoutPreparations(owner)).toHaveLength(1);
 });
 it("identifies the individual pending preparation by date", async () => {
   await loadWorkoutPreparation(context);
@@ -88,6 +105,15 @@ it("does not cancel after a request with an uncertain result", async () => {
   await expect(cancelUnsentWorkoutPreparation(pending.operationId, owner)).rejects.toThrow();
   expect(await db.syncQueue.count()).toBe(1);
   expect((await readWorkoutPreparationDraft(pending.key, owner))?.request).not.toBeNull();
+});
+it("does not cancel an orphaned preparation if it may have been sent", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  vi.spyOn(apiClient, "put").mockRejectedValue(new Error("lost response"));
+  await expect(syncWorkoutPreparation(pending.key, owner)).rejects.toThrow();
+  await db.syncQueue.delete(pending.operationId);
+  await expect(cancelUnsentWorkoutPreparation(pending.operationId, owner)).rejects.toThrow("уже отправлялось");
+  expect(await readWorkoutPreparationDraft(pending.key, owner)).not.toBeNull();
 });
 it("does not send a preparation cancelled while its preview is loading", async () => {
   await loadWorkoutPreparation(context);

@@ -168,7 +168,7 @@ export async function cancelUnsentWorkoutPreparation(operationId: string, owner:
     checkOwner(owner);
     const queued = await db.syncQueue.get(operationId);
     const key = `${prefix(owner)}op:${operationId}`;
-    if (!queued || queued.ownerUserId !== owner || queued.type !== "customize_workout" || queued.payload.draftKey !== key)
+    if (queued && (queued.ownerUserId !== owner || queued.type !== "customize_workout" || queued.payload.draftKey !== key))
       throw new Error("Изменение не найдено. Обновите экран");
     const draft = await readWorkoutPreparationDraft(key, owner);
     if (!draft || draft.operationId !== operationId) throw new Error("Подготовка не найдена. Изменения сохранены");

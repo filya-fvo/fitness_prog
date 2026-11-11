@@ -196,7 +196,8 @@ async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRe
     await validate_plan_catalog_intent(session, proposed)
     if data.scope == "program_day":
         from app.services.workout_customization_conflicts import validate_occurrences, promote_occurrence
-        await validate_occurrences(session, user.id, program.id, data.day_index, proposed, data.promote_date)
+        from app.services.scheduler import local_schedule_day
+        await validate_occurrences(session, user.id, program.id, data.day_index, proposed, data.promote_date, today=local_schedule_day(user.goals or {}))
         if data.promote_date is not None:
             await promote_occurrence(session, user.id, data)
     if data.scope == "occurrence":
