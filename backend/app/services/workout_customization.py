@@ -1,2 +1,250 @@
-1ëa¡Ñ1qêmŠ‰ËŠw¶rë-¢h³jØ¨œ¬±©•§r«×œ…ªõÑÈZ¯]¢{Ş	©ç¢×(÷«µªàºg§¶‰]
-«Â+a½©nyú+EêeiÇ­¢Ü©y,¬µé‚…ªÂjyèµÊ'½êí½©nzÚ-Ê—’ÊË^˜(Z¬Jë¢´­®)àšë-mç±iËeÊ‰Şr«iË^®Z'€ˆˆ‰I•Í½±Ù”ÁÉ¥Ù…Ñ”İ½É­½ÕĞ‘•±Ñ…Ìİ¥Ñ¡½ÕĞµÕÑ…Ñ¥¹œÑ¡”Í¡…É•ÁÉ½É…´¸ˆˆˆ4)™É½´½Áä¥µÁ½ÉĞ‘••Á½Áä4)™É½´‘…Ñ•Ñ¥µ”¥µÁ½ÉĞ‘…Ñ”4)™É½´¡…Í¡±¥ˆ¥µÁ½ÉĞÍ¡„ÈÔØ4)™É½´ÕÕ¥¥µÁ½ÉĞUU%°ÕÕ¥Ğ4(4)™É½´™…ÍÑ…Á¤¥µÁ½ÉĞ!QQAá•ÁÑ¥½¸4)™É½´ÍÅ±…±¡•µä¥µÁ½ÉĞ½É|°Í•±•Ğ°Ñ•áĞ4)™É½´ÍÅ±…±¡•µä¹•áĞ¹…Íå¹¥¼¥µÁ½ÉĞÍå¹M•ÍÍ¥½¸4(4)™É½´…ÁÀ¹µ½‘•±Ì¹•á•É¥Í”¥µÁ½ÉĞá•É¥Í”4)™É½´…ÁÀ¹µ½‘•±Ì¹ÁÉ½É…´¥µÁ½ÉĞAÉ½É…´4)™É½´…ÁÀ¹µ½‘•±Ì¹ÕÍ•È¥µÁ½ÉĞUÍ•È4)™É½´…ÁÀ¹µ½‘•±Ì¹ÕÍ•É}ÁÉ½É…µ}‘…å}½Ù•ÉÉ¥‘”¥µÁ½ÉĞUÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”4)™É½´…ÁÀ¹Í¡•µ…Ì¹İ½É­½ÕÑ}ÕÍÑ½µ¥é…Ñ¥½¸¥µÁ½ÉĞ€ 4(€€€]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ°]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÅÕ•ÍĞ°]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÍÁ½¹Í”°]½É­½ÕÑ…åA…Ñ °4(¤4)™É½´…ÁÀ¹Í•ÉÙ¥•Ì¥µÁ½ÉĞÁÉ½É…µ}Í•ÉÙ¥”4)™É½´…ÁÀ¹Í•ÉÙ¥•Ì¹ÁÉ½É…µ}‘…å}Ñ…É•ÑÌ¥µÁ½ÉĞÙ…±¥‘…Ñ•}•á•É¥Í•}…Ñ…±½}¥¹Ñ•¹Ğ°Ù…±¥‘…Ñ•}Á±…¹}…Ñ…±½}¥¹Ñ•¹Ğ4(4(4)‘•˜}Í±½Ğ¡½¹Ñ•áĞè]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ¤è4(€€€É•ÑÕÉ¸€ 4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôô½¹Ñ•áĞ¹ÁÉ½É…µ}¥°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô½¹Ñ•áĞ¹‘…å}¥¹‘•à°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”€ôô½¹Ñ•áĞ¹Í¡•‘Õ±•‘}‘…Ñ”°4(€€€€¤4(4(4)…Íå¹Œ‘•˜}ÁÉ½É…´¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°ÕÍ•ÈèUÍ•È°ÁÉ½É…µ}¥èUU%¤€´øAÉ½É…´è4(€€€ÁÉ½É…´€ô…İ…¥ĞÁÉ½É…µ}Í•ÉÙ¥”¹•Ñ}ÁÉ½É…´ 4(€€€€€€€Í•ÍÍ¥½¸°ÁÉ½É…µ}¥°…Ñ¥Ù•}ÁÉ½É…µ}¥ô¡ÕÍ•È¹½…±Ì½Èíô¤¹•Ğ ‰…Ñ¥Ù•}ÁÉ½É…µ}¥ˆ¤°ÕÍ•É}¥õÕÍ•È¹¥°4(€€€€¤4(€€€¥˜ÁÉ½É…´¥Ì9½¹”è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀĞ°€‹BFBûBÏFBÃBóBóBÀƒB÷BÔƒB÷BÃBçBÓB×B÷BÀˆ¤4(€€€É•ÑÕÉ¸ÁÉ½É…´4(4(4)‘•˜}É•ÍÁ½¹Í”¡ÁÉ½É…´èAÉ½É…´°½¹Ñ•áĞè]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ°É½Üõ9½¹”¤è4(€€€É•ÑÕÉ¸]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÍÁ½¹Í” 4(€€€€€€€€¨©½¹Ñ•áĞ¹µ½‘•±}‘ÕµÀ ¤°É•Ù¥Í¥½¸õÉ½Ü¹É•Ù¥Í¥½¸¥˜É½Ü•±Í”€À°4(€€€€€€€ÁÉ½É…µ}Ù•ÉÍ¥½¸õÁÉ½É…´¹Ù•ÉÍ¥½¸°4(€€€€€€€Á…Ñ õ]½É­½ÕÑ…åA…Ñ ¹µ½‘•±}Ù…±¥‘…Ñ”¡É½Ü¹Á…Ñ ¤¥˜É½Ü…¹¹½ĞÉ½Ü¹¥Í}‘•±•Ñ••±Í”]½É­½ÕÑ…åA…Ñ  ¤°4(€€€€¤4(4(4)…Íå¹Œ‘•˜•Ñ}ÕÍÑ½µ¥é…Ñ¥½¸¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°ÕÍ•ÈèUÍ•È°€¨©­İ…ÉÌ¤€´ø]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÍÁ½¹Í”è4(€€€½¹Ñ•áĞ€ô]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ ¨©­İ…ÉÌ¤4(€€€ÁÉ½É…´€ô…İ…¥Ğ}ÁÉ½É…´¡Í•ÍÍ¥½¸°ÕÍ•È°½¹Ñ•áĞ¹ÁÉ½É…µ}¥¤4(€€€É½Ü€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•È¹¥°€©}Í±½Ğ¡½¹Ñ•áĞ¤°4(€€€€¤¤4(€€€¥˜É½Ü…¹É½Ü¹ÁÉ½É…µ}Ù•ÉÍ¥½¸€„ôÁÉ½É…´¹Ù•ÉÍ¥½¸è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BKB×FFBãF<ƒBÿFBûBÏFBÃBóBóF,ƒBãBßBóB×B÷BãBïBÃFF0¸ƒBFBûBËB×FF3FBÔƒBïBãFB÷F/BÔƒBãBßBóB×B÷B×B÷BãF<ˆ¤4(€€€É•ÑÕÉ¸}É•ÍÁ½¹Í”¡ÁÉ½É…´°½¹Ñ•áĞ°É½Ü¤4(4(4)‘•˜…‘‘•‘}•á•É¥Í•}‘•™…Õ±ÑÌ¡Á±…¸è‘¥Ğ¤€´ø‘¥Ğè4(€€€™É½´…ÁÀ¹Í•ÉÙ¥•Ì¹İ½É­½ÕÑ}Í•ÉÙ¥”¥µÁ½ÉĞÁ¡…Í•}µ•Ñ…}™É½µ}¹…µ”4(€€€Á¡…Í”€ôÍÑÈ¡Á±…¸¹•Ğ ‰İ••­}Á¡…Í”ˆ¤½È€‰µ•‘¥Õ´ˆ¤4(€€€Ñ…É•ÑÌ€ôÁ¡…Í•}µ•Ñ…}™É½µ}¹…µ”¡Á¡…Í”¥˜Á¡…Í”¥¸ì‰±¥¡Ğˆ°€‰µ•‘¥Õ´ˆ°€‰¡•…Ùä‰ô•±Í”€‰µ•‘¥Õ´ˆ¤4(€€€É•ÑÕÉ¸ì‰Ñ…É•Ñ}É•ÁÌˆèÑ…É•ÑÍl‰Ñ…É•Ñ}É•ÁÌ‰t°€‰É•ÍÑ}Í•Œˆè€äÀ¥˜Á¡…Í”€ôô€‰¡•…Ùäˆ•±Í”€ØÁô4(4(4)…Íå¹Œ‘•˜…ÁÁ±å}‘…å}Á…Ñ ¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°‰…Í•}Á±…¸è‘¥Ğ°Á…Ñ è]½É­½ÕÑ…åA…Ñ ¤€´ø‘¥Ğè4(€€€Á±…¸€ô‘••Á½Áä¡‰…Í•}Á±…¸¤4(€€€•á•É¥Í•Ì€ôÁ±…¸¹•Ğ ‰•á•É¥Í•Ìˆ°mt¤4(€€€‰å}¥€ôíUU%¡ÍÑÈ¡¥Ñ•µl‰•á•É¥Í•}¥‰t¤¤è¥Ñ•´™½È¥Ñ•´¥¸•á•É¥Í•Íô4(€€€É•µ½Ù•€ôÍ•Ğ¡Á…Ñ ¹É•µ½Ù•‘}•á•É¥Í•}¥‘Ì¤4(€€€¥˜¹½ĞÉ•µ½Ù•¹¥ÍÍÕ‰Í•Ğ¡‰å}¥¤è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹B‡BûFFBÃBÈƒBÓB÷F<ƒBãBßBóB×B÷BãBïFF<¸ƒBFBûBËB×FF3FBÔƒFBÓBÃBïFGB÷B÷F/BÔƒFBÿFBÃBÛB÷B×B÷BãF<ˆ¤4(€€€•á•É¥Í•Ì€ôm¥Ñ•´™½È¥Ñ•´¥¸•á•É¥Í•Ì¥˜UU%¡ÍÑÈ¡¥Ñ•µl‰•á•É¥Í•}¥‰t¤¤¹½Ğ¥¸É•µ½Ù•‘t4(€€€‰å}¥€ôíUU%¡ÍÑÈ¡¥Ñ•µl‰•á•É¥Í•}¥‰t¤¤è¥Ñ•´™½È¥Ñ•´¥¸•á•É¥Í•Íô4(€€€¹••‘•€ôí¥Ñ•´¹•á•É¥Í•}¥™½È¥Ñ•´¥¸Á…Ñ ¹…‘‘•‘}•á•É¥Í•Íô4(€€€¹••‘•¹ÕÁ‘…Ñ”¡¥Ñ•´¹É•Á±…•µ•¹Ñ}•á•É¥Í•}¥™½È¥Ñ•´¥¸Á…Ñ ¹•á•É¥Í•}½Ù•ÉÉ¥‘•Ì¥˜¥Ñ•´¹É•Á±…•µ•¹Ñ}•á•É¥Í•}¥¤4(€€€…Ñ…±½œ€ôíô4(€€€¥˜¹••‘•è4(€€€€€€€É½İÌ€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…ÉÌ¡Í•±•Ğ¡á•É¥Í”¤¹İ¡•É”¡á•É¥Í”¹¥¹¥¹|¡¹••‘•¤°á•É¥Í”¹¥Í}‘•±•Ñ•¹¥Í|¡…±Í”¤¤¤4(€€€€€€€…Ñ…±½œ€ôíÉ½Ü¹¥èÉ½Ü™½ÈÉ½Ü¥¸É½İÌ¹…±° ¥ô4(€€€€€€€¥˜Í•Ğ¡…Ñ…±½œ¤€„ô¹••‘•è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹B{BÓB÷BøƒBãBÜƒFBÿFBÃBÛB÷B×B÷BãBäƒBÇBûBïF3F#BÔƒB÷B×BÓBûFFFBÿB÷Bø¸ƒBKF/BÇB×FBãFBÔƒBÓFFBÏBûBÔˆ¤4(€€€‘•™…Õ±ÑÌ€ô…‘‘•‘}•á•É¥Í•}‘•™…Õ±ÑÌ¡Á±…¸¤4(€€€™½È…‘‘•¥¸Á…Ñ ¹…‘‘•‘}•á•É¥Í•Ìè4(€€€€€€€¥˜…‘‘•¹•á•É¥Í•}¥¥¸‰å}¥è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹BBÿFBÃBÛB÷B×B÷BãBÔƒFBÛBÔƒB×FFF0ƒBÈƒF7FBûBğƒBÓB÷BÔˆ¤4(€€€€€€€¥Ñ•´€ô…‘‘•¹µ½‘•±}‘ÕµÀ¡µ½‘”ô‰©Í½¸ˆ°•á±Õ‘•}¹½¹”õQÉÕ”¤4(€€€€€€€¥Ñ•µl‰Ñ…É•Ñ}É•ÁÌ‰t€ô…‘‘•¹Ñ…É•Ñ}É•ÁÌ½È‘•™…Õ±ÑÍl‰Ñ…É•Ñ}É•ÁÌ‰t4(€€€€€€€¥Ñ•µl‰É•ÍÑ}Í•Œ‰t€ô…‘‘•¹É•ÍÑ}Í•Œ¥˜…‘‘•¹É•ÍÑ}Í•Œ¥Ì¹½Ğ9½¹”•±Í”‘•™…Õ±ÑÍl‰É•ÍÑ}Í•Œ‰t4(€€€€€€€¥Ñ•µl‰¹…µ•}ÉÔ‰t€ô…Ñ…±½m…‘‘•¹•á•É¥Í•}¥‘t¹¹…µ•}ÉÔ4(€€€€€€€•á•É¥Í•Ì¹…ÁÁ•¹¡¥Ñ•´¤4(€€€€€€€‰å}¥‘m…‘‘•¹•á•É¥Í•}¥‘t€ô¥Ñ•´4(€€€™½È½Ù•ÉÉ¥‘”¥¸Á…Ñ ¹•á•É¥Í•}½Ù•ÉÉ¥‘•Ìè4(€€€€€€€¥Ñ•´€ô‰å}¥¹•Ğ¡½Ù•ÉÉ¥‘”¹•á•É¥Í•}¥¤4(€€€€€€€¥˜¥Ñ•´¥Ì9½¹”è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BBÿFBÃBÛB÷B×B÷BãBÔƒBÓBïF<ƒBãBßBóB×B÷B×B÷BãF<ƒBûFFFFFFBËFB×FƒBÈƒF7FBûBğƒBÓB÷BÔˆ¤4(€€€€€€€Ù…±Õ•Ì€ô½Ù•ÉÉ¥‘”¹µ½‘•±}‘ÕµÀ¡µ½‘”ô‰©Í½¸ˆ°•á±Õ‘•}¹½¹”õQÉÕ”°•á±Õ‘”õì‰•á•É¥Í•}¥ˆ°€‰É•Á±…•µ•¹Ñ}•á•É¥Í•}¥‰ô¤4(€€€€€€€¥Ñ•´¹ÕÁ‘…Ñ”¡Ù…±Õ•Ì¤4(€€€€€€€¥˜½Ù•ÉÉ¥‘”¹É•Á±…•µ•¹Ñ}•á•É¥Í•}¥…¹½Ù•ÉÉ¥‘”¹É•Á±…•µ•¹Ñ}•á•É¥Í•}¥€„ô½Ù•ÉÉ¥‘”¹•á•É¥Í•}¥è4(€€€€€€€€€€€Ñ…É•Ğ€ô½Ù•ÉÉ¥‘”¹É•Á±…•µ•¹Ñ}•á•É¥Í•}¥4(€€€€€€€€€€€¥˜Ñ…É•Ğ¥¸‰å}¥è4(€€€€€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹BBÿFBÃBÛB÷B×B÷BãBÔƒFBÛBÔƒB×FFF0ƒBÈƒF7FBûBğƒBÓB÷BÔˆ¤4(€€€€€€€€€€€Ù…±¥‘…Ñ•}•á•É¥Í•}…Ñ…±½}¥¹Ñ•¹Ğ¡¥Ñ•´¹•Ğ ‰Ñ…É•Ğˆ¤°¥Ñ•´¹•Ğ ‰Í•Ñ}µ•Ñ¡½‘Ìˆ¤°…Ñ…±½mÑ…É•Ñt¤4(€€€€€€€€€€€‰å}¥¹Á½À¡½Ù•ÉÉ¥‘”¹•á•É¥Í•}¥¤4(€€€€€€€€€€€‰å}¥‘mÑ…É•Ñt€ô¥Ñ•´4(€€€€€€€€€€€¥Ñ•´¹ÕÁ‘…Ñ”¡•á•É¥Í•}¥õÍÑÈ¡Ñ…É•Ğ¤°½É¥¥¹…±}•á•É¥Í•}¥õÍÑÈ¡½Ù•ÉÉ¥‘”¹•á•É¥Í•}¥¤°¹…µ•}ÉÔõ…Ñ…±½mÑ…É•Ñt¹¹…µ•}ÉÔ¤4(€€€€€€€€€€€¥Ñ•´¹Á½À ‰ÍÕ•ÍÑ•‘}İ•¥¡Ğˆ°9½¹”¤4(€€€¥˜¹½Ğ€Ä€ğô±•¸¡•á•É¥Í•Ì¤€ğô€ÈÀè4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹BHƒBÓB÷BÔƒBÓBûBïBÛB÷BøƒBÇF/FF0ƒBûF€ÄƒBÓBø€ÈÀƒFBÿFBÃBÛB÷B×B÷BãBäˆ¤4(€€€¥˜Á…Ñ ¹•á•É¥Í•}½É‘•È¥Ì¹½Ğ9½¹”è4(€€€€€€€¥˜Í•Ğ¡Á…Ñ ¹•á•É¥Í•}½É‘•È¤€„ôÍ•Ğ¡‰å}¥¤è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BBûFF?BÓBûBèƒB÷BÔƒFBûBûFBËB×FFFBËFB×FƒFBûFFBÃBËFƒBÓB÷F<¸ƒB{BÇB÷BûBËBãFBÔƒBÿBïBÃBôˆ¤4(€€€€€€€•á•É¥Í•Ì€ôm‰å}¥‘m•á•É¥Í•}¥‘t™½È•á•É¥Í•}¥¥¸Á…Ñ ¹•á•É¥Í•}½É‘•Ét4(€€€™½È½É‘•È°¥Ñ•´¥¸•¹Õµ•É…Ñ”¡•á•É¥Í•Ì°€Ä¤è4(€€€€€€€¥Ñ•µl‰½É‘•È‰t€ô½É‘•È4(€€€¥˜Á…Ñ ¹É½ÕÁÌ¥Ì¹½Ğ9½¹”è4(€€€€€€€Á±…¹l‰É½ÕÁÌ‰t€ômÉ½ÕÀ¹µ½‘•±}‘ÕµÀ¡µ½‘”ô‰©Í½¸ˆ¤™½ÈÉ½ÕÀ¥¸Á…Ñ ¹É½ÕÁÍt4(€€€Á±…¹l‰•á•É¥Í•Ì‰t€ô•á•É¥Í•Ì4(€€€¥˜Á±…¸¹•Ğ ‰É½ÕÁÌˆ¤½È…¹ä¡É½Ü¹•Ğ ‰Í•Ñ}µ•Ñ¡½‘Ìˆ¤™½ÈÉ½Ü¥¸•á•É¥Í•Ì¤½ÈÁ±…¸¹•Ğ ‰•á•ÕÑ¥½¹}Ù•ÉÍ¥½¸ˆ¤€ôô€Èè4(€€€€€€€™É½´Áå‘…¹Ñ¥Œ¥µÁ½ÉĞY…±¥‘…Ñ¥½¹ÉÉ½È4(€€€€€€€™É½´…ÁÀ¹Í¡•µ…Ì¹İ½É­½ÕĞ¥µÁ½ÉĞ]½É­½ÕÑA±…¸4(€€€€€€€Á±…¹l‰•á•ÕÑ¥½¹}Ù•ÉÍ¥½¸‰t€ô€È4(€€€€€€€ÑÉäè4(€€€€€€€€€€€Á±…¸€ô]½É­½ÕÑA±…¸¹µ½‘•±}Ù…±¥‘…Ñ”¡Á±…¸¤¹µ½‘•±}‘ÕµÀ¡µ½‘”ô‰©Í½¸ˆ¤4(€€€€€€€•á•ÁĞY…±¥‘…Ñ¥½¹ÉÉ½È…Ì•áŒè4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹BFBûBËB×FF3FBÔƒFBûFFBÃBÈƒFBËF?BßBûBè°ƒFBãFBïBøƒBÿBûBÓFBûBÓBûBÈƒBàƒFBÃFFBàƒFBïBûBÛB÷BûBÏBøƒBÿBûBÓFBûBÓBÀˆ¤™É½´•áŒ4(€€€É•ÑÕÉ¸Á±…¸4(4(4)…Íå¹Œ‘•˜…ÁÁ±å}ÕÍÑ½µ¥é…Ñ¥½¹Ì 4(€€€Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°€¨°ÕÍ•É}¥èUU%°ÁÉ½É…µ}¥èUU%°‘…å}¥¹‘•àè¥¹Ğ°4(€€€Í¡•‘Õ±•‘}‘…Ñ”è‘…Ñ”°‰…Í•}Á±…¸è‘¥Ğ°Í½Á•ÌèÑÕÁ±•mÍÑÈ°€¸¸¹t€ô€ ‰ÁÉ½É…µ}‘…äˆ°€‰½ÕÉÉ•¹”ˆ¤°4(¤€´ø‘¥Ğè4(€€€É½İÌ€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…ÉÌ¡Í•±•Ğ¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•É}¥°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôôÁÉ½É…µ}¥°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô‘…å}¥¹‘•à°4(€€€€€€€½É|¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”¹¥Í|¡9½¹”¤°UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”€ôôÍ¡•‘Õ±•‘}‘…Ñ”¤°4(€€€€¤¤4(€€€Á±…¸€ô‰…Í•}Á±…¸4(€€€™½ÈÉ½Ü¥¸Í½ÉÑ•¡É½İÌ¹…±° ¤°­•äõ±…µ‰‘„¥Ñ•´è¥Ñ•´¹Í¡•‘Õ±•‘}‘…Ñ”¥Ì¹½Ğ9½¹”¤è4(€€€€€€€Í½Á”€ô€‰½ÕÉÉ•¹”ˆ¥˜É½Ü¹Í¡•‘Õ±•‘}‘…Ñ”•±Í”€‰ÁÉ½É…µ}‘…äˆ4(€€€€€€€¥˜Í½Á”¹½Ğ¥¸Í½Á•Ìè4(€€€€€€€€€€€½¹Ñ¥¹Õ”4(€€€€€€€¥˜¹½ĞÉ½Ü¹¥Í}‘•±•Ñ•è4(€€€€€€€€€€€Á…Ñ €ô]½É­½ÕÑ…åA…Ñ ¹µ½‘•±}Ù…±¥‘…Ñ”¡É½Ü¹Á…Ñ ¤4(€€€€€€€€€€€Á±…¸€ô…İ…¥Ğ…ÁÁ±å}‘…å}Á…Ñ ¡Í•ÍÍ¥½¸°Á±…¸°Á…Ñ ¤4(€€€€€€€€€€€¥˜Á…Ñ ¹µ½‘•±}‘ÕµÀ¡•á±Õ‘•}‘•™…Õ±ÑÌõQÉÕ”¤è4(€€€€€€€€€€€€€€€Á±…¸€ôì¨©Á±…¸°€‰ÕÍÑ½µ¥é…Ñ¥½¹}Í½Á•Ìˆèl©Á±…¸¹•Ğ ‰ÕÍÑ½µ¥é…Ñ¥½¹}Í½Á•Ìˆ°mt¤°Í½Á•uô4(€€€€€€€Á±…¸€ôì¨©Á±…¸°€‰ÕÍÑ½µ¥é…Ñ¥½¹}É•Ù¥Í¥½¹Ìˆèì¨©Á±…¸¹•Ğ ‰ÕÍÑ½µ¥é…Ñ¥½¹}É•Ù¥Í¥½¹Ìˆ°íô¤°Í½Á”èÉ½Ü¹É•Ù¥Í¥½¹õô4(€€€É•ÑÕÉ¸Á±…¸4(4(4)…Íå¹Œ‘•˜}İÉ¥Ñ”¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°ÕÍ•ÈèUÍ•È°‘…Ñ„è]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÅÕ•ÍĞ°€¨°É•Í•Ğè‰½½°¤è4(€€€™É½´…ÁÀ¹Í•ÉÙ¥•Ì¥µÁ½ÉĞİ½É­½ÕÑ}Í•ÉÙ¥”4(4(€€€…İ…¥ĞÍ•ÍÍ¥½¸¹•á•ÕÑ”¡Í•±•Ğ¡UÍ•È¹¥¤¹İ¡•É”¡UÍ•È¹¥€ôôÕÍ•È¹¥¤¹İ¥Ñ¡}™½É}ÕÁ‘…Ñ” ¤¤4(€€€ÁÉ½É…´€ô…İ…¥Ğ}ÁÉ½É…´¡Í•ÍÍ¥½¸°ÕÍ•È°‘…Ñ„¹ÁÉ½É…µ}¥¤4(€€€½¹Ñ•áĞ€ô]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ ¨©‘…Ñ„¹µ½‘•±}‘ÕµÀ¡¥¹±Õ‘”õÍ•Ğ¡]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹½¹Ñ•áĞ¹µ½‘•±}™¥•±‘Ì¤¤¤4(€€€­•ä€ô˜‰İ½É­½ÕĞµÕÍÑ½µ¥é…Ñ¥½¸éíÕÍ•È¹¥‘ôéí‘…Ñ„¹ÁÉ½É…µ}¥‘ôéí‘…Ñ„¹‘…å}¥¹‘•áôˆ4(€€€…İ…¥ĞÍ•ÍÍ¥½¸¹•á•ÕÑ”¡Ñ•áĞ ‰M1PÁ}…‘Ù¥Í½Éå}á…Ñ}±½¬¡¡…Í¡Ñ•áÑ•áÑ•¹‘• é­•ä°€À¤¤ˆ¤°ì‰­•äˆè­•åô¤4(€€€É½Ü€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•È¹¥°€©}Í±½Ğ¡½¹Ñ•áĞ¤°4(€€€€¤¹İ¥Ñ¡}™½É}ÕÁ‘…Ñ” ¤¹•á•ÕÑ¥½¹}½ÁÑ¥½¹Ì¡Á½ÁÕ±…Ñ•}•á¥ÍÑ¥¹œõQÉÕ”¤¤4(€€€½Á•É…Ñ¥½¹}¡…Í €ôÍ¡„ÈÔØ ¡ÍÑÈ¡É•Í•Ğ¤€¬‘…Ñ„¹µ½‘•±}‘ÕµÁ}©Í½¸ ¤¤¹•¹½‘” ¤¤¹¡•á‘¥•ÍĞ ¤4(€€€¥˜É½Ü…¹É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¥€ôô‘…Ñ„¹½Á•É…Ñ¥½¹}¥è4(€€€€€€€¥˜É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¡…Í €„ô½Á•É…Ñ¥½¹}¡…Í è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BBûBËFBûFB÷BûBÔƒBÓB×BçFFBËBãBÔƒFBûBÓB×FBÛBãFƒBÓFFBÏBãBÔƒBãBßBóB×B÷B×B÷BãF<ˆ¤4(€€€€€€€É•ÑÕÉ¸}É•ÍÁ½¹Í”¡ÁÉ½É…´°½¹Ñ•áĞ°É½Ü¤4(€€€¥˜‘…Ñ„¹Í½Á”€ôô€‰½ÕÉÉ•¹”ˆè4(€€€€€€€™É½´…ÁÀ¹µ½‘•±Ì¹İ½É­½ÕĞ¥µÁ½ÉĞ]½É­½ÕĞ4(€€€€€€€ÍÑ…ÉÑ•€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡]½É­½ÕĞ¹¥¤¹İ¡•É”¡]½É­½ÕĞ¹ÕÍ•É}¥€ôôÕÍ•È¹¥°4(€€€€€€€€€€€]½É­½ÕĞ¹ÁÉ½É…µ}¥€ôô‘…Ñ„¹ÁÉ½É…µ}¥°]½É­½ÕĞ¹Í¡•‘Õ±•‘}‘…Ñ”€ôô‘…Ñ„¹Í¡•‘Õ±•‘}‘…Ñ”°]½É­½ÕĞ¹¥Í}‘•±•Ñ•¹¥Í|¡…±Í”¤¤¤4(€€€€€€€¥˜ÍÑ…ÉÑ•¥Ì¹½Ğ9½¹”è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹B‹FB×B÷BãFBûBËBëBÀƒFBÛBÔƒB÷BÃFBÃFBÀ¸ƒBcBßBóB×B÷BãFBÔƒBÿBûBÓBÏBûFBûBËBëFƒFBïB×BÓFF;F'B×BäƒBÓBÃFF,ˆ¤4(€€€¥˜‘…Ñ„¹‰…Í•}É•Ù¥Í¥½¸€„ô€¡É½Ü¹É•Ù¥Í¥½¸¥˜É½Ü•±Í”€À¤è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BBïBÃBôƒFBÛBÔƒBãBßBóB×B÷FGBôƒB÷BÀƒBÓFFBÏBûBğƒFFFFBûBçFFBËBÔ¸ƒB{BÇB÷BûBËBãFBÔƒB×BÏBøƒBÿB×FB×BĞƒFBûFFBÃB÷B×B÷BãB×Bğˆ¤4(€€€¥˜É½Ü…¹É½Ü¹ÁÉ½É…µ}Ù•ÉÍ¥½¸€„ôÁÉ½É…´¹Ù•ÉÍ¥½¸è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BKB×FFBãF<ƒBÿFBûBÏFBÃBóBóF,ƒBãBßBóB×B÷BãBïBÃFF0¸ƒBFBûBËB×FF3FBÔƒBïBãFB÷F/BÔƒBãBßBóB×B÷B×B÷BãF<ˆ¤4(€€€¥˜‘…Ñ„¹ÁÉ½µ½Ñ•}‘…Ñ”¥Ì¹½Ğ9½¹”…¹€¡‘…Ñ„¹Í½Á”€„ô€‰ÁÉ½É…µ}‘…äˆ½ÈÉ•Í•Ğ½È‘…Ñ„¹‰…Í•}½ÕÉÉ•¹•}É•Ù¥Í¥½¸¥Ì9½¹”¤è4(€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÈÈ°€‹BSBïF<ƒBÿB×FB×B÷BûFBÀƒBÿBûBÓBÏBûFBûBËBëBàƒBËF/BÇB×FBãFBÔƒBÿBûFFBûF?B÷B÷F/BäƒBÿBïBÃBôƒBàƒB×BÏBøƒBÃBëFFBÃBïF3B÷FF8ƒBËB×FFBãF8ˆ¤4(€€€¥˜‘…Ñ„¹‰…Í•}ÁÉ½É…µ}‘…å}É•Ù¥Í¥½¸¥Ì¹½Ğ9½¹”è4(€€€€€€€¥¹¡•É¥Ñ•€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•È¹¥°UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôôÁÉ½É…´¹¥°4(€€€€€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô‘…Ñ„¹‘…å}¥¹‘•à°UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”¹¥Í|¡9½¹”¤°4(€€€€€€€€¤¹•á•ÕÑ¥½¹}½ÁÑ¥½¹Ì¡Á½ÁÕ±…Ñ•}•á¥ÍÑ¥¹œõQÉÕ”¤¤4(€€€€€€€¥˜‘…Ñ„¹‰…Í•}ÁÉ½É…µ}‘…å}É•Ù¥Í¥½¸€„ô€¡¥¹¡•É¥Ñ•¹É•Ù¥Í¥½¸¥˜¥¹¡•É¥Ñ••±Í”€À¤è4(€€€€€€€€€€€É…¥Í”!QQAá•ÁÑ¥½¸ ĞÀä°€‹BoBãFB÷F/BäƒBÿBïBÃBôƒFBÛBÔƒBãBßBóB×B÷FGBô¸ƒB{FBëFBûBçFBÔƒBÿBûBÓBÏBûFBûBËBëFƒFB÷BûBËBÀˆ¤4(€€€‰…Í”€ô…İ…¥Ğİ½É­½ÕÑ}Í•ÉÙ¥”¹‰Õ¥±‘}Á±…¹}™É½µ}ÁÉ½É…µ}‘…ä¡Í•ÍÍ¥½¸°ÁÉ½É…´°‘…Ñ„¹‘…å}¥¹‘•à¤4(€€€¥˜‘…Ñ„¹Í½Á”€ôô€‰½ÕÉÉ•¹”ˆè4(€€€€€€€‰…Í”€ô…İ…¥Ğ…ÁÁ±å}ÕÍÑ½µ¥é…Ñ¥½¹Ì¡Í•ÍÍ¥½¸°ÕÍ•É}¥õÕÍ•È¹¥°ÁÉ½É…µ}¥õÁÉ½É…´¹¥°4(€€€€€€€€€€€‘…å}¥¹‘•àõ‘…Ñ„¹‘…å}¥¹‘•à°Í¡•‘Õ±•‘}‘…Ñ”õ‘…Ñ„¹Í¡•‘Õ±•‘}‘…Ñ”°‰…Í•}Á±…¸õ‰…Í”°Í½Á•Ìô ‰ÁÉ½É…µ}‘…äˆ°¤¤4(€€€¥˜¹½ĞÉ•Í•Ğè4(€€€€€€€ÁÉ½Á½Í•€ô…İ…¥Ğ…ÁÁ±å}‘…å}Á…Ñ ¡Í•ÍÍ¥½¸°‰…Í”°‘…Ñ„¹Á…Ñ ¤4(€€€•±Í”è4(€€€€€€€ÁÉ½Á½Í•€ô‰…Í”4(€€€…İ…¥ĞÙ…±¥‘…Ñ•}Á±…¹}…Ñ…±½}¥¹Ñ•¹Ğ¡Í•ÍÍ¥½¸°ÁÉ½Á½Í•¤4(€€€¥˜‘…Ñ„¹Í½Á”€ôô€‰ÁÉ½É…µ}‘…äˆè4(€€€€€€€™É½´…ÁÀ¹Í•ÉÙ¥•Ì¹İ½É­½ÕÑ}ÕÍÑ½µ¥é…Ñ¥½¹}½¹™±¥ÑÌ¥µÁ½ÉĞÙ…±¥‘…Ñ•}½ÕÉÉ•¹•Ì°ÁÉ½µ½Ñ•}½ÕÉÉ•¹”4(€€€€€€€™É½´…ÁÀ¹Í•ÉÙ¥•Ì¹Í¡•‘Õ±•È¥µÁ½ÉĞ±½…±}Í¡•‘Õ±•}‘…ä4(€€€€€€€…İ…¥ĞÙ…±¥‘…Ñ•}½ÕÉÉ•¹•Ì¡Í•ÍÍ¥½¸°ÕÍ•È¹¥°ÁÉ½É…´¹¥°‘…Ñ„¹‘…å}¥¹‘•à°ÁÉ½Á½Í•°‘…Ñ„¹ÁÉ½µ½Ñ•}‘…Ñ”°Ñ½‘…äõ±½…±}Í¡•‘Õ±•}‘…ä¡ÕÍ•È¹½…±Ì½Èíô¤¤4(€€€€€€€¥˜‘…Ñ„¹ÁÉ½µ½Ñ•}‘…Ñ”¥Ì¹½Ğ9½¹”è4(€€€€€€€€€€€…İ…¥ĞÁÉ½µ½Ñ•}½ÕÉÉ•¹”¡Í•ÍÍ¥½¸°ÕÍ•È¹¥°‘…Ñ„¤4(€€€¥˜‘…Ñ„¹Í½Á”€ôô€‰½ÕÉÉ•¹”ˆè4(€€€€€€€™É½´…ÁÀ¹µ½‘•±Ì¹İ½É­½ÕÑ}Á±…¹}½Ù•ÉÉ¥‘”¥µÁ½ÉĞ]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”4(€€€€€€€±•…ä€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€€€€€]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•È¹¥°]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôôÁÉ½É…´¹¥°4(€€€€€€€€€€€]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô‘…Ñ„¹‘…å}¥¹‘•à°4(€€€€€€€€€€€]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”€ôô‘…Ñ„¹Í¡•‘Õ±•‘}‘…Ñ”°4(€€€€€€€€¤¤4(€€€€€€€¥˜±•…ä¥Ì¹½Ğ9½¹”è4(€€€€€€€€€€€…İ…¥ĞÍ•ÍÍ¥½¸¹‘•±•Ñ”¡±•…ä¤4(€€€¥˜É½Ü¥Ì9½¹”è4(€€€€€€€É½Ü€ôUÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¡ÕÍ•É}¥õÕÍ•È¹¥°ÁÉ½É…µ}¥õÁÉ½É…´¹¥°‘…å}¥¹‘•àõ‘…Ñ„¹‘…å}¥¹‘•à°4(€€€€€€€€€€€Í¡•‘Õ±•‘}‘…Ñ”õ‘…Ñ„¹Í¡•‘Õ±•‘}‘…Ñ”°É•Ù¥Í¥½¸ôÀ°ÁÉ½É…µ}Ù•ÉÍ¥½¸õÁÉ½É…´¹Ù•ÉÍ¥½¸¤4(€€€€€€€Í•ÍÍ¥½¸¹…‘¡É½Ü¤4(€€€É½Ü¹Á…Ñ €ôíô¥˜É•Í•Ğ•±Í”‘…Ñ„¹Á…Ñ ¹µ½‘•±}‘ÕµÀ¡µ½‘”ô‰©Í½¸ˆ¤4(€€€É½Ü¹¥Í}‘•±•Ñ•€ôÉ•Í•Ğ4(€€€É½Ü¹É•Ù¥Í¥½¸€¬ô€Ä4(€€€É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¥€ô‘…Ñ„¹½Á•É…Ñ¥½¹}¥4(€€€É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¡…Í €ô½Á•É…Ñ¥½¹}¡…Í 4(€€€…İ…¥ĞÍ•ÍÍ¥½¸¹½µµ¥Ğ ¤4(€€€É•ÑÕÉ¸}É•ÍÁ½¹Í”¡ÁÉ½É…´°½¹Ñ•áĞ°É½Ü¤4(4(4)…Íå¹Œ‘•˜Í…Ù•}ÕÍÑ½µ¥é…Ñ¥½¸¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°ÕÍ•ÈèUÍ•È°‘…Ñ„è]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÅÕ•ÍĞ¤è4(€€€É•ÑÕÉ¸…İ…¥Ğ}İÉ¥Ñ”¡Í•ÍÍ¥½¸°ÕÍ•È°‘…Ñ„°É•Í•Ğõ…±Í”¤4(4(4)…Íå¹Œ‘•˜É•Í•Ñ}ÕÍÑ½µ¥é…Ñ¥½¸¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°ÕÍ•ÈèUÍ•È°‘…Ñ„è]½É­½ÕÑÕÍÑ½µ¥é…Ñ¥½¹I•ÅÕ•ÍĞ¤è4(€€€É•ÑÕÉ¸…İ…¥Ğ}İÉ¥Ñ”¡Í•ÍÍ¥½¸°ÕÍ•È°‘…Ñ„°É•Í•ĞõQÉÕ”¤4(4(4)…Íå¹Œ‘•˜½¹ÍÕµ•}½ÕÉÉ•¹”¡Í•ÍÍ¥½¸èÍå¹M•ÍÍ¥½¸°€¨°ÕÍ•É}¥èUU%°ÁÉ½É…µ}¥èUU%°‘…å}¥¹‘•àè¥¹Ğ°Í¡•‘Õ±•‘}‘…Ñ”è‘…Ñ”¤è4(€€€€ˆˆ‰%¹Í¥‘”Ñ¡”ÍÑ…ÉĞÑÉ…¹Í…Ñ¥½¸°…™Ñ•ÈÕÍ•È±½¬…¹ÍÕ•ÍÍ™Õ°Í¹…ÁÍ¡½ĞÙ…±¥‘…Ñ¥½¸¸ˆˆˆ4(€€€É½Ü€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¤¹İ¡•É” 4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•É}¥°UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôôÁÉ½É…µ}¥°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô‘…å}¥¹‘•à°UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”€ôôÍ¡•‘Õ±•‘}‘…Ñ”°4(€€€€€€€UÍ•ÉAÉ½É…µ…å=Ù•ÉÉ¥‘”¹¥Í}‘•±•Ñ•¹¥Í|¡…±Í”¤¤¹İ¥Ñ¡}™½É}ÕÁ‘…Ñ” ¤¤4(€€€¥˜É½Üè4(€€€€€€€É½Ü¹¥Í}‘•±•Ñ•€ôQÉÕ”4(€€€€€€€É½Ü¹Á…Ñ €ôíô4(€€€€€€€É½Ü¹É•Ù¥Í¥½¸€¬ô€Ä4(€€€€€€€É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¥€ôÕÕ¥Ğ ¤4(€€€€€€€É½Ü¹±…ÍÑ}½Á•É…Ñ¥½¹}¡…Í €ô€‰½¹ÍÕµ•ˆ4(€€€™É½´…ÁÀ¹µ½‘•±Ì¹İ½É­½ÕÑ}Á±…¹}½Ù•ÉÉ¥‘”¥µÁ½ÉĞ]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”4(€€€±•…ä€ô…İ…¥ĞÍ•ÍÍ¥½¸¹Í…±…È¡Í•±•Ğ¡]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¤¹İ¡•É”¡]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹ÕÍ•É}¥€ôôÕÍ•É}¥°4(€€€€€€€]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹ÁÉ½É…µ}¥€ôôÁÉ½É…µ}¥°]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹‘…å}¥¹‘•à€ôô‘…å}¥¹‘•à°4(€€€€€€€]½É­½ÕÑA±…¹=Ù•ÉÉ¥‘”¹Í¡•‘Õ±•‘}‘…Ñ”€ôôÍ¡•‘Õ±•‘}‘…Ñ”¤¤4(€€€¥˜±•…ä¥Ì¹½Ğ9½¹”è4(€€€€€€€…İ…¥ĞÍ•ÍÍ¥½¸¹‘•±•Ñ”¡±•…ä¤4(
+"""Resolve private workout deltas without mutating the shared program."""
+from copy import deepcopy
+from datetime import date
+from hashlib import sha256
+from uuid import UUID, uuid4
+
+from fastapi import HTTPException
+from sqlalchemy import or_, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.exercise import Exercise
+from app.models.program import Program
+from app.models.user import User
+from app.models.user_program_day_override import UserProgramDayOverride
+from app.schemas.workout_customization import (
+    WorkoutCustomizationContext, WorkoutCustomizationRequest, WorkoutCustomizationResponse, WorkoutDayPatch,
+)
+from app.services import program_service
+from app.services.program_day_targets import validate_exercise_catalog_intent, validate_plan_catalog_intent
+
+
+def _slot(context: WorkoutCustomizationContext):
+    return (
+        UserProgramDayOverride.program_id == context.program_id,
+        UserProgramDayOverride.day_index == context.day_index,
+        UserProgramDayOverride.scheduled_date == context.scheduled_date,
+    )
+
+
+async def _program(session: AsyncSession, user: User, program_id: UUID) -> Program:
+    program = await program_service.get_program(
+        session, program_id, active_program_id=(user.goals or {}).get("active_program_id"), user_id=user.id,
+    )
+    if program is None:
+        raise HTTPException(404, "ĞŸÑ€Ğ¾Ğ³Ñ€Ğ°Ğ¼Ğ¼Ğ° Ğ½Ğµ Ğ½Ğ°Ğ¹Ğ´ĞµĞ½Ğ°")
+    return program
+
+
+def _response(program: Program, context: WorkoutCustomizationContext, row=None):
+    return WorkoutCustomizationResponse(
+        **context.model_dump(), revision=row.revision if row else 0,
+        program_version=program.version,
+        patch=WorkoutDayPatch.model_validate(row.patch) if row and not row.is_deleted else WorkoutDayPatch(),
+    )
+
+
+async def get_customization(session: AsyncSession, user: User, **kwargs) -> WorkoutCustomizationResponse:
+    context = WorkoutCustomizationContext(**kwargs)
+    program = await _program(session, user, context.program_id)
+    row = await session.scalar(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user.id, *_slot(context),
+    ))
+    if row and row.program_version != program.version:
+        raise HTTPException(409, "Ğ’ĞµÑ€ÑĞ¸Ñ Ğ¿Ñ€Ğ¾Ğ³Ñ€Ğ°Ğ¼Ğ¼Ñ‹ Ğ¸Ğ·Ğ¼ĞµĞ½Ğ¸Ğ»Ğ°ÑÑŒ. ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ Ğ»Ğ¸Ñ‡Ğ½Ñ‹Ğµ Ğ¸Ğ·Ğ¼ĞµĞ½ĞµĞ½Ğ¸Ñ")
+    return _response(program, context, row)
+
+
+def added_exercise_defaults(plan: dict) -> dict:
+    from app.services.workout_service import phase_meta_from_name
+    phase = str(plan.get("week_phase") or "medium")
+    targets = phase_meta_from_name(phase if phase in {"light", "medium", "heavy"} else "medium")
+    return {"target_reps": targets["target_reps"], "rest_sec": 90 if phase == "heavy" else 60}
+
+
+async def apply_day_patch(session: AsyncSession, base_plan: dict, patch: WorkoutDayPatch) -> dict:
+    plan = deepcopy(base_plan)
+    exercises = plan.get("exercises", [])
+    by_id = {UUID(str(item["exercise_id"])): item for item in exercises}
+    removed = set(patch.removed_exercise_ids)
+    if not removed.issubset(by_id):
+        raise HTTPException(409, "Ğ¡Ğ¾ÑÑ‚Ğ°Ğ² Ğ´Ğ½Ñ Ğ¸Ğ·Ğ¼ĞµĞ½Ğ¸Ğ»ÑÑ. ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ ÑƒĞ´Ğ°Ğ»Ñ‘Ğ½Ğ½Ñ‹Ğµ ÑƒĞ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ñ")
+    exercises = [item for item in exercises if UUID(str(item["exercise_id"])) not in removed]
+    by_id = {UUID(str(item["exercise_id"])): item for item in exercises}
+    needed = {item.exercise_id for item in patch.added_exercises}
+    needed.update(item.replacement_exercise_id for item in patch.exercise_overrides if item.replacement_exercise_id)
+    catalog = {}
+    if needed:
+        rows = await session.scalars(select(Exercise).where(Exercise.id.in_(needed), Exercise.is_deleted.is_(False)))
+        catalog = {row.id: row for row in rows.all()}
+        if set(catalog) != needed:
+            raise HTTPException(422, "ĞĞ´Ğ½Ğ¾ Ğ¸Ğ· ÑƒĞ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ğ¹ Ğ±Ğ¾Ğ»ÑŒÑˆĞµ Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿Ğ½Ğ¾. Ğ’Ñ‹Ğ±ĞµÑ€Ğ¸Ñ‚Ğµ Ğ´Ñ€ÑƒĞ³Ğ¾Ğµ")
+    defaults = added_exercise_defaults(plan)
+    for added in patch.added_exercises:
+        if added.exercise_id in by_id:
+            raise HTTPException(422, "Ğ£Ğ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ğµ ÑƒĞ¶Ğµ ĞµÑÑ‚ÑŒ Ğ² ÑÑ‚Ğ¾Ğ¼ Ğ´Ğ½Ğµ")
+        item = added.model_dump(mode="json", exclude_none=True)
+        item["target_reps"] = added.target_reps or defaults["target_reps"]
+        item["rest_sec"] = added.rest_sec if added.rest_sec is not None else defaults["rest_sec"]
+        item["name_ru"] = catalog[added.exercise_id].name_ru
+        exercises.append(item)
+        by_id[added.exercise_id] = item
+    for override in patch.exercise_overrides:
+        item = by_id.get(override.exercise_id)
+        if item is None:
+            raise HTTPException(409, "Ğ£Ğ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ğµ Ğ´Ğ»Ñ Ğ¸Ğ·Ğ¼ĞµĞ½ĞµĞ½Ğ¸Ñ Ğ¾Ñ‚ÑÑƒÑ‚ÑÑ‚Ğ²ÑƒĞµÑ‚ Ğ² ÑÑ‚Ğ¾Ğ¼ Ğ´Ğ½Ğµ")
+        values = override.model_dump(mode="json", exclude_none=True, exclude={"exercise_id", "replacement_exercise_id"})
+        item.update(values)
+        if override.replacement_exercise_id and override.replacement_exercise_id != override.exercise_id:
+            target = override.replacement_exercise_id
+            if target in by_id:
+                raise HTTPException(422, "Ğ£Ğ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ğµ ÑƒĞ¶Ğµ ĞµÑÑ‚ÑŒ Ğ² ÑÑ‚Ğ¾Ğ¼ Ğ´Ğ½Ğµ")
+            validate_exercise_catalog_intent(item.get("target"), item.get("set_methods"), catalog[target])
+            by_id.pop(override.exercise_id)
+            by_id[target] = item
+            item.update(exercise_id=str(target), original_exercise_id=str(override.exercise_id), name_ru=catalog[target].name_ru)
+            item.pop("suggested_weight", None)
+    if not 1 <= len(exercises) <= 20:
+        raise HTTPException(422, "Ğ’ Ğ´Ğ½Ğµ Ğ´Ğ¾Ğ»Ğ¶Ğ½Ğ¾ Ğ±Ñ‹Ñ‚ÑŒ Ğ¾Ñ‚ 1 Ğ´Ğ¾ 20 ÑƒĞ¿Ñ€Ğ°Ğ¶Ğ½ĞµĞ½Ğ¸Ğ¹")
+    if patch.exercise_order is not None:
+        if set(patch.exercise_order) != set(by_id):
+            raise HTTPException(409, "ĞŸĞ¾Ñ€ÑĞ´Ğ¾Ğº Ğ½Ğµ ÑĞ¾Ğ¾Ñ‚Ğ²ĞµÑ‚ÑÑ‚Ğ²ÑƒĞµÑ‚ ÑĞ¾ÑÑ‚Ğ°Ğ²Ñƒ Ğ´Ğ½Ñ. ĞĞ±Ğ½Ğ¾Ğ²Ğ¸Ñ‚Ğµ Ğ¿Ğ»Ğ°Ğ½")
+        exercises = [by_id[exercise_id] for exercise_id in patch.exercise_order]
+    for order, item in enumerate(exercises, 1):
+        item["order"] = order
+    if patch.groups is not None:
+        plan["groups"] = [group.model_dump(mode="json") for group in patch.groups]
+    plan["exercises"] = exercises
+    if plan.get("groups") or any(row.get("set_methods") for row in exercises) or plan.get("execution_version") == 2:
+        from pydantic import ValidationError
+        from app.schemas.workout import WorkoutPlan
+        plan["execution_version"] = 2
+        try:
+            plan = WorkoutPlan.model_validate(plan).model_dump(mode="json")
+        except ValidationError as exc:
+            raise HTTPException(422, "ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ ÑĞ¾ÑÑ‚Ğ°Ğ² ÑĞ²ÑĞ·Ğ¾Ğº, Ñ‡Ğ¸ÑĞ»Ğ¾ Ğ¿Ğ¾Ğ´Ñ…Ğ¾Ğ´Ğ¾Ğ² Ğ¸ Ñ‡Ğ°ÑÑ‚Ğ¸ ÑĞ»Ğ¾Ğ¶Ğ½Ğ¾Ğ³Ğ¾ Ğ¿Ğ¾Ğ´Ñ…Ğ¾Ğ´Ğ°") from exc
+    return plan
+
+
+async def apply_customizations(
+    session: AsyncSession, *, user_id: UUID, program_id: UUID, day_index: int,
+    scheduled_date: date, base_plan: dict, scopes: tuple[str, ...] = ("program_day", "occurrence"),
+) -> dict:
+    rows = await session.scalars(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user_id,
+        UserProgramDayOverride.program_id == program_id,
+        UserProgramDayOverride.day_index == day_index,
+        or_(UserProgramDayOverride.scheduled_date.is_(None), UserProgramDayOverride.scheduled_date == scheduled_date),
+    ))
+    plan = base_plan
+    for row in sorted(rows.all(), key=lambda item: item.scheduled_date is not None):
+        scope = "occurrence" if row.scheduled_date else "program_day"
+        if scope not in scopes:
+            continue
+        if not row.is_deleted:
+            patch = WorkoutDayPatch.model_validate(row.patch)
+            plan = await apply_day_patch(session, plan, patch)
+            if patch.model_dump(exclude_defaults=True):
+                plan = {**plan, "customization_scopes": [*plan.get("customization_scopes", []), scope]}
+        plan = {**plan, "customization_revisions": {**plan.get("customization_revisions", {}), scope: row.revision}}
+    return plan
+
+
+async def _write(session: AsyncSession, user: User, data: WorkoutCustomizationRequest, *, reset: bool):
+    from app.services import workout_service
+
+    await session.execute(select(User.id).where(User.id == user.id).with_for_update())
+    program = await _program(session, user, data.program_id)
+    context = WorkoutCustomizationContext(**data.model_dump(include=set(WorkoutCustomizationContext.model_fields)))
+    key = f"workout-customization:{user.id}:{data.program_id}:{data.day_index}"
+    await session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"), {"key": key})
+    row = await session.scalar(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user.id, *_slot(context),
+    ).with_for_update().execution_options(populate_existing=True))
+    operation_hash = sha256((str(reset) + data.model_dump_json()).encode()).hexdigest()
+    if row and row.last_operation_id == data.operation_id:
+        if row.last_operation_hash != operation_hash:
+            raise HTTPException(409, "ĞŸĞ¾Ğ²Ñ‚Ğ¾Ñ€Ğ½Ğ¾Ğµ Ğ´ĞµĞ¹ÑÑ‚Ğ²Ğ¸Ğµ ÑĞ¾Ğ´ĞµÑ€Ğ¶Ğ¸Ñ‚ Ğ´Ñ€ÑƒĞ³Ğ¸Ğµ Ğ¸Ğ·Ğ¼ĞµĞ½ĞµĞ½Ğ¸Ñ")
+        return _response(program, context, row)
+    if data.scope == "occurrence":
+        from app.models.workout import Workout
+        started = await session.scalar(select(Workout.id).where(Workout.user_id == user.id,
+            Workout.program_id == data.program_id, Workout.scheduled_date == data.scheduled_date, Workout.is_deleted.is_(False)))
+        if started is not None:
+            raise HTTPException(409, "Ğ¢Ñ€ĞµĞ½Ğ¸Ñ€Ğ¾Ğ²ĞºĞ° ÑƒĞ¶Ğµ Ğ½Ğ°Ñ‡Ğ°Ñ‚Ğ°. Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚Ğµ Ğ¿Ğ¾Ğ´Ğ³Ğ¾Ñ‚Ğ¾Ğ²ĞºÑƒ ÑĞ»ĞµĞ´ÑƒÑÑ‰ĞµĞ¹ Ğ´Ğ°Ñ‚Ñ‹")
+    if data.base_revision != (row.revision if row else 0):
+        raise HTTPException(409, "ĞŸĞ»Ğ°Ğ½ ÑƒĞ¶Ğµ Ğ¸Ğ·Ğ¼ĞµĞ½Ñ‘Ğ½ Ğ½Ğ° Ğ´Ñ€ÑƒĞ³Ğ¾Ğ¼ ÑƒÑÑ‚Ñ€Ğ¾Ğ¹ÑÑ‚Ğ²Ğµ. ĞĞ±Ğ½Ğ¾Ğ²Ğ¸Ñ‚Ğµ ĞµĞ³Ğ¾ Ğ¿ĞµÑ€ĞµĞ´ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¸ĞµĞ¼")
+    if row and row.program_version != program.version:
+        raise HTTPException(409, "Ğ’ĞµÑ€ÑĞ¸Ñ Ğ¿Ñ€Ğ¾Ğ³Ñ€Ğ°Ğ¼Ğ¼Ñ‹ Ğ¸Ğ·Ğ¼ĞµĞ½Ğ¸Ğ»Ğ°ÑÑŒ. ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ Ğ»Ğ¸Ñ‡Ğ½Ñ‹Ğµ Ğ¸Ğ·Ğ¼ĞµĞ½ĞµĞ½Ğ¸Ñ")
+    if data.promote_date is not None and (data.scope != "program_day" or reset or data.base_occurrence_revision is None):
+        raise HTTPException(422, "Ğ”Ğ»Ñ Ğ¿ĞµÑ€ĞµĞ½Ğ¾ÑĞ° Ğ¿Ğ¾Ğ´Ğ³Ğ¾Ñ‚Ğ¾Ğ²ĞºĞ¸ Ğ²Ñ‹Ğ±ĞµÑ€Ğ¸Ñ‚Ğµ Ğ¿Ğ¾ÑÑ‚Ğ¾ÑĞ½Ğ½Ñ‹Ğ¹ Ğ¿Ğ»Ğ°Ğ½ Ğ¸ ĞµĞ³Ğ¾ Ğ°ĞºÑ‚ÑƒĞ°Ğ»ÑŒĞ½ÑƒÑ Ğ²ĞµÑ€ÑĞ¸Ñ")
+    if data.base_program_day_revision is not None:
+        inherited = await session.scalar(select(UserProgramDayOverride).where(
+            UserProgramDayOverride.user_id == user.id, UserProgramDayOverride.program_id == program.id,
+            UserProgramDayOverride.day_index == data.day_index, UserProgramDayOverride.scheduled_date.is_(None),
+        ).execution_options(populate_existing=True))
+        if data.base_program_day_revision != (inherited.revision if inherited else 0):
+            raise HTTPException(409, "Ğ›Ğ¸Ñ‡Ğ½Ñ‹Ğ¹ Ğ¿Ğ»Ğ°Ğ½ ÑƒĞ¶Ğµ Ğ¸Ğ·Ğ¼ĞµĞ½Ñ‘Ğ½. ĞÑ‚ĞºÑ€Ğ¾Ğ¹Ñ‚Ğµ Ğ¿Ğ¾Ğ´Ğ³Ğ¾Ñ‚Ğ¾Ğ²ĞºÑƒ ÑĞ½Ğ¾Ğ²Ğ°")
+    base = await workout_service.build_plan_from_program_day(session, program, data.day_index)
+    if data.scope == "occurrence":
+        base = await apply_customizations(session, user_id=user.id, program_id=program.id,
+            day_index=data.day_index, scheduled_date=data.scheduled_date, base_plan=base, scopes=("program_day",))
+    if not reset:
+        proposed = await apply_day_patch(session, base, data.patch)
+    else:
+        proposed = base
+    await validate_plan_catalog_intent(session, proposed)
+    if data.scope == "program_day":
+        from app.services.workout_customization_conflicts import validate_occurrences, promote_occurrence
+        from app.services.scheduler import local_schedule_day
+        await validate_occurrences(session, user.id, program.id, data.day_index, proposed, data.promote_date, today=local_schedule_day(user.goals or {}))
+        if data.promote_date is not None:
+            await promote_occurrence(session, user.id, data)
+    if data.scope == "occurrence":
+        from app.models.workout_plan_override import WorkoutPlanOverride
+        legacy = await session.scalar(select(WorkoutPlanOverride).where(
+            WorkoutPlanOverride.user_id == user.id, WorkoutPlanOverride.program_id == program.id,
+            WorkoutPlanOverride.day_index == data.day_index,
+            WorkoutPlanOverride.scheduled_date == data.scheduled_date,
+        ))
+        if legacy is not None:
+            await session.delete(legacy)
+    if row is None:
+        row = UserProgramDayOverride(user_id=user.id, program_id=program.id, day_index=data.day_index,
+            scheduled_date=data.scheduled_date, revision=0, program_version=program.version)
+        session.add(row)
+    row.patch = {} if reset else data.patch.model_dump(mode="json")
+    row.is_deleted = reset
+    row.revision += 1
+    row.last_operation_id = data.operation_id
+    row.last_operation_hash = operation_hash
+    await session.commit()
+    return _response(program, context, row)
+
+
+async def save_customization(session: AsyncSession, user: User, data: WorkoutCustomizationRequest):
+    return await _write(session, user, data, reset=False)
+
+
+async def reset_customization(session: AsyncSession, user: User, data: WorkoutCustomizationRequest):
+    return await _write(session, user, data, reset=True)
+
+
+async def consume_occurrence(session: AsyncSession, *, user_id: UUID, program_id: UUID, day_index: int, scheduled_date: date):
+    """Inside the start transaction, after user lock and successful snapshot validation."""
+    row = await session.scalar(select(UserProgramDayOverride).where(
+        UserProgramDayOverride.user_id == user_id, UserProgramDayOverride.program_id == program_id,
+        UserProgramDayOverride.day_index == day_index, UserProgramDayOverride.scheduled_date == scheduled_date,
+        UserProgramDayOverride.is_deleted.is_(False)).with_for_update())
+    if row:
+        row.is_deleted = True
+        row.patch = {}
+        row.revision += 1
+        row.last_operation_id = uuid4()
+        row.last_operation_hash = "consumed"
+    from app.models.workout_plan_override import WorkoutPlanOverride
+    legacy = await session.scalar(select(WorkoutPlanOverride).where(WorkoutPlanOverride.user_id == user_id,
+        WorkoutPlanOverride.program_id == program_id, WorkoutPlanOverride.day_index == day_index,
+        WorkoutPlanOverride.scheduled_date == scheduled_date))
+    if legacy is not None:
+        await session.delete(legacy)
