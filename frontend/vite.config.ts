@@ -104,6 +104,7 @@ export default defineConfig({
     // Only scripts/publish-build.mjs is allowed to promote a staged build into dist.
     outDir: ".dist-check",
     sourcemap: true,
+    minify: "terser",
     rollupOptions: {
       output: {
         manualChunks(id) {
