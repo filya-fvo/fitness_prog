@@ -28,7 +28,8 @@ export async function installMethodApi(page: Page, failSave = false) {
     for (const changed of patch.exercise_overrides) {
       const row = rows.find(row => row.exercise_id === changed.exercise_id);
       if (row) Object.assign(row, Object.fromEntries(Object.entries(changed).filter(([, value]) => value != null)),
-        changed.replacement_exercise_id ? { exercise_id: changed.replacement_exercise_id } : {});
+        changed.replacement_exercise_id ? { exercise_id: changed.replacement_exercise_id, original_exercise_id: changed.exercise_id,
+          name_ru: catalog.find(item => item.id === changed.replacement_exercise_id)?.name_ru } : {});
     }
     const ordered = patch.exercise_order ? patch.exercise_order.map(id => rows.find(row => row.exercise_id === id)!) : rows;
     const groups = patch.groups ?? source.groups;
