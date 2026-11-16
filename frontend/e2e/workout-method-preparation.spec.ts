@@ -67,6 +67,31 @@ async function openPrepared(page: import("@playwright/test").Page, failSave = fa
   return api;
 }
 
+test("replaced superset can be separated without losing either exercise", async ({ page }) => {
+  const api = await openPrepared(page);
+  await page.getByRole("button", { name: "Создать суперсет", exact: true }).click();
+  for (const name of ["Сгибания со штангой", "Разгибания на блоке"]) await page.getByRole("checkbox", { name, exact: true }).check();
+  await page.getByRole("button", { name: "Создать связку", exact: true }).click();
+  await page.getByRole("region", { name: "Сгибания со штангой", exact: true }).getByRole("button", { name: "Заменить", exact: true }).click();
+  await page.getByRole("button", { name: "Выбрать Сгибания с гантелями", exact: true }).click();
+  await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  const row = page.getByRole("region", { name: "Сгибания с гантелями", exact: true });
+  await row.getByRole("button", { name: "Разъединить суперсет", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Заменить", exact: true })).toBeFocused();
+  await expect(page.getByRole("status").filter({ hasText: "Связка разъединена" })).toHaveCount(1);
+  await expect(page.getByRole("region", { name: "Связка Суперсет", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(api.writes[1].removed_exercise_ids).toEqual([]);
+  expect(api.writes[1].exercise_overrides).toContainEqual(expect.objectContaining({ exercise_id: methodIds.curl, replacement_exercise_id: methodIds.second }));
+  await page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  await expect(page.getByRole("region", { name: "Сгибания с гантелями", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Разгибания на блоке", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Связка Суперсет", exact: true })).toHaveCount(0);
+});
+
 test("configures the last cluster as 100 kg, four plus four plus four, with two short pauses", async ({ page }) => {
   const api = await openPrepared(page);
   const row = page.getByRole("region", { name: "Сгибания со штангой", exact: true });

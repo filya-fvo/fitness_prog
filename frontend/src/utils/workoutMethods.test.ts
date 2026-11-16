@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
 import { configureWorkoutGroup, dissolveWorkoutGroup, replacePreparedExercise, removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "./workoutMethods";
-import { reorderWorkoutExercise } from "./workoutCustomization";
+import { buildWorkoutDayPatch, reorderWorkoutExercise } from "./workoutCustomization";
 const base: WorkoutPlan = { exercises: ["A", "B", "C"].map((id, i) => ({ exercise_id: id, order: i + 1, target_sets: i + 2, rest_sec: 120 })) };
 const group = { id: "group", kind: "superset" as const, exercise_ids: ["A", "C"], rounds: 3, transition_sec: 0, round_rest_sec: 90 };
 const exercise = (id: string, tags = ["load:weight_reps"]) => ({ id, name_ru: id, muscle_group: "biceps", equipment: null, tags }) as Exercise;
@@ -43,6 +43,19 @@ it("changes replacement references atomically and prevents a weighted method fro
   const methods = [{ set_number: 1, kind: "cluster" as const, parts: [0, 1].map(i => ({ target_reps: 4, target_weight: 100, pause_after_sec: i ? 0 : 20 })) }];
   const advanced = { ...next, exercises: next.exercises.map(row => row.exercise_id === "D" ? { ...row, set_methods: methods } : row) };
   expect(() => replacePreparedExercise(advanced, "D", exercise("plank", ["load:timed"]))).toThrow();
+});
+it("keeps both exercises and the replacement when a prepared superset is dissolved", () => {
+  const [a, b, replacement, groupId] = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"];
+  const source: WorkoutPlan = { exercises: [a, b].map((exercise_id, index) => ({ exercise_id, order: index + 1, target_sets: 3, rest_sec: 90 })) };
+  const grouped = configureWorkoutGroup(source, { ...group, id: groupId, exercise_ids: [a, b] });
+  const replaced = replacePreparedExercise(grouped, a, exercise(replacement));
+  const dissolved = dissolveWorkoutGroup(replaced, groupId);
+  const patch = buildWorkoutDayPatch(source, dissolved);
+  expect(dissolved.groups).toEqual([]);
+  expect(dissolved.exercises.map(row => row.exercise_id)).toEqual([replacement, b]);
+  expect(patch.removed_exercise_ids).toEqual([]);
+  expect(patch.exercise_overrides).toContainEqual(expect.objectContaining({ exercise_id: a, replacement_exercise_id: replacement }));
+  expect(patch.exercise_order).toEqual([replacement, b]);
 });
 it("does not leave methods attached to removed future set slots", () => {
   const methods = [{ set_number: 2, kind: "cluster" as const, parts: [0, 1].map(i => ({ target_reps: 4, pause_after_sec: i ? 0 : 20 })) }];

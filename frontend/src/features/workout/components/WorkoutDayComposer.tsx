@@ -6,7 +6,7 @@ import type { Exercise, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout
 import { WorkoutMethodEditor } from "./WorkoutMethodEditor";
 import { WorkoutGroupEditor, type WorkoutGroupEditorHandle } from "./WorkoutGroupEditor";
 import { WorkoutTimingPreview } from "./WorkoutTimingPreview";
-import { removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "@/utils/workoutMethods";
+import { dissolveWorkoutGroup, removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "@/utils/workoutMethods";
 import { ExerciseThumbnail } from "./ExerciseThumbnail";
 import { reorderWorkoutExercise, updateWorkoutExercise } from "@/utils/workoutCustomization";
 import { invalidMethodRaw, retainMethodRaw, type GroupProposal, type WorkoutRaw } from "./workoutEditorDraft";
@@ -32,6 +32,9 @@ type Props = {
 export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanChange, onAdd, onReplace, onOpenDetail, onPendingChange, raw: owningRaw, groupProposal, onProposalChange,
   limits = { sets: 20, exercises: 20, rest: 600, rounds: 20 }, incomplete, previewReady = true, renderFields, renderSummary, onRemove, hideAdd, groupSaveHint }: Props) {
   const groupEditor = useRef<WorkoutGroupEditorHandle>(null);
+  const replaceButtons = useRef(new Map<string, HTMLButtonElement>());
+  const [dissolvedExercise, setDissolvedExercise] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const [localGroupDraft, setGroupDraft] = useState(false);
   const [localRaw, setLocalRaw] = useState<WorkoutRaw>({});
   const raw = owningRaw ?? retainMethodRaw(plan, localRaw);
@@ -39,6 +42,12 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanCh
   const invalidRaw = invalidMethodRaw(raw);
   const pending = groupDraft || (owningRaw === undefined && invalidRaw);
   useEffect(() => { onPendingChange?.(pending); }, [onPendingChange, pending]);
+  useEffect(() => {
+    if (dissolvedExercise && !plan.groups?.some(group => group.exercise_ids.includes(dissolvedExercise))) {
+      replaceButtons.current.get(dissolvedExercise)?.focus();
+      setDissolvedExercise(null);
+    }
+  }, [dissolvedExercise, plan.groups]);
   function onChange(next: WorkoutPlan, nextRaw = raw) {
     const retained = retainMethodRaw(next, nextRaw);
     if (owningRaw === undefined) setLocalRaw(retained);
@@ -50,16 +59,19 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanCh
   function change(id: string, values: Partial<WorkoutPlanExercise>) {
     onChange(updateWorkoutExercise(plan, id, values));
   }
+  function changeGroups(next: WorkoutPlan, appliedId?: string) {
+    const changed = new Set((plan.groups ?? []).filter(group => JSON.stringify(group) !== JSON.stringify(next.groups?.find(item => item.id === group.id))).map(group => group.id));
+    if (appliedId) changed.add(appliedId);
+    onChange(next, Object.fromEntries(Object.entries(raw).filter(([key]) => !changed.has(key.split("/")[0]))));
+  }
   return <div className="space-y-3">
-    <WorkoutGroupEditor ref={groupEditor} plan={plan} raw={raw} maxRounds={limits.rounds} saveHint={groupSaveHint} proposal={groupProposal} onProposalChange={onProposalChange} disabled={disabled || incomplete} onChange={(next, appliedId) => {
-      const changed = new Set((plan.groups ?? []).filter(group => JSON.stringify(group) !== JSON.stringify(next.groups?.find(item => item.id === group.id))).map(group => group.id));
-      if (appliedId) changed.add(appliedId);
-      onChange(next, Object.fromEntries(Object.entries(raw).filter(([key]) => !changed.has(key.split("/")[0]))));
-    }} onEditingChange={setGroupDraft} />
+    <p role="status" aria-live="polite" className="sr-only">{announcement}</p>
+    <WorkoutGroupEditor ref={groupEditor} plan={plan} raw={raw} maxRounds={limits.rounds} saveHint={groupSaveHint} proposal={groupProposal} onProposalChange={onProposalChange} disabled={disabled || incomplete} onChange={changeGroups} onEditingChange={setGroupDraft} />
     {plan.exercises.map((row, index) => {
       const exercise = byId.get(row.exercise_id);
       const timed = exercise && ["timed", "cardio_machine"].includes(inferLoadType(exercise));
-      const grouped = Boolean(plan.groups?.some(group => group.exercise_ids.includes(row.exercise_id)));
+      const group = plan.groups?.find(item => item.exercise_ids.includes(row.exercise_id));
+      const grouped = Boolean(group);
       const name = row.name_ru || exercise?.name_ru || "Упражнение";
       const typedGoal = row.target ? resolveInitialWorkoutTarget({ row }).label : null;
       return <section key={row.exercise_id} className="app-card app-card-ocean p-3" aria-label={name}>
@@ -87,12 +99,18 @@ export function WorkoutDayComposer({ plan, catalog, disabled, onChange: onPlanCh
             if (value === null || (value >= 0 && value <= limits.rest)) change(row.exercise_id, { rest_sec: value });
           }} className="app-field mt-1 w-full px-2 py-2 text-base" /></label>
         </div>}
-        {grouped ? <p className="mt-2 text-xs text-tg-hint">Подходы и отдых задаются в связке. Перед удалением участника измените или распустите её.</p> : null}
+        {group ? <div className="mt-2"><p className="text-xs text-tg-hint">Подходы и отдых задаются в связке. Разъединение сохранит все упражнения.</p>
+          <button type="button" disabled={structureLocked} onClick={() => {
+            setDissolvedExercise(row.exercise_id);
+            setAnnouncement("Связка разъединена, все упражнения остались в подготовке. Не забудьте сохранить изменения.");
+            changeGroups(dissolveWorkoutGroup(plan, group.id));
+          }} className="min-h-[44px] px-2 text-sm font-medium text-tg-link disabled:opacity-30">Разъединить {group.kind === "superset" ? "суперсет" : group.kind === "triset" ? "трисет" : "круг"}</button>
+        </div> : null}
         <WorkoutMethodEditor row={row} exercise={exercise} raw={raw} disabled={locked || incomplete} onChange={(methods, nextRaw) => onChange({ ...plan, execution_version: 2,
           exercises: plan.exercises.map(item => item.exercise_id === row.exercise_id ? { ...item, set_methods: methods } : item) }, nextRaw)} />
         {!grouped ? <button type="button" disabled={structureLocked || plan.exercises.length < 2} onClick={() => groupEditor.current?.startWith(row.exercise_id)} className="min-h-[44px] px-2 text-sm font-medium text-tg-link">Суперсет / трисет</button> : null}
         <div className="mt-2 flex flex-wrap items-center gap-1">
-          <button type="button" disabled={structureLocked} onClick={() => onReplace(row)} className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
+          <button type="button" ref={element => { if (element) replaceButtons.current.set(row.exercise_id, element); else replaceButtons.current.delete(row.exercise_id); }} disabled={structureLocked} onClick={() => onReplace(row)} className="min-h-[44px] rounded-lg px-2 text-xs font-medium text-tg-link">Заменить</button>
           {exercise ? <button type="button" disabled={locked} onClick={() => onOpenDetail(exercise)} className="min-h-[44px] rounded-lg px-2 text-xs text-tg-link">Техника и описание</button> : null}
           <button type="button" aria-label={`Поднять ${name}`} disabled={structureLocked || index === 0} onClick={() => onChange(reorderWorkoutExercise(plan, row.exercise_id, -1))} className="min-h-[44px] min-w-[44px] rounded-lg text-tg-link disabled:opacity-30">↑</button>
           <button type="button" aria-label={`Опустить ${name}`} disabled={structureLocked || index === plan.exercises.length - 1} onClick={() => onChange(reorderWorkoutExercise(plan, row.exercise_id, 1))} className="min-h-[44px] min-w-[44px] rounded-lg text-tg-link disabled:opacity-30">↓</button>
