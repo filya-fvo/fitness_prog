@@ -26,7 +26,8 @@ import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTa
 import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscriptionAccess";
-import { ExerciseThumbnail } from "@/features/workout/components/ExerciseThumbnail";
+import { WorkoutReplacementPicker } from "@/features/workout/components/WorkoutReplacementPicker";
+import { rankWorkoutReplacementOptions } from "@/utils/exerciseAlternatives";
 import { WorkoutExecutionNavigator } from "@/features/workout/components/WorkoutExecutionNavigator";
 import { finishExecutionSession } from "@/db/workoutExecution";
 import { workoutClockSnapshot } from "@/utils/workoutRest";
@@ -168,8 +169,6 @@ export function ActiveWorkout() {
   const [suggestNote, setSuggestNote] = useState<string | null>(null);
   const [elapsedFinalSec, setElapsedFinalSec] = useState<number | null>(null);
   const [replaceOpen, setReplaceOpen] = useState(false);
-  const [replaceQuery, setReplaceQuery] = useState("");
-  const [replaceMuscle, setReplaceMuscle] = useState("");
   const [bulkReplacementPlan, setBulkReplacementPlan] =
     useState<BulkReplacementPlan | null>(null);
   const [aiAssistOpen, setAiAssistOpen] = useState(false);
@@ -200,6 +199,7 @@ export function ActiveWorkout() {
     return true;
   });
   const [moreOpen, setMoreOpen] = useState(false);
+  const [executionEditorOpen, setExecutionEditorOpen] = useState(false);
   const [restInputDrafts, setRestInputDrafts] = useState<Record<string, string>>({});
   const [finishOpen, setFinishOpen] = useState(false);
   const finishDialogRef = useModalAccessibility(finishOpen, () => setFinishOpen(false));
@@ -587,84 +587,10 @@ export function ActiveWorkout() {
 
   const occupiedExerciseIds = useMemo(() => new Set(exerciseIds), [exerciseIds]);
 
-  const recommendedAlternatives = useMemo(() => {
-    if (!currentExercise) return [] as Exercise[];
-    const muscle = (currentExercise.muscle_group || "").toLowerCase();
-    const equip = (currentExercise.equipment || "").toLowerCase();
-    const tags = new Set((currentExercise.tags || []).map((tg) => tg.toLowerCase()));
-    const name = (currentExercise.name_ru || "").toLowerCase();
-
-    const RELATED: Record<string, string[]> = {
-      спина: ["спина", "задние дельты", "трапеции", "поясница"],
-      грудь: ["грудь", "трицепс", "передние дельты"],
-      ноги: ["ноги", "ягодицы", "бицепс бедра", "икры"],
-      плечи: ["плечи", "передние дельты", "средние дельты", "задние дельты", "трапеции"],
-      бицепс: ["бицепс", "предплечья", "спина"],
-      трицепс: ["трицепс", "грудь", "плечи"],
-      пресс: ["пресс", "кор", "core"],
-      ягодицы: ["ягодицы", "ноги", "бицепс бедра"],
-    };
-    const related = new Set((RELATED[muscle] || [muscle]).map((x) => x.toLowerCase()).filter(Boolean));
-
-    const KEYWORDS: Array<{ re: RegExp; boost: string[] }> = [
-      { re: /тяг|row|pulldown|pull-down|подтяг/, boost: ["тяг", "подтяг", "pulldown", "row", "блок", "пуловер", "pullover"] },
-      { re: /жим|press|bench/, boost: ["жим", "press", "развод", "push", "француз"] },
-      { re: /присед|squat|выпад|lunge/, boost: ["присед", "выпад", "squat", "lunge"] },
-      { re: /станова|deadlift|румын/, boost: ["станова", "румын", "deadlift"] },
-      { re: /пуловер|pullover/, boost: ["пуловер", "pullover", "тяг", "блок", "прямыми руками"] },
-      { re: /француз|skull|трицепс|triceps/, boost: ["француз", "разгиб", "блок", "узк", "skull"] },
-      { re: /махи|развод|fly|raise/, boost: ["махи", "развод", "fly", "raise"] },
-    ];
-    const nameBoosts = KEYWORDS.filter((k) => k.re.test(name)).flatMap((k) => k.boost);
-
-    return catalog
-      .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
-      .map((ex) => {
-        let score = 0;
-        const exMuscle = (ex.muscle_group || "").toLowerCase();
-        const exName = (ex.name_ru || "").toLowerCase();
-        const exEquip = (ex.equipment || "").toLowerCase();
-        if (muscle && exMuscle === muscle) score += 6;
-        else if (exMuscle && related.has(exMuscle)) score += 3;
-        if (equip && exEquip === equip) score += 2;
-        else if (equip && exEquip && (exEquip.includes(equip) || equip.includes(exEquip))) score += 1;
-        for (const tg of ex.tags || []) {
-          if (tags.has(tg.toLowerCase())) score += 1;
-        }
-        for (const b of nameBoosts) {
-          if (exName.includes(b)) score += 2;
-        }
-        if (/гантел|штан|barbell|dumbbell/.test(name) && /блок|cable|тренаж|machine|smith/.test(exName + " " + exEquip)) {
-          score += 1;
-        }
-        return { ex, score };
-      })
-      .filter((x) => x.score >= 3)
-      .sort((a, b) => b.score - a.score || a.ex.name_ru.localeCompare(b.ex.name_ru, "ru"))
-      .slice(0, 16)
-      .map((x) => x.ex);
-  }, [catalog, currentExercise, occupiedExerciseIds]);
-
-  const replaceCatalog = useMemo(() => {
-    if (!currentExercise) return [] as Exercise[];
-    const q = replaceQuery.trim().toLowerCase();
-    return catalog
-      .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
-      .filter((ex) => {
-        if (replaceMuscle && ex.muscle_group !== replaceMuscle) return false;
-        if (!q) return true;
-        const hay = [ex.name_ru, ex.muscle_group, ex.equipment || "", ex.description || ""]
-          .join(" ")
-          .toLowerCase();
-        return hay.includes(q);
-      })
-      .slice(0, 80);
-  }, [catalog, currentExercise, occupiedExerciseIds, replaceMuscle, replaceQuery]);
-
-  const replaceMuscleGroups = useMemo(() => {
-    const set = new Set(catalog.map((c) => c.muscle_group).filter(Boolean));
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
-  }, [catalog]);
+  const recommendedAlternatives = useMemo(
+    () => rankWorkoutReplacementOptions(currentExercise, catalog, occupiedExerciseIds),
+    [catalog, currentExercise, occupiedExerciseIds],
+  );
 
   const applyReplace = useCallback(
     (ex: Exercise) => {
@@ -675,8 +601,6 @@ export function ActiveWorkout() {
         return;
       }
       setReplaceOpen(false);
-      setReplaceQuery("");
-      setReplaceMuscle("");
       setError(null);
       hapticImpact("light");
       const next = useWorkoutStore.getState();
@@ -1060,6 +984,7 @@ export function ActiveWorkout() {
         !replaceOpen &&
         !bulkReplacementPlan &&
         !finishOpen &&
+        !executionEditorOpen &&
         !addSetOpen,
     ),
     enabled: !completing,
@@ -1502,14 +1427,14 @@ export function ActiveWorkout() {
           label="Таймер тренировки"
         />
         <div className="flex shrink-0 items-center gap-2">
-          {!isV2 ? <button
+          <button
             type="button"
             onClick={toggleSimpleMode}
             className="tap-target rounded-full bg-tg-bg px-2.5 py-1.5 text-[11px] font-medium text-tg-hint"
             title={simpleMode ? "Показать все настройки" : "Режим зала"}
           >
             {simpleMode ? "Зал" : "Полный"}
-          </button> : null}
+          </button>
           <button
             type="button"
             onClick={openFinishDialog}
@@ -1639,7 +1564,8 @@ export function ActiveWorkout() {
         })}
       </div> : null}
 
-      {isV2 ? <WorkoutExecutionNavigator autoAdvance={autoAdvanceExercises} /> : null}
+      {isV2 ? <WorkoutExecutionNavigator key={`${authenticatedUserId}:${stableClientId}`} autoAdvance={autoAdvanceExercises}
+        simpleMode={simpleMode} moreOpen={moreOpen} setMoreOpen={setMoreOpen} onEditorOpenChange={setExecutionEditorOpen} /> : null}
       {!isV2 && currentExercise ? (
         <article className="app-card app-card-indigo space-y-3 p-4">
           <div className="flex items-start justify-between gap-2">
@@ -1670,8 +1596,6 @@ export function ActiveWorkout() {
                 className="tap-target text-xs text-tg-link"
                 onClick={() => {
                   setReplaceOpen(true);
-                  setReplaceQuery("");
-                  setReplaceMuscle(currentExercise.muscle_group || "");
                 }}
               >
                 Заменить
@@ -2364,103 +2288,8 @@ export function ActiveWorkout() {
               </button>
             </div>
             <div className="space-y-3 overflow-y-auto p-4" style={{ maxHeight: "70vh" }}>
-              {recommendedAlternatives.length ? (
-                <div>
-                  <p className="mb-2 text-xs font-medium text-tg-hint">Рекомендуемые замены</p>
-                  <div className="space-y-2">
-                    {recommendedAlternatives.map((ex) => (
-                      <button
-                        key={`rec-${ex.id}`}
-                        type="button"
-                        onClick={() => applyReplace(ex)}
-                        className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <ExerciseThumbnail exercise={ex} size="sm" />
-                          <span className="min-w-0">
-                          <span className="block text-sm font-medium">{ex.name_ru}</span>
-                          <span className="block text-[11px] text-tg-hint">
-                            {enumLabel(ex.muscle_group)}
-                            {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
-                          </span>
-                          </span>
-                        </span>
-                        <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-tg-hint">
-                  Нет близких рекомендаций — выберите из каталога ниже.
-                </p>
-              )}
-
-              <label className="block text-xs text-tg-hint">
-                Поиск по каталогу
-                <input
-                  type="search"
-                  value={replaceQuery}
-                  onChange={(e) => setReplaceQuery(e.target.value)}
-                  placeholder="Название, мышца, инвентарь"
-                  className="app-field mt-1 w-full"
-                />
-              </label>
-
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setReplaceMuscle("")}
-                  className={[
-                    "rounded-full px-2.5 py-1 text-[11px]",
-                    !replaceMuscle ? "app-gradient-action text-white" : "bg-tg-secondary text-tg-hint",
-                  ].join(" ")}
-                >
-                  Все
-                </button>
-                {replaceMuscleGroups.map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => setReplaceMuscle(g)}
-                    className={[
-                      "rounded-full px-2.5 py-1 text-[11px]",
-                      replaceMuscle === g
-                        ? "app-gradient-action text-white"
-                        : "bg-tg-secondary text-tg-hint",
-                    ].join(" ")}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                {replaceCatalog.length === 0 ? (
-                  <p className="text-xs text-tg-hint">Ничего не найдено.</p>
-                ) : (
-                  replaceCatalog.map((ex) => (
-                    <button
-                      key={`all-${ex.id}`}
-                      type="button"
-                      onClick={() => applyReplace(ex)}
-                      className="flex w-full items-start justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-left"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <ExerciseThumbnail exercise={ex} size="sm" />
-                        <span className="min-w-0">
-                        <span className="block text-sm font-medium">{ex.name_ru}</span>
-                        <span className="block text-[11px] text-tg-hint">
-                          {enumLabel(ex.muscle_group)}
-                          {ex.equipment ? ` · ${enumLabel(ex.equipment)}` : ""}
-                        </span>
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-xs text-tg-link">Выбрать</span>
-                    </button>
-                  ))
-                )}
-              </div>
+              <WorkoutReplacementPicker catalog={catalog} occupiedIds={occupiedExerciseIds} source={currentExercise}
+                recommended={recommendedAlternatives} onChoose={applyReplace} />
             </div>
           </div>
         </div>
@@ -2577,8 +2406,6 @@ export function ActiveWorkout() {
               onClick={() => {
                 setAiAssistOpen(false);
                 setReplaceOpen(true);
-                setReplaceQuery("");
-                setReplaceMuscle(currentExercise?.muscle_group || "");
               }}
             >
               Открыть полный список замен

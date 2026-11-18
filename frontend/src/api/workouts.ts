@@ -16,6 +16,7 @@ import type {
 
 export const workoutPlanSchema = z.object({
   execution_version: z.union([z.literal(1), z.literal(2)]).optional(),
+  active_plan_revision: z.number().int().nonnegative().optional(),
   groups: z.array(workoutGroupSchema).max(10).optional(),
   customization_scopes: z.array(z.enum(["program_day", "occurrence"])).max(2).optional(),
   customization_revisions: z.record(z.string(), z.number().int().nonnegative()).optional(),
@@ -37,6 +38,7 @@ export const workoutPlanSchema = z.object({
     set_methods: z.array(setMethodSchema).max(20).optional(),
     order: z.number(),
     target_sets: z.number(),
+    active_set_numbers: z.array(z.number().int().min(1).max(20)).min(1).max(20).nullish(),
     target_reps: z.string().nullable().optional(),
     target: explicitWorkoutTargetSchema.nullable().optional(),
     rest_sec: z.number().nullable().optional(),
@@ -290,7 +292,7 @@ const WORKOUT_RESPONSE_GRACE_MS = 5_000;
 const workoutResponseRevisions = new Map<string, number>();
 const workoutResponseKey = (id: string, owner = useUserStore.getState().user?.id) => `${owner ?? ""}:${id}`;
 
-function invalidateWorkoutResponse(workoutId: string): void {
+export function invalidateWorkoutResponse(workoutId: string): void {
   const key = workoutResponseKey(workoutId);
   recentWorkoutResponses.delete(key);
   workoutRequestsInFlight.delete(key);
@@ -370,6 +372,7 @@ export async function updateWorkoutPlan(input: {
 
 export async function addWorkoutSet(input: {
   executionVersion?: 1 | 2;
+  activePlanRevision?: number;
   executionKind?: "standard" | "drop" | "cluster";
   baseExecutionRevision?: number;
   clientOperationId?: string;
@@ -392,6 +395,7 @@ export async function addWorkoutSet(input: {
     ...(input.executionVersion === 2 ? {
       is_skipped: input.isSkipped ?? false, execution_version: 2, execution_kind: input.executionKind ?? "standard",
       base_execution_revision: input.baseExecutionRevision, client_operation_id: input.clientOperationId,
+      ...(input.activePlanRevision != null ? { active_plan_revision: input.activePlanRevision } : {}),
       parts: input.parts ?? [],
     } : {}),
     exercise_id: input.exerciseId,
@@ -410,6 +414,7 @@ export async function addWorkoutSet(input: {
 
 export async function completeWorkout(input: {
   executionVersion?: 1 | 2;
+  activePlanRevision?: number;
   workoutId: string;
   completedAt?: string;
   durationSec?: number;
@@ -419,6 +424,7 @@ export async function completeWorkout(input: {
   invalidateWorkoutResponse(input.workoutId);
   const { data } = await apiClient.put(`/workouts/${input.workoutId}/complete`, {
     ...(input.executionVersion ? { execution_version: input.executionVersion } : {}),
+    ...(input.activePlanRevision != null ? { active_plan_revision: input.activePlanRevision } : {}),
     ...(input.completedAt !== undefined ? { completed_at: input.completedAt, duration_sec: input.durationSec } : {}),
     rpe: input.rpe ?? null,
     ai_notes: input.aiNotes ?? null,

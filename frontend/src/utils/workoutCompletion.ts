@@ -23,7 +23,7 @@ export function buildWorkoutCompletionFacts(input: {
 }): WorkoutCompletionFacts {
   const completed = input.drafts.filter((draft) => draft.isCompleted);
   const completedExerciseIds = new Set(input.drafts.filter(draft => draft.isCompleted || draft.parts?.some(part => part.status === "completed")).map(draft => draft.exerciseId));
-  const totalExerciseIds = new Set(input.exerciseIds);
+  const totalExerciseIds = new Set([...input.exerciseIds, ...completedExerciseIds]);
   const compound = input.drafts.filter(draft => draft.executionKind === "cluster" || draft.executionKind === "drop");
   const parts = compound.flatMap(draft => draft.parts ?? []);
   const completedParts = parts.filter(part => part.status === "completed").length;

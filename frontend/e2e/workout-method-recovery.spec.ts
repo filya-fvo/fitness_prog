@@ -9,6 +9,20 @@ async function signals(page: Page) {
 }
 async function signalCount(page: Page) { return page.evaluate(() => (window as unknown as { executionSignals: number }).executionSignals); }
 
+test("restores a superset member from IndexedDB when the running catalog is incomplete", async ({ page }) => {
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup&catalog=partial");
+  await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeVisible();
+  await page.reload();
+
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Молитва/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Молитва", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0]).toMatchObject({ exercise_id: "44444444-4444-4444-8444-444444444444", is_completed: true });
+});
+
 test("reload between cluster parts retains facts and original deadline", async ({ page }) => {
   await page.clock.install({ time: initialTime }); await page.clock.pauseAt(new Date(initialTime.getTime() + 1000));
   const api = await installTimingApi(page);

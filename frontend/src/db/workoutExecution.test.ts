@@ -8,7 +8,7 @@ import { draftsFromWorkoutSnapshot } from "@/utils/workoutSession";
 import { buildExecutionSteps } from "@/utils/workoutExecution";
 import { remainingRestMs } from "@/utils/workoutRest";
 import type { Workout, WorkoutPlan } from "@/types/workout";
-import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, finishExecutionSession, showExecutionStep } from "./workoutExecution";
+import { beginActiveTopology, finishActiveTopology, readPendingTopology, initializeExecutionSession, commitExecutionAction, claimExecutionSignal, finishExecutionSession, showExecutionStep } from "./workoutExecution";
 
 const owner = "22222222-2222-4222-8222-222222222222";
 const client = "11111111-1111-4111-8111-111111111111";
@@ -25,6 +25,43 @@ const action = () => ({ owner, clientWorkoutId: client, action: "complete" as co
   values: { reps: "4", weight: "100", weightMode: "total" as const, durationSec: null }, autoAdvance: true });
 beforeEach(async () => { await db.delete(); await db.open(); useUserStore.setState({ user: { id: owner, subscription_status: "plus", onboarding_completed: true } }); });
 afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await db.delete(); useUserStore.setState({ user: null }); });
+
+it("recovers an interrupted plan edit and binds subsequent set and finish operations to the new revision", async () => {
+  await seed();
+  const operation = { operation_id: crypto.randomUUID(), action: "resize_exercise" as const, subject_id: exercise,
+    target_count: 2, expected_plan_revision: 0, preview_fingerprint: "a".repeat(64) };
+  await beginActiveTopology(owner, client, operation);
+  db.close(); await db.open();
+  expect(await readPendingTopology(owner, client)).toEqual(operation);
+  await expect(commitExecutionAction(action())).rejects.toThrow("Сначала завершите изменение плана");
+  await expect(finishExecutionSession({ owner, clientWorkoutId: client, actionId: crypto.randomUUID(), now: clock, rpe: 7, aiNotes: null }))
+    .rejects.toThrow("Сначала завершите изменение плана");
+  expect(await db.syncQueue.count()).toBe(0);
+
+  const resized: WorkoutPlan = { ...plan, active_plan_revision: 1, exercises: [{ ...plan.exercises[0], target_sets: 2 }] };
+  const session = await finishActiveTopology(owner, client, operation.operation_id, { ...workout, plan: resized });
+  expect(await readPendingTopology(owner, client)).toBeNull();
+  expect(await beginActiveTopology(owner, client, operation)).toBe(false);
+  expect(await readPendingTopology(owner, client)).toBeNull();
+  expect(await finishActiveTopology(owner, client, operation.operation_id, { ...workout, plan: resized })).toEqual(session);
+  expect(session.drafts).toHaveLength(2);
+  await commitExecutionAction({ ...action(), expectedRevision: session.execution!.revision });
+  await finishExecutionSession({ owner, clientWorkoutId: client, actionId: crypto.randomUUID(), now: clock, rpe: 7, aiNotes: null });
+  expect((await db.syncQueue.orderBy("createdAt").toArray()).map(item => [item.type, item.payload.activePlanRevision]))
+    .toEqual([["add_set", 1], ["complete_workout", 1]]);
+});
+
+it("a pending local set is never removed when topology change is requested", async () => {
+  await seed();
+  const recorded = await commitExecutionAction(action());
+  const operation = { operation_id: crypto.randomUUID(), action: "resize_exercise" as const, subject_id: exercise,
+    target_count: 2, preview_fingerprint: "b".repeat(64) };
+  await expect(beginActiveTopology(owner, client, operation)).rejects.toThrow();
+  expect(await readPendingTopology(owner, client)).toBeNull();
+  expect(await db.syncQueue.count()).toBe(1);
+  expect((await db.sessions.get(client))?.drafts).toEqual(recorded.session.drafts);
+});
+
 
 it("records a manually chosen later superset exercise and restores unfinished earlier work", async () => {
   const second = "55555555-5555-4555-8555-555555555555";
@@ -49,6 +86,21 @@ it("records a manually chosen later superset exercise and restores unfinished ea
     undoActionId: restored.execution!.progress.lastAction!.actionId, expectedRevision: restored.execution!.revision, autoAdvance: false });
   expect(undone.session.execution!.progress.cursor).toBe(steps[0].id);
   expect(undone.session.execution!.progress.facts[steps[1].id]).toBe("pending");
+});
+
+it("keeps a manually edited set usable when another tab changes only the viewed exercise", async () => {
+  const second = "55555555-5555-4555-8555-555555555555";
+  const two: WorkoutPlan = { execution_version: 2, exercises: [{ exercise_id: exercise, order: 1, target_sets: 1 }, { exercise_id: second, order: 2, target_sets: 1 }] };
+  const sessionWorkout = { ...workout, plan: two };
+  await initializeExecutionSession({ owner, clientWorkoutId: client, serverWorkoutId: client, workout: sessionWorkout, drafts: draftsFromWorkoutSnapshot(sessionWorkout), now: clock });
+  const steps = buildExecutionSteps(two);
+  const opened = await showExecutionStep(owner, client, steps[1].id);
+  const captured = JSON.stringify(opened.drafts.find(item => item.exerciseId === second));
+  const otherTab = await showExecutionStep(owner, client, steps[0].id);
+  const saved = await commitExecutionAction({ ...action(), stepId: steps[1].id, expectedRevision: otherTab.execution!.revision,
+    values: { ...action().values, baseDraft: captured, manualSelection: true } });
+  expect(saved.accepted).toBe(true);
+  expect(saved.session.execution!.progress.facts[steps[1].id]).toBe("completed");
 });
 
 it("restores a manually selected later cluster part with its rest and earlier work pending", async () => {
@@ -131,6 +183,19 @@ it("account change cannot commit into another owner's active session", async () 
   await seed();
   useUserStore.setState({ user: { id: "44444444-4444-4444-8444-444444444444", subscription_status: "plus", onboarding_completed: true } });
   await expect(commitExecutionAction(action())).rejects.toThrow();
+  expect(await db.syncQueue.count()).toBe(0);
+});
+
+it("does not overwrite a set whose locally saved draft changed in another tab", async () => {
+  await seed();
+  const first = (await db.sessions.get(client))!;
+  const original = JSON.stringify(first.drafts[0]);
+  first.drafts[0].note = "другие данные";
+  first.execution!.revision += 1;
+  await db.sessions.put(first);
+  await expect(commitExecutionAction({ ...action(), expectedRevision: first.execution!.revision,
+    values: { ...action().values, baseDraft: original } })).rejects.toThrow("подход изменён");
+  expect((await db.sessions.get(client))!.drafts[0].note).toBe("другие данные");
   expect(await db.syncQueue.count()).toBe(0);
 });
 

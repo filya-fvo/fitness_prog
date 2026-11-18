@@ -72,6 +72,8 @@ from app.services import scheduler as scheduler_service
 from app.services import workout_shift
 from app.services import workout_load_hints
 from app.services import workout_service
+from app.services.workout_topology import ActiveTopologyApply, ActiveTopologyRequest
+from app.services.workout_topology_apply import apply_topology, preview_topology
 
 from app.routers.workout_customizations import router as customizations_router
 
@@ -545,6 +547,26 @@ async def update_workout_plan(
 ) -> WorkoutResponse:
     workout = await workout_service.update_workout_plan(session, user, workout_id, body)
     return WorkoutResponse.model_validate(workout)
+
+
+@router.post("/{workout_id}/active-topology/preview")
+async def preview_active_workout_topology(
+    workout_id: uuid.UUID,
+    body: ActiveTopologyRequest,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    return await preview_topology(session, user, workout_id, body)
+
+
+@router.post("/{workout_id}/active-topology", response_model=WorkoutResponse)
+async def apply_active_workout_topology(
+    workout_id: uuid.UUID,
+    body: ActiveTopologyApply,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> WorkoutResponse:
+    return await apply_topology(session, user, workout_id, body)
 
 
 @router.put("/{workout_id}/complete", response_model=WorkoutResponse)

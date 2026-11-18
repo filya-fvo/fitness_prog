@@ -23,7 +23,7 @@ export function buildWorkoutHistoryGroups(workout: Workout, catalog: Exercise[])
       tags: [last?.machine_params ? "load:cardio_machine" : last?.duration_sec != null ? "load:timed" : "load:weight_reps"],
     } satisfies Exercise;
     const count = Math.max(0, Math.min(20, Math.floor(item?.target_sets || 0)));
-    const numbers = new Set([...Array.from({ length: count }, (_, index) => index + 1), ...saved.map(row => row.set_number)]);
+    const numbers = new Set([...(item?.active_set_numbers ?? Array.from({ length: count }, (_, index) => index + 1)), ...saved.map(row => row.set_number)]);
     const rows = [...numbers].sort((a, b) => a - b).map(number => {
       const row = saved.find(set => set.set_number === number);
       return row ? { row, saved: true } : { row: emptyHistorySet(workout, exercise, number, last), saved: false };

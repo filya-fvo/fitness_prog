@@ -62,6 +62,16 @@ describe("workout completion", () => {
     expect(message).not.toMatch(/рекорд|лучший/i);
   });
 
+  it("includes the recorded exercises replaced during the workout in the totals", () => {
+    const facts = buildWorkoutCompletionFacts({
+      drafts: [draft({ exerciseId: "original" }), draft({ exerciseId: "replacement" })],
+      exerciseIds: ["replacement"],
+      elapsedSec: 120,
+      rpe: 7,
+    });
+    expect(facts).toMatchObject({ completedExercises: 2, totalExercises: 2, completedSets: 2, tonnageKg: 400 });
+  });
+
   it("warns about recovery only when recorded RPE is high", () => {
     const message = buildInstantWorkoutMessage({
       elapsedSec: 1800,

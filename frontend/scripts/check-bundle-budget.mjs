@@ -206,8 +206,12 @@ const limits = {
   // total requested-feature delta to +3254 total / +3237 product B gzip.
   // Root-approved +3300 from original caps retains ~0.4 KB of headroom;
   // dependencies and largest/admin caps are unchanged; lazy overlay is 3049 B.
-  totalJsGzip: 655_550,
-  productJsGzip: 598_850,
+  // Measured against deployed 8b38c9d with the same dependency tree.
+  // Full exercise cards and active plan edits grow 657095/600395 to
+  // 663114/606418 bytes total/product. Vendor and largest chunk sizes
+  // are unchanged. Retain about 0.5 KB aggregate headroom.
+  totalJsGzip: 663_650,
+  productJsGzip: 606_950,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

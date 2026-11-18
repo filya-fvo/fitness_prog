@@ -10,6 +10,7 @@ from app.models.workout import Workout
 from app.models.workout_set_part import WorkoutSetExecutionReceipt, WorkoutSetPart
 from app.schemas.workout import WorkoutPlan, WorkoutSetResponse
 from app.schemas.workout_execution import validate_weights
+from app.services.workout_topology import PLAN_CHANGED
 
 
 UPDATE_REQUIRED = "Для этой тренировки обновите приложение. Результат сохранён на устройстве"
@@ -45,27 +46,39 @@ async def save_execution_set(session, user, workout_id, data):
         plan = WorkoutPlan.model_validate(workout.plan)
     except ValidationError as exc:
         raise HTTPException(409, "Не удалось проверить план тренировки. Результат сохранён на устройстве") from exc
-    exercise = next((row for row in plan.exercises if row.exercise_id == data.exercise_id), None)
-    if exercise is None or data.set_number > exercise.target_sets:
-        raise HTTPException(422, "Подход отсутствует в плане тренировки")
-    method = next((row for row in exercise.set_methods if row.set_number == data.set_number), None)
-    kind = method.kind if method else "standard"
-    if data.execution_kind != kind or (kind == "standard" and data.parts):
-        raise HTTPException(422, "Вид подхода не соответствует плану тренировки")
-    parent = next((row for row in workout.sets if row.exercise_id == data.exercise_id and row.set_number == data.set_number and not row.is_deleted), None)
-    if parent is None:
-        raise HTTPException(409, "Подход не найден. Обновите сохранённую тренировку")
+    parent = next((row for row in workout.sets if row.exercise_id == data.exercise_id and row.set_number == data.set_number), None)
     # Preserve hashes of queued pre-skip v2 operations when the new flag is false.
-    digest = sha256(data.model_dump_json(exclude={"is_skipped"} if not data.is_skipped else set()).encode()).hexdigest()
-    receipt = await session.get(WorkoutSetExecutionReceipt, (parent.id, data.client_operation_id))
+    excluded = {"is_skipped"} if not data.is_skipped else set()
+    if data.active_plan_revision is None:
+        excluded.add("active_plan_revision")
+    digest = sha256(data.model_dump_json(exclude=excluded).encode()).hexdigest()
+    receipt = await session.get(WorkoutSetExecutionReceipt, (parent.id, data.client_operation_id)) if parent else None
     if receipt is not None:
         if receipt.request_hash != digest:
             raise HTTPException(409, "Эта операция уже сохранена с другим результатом")
         return WorkoutSetResponse.model_validate(receipt.response)
+    exercise = next((row for row in plan.exercises
+                     if row.exercise_id == data.exercise_id and data.set_number in row.planned_set_numbers()), None)
+    plan_revision = (workout.plan or {}).get("active_plan_revision", 0)
+    requested_revision = data.active_plan_revision or 0
+    historical = exercise is None and workout.status == "completed" and plan_revision > 0
+    # An older plan can still record an unchanged slot. Removed slots fail the
+    # plan check, and resurrected slots have a new execution revision.
+    if requested_revision > plan_revision or (requested_revision < plan_revision and exercise is None):
+        raise HTTPException(409, PLAN_CHANGED)
+    if exercise is None and not historical:
+        raise HTTPException(422, "Подход отсутствует в плане тренировки")
+    if parent is None or parent.is_deleted:
+        raise HTTPException(409, "Подход не найден. Обновите сохранённую тренировку")
+    method = next((row for row in exercise.set_methods if row.set_number == data.set_number), None) if exercise else None
+    kind = parent.execution_kind if historical else method.kind if method else "standard"
+    if data.execution_kind != kind or (kind == "standard" and data.parts):
+        raise HTTPException(422, "Вид подхода не соответствует плану тренировки")
     if parent.execution_revision != data.base_execution_revision:
         raise HTTPException(409, "Подход уже изменён на другом устройстве. Ваш результат сохранён локально")
-    if method:
-        if len(data.parts) != len(method.parts) or [part.ordinal for part in data.parts] != list(range(1, len(method.parts) + 1)):
+    if kind != "standard":
+        count = len(method.parts) if method else len(parent.parts)
+        if len(data.parts) != count or [part.ordinal for part in data.parts] != list(range(1, count + 1)):
             raise HTTPException(422, "Передайте все части подхода в заданном порядке")
         if len({part.id for part in data.parts}) != len(data.parts):
             raise HTTPException(422, "Идентификаторы частей не должны повторяться")
@@ -114,7 +127,7 @@ def validate_plan_edit(old_plan, new_plan):
         def topology(plan):
             parsed = WorkoutPlan.model_validate(plan)
             return (sorted(parsed.groups, key=lambda group: str(group.id)), [
-                (row.exercise_id, row.order, row.target_sets, row.target_reps, row.rest_sec, row.weight_mode, row.target,
+                (row.exercise_id, row.order, row.target_sets, row.active_set_numbers, row.target_reps, row.rest_sec, row.weight_mode, row.target,
                  sorted(row.set_methods, key=lambda method: method.set_number))
                 for row in sorted(parsed.exercises, key=lambda row: row.order)])
         if topology(old_plan) != topology(new_plan):

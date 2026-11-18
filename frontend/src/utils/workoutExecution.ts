@@ -69,6 +69,8 @@ function validatePlan(plan: WorkoutPlan): WorkoutPlanExercise[] {
   if ((plan.groups?.length || rows.some(row => row.set_methods?.length)) && plan.execution_version !== 2) invalid();
   for (const row of rows) {
     if (!integer(row.order, 1, 20) || !integer(row.target_sets, 1, 20) || !integer(row.rest_sec ?? 60, 0, 600)) invalid();
+    const active = row.active_set_numbers;
+    if (active && (!active.length || active.some((number, index) => !integer(number, 1, row.target_sets) || (index > 0 && number <= active[index - 1])))) invalid();
     const methods = row.set_methods ?? [];
     if (methods.length > 20 || new Set(methods.map(method => method.set_number)).size !== methods.length) invalid();
     for (const method of methods) {
@@ -107,6 +109,7 @@ export function buildExecutionSteps(plan: WorkoutPlan): ExecutionStep[] {
   const groups = plan.groups ?? [];
   const steps: ExecutionStep[] = [];
   const append = (row: WorkoutPlanExercise, setNumber: number, blockId: string, round: number) => {
+    if (row.active_set_numbers && !row.active_set_numbers.includes(setNumber)) return;
     const method = row.set_methods?.find(method => method.set_number === setNumber);
     const ordinals = method ? method.parts.map((_, index) => index + 1) : [null];
     for (const ordinal of ordinals) steps.push({

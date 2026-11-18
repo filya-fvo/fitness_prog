@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workout import Workout
+from app.services.workout_metrics import has_recorded_work
 
 
 async def align_replacement_slots(session: AsyncSession, workout: Workout, plan: dict) -> None:
@@ -27,7 +28,13 @@ async def align_replacement_slots(session: AsyncSession, workout: Workout, plan:
     slots = {(row.exercise_id, row.set_number): row for row in workout.sets}
     for row in workout.sets:
         target = mapping.get(row.exercise_id)
-        if target is None or row.is_completed:
+        if target is None or (
+            row.is_completed
+            or getattr(row, "is_deleted", False)
+            or getattr(row, "is_skipped", False)
+            or (getattr(row, "execution_revision", 0) or 0) > 0
+            or has_recorded_work(row)
+        ):
             continue
         collision = slots.get((target, row.set_number))
         if collision is not None:

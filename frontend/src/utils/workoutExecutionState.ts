@@ -27,10 +27,12 @@ function canonicalJson(value: unknown): string {
 export function executionSnapshotKey(plan: WorkoutPlan): string {
   buildExecutionSteps(plan);
   return canonicalJson({ execution_version: plan.execution_version, day_index: plan.day_index ?? null,
+    ...(plan.active_plan_revision == null ? {} : { active_plan_revision: plan.active_plan_revision }),
     week_phase: plan.week_phase ?? null, revisions: [plan.customization_revisions?.program_day ?? 0, plan.customization_revisions?.occurrence ?? 0],
     groups: [...(plan.groups ?? [])].sort((a, b) => a.id.localeCompare(b.id)),
     exercises: [...plan.exercises].sort((a, b) => a.order - b.order).map(row => ({ exercise_id: row.exercise_id, order: row.order,
       ...(row.target == null ? {} : { target: explicitWorkoutTargetSchema.parse(row.target) }),
+      ...(row.active_set_numbers == null ? {} : { active_set_numbers: row.active_set_numbers }),
       target_sets: row.target_sets, target_reps: row.target_reps ?? null, rest_sec: row.rest_sec ?? 60, weight_mode: row.weight_mode ?? null,
       set_methods: [...(row.set_methods ?? [])].sort((a, b) => a.set_number - b.set_number).map(method => ({ ...method,
         parts: method.parts.map(part => ({ ...part, target_weight: part.target_weight == null ? null : Number(part.target_weight) })) })),
@@ -45,6 +47,7 @@ export function ensureExecutionDrafts(workout: Workout, drafts: LocalSetDraft[],
   return completeDrafts.map(draft => {
     const row = plan.exercises.find(row => row.exercise_id === draft.exerciseId);
     const method = row?.set_methods?.find(method => method.set_number === draft.setNumber);
+    if (!row) return draft;
     if (!method) return { ...draft, executionKind: "standard" as const, executionRevision: draft.executionRevision ?? 0 };
     const saved = workout.sets.find(set => set.exercise_id === draft.exerciseId && set.set_number === draft.setNumber);
     const parts = draft.parts?.length ? draft.parts : saved?.parts;
@@ -93,6 +96,7 @@ export function assertExecutionSessionSnapshot(session: LocalWorkoutSession, own
   const drafts = new Map(session.drafts.map(draft => [`${draft.exerciseId}/${draft.setNumber}`, draft]));
   if (drafts.size !== session.drafts.length) invalid();
   for (const row of plan.exercises) for (let number = 1; number <= row.target_sets; number++) {
+    if (row.active_set_numbers && !row.active_set_numbers.includes(number)) continue;
     const draft = drafts.get(`${row.exercise_id}/${number}`);
     if (!draft || !Number.isSafeInteger(draft.executionRevision) || draft.executionRevision! < 0) invalid();
     const method = row.set_methods?.find(method => method.set_number === number);

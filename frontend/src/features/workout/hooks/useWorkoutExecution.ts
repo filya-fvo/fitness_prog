@@ -40,7 +40,8 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     if (current !== generation.current || useUserStore.getState().user?.id !== owner || session.clientId !== client) return false;
     const store = useWorkoutStore.getState();
     const viewStepId = store.execution?.viewStepId;
-    const projected = editing.current && viewStepId && session.execution ? { ...session, currentExerciseIndex: store.currentExerciseIndex,
+    const samePlan = session.execution?.snapshotKey === store.execution?.snapshotKey;
+    const projected = editing.current && viewStepId && session.execution && samePlan ? { ...session, currentExerciseIndex: store.currentExerciseIndex,
       execution: { ...session.execution, viewStepId } } : session;
     return store.applyExecutionSession(projected, workoutClockSnapshot());
   }, [owner, client]);
@@ -110,7 +111,7 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     return () => subscription.unsubscribe();
   }, [apply, client, enabled, owner, ready]);
 
-  const act = useCallback(async (action: TransitionInput["action"], stepId: string, values?: ExecutionValues, undoActionId?: string) => {
+  const act = useCallback(async (action: TransitionInput["action"], stepId: string, values?: ExecutionValues, undoActionId?: string, expectedRevision?: number) => {
     if (!enabled || !owner || !client || busyRef.current) return false;
     const state = useWorkoutStore.getState();
     if (!state.execution) return false;
@@ -120,11 +121,16 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     busyRef.current = true; setBusy(true); setError(null);
     try {
       const result = await commitExecutionAction({ owner, clientWorkoutId: client, actionId, stepId, action, confirmedAt,
-        values, undoActionId, expectedRevision: state.execution.revision, autoAdvance: preference.current });
-      if (result.accepted && current === generation.current) editing.current = false;
-      if (!apply(result.session, current)) return false;
-      if (result.accepted) sync();
-      return result.accepted;
+        values, undoActionId, expectedRevision: expectedRevision ?? state.execution.revision, autoAdvance: preference.current });
+      const sameSession = current === generation.current && useUserStore.getState().user?.id === owner && useWorkoutStore.getState().clientWorkoutId === client;
+      if (result.accepted && sameSession) editing.current = false;
+      const applied = apply(result.session, current);
+      if (result.accepted && sameSession) {
+        sync();
+        if (!applied) void reload();
+        return true;
+      }
+      return false;
     } catch (err) {
       if (current === generation.current) { setError(toUserMessage(err, "Не удалось сохранить результат. Повторите действие")); void reload(); }
       return false;
@@ -145,11 +151,24 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
   }, [apply, client, owner]);
   const show = useCallback(async (stepId: string) => {
     if (!owner || !client || busyRef.current) return;
+    if (useWorkoutStore.getState().execution?.viewStepId === stepId) return;
     if (editing.current && useWorkoutStore.getState().execution?.viewStepId !== stepId && !await confirmAction("Введённые данные ещё не записаны. Перейти к другому подходу?")) return;
+    if (busyRef.current) return;
     const current = generation.current;
-    try { apply(await showExecutionStep(owner, client, stepId), current); editing.current = false; }
+    busyRef.current = true; setBusy(true);
+    try {
+      const session = await showExecutionStep(owner, client, stepId);
+      if (current === generation.current) editing.current = false;
+      apply(session, current);
+    }
     catch (err) { if (current === generation.current) setError(toUserMessage(err, "Не удалось открыть шаг")); }
+    finally { if (current === generation.current) { busyRef.current = false; setBusy(false); } }
   }, [apply, owner, client]);
+  const prepareModal = useCallback(async () => {
+    if (editing.current && !await confirmAction("Введённые данные ещё не записаны. Открыть редактор подхода?")) return false;
+    editing.current = false;
+    return true;
+  }, []);
   const finish = useCallback(async (rpe: number, aiNotes: string | null) => {
     if (!owner || !client) throw new Error("Откройте тренировку заново");
     const current = generation.current;
@@ -159,7 +178,7 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
   const steps = useMemo(() => enabled && plan?.exercises.length ? buildExecutionSteps(plan) : [], [enabled, plan]);
   const viewed = steps.find(step => step.id === execution?.viewStepId) ?? steps.find(step => step.id === execution?.progress.cursor) ?? null;
   const next = steps.find(step => step.id === execution?.progress.cursor) ?? null;
-  return { ready, busy, error, clock, execution, steps, viewed, next, act, restAction, show, finish,
+  return { ready, busy, error, clock, execution, steps, viewed, next, act, restAction, show, finish, prepareModal,
     markEditing: (value: boolean) => { editing.current = value; }, reload };
 }
 export type WorkoutExecutionController = ReturnType<typeof useWorkoutExecution>;

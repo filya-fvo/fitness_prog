@@ -5,9 +5,10 @@ import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutSet } from "@/types/wo
 import { MAX_EXECUTION_ACTIONS, buildExecutionSteps, executionStepId, resolveExecutionTransition, type ExecutionProgress, type TransitionInput } from "@/utils/workoutExecution";
 import { executionFactsFromDrafts } from "@/utils/workoutSession";
 import { ensureExecutionDrafts, executionSnapshotKey, assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
-import { remainingRestMs, adjustExecutionRest, claimRestCompletion, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
+import { remainingRestMs, adjustExecutionRest, claimRestCompletion, executionRestNeedsConfirmation, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
+import type { ActiveWorkoutTopologyApply } from "@/api/activeWorkoutTopology";
 
-export type ExecutionValues = { baseSetRevision?: number; reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
+export type ExecutionValues = { baseSetRevision?: number; baseDraft?: string; manualSelection?: boolean; reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
   durationSec: number | null; note?: string | null; machineParams?: Record<string, string | number> | null };
 export type ExecutionAction = Pick<TransitionInput, "owner" | "clientWorkoutId" | "action" | "actionId" | "stepId" | "confirmedAt" | "undoActionId"> & {
   expectedRevision: number; values?: ExecutionValues; autoAdvance: boolean;
@@ -16,6 +17,82 @@ export type ExecutionCommit = { session: LocalWorkoutSession; accepted: boolean 
 
 function requireOwner(owner: string): void {
   if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Откройте тренировку заново");
+}
+const activeTopologyKey = (owner: string, client: string) => `active_workout_topology:${owner}:${client}`;
+
+export async function readPendingTopology(owner: string, client: string): Promise<ActiveWorkoutTopologyApply | null> {
+  const row = await db.meta.get(activeTopologyKey(owner, client));
+  return row ? JSON.parse(row.value) as ActiveWorkoutTopologyApply : null;
+}
+
+async function requireNoPendingTopology(owner: string, client: string): Promise<void> {
+  if (await readPendingTopology(owner, client)) throw new Error("Сначала завершите изменение плана тренировки");
+}
+
+export async function beginActiveTopology(owner: string, client: string, request: ActiveWorkoutTopologyApply) {
+  return db.transaction("rw", db.sessions, db.syncQueue, db.meta, async () => {
+    const session = await db.sessions.get(client);
+    assertSession(session, owner);
+    const previous = await readPendingTopology(owner, client);
+    if (previous) {
+      if (JSON.stringify(previous) !== JSON.stringify(request)) throw new Error("Сначала завершите изменение плана тренировки");
+      return true;
+    }
+    const plan = session.workout.plan as WorkoutPlan;
+    if (request.expected_plan_revision != null && request.expected_plan_revision !== (plan.active_plan_revision ?? 0)) return false;
+    const rest = session.execution?.progress.rest;
+    const now = workoutClockSnapshot();
+    if (session.workout.status !== "planned" || !session.serverId ||
+        (rest && (remainingRestMs(rest, now) > 0 || executionRestNeedsConfirmation(rest, now))))
+      throw new Error("Изменение плана доступно во время синхронизированной тренировки без активного отдыха");
+    const queued = await db.syncQueue.where("ownerUserId").equals(owner).filter(item => item.clientWorkoutId === client).count();
+    if (queued) throw new Error("Сначала дождитесь синхронизации подходов");
+    await db.meta.put({ key: activeTopologyKey(owner, client), value: JSON.stringify(request), updatedAt: Date.now() });
+    return true;
+  });
+}
+
+export async function clearRejectedTopology(owner: string, client: string, operationId: string): Promise<void> {
+  requireOwner(owner);
+  await db.transaction("rw", db.meta, async () => {
+    const pending = await readPendingTopology(owner, client);
+    if (pending?.operation_id === operationId) await db.meta.delete(activeTopologyKey(owner, client));
+    requireOwner(owner);
+  });
+}
+
+export async function finishActiveTopology(owner: string, client: string, operationId: string, workout: Workout): Promise<LocalWorkoutSession> {
+  return db.transaction("rw", db.sessions, db.workouts, db.meta, async () => {
+    const session = await db.sessions.get(client);
+    assertSession(session, owner);
+    const pending = await readPendingTopology(owner, client);
+    const plan = workout.plan as WorkoutPlan;
+    const incomingRevision = plan.active_plan_revision ?? 0;
+    const currentRevision = (session.workout.plan as WorkoutPlan).active_plan_revision ?? 0;
+    if (workout.user_id !== owner || workout.id !== session.serverId)
+      throw new Error("Не удалось сверить изменённый план тренировки");
+    if ((!pending || pending.operation_id === operationId) && currentRevision >= incomingRevision && incomingRevision > 0) {
+      if (pending) await db.meta.delete(activeTopologyKey(owner, client));
+      return session;
+    }
+    if (pending?.operation_id !== operationId || incomingRevision <= currentRevision)
+      throw new Error("Не удалось сверить изменённый план тренировки");
+    session.workout = workout;
+    session.drafts = ensureExecutionDrafts(workout, [], () => crypto.randomUUID());
+    const execution = session.execution!;
+    const steps = buildExecutionSteps(plan);
+    const facts = executionFactsFromDrafts(plan, session.drafts);
+    const cursor = steps.find(step => facts[step.id] === "pending") ?? null;
+    execution.revision += 1;
+    execution.snapshotKey = executionSnapshotKey(plan);
+    execution.viewStepId = cursor?.id ?? steps.at(-1)?.id ?? null;
+    execution.progress = { ...execution.progress, facts, cursor: cursor?.id ?? null, rest: null, lastAction: null, manualContinue: false };
+    session.currentExerciseIndex = Math.max(0, plan.exercises.findIndex(row => row.exercise_id === cursor?.exerciseId));
+    assertSession(session, owner);
+    await writeSession(session);
+    await db.meta.delete(activeTopologyKey(owner, client));
+    return session;
+  });
 }
 function assertSession(session: LocalWorkoutSession | undefined, owner: string): asserts session is LocalWorkoutSession {
   requireOwner(owner);
@@ -104,6 +181,7 @@ function validateResult(draft: LocalSetDraft): void {
   if (draft.executionKind === "cluster" && new Set(weights).size > 1) throw new Error("Вес выполненных частей кластера должен совпадать");
   if (draft.executionKind === "drop" && weights.some((weight, i) => i > 0 && weights[i - 1] <= weight)) throw new Error("В дроп-сете вес каждой следующей части должен снижаться");
 }
+
 function setFromDraft(session: LocalWorkoutSession, draft: LocalSetDraft): WorkoutSet {
   const previous = session.workout.sets.find(row => row.exercise_id === draft.exerciseId && row.set_number === draft.setNumber);
   return { id: previous?.id ?? crypto.randomUUID(), workout_id: session.workout.id, exercise_id: draft.exerciseId, set_number: draft.setNumber,
@@ -115,15 +193,16 @@ function setFromDraft(session: LocalWorkoutSession, draft: LocalSetDraft): Worko
 
 export async function commitExecutionAction(input: ExecutionAction): Promise<ExecutionCommit> {
   requireOwner(input.owner);
-  return db.transaction("rw", db.sessions, db.workouts, db.syncQueue, async () => {
+  return db.transaction("rw", db.sessions, db.workouts, db.syncQueue, db.meta, async () => {
     const session = await db.sessions.get(input.clientWorkoutId);
     assertSession(session, input.owner);
+    await requireNoPendingTopology(input.owner, input.clientWorkoutId);
     const execution = session.execution!;
     if (execution.progress.processedActionIds.includes(input.actionId)) return { session, accepted: false };
     if (execution.revision !== input.expectedRevision) throw new Error("Тренировка изменилась в другой вкладке. Повторите действие после обновления");
     if (session.workout.status !== "planned") throw new Error("Тренировка уже завершена");
     const decision = resolveExecutionTransition({ ...input, ...execution.progress, plan: session.workout.plan as WorkoutPlan, rest: execution.progress.rest,
-      allowOutOfOrder: execution.viewStepId === input.stepId });
+      allowOutOfOrder: execution.viewStepId === input.stepId || (input.values?.manualSelection === true && input.values.baseDraft !== undefined) });
     if (!decision.accepted) {
       if (decision.blockedReason === "active_rest") throw new Error("Сначала закончите текущий отдых");
       if (decision.blockedReason === "undo_unavailable") throw new Error("Это действие уже нельзя отменить");
@@ -132,6 +211,8 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
     const step = buildExecutionSteps(session.workout.plan as WorkoutPlan).find(step => step.id === input.stepId)!;
     const draft = structuredClone(session.drafts.find(row => row.exerciseId === step.exerciseId && row.setNumber === step.setNumber)!);
     if (!draft) throw new Error("Подход не найден");
+    if (input.values?.baseDraft !== undefined && input.values.baseDraft !== JSON.stringify(draft))
+      throw new Error("Этот подход изменён в другой вкладке. Введённые значения остались в форме");
     if (input.values?.baseSetRevision !== undefined && input.values.baseSetRevision !== (draft.executionRevision ?? 0))
       throw new Error("Подход изменён в другой вкладке. Введённые значения остались в форме; обновите её перед сохранением");
     if (input.values && (input.action === "complete" || input.action === "correct")) {
@@ -163,6 +244,7 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
     const queued: SyncQueueItem = { id: input.actionId, ownerUserId: input.owner, type: "add_set", clientWorkoutId: input.clientWorkoutId,
       createdAt: queueTime(session), attempts: 0, lastError: null, payload: {
         executionVersion: 2, executionKind: draft.executionKind, baseExecutionRevision: baseRevision, clientOperationId: input.actionId,
+        activePlanRevision: (session.workout.plan as WorkoutPlan).active_plan_revision,
         exerciseId: draft.exerciseId, setNumber: draft.setNumber, reps: result.reps, weight: result.weight, weightMode: result.weight_mode,
         restTimeSec: result.rest_time_sec, durationSec: result.duration_sec, note: result.note, machineParams: result.machine_params,
         isCompleted: result.is_completed, isSkipped: result.is_skipped ?? false, parts: result.parts,
@@ -217,9 +299,10 @@ export async function changeExecutionRest(input: { owner: string; clientWorkoutI
 export async function finishExecutionSession(input: { owner: string; clientWorkoutId: string; actionId: string;
   now: ClockSnapshot; rpe: number; aiNotes: string | null }): Promise<LocalWorkoutSession> {
   requireOwner(input.owner);
-  return db.transaction("rw", db.sessions, db.workouts, db.syncQueue, async () => {
+  return db.transaction("rw", db.sessions, db.workouts, db.syncQueue, db.meta, async () => {
     const session = await db.sessions.get(input.clientWorkoutId);
     assertSession(session, input.owner);
+    await requireNoPendingTopology(input.owner, input.clientWorkoutId);
     if (session.workout.status === "completed") return session;
     const execution = session.execution!;
     const completedAt = new Date(input.now.wallMs).toISOString();
@@ -231,7 +314,8 @@ export async function finishExecutionSession(input: { owner: string; clientWorko
     execution.revision += 1;
     const queued: SyncQueueItem = { id: input.actionId, ownerUserId: input.owner, clientWorkoutId: input.clientWorkoutId,
       type: "complete_workout", createdAt: queueTime(session), attempts: 0, lastError: null,
-      payload: { executionVersion: 2, completedAt, durationSec: session.workout.duration_sec, rpe: input.rpe, aiNotes: input.aiNotes } };
+      payload: { executionVersion: 2, activePlanRevision: (session.workout.plan as WorkoutPlan).active_plan_revision,
+        completedAt, durationSec: session.workout.duration_sec, rpe: input.rpe, aiNotes: input.aiNotes } };
     await writeSession(session);
     await db.syncQueue.add(queued);
     requireOwner(input.owner);

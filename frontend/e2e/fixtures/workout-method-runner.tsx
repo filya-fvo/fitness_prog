@@ -4,7 +4,8 @@ import { ActiveWorkout } from "../../src/features/workout/pages/ActiveWorkout";
 import { useUserStore } from "../../src/store/userStore";
 import { useWorkoutStore } from "../../src/store/workoutStore";
 import { db } from "../../src/db/schema";
-import { saveLocalSession } from "../../src/db/syncQueue";
+import { cacheExercises, saveLocalSession } from "../../src/db/syncQueue";
+import { restoreSessionIntoStore } from "../../src/lib/sessionRestore";
 import { draftsFromWorkoutSnapshot } from "../../src/utils/workoutSession";
 import { startProgramSession } from "../../src/features/workout/services/programWorkoutStart";
 import { apiClient } from "../../src/api/client";
@@ -24,14 +25,18 @@ const onlineTargetStart = targetCase === "weight" || targetCase === "reps" || ta
 const targetProgram = "88888888-8888-4888-8888-888888888888";
 const internalPause = params.get("rest") === "short" ? 1 : 20;
 const grouped = kind.includes("group");
+const partialCatalog = params.get("catalog") === "partial";
 const expanded = kind.includes("triset") || kind.includes("circuit");
 const c = "77777777-7777-4777-8777-777777777777";
+const replacement = "99999999-9999-4999-8999-999999999999";
 const catalog: Exercise[] = [
   { id: a, name_ru: "Жим штанги лёжа" }, { id: b, name_ru: "Сгибания со штангой" },
 ].map(row => ({ ...row, muscle_group: "arms", equipment: "штанга", tags: ["load:weight_reps"], weight_rule: "total",
   description: null, technique: "Подконтрольное движение", common_mistakes: null, difficulty: 1, video_url: null,
   animation_url: null, thumbnail_url: null, media_duration_sec: null, media_source: "none" }));
+if (partialCatalog) catalog[1] = { ...catalog[1], name_ru: "Молитва", muscle_group: "abs", equipment: "блочный тренажёр" };
 if (expanded) catalog.push({ ...catalog[0], id: c, name_ru: "Планка", tags: ["load:timed"], weight_rule: "none" });
+if (params.has("topology")) catalog.push({ ...catalog[0], id: replacement, name_ru: "Молитва", muscle_group: "abs" });
 const plan: WorkoutPlan = { execution_version: 2, title: "Сложная тренировка", exercises: [
   { exercise_id: a, name_ru: catalog[0].name_ru, order: 1, target_sets: grouped || kind.endsWith("next") ? 2 : 1,
     target_reps: "4", rest_sec: 120, set_methods: [{ set_number: 1, kind: kind.startsWith("drop") ? "drop" : "cluster",
@@ -44,6 +49,10 @@ if (targetCase === "timed" || targetCase === "timed-v2") {
   catalog[0] = { ...catalog[0], name_ru: "Планка", tags: ["load:timed"], weight_rule: "none" };
   plan.execution_version = targetCase === "timed" ? 1 : 2;
   plan.exercises = [{ exercise_id: a, name_ru: "Планка", order: 1, target_sets: 3, target_reps: "30 с", rest_sec: 60, target: { kind: "timed", duration_sec: 95 } }];
+} else if (targetCase === "weight-v1") {
+  plan.execution_version = 1;
+  plan.exercises = [{ exercise_id: a, name_ru: catalog[0].name_ru, order: 1, target_sets: 1,
+    target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 12.35 } }];
 } else if (targetCase === "weight") {
   plan.exercises[0] = { ...plan.exercises[0], target_sets: 2, target: { kind: "weight_reps", reps_min: 12, reps_max: 15, target_weight: 40 } };
 } else if (targetCase === "reps") {
@@ -60,7 +69,7 @@ const workout: Workout = { id: workoutId, user_id: owner, program_id: null, sche
         ordinal: ordinal + 1, reps: null, weight: null, duration_sec: null, status: "pending", rest_after_sec: part.pause_after_sec })),
     }))) };
 // The V1 modal control deliberately starts with missing slots; actual typed starts are V2.
-if (targetCase === "timed") workout.sets = [];
+if (targetCase === "timed" || targetCase === "weight-v1") workout.sets = [];
 if (onlineTargetStart) {
   workout.program_id = targetProgram;
   // Synthetic transport returns the same all-slot shape as backend _create_set_slots.
@@ -70,15 +79,20 @@ if (onlineTargetStart) {
   });
 }
 useUserStore.setState({ user: { id: owner, subscription_status: "plus", onboarding_completed: true }, isAuthenticated: true, isAuthLoading: false });
-useWorkoutStore.getState().setCatalog(catalog);
+useWorkoutStore.getState().setCatalog(partialCatalog ? [catalog[0]] : catalog);
 let session = onlineTargetStart ? await db.sessions.filter(row => row.workout.id === workoutId).first() : await db.sessions.get(workoutId);
 if (!session && onlineTargetStart) session = await startProgramSession({ programId: targetProgram, scheduledDate: workout.scheduled_date, dayIndex: 1 });
 if (!session) {
+  if (partialCatalog) await cacheExercises(catalog);
   await saveLocalSession({ clientId: workoutId, serverId: workoutId, workout, drafts: draftsFromWorkoutSnapshot(workout) });
   session = (await db.sessions.get(workoutId))!;
 }
-useWorkoutStore.getState().hydrateSession({ clientId: session.clientId, serverId: session.serverId, workout: session.workout, drafts: session.drafts,
-  currentExerciseIndex: session.currentExerciseIndex, execution: session.execution });
+if (partialCatalog) {
+  await restoreSessionIntoStore(session, owner);
+} else {
+  useWorkoutStore.getState().hydrateSession({ clientId: session.clientId, serverId: session.serverId, workout: session.workout, drafts: session.drafts,
+    currentExerciseIndex: session.currentExerciseIndex, execution: session.execution });
+}
 createRoot(document.getElementById("root")!).render(<main className="mx-auto max-w-lg p-3"><MemoryRouter initialEntries={[`/workouts/${workoutId}`]}><Routes>
   <Route path="/workouts/:workoutId" element={<ActiveWorkout />} />
 </Routes></MemoryRouter></main>);

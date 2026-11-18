@@ -12,6 +12,14 @@ const STATUS_MESSAGES: Record<number, string> = {
   429: "Слишком много запросов. Подождите немного и попробуйте снова.",
 };
 
+const WORKOUT_CHANGE_CONFLICTS = new Set([
+  "План тренировки уже изменился. Записанный результат сохранён на устройстве",
+  "Это упражнение уже есть в плане или истории тренировки",
+  "В этой части тренировки больше нет незавершённых подходов",
+  "В убираемых подходах есть сохранённые записи",
+  "Оставьте хотя бы один подход для каждого участника связки",
+]);
+
 export function isRetryableApiError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) return false;
   const status = error.response?.status;
@@ -27,6 +35,7 @@ export function toUserMessage(error: unknown, fallback = "Что-то пошло
     if (plusDetail) return plusDetail.message;
     const status = error.response?.status;
     const detail = error.response?.data?.detail;
+    if (status === 409 && typeof detail === "string" && WORKOUT_CHANGE_CONFLICTS.has(detail)) return detail;
     if (
       status === 429 &&
       typeof detail === "string" &&

@@ -213,3 +213,63 @@ export function buildBulkReplacementPlan(input: {
 
   return { replacements, completedSkipped, noEquivalentSkipped };
 }
+
+export function rankWorkoutReplacementOptions(
+  currentExercise: Exercise | null | undefined, catalog: Exercise[], occupiedExerciseIds: Set<string>,
+): Exercise[] {
+  if (!currentExercise) return [];
+  const muscle = (currentExercise.muscle_group || "").toLowerCase();
+  const equip = (currentExercise.equipment || "").toLowerCase();
+  const tags = new Set((currentExercise.tags || []).map((tg) => tg.toLowerCase()));
+  const name = (currentExercise.name_ru || "").toLowerCase();
+
+  const RELATED: Record<string, string[]> = {
+    спина: ["спина", "задние дельты", "трапеции", "поясница"],
+    грудь: ["грудь", "трицепс", "передние дельты"],
+    ноги: ["ноги", "ягодицы", "бицепс бедра", "икры"],
+    плечи: ["плечи", "передние дельты", "средние дельты", "задние дельты", "трапеции"],
+    бицепс: ["бицепс", "предплечья", "спина"],
+    трицепс: ["трицепс", "грудь", "плечи"],
+    пресс: ["пресс", "кор", "core"],
+    ягодицы: ["ягодицы", "ноги", "бицепс бедра"],
+  };
+  const related = new Set((RELATED[muscle] || [muscle]).map((x) => x.toLowerCase()).filter(Boolean));
+
+  const KEYWORDS: Array<{ re: RegExp; boost: string[] }> = [
+    { re: /тяг|row|pulldown|pull-down|подтяг/, boost: ["тяг", "подтяг", "pulldown", "row", "блок", "пуловер", "pullover"] },
+    { re: /жим|press|bench/, boost: ["жим", "press", "развод", "push", "француз"] },
+    { re: /присед|squat|выпад|lunge/, boost: ["присед", "выпад", "squat", "lunge"] },
+    { re: /станова|deadlift|румын/, boost: ["станова", "румын", "deadlift"] },
+    { re: /пуловер|pullover/, boost: ["пуловер", "pullover", "тяг", "блок", "прямыми руками"] },
+    { re: /француз|skull|трицепс|triceps/, boost: ["француз", "разгиб", "блок", "узк", "skull"] },
+    { re: /махи|развод|fly|raise/, boost: ["махи", "развод", "fly", "raise"] },
+  ];
+  const nameBoosts = KEYWORDS.filter((k) => k.re.test(name)).flatMap((k) => k.boost);
+
+  return catalog
+    .filter((ex) => ex.id !== currentExercise.id && !occupiedExerciseIds.has(ex.id))
+    .map((ex) => {
+      let score = 0;
+      const exMuscle = (ex.muscle_group || "").toLowerCase();
+      const exName = (ex.name_ru || "").toLowerCase();
+      const exEquip = (ex.equipment || "").toLowerCase();
+      if (muscle && exMuscle === muscle) score += 6;
+      else if (exMuscle && related.has(exMuscle)) score += 3;
+      if (equip && exEquip === equip) score += 2;
+      else if (equip && exEquip && (exEquip.includes(equip) || equip.includes(exEquip))) score += 1;
+      for (const tg of ex.tags || []) {
+        if (tags.has(tg.toLowerCase())) score += 1;
+      }
+      for (const b of nameBoosts) {
+        if (exName.includes(b)) score += 2;
+      }
+      if (/гантел|штан|barbell|dumbbell/.test(name) && /блок|cable|тренаж|machine|smith/.test(exName + " " + exEquip)) {
+        score += 1;
+      }
+      return { ex, score };
+    })
+    .filter((x) => x.score >= 3)
+    .sort((a, b) => b.score - a.score || a.ex.name_ru.localeCompare(b.ex.name_ru, "ru"))
+    .slice(0, 16)
+    .map((x) => x.ex);
+}

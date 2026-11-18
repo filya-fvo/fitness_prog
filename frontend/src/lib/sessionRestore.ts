@@ -8,6 +8,7 @@ import { useUserStore } from "@/store/userStore";
 import { initializeExecutionSession } from "@/db/workoutExecution";
 import { workoutClockSnapshot } from "@/utils/workoutRest";
 import { useWorkoutStore } from "@/store/workoutStore";
+import type { WorkoutPlan } from "@/types/workout";
 
 export async function findResumableSession(
   ownerUserId = useUserStore.getState().user?.id,
@@ -39,13 +40,23 @@ export async function restoreSessionIntoStore(
   check();
   const version = (session.workout.plan as { execution_version?: unknown } | null)?.execution_version;
   if (version != null && version !== 1 && version !== 2) throw new Error("Обновите приложение, чтобы открыть сохранённую тренировку. Данные сохранены");
-  const cached = useWorkoutStore.getState().catalog.length ? [] : await readCachedExercises();
+  const plan = session.workout.plan as WorkoutPlan | null;
+  const plannedIds = new Set(Array.isArray(plan?.exercises) ? plan.exercises.map(row => row.exercise_id) : []);
+  const currentCatalog = useWorkoutStore.getState().catalog;
+  const knownIds = new Set(currentCatalog.map(item => item.id));
+  const missingPlannedExercise = [...plannedIds].some(id => !knownIds.has(id));
+  const cached = !currentCatalog.length || missingPlannedExercise ? await readCachedExercises() : [];
   check();
   const restored = version === 2 ? await initializeExecutionSession({ owner: ownerUserId, clientWorkoutId: session.clientId,
     serverWorkoutId: session.serverId, workout: session.workout, drafts: session.drafts, now: workoutClockSnapshot() }) : session;
   check();
   const store = useWorkoutStore.getState();
-  if (cached.length) store.setCatalog(cached);
+  if (cached.length) {
+    const latestCatalog = store.catalog;
+    const latestIds = new Set(latestCatalog.map(item => item.id));
+    const additions = cached.filter(item => !latestIds.has(item.id) && (!latestCatalog.length || plannedIds.has(item.id)));
+    if (additions.length) store.setCatalog([...latestCatalog, ...additions]);
+  }
   store.hydrateSession({ clientId: restored.clientId, serverId: restored.serverId, workout: restored.workout, drafts: restored.drafts,
     currentExerciseIndex: restored.currentExerciseIndex ?? 0, execution: restored.execution });
 

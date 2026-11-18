@@ -26,6 +26,7 @@ from app.models.user import User
 from app.models.user_entitlement import UserEntitlement
 from app.models.user_exercise_pin import UserExercisePin
 from app.models.workout import Workout, WorkoutSet
+from app.models.workout_topology_receipt import WorkoutTopologyReceipt
 from app.models.workout_set_part import WorkoutSetPart, WorkoutSetExecutionReceipt
 from app.models.workout_plan_override import WorkoutPlanOverride
 from app.models.user_program_day_override import UserProgramDayOverride
@@ -57,6 +58,7 @@ __all__ = [
     "CompetitionParticipant",
     "Workout",
     "WorkoutSet",
+    "WorkoutTopologyReceipt",
     "WorkoutSetPart",
     "WorkoutSetExecutionReceipt",
     "WorkoutPlanOverride",

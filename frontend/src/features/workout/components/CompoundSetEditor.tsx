@@ -41,21 +41,23 @@ export function CompoundSetEditor({ controller, step, draft, row, exercise, bloc
   const [machine, setMachine] = useState(() => initialCardioParamValues(draft.machineParams));
   const [dirty, setDirty] = useState(false);
   const [baseRevision, setBaseRevision] = useState(draft.executionRevision ?? 0);
+  const [baseDraft, setBaseDraft] = useState(() => JSON.stringify(draft));
   const rootRevision = draft.executionRevision ?? 0;
   const outdated = baseRevision !== rootRevision;
   useEffect(() => {
-    if (dirty || baseRevision === rootRevision) return;
+    if (dirty) return;
     setReps(initialReps); setWeight(initialWeight); setDuration(initialDuration); setNote(draft.note ?? "");
-    setMachine(initialCardioParamValues(draft.machineParams)); setBaseRevision(rootRevision);
-  }, [baseRevision, dirty, rootRevision, initialReps, initialWeight, initialDuration, draft.note, draft.machineParams]);
-  const weightInput = exerciseWeightInput(exercise, recorded ? draft.weightMode ?? null : draft.weightMode ?? undefined);
+    setMachine(initialCardioParamValues(draft.machineParams)); setBaseRevision(rootRevision); setBaseDraft(JSON.stringify(draft));
+  }, [baseRevision, dirty, rootRevision, initialReps, initialWeight, initialDuration, draft]);
+  const hasRecordedPart = recorded || Boolean(draft.parts?.some(item => item.status === "completed"));
+  const weightInput = exerciseWeightInput(exercise, hasRecordedPart ? draft.weightMode ?? null : draft.weightMode ?? undefined);
   const machineKind = inferCardioMachineKind(exercise);
   const fieldClass = "mt-1 min-h-11 w-full rounded-xl border border-tg-hint/30 bg-tg-bg px-3 text-base text-tg-text";
   const changed = () => { setDirty(true); controller.markEditing(true); };
   async function submit() {
     if (recorded && !dirty) return;
     const accepted = await controller.act(recorded ? "correct" : "complete", step.id, {
-      baseSetRevision: baseRevision, reps: timed ? "" : reps, weight: load === "weight_reps" || compound ? weight : "",
+      baseSetRevision: baseRevision, baseDraft, manualSelection: true, reps: timed ? "" : reps, weight: load === "weight_reps" || compound ? weight : "",
       weightMode: weightInput.mode, durationSec: timed ? Number(duration) : null, note: note || null,
       machineParams: load === "cardio_machine" ? buildCardioMachineParams(machineKind, machine) : null,
     });

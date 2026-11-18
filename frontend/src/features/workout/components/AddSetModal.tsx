@@ -44,16 +44,19 @@ type Props = {
   onStartTimerOnly?: (seconds: number) => void;
   defaultRestSec?: number;
   editing?: boolean;
+  allowCompletionChange?: boolean;
   preserveWeightMode?: boolean;
+  preserveWeightPrecision?: boolean;
   showTimerControls?: boolean;
   busy?: boolean;
   error?: string | null;
+  subtitle?: string;
 };
 
 function splitWeight(w: number): { whole: number; tenth: number } {
-  const r = Math.max(0, Math.round(w * 10) / 10);
+  const r = Math.max(0, Math.round(w * 100) / 100);
   const whole = Math.floor(r);
-  const tenth = Math.round((r - whole) * 10);
+  const tenth = Math.floor((r - whole) * 10 + 1e-8);
   return { whole, tenth: Math.min(9, Math.max(0, tenth)) };
 }
 
@@ -66,10 +69,13 @@ export function AddSetModal({
   onStartTimerOnly,
   defaultRestSec = 60,
   editing = false,
+  allowCompletionChange = editing,
   preserveWeightMode = editing,
+  preserveWeightPrecision = true,
   showTimerControls = true,
   busy = false,
   error = null,
+  subtitle,
 }: Props) {
   const dialogRef = useModalAccessibility(open, () => { if (!busy) onClose(); });
   const fieldId = useId();
@@ -90,6 +96,8 @@ export function AddSetModal({
   const [reps, setReps] = useState(initReps);
   const [kgWhole, setKgWhole] = useState(w0);
   const [kgTenth, setKgTenth] = useState(t0);
+  const [exactWeight, setExactWeight] = useState<number | null>(null);
+  const [weightValid, setWeightValid] = useState(true);
   const [min, setMin] = useState(Math.floor(initDur / 60));
   const [sec, setSec] = useState(initDur % 60);
   const [noteOpen, setNoteOpen] = useState(Boolean(initial?.note));
@@ -112,7 +120,7 @@ export function AddSetModal({
   const durationSec = Math.max(0, min * 60 + sec);
   const weightStr =
     loadType === "weight_reps"
-      ? preserveWeightMode && initial?.weight && !changedFields.includes("weight") ? initial.weight
+      ? exactWeight !== null ? String(exactWeight) : preserveWeightPrecision && initial?.weight && !changedFields.includes("weight") ? initial.weight
         : (Math.round((kgWhole + kgTenth / 10) * 10) / 10).toFixed(kgTenth ? 1 : 0).replace(/\.0$/, "")
       : "";
 
@@ -146,7 +154,7 @@ export function AddSetModal({
             ✕
           </button>
         </div>
-        <p className="mb-3 text-xs text-tg-hint">{exercise.name_ru}</p>
+        <p className="mb-3 text-xs text-tg-hint">{exercise.name_ru}{subtitle ? ` · ${subtitle}` : ""}</p>
 
         <fieldset disabled={busy} {...(busy ? { inert: "" } : {})}>
 
@@ -159,8 +167,8 @@ export function AddSetModal({
               <p className="mt-2 text-center text-lg font-semibold tabular-nums">{reps} повт.</p>
             </div>
             <SetWeightSelector label={weightInput.label} hint={weightInput.hint} whole={kgWhole} tenth={kgTenth}
-              displayWeight={preserveWeightMode && initial?.weight && !changedFields.includes("weight") ? Number(initial.weight) : undefined}
-              onChange={(whole, tenth) => { setKgWhole(whole); setKgTenth(tenth); markChanged("weight"); }} previousWeight={initWeight} />
+              displayWeight={exactWeight ?? (preserveWeightPrecision && initial?.weight && !changedFields.includes("weight") ? Number(initial.weight) : undefined)}
+              onChange={(whole, tenth, exact) => { setKgWhole(whole); setKgTenth(tenth); setExactWeight(exact ?? null); markChanged("weight"); }} onValidityChange={setWeightValid} previousWeight={initWeight} />
           </div>
           </div>
         ) : null}
@@ -246,7 +254,7 @@ export function AddSetModal({
             </select>
           </div> : null}
 
-          {editing ? <label className="flex min-h-11 items-center gap-2 text-sm text-tg-hint">
+          {allowCompletionChange ? <label className="flex min-h-11 items-center gap-2 text-sm text-tg-hint">
             <input type="checkbox" checked={isCompleted} onChange={(e) => { setIsCompleted(e.target.checked); markChanged("isCompleted"); }} />
             Подход выполнен
           </label> : null}
@@ -280,7 +288,7 @@ export function AddSetModal({
 
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !weightValid}
           className="app-button app-gradient-action mt-4 w-full rounded-full"
           onClick={() =>
             onApply({

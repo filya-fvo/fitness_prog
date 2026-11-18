@@ -8,6 +8,9 @@ test("manual selection shows every superset exercise and records a later one", a
   const api = await installTimingApi(page, false, false);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
   const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
+  await page.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
+  await expect(page.getByRole("region", { name: "Материалы упражнения" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByText("Подход 1", { exact: true })).toBeVisible();
   await expect(navigation.getByRole("button", { name: /Жим штанги лёжа/ })).toBeVisible();
   await navigation.getByRole("button", { name: /Сгибания со штангой/ }).click();
   await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
@@ -20,6 +23,329 @@ test("manual selection shows every superset exercise and records a later one", a
   await expect(navigation.getByRole("button", { name: /Сгибания со штангой/ })).toBeVisible();
   await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
   await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
+});
+
+test("confirmed navigation discards unfinished input and opens selected exercise", async ({ page }) => {
+  await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("110");
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+});
+
+test("opens the full exercise card from gym mode and restores focus after manual input", async ({ page }) => {
+  await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup&catalog=partial");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Молитва/ }).click();
+  const card = page.getByRole("article", { name: "Текущий шаг" });
+  await expect(card.getByRole("region", { name: "Материалы упражнения" })).toHaveCount(0);
+  await card.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
+  await expect(card.getByRole("region", { name: "Материалы упражнения" })).toBeVisible();
+  await expect(card.getByText("Дневник", { exact: true })).toBeVisible();
+  const edit = card.getByRole("button", { name: "Править подход 1", exact: true });
+  await edit.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(edit).toBeFocused();
+});
+
+test("ordinary set in a superset uses the standard dialog and records the approach", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "+2,5", exact: true }).click();
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].is_completed).toBe(true);
+  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("2.5");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("2.5");
+});
+
+test("standard dialog retains a precise existing weight", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+  await page.evaluate(async () => {
+    const path = "/src/db/schema.ts";
+    const { db } = await import(/* @vite-ignore */ path);
+    const sessions = await db.sessions.toArray();
+    const session = sessions[0];
+    const draft = session.drafts.find((item: { exerciseId: string }) => item.exerciseId === "44444444-4444-4444-8444-444444444444");
+    draft.weight = "12.35";
+    session.execution.revision += 1;
+    await db.sessions.put(session);
+  });
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0]).toMatchObject({ weight: 12.35 });
+});
+
+for (const [initialWeight, expectedWeight] of [["12.35", 14.85], ["310", 312.5]] as const) {
+  test(`weight adjustment keeps full precision and supports ${initialWeight} kg`, async ({ page }) => {
+    const api = await installTimingApi(page, false, false);
+    await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+    await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+    await page.evaluate(async weight => {
+      const path = "/src/db/schema.ts";
+      const { db } = await import(/* @vite-ignore */ path);
+      const session = (await db.sessions.toArray())[0];
+      session.drafts.find((item: { exerciseId: string }) => item.exerciseId === "44444444-4444-4444-8444-444444444444").weight = weight;
+      session.execution.revision += 1;
+      await db.sessions.put(session);
+    }, initialWeight);
+    await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+    await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+    await dialog.getByRole("button", { name: "+2,5", exact: true }).click();
+    await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+    await expect.poll(() => api.writes.length).toBe(1);
+    expect(api.writes[0]).toMatchObject({ weight: expectedWeight });
+  });
+}
+
+for (const [initialWeight, chosenKg, expectedWeight] of [["12.35", "13", 13.35], ["310", "309", 309]] as const) {
+  test(`weight wheel keeps precision and neighboring values for ${initialWeight} kg`, async ({ page }) => {
+    const api = await installTimingApi(page, false, false);
+    await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+    await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+    await page.evaluate(async weight => {
+      const path = "/src/db/schema.ts";
+      const { db } = await import(/* @vite-ignore */ path);
+      const session = (await db.sessions.toArray())[0];
+      session.drafts.find((item: { exerciseId: string }) => item.exerciseId === "44444444-4444-4444-8444-444444444444").weight = weight;
+      session.execution.revision += 1;
+      await db.sessions.put(session);
+    }, initialWeight);
+    await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+    await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+    await dialog.getByLabel("Кг: выбрать значение", { exact: true }).selectOption(chosenKg);
+    await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+    await expect.poll(() => api.writes.length).toBe(1);
+    expect(api.writes[0]).toMatchObject({ weight: expectedWeight });
+  });
+}
+
+test("a suggested dumbbell weight keeps the per-hand meaning", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+  await page.evaluate(async () => {
+    const dbPath = "/src/db/schema.ts", storePath = "/src/store/workoutStore.ts";
+    const { db } = await import(/* @vite-ignore */ dbPath);
+    const { useWorkoutStore } = await import(/* @vite-ignore */ storePath);
+    const state = useWorkoutStore.getState();
+    state.setCatalog(state.catalog.map((exercise: { id: string }) => exercise.id === "44444444-4444-4444-8444-444444444444" ? { ...exercise, weight_rule: "per_hand" } : exercise));
+    const session = (await db.sessions.toArray())[0];
+    const draft = session.drafts.find((item: { exerciseId: string }) => item.exerciseId === "44444444-4444-4444-8444-444444444444");
+    draft.weight = "12.35"; draft.weightMode = null;
+    session.execution.revision += 1;
+    await db.sessions.put(session);
+  });
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog.getByText("Вес одной гантели, кг", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0]).toMatchObject({ weight: 12.35, weight_mode: "per_hand" });
+});
+
+test("the standard editor accepts a new weight with hundredths", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog.getByLabel("Точный вес, кг", { exact: true })).toBeVisible({ timeout: 2000 });
+  await dialog.getByLabel("Точный вес, кг", { exact: true }).fill("12,345");
+  await expect(dialog.getByRole("button", { name: "Применить", exact: true })).toBeDisabled();
+  await dialog.getByLabel("Точный вес, кг", { exact: true }).fill("12,35");
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0]).toMatchObject({ weight: 12.35 });
+});
+
+test("the zero-weight shortcut updates the exact input and clears invalid input", async ({ page }) => {
+  await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  const field = dialog.getByLabel("Точный вес, кг", { exact: true });
+  await field.fill("12,35");
+  await dialog.getByRole("button", { name: "0 кг", exact: true }).click();
+  await expect(field).toHaveValue("0");
+  await field.fill("10001");
+  await expect(dialog.getByRole("button", { name: "Применить", exact: true })).toBeDisabled();
+  await dialog.getByRole("button", { name: "0 кг", exact: true }).click();
+  await expect(field).toHaveValue("0");
+  await expect(dialog.getByRole("button", { name: "Применить", exact: true })).toBeEnabled();
+});
+
+test("the ordinary workout editor keeps a suggested weight in hundredths", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?target=weight-v1");
+  await page.getByRole("button", { name: "Править", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog.getByLabel("Точный вес, кг", { exact: true })).toHaveValue("12,35");
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0]).toMatchObject({ weight: 12.35 });
+});
+
+test("refusing to discard inline input keeps it when opening the standard dialog", async ({ page }) => {
+  await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  const weight = page.getByLabel("Рабочий вес, кг", { exact: true });
+  await weight.fill("31");
+  page.once("dialog", dialog => dialog.dismiss());
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  await expect(weight).toHaveValue("31");
+  await expect(page.getByRole("dialog", { name: "Добавить подход" })).toHaveCount(0);
+});
+
+test("reselecting the same exercise does not discard the warning about unfinished input", async ({ page }) => {
+  await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
+  const weight = page.getByLabel("Рабочий вес, кг", { exact: true });
+  await weight.fill("110");
+  await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
+  page.once("dialog", dialog => dialog.dismiss());
+  await navigation.getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await expect(weight).toHaveValue("110");
+  await expect(page.getByRole("heading", { name: "Жим штанги лёжа", exact: true })).toBeVisible();
+});
+
+test("a cluster part opens the same editing dialog and records only the chosen part", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].parts.map(part => part.status)).toEqual(["completed", "pending", "pending"]);
+});
+
+test("editing a restored pending part keeps its own entered values", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+  await page.evaluate(async () => {
+    const path = "/src/db/schema.ts";
+    const { db } = await import(/* @vite-ignore */ path);
+    const session = (await db.sessions.toArray())[0];
+    session.drafts[0].parts[0].reps = 6;
+    session.drafts[0].parts[0].weight = 12.35;
+    session.execution.revision += 1;
+    await db.sessions.put(session);
+  });
+  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("12.35");
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  await page.getByRole("dialog", { name: "Добавить подход" }).getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].parts[0]).toMatchObject({ reps: 6, weight: 12.35, status: "completed" });
+});
+
+test("a later cluster part keeps the original total-weight interpretation", async ({ page }) => {
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  await page.evaluate(async () => {
+    const dbPath = "/src/db/schema.ts", storePath = "/src/store/workoutStore.ts";
+    const { db } = await import(/* @vite-ignore */ dbPath);
+    const { useWorkoutStore } = await import(/* @vite-ignore */ storePath);
+    const state = useWorkoutStore.getState();
+    state.setCatalog(state.catalog.map((exercise: { id: string }) => exercise.id === "33333333-3333-4333-8333-333333333333" ? { ...exercise, weight_rule: "per_hand" } : exercise));
+    const session = (await db.sessions.toArray())[0];
+    session.drafts[0].weightMode = null;
+    session.execution.revision += 1;
+    await db.sessions.put(session);
+  });
+  await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
+  await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog.getByText("Рабочий вес, кг", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1]).toMatchObject({ weight_mode: "total" });
+});
+
+test("finishing rest does not steal a manually opened set editor", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await expect(dialog).toBeVisible();
+  await page.clock.runFor(21000);
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1].is_completed).toBe(true);
+});
+
+test("a saved set synchronizes once even if another tab advances the view before rendering", async ({ page, context }) => {
+  const api = await installTimingApi(page, false, false);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  const second = await context.newPage();
+  await installTimingApi(second, false, false);
+  await second.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await expect(second.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
+  await page.evaluate(async () => {
+    const path = "/src/db/schema.ts";
+    const { db } = await import(/* @vite-ignore */ path);
+    const original = db.transaction.bind(db);
+    const shared = window as unknown as { held?: boolean; heldRevision?: number; release?: () => void };
+    const wait = new Promise<void>(resolve => { shared.release = resolve; });
+    db.transaction = (...args: unknown[]) => original(...args).then(async (result: { accepted?: boolean; session?: { execution?: { revision: number } } }) => {
+      if (result?.accepted === true && result.session?.execution && !shared.held) { shared.held = true; shared.heldRevision = result.session.execution.revision; await wait; }
+      return result;
+    });
+  });
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { held?: boolean }).held))).toBe(true);
+  await second.evaluate(async () => {
+    const dbPath = "/src/db/workoutExecution.ts", storePath = "/src/store/workoutStore.ts", utilPath = "/src/utils/workoutExecution.ts";
+    const { showExecutionStep } = await import(/* @vite-ignore */ dbPath);
+    const { useWorkoutStore } = await import(/* @vite-ignore */ storePath);
+    const { buildExecutionSteps } = await import(/* @vite-ignore */ utilPath);
+    const state = useWorkoutStore.getState();
+    await showExecutionStep("22222222-2222-4222-8222-222222222222", state.clientWorkoutId, buildExecutionSteps(state.activeWorkout.plan)[0].id);
+  });
+  await expect.poll(() => page.evaluate(async () => {
+    const path = "/src/store/workoutStore.ts";
+    const { useWorkoutStore } = await import(/* @vite-ignore */ path);
+    const held = (window as unknown as { heldRevision?: number }).heldRevision ?? -1;
+    return (useWorkoutStore.getState().execution?.revision ?? -1) > held;
+  })).toBe(true);
+  await page.evaluate(() => (window as unknown as { release: () => void }).release());
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(1);
+  await second.close();
 });
 
 test("slow network and double tap do not prolong cluster rest or complete the next part", async ({ page }) => {

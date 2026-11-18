@@ -44,7 +44,7 @@ export function draftsFromWorkoutSnapshot(workout: Workout): LocalSetDraft[] {
     );
     const plannedSetCount = Math.max(1, Math.min(20, Math.trunc(exercise.target_sets || 3)));
     const setNumbers = [...new Set([
-      ...Array.from({ length: plannedSetCount }, (_, i) => i + 1),
+      ...(exercise.active_set_numbers ?? Array.from({ length: plannedSetCount }, (_, i) => i + 1)),
       ...savedRows.map(row => row.set_number),
     ])].sort((a, b) => a - b);
     const restSec = exercise.rest_sec ?? 60;

@@ -64,6 +64,7 @@ export type WorkoutPlanExercise = {
   exercise_id: string;
   order: number;
   target_sets: number;
+  active_set_numbers?: number[] | null;
   target_reps?: string | null;
   rest_sec?: number | null;
   name_ru?: string | null;
@@ -76,6 +77,7 @@ export type WorkoutPlanExercise = {
 
 export type WorkoutPlan = {
   execution_version?: 1 | 2;
+  active_plan_revision?: number;
   groups?: WorkoutGroup[];
   customization_scopes?: Array<"program_day" | "occurrence">;
   customization_revisions?: Partial<Record<"program_day" | "occurrence", number>>;

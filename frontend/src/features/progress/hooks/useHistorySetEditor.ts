@@ -46,7 +46,7 @@ export function useHistorySetEditor(workouts: Workout[], onChanged: (workout: Wo
         machineParams: changed("machineParams") ? draft.machineParams ? { ...row.machine_params, ...draft.machineParams } : null : row.machine_params,
         isCompleted: changed("isCompleted") ? draft.isCompleted ?? selection.adding : row.is_completed,
         isSkipped: row.is_skipped === true && !(changed("isCompleted") ? draft.isCompleted ?? selection.adding : row.is_completed),
-        ...((workout.plan as WorkoutPlan | null)?.execution_version === 2 ? { executionVersion: 2, executionKind: "standard", baseExecutionRevision: row.execution_revision ?? 0 } : {}),
+        ...((workout.plan as WorkoutPlan | null)?.execution_version === 2 ? { executionVersion: 2, executionKind: "standard", baseExecutionRevision: row.execution_revision ?? 0, activePlanRevision: (workout.plan as WorkoutPlan).active_plan_revision } : {}),
       };
       if (payload.executionVersion === 2) {
         const key = JSON.stringify(payload);
@@ -79,6 +79,7 @@ export function useHistorySetEditor(workouts: Workout[], onChanged: (workout: Wo
     try {
       const payload: Parameters<typeof addWorkoutSet>[0] = { workoutId: workout.id, exerciseId: row.exercise_id, setNumber: row.set_number,
         executionVersion: 2, executionKind: row.execution_kind, baseExecutionRevision: row.execution_revision ?? 0, parts,
+        activePlanRevision: (workout.plan as WorkoutPlan | null)?.active_plan_revision,
         reps: null, weight: null, weightMode: row.weight_mode, durationSec: row.duration_sec, restTimeSec: row.rest_time_sec,
         note, machineParams: row.machine_params, isCompleted: parts.every(part => part.status !== "pending") && parts.some(part => part.status === "completed") };
       const key = JSON.stringify(payload);

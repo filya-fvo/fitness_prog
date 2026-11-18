@@ -14,7 +14,7 @@ from app.services.workout_target_compatibility import restore_omitted_targets
 
 def plan_fingerprint(user, program, plan, *, scheduled_date, day_index, week_phase, cycle_readiness):
     parsed = WorkoutPlan.model_validate(plan)
-    content = parsed.model_dump(exclude={"exercises": {"__all__": {"suggested_weight", "name_ru"}}})
+    content = parsed.model_dump(exclude={"exercises": {"__all__": {"suggested_weight", "name_ru", "active_set_numbers"}}})
     content["exercises"].sort(key=lambda row: row["order"])
     content["groups"].sort(key=lambda row: str(row["id"]))
     for row in content["exercises"]:

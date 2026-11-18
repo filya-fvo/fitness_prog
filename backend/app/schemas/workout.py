@@ -7,7 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 from app.schemas.workout_target import ExplicitWorkoutTarget
@@ -20,6 +20,7 @@ class WorkoutPlanExercise(BaseModel):
     exercise_id: uuid.UUID
     order: int = Field(..., ge=1)
     target_sets: int = Field(default=3, ge=1, le=20)
+    active_set_numbers: list[int] | None = Field(default=None, min_length=1, max_length=20)
     target_reps: str | None = "8-12"
     rest_sec: int = Field(default=60, ge=0, le=600)
     name_ru: str | None = None
@@ -28,6 +29,18 @@ class WorkoutPlanExercise(BaseModel):
     weight_mode: str | None = Field(default=None, pattern=r"^(total|per_hand)$")
     # Up to 500 user characters plus the bounded readable goal suffix.
     note: str | None = Field(default=None, max_length=600)
+
+    @model_validator(mode="after")
+    def validate_active_sets(self):
+        numbers = self.active_set_numbers
+        if numbers is not None and (numbers != sorted(set(numbers)) or numbers[0] < 1 or numbers[-1] > self.target_sets):
+            raise ValueError("Некорректные номера оставшихся подходов")
+        return self
+
+    def planned_set_numbers(self) -> range | list[int]:
+        if self.active_set_numbers is not None:
+            return self.active_set_numbers
+        return range(1, self.target_sets + 1)
 
 
 class WorkoutPlan(BaseModel):
@@ -115,6 +128,8 @@ class WorkoutCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_preparation(self):
+        if self.plan and any(row.active_set_numbers is not None for row in self.plan.exercises):
+            raise ValueError("Оставшиеся подходы рассчитываются только для начатой тренировки")
         if self.preparation is not None and (self.execution_version != 2 or not self.program_id or not self.day_index or not self.client_workout_id or not self.plan or not self.plan.exercises):
             raise ValueError("Сохранённому плану нужны программа, день, версия и идентификатор тренировки")
         return self
@@ -135,6 +150,7 @@ class PlannedWorkoutPlanRequest(BaseModel):
 
 
 class WorkoutCompleteRequest(BaseModel):
+    active_plan_revision: int | None = Field(default=None, ge=0)
     execution_version: Literal[1, 2] | None = None
     completed_at: AwareDatetime | None = None
     duration_sec: int | None = Field(default=None, ge=0, le=604800)
@@ -159,6 +175,7 @@ class WorkoutUpdateRequest(BaseModel):
 
 
 class WorkoutSetCreate(BaseModel):
+    active_plan_revision: int | None = Field(default=None, ge=0)
     execution_version: Literal[1, 2] | None = None
     execution_kind: Literal["standard", "drop", "cluster"] = "standard"
     base_execution_revision: int | None = Field(default=None, ge=0)
@@ -225,6 +242,13 @@ class WorkoutResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     sets: list[WorkoutSetResponse] = Field(default_factory=list)
+
+    @field_validator("sets", mode="before")
+    @classmethod
+    def exclude_deleted_sets(cls, rows):
+        if isinstance(rows, list):
+            return [row for row in rows if not getattr(row, "is_deleted", False)]
+        return rows
 
 
 class WorkoutHistoryResponse(BaseModel):

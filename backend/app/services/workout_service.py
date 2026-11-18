@@ -27,6 +27,7 @@ from app.schemas.workout import (
 )
 from app.services import cycle_training, illness_pause, planned_workout, program_publication, workout_customization, workout_execution
 from app.services.workout_notifications import mark_occurrence_started
+from app.services.workout_topology import require_active_plan_revision
 from app.services.program_day_targets import apply_exercise_intent, execution_fields, with_readable_target_notes
 
 
@@ -761,6 +762,7 @@ async def complete_workout(
         await session.execute(select(User.id).where(User.id == user.id).with_for_update())
         workout = await workout_execution.lock_workout(session, workout.id, user.id)
         workout_execution.require_execution_version(workout.plan, data.execution_version)
+        require_active_plan_revision(workout.plan, data.active_plan_revision)
     if workout.status == "completed":
         # Also repairs cursors from older/client-only completion flows.
         repaired = await _advance_program_cursor_for_completed_workout(session, user, workout)
@@ -1028,6 +1030,7 @@ async def update_workout_plan(
     if (workout.plan or {}).get("execution_version") == 2:
         workout = await workout_execution.lock_workout(session, workout.id, user.id)
         workout_execution.require_execution_version(workout.plan, data.execution_version)
+        require_active_plan_revision(workout.plan, None)
     if workout.status == "completed":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
