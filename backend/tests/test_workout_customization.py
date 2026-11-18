@@ -363,9 +363,10 @@ async def test_stale_inherited_revision_cannot_overwrite_new_personal_day(databa
 
 
 @pytest.mark.asyncio
-async def test_reset_with_dependent_occurrence_preserves_both_layers_on_conflict(database):
-    from app.services import workout_customization as service
+async def test_reset_with_dependent_occurrence_preserves_both_layers_on_conflict(database, monkeypatch):
+    from app.services import scheduler, workout_customization as service
     session, owner, _, program, exercise, _, _ = database
+    monkeypatch.setattr(scheduler, "local_schedule_day", lambda _: date(2026, 10, 18))
     await service.save_customization(session, owner, request(program, exercise))
     await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": exercise.id, "target_sets": 5}]}))
     with pytest.raises(HTTPException) as caught:

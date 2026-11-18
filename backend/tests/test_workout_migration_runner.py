@@ -31,7 +31,13 @@ async def test_real_runner_preserves_history_and_skips_applied_files(database, t
             await session.execute(text(f'INSERT INTO "{schema}".{table} SELECT * FROM "{source}".{table}'))
         await session.execute(text(f'ALTER TABLE "{schema}".workout_sets DROP COLUMN execution_kind CASCADE, DROP COLUMN execution_revision CASCADE, DROP COLUMN is_skipped CASCADE'))
         await session.commit()
-        for filename in ["20261019000000_personal_workout_customizations.sql", "20261019000001_structured_workout_execution.sql", "20261020000000_workout_set_skips.sql"]:
+        files = [
+            "20261019000000_personal_workout_customizations.sql",
+            "20261019000001_structured_workout_execution.sql",
+            "20261020000000_workout_set_skips.sql",
+            "20261114000000_workout_topology_receipts.sql",
+        ]
+        for filename in files:
             shutil.copyfile(migration().with_name(filename), tmp_path / filename)
         url = make_url(os.environ["WORKOUT_METHODS_TEST_URL"])
         env = dict(os.environ, PGHOST=url.host, PGPORT=str(url.port), PGDATABASE=url.database, PGUSER=url.username,
@@ -50,9 +56,9 @@ async def test_real_runner_preserves_history_and_skips_applied_files(database, t
             return completed.stdout
         first = await asyncio.to_thread(run)
         second = await asyncio.to_thread(run)
-        assert first.count("APPLY ") == 3
-        assert second.count("SKIP ") == 3 and "APPLY " not in second
-        assert (await session.execute(text(f'SELECT count(*) FROM "{schema}".fitness_schema_migrations'))).scalar_one() == 3
+        assert first.count("APPLY ") == len(files)
+        assert second.count("SKIP ") == len(files) and "APPLY " not in second
+        assert (await session.execute(text(f'SELECT count(*) FROM "{schema}".fitness_schema_migrations'))).scalar_one() == len(files)
         row = (await session.execute(text(f'SELECT reps, weight, is_completed, execution_kind, execution_revision, is_skipped FROM "{schema}".workout_sets WHERE id=:id'), {"id": result.id})).one()
         assert tuple(row) == (10, 50, True, "standard", 0, False)
     finally:

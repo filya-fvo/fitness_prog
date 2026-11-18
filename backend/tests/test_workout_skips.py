@@ -27,7 +27,8 @@ async def test_skip_survives_server_fetch_and_undo_and_does_not_count_as_work(da
     from hashlib import sha256
     from app.models.workout_set_part import WorkoutSetExecutionReceipt
     receipt = await session.get(WorkoutSetExecutionReceipt, (undone.id, undo.client_operation_id))
-    assert receipt.request_hash == sha256(undo.model_dump_json(exclude={"is_skipped"}).encode()).hexdigest()
+    legacy_request = undo.model_dump_json(exclude={"is_skipped", "active_plan_revision"})
+    assert receipt.request_hash == sha256(legacy_request.encode()).hexdigest()
     assert (await workout_service.add_workout_set(session, owner, workout.id, undo)).execution_revision == 2
     assert not undone.is_skipped and not undone.is_completed
 
