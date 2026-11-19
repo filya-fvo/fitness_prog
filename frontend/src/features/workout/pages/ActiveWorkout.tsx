@@ -1597,8 +1597,9 @@ export function ActiveWorkout() {
       {!isV2 && activeWorkout.status === "planned" ? <button type="button"
         className="app-button app-ghost-action mb-3 min-h-11 w-full"
         disabled={completing || Boolean(savingKey)}
-        onClick={() => {
+        onClick={event => {
           if (completingSetsRef.current.size) return;
+          event.currentTarget.focus({ preventScroll: true });
           setAutoAdvance(null); setAppendError(null); setExercisePicker("append");
         }}>Добавить упражнение</button> : null}
       {isV2 ? <WorkoutExecutionNavigator key={`${authenticatedUserId}:${stableClientId}`} autoAdvance={autoAdvanceExercises}

@@ -20,7 +20,7 @@ type Props = {
   confirmDiscardInput: () => Promise<boolean>;
 };
 type Action = ActiveWorkoutTopologyRequest["action"];
-type Selection = { action: Action; subject: string; revision: number; source?: Exercise };
+type Selection = { action: Action; subject: string; revision: number; source?: Exercise; opener: HTMLButtonElement };
 const button = "min-h-11 rounded-xl border border-tg-hint/25 px-3 text-sm disabled:opacity-40";
 
 export function ActiveTopologyEditor({ owner, client, server, plan, row, group, exercise, activeRest, onOpenChange, confirmDiscardInput }: Props) {
@@ -60,7 +60,7 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
     if (inFlight.current || retry) return;
     setSelection(null); setPreview(null); setPending(null); setError(null);
   }
-  const ref = useModalAccessibility(open, close);
+  const ref = useModalAccessibility(open, close, selection?.opener);
   useEffect(() => {
     onOpenChange(open);
     return () => onOpenChange(false);
@@ -124,22 +124,23 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
   }
 
   const controlsDisabled = activeRest || !online || busy || retry;
-  async function edit(action: Action) {
+  async function edit(action: Action, opener: HTMLButtonElement) {
     if (!await confirmDiscardInput()) return;
     const wholeGroup = action.endsWith("group");
     setSelection({
       action, subject: wholeGroup && group ? group.id : row.exercise_id, revision: plan.active_plan_revision ?? 0,
       source: action === "replace_member" ? exercise : undefined,
+      opener,
     });
     setCount(String(group?.rounds ?? row.target_sets)); setError(null);
   }
 
   return <>
     <div className="flex flex-wrap gap-2" aria-label="Настройки текущей тренировки">
-      <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("append_exercise")}>Добавить упражнение</button>
-      <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("replace_member")}>Заменить</button>
-      {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("replace_group")}>Заменить связку</button> : null}
-      <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit(group ? "resize_group" : "resize_exercise")}>{group ? "Изменить раунды" : "Изменить подходы"}</button>
+      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("append_exercise", event.currentTarget)}>Добавить упражнение</button>
+      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_member", event.currentTarget)}>Заменить</button>
+      {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_group", event.currentTarget)}>Заменить связку</button> : null}
+      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit(group ? "resize_group" : "resize_exercise", event.currentTarget)}>{group ? "Изменить раунды" : "Изменить подходы"}</button>
     </div>
     {!open && error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
     {!online && !open ? <p className="text-xs text-tg-hint">Изменение плана доступно в сети.</p> : null}

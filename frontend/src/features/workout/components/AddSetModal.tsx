@@ -28,6 +28,7 @@ type Props = {
   /** Prefill from recommendation / last set */
   initial?: Partial<LocalSetDraft> | null;
   onClose: () => void;
+  returnFocusTo?: HTMLElement;
   onApply: (draft: {
     reps: string;
     weight: string;
@@ -65,6 +66,7 @@ export function AddSetModal({
   exercise,
   initial,
   onClose,
+  returnFocusTo,
   onApply,
   onStartTimerOnly,
   defaultRestSec = 60,
@@ -77,7 +79,7 @@ export function AddSetModal({
   error = null,
   subtitle,
 }: Props) {
-  const dialogRef = useModalAccessibility(open, () => { if (!busy) onClose(); });
+  const dialogRef = useModalAccessibility(open, () => { if (!busy) onClose(); }, returnFocusTo);
   const fieldId = useId();
   const loadType: ExerciseLoadType = useMemo(() => inferLoadType(exercise), [exercise]);
   const machineKind: CardioMachineKind = useMemo(

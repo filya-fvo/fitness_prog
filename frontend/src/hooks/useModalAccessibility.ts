@@ -21,6 +21,7 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
   open: boolean,
   onClose: () => void,
+  returnFocusTo?: HTMLElement,
 ): RefObject<T> {
   const dialogRef = useRef<T>(null);
   const dialogIdRef = useRef(Symbol("dialog"));
@@ -33,9 +34,9 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
     const dialogId = dialogIdRef.current;
     openDialogStack.push(dialogId);
 
-    const previouslyFocused = document.activeElement instanceof HTMLElement
+    const previouslyFocused = returnFocusTo ?? (document.activeElement instanceof HTMLElement
       ? document.activeElement
-      : null;
+      : null);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -88,7 +89,7 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
-  }, [open]);
+  }, [open, returnFocusTo]);
 
   return dialogRef;
 }
