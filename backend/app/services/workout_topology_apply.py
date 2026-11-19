@@ -50,9 +50,10 @@ async def _preview(session, workout, request):
         require_active_plan_revision(workout.plan, request.expected_plan_revision)
     plan = WorkoutPlan.model_validate(workout.plan)
     exercise = None
-    if request.replacement_exercise_id:
+    catalog_id = request.subject_id if request.action == "append_exercise" else request.replacement_exercise_id
+    if catalog_id:
         exercise = await session.scalar(select(Exercise).where(
-            Exercise.id == request.replacement_exercise_id, Exercise.is_deleted.is_(False),
+            Exercise.id == catalog_id, Exercise.is_deleted.is_(False),
         ))
         if exercise is None:
             raise HTTPException(422, "Упражнение больше недоступно")

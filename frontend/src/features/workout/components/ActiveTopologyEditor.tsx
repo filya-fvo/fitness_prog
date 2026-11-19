@@ -68,11 +68,13 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
 
   async function requestPreview(next?: Exercise) {
     if (!selection || inFlight.current) return;
+    const adding = selection.action === "append_exercise";
+    if (adding && !next) return;
     inFlight.current = true; setBusy(true); setError(null);
     const payload: ActiveWorkoutTopologyRequest = {
-      operation_id: crypto.randomUUID(), action: selection.action, subject_id: selection.subject,
+      operation_id: crypto.randomUUID(), action: selection.action, subject_id: adding && next ? next.id : selection.subject,
       expected_plan_revision: selection.revision,
-      ...(next ? { replacement_exercise_id: next.id } : { target_count: Number(count) }),
+      ...(next ? (adding ? {} : { replacement_exercise_id: next.id }) : { target_count: Number(count) }),
     };
     try {
       await flushSyncQueue(owner);
@@ -134,18 +136,19 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
 
   return <>
     <div className="flex flex-wrap gap-2" aria-label="Настройки текущей тренировки">
+      <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("append_exercise")}>Добавить упражнение</button>
       <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("replace_member")}>Заменить</button>
       {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit("replace_group")}>Заменить связку</button> : null}
       <button type="button" className={button} disabled={controlsDisabled} onClick={() => void edit(group ? "resize_group" : "resize_exercise")}>{group ? "Изменить раунды" : "Изменить подходы"}</button>
     </div>
     {!open && error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
-    {!online && !open ? <p className="text-xs text-tg-hint">Замена и изменение числа подходов доступны в сети.</p> : null}
+    {!online && !open ? <p className="text-xs text-tg-hint">Изменение плана доступно в сети.</p> : null}
     {open ? <div role="dialog" aria-modal="true" aria-labelledby="active-topology-title"
       className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 sm:items-center">
       <section ref={ref} tabIndex={-1} className="app-card max-h-[90dvh] w-full max-w-lg space-y-3 overflow-y-auto p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 id="active-topology-title" className="text-lg font-semibold">
-            {selection?.action === "replace_member" ? "Замена упражнения" : selection?.action === "replace_group" ? "Замена связки" : "Изменить текущую тренировку"}
+            {selection?.action === "append_exercise" ? "Добавить упражнение" : selection?.action === "replace_member" ? "Замена упражнения" : selection?.action === "replace_group" ? "Замена связки" : "Изменить текущую тренировку"}
           </h2>
           <button type="button" disabled={busy || retry} className={button} onClick={close}>Закрыть</button>
         </div>
@@ -158,7 +161,7 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
             <button type="button" disabled={busy} className={button} onClick={() => { setPending(null); setPreview(null); }}>Назад</button>
           </>}
           <button type="button" disabled={busy || !online} className={button} onClick={() => void save()}>{retry ? "Повторить отправку" : "Применить изменение"}</button>
-        </> : selection?.action.startsWith("replace") ? <fieldset disabled={busy || !online}>
+        </> : selection && (selection.action.startsWith("replace") || selection.action === "append_exercise") ? <fieldset disabled={busy || !online}>
           {selection.source ? <p className="mb-3 text-xs text-tg-hint">Сейчас: {selection.source.name_ru}</p> : null}
           <WorkoutReplacementPicker source={selection.source} catalog={catalog} occupiedIds={occupiedIds}
             recommended={rankWorkoutReplacementOptions(selection.source, catalog, occupiedIds)}

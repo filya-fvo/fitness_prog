@@ -15,21 +15,26 @@ from app.services.workout_topology_apply import apply_topology, preview_topology
 from tests.test_workout_customization import database as database
 
 
-async def start_group(database, *, drop=False):
+async def start_group(database, *, drop=False, kind="superset"):
     session, owner, other, _, a, b, _ = database
     replacement = Exercise(name_ru="Замена", muscle_group="Пресс", difficulty=1)
     session.add(replacement)
+    members = [a, b]
+    if kind == "triset":
+        third = Exercise(name_ru="Третий участник", muscle_group="Руки", difficulty=1)
+        session.add(third)
+        members.append(third)
     await session.commit()
     gid = uuid4()
     exercises = [{"exercise_id": ex.id, "order": position, "target_sets": 2}
-                 for position, ex in enumerate((a, b), 1)]
+                 for position, ex in enumerate(members, 1)]
     if drop:
         exercises[0]["set_methods"] = [{"set_number": 1, "kind": "drop", "parts": [
             {"target_reps": 8, "target_weight": 30, "pause_after_sec": 0},
             {"target_reps": 8, "target_weight": 20, "pause_after_sec": 0},
         ]}]
     plan = WorkoutPlan.model_validate({"execution_version": 2, "groups": [
-        {"id": gid, "kind": "superset", "exercise_ids": [a.id, b.id], "rounds": 2},
+        {"id": gid, "kind": kind, "exercise_ids": [exercise.id for exercise in members], "rounds": 2},
     ], "exercises": exercises})
     workout = await workout_service.create_workout(session, owner, WorkoutCreate(
         scheduled_date=date(2026, 11, 14), client_workout_id=uuid4(), execution_version=2, plan=plan,
@@ -199,3 +204,28 @@ async def test_reopened_round_does_not_accept_results_from_before_its_removal(da
     owner = await session.get(User, owner_id)
     fresh = result(a, 2, revision=2).model_copy(update={"base_execution_revision": 1})
     assert (await workout_service.add_workout_set(session, owner, workout_id, fresh)).is_completed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["superset", "triset"])
+async def test_appends_exercise_after_the_group_once_without_changing_recorded_sets(database, kind):
+    session, owner, _, workout, _, a, _, extra = await start_group(database, kind=kind)
+    workout_id = workout.id
+    saved = await workout_service.add_workout_set(session, owner, workout_id, result(a))
+    original_group = workout.plan["groups"]
+    request = ActiveTopologyRequest(operation_id=uuid4(), action="append_exercise", subject_id=extra,
+                                    expected_plan_revision=0)
+    payload = await confirmed(session, owner, workout_id, request)
+    applied = await apply_topology(session, owner, workout_id, payload)
+    assert applied.plan["groups"] == original_group
+    assert applied.plan["exercises"][-1]["exercise_id"] == str(extra)
+    assert applied.plan["exercises"][-1]["target_sets"] == 3
+    assert next(row for row in applied.sets if row.id == saved.id).reps == 9
+    assert (await apply_topology(session, owner, workout_id, payload)).model_dump() == applied.model_dump()
+    assert (await workout_service.add_workout_set(session, owner, workout_id, result(extra, revision=1))).is_completed
+
+    duplicate = ActiveTopologyRequest(operation_id=uuid4(), action="append_exercise", subject_id=extra,
+                                      expected_plan_revision=1)
+    with pytest.raises(HTTPException) as caught:
+        await confirmed(session, owner, workout_id, duplicate)
+    assert caught.value.status_code == 409

@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.schemas.workout import WorkoutPlan
 
-TopologyAction = Literal["replace_member", "replace_group", "resize_exercise", "resize_group"]
+TopologyAction = Literal["append_exercise", "replace_member", "replace_group", "resize_exercise", "resize_group"]
 PLAN_CHANGED = "План тренировки уже изменился. Записанный результат сохранён на устройстве"
 
 
@@ -152,6 +152,20 @@ def preview_active_topology_change(
 
 def project_v2_topology(plan: WorkoutPlan, rows: list[dict], request: ActiveTopologyRequest, name: str | None) -> WorkoutPlan:
     """Keep unworked slots in the plan and leave recorded rows attached to the workout."""
+    if request.action == "append_exercise":
+        if len(plan.exercises) >= 20:
+            raise HTTPException(409, "В тренировке уже 20 упражнений")
+        if any(row.exercise_id == request.subject_id for row in plan.exercises):
+            raise HTTPException(409, "Это упражнение уже есть в плане или истории тренировки")
+        exercises = sorted(plan.exercises, key=lambda row: row.order)
+        return WorkoutPlan.model_validate({
+            **plan.model_dump(),
+            "exercises": [
+                *(row.model_copy(update={"order": index}) for index, row in enumerate(exercises, 1)),
+                {"exercise_id": request.subject_id, "name_ru": name, "order": len(exercises) + 1,
+                 "target_sets": request.target_count or 3, "target_reps": None},
+            ],
+        })
     preview_active_topology_change(rows, **request.model_dump(exclude={"expected_plan_revision"}))
     projected = plan.model_dump(mode="python")
     exercises = sorted(projected["exercises"], key=lambda row: row["order"])

@@ -359,9 +359,11 @@ export async function saveLocalSession(input: {
   workout: Workout;
   drafts: LocalSetDraft[];
   currentExerciseIndex?: number;
+  syncPlan?: WorkoutPlan;
 }): Promise<void> {
   const ownerUserId = requireOwnerUserId(input.workout.user_id);
-  await db.transaction("rw", db.sessions, db.workouts, async () => {
+  const tables = input.syncPlan ? [db.sessions, db.workouts, db.syncQueue] : [db.sessions, db.workouts];
+  await db.transaction("rw", tables, async () => {
     const existing = await db.sessions.get(input.clientId);
     if (existing && existing.ownerUserId !== ownerUserId) throw new Error("Тренировка принадлежит другому аккаунту");
     const serverId = input.serverId ?? existing?.serverId ?? null;
@@ -377,28 +379,13 @@ export async function saveLocalSession(input: {
       await db.sessions.put({ clientId: input.clientId, ownerUserId, serverId, workout: workoutForStore,
         drafts: input.drafts, currentExerciseIndex: input.currentExerciseIndex ?? 0, updatedAt: Date.now() });
       await db.workouts.put(workoutForStore);
+      if (input.syncPlan) await enqueueSync({ ownerUserId, type: "update_plan", clientWorkoutId: input.clientId,
+        payload: { plan: input.syncPlan } });
     }
     if (serverId && serverId !== input.clientId) await db.workouts.delete(input.clientId);
   });
-}
-
-export async function syncWorkoutPlan(input: {
-  clientWorkoutId: string;
-  plan: WorkoutPlan;
-}): Promise<void> {
-  if (navigator.onLine) {
-    try {
-      const serverWorkoutId = await resolveServerWorkoutId(input.clientWorkoutId);
-      await updateWorkoutPlan({ workoutId: serverWorkoutId, plan: input.plan });
-      return;
-    } catch {
-      // Preserve the mutation and retry in queue order (after create_workout if needed).
-    }
-  }
-  await enqueueSync({
-    type: "update_plan",
-    clientWorkoutId: input.clientWorkoutId,
-    payload: { plan: input.plan },
+  if (input.syncPlan) void flushSyncQueue(ownerUserId).catch(() => {
+    window.dispatchEvent(new CustomEvent("fitness:sync-error", { detail: { message: "Не удалось синхронизировать сохранённые данные" } }));
   });
 }
 
@@ -460,7 +447,7 @@ export async function flushSyncQueue(
       if (useUserStore.getState().user?.id !== owner) break;
       if ((item.attempts || 0) >= MAX_SYNC_ATTEMPTS) {
         if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
-        if (structured) blockedWorkouts.add(item.clientWorkoutId);
+        if (structured || item.type === "update_plan") blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         continue;
       }
@@ -472,7 +459,7 @@ export async function flushSyncQueue(
       } catch (err) {
         if (useUserStore.getState().user?.id !== owner) break;
         if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
-        if (structured) blockedWorkouts.add(item.clientWorkoutId);
+        if (structured || item.type === "update_plan") blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         const message = structured ? workoutSyncError(err) : err instanceof Error ? err.message : "sync failed";
         const attempts = (item.attempts || 0) + 1;

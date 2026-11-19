@@ -35,7 +35,6 @@ import {
   readCachedWorkouts,
   readOperationalCachedWorkouts,
   saveLocalSession,
-  syncWorkoutPlan,
 } from "@/db/syncQueue";
 import { ActivationChecklistCard } from "@/features/onboarding/components/ActivationChecklistCard";
 import { useActivationChecklist } from "@/features/onboarding/hooks/useActivationChecklist";
@@ -514,10 +513,7 @@ export function HomePage() {
           workout: next.activeWorkout,
           drafts: next.drafts,
           currentExerciseIndex: next.currentExerciseIndex,
-        });
-        await syncWorkoutPlan({
-          clientWorkoutId,
-          plan: next.activeWorkout.plan as WorkoutPlan,
+          syncPlan: next.activeWorkout.plan as WorkoutPlan,
         });
       }
       setSessionHasReplacements(false);

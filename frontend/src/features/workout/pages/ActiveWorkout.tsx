@@ -15,7 +15,6 @@ import {
   removeCachedWorkout,
   resolveServerWorkoutId,
   saveLocalSession,
-  syncWorkoutPlan,
 } from "@/db/syncQueue";
 import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHints";
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
@@ -47,7 +46,7 @@ import { confirmAction, hapticImpact, hapticNotification } from "@/lib/telegram"
 import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
 import { uniqueExerciseIds, useWorkoutStore } from "@/store/workoutStore";
-import type { Exercise, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
+import type { Exercise, LocalSetDraft, Workout, WorkoutPlan, WorkoutSet } from "@/types/workout";
 import {
   draftReadyToComplete,
   resolveWeekPhase,
@@ -168,7 +167,11 @@ export function ActiveWorkout() {
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
   const [suggestNote, setSuggestNote] = useState<string | null>(null);
   const [elapsedFinalSec, setElapsedFinalSec] = useState<number | null>(null);
-  const [replaceOpen, setReplaceOpen] = useState(false);
+  const [exercisePicker, setExercisePicker] = useState<"replace" | "append" | null>(null);
+  const replaceOpen = exercisePicker !== null;
+  const appendingExercise = useRef(false);
+  const [appendBusy, setAppendBusy] = useState(false);
+  const [appendError, setAppendError] = useState<string | null>(null);
   const [bulkReplacementPlan, setBulkReplacementPlan] =
     useState<BulkReplacementPlan | null>(null);
   const [aiAssistOpen, setAiAssistOpen] = useState(false);
@@ -207,7 +210,8 @@ export function ActiveWorkout() {
     Boolean(bulkReplacementPlan),
     () => setBulkReplacementPlan(null),
   );
-  const replaceDialogRef = useModalAccessibility(replaceOpen, () => setReplaceOpen(false));
+  const closeExercisePicker = () => { if (!appendingExercise.current) setExercisePicker(null); };
+  const replaceDialogRef = useModalAccessibility(replaceOpen, closeExercisePicker);
   const aiAssistDialogRef = useModalAccessibility(aiAssistOpen, () => setAiAssistOpen(false));
   const [restContext, setRestContext] = useState<{
     exerciseName: string;
@@ -554,7 +558,7 @@ export function ActiveWorkout() {
   }, [booting, currentExerciseId, weekPhase.phase, isV2]);
 
   const persistSession = useCallback(
-    async (workout: Workout, nextDrafts = drafts, exerciseIndex = currentExerciseIndex) => {
+    async (workout: Workout, nextDrafts = drafts, exerciseIndex = currentExerciseIndex, syncPlan?: WorkoutPlan) => {
       const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
       const serverId = useWorkoutStore.getState().serverWorkoutId;
       await saveLocalSession({
@@ -563,20 +567,16 @@ export function ActiveWorkout() {
         workout,
         drafts: nextDrafts,
         currentExerciseIndex: exerciseIndex,
+        syncPlan,
       });
     },
     [currentExerciseIndex, drafts, stableClientId],
   );
 
   const persistPlanReplacement = useCallback(
-    async (workout: Workout, nextDrafts = drafts, exerciseIndex = currentExerciseIndex) => {
-      await persistSession(workout, nextDrafts, exerciseIndex);
-      await syncWorkoutPlan({
-        clientWorkoutId: useWorkoutStore.getState().clientWorkoutId ?? stableClientId,
-        plan: asPlan(workout.plan),
-      });
-    },
-    [currentExerciseIndex, drafts, persistSession, stableClientId],
+    (workout: Workout, nextDrafts: LocalSetDraft[], exerciseIndex: number) =>
+      persistSession(workout, nextDrafts, exerciseIndex, asPlan(workout.plan)),
+    [persistSession],
   );
 
   const hasReplacements = useMemo(() => {
@@ -600,7 +600,7 @@ export function ActiveWorkout() {
         setError("Не удалось заменить: упражнение уже есть в тренировке.");
         return;
       }
-      setReplaceOpen(false);
+      setExercisePicker(null);
       setError(null);
       hapticImpact("light");
       const next = useWorkoutStore.getState();
@@ -610,6 +610,36 @@ export function ActiveWorkout() {
     },
     [currentExerciseId, persistPlanReplacement, replaceExercise],
   );
+
+  async function appendExercise(exercise: Exercise) {
+    if (appendingExercise.current || completing || completingSetsRef.current.size) return;
+    const state = useWorkoutStore.getState();
+    const workout = state.activeWorkout;
+    if (!workout || workout.status !== "planned" || useUserStore.getState().user?.id !== workout.user_id) return;
+    const previous = asPlan(workout.plan);
+    if (previous.exercises.length >= 20) { setAppendError("В тренировке уже 20 упражнений"); return; }
+    if (previous.exercises.some(row => row.exercise_id === exercise.id) || state.drafts.some(row => row.exerciseId === exercise.id)) {
+      setAppendError("Это упражнение уже есть в тренировке"); return;
+    }
+    const next = {
+      exercise_id: exercise.id, name_ru: exercise.name_ru,
+      order: Math.max(0, ...previous.exercises.map(row => row.order)) + 1, target_sets: 3,
+    };
+    const updated = { ...workout, plan: { ...previous, exercises: [...previous.exercises, next] } };
+    const addedDrafts = draftsFromWorkoutSnapshot(updated).filter(row => row.exerciseId === exercise.id);
+    const nextDrafts = [...state.drafts, ...addedDrafts];
+    appendingExercise.current = true;
+    setAppendBusy(true); setAppendError(null);
+    try {
+      await persistPlanReplacement(updated, nextDrafts, state.currentExerciseIndex);
+      if (useUserStore.getState().user?.id === workout.user_id && useWorkoutStore.getState().clientWorkoutId === state.clientWorkoutId) {
+        setActiveWorkout(updated);
+        setDrafts(nextDrafts);
+        setExercisePicker(null);
+      }
+    } catch (err) { setAppendError(toUserMessage(err, "Не удалось добавить упражнение")); }
+    finally { appendingExercise.current = false; setAppendBusy(false); }
+  }
 
   const prepareBulkReplacement = useCallback(() => {
     if (!plan.exercises.length || !catalog.length) {
@@ -781,7 +811,7 @@ export function ActiveWorkout() {
   }, [stableClientId]);
 
   const finishWorkout = useCallback(async () => {
-    if (!activeWorkout || completing) return;
+    if (!activeWorkout || completing || appendingExercise.current) return;
     // Allow finish from any exercise (user may end early).
     setCompleting(true);
     setError(null);
@@ -1045,7 +1075,7 @@ export function ActiveWorkout() {
       machineParams: Record<string, string | number> | null;
     }>,
   ) {
-    if (!activeWorkout || restInputDrafts[restInputKey(exerciseId)] !== undefined) return;
+    if (!activeWorkout || appendingExercise.current || restInputDrafts[restInputKey(exerciseId)] !== undefined) return;
     const restWasActiveAtSubmit = useWorkoutStore.getState().isResting;
     let setNumber = setNumberInput;
     // Always read latest drafts from store (modal apply must not race with stale closure).
@@ -1564,6 +1594,13 @@ export function ActiveWorkout() {
         })}
       </div> : null}
 
+      {!isV2 && activeWorkout.status === "planned" ? <button type="button"
+        className="app-button app-ghost-action mb-3 min-h-11 w-full"
+        disabled={completing || Boolean(savingKey)}
+        onClick={() => {
+          if (completingSetsRef.current.size) return;
+          setAutoAdvance(null); setAppendError(null); setExercisePicker("append");
+        }}>Добавить упражнение</button> : null}
       {isV2 ? <WorkoutExecutionNavigator key={`${authenticatedUserId}:${stableClientId}`} autoAdvance={autoAdvanceExercises}
         simpleMode={simpleMode} moreOpen={moreOpen} setMoreOpen={setMoreOpen} onEditorOpenChange={setExecutionEditorOpen} /> : null}
       {!isV2 && currentExercise ? (
@@ -1595,7 +1632,7 @@ export function ActiveWorkout() {
                 type="button"
                 className="tap-target text-xs text-tg-link"
                 onClick={() => {
-                  setReplaceOpen(true);
+                  setExercisePicker("replace");
                 }}
               >
                 Заменить
@@ -2264,7 +2301,7 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      {replaceOpen && currentExercise ? (
+      {exercisePicker === "append" || (exercisePicker === "replace" && currentExercise) ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
           <div
             ref={replaceDialogRef}
@@ -2276,20 +2313,28 @@ export function ActiveWorkout() {
           >
             <div className="flex items-center justify-between border-b border-black/5 px-4 py-3">
               <div>
-                <p id="replace-exercise-title" className="text-sm font-semibold">Замена упражнения</p>
-                <p className="text-xs text-tg-hint">Сейчас: {currentExercise.name_ru}</p>
+                <p id="replace-exercise-title" className="text-sm font-semibold">
+                  {exercisePicker === "append" ? "Добавить упражнение" : "Замена упражнения"}
+                </p>
+                {exercisePicker === "replace" ? <p className="text-xs text-tg-hint">Сейчас: {currentExercise?.name_ru}</p> : null}
               </div>
               <button
                 type="button"
                 className="text-sm text-tg-link"
-                onClick={() => setReplaceOpen(false)}
+                disabled={appendBusy}
+                onClick={closeExercisePicker}
               >
                 Закрыть
               </button>
             </div>
             <div className="space-y-3 overflow-y-auto p-4" style={{ maxHeight: "70vh" }}>
-              <WorkoutReplacementPicker catalog={catalog} occupiedIds={occupiedExerciseIds} source={currentExercise}
-                recommended={recommendedAlternatives} onChoose={applyReplace} />
+              {exercisePicker === "append" && appendError ? <p role="alert" className="text-sm text-[var(--app-danger)]">{appendError}</p> : null}
+              <fieldset disabled={appendBusy}>
+                <WorkoutReplacementPicker catalog={catalog} occupiedIds={occupiedExerciseIds}
+                  source={exercisePicker === "replace" ? currentExercise ?? undefined : undefined}
+                  recommended={exercisePicker === "replace" ? recommendedAlternatives : []}
+                  onChoose={exercisePicker === "append" ? exercise => void appendExercise(exercise) : applyReplace} />
+              </fieldset>
             </div>
           </div>
         </div>
@@ -2405,7 +2450,7 @@ export function ActiveWorkout() {
               className="mt-3 w-full rounded-xl bg-tg-secondary px-3 py-2 text-sm"
               onClick={() => {
                 setAiAssistOpen(false);
-                setReplaceOpen(true);
+                setExercisePicker("replace");
               }}
             >
               Открыть полный список замен

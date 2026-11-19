@@ -210,8 +210,9 @@ const limits = {
   // Full exercise cards and active plan edits grow 657095/600395 to
   // 663114/606418 bytes total/product. Vendor and largest chunk sizes
   // are unchanged. Retain about 0.5 KB aggregate headroom.
-  totalJsGzip: 663_650,
-  productJsGzip: 606_950,
+  // Adding a catalog exercise during a workout adds about 0.55 KB gzip.
+  totalJsGzip: 663_850,
+  productJsGzip: 607_150,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.
