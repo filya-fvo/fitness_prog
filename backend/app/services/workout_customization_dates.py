@@ -14,6 +14,7 @@ from app.models.user_program_day_override import UserProgramDayOverride
 async def change_customization_date(
     session: AsyncSession, user_id: UUID, source_date: date, target_date: date | None,
     program_id: UUID | None = None,
+    day_index: int | None = None,
 ) -> None:
     if source_date == target_date:
         return
@@ -21,6 +22,8 @@ async def change_customization_date(
         UserProgramDayOverride.scheduled_date == source_date, UserProgramDayOverride.is_deleted.is_(False)]
     if program_id is not None:
         conditions.append(UserProgramDayOverride.program_id == program_id)
+    if day_index is not None:
+        conditions.append(UserProgramDayOverride.day_index == day_index)
     rows = await session.scalars(select(UserProgramDayOverride).where(*conditions)
         .order_by(UserProgramDayOverride.program_id, UserProgramDayOverride.day_index))
     for candidate in rows.all():

@@ -256,30 +256,32 @@ export function TrainHubPage() {
       }
 
       if (useUserStore.getState().user?.id !== startOwner) return;
-      const { start, goalsPatch: startPatch } = ensureProgramStartDate(goals, program.id);
-      const cursorPatch = cursorGoalsPatch(
-        program.id,
-        {
-          nextDayIndex: startDayIndex,
-          weekPhase,
-          phaseSource: cursor?.phaseSource ?? "auto",
-          workoutsInPhase: cursor?.workoutsInPhase ?? 0,
-          startedAt: start,
-        },
-        localDateKey(),
-      );
-      const goalsMerged = { ...goals, ...(startPatch || {}), ...cursorPatch };
-      if (isOnline() && getStoredToken()) {
-        try {
-          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
-          if (useUserStore.getState().user?.id !== startOwner) return;
-          setGoals((profile.goals as Record<string, unknown>) || goalsMerged);
-        } catch {
-          if (useUserStore.getState().user?.id !== startOwner) return;
+      if (!startableOccurrence?.original_date) {
+        const { start, goalsPatch: startPatch } = ensureProgramStartDate(goals, program.id);
+        const cursorPatch = cursorGoalsPatch(
+          program.id,
+          {
+            nextDayIndex: startDayIndex,
+            weekPhase,
+            phaseSource: cursor?.phaseSource ?? "auto",
+            workoutsInPhase: cursor?.workoutsInPhase ?? 0,
+            startedAt: start,
+          },
+          localDateKey(),
+        );
+        const goalsMerged = { ...goals, ...(startPatch || {}), ...cursorPatch };
+        if (isOnline() && getStoredToken()) {
+          try {
+            const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
+            if (useUserStore.getState().user?.id !== startOwner) return;
+            setGoals((profile.goals as Record<string, unknown>) || goalsMerged);
+          } catch {
+            if (useUserStore.getState().user?.id !== startOwner) return;
+            setGoals(goalsMerged);
+          }
+        } else {
           setGoals(goalsMerged);
         }
-      } else {
-        setGoals(goalsMerged);
       }
 
       const session = await startProgramSession({
@@ -287,8 +289,8 @@ export function TrainHubPage() {
         warmupLocation: String(goals.location || "gym"),
         programId: program.id,
         dayIndex: startDayIndex,
-        scheduledDate:
-          startableOccurrence?.target_date,
+        scheduledDate: startableOccurrence?.target_date,
+        expectedOriginalDate: startableOccurrence?.original_date,
         weekPhase,
         cycleReadiness,
       });

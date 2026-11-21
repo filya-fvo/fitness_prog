@@ -87,7 +87,7 @@ export function WorkoutSchedulePanel({ overview, disabled = false, onChange }: P
     setSaving(true);
     setError(null);
     try {
-      onChange(await cancelScheduledWorkout(activeOccurrence.target_date));
+      onChange(await cancelScheduledWorkout(activeOccurrence.target_date, activeOccurrence));
     } catch (err) {
       setError(toUserMessage(err, "Не удалось отменить тренировку"));
     } finally {

@@ -369,6 +369,9 @@ async def reschedule_workout_occurrence(
         target_date=body.target_date,
         target_time=body.target_time,
         conflict_resolution=body.conflict_resolution,
+        expected_program_id=body.expected_program_id,
+        expected_day_index=body.expected_day_index,
+        idempotency_key=body.idempotency_key,
     )
     return await _schedule_overview_response(session, user, overview)
 
@@ -397,6 +400,8 @@ async def cancel_workout_occurrence(
         session,
         user,
         scheduled_date=body.scheduled_date,
+        expected_program_id=body.expected_program_id,
+        expected_day_index=body.expected_day_index,
     )
     return await _schedule_overview_response(session, user, overview)
 
@@ -429,6 +434,8 @@ async def assign_workout_occurrence(
         source_target_date=body.source_target_date,
         target_date=body.target_date,
         target_time=body.target_time,
+        expected_program_id=body.expected_program_id,
+        expected_day_index=body.expected_day_index,
     )
     return await _schedule_overview_response(session, user, overview)
 

@@ -487,17 +487,29 @@ export async function fetchWorkoutSchedule(day?: string, policy?: ReadPolicy): P
   return scheduleOverviewSchema.parse(data);
 }
 
+type OccurrenceIdentity = Pick<WorkoutScheduleOccurrence, "program_id" | "day_index">;
+
+function expectedOccurrence(identity?: OccurrenceIdentity) {
+  return identity?.program_id && identity.day_index
+    ? { expected_program_id: identity.program_id, expected_day_index: identity.day_index }
+    : {};
+}
+
 export async function rescheduleWorkout(input: {
   originalDate: string;
   targetDate: string;
   targetTime: string;
   conflictResolution?: "move_existing" | "cancel_existing" | null;
+  idempotencyKey?: string;
+  occurrence?: OccurrenceIdentity;
 }): Promise<WorkoutScheduleOverview> {
   const { data } = await apiClient.post("/workouts/schedule/reschedule", {
     original_date: input.originalDate,
     target_date: input.targetDate,
     target_time: input.targetTime,
     conflict_resolution: input.conflictResolution ?? null,
+    idempotency_key: input.idempotencyKey,
+    ...expectedOccurrence(input.occurrence),
   });
   return scheduleOverviewSchema.parse(data);
 }
@@ -531,12 +543,14 @@ export async function assignWorkoutOccurrence(input: {
   sourceTargetDate: string;
   targetDate: string;
   targetTime: string;
+  occurrence?: OccurrenceIdentity;
 }): Promise<WorkoutScheduleOverview> {
   const { data } = await apiClient.post("/workouts/schedule/assignment", {
     source_original_date: input.sourceOriginalDate,
     source_target_date: input.sourceTargetDate,
     target_date: input.targetDate,
     target_time: input.targetTime,
+    ...expectedOccurrence(input.occurrence),
   });
   return scheduleOverviewSchema.parse(data);
 }
@@ -701,9 +715,10 @@ export async function chooseIllnessRecovery(
   return illnessPauseSchema.parse(data);
 }
 
-export async function cancelScheduledWorkout(scheduledDate: string): Promise<WorkoutScheduleOverview> {
+export async function cancelScheduledWorkout(scheduledDate: string, occurrence?: OccurrenceIdentity): Promise<WorkoutScheduleOverview> {
   const { data } = await apiClient.post("/workouts/schedule/cancel", {
     scheduled_date: scheduledDate,
+    ...expectedOccurrence(occurrence),
   });
   return scheduleOverviewSchema.parse(data);
 }

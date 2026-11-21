@@ -395,6 +395,49 @@ async def test_overview_marks_todays_completed_occurrence_and_advances_next() ->
 
 
 @pytest.mark.asyncio
+async def test_other_program_completion_shows_actual_workout_and_next_regular_day(monkeypatch) -> None:
+    from app.services import scheduler
+
+    active, other = uuid.uuid4(), uuid.uuid4()
+    day = date(2026, 8, 21)
+    goals = _schedule_goals()
+    goals["active_program_id"] = str(active)
+    goals["active_program_next_day"] = 2
+    goals["workout_schedule_assignments"] = [{
+        "scheduled_date": "2026-08-22",
+        "source_original_date": "2026-08-24",
+        "source_target_date": "2026-08-24",
+        "target_time": "08:00",
+        "program_id": str(other),
+        "day_index": 3,
+        "assignment": True,
+    }]
+    completed = SimpleNamespace(program_id=other, title="Другая программа", plan={"day_index": 3})
+    user = SimpleNamespace(id=uuid.uuid4(), goals=goals)
+    session = AsyncMock()
+
+    async def find_completed(statement):
+        params = statement.compile().params.values()
+        return None if active in params else completed
+
+    session.scalar = AsyncMock(side_effect=find_completed)
+    monkeypatch.setattr(scheduler, "goals_with_completed_assignments", AsyncMock(return_value=goals))
+    monkeypatch.setattr(
+        scheduler, "active_program_snapshot", AsyncMock(return_value=(active, 2, "Основная · День 2")),
+    )
+
+    overview = await get_schedule_overview(session, user, day)
+
+    assert overview["current"]["status"] == "completed"
+    assert overview["current"]["program_id"] == other
+    assert overview["current"]["day_index"] == 3
+    assert overview["next"]["target_date"] == date(2026, 8, 24)
+    assert overview["next"]["program_id"] == active
+    assert overview["next"]["day_index"] == 2
+    assert user.goals["active_program_next_day"] == 2
+
+
+@pytest.mark.asyncio
 async def test_reschedule_updates_only_one_occurrence(monkeypatch) -> None:
     goals = _schedule_goals()
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
@@ -426,10 +469,13 @@ async def test_reschedule_updates_only_one_occurrence(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_cancel_occurrence_keeps_cursor_and_moves_prepared_date(monkeypatch) -> None:
     goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
     session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
-    session.scalar = AsyncMock(side_effect=[locked_user, None])
+    async def read_scalar(statement):
+        return locked_user if statement.column_descriptions[0]["entity"] is User else None
+    session.scalar = AsyncMock(side_effect=read_scalar)
     session.execute = AsyncMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
@@ -455,6 +501,7 @@ async def test_cancel_occurrence_keeps_cursor_and_moves_prepared_date(monkeypatc
         session,
         locked_user,
         {date(2026, 8, 28), date(2026, 8, 31)},
+        commit=False,
     )
 
 
@@ -500,7 +547,9 @@ async def test_assignment_moves_next_program_day_earlier_without_changing_cursor
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
     session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
-    session.scalar = AsyncMock(side_effect=[locked_user, None, None, None, None, None])
+    async def read_scalar(statement):
+        return locked_user if statement.column_descriptions[0]["entity"] is User else None
+    session.scalar = AsyncMock(side_effect=read_scalar)
     session.execute = AsyncMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
@@ -532,6 +581,7 @@ async def test_assignment_moves_next_program_day_earlier_without_changing_cursor
         session,
         locked_user,
         {date(2026, 8, 28), date(2026, 8, 31)},
+        commit=False,
     )
 
 
@@ -553,7 +603,9 @@ async def test_cancelling_assignment_restores_the_existing_next_date(monkeypatch
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
     session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
-    session.scalar = AsyncMock(side_effect=[locked_user, None, None])
+    async def read_scalar(statement):
+        return locked_user if statement.column_descriptions[0]["entity"] is User else None
+    session.scalar = AsyncMock(side_effect=read_scalar)
     session.execute = AsyncMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
@@ -578,6 +630,7 @@ async def test_cancelling_assignment_restores_the_existing_next_date(monkeypatch
         session,
         locked_user,
         {date(2026, 8, 28), date(2026, 8, 31)},
+        commit=False,
     )
 
 
@@ -633,11 +686,14 @@ def test_reschedule_preview_offers_next_free_day_for_occupied_target() -> None:
 @pytest.mark.asyncio
 async def test_reschedule_cascades_occupied_workout_to_next_free_day(monkeypatch) -> None:
     goals = _schedule_goals()
+    goals["active_program_id"] = str(uuid.uuid4())
     goals["notification_settings"]["workouts"]["days"] = [0, 1, 3, 4]
     locked_user = User(id=uuid.uuid4(), goals=goals, anthropometry={})
     session = AsyncMock()
     session.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: []))
-    session.scalar = AsyncMock(side_effect=[locked_user, None])
+    async def read_scalar(statement):
+        return locked_user if statement.column_descriptions[0]["entity"] is User else None
+    session.scalar = AsyncMock(side_effect=read_scalar)
     session.execute = AsyncMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
@@ -664,6 +720,7 @@ async def test_reschedule_cascades_occupied_workout_to_next_free_day(monkeypatch
         session,
         locked_user,
         {date(2026, 9, 10), date(2026, 9, 11), date(2026, 9, 12)},
+        commit=False,
     )
 
 

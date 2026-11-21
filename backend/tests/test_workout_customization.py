@@ -377,11 +377,12 @@ async def test_reset_with_dependent_occurrence_preserves_both_layers_on_conflict
 
 @pytest.mark.asyncio
 async def test_one_off_move_transfers_only_date_layer(database):
-    from app.services import workout_customization as service, workout_reschedule
+    from app.services import workout_customization as service
+    from app.services.workout_schedule_occurrence import OccurrenceScope, move_pending_occurrence
     session, owner, _, program, exercise, base, _ = database
     await service.save_customization(session, owner, request(program, exercise))
     await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
-    await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+    await move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20), OccurrenceScope(program.id, 1))
     await session.commit()
     moved = await resolve(service, session, owner, program, base, when=date(2026, 10, 20))
     original = await resolve(service, session, owner, program, base)
@@ -390,17 +391,26 @@ async def test_one_off_move_transfers_only_date_layer(database):
     assert len(original["exercises"]) == len(moved["exercises"]) == 2
 
 
+
+
 @pytest.mark.asyncio
-async def test_cancel_existing_does_not_delete_permanent_layer(database):
-    from app.services import workout_customization as service, workout_reschedule
+async def test_cancel_existing_preserves_permanent_and_dated_preparations(database):
+    from app.services import workout_customization as service
+    from app.services.workout_schedule_occurrence import OccurrenceScope, cancel_pending_occurrence
     session, owner, _, program, exercise, base, _ = database
     await service.save_customization(session, owner, request(program, exercise))
     await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
-    await workout_reschedule._cancel_pending_occurrence(session, owner.id, date(2026, 10, 19))
-    await session.commit()
+    with pytest.raises(HTTPException) as caught:
+        await cancel_pending_occurrence(session, owner.id, date(2026, 10, 19), OccurrenceScope(program.id, 1))
+    assert caught.value.status_code == 409
     current = await resolve(service, session, owner, program, base)
     assert len(current["exercises"]) == 2
-    assert current["exercises"][0]["target_sets"] == 3
+    assert current["exercises"][0]["target_sets"] == 5
+    permanent = await resolve(service, session, owner, program, base, when=date(2026, 10, 20))
+    assert len(permanent["exercises"]) == 2
+    assert permanent["exercises"][0]["target_sets"] == 3
+
+
 
 @pytest.mark.asyncio
 async def test_four_day_rotation_and_cursor_stay_unchanged(database):
@@ -462,27 +472,33 @@ async def test_repeated_reschedule_and_return_to_default_keep_preparation(databa
 
 @pytest.mark.asyncio
 async def test_move_conflict_preserves_both_date_preparations(database):
-    from app.services import workout_customization as service, workout_reschedule
+    from app.services import workout_customization as service
+    from app.services.workout_schedule_occurrence import OccurrenceScope, move_pending_occurrence
     session, owner, _, program, _, base, _ = database
     await service.save_customization(session, owner, request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 5}]}))
     target = request(program, scope="occurrence", patch={"exercise_overrides": [{"exercise_id": base.id, "target_sets": 6}]}).model_copy(update={"scheduled_date": date(2026, 10, 20)})
     await service.save_customization(session, owner, target)
     with pytest.raises(HTTPException) as caught:
-        await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+        await move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20), OccurrenceScope(program.id, 1))
     assert caught.value.status_code == 409
     assert (await resolve(service, session, owner, program, base))["exercises"][0]["target_sets"] == 5
     assert (await resolve(service, session, owner, program, base, when=date(2026, 10, 20)))["exercises"][0]["target_sets"] == 6
 
+
+
 @pytest.mark.asyncio
 async def test_cancelled_legacy_target_does_not_block_a_move(database):
     from app.models.workout_plan_override import WorkoutPlanOverride
-    from app.services import workout_reschedule
+    from app.services.workout_schedule_occurrence import OccurrenceScope, move_pending_occurrence
     session, owner, _, program, exercise, base, _ = database
     for day in (date(2026, 10, 19), date(2026, 10, 20)):
-        session.add(WorkoutPlanOverride(user_id=owner.id, program_id=program.id, day_index=1, scheduled_date=day, replacements=[{"from_exercise_id": str(base.id), "to_exercise_id": str(exercise.id)}]))
+        session.add(WorkoutPlanOverride(
+            user_id=owner.id, program_id=program.id, day_index=1, scheduled_date=day,
+            is_deleted=day == date(2026, 10, 20),
+            replacements=[{"from_exercise_id": str(base.id), "to_exercise_id": str(exercise.id)}],
+        ))
     await session.commit()
-    await workout_reschedule._cancel_pending_occurrence(session, owner.id, date(2026, 10, 20))
-    await workout_reschedule._move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20))
+    await move_pending_occurrence(session, owner.id, date(2026, 10, 19), date(2026, 10, 20), OccurrenceScope(program.id, 1))
     await session.commit()
     rows = (await session.scalars(select(WorkoutPlanOverride).where(WorkoutPlanOverride.user_id == owner.id, WorkoutPlanOverride.is_deleted.is_(False)))).all()
     assert len(rows) == 1 and rows[0].scheduled_date == date(2026, 10, 20)

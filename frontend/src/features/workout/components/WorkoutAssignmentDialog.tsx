@@ -84,6 +84,7 @@ export function WorkoutAssignmentDialog({ source, minDate, maxDate, onClose, onC
         sourceTargetDate: source.target_date,
         targetDate,
         targetTime,
+        occurrence: source,
       });
       trackEvent("workout_assigned_earlier", {
         days_earlier: Math.round(

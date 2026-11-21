@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   cancelScheduledWorkout,
@@ -13,7 +13,7 @@ import {
 } from "@/api/workouts";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { confirmAction } from "@/lib/telegram";
-import { toUserMessage } from "@/utils/errors";
+import { isRetryableApiError, toUserMessage } from "@/utils/errors";
 
 type Props = {
   overview: WorkoutScheduleOverview;
@@ -62,7 +62,8 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useModalAccessibility(true, onClose);
+  const onceRequest = useRef<{ signature: string; key: string; retry: boolean } | null>(null);
+  const dialogRef = useModalAccessibility(true, () => { if (!saving) onClose(); });
   const permanentMax = useMemo(() => weekEnd(occurrence.original_date), [occurrence.original_date]);
   const permanentMin = useMemo(() => weekStart(occurrence.original_date), [occurrence.original_date]);
   const outsideOccurrenceWeek = mode === "once" && Boolean(targetDate) && (targetDate < permanentMin || targetDate > permanentMax);
@@ -75,19 +76,32 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
     setError(null);
   }
 
+  function requestSignature(resolution: "move_existing" | "cancel_existing" | null) {
+    return JSON.stringify([occurrence.original_date, occurrence.program_id, occurrence.day_index, targetDate, targetTime, resolution]);
+  }
+
   async function applyOnce(resolution: "move_existing" | "cancel_existing" | null = null) {
     if (!targetDate || !targetTime || saving) return;
     setSaving(true);
     setError(null);
+    const signature = requestSignature(resolution);
+    const previous = onceRequest.current;
+    const request = previous?.signature === signature
+      ? previous
+      : { signature, key: crypto.randomUUID(), retry: false };
+    onceRequest.current = request;
     try {
       onChange(await rescheduleWorkout({
         originalDate: occurrence.original_date,
         targetDate,
         targetTime,
         conflictResolution: resolution,
+        idempotencyKey: request.key,
+        occurrence,
       }));
       onClose();
     } catch (err) {
+      request.retry = isRetryableApiError(err);
       setError(toUserMessage(err, "Не удалось перенести тренировку"));
     } finally {
       setSaving(false);
@@ -96,6 +110,11 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
 
   async function submitOnce() {
     if (!targetDate || !targetTime || saving || outsideOccurrenceWeek) return;
+    const previous = onceRequest.current;
+    if (previous?.retry && previous.signature === requestSignature(null)) {
+      await applyOnce();
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -126,7 +145,7 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
     setSaving(true);
     setError(null);
     try {
-      onChange(await cancelScheduledWorkout(occurrence.target_date));
+      onChange(await cancelScheduledWorkout(occurrence.target_date, occurrence));
       onClose();
     } catch (err) {
       setError(toUserMessage(err, "Не удалось отменить тренировку"));
@@ -190,10 +209,10 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
             <h3 id="reschedule-workout-title" className="text-base font-semibold">Перенести тренировку</h3>
             <p className="mt-1 break-words text-xs text-tg-hint [overflow-wrap:anywhere]">{occurrence.title}</p>
           </div>
-          <button type="button" aria-label="Закрыть" onClick={onClose} className="app-button app-ghost-action min-w-[44px]">✕</button>
+          <button type="button" aria-label="Закрыть" disabled={saving} onClick={onClose} className="app-button app-ghost-action min-w-[44px]">✕</button>
         </div>
 
-        <fieldset className="mt-3 space-y-2">
+        <fieldset disabled={saving} className="mt-3 space-y-2">
           <legend className="text-xs font-medium">Как перенести?</legend>
           <label className="app-card-inset flex min-h-[44px] items-center gap-3 px-3 py-2 text-sm">
             <input type="radio" name="move-mode" checked={mode === "once"} onChange={() => { setMode("once"); resetPreview(); }} />
@@ -208,16 +227,16 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
         <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="min-w-0 text-xs text-tg-hint">
             Новый день
-            <input type="date" value={targetDate} min={mode === "once" ? overview.requested_date : permanentMin} max={mode === "permanent" ? permanentMax : undefined} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
+            <input type="date" disabled={saving} value={targetDate} min={mode === "once" ? overview.requested_date : permanentMin} max={mode === "permanent" ? permanentMax : undefined} onChange={(event) => { setTargetDate(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
           </label>
           <label className="min-w-0 text-xs text-tg-hint">
             Время начала
-            <input type="time" value={targetTime} onChange={(event) => { setTargetTime(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
+            <input type="time" disabled={saving} value={targetTime} onChange={(event) => { setTargetTime(event.target.value); resetPreview(); }} className="app-field mt-1 min-w-0 px-3 py-2.5 text-base" />
           </label>
         </div>
 
         {mode === "permanent" ? (
-          <fieldset className="mt-3 space-y-2">
+          <fieldset disabled={saving} className="mt-3 space-y-2">
             <legend className="text-xs font-medium">Когда изменить график?</legend>
             <label className="flex min-h-[44px] items-center gap-3 text-sm">
               <input type="radio" name="effective-scope" checked={effectiveScope === "current_week"} onChange={() => { setEffectiveScope("current_week"); resetPreview(); }} />
@@ -269,7 +288,7 @@ export function WorkoutRescheduleDialog({ overview, occurrence, initialDate, onC
             {preview.warning ? <p className="app-status app-status-warning mt-2">{preview.warning}</p> : null}
             {preview.requires_conflict_resolution ? (
               <label className="app-card-inset mt-2 flex min-h-[44px] items-center gap-3 px-2 py-1.5">
-                <input type="checkbox" checked={conflictResolution === "reduce"} onChange={(event) => { setConflictResolution(event.target.checked ? "reduce" : null); setError(null); }} />
+                <input type="checkbox" disabled={saving} checked={conflictResolution === "reduce"} onChange={(event) => { setConflictResolution(event.target.checked ? "reduce" : null); setError(null); }} />
                 Убрать {WEEKDAYS[preview.source_weekday]} и оставить {WEEKDAYS[preview.target_weekday]}
               </label>
             ) : null}

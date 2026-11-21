@@ -326,6 +326,8 @@ async def update_workout_schedule_settings(
 ) -> dict[str, Any]:
     """Persist the domain schedule and its invisible analytics history."""
 
+    await session.execute(select(User.id).where(User.id == user.id).with_for_update())
+    await session.refresh(user, attribute_names=["goals"])
     goals = dict(user.goals or {})
     effective_from = local_schedule_day(goals)
     created_at = getattr(user, "created_at", None)
@@ -750,16 +752,37 @@ def schedule_overview(goals: dict[str, Any], requested_day: date) -> dict[str, A
     elif current_context["moved_away"]:
         current = _occurrence_payload(goals, current_context, status_value="moved")
 
-    upcoming: dict[str, Any] | None = None
-    for offset in range(0, 15):
-        candidate = requested_day + timedelta(days=offset)
+    return {
+        "requested_date": requested_day,
+        "current": current,
+        "next": next_scheduled_occurrence(goals, requested_day),
+    }
+
+
+def next_scheduled_occurrence(
+    goals: dict[str, Any],
+    start: date,
+    *,
+    recurring_program: str | None = None,
+) -> dict[str, Any] | None:
+    from app.services.illness_pause import is_illness_day
+
+    for offset in range(15):
+        candidate = start + timedelta(days=offset)
         if is_illness_day(goals, candidate):
             continue
         context = effective_workout_context(goals, candidate)
-        if context["is_workout_day"]:
-            upcoming = _occurrence_payload(goals, context, status_value="scheduled")
-            break
-    return {"requested_date": requested_day, "current": current, "next": upcoming}
+        if not context["is_workout_day"]:
+            continue
+        occurrence = _occurrence_payload(goals, context, status_value="scheduled")
+        if recurring_program is not None and (
+            occurrence["is_assignment"]
+            or str(occurrence["program_id"]) != recurring_program
+            or str(occurrence["day_index"] or 1) != str(goals.get("active_program_next_day") or 1)
+        ):
+            continue
+        return occurrence
+    return None
 
 
 async def get_schedule_overview(
@@ -779,8 +802,6 @@ async def get_schedule_overview(
             Workout.status == "completed",
             Workout.is_deleted.is_(False),
         ]
-        if current.get("program_id") is not None:
-            completed_filters.append(Workout.program_id == current["program_id"])
         completed = await session.scalar(
             select(Workout)
             .where(*completed_filters)
@@ -789,16 +810,16 @@ async def get_schedule_overview(
         if completed is not None:
             plan = completed.plan if isinstance(completed.plan, dict) else {}
             current["status"] = "completed"
-            current["program_id"] = completed.program_id or current.get("program_id")
+            current["program_id"] = completed.program_id
             current["title"] = str(
                 completed.title or plan.get("title") or current.get("title") or "Тренировка"
             )
             try:
                 current["day_index"] = int(
-                    plan.get("day_index") or current.get("day_index") or 0
+                    plan.get("day_index") or 0
                 ) or None
             except (TypeError, ValueError):
-                current["day_index"] = current.get("day_index")
+                current["day_index"] = None
             current["can_reschedule"] = False
             current["reschedule_until"] = None
             current["can_cancel"] = False
@@ -806,8 +827,13 @@ async def get_schedule_overview(
 
             # Today appears as both current and next in the pure schedule. Once
             # completed, expose the first future occurrence for preparation.
-            future = schedule_overview(goals, requested_day + timedelta(days=1))
-            overview["next"] = future.get("next")
+            active_program = goals.get("active_program_id")
+            other_program = active_program and str(completed.program_id) != str(active_program)
+            overview["next"] = next_scheduled_occurrence(
+                goals,
+                requested_day + timedelta(days=1),
+                recurring_program=str(active_program) if other_program else None,
+            )
     if overview.get("current") is None:
         schedule_start = program_schedule_start(goals)
         created_at = getattr(user, "created_at", None)
@@ -848,7 +874,7 @@ async def get_schedule_overview(
     program_id, day_index, title = await active_program_snapshot(session, user)
     for key in ("current", "next"):
         occurrence = overview.get(key)
-        if not isinstance(occurrence, dict):
+        if not isinstance(occurrence, dict) or occurrence["status"] == "completed":
             continue
         if occurrence["title"].startswith("День ") or occurrence["title"] == "Тренировка":
             occurrence["title"] = title
@@ -883,10 +909,21 @@ async def cancel_workout_occurrence(
     user: User,
     *,
     scheduled_date: date,
+    expected_program_id: uuid.UUID | None = None,
+    expected_day_index: int | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Cancel one occurrence; the unchanged cursor makes it next in program order."""
-    locked_user = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+    from app.services.workout_schedule_occurrence import (
+        move_preparations,
+        occurrence_scope,
+        require_unstarted,
+        workouts_in_slot,
+    )
+
+    locked_user = await session.scalar(
+        select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True)
+    )
     if locked_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     goals = dict(locked_user.goals or {})
@@ -897,6 +934,10 @@ async def cancel_workout_occurrence(
     assignment = _assignment_for_day(goals, scheduled_date)
     existing_cancellation = _cancellation_for_day(goals, scheduled_date)
     if assignment is None and existing_cancellation is not None:
+        occurrence_scope(
+            goals, existing_cancellation,
+            expected_program_id=expected_program_id, expected_day_index=expected_day_index,
+        )
         return await get_schedule_overview(session, locked_user, local_now.date())
     context = effective_workout_context(goals, scheduled_date)
     if not context["is_workout_day"]:
@@ -913,14 +954,14 @@ async def cancel_workout_occurrence(
     if next_date is None:
         raise HTTPException(status_code=400, detail="Не найден следующий тренировочный день")
 
-    completed = await session.scalar(
-        select(Workout.id).where(
-            Workout.user_id == locked_user.id,
-            Workout.scheduled_date == scheduled_date,
-            Workout.status == "completed",
-            Workout.is_deleted.is_(False),
-        )
+    context_override = context.get("override") if isinstance(context.get("override"), dict) else {}
+    scope = occurrence_scope(
+        goals, context_override,
+        expected_program_id=expected_program_id, expected_day_index=expected_day_index,
     )
+    completed = await session.scalar(select(Workout.id).where(*workouts_in_slot(
+        locked_user.id, {scheduled_date}, scope, workout_status="completed", include_unknown=True,
+    )))
     if completed is not None:
         raise HTTPException(status_code=409, detail="Выполненную тренировку отменить нельзя")
 
@@ -933,12 +974,12 @@ async def cancel_workout_occurrence(
             scheduled_date=scheduled_date,
             source_target_date=next_date,
             local_day=local_now.date(),
+            scope=scope,
         )
         user.goals = locked_user.goals
         return overview
 
-    context_override = context.get("override") if isinstance(context.get("override"), dict) else {}
-    program_id, day_index, title = await active_program_snapshot(session, locked_user)
+    _, day_index, title = await active_program_snapshot(session, locked_user)
     source_date = context["original_date"]
     cancellations = [
         row
@@ -949,8 +990,8 @@ async def cancel_workout_occurrence(
         {
             "scheduled_date": scheduled_date.isoformat(),
             "source_date": source_date.isoformat() if source_date != scheduled_date else None,
-            "program_id": str(context_override.get("program_id") or program_id or "") or None,
-            "day_index": context_override.get("day_index") or day_index,
+            "program_id": str(scope.program_id) if scope else None,
+            "day_index": scope.day_index if scope else day_index,
             "title": str(context_override.get("title") or title),
             "next_date": next_date.isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
@@ -968,22 +1009,16 @@ async def cancel_workout_occurrence(
         if row["original_date"] != source_date.isoformat()
         and row["target_date"] != scheduled_date.isoformat()
     ]
+    if scope is not None:
+        await require_unstarted(session, locked_user.id, scheduled_date, scope)
+        await move_preparations(session, locked_user.id, scheduled_date, next_date, scope)
     locked_user.goals = goals
     flag_modified(locked_user, "goals")
 
-    from app.services.planned_workout import move_saved_overrides
-    await move_saved_overrides(session, user_id=locked_user.id, source_date=scheduled_date, target_date=next_date, program_id=program_id)
-    from app.services.workout_customization_dates import change_customization_date
-    await change_customization_date(session, locked_user.id, scheduled_date, next_date, program_id)
+    from app.services import supplement_intakes
+
+    await supplement_intakes.reset_pending_days(session, locked_user, {scheduled_date, next_date}, commit=False)
     await session.commit()
     await session.refresh(locked_user)
     user.goals = locked_user.goals
-
-    from app.services import supplement_intakes
-
-    await supplement_intakes.reset_pending_days(
-        session,
-        locked_user,
-        {scheduled_date, next_date},
-    )
     return await get_schedule_overview(session, locked_user, local_now.date())

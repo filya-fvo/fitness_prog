@@ -71,7 +71,9 @@ def illness_status(goals: dict[str, Any]) -> dict[str, object]:
 
 
 async def _locked_user(session: AsyncSession, user: User) -> User:
-    locked = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+    locked = await session.scalar(
+        select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True)
+    )
     if locked is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return locked

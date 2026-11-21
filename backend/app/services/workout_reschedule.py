@@ -7,15 +7,25 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.models.workout import Workout
-from app.models.workout_plan_override import WorkoutPlanOverride
 from app.services import scheduler
-from app.services.workout_customization_dates import change_customization_date
+from app.services.workout_schedule_occurrence import (
+    RESCHEDULE_RECEIPTS_KEY,
+    cancel_pending_occurrence,
+    move_pending_occurrence,
+    occurrence_scope,
+    require_unstarted,
+    workouts_in_slot,
+)
+
+RESCHEDULE_RECEIPT_LIMIT = 100
+RESCHEDULE_REQUEST_CHANGED = "Данные переноса изменились. Проверьте выбранные дату и время."
+ASSIGNED_OCCURRENCE_CONFLICT = "На выбранную дату уже назначена тренировка. Выберите другую дату или измените назначение."
 
 
 def _week_bounds(day: date) -> tuple[date, date]:
@@ -131,19 +141,48 @@ async def reschedule_workout_occurrence(
     target_date: date,
     target_time: time,
     conflict_resolution: str | None = None,
+    expected_program_id: uuid.UUID | None = None,
+    expected_day_index: int | None = None,
+    idempotency_key: uuid.UUID | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Move one occurrence inside its week, resolving an occupied target explicitly."""
 
-    locked_user = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+    locked_user = await session.scalar(
+        select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True)
+    )
     if locked_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     goals = dict(locked_user.goals or {})
+    local_now = (now or datetime.now(UTC)).astimezone(scheduler._schedule_timezone(goals))
+    normalized_time = target_time.replace(second=0, microsecond=0)
+    request = {
+        "source": original_date.isoformat(), "target": target_date.isoformat(),
+        "time": normalized_time.strftime("%H:%M"), "resolution": conflict_resolution,
+        "program": str(expected_program_id) if expected_program_id else None, "day": expected_day_index,
+    }
+    raw_receipts = goals.get(RESCHEDULE_RECEIPTS_KEY)
+    receipts = [row for row in raw_receipts if isinstance(row, dict)] if isinstance(raw_receipts, list) else []
+    key = str(idempotency_key) if idempotency_key else None
+    previous = next((row for row in receipts if key and row.get("key") == key), None)
+    if previous is not None:
+        if previous.get("request") != request:
+            raise HTTPException(409, RESCHEDULE_REQUEST_CHANGED)
+        return await scheduler.get_schedule_overview(session, locked_user, local_now.date())
+
     previous_override = scheduler._override_for_original(goals, original_date)
     source_date = date.fromisoformat(str(previous_override["target_date"])) if previous_override else original_date
+    scope = occurrence_scope(
+        goals, previous_override, expected_program_id=expected_program_id, expected_day_index=expected_day_index,
+    )
+    if scheduler._assignment_for_day(goals, source_date) is not None:
+        raise HTTPException(409, ASSIGNED_OCCURRENCE_CONFLICT)
+    if key is None and previous_override and (
+        source_date == target_date and previous_override["target_time"] == normalized_time.strftime("%H:%M")
+    ):
+        return await scheduler.get_schedule_overview(session, locked_user, local_now.date())
     if original_date.weekday() not in scheduler.workout_days_on(goals, original_date):
         raise HTTPException(status_code=400, detail="Исходная дата не входит в расписание тренировок")
-    local_now = (now or datetime.now(UTC)).astimezone(scheduler._schedule_timezone(goals))
     if original_date < local_now.date() - timedelta(days=scheduler.MAX_RESCHEDULE_LOOKBACK_DAYS):
         raise HTTPException(status_code=400, detail="Эту тренировку уже нельзя перенести")
     preview = preview_workout_reschedule(
@@ -158,7 +197,6 @@ async def reschedule_workout_occurrence(
             detail=preview["warning"] or "Выберите дату в пределах этой недели",
         )
 
-    normalized_time = target_time.replace(second=0, microsecond=0)
     base_time = scheduler.workout_start_time_on(goals, original_date)
     if target_date == original_date and normalized_time < base_time:
         raise HTTPException(
@@ -174,6 +212,8 @@ async def reschedule_workout_occurrence(
         raise HTTPException(status_code=400, detail="Выберите время, которое ещё не прошло")
 
     conflict_date = preview["conflicting_original_date"]
+    if conflict_date is not None and scheduler._assignment_for_day(goals, target_date) is not None:
+        raise HTTPException(409, ASSIGNED_OCCURRENCE_CONFLICT)
     if conflict_date is not None and conflict_resolution not in {"move_existing", "cancel_existing"}:
         raise HTTPException(
             status_code=409,
@@ -185,18 +225,17 @@ async def reschedule_workout_occurrence(
             detail="На этой неделе нет свободного более позднего дня. Выберите другую дату или отмените занятую тренировку.",
         )
 
-    completed_dates = {original_date, source_date}
-    if conflict_date is not None:
-        completed_dates.add(target_date)
-    completed = await session.scalar(
-        select(Workout.id).where(
-            Workout.user_id == locked_user.id,
-            Workout.scheduled_date.in_(completed_dates),
-            Workout.status == "completed",
-            Workout.is_deleted.is_(False),
-        )
-    )
-    if completed is not None:
+    target_override = scheduler.effective_workout_context(goals, target_date).get("override") if conflict_date else None
+    displaced_scope = occurrence_scope(goals, target_override) if conflict_date else None
+    completed = [and_(*workouts_in_slot(
+        locked_user.id, {original_date, source_date, target_date}, scope,
+        workout_status="completed", include_unknown=True,
+    ))]
+    if conflict_date and displaced_scope != scope:
+        completed.append(and_(*workouts_in_slot(
+            locked_user.id, {target_date}, displaced_scope, workout_status="completed", include_unknown=True,
+        )))
+    if await session.scalar(select(Workout.id).where(or_(*completed))) is not None:
         raise HTTPException(status_code=409, detail="Выполненную тренировку перенести или отменить нельзя")
 
     overrides = scheduler._schedule_overrides(goals)
@@ -215,11 +254,12 @@ async def reschedule_workout_occurrence(
                 "original_date": conflict_date.isoformat(),
                 "target_date": displaced_date.isoformat(),
                 "target_time": displaced_time.strftime("%H:%M"),
-                "program_id": str(goals.get("active_program_id") or "") or None,
+                "program_id": str(displaced_scope.program_id) if displaced_scope else None,
+                "day_index": displaced_scope.day_index if displaced_scope else None,
                 "updated_at": datetime.now(UTC).isoformat(),
             }
         )
-        await _move_pending_occurrence(session, locked_user.id, target_date, displaced_date)
+        await move_pending_occurrence(session, locked_user.id, target_date, displaced_date, displaced_scope)
     elif conflict_date is not None and conflict_resolution == "cancel_existing":
         overrides = [
             row for row in overrides if row["original_date"] != conflict_date.isoformat()
@@ -234,7 +274,8 @@ async def reschedule_workout_occurrence(
             {
                 "scheduled_date": target_date.isoformat(),
                 "source_date": conflict_date.isoformat(),
-                "program_id": str(goals.get("active_program_id") or "") or None,
+                "program_id": str(displaced_scope.program_id) if displaced_scope else None,
+                "day_index": displaced_scope.day_index if displaced_scope else None,
                 "title": "Тренировка отменена при переносе",
                 "next_date": (
                     scheduler.next_base_workout_date(goals, target_date) or target_date
@@ -242,25 +283,31 @@ async def reschedule_workout_occurrence(
                 "updated_at": datetime.now(UTC).isoformat(),
             }
         )
-        await _cancel_pending_occurrence(session, locked_user.id, target_date)
+        await cancel_pending_occurrence(session, locked_user.id, target_date, displaced_scope)
 
     is_default_slot = target_date == original_date and normalized_time == base_time
     overrides = [row for row in overrides if row["original_date"] != original_date.isoformat()]
     if not is_default_slot:
-        program_id, day_index, title = await scheduler.active_program_snapshot(session, locked_user)
+        _, _, title = await scheduler.active_program_snapshot(session, locked_user)
+        if previous_override and previous_override.get("title"):
+            title = str(previous_override["title"])
+        elif scope is not None and scope.day_index != goals.get("active_program_next_day"):
+            title = scheduler._fallback_title(goals, {"day_index": scope.day_index})
         overrides.append(
             {
                 "original_date": original_date.isoformat(),
                 "target_date": target_date.isoformat(),
                 "target_time": normalized_time.strftime("%H:%M"),
-                "program_id": str(program_id) if program_id else None,
-                "day_index": day_index,
+                "program_id": str(scope.program_id) if scope else None,
+                "day_index": scope.day_index if scope else None,
                 "title": title,
                 "updated_at": datetime.now(UTC).isoformat(),
             }
         )
     if source_date != target_date:
-        await _move_pending_occurrence(session, locked_user.id, source_date, target_date)
+        await move_pending_occurrence(session, locked_user.id, source_date, target_date, scope)
+    else:
+        await require_unstarted(session, locked_user.id, source_date, scope)
 
     cutoff = local_now.date() - timedelta(days=scheduler.SCHEDULE_HISTORY_RETENTION_DAYS)
     goals[scheduler.OVERRIDES_KEY] = [
@@ -271,65 +318,15 @@ async def reschedule_workout_occurrence(
         for row in cancellations
         if date.fromisoformat(str(row["scheduled_date"])) >= cutoff
     ]
+    if key is not None:
+        goals[RESCHEDULE_RECEIPTS_KEY] = (receipts + [{"key": key, "request": request}])[-RESCHEDULE_RECEIPT_LIMIT:]
     locked_user.goals = goals
     flag_modified(locked_user, "goals")
-    await session.commit()
-    await session.refresh(locked_user)
-    user.goals = locked_user.goals
 
     from app.services import supplement_intakes
 
-    await supplement_intakes.reset_pending_days(
-        session,
-        locked_user,
-        affected_days,
-    )
+    await supplement_intakes.reset_pending_days(session, locked_user, affected_days, commit=False)
+    await session.commit()
+    await session.refresh(locked_user)
+    user.goals = locked_user.goals
     return await scheduler.get_schedule_overview(session, locked_user, local_now.date())
-
-
-async def _move_pending_occurrence(
-    session: AsyncSession,
-    user_id: uuid.UUID,
-    source_date: date,
-    target_date: date,
-) -> None:
-    await session.execute(
-        update(Workout)
-        .where(
-            Workout.user_id == user_id,
-            Workout.scheduled_date == source_date,
-            Workout.status == "planned",
-            Workout.is_deleted.is_(False),
-        )
-        .values(scheduled_date=target_date)
-    )
-    from app.services.planned_workout import move_saved_overrides
-    await move_saved_overrides(session, user_id=user_id, source_date=source_date, target_date=target_date)
-    await change_customization_date(session, user_id, source_date, target_date)
-
-
-async def _cancel_pending_occurrence(
-    session: AsyncSession,
-    user_id: uuid.UUID,
-    target_date: date,
-) -> None:
-    await session.execute(
-        update(Workout)
-        .where(
-            Workout.user_id == user_id,
-            Workout.scheduled_date == target_date,
-            Workout.status == "planned",
-            Workout.is_deleted.is_(False),
-        )
-        .values(status="skipped")
-    )
-    await session.execute(
-        update(WorkoutPlanOverride)
-        .where(
-            WorkoutPlanOverride.user_id == user_id,
-            WorkoutPlanOverride.scheduled_date == target_date,
-            WorkoutPlanOverride.is_deleted.is_(False),
-        )
-        .values(is_deleted=True)
-    )
-    await change_customization_date(session, user_id, target_date, None)

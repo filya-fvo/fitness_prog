@@ -23,13 +23,19 @@ class ShiftScheduleResponse(BaseModel):
     workout_ids: list[uuid.UUID]
 
 
-class WorkoutRescheduleRequest(BaseModel):
+class WorkoutOccurrenceExpectation(BaseModel):
+    expected_program_id: uuid.UUID | None = None
+    expected_day_index: int | None = Field(default=None, ge=1, le=7)
+
+
+class WorkoutRescheduleRequest(WorkoutOccurrenceExpectation):
     """Move one occurrence without changing the recurring weekly schedule."""
 
     original_date: date
     target_date: date
     target_time: time
     conflict_resolution: Literal["move_existing", "cancel_existing"] | None = None
+    idempotency_key: uuid.UUID | None = None
 
 
 class WorkoutReschedulePreviewRequest(BaseModel):
@@ -51,7 +57,7 @@ class WorkoutReschedulePreview(BaseModel):
     warning: str | None = None
 
 
-class WorkoutCancellationRequest(BaseModel):
+class WorkoutCancellationRequest(WorkoutOccurrenceExpectation):
     """Cancel one effective occurrence without advancing the program cursor."""
 
     scheduled_date: date
@@ -76,7 +82,7 @@ class WorkoutAssignmentPreviewRequest(BaseModel):
     target_date: date
 
 
-class WorkoutAssignmentRequest(WorkoutAssignmentPreviewRequest):
+class WorkoutAssignmentRequest(WorkoutAssignmentPreviewRequest, WorkoutOccurrenceExpectation):
     target_time: time
 
 

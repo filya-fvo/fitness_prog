@@ -3,6 +3,7 @@
 import uuid
 from datetime import date
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import ValidationError
@@ -49,13 +50,6 @@ def test_invalid_target_weight_is_rejected(target: object) -> None:
 
 @pytest.mark.asyncio
 async def test_program_change_resets_server_schedule_cursor(monkeypatch) -> None:
-    class FakeSession:
-        async def commit(self) -> None:
-            return None
-
-        async def refresh(self, _user: User) -> None:
-            return None
-
     user = User(
         id=uuid.uuid4(),
         anthropometry={},
@@ -68,7 +62,7 @@ async def test_program_change_resets_server_schedule_cursor(monkeypatch) -> None
     monkeypatch.setattr(user_service, "local_schedule_day", lambda _goals: date(2026, 8, 27))
 
     await user_service.update_profile(
-        FakeSession(),  # type: ignore[arg-type]
+        AsyncMock(),
         user,
         UserProfileUpdate(goals={"active_program_id": "new-program"}),
     )
@@ -76,6 +70,21 @@ async def test_program_change_resets_server_schedule_cursor(monkeypatch) -> None
     assert user.goals["active_program_started_at"] == "2026-08-27"
     assert user.goals["active_program_next_day"] == 1
     assert user.goals["active_program_week_phase"] == "light"
+
+
+@pytest.mark.asyncio
+async def test_offline_profile_patch_cannot_replace_schedule_operation_receipts() -> None:
+    receipts = [{"key": str(uuid.uuid4()), "request": {"source": "2026-11-11"}}]
+    user = User(id=uuid.uuid4(), anthropometry={}, goals={"workout_reschedule_requests": receipts})
+    session = AsyncMock()
+
+    await user_service.update_profile(session, user, UserProfileUpdate(goals={
+        "workout_reschedule_requests": [],
+        "cycle_training_enabled": True,
+    }))
+
+    assert user.goals["workout_reschedule_requests"] == receipts
+    assert user.goals["cycle_training_enabled"] is True
 
 
 def test_cycle_training_preference_must_be_boolean() -> None:

@@ -162,6 +162,7 @@ legal_status: acceptedLegalStatus(USER_ID),
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(initial) });
   });
   await page.route("**/workouts/schedule/reschedule/preview", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     expect(route.request().postDataJSON()).toEqual({
       original_date: "2026-08-21",
       target_date: "2026-08-22",
@@ -181,6 +182,7 @@ legal_status: acceptedLegalStatus(USER_ID),
       }),
     });
   });
+  let appliedRequestId: string | undefined;
   await page.route("**/workouts/schedule/reschedule", async (route) => {
     const payload = route.request().postDataJSON() as Record<string, string>;
     expect(payload).toEqual({
@@ -188,7 +190,16 @@ legal_status: acceptedLegalStatus(USER_ID),
       target_date: "2026-08-22",
       target_time: "08:00",
       conflict_resolution: "move_existing",
+      idempotency_key: expect.any(String),
+      expected_program_id: PROGRAM_ID,
+      expected_day_index: 3,
     });
+    if (!appliedRequestId) {
+      appliedRequestId = payload.idempotency_key;
+      await route.abort("connectionreset");
+      return;
+    }
+    expect(payload.idempotency_key).toBe(appliedRequestId);
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -214,8 +225,14 @@ legal_status: acceptedLegalStatus(USER_ID),
   await page.getByLabel("Новый день").fill("2026-08-22");
   await page.getByLabel("Время начала").fill("08:00");
   await page.getByRole("button", { name: "Перенести только эту тренировку" }).click();
+  await expect(page.getByLabel("Новый день")).toBeDisabled();
+  await expect(page.getByLabel("Время начала")).toBeDisabled();
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Закрыть" })).toBeDisabled();
   await expect(page.getByText(/уже есть тренировка/i)).toBeVisible();
-  await page.getByRole("button", { name: /Перенести её на.*23.*авг/i }).click();
+  const applyMove = page.getByRole("button", { name: /Перенести её на.*23.*авг/i });
+  await applyMove.click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Не удалось связаться с сервером");
+  await applyMove.click();
 
   await expect(page.getByText(/Перенесена на .*22.*августа.*08:00/i)).toBeVisible();
   await expect(page.getByText("Обычное расписание следующих недель не изменится.")).toBeVisible();
@@ -484,7 +501,11 @@ legal_status: acceptedLegalStatus(USER_ID),
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Отменить" }).click();
 
-  expect(cancelPayload).toEqual({ scheduled_date: "2026-08-28" });
+  expect(cancelPayload).toEqual({
+    scheduled_date: "2026-08-28",
+    expected_program_id: PROGRAM_ID,
+    expected_day_index: friday.day_index,
+  });
   await expect(page.getByText(/Тренировка отменена · следующая .*31.*августа.*06:15/i)).toBeVisible();
   await expect(page.getByText("Порядок программы сохранён: эта тренировка станет следующей.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Отменить" })).toHaveCount(0);
@@ -499,6 +520,8 @@ legal_status: acceptedLegalStatus(USER_ID),
     source_target_date: "2026-08-31",
     target_date: "2026-08-28",
     target_time: "06:15",
+    expected_program_id: PROGRAM_ID,
+    expected_day_index: friday.day_index,
   });
   await expect(page.getByText("Назначена на сегодня в 06:15")).toBeVisible();
   expect(await page.evaluate(

@@ -304,3 +304,58 @@ async def test_completion_flushes_before_latest_completed_guard(monkeypatch) -> 
     session.flush.assert_awaited_once()
     assert user.goals["active_program_next_day"] == 1
     assert user.goals["active_program_week_phase"] == "heavy"
+
+
+@pytest.mark.asyncio
+async def test_scheduled_start_rejects_card_for_an_occurrence_moved_on_another_device(monkeypatch):
+    from app.services import scheduler
+
+    original = date(2026, 11, 11)
+    moved = date(2026, 11, 13)
+    user = User(id=uuid4(), telegram_id=None, anthropometry={}, goals={})
+    program = four_day_program(uuid4())
+    program.publication_status = "published"
+    user.goals = {"active_program_id": str(program.id), "active_program_next_day": 2}
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[program, None])
+    monkeypatch.setattr(scheduler, "get_schedule_overview", AsyncMock(return_value={
+        "current": {
+            "original_date": original, "target_date": moved, "program_id": program.id,
+            "day_index": 2, "status": "scheduled",
+        }
+    }))
+    create = AsyncMock()
+    monkeypatch.setattr(workout_service, "create_workout", create)
+    with pytest.raises(HTTPException) as error:
+        await workout_service.start_program_workout(
+            session, user, program.id, day_index=2, scheduled_date=original,
+            expected_original_date=original,
+        )
+    assert error.value.status_code == 409
+    create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_scheduled_start_can_resume_already_created_workout_after_schedule_moves(monkeypatch):
+    from app.services import scheduler
+
+    day = date(2026, 11, 11)
+    user = User(id=uuid4(), telegram_id=None, anthropometry={}, goals={})
+    program = four_day_program(uuid4())
+    program.publication_status = "published"
+    user.goals = {"active_program_id": str(program.id), "active_program_next_day": 2}
+    existing = Workout(
+        id=uuid4(), user_id=user.id, program_id=program.id, scheduled_date=day,
+        status="planned", plan={"day_index": 2},
+    )
+    session = AsyncMock()
+    session.scalar = AsyncMock(side_effect=[program, existing])
+    overview = AsyncMock()
+    monkeypatch.setattr(scheduler, "get_schedule_overview", overview)
+    monkeypatch.setattr(workout_service, "_get_workout_for_user", AsyncMock(return_value=existing))
+
+    assert await workout_service.start_program_workout(
+        session, user, program.id, day_index=2, scheduled_date=day,
+        expected_original_date=day,
+    ) is existing
+    overview.assert_not_awaited()

@@ -531,6 +531,7 @@ export function HomePage() {
     weekPhase: WeekPhase;
     phaseSource: "auto" | "manual";
     scheduledDate?: string;
+    expectedOriginalDate?: string;
   }) {
     if (!todayProgram || starting) {
       if (!todayProgram) navigate("/programs");
@@ -552,33 +553,35 @@ export function HomePage() {
       }
 
       if (useUserStore.getState().user?.id !== startOwner) return;
-      const { start, goalsPatch: startPatch } = ensureProgramStartDate(
-        profileGoals,
-        todayProgram.id,
-      );
-      const cursorPatch = cursorGoalsPatch(
-        todayProgram.id,
-        {
-          nextDayIndex: opts.dayIndex,
-          weekPhase: opts.weekPhase,
-          phaseSource: opts.phaseSource,
-          workoutsInPhase: programCursor?.workoutsInPhase ?? 0,
-          startedAt: start,
-        },
-        localDateKey(),
-      );
-      const goalsMerged = { ...profileGoals, ...(startPatch || {}), ...cursorPatch };
-      if (isOnline() && getStoredToken()) {
-        try {
-          const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
-          if (useUserStore.getState().user?.id !== startOwner) return;
-          setProfileGoals((profile.goals as Record<string, unknown>) || goalsMerged);
-        } catch {
-          if (useUserStore.getState().user?.id !== startOwner) return;
+      if (!opts.expectedOriginalDate) {
+        const { start, goalsPatch: startPatch } = ensureProgramStartDate(
+          profileGoals,
+          todayProgram.id,
+        );
+        const cursorPatch = cursorGoalsPatch(
+          todayProgram.id,
+          {
+            nextDayIndex: opts.dayIndex,
+            weekPhase: opts.weekPhase,
+            phaseSource: opts.phaseSource,
+            workoutsInPhase: programCursor?.workoutsInPhase ?? 0,
+            startedAt: start,
+          },
+          localDateKey(),
+        );
+        const goalsMerged = { ...profileGoals, ...(startPatch || {}), ...cursorPatch };
+        if (isOnline() && getStoredToken()) {
+          try {
+            const profile = await updateMyProfile({ goals: { ...(startPatch || {}), ...cursorPatch } });
+            if (useUserStore.getState().user?.id !== startOwner) return;
+            setProfileGoals((profile.goals as Record<string, unknown>) || goalsMerged);
+          } catch {
+            if (useUserStore.getState().user?.id !== startOwner) return;
+            setProfileGoals(goalsMerged);
+          }
+        } else {
           setProfileGoals(goalsMerged);
         }
-      } else {
-        setProfileGoals(goalsMerged);
       }
 
       const session = await startProgramSession({
@@ -588,6 +591,7 @@ export function HomePage() {
         dayIndex: opts.dayIndex,
         weekPhase: opts.weekPhase,
         scheduledDate: opts.scheduledDate,
+        expectedOriginalDate: opts.expectedOriginalDate,
         cycleReadiness,
       });
       if (useUserStore.getState().user?.id !== session.ownerUserId) return;
@@ -622,6 +626,7 @@ export function HomePage() {
       weekPhase: todayPhase,
       phaseSource: programCursor?.phaseSource ?? "auto",
       scheduledDate: startableOccurrence?.target_date,
+      expectedOriginalDate: startableOccurrence?.original_date,
     });
   }
 
@@ -745,7 +750,7 @@ export function HomePage() {
                 {workoutSchedule?.current?.title || todayProgram.name}
               </p>
               <p className="mt-2 text-xs text-tg-hint">
-                Результат сохранён. Повторно начинать этот день программы не нужно.
+                Результат сохранён. Следующая тренировка — по расписанию.
               </p>
             </div>
             <WorkoutSchedulePanel

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.user import User
 from app.schemas.user import UserProfileResponse, UserProfileUpdate
 from app.services.scheduler import local_schedule_day
+from app.services.schedule_replacement import SCHEDULE_CHANGE_REQUESTS_KEY
+from app.services.workout_schedule_occurrence import RESCHEDULE_RECEIPTS_KEY
 from app.services.legal_consent import get_legal_status
 from app.services.subscription_service import get_subscription_state, legacy_subscription_status
 
@@ -39,11 +42,18 @@ async def update_profile(
     user: User,
     data: UserProfileUpdate,
 ) -> User:
+    if data.anthropometry is not None or data.goals is not None:
+        await session.execute(select(User.id).where(User.id == user.id).with_for_update())
+        await session.refresh(user, attribute_names=["goals", "anthropometry"])
     if data.anthropometry is not None:
         user.anthropometry = {**(user.anthropometry or {}), **data.anthropometry}
         flag_modified(user, "anthropometry")
     if data.goals is not None:
-        merged = {**(user.goals or {}), **data.goals}
+        goal_patch = {
+            key: value for key, value in data.goals.items()
+            if key not in {RESCHEDULE_RECEIPTS_KEY, SCHEDULE_CHANGE_REQUESTS_KEY}
+        }
+        merged = {**(user.goals or {}), **goal_patch}
         previous_program_id = str((user.goals or {}).get("active_program_id") or "")
         selected_program_id = str(merged.get("active_program_id") or "")
         if selected_program_id != previous_program_id:

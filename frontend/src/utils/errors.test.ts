@@ -16,6 +16,16 @@ describe("user-facing errors", () => {
     expect(toUserMessage(new Error("Тренировка уже удалена"))).toBe("Тренировка уже удалена");
   });
 
+  it("shows a known scheduling conflict without exposing arbitrary server details", () => {
+    const conflict = new axios.AxiosError("Conflict", "ERR_BAD_REQUEST", undefined, undefined, {
+      status: 409, statusText: "Conflict", headers: {}, config: { headers: new axios.AxiosHeaders() },
+      data: { detail: "Выполненную тренировку перенести или отменить нельзя" },
+    });
+    expect(toUserMessage(conflict)).toBe("Выполненную тренировку перенести или отменить нельзя");
+    conflict.response!.data = { detail: "Internal SQL diagnostic" };
+    expect(toUserMessage(conflict)).toBe("Данные уже изменились. Обновите экран и повторите действие.");
+  });
+
   it.each(["ECONNABORTED", "ETIMEDOUT"])("explains an API timeout with code %s", (code) => {
     expect(toUserMessage(new axios.AxiosError("timeout", code))).toBe(
       "Сервис отвечает слишком долго. Попробуйте ещё раз.",

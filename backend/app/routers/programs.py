@@ -127,6 +127,7 @@ async def start_program(
         program_id,
         day_index=payload.day_index,
         scheduled_date=payload.scheduled_date,
+        expected_original_date=payload.expected_original_date,
         week_phase=payload.week_phase,
         cycle_readiness=payload.cycle_readiness,
         execution_version=payload.execution_version,

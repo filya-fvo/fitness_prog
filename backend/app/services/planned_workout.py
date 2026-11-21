@@ -176,6 +176,7 @@ async def save_override(
 async def move_saved_overrides(
     session: AsyncSession, *, user_id: uuid.UUID, source_date: date, target_date: date,
     program_id: uuid.UUID | None = None,
+    day_index: int | None = None,
 ) -> None:
     """Move legacy drafts inside the caller's locked-user transaction."""
     from sqlalchemy import update
@@ -187,6 +188,9 @@ async def move_saved_overrides(
     if program_id is not None:
         filters.append(WorkoutPlanOverride.program_id == program_id)
         targets.append(WorkoutPlanOverride.program_id == program_id)
+    if day_index is not None:
+        filters.append(WorkoutPlanOverride.day_index == day_index)
+        targets.append(WorkoutPlanOverride.day_index == day_index)
     collisions = await session.scalars(select(WorkoutPlanOverride).where(*targets))
     removed = False
     for target in collisions.all():

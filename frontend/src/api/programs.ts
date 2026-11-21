@@ -112,6 +112,7 @@ export async function startProgramWorkout(input: {
   programId: string;
   dayIndex?: number;
   scheduledDate?: string;
+  expectedOriginalDate?: string;
   weekPhase?: "light" | "medium" | "heavy" | null;
   cycleReadiness?: CycleReadiness;
 }): Promise<Workout> {
@@ -121,6 +122,7 @@ export async function startProgramWorkout(input: {
     week_phase: input.weekPhase ?? null,
   };
   payload.execution_version = input.executionVersion ?? 2;
+  if (input.expectedOriginalDate) payload.expected_original_date = input.expectedOriginalDate;
   if (input.cycleReadiness !== undefined) payload.cycle_readiness = input.cycleReadiness;
   const { data } = await apiClient.post(`/programs/${input.programId}/start`, payload);
   return mapWorkout(workoutSchema.parse(data));

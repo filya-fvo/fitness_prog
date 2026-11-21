@@ -645,6 +645,7 @@ async def start_program_workout(
     *,
     day_index: int = 1,
     scheduled_date: date | None = None,
+    expected_original_date: date | None = None,
     week_phase: str | None = None,
     cycle_readiness: object = None,
     execution_version: int | None = None,
@@ -660,7 +661,10 @@ async def start_program_workout(
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
 
-    target_date = scheduled_date or date.today()
+    from app.services import scheduler
+
+    local_day = scheduler.local_schedule_day(user.goals or {})
+    target_date = scheduled_date or local_day
     existing = await session.scalar(
         select(Workout)
         .where(
@@ -683,6 +687,19 @@ async def start_program_workout(
             workout_id=existing.id,
             user_id=user.id,
         )
+
+    if expected_original_date is not None:
+        current = (await scheduler.get_schedule_overview(session, user, local_day)).get("current")
+        if current is None or (
+            current["status"] not in {"scheduled", "missed"}
+            or current["original_date"] != expected_original_date
+            or current["target_date"] != target_date
+            or current["program_id"] != program_id
+            or current["day_index"] != day_index
+        ):
+            raise HTTPException(
+                409, "Расписание изменилось. Обновите экран и выберите тренировку снова.",
+            )
 
     payload = WorkoutCreate(
         execution_version=execution_version,
