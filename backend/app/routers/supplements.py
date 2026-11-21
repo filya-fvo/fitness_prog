@@ -21,6 +21,7 @@ from app.deps import get_current_user
 from app.models.user import User
 from app.models.supplement_intake import SupplementIntake
 from app.services import supplement_intakes
+from app.services.android_notification_delivery import lock_notification_user
 
 router = APIRouter(prefix="/supplements", tags=["supplements"])
 
@@ -117,6 +118,31 @@ def _stack(user: User) -> list[dict[str, Any]]:
     return [x for x in raw if isinstance(x, dict)]
 
 
+def _set_stack(user: User, items: list[dict[str, Any]]) -> None:
+    user.goals = {
+        **(user.goals or {}),
+        "supplements": items,
+        "supplements_initialized": True,
+    }
+    flag_modified(user, "goals")
+
+
+def _stack_response(items: list[dict[str, Any]]) -> SupplementStackResponse:
+    return SupplementStackResponse(
+        items=[SupplementEntry.model_validate(item) for item in items],
+        catalog=SUPPLEMENTS_CATALOG,
+    )
+
+
+async def _save_stack(
+    session: AsyncSession, user: User, items: list[dict[str, Any]],
+) -> SupplementStackResponse:
+    response = _stack_response(items)
+    _set_stack(user, items)
+    await supplement_intakes.reset_pending_schedule(session, user)
+    return response
+
+
 def _normalize_entry_dump(raw: dict[str, Any]) -> dict[str, Any]:
     """Keep times[] in sync with schedule[] for legacy clients / bot marks."""
     item = dict(raw)
@@ -159,23 +185,16 @@ async def get_stack(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
-    items = _stack(user)
     # Do not auto-seed stack — user adds supplements manually from catalog.
     if not (user.goals or {}).get("supplements_initialized"):
-        goals = {
-            **(user.goals or {}),
-            "supplements": items if items else [],
-            "supplements_initialized": True,
-        }
-        user.goals = goals
-        flag_modified(user, "goals")
-        await session.commit()
-        await session.refresh(user)
-        items = _stack(user)
-    return SupplementStackResponse(
-        items=[SupplementEntry.model_validate(x) for x in items],
-        catalog=SUPPLEMENTS_CATALOG,
-    )
+        user = await lock_notification_user(session, user.id)
+        if not (user.goals or {}).get("supplements_initialized"):
+            items = _stack(user)
+            response = _stack_response(items)
+            _set_stack(user, items)
+            await session.commit()
+            return response
+    return _stack_response(_stack(user))
 
 
 @router.put("/stack", response_model=SupplementStackResponse)
@@ -185,19 +204,8 @@ async def put_stack(
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
     items = [_normalize_entry_dump(x.model_dump()) for x in body.items]
-    user.goals = {
-        **(user.goals or {}),
-        "supplements": items,
-        "supplements_initialized": True,
-    }
-    flag_modified(user, "goals")
-    await session.commit()
-    await session.refresh(user)
-    await supplement_intakes.reset_pending_schedule(session, user)
-    return SupplementStackResponse(
-        items=[SupplementEntry.model_validate(x) for x in items],
-        catalog=SUPPLEMENTS_CATALOG,
-    )
+    user = await lock_notification_user(session, user.id)
+    return await _save_stack(session, user, items)
 
 
 @router.post("/stack/from-catalog", response_model=SupplementStackResponse)
@@ -209,6 +217,7 @@ async def add_from_catalog(
     cat = catalog_by_key().get(body.key)
     if not cat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Добавка не найдена")
+    user = await lock_notification_user(session, user.id)
     items = _stack(user)
     if any(str(x.get("key")) == body.key for x in items):
         raise HTTPException(status_code=400, detail="Добавка уже есть в списке")
@@ -220,19 +229,7 @@ async def add_from_catalog(
         entry["times"] = times
         entry["schedule"] = [{"slot": t, "days": "every"} for t in times]
     items.append(entry)
-    user.goals = {
-        **(user.goals or {}),
-        "supplements": items,
-        "supplements_initialized": True,
-    }
-    flag_modified(user, "goals")
-    await session.commit()
-    await session.refresh(user)
-    await supplement_intakes.reset_pending_schedule(session, user)
-    return SupplementStackResponse(
-        items=[SupplementEntry.model_validate(x) for x in items],
-        catalog=SUPPLEMENTS_CATALOG,
-    )
+    return await _save_stack(session, user, items)
 
 
 @router.post("/stack/custom", response_model=SupplementStackResponse)
@@ -241,6 +238,7 @@ async def add_custom(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
+    user = await lock_notification_user(session, user.id)
     items = _stack(user)
     times = [str(t).strip() for t in (body.times or ["10:00"]) if str(t).strip()] or ["10:00"]
     entry = {
@@ -255,19 +253,7 @@ async def add_custom(
         "notes": body.notes,
     }
     items.append(entry)
-    user.goals = {
-        **(user.goals or {}),
-        "supplements": items,
-        "supplements_initialized": True,
-    }
-    flag_modified(user, "goals")
-    await session.commit()
-    await session.refresh(user)
-    await supplement_intakes.reset_pending_schedule(session, user)
-    return SupplementStackResponse(
-        items=[SupplementEntry.model_validate(x) for x in items],
-        catalog=SUPPLEMENTS_CATALOG,
-    )
+    return await _save_stack(session, user, items)
 
 
 @router.delete("/stack/{entry_id}", response_model=SupplementStackResponse)
@@ -276,20 +262,9 @@ async def remove_entry(
     session: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> SupplementStackResponse:
+    user = await lock_notification_user(session, user.id)
     items = [x for x in _stack(user) if str(x.get("id")) != entry_id]
-    user.goals = {
-        **(user.goals or {}),
-        "supplements": items,
-        "supplements_initialized": True,
-    }
-    flag_modified(user, "goals")
-    await session.commit()
-    await session.refresh(user)
-    await supplement_intakes.reset_pending_schedule(session, user)
-    return SupplementStackResponse(
-        items=[SupplementEntry.model_validate(x) for x in items],
-        catalog=SUPPLEMENTS_CATALOG,
-    )
+    return await _save_stack(session, user, items)
 
 
 @router.get("/intakes/today", response_model=IntakeDayResponse)
