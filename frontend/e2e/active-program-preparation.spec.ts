@@ -107,13 +107,14 @@ legal_status: acceptedLegalStatus(USER_ID),
 });
 
 
-test("starting a program only patches program fields", async ({ page }) => {
+test("starts the scheduled occurrence without overwriting the profile", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "program-start-e2e"));
-  let saved: {goals?: Record<string, unknown>} | null = null;
+  const profileWrites: unknown[] = [];
+  let startPayload: unknown = null;
   const day = new Date().toLocaleDateString("en-CA");
   const profile = {legal_status: acceptedLegalStatus(USER_ID), id: USER_ID, telegram_id: null, username: "program-user", anthropometry: {}, goals: {onboarding_completed: true, active_program_id: PROGRAM_ID, active_program_next_day: 1, active_program_week_phase: "medium", notification_preferences: {enabled: true}}, subscription_status: "free", stars_balance: 0, onboarding_completed: true};
   await page.route("**/users/me", route => {
-    if(route.request().method() !== "GET") saved = route.request().postDataJSON();
+    if (route.request().method() !== "GET") profileWrites.push(route.request().postDataJSON());
     return route.fulfill({json: profile});
   });
   const program = {id: PROGRAM_ID, name: "Программа", structure: {days: [{day_index: 1}]}};
@@ -122,11 +123,12 @@ test("starting a program only patches program fields", async ({ page }) => {
   await page.route(`**/programs/${PROGRAM_ID}`, route => route.fulfill({json:program}));
   await page.route(/\/exercises(?:\?|$)/, route => route.fulfill({json:{items:[],total:0,page:1,page_size:200}}));
   await page.route("**/workouts/schedule/overview**", route => route.fulfill({json:{requested_date:day,current:{original_date:day,target_date:day,start_time:"10:00:00",title:"День 1",program_id:PROGRAM_ID,day_index:1,status:"scheduled",is_override:false,can_reschedule:false},next:null}}));
-  await page.route(`**/programs/${PROGRAM_ID}/start`, route => route.fulfill({status:503,json:{detail:"Test stops after profile patch"}}));
+  await page.route(`**/programs/${PROGRAM_ID}/start`, route => {
+    startPayload = route.request().postDataJSON();
+    return route.fulfill({ status: 503, json: { detail: "Test stops after scheduled start request" } });
+  });
   await page.goto("/train");
   await page.getByRole("button",{name:/^Начать ·/}).click();
-  await expect.poll(() => saved).not.toBeNull();
-  expect(saved!.goals).not.toHaveProperty("notification_preferences");
-  expect(saved!.goals).not.toHaveProperty("onboarding_completed");
-  expect(saved!.goals).toHaveProperty("active_program_id", PROGRAM_ID);
+  await expect.poll(() => startPayload).toMatchObject({ day_index: 1, scheduled_date: day, expected_original_date: day });
+  expect(profileWrites).toEqual([]);
 });

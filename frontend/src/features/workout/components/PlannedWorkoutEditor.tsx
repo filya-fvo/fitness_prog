@@ -1,4 +1,4 @@
-import { loadWorkoutPreparation, findWorkoutPreparation, stageWorkoutPreparation, readWorkoutPreparationDraft, readWorkoutPreparationFailure, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation } from "@/db/workoutCustomization";
+import { loadWorkoutPreparation, findWorkoutPreparation, stageWorkoutPreparation, requeueWorkoutPreparation, readWorkoutPreparationDraft, readWorkoutPreparationFailure, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation, sameWorkoutPreparationContext, type WorkoutPreparationDraft } from "@/db/workoutCustomization";
 import { useUserStore } from "@/store/userStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -37,6 +37,7 @@ export function PlannedWorkoutEditor(props: Props) {
   const [structuralEdit, setStructuralEdit] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blockedPreparation, setBlockedPreparation] = useState<WorkoutPreparationDraft | null>(null);
   const [scope, setScope] = useState<"occurrence" | "program_day">("occurrence");
   const loadedPlan = useRef<WorkoutPlan | null>(null);
   const generation = useRef(0);
@@ -56,7 +57,7 @@ export function PlannedWorkoutEditor(props: Props) {
     if (loading || props.disabled) return;
     const current = ++generation.current;
     openedContext.current = { ...props };
-    setOpen(true); setLoading(true); setError(null); setPlan(null); setStructuralEdit(false); setScope("occurrence");
+    setOpen(true); setLoading(true); setError(null); setPlan(null); setBlockedPreparation(null); setStructuralEdit(false); setScope("occurrence");
     try {
       const cached = await readCachedExercises();
       if (current !== generation.current) return;
@@ -68,7 +69,13 @@ export function PlannedWorkoutEditor(props: Props) {
       ]);
       if (current !== generation.current) return;
       setPlan(prepared); loadedPlan.current = prepared;
-      if (pending && !pending.receipt) { setScope(pending.scope); setStructuralEdit(true); }
+      if (pending && !pending.receipt) {
+        if (sameWorkoutPreparationContext(pending.context, openedContext.current)) {
+          setScope(pending.scope); setStructuralEdit(true);
+        } else {
+          setBlockedPreparation(pending);
+        }
+      }
       if (fresh === null && !cached.length) setError("Не удалось загрузить каталог упражнений. Откройте подготовку снова");
       if (fresh?.length) { setCatalog(fresh); await cacheExercises(fresh); }
     } catch (err) {
@@ -108,7 +115,7 @@ export function PlannedWorkoutEditor(props: Props) {
   }
 
   async function save() {
-    if (!plan || saving || pendingGroup || workoutPreparationError(plan)) return;
+    if (!plan || saving || blockedPreparation || pendingGroup || workoutPreparationError(plan)) return;
     const current = generation.current;
     const context = openedContext.current;
     setSaving(true); setError(null);
@@ -134,18 +141,44 @@ export function PlannedWorkoutEditor(props: Props) {
     }
   }
 
+  async function retryBlockedPreparation() {
+    if (!blockedPreparation || !owner || saving) return;
+    if (!isOnline() || !getStoredToken()) {
+      setError("Подключитесь к интернету и войдите в аккаунт, чтобы отправить подготовку");
+      return;
+    }
+    const current = generation.current;
+    const { operationId } = blockedPreparation;
+    setSaving(true); setError(null);
+    try {
+      const key = await requeueWorkoutPreparation(operationId, owner);
+      await flushSyncQueue(owner, { retryFailed: true });
+      const draft = await readWorkoutPreparationDraft(key, owner);
+      if (!draft?.receipt) throw new Error(await readWorkoutPreparationFailure(operationId, owner) ?? "Подготовка сохранена на устройстве. Отправка пока не завершена");
+      if (current === generation.current) {
+        setSaving(false);
+        toast("Подготовка сохранена");
+        await showEditor();
+      }
+    } catch (err) {
+      if (current === generation.current) setError(toUserMessage(err, "Не удалось отправить подготовку"));
+    } finally {
+      if (current === generation.current) setSaving(false);
+    }
+  }
+
   async function resetScope(value: "occurrence" | "program_day") {
-    if (!plan || saving) return;
+    if (!plan || saving || blockedPreparation) return;
     const current = generation.current;
     const context = openedContext.current;
     let saved = false;
     setSaving(true); setError(null);
     try {
-      await guardWorkoutPreparationReset(context);
+      await guardWorkoutPreparationReset(context, value);
       const warning = await resetPreparedWorkoutChanges(context, loadedPlan.current ?? plan, value);
       if (warning && current === generation.current) toast(warning, "error", 7000);
       saved = true;
-      await clearAcknowledgedWorkoutPreparation(context);
+      await clearAcknowledgedWorkoutPreparation(context, value);
       if (current !== generation.current) return;
       setPlan(null); setLoading(true);
       const fresh = await loadWorkoutPreparation(context);
@@ -173,13 +206,17 @@ export function PlannedWorkoutEditor(props: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? <p className="text-sm text-tg-hint">Загрузка плана…</p> : null}
           {error ? <p role="alert" className="app-status app-status-danger text-sm">{error}</p> : null}
-          {plan && !picking ? <WorkoutCustomizationScope value={scope} activeScopes={plan.customization_scopes} disabled={saving || pendingGroup} onChange={setScope} onReset={value => void resetScope(value)} /> : null}
+          {blockedPreparation ? <div className="app-card-inset space-y-2 p-3">
+            <p className="text-sm">Подготовка на {formatDate(blockedPreparation.context.scheduledDate)} сохранена на устройстве. Отправьте её, чтобы изменить этот план.</p>
+            <button type="button" className="app-button app-secondary-action min-h-11" disabled={saving} onClick={() => void retryBlockedPreparation()}>Повторить отправку подготовки</button>
+          </div> : null}
+          {plan && !picking ? <WorkoutCustomizationScope value={scope} activeScopes={plan.customization_scopes} disabled={saving || Boolean(blockedPreparation) || pendingGroup} onChange={setScope} onReset={value => void resetScope(value)} /> : null}
           {picking ? <PlannedExercisePicker key={adding ? "add" : editingId} source={adding ? null : source} catalog={editingItem?.set_methods?.length ? catalog.filter(item => inferLoadType(item) === "weight_reps") : catalog} occupiedIds={occupiedIds}
             onBack={() => { setAdding(false); setEditingId(null); }} onChoose={choose} onOpenDetail={setDetailExercise} />
-            : plan ? <WorkoutDayComposer plan={plan} catalog={catalog} disabled={saving}
+            : plan ? <WorkoutDayComposer plan={plan} catalog={catalog} disabled={saving || Boolean(blockedPreparation)}
               onPendingChange={setPendingGroup} onChange={next => { setPlan(next); setStructuralEdit(true); }} onAdd={() => setAdding(true)} onReplace={row => setEditingId(row.exercise_id)} onOpenDetail={setDetailExercise} /> : null}
         </div>
-        {plan && !picking ? <div className="space-y-2 border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {plan && !picking && !blockedPreparation ? <div className="space-y-2 border-t border-black/5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button type="button" disabled={saving || pendingGroup || Boolean(workoutPreparationError(plan))} onClick={() => void save()} className="app-button app-gradient-action min-h-[48px] w-full">{saving ? "Сохраняем…" : "Сохранить подготовку"}</button>
           {plan.exercises.some(row => row.original_exercise_id) ? <button type="button" disabled={saving} onClick={restoreDefaults} className="min-h-[44px] w-full text-xs text-tg-hint">Вернуть упражнения программы</button> : null}
         </div> : null}

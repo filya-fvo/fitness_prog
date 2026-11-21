@@ -6,4 +6,7 @@ import "../../src/index.css";
 import { initializeTheme } from "../../src/theme/theme";
 initializeTheme();
 useUserStore.setState({ user: { id: "22222222-2222-4222-8222-222222222222", subscription_status: "plus", onboarding_completed: true }, isAuthenticated: true });
-createRoot(document.getElementById("root")!).render(<main className="mx-auto max-w-md p-4"><h1>Чередование акцентов</h1><PendingPreparationActions /><PlannedWorkoutEditor programId="33333333-3333-4333-8333-333333333333" scheduledDate="2026-10-19" dayIndex={1} weekPhase="medium" /></main>);
+const params = new URLSearchParams(window.location.search);
+const scheduledDate = params.get("date") ?? "2026-10-19";
+const weekPhase = params.get("phase") === "heavy" ? "heavy" : "medium";
+createRoot(document.getElementById("root")!).render(<main className="mx-auto max-w-md p-4"><h1>Чередование акцентов</h1><PendingPreparationActions /><PlannedWorkoutEditor programId="33333333-3333-4333-8333-333333333333" scheduledDate={scheduledDate} dayIndex={1} weekPhase={weekPhase} /></main>);

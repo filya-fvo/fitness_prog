@@ -3,9 +3,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { db } from "./schema";
 import { apiClient } from "@/api/client";
 import { useUserStore } from "@/store/userStore";
-import { loadWorkoutPreparation, stageWorkoutPreparation, syncWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation, cancelUnsentWorkoutPreparation, listPendingWorkoutPreparations } from "./workoutCustomization";
+import { loadWorkoutPreparation, stageWorkoutPreparation, syncWorkoutPreparation, requeueWorkoutPreparation, readWorkoutPreparationDraft, guardWorkoutPreparationReset, clearAcknowledgedWorkoutPreparation, cancelUnsentWorkoutPreparation, listPendingWorkoutPreparations } from "./workoutCustomization";
 import type { WorkoutPlan } from "@/types/workout";
-import { clearSyncQueue } from "./syncQueue";
+import { clearSyncQueue, flushSyncQueue } from "./syncQueue";
 const owner = "22222222-2222-4222-8222-222222222222";
 const program = "11111111-1111-4111-8111-111111111111";
 const exercise = "33333333-3333-4333-8333-333333333333";
@@ -203,4 +203,77 @@ it("prevents resetting an unsent proposal and clears acknowledged derived previe
   await expect(loadWorkoutPreparation(context)).rejects.toThrow("Откройте этот день");
   // The receipt remains available to an already dependent workout operation.
   expect((await readWorkoutPreparationDraft(pending.key, owner))?.receipt?.revision).toBe(1);
+});
+
+it("opens the current plan despite a legacy pending preparation for another date", async () => {
+  await loadWorkoutPreparation(context);
+  const earlier = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  const legacyIndex = `workout-preparation:v1:${owner}:day:${program}:1`;
+  const dateIndex = `${legacyIndex}:${context.scheduledDate}`;
+  const indexed = await db.meta.get(dateIndex);
+  if (indexed) {
+    await db.meta.put({ ...indexed, key: legacyIndex });
+    await db.meta.delete(dateIndex);
+  }
+
+  const next = { ...context, scheduledDate: "2026-10-26" };
+  const serverPlan = { ...plan, exercises: [{ ...plan.exercises[0], target_sets: 4 }] };
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === "/workouts/planned-plan" ? serverPlan : {
+    program_id: program, day_index: 1, scope: "program_day", scheduled_date: null, revision: 0, program_version: 1, patch: {},
+  } }));
+  const loaded = await loadWorkoutPreparation(next);
+  expect(loaded.exercises).toEqual(serverPlan.exercises);
+  const nextDraft = await stageWorkoutPreparation(next, loaded, { ...loaded, exercises: edited.exercises }, "occurrence");
+
+  expect((await readWorkoutPreparationDraft(earlier.key, owner))?.edited.exercises).toHaveLength(2);
+  expect((await readWorkoutPreparationDraft(nextDraft.key, owner))?.context.scheduledDate).toBe(next.scheduledDate);
+  expect(await db.syncQueue.count()).toBe(2);
+  expect((await loadWorkoutPreparation(context)).exercises).toHaveLength(2);
+  await expect(guardWorkoutPreparationReset(next, "program_day")).rejects.toThrow("Сначала отправьте");
+  await cancelUnsentWorkoutPreparation(nextDraft.operationId, owner);
+  expect((await loadWorkoutPreparation(context)).exercises).toHaveLength(2);
+});
+
+it("shows the current plan for a different phase without sending or losing the pending preparation", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  const otherPhase = { ...context, weekPhase: "heavy" as const };
+  const put = vi.spyOn(apiClient, "put");
+
+  expect((await loadWorkoutPreparation(otherPhase)).exercises).toEqual(plan.exercises);
+  expect((await readWorkoutPreparationDraft(pending.key, owner))?.edited.exercises).toHaveLength(2);
+  expect(await db.syncQueue.count()).toBe(1);
+  expect(put).not.toHaveBeenCalled();
+});
+
+it("sends preparation for a new date when the earlier proposal cannot be saved", async () => {
+  const next = { ...context, scheduledDate: "2026-10-26" };
+  await loadWorkoutPreparation(context);
+  const earlier = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await db.syncQueue.update(earlier.operationId, { createdAt: 1 });
+  await loadWorkoutPreparation(next);
+  const later = await stageWorkoutPreparation(next, plan, edited, "occurrence");
+  const put = vi.spyOn(apiClient, "put").mockImplementation(async (_, body) => {
+    if ((body as { scheduled_date: string }).scheduled_date === context.scheduledDate) throw new Error("Изменения этой даты уже закрыты");
+    return { data: { program_id: program, day_index: 1, scope: "occurrence", scheduled_date: next.scheduledDate, revision: 1, program_version: 1, patch: {} } };
+  });
+
+  expect(await flushSyncQueue(owner)).toEqual({ processed: 1, failed: 1, dropped: 0 });
+  expect(put.mock.calls.map(([, body]) => body)).toMatchObject([{ scheduled_date: context.scheduledDate }, { scheduled_date: next.scheduledDate }]);
+  expect((await readWorkoutPreparationDraft(earlier.key, owner))?.receipt).toBeNull();
+  expect((await readWorkoutPreparationDraft(later.key, owner))?.receipt?.revision).toBe(1);
+});
+
+it("retries an orphaned preparation by its original ID and leaves an acknowledged one alone", async () => {
+  await loadWorkoutPreparation(context);
+  const pending = await stageWorkoutPreparation(context, plan, edited, "occurrence");
+  await db.syncQueue.delete(pending.operationId);
+  expect(await requeueWorkoutPreparation(pending.operationId, owner)).toBe(pending.key);
+  expect((await db.syncQueue.get(pending.operationId))?.payload.draftKey).toBe(pending.key);
+
+  vi.spyOn(apiClient, "put").mockResolvedValue({ data: { program_id: program, day_index: 1, scope: "occurrence", scheduled_date: context.scheduledDate, revision: 1, program_version: 1, patch: {} } });
+  await syncWorkoutPreparation(pending.key, owner);
+  await db.syncQueue.delete(pending.operationId);
+  expect(await requeueWorkoutPreparation(pending.operationId, owner)).toBe(pending.key);
+  expect(await db.syncQueue.count()).toBe(0);
 });

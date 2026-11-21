@@ -91,6 +91,36 @@ test("reports catalog outage and keeps the prepared plan usable", async ({ page 
   await expect(prepare).toBeFocused();
 });
 
+test("opens the current server plan while preserving a pending preparation for an earlier date", async ({ page }) => {
+  await installComposerApi(page, true);
+  const fixture = "/e2e/fixtures/workout-composer.html";
+  const dialog = page.getByRole("dialog", { name: "Подготовка тренировки" });
+  const open = () => page.getByRole("button", { name: /Подготовить упражнения/ }).click();
+  await page.goto(fixture);
+  await open();
+  await dialog.getByRole("button", { name: "Добавить упражнение", exact: true }).click();
+  await dialog.getByRole("searchbox").fill("Скручивания");
+  await dialog.getByRole("button", { name: /Добавить.*Скручивания/ }).click();
+  await dialog.getByRole("button", { name: "Сохранить подготовку" }).click();
+  await expect(dialog.getByRole("alert")).toBeVisible();
+
+  await page.goto(`${fixture}?date=2026-10-26`);
+  await open();
+  await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Скручивания", { exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Сохранить подготовку" })).toBeEnabled();
+
+  await page.goto(`${fixture}?phase=heavy`);
+  await open();
+  await expect(dialog.getByText("Сгибания со штангой", { exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Повторить отправку подготовки" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Добавить упражнение", exact: true })).toBeDisabled();
+
+  await page.goto(fixture);
+  await open();
+  await expect(dialog.getByText("Скручивания", { exact: true })).toBeVisible();
+});
+
 test("saves a personal program day and resets it separately from date preparation", async ({ page }) => {
   await installComposerApi(page);
   let active = false, revision = 0;

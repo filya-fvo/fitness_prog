@@ -444,10 +444,11 @@ export async function flushSyncQueue(
       if (typeof item.payload.preparationDraftKey === "string" && blockedPreparations.has(item.payload.preparationDraftKey)) blockedWorkouts.add(item.clientWorkoutId);
       if (blockedWorkouts.has(item.clientWorkoutId)) { failed += 1; continue; }
       const structured = item.payload.executionVersion === 2 || (item.payload.plan && typeof item.payload.plan === "object" && (item.payload.plan as { execution_version?: unknown }).execution_version === 2);
+      const locksWorkout = item.type !== "customize_workout" && (structured || item.type === "update_plan");
       if (useUserStore.getState().user?.id !== owner) break;
       if ((item.attempts || 0) >= MAX_SYNC_ATTEMPTS) {
         if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
-        if (structured || item.type === "update_plan") blockedWorkouts.add(item.clientWorkoutId);
+        if (locksWorkout) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         continue;
       }
@@ -459,7 +460,7 @@ export async function flushSyncQueue(
       } catch (err) {
         if (useUserStore.getState().user?.id !== owner) break;
         if (item.type === "customize_workout" && typeof item.payload.draftKey === "string") blockedPreparations.add(item.payload.draftKey);
-        if (structured || item.type === "update_plan") blockedWorkouts.add(item.clientWorkoutId);
+        if (locksWorkout) blockedWorkouts.add(item.clientWorkoutId);
         failed += 1;
         const message = structured ? workoutSyncError(err) : err instanceof Error ? err.message : "sync failed";
         const attempts = (item.attempts || 0) + 1;

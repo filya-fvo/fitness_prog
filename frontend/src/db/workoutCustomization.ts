@@ -20,10 +20,13 @@ const draftSchema = cacheSchema.extend({ version: z.literal(1), owner: z.string(
 export type WorkoutPreparationDraft = z.infer<typeof draftSchema>;
 const prefix = (owner: string) => `workout-preparation:v1:${owner}:`;
 const dayKey = (owner: string, context: PlannedWorkoutPlanInput) => `${prefix(owner)}day:${context.programId}:${context.dayIndex}`;
+const occurrenceKey = (owner: string, context: PlannedWorkoutPlanInput) => `${dayKey(owner, context)}:${context.scheduledDate}`;
 const cacheKey = (owner: string, context: PlannedWorkoutPlanInput) => `${prefix(owner)}cache:${context.programId}:${context.dayIndex}:${context.scheduledDate}:${context.weekPhase ?? "auto"}`;
 function checkOwner(owner: string): void { if (useUserStore.getState().user?.id !== owner) throw new Error("Аккаунт изменился. Откройте подготовку снова"); }
 function requireOwner(): string { const owner = useUserStore.getState().user?.id; if (!owner) throw new Error("Войдите в аккаунт"); return owner; }
-const sameContext = (a: PlannedWorkoutPlanInput, b: PlannedWorkoutPlanInput) => a.programId === b.programId && a.dayIndex === b.dayIndex && a.scheduledDate === b.scheduledDate && (a.weekPhase ?? null) === (b.weekPhase ?? null);
+export function sameWorkoutPreparationContext(a: PlannedWorkoutPlanInput, b: PlannedWorkoutPlanInput): boolean {
+  return a.programId === b.programId && a.dayIndex === b.dayIndex && a.scheduledDate === b.scheduledDate && (a.weekPhase ?? null) === (b.weekPhase ?? null);
+}
 function row(key: string, data: unknown) {
   const value = JSON.stringify(data);
   if (new TextEncoder().encode(value).length > 1900000) throw new Error("Подготовка слишком большая для сохранения");
@@ -39,10 +42,42 @@ export async function readWorkoutPreparationDraft(key: string, owner: string): P
   if (draft.owner !== owner) throw new Error("Подготовка принадлежит другому аккаунту");
   return draft;
 }
-async function currentDraft(owner: string, context: PlannedWorkoutPlanInput) {
-  const index = await db.meta.get(dayKey(owner, context));
+async function indexedDraft(owner: string, index: { value: string } | undefined) {
   checkOwner(owner);
   return index ? readWorkoutPreparationDraft(z.string().parse(JSON.parse(index.value)), owner) : null;
+}
+async function currentDraft(owner: string, context: PlannedWorkoutPlanInput) {
+  const [day, date] = await db.meta.bulkGet([dayKey(owner, context), occurrenceKey(owner, context)]);
+  const shared = await indexedDraft(owner, day);
+  if (shared?.scope === "program_day" && !shared.receipt) return shared;
+  const occurrence = await indexedDraft(owner, date);
+  // Older clients indexed both scopes by program day. Keep pending and acknowledged records usable.
+  const legacy = shared?.context.scheduledDate === context.scheduledDate ? shared : null;
+  return legacy && !legacy.receipt ? legacy : occurrence ?? legacy;
+}
+async function checkPendingDay(owner: string, context: PlannedWorkoutPlanInput): Promise<void> {
+  const key = dayKey(owner, context);
+  const indexes = await db.meta.where("key").startsWith(key).filter(index => index.key === key || index.key.startsWith(`${key}:`)).toArray();
+  for (const index of indexes) {
+    const draft = await indexedDraft(owner, index);
+    if (draft && !draft.receipt) throw new Error("Сначала отправьте сохранённую подготовку этого дня");
+  }
+}
+async function enqueueWorkoutPreparation(draft: WorkoutPreparationDraft, key: string): Promise<void> {
+  if (await db.syncQueue.get(draft.operationId)) return;
+  await db.syncQueue.add({ id: draft.operationId, ownerUserId: draft.owner, type: "customize_workout",
+    clientWorkoutId: `customization:${draft.context.programId}:${draft.context.dayIndex}`,
+    payload: { draftKey: key, executionVersion: 2 }, createdAt: Date.now(), attempts: 0, lastError: null });
+}
+export async function requeueWorkoutPreparation(operationId: string, owner: string): Promise<string> {
+  const key = `${prefix(owner)}op:${operationId}`;
+  await db.transaction("rw", db.meta, db.syncQueue, async () => {
+    const draft = await readWorkoutPreparationDraft(key, owner);
+    if (!draft || draft.operationId !== operationId) throw new Error("Сохранённая подготовка не найдена");
+    if (!draft.receipt) await enqueueWorkoutPreparation(draft, key);
+    checkOwner(owner);
+  });
+  return key;
 }
 export async function findWorkoutPreparation(context: PlannedWorkoutPlanInput): Promise<WorkoutPreparationDraft | null> {
   return currentDraft(requireOwner(), context);
@@ -50,11 +85,7 @@ export async function findWorkoutPreparation(context: PlannedWorkoutPlanInput): 
 export async function loadWorkoutPreparation(context: PlannedWorkoutPlanInput): Promise<WorkoutPlan> {
   const owner = requireOwner();
   const draft = await currentDraft(owner, context);
-  if (draft && !draft.receipt) {
-    if (!sameContext(draft.context, context)) throw new Error("Сначала отправьте сохранённую подготовку этого дня");
-    return draft.edited as WorkoutPlan;
-  }
-  if (draft?.receipt && !isOnline() && sameContext(draft.context, context)) return draft.edited as WorkoutPlan;
+  if (draft && sameWorkoutPreparationContext(draft.context, context) && (!draft.receipt || !isOnline())) return draft.edited as WorkoutPlan;
   if (isOnline()) {
     const [loaded, stored] = await Promise.all([fetchPlannedWorkoutPlan(context), fetchWorkoutCustomization({ program_id: context.programId, day_index: context.dayIndex, scope: "program_day" })]);
     checkOwner(owner);
@@ -73,27 +104,28 @@ export async function loadWorkoutPreparation(context: PlannedWorkoutPlanInput): 
 }
 export async function stageWorkoutPreparation(context: PlannedWorkoutPlanInput, loaded: WorkoutPlan, edited: WorkoutPlan, scope: "occurrence" | "program_day"): Promise<{ key: string; operationId: string }> {
   const owner = requireOwner();
-  const cached = await db.meta.get(cacheKey(owner, context));
-  checkOwner(owner);
-  if (!cached) throw new Error("Откройте подготовку заново перед сохранением");
-  const base = cacheSchema.parse(JSON.parse(cached.value));
   let operationId: string = crypto.randomUUID();
   let key = `${prefix(owner)}op:${operationId}`;
-  const draft = draftSchema.parse({ ...base, version: 1, owner, context, operationId, scope, edited, request: null, receipt: null });
   await db.transaction("rw", db.meta, db.syncQueue, async () => {
     checkOwner(owner);
     const previous = await currentDraft(owner, context);
     if (previous && !previous.receipt) {
-      if (!sameContext(previous.context, context) || previous.scope !== scope || JSON.stringify(previous.edited) !== JSON.stringify(workoutPlanSchema.parse(edited))) throw new Error("Сначала отправьте сохранённую подготовку этого дня");
+      if (!sameWorkoutPreparationContext(previous.context, context) || previous.scope !== scope || JSON.stringify(previous.edited) !== JSON.stringify(workoutPlanSchema.parse(edited))) throw new Error("Сначала отправьте сохранённую подготовку этого дня");
       operationId = previous.operationId; key = `${prefix(owner)}op:${operationId}`;
-      if (!await db.syncQueue.get(operationId)) await db.syncQueue.add({ id: operationId, ownerUserId: owner, type: "customize_workout", clientWorkoutId: `customization:${context.programId}:${context.dayIndex}`,
-        payload: { draftKey: key, executionVersion: 2 }, createdAt: Date.now(), attempts: 0, lastError: null });
+      await enqueueWorkoutPreparation(previous, key);
+      checkOwner(owner);
       return;
     }
+    if (scope === "program_day") await checkPendingDay(owner, context);
+    const cached = await db.meta.get(cacheKey(owner, context));
+    checkOwner(owner);
+    if (!cached) throw new Error("Откройте подготовку заново перед сохранением");
+    const base = cacheSchema.parse(JSON.parse(cached.value));
     if (JSON.stringify(base.loaded) !== JSON.stringify(workoutPlanSchema.parse(loaded))) throw new Error("План изменился. Откройте подготовку снова");
-    await db.meta.bulkPut([row(key, draft), row(dayKey(owner, context), key)]);
-    await db.syncQueue.add({ id: operationId, ownerUserId: owner, type: "customize_workout", clientWorkoutId: `customization:${context.programId}:${context.dayIndex}`,
-      payload: { draftKey: key, executionVersion: 2 }, createdAt: Date.now(), attempts: 0, lastError: null });
+    const draft = draftSchema.parse({ ...base, version: 1, owner, context, operationId, scope, edited, request: null, receipt: null });
+    const index = scope === "occurrence" ? occurrenceKey(owner, context) : dayKey(owner, context);
+    await db.meta.bulkPut([row(key, draft), row(index, key)]);
+    await enqueueWorkoutPreparation(draft, key);
     checkOwner(owner);
   });
   return { key, operationId };
@@ -122,18 +154,26 @@ export async function syncWorkoutPreparation(key: string, owner: string): Promis
 }
 
 
-export async function guardWorkoutPreparationReset(context: PlannedWorkoutPlanInput): Promise<void> {
+export async function guardWorkoutPreparationReset(context: PlannedWorkoutPlanInput, scope: WorkoutPreparationDraft["scope"] = "occurrence"): Promise<void> {
   const owner = requireOwner();
+  if (scope === "program_day") return checkPendingDay(owner, context);
   const draft = await currentDraft(owner, context);
   if (draft && !draft.receipt) throw new Error("Сначала отправьте сохранённую подготовку этого дня");
 }
-export async function clearAcknowledgedWorkoutPreparation(context: PlannedWorkoutPlanInput): Promise<void> {
+export async function clearAcknowledgedWorkoutPreparation(context: PlannedWorkoutPlanInput, scope: WorkoutPreparationDraft["scope"] = "occurrence"): Promise<void> {
   const owner = requireOwner();
   await db.transaction("rw", db.meta, async () => {
     checkOwner(owner);
-    await guardWorkoutPreparationReset(context);
-    const keys = await db.meta.where("key").startsWith(`${prefix(owner)}cache:${context.programId}:${context.dayIndex}:`).primaryKeys();
-    await db.meta.bulkDelete([...keys, dayKey(owner, context)]);
+    await guardWorkoutPreparationReset(context, scope);
+    const day = dayKey(owner, context);
+    const legacy = await indexedDraft(owner, await db.meta.get(day));
+    const date = occurrenceKey(owner, context);
+    const previews = `${prefix(owner)}cache:${context.programId}:${context.dayIndex}:`;
+    const keys = scope === "program_day"
+      ? [...await db.meta.where("key").startsWith(previews).primaryKeys(), ...await db.meta.where("key").startsWith(`${day}:`).primaryKeys(), day]
+      : [...await db.meta.where("key").startsWith(`${previews}${context.scheduledDate}:`).primaryKeys(), date];
+    if (scope === "occurrence" && legacy?.context.scheduledDate === context.scheduledDate) keys.push(day);
+    await db.meta.bulkDelete(keys);
     checkOwner(owner);
   });
 }
@@ -176,10 +216,11 @@ export async function cancelUnsentWorkoutPreparation(operationId: string, owner:
     const dependent = await db.syncQueue.where("ownerUserId").equals(owner)
       .filter(item => item.type === "create_workout" && item.payload.preparationDraftKey === key).first();
     if (dependent) throw new Error("С этой подготовкой сохранена тренировка. Сначала синхронизируйте её");
-    const indexKey = dayKey(owner, draft.context);
-    const index = await db.meta.get(indexKey);
-    const previewKeys = await db.meta.where("key").startsWith(`${prefix(owner)}cache:${draft.context.programId}:${draft.context.dayIndex}:`).primaryKeys();
-    await db.meta.bulkDelete([key, ...previewKeys, ...(index && JSON.parse(index.value) === key ? [indexKey] : [])]);
+    const indexes = await db.meta.bulkGet([dayKey(owner, draft.context), occurrenceKey(owner, draft.context)]);
+    const ownedIndexes = indexes.flatMap(index => index && JSON.parse(index.value) === key ? [index.key] : []);
+    const previews = `${prefix(owner)}cache:${draft.context.programId}:${draft.context.dayIndex}:`;
+    const previewKeys = await db.meta.where("key").startsWith(draft.scope === "occurrence" ? `${previews}${draft.context.scheduledDate}:` : previews).primaryKeys();
+    await db.meta.bulkDelete([key, ...previewKeys, ...ownedIndexes]);
     await db.syncQueue.delete(operationId);
     checkOwner(owner);
   });
