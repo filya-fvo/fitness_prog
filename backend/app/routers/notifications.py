@@ -19,7 +19,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.deps import get_current_user, require_admin
 from app.models.user import User
-from app.models.supplement_intake import WebPushSubscription
+from app.models.supplement_intake import SupplementIntake, WebPushSubscription
 from app.schemas.notifications import (
     ReminderRequest,
     ReminderResponse,
@@ -451,6 +451,7 @@ async def dispatch_due_for_me(
 ) -> dict[str, Any]:
     """Send due notifications for current user (manual test / fallback)."""
     sent = await _dispatch_user(session, user, settings)
+    await session.commit()
     return {"ok": True, "sent": sent}
 
 
@@ -677,45 +678,55 @@ async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings
         await session.commit()
         await session.refresh(user)
 
-    for group in await supplement_intakes.due_groups(session, user):
-        # Materialization can commit: reload/relock before any external send.
-        user = await lock_notification_user(session, user.id)
-        if android_delivery_state(user.goals or {}).enabled:
+    return sent + await _dispatch_supplement_groups(session, user.id, settings)
+
+
+def _current_supplement_channel(user: User) -> Literal["telegram", "browser"] | None:
+    goals = user.goals or {}
+    preferences = _merged_notification_settings(goals)
+    timezone = str(preferences.get("timezone") or "Europe/Moscow")
+    if (
+        android_delivery_state(goals).enabled
+        or in_quiet_hours(preferences, local_now(timezone))
+        or not bool((preferences.get("supplements") or {}).get("enabled", True))
+    ):
+        return None
+    return _delivery_channel(preferences, user)
+
+
+async def _dispatch_supplement_groups(
+    session: AsyncSession, user_id: uuid.UUID, settings: Settings,
+) -> int:
+    sent = 0
+    attempted: set[uuid.UUID] = set()
+    materialize = True
+    while True:
+        # Read eligibility and take intake locks only after the owner's lock.
+        user = await lock_notification_user(session, user_id)
+        channel = _current_supplement_channel(user)
+        if channel is None:
             return sent
-        lines = [
-            f"{index}. <b>{row.name_ru}</b>" + (f" — {row.dose}" if row.dose else "")
-            for index, row in enumerate(group, start=1)
-        ]
-        text = "Добавки на сейчас:\n" + "\n".join(lines)
-        delivered = 0
-        uncertain = False
-        if channel == "telegram" and settings.bot_token and not settings.bot_token.startswith(
-            "replace_with"
-        ):
-            try:
-                await send_message(
-                    settings,
-                    chat_id=int(user.telegram_id),
-                    text=f"💊 <b>Добавки</b>\n{text}",
-                    reply_markup=supplement_intake_keyboard(
-                        [(str(row.id), row.name_ru) for row in group]
-                    ),
-                )
-                delivered += 1
-            except TelegramDeliveryUncertain as exc:
-                # Telegram may already have accepted this message. Replaying an
-                # ambiguous delivery creates duplicates; keep the intake pending.
-                await supplement_intakes.claim_notified(session, group)
-                uncertain = True
-                logger.warning("supplement_delivery_uncertain user={} err={}", user.id, exc)
-            except TelegramBotError as exc:
-                logger.warning("supplement_telegram_failed user={} err={}", user.id, exc)
-        if channel == "browser":
-            delivered += await send_user_web_push(
+        groups = await supplement_intakes.due_groups(session, user, materialize=materialize)
+        materialize = False
+        group = next(
+            (rows for rows in groups if any(row.id not in attempted for row in rows)),
+            [],
+        )
+        if not group:
+            return sent
+        group = [row for row in group if row.id not in attempted]
+        attempted.update(row.id for row in group)
+
+        if channel == "telegram":
+            if not settings.bot_token or settings.bot_token.startswith("replace_with"):
+                return sent
+            delivered = await _deliver_telegram_supplements(session, settings, user, group)
+        else:
+            delivered = await send_user_web_push(
                 session,
                 settings,
                 commit=False,
-                user_id=user.id,
+                user_id=user_id,
                 title="Пора принять добавки",
                 body="; ".join(
                     row.name_ru + (f" — {row.dose}" if row.dose else "") for row in group
@@ -723,16 +734,57 @@ async def _dispatch_user(session: AsyncSession, user: User | uuid.UUID, settings
                 url="/profile?section=supplements",
                 tag=f"supplements-{group[0].scheduled_at.isoformat()}",
             )
-        if delivered:
-            await supplement_intakes.claim_notified(session, group)
-            user = await lock_notification_user(session, user.id)
-            user.goals = _record_delivery(user.goals or goals, channel)
-            flag_modified(user, "goals")
-            await session.commit()
-            sent += delivered
-        elif not uncertain:
-            logger.info("supplement_notification_no_channel user={} count={}", user.id, len(group))
-    return sent
+            if delivered:
+                await supplement_intakes.claim_notified(session, group, commit=False)
+                await _record_supplement_delivery(session, user, channel)
+        sent += delivered
+
+
+async def _deliver_telegram_supplements(
+    session: AsyncSession, settings: Settings, user: User, group: list[SupplementIntake],
+) -> int:
+    user_id = user.id
+    intake_ids = [row.id for row in group]
+    # Commit one group before POST. After a crash or an ambiguous response, the
+    # intake remains pending in the diary, but the worker won't repeat this POST.
+    claimed_at = await supplement_intakes.claim_notified(session, group)
+    user = await lock_notification_user(session, user_id)
+    group = await supplement_intakes.lock_claimed_group(session, user, intake_ids, claimed_at)
+    if not group:
+        return 0
+    if _current_supplement_channel(user) != "telegram":
+        await supplement_intakes.release_notification_claim(session, group)
+        return 0
+
+    lines = [
+        f"{index}. <b>{row.name_ru}</b>" + (f" — {row.dose}" if row.dose else "")
+        for index, row in enumerate(group, start=1)
+    ]
+    try:
+        await send_message(
+            settings,
+            chat_id=int(user.telegram_id),
+            text="💊 <b>Добавки</b>\nДобавки на сейчас:\n" + "\n".join(lines),
+            reply_markup=supplement_intake_keyboard([(str(row.id), row.name_ru) for row in group]),
+        )
+    except TelegramDeliveryUncertain:
+        logger.warning("supplement_delivery_uncertain user={}", user_id)
+        return 0
+    except TelegramBotError as exc:
+        await supplement_intakes.release_notification_claim(session, group)
+        logger.warning("supplement_telegram_failed user={} error_type={}", user_id, type(exc).__name__)
+        return 0
+
+    await _record_supplement_delivery(session, user, "telegram")
+    return 1
+
+
+async def _record_supplement_delivery(
+    session: AsyncSession, user: User, channel: Literal["telegram", "browser"],
+) -> None:
+    user.goals = _record_delivery(user.goals or {}, channel)
+    flag_modified(user, "goals")
+    await session.commit()
 
 
 @router.post("/reminders", response_model=ReminderResponse)

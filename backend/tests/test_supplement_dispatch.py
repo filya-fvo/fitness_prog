@@ -1,21 +1,23 @@
 """Supplement delivery regressions with isolated PostgreSQL and no real messages."""
 
+import asyncio
 import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.models.supplement_intake import SupplementIntake
 from app.models.user import User, subscription_status_enum
-from app.routers import supplements
+from app.routers import notifications, supplements
 from app.services import supplement_intakes
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=UTC)
@@ -120,6 +122,155 @@ async def database(monkeypatch, tmp_path):
         async with admin.begin() as connection:
             await connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         await admin.dispose()
+
+
+async def dispatch(factory, user_id):
+    async with factory() as session:
+        result = await notifications._dispatch_user(
+            session,
+            user_id,
+            Settings(jwt_secret="supplement-test", bot_token="synthetic-token"),
+        )
+        await session.commit()
+        return result
+
+
+@pytest.mark.asyncio
+async def test_worker_restart_does_not_replay_an_accepted_post(database, monkeypatch):
+    factory, user_id, *_ = database
+    deliveries = []
+
+    async def accept_message(_settings, *, chat_id, text, reply_markup):
+        assert chat_id == 99901
+        assert reply_markup["inline_keyboard"]
+        deliveries.append(text)
+        if len(deliveries) == 1:
+            raise asyncio.CancelledError
+        return {"ok": True}
+
+    monkeypatch.setattr(notifications, "send_message", accept_message)
+    with pytest.raises(asyncio.CancelledError):
+        await dispatch(factory, user_id)
+    await dispatch(factory, user_id)
+
+    async with factory() as session:
+        intake = (await session.scalars(select(SupplementIntake))).one()
+        assert intake.status == "pending"
+    assert len(deliveries) == 1
+
+
+@pytest.mark.asyncio
+async def test_two_dispatches_do_not_repeat_a_later_group(database, monkeypatch):
+    factory, user_id, session_class, make_factory = database
+    async with factory() as session:
+        user = await session.get(User, user_id)
+        user.goals = {
+            **user.goals,
+            "supplements": [
+                *user.goals["supplements"],
+                {"id": "protein", "name_ru": "Протеин", "times": ["09:00"]},
+            ],
+        }
+        await session.commit()
+    deliveries = []
+
+    async def accept_message(_settings, *, chat_id, text, reply_markup):
+        deliveries.append(text)
+        return {"ok": True}
+
+    monkeypatch.setattr(notifications, "send_message", accept_message)
+    raced = False
+
+    class InterleavedSession(session_class):
+        async def commit(self):
+            nonlocal raced
+            await super().commit()
+            if deliveries and not raced:
+                raced = True
+                # Start B as soon as A releases its PostgreSQL locks after group one.
+                await asyncio.wait_for(dispatch(factory, user_id), timeout=5)
+
+    await dispatch(make_factory(InterleavedSession), user_id)
+
+    assert raced
+    assert len(deliveries) == 2
+    assert sum("Магний" in text for text in deliveries) == 1
+    assert sum("Протеин" in text for text in deliveries) == 1
+
+
+@pytest.mark.asyncio
+async def test_workout_schedule_reset_keeps_an_already_delivered_daily_intake(database, monkeypatch):
+    factory, user_id, *_ = database
+    deliveries = []
+
+    async def accept_message(_settings, *, chat_id, text, reply_markup):
+        deliveries.append(text)
+        return {"ok": True}
+
+    monkeypatch.setattr(notifications, "send_message", accept_message)
+    await dispatch(factory, user_id)
+    async with factory() as session:
+        original = (await session.scalars(select(SupplementIntake))).one()
+        original_id = original.id
+    async with factory() as session:
+        user = await session.get(User, user_id)
+        await supplement_intakes.reset_pending_days(session, user, {NOW.date()})
+    await dispatch(factory, user_id)
+
+    async with factory() as session:
+        current = (await session.scalars(select(SupplementIntake))).one()
+        assert current.id == original_id
+        assert current.status == "pending"
+    assert len(deliveries) == 1
+
+
+@pytest.mark.asyncio
+async def test_catch_up_excludes_unconfirmed_previous_local_day(database, monkeypatch):
+    factory, user_id, *_ = database
+    async with factory() as session:
+        user = await session.get(User, user_id)
+        await supplement_intakes.ensure_day(session, user, NOW.date().replace(day=11))
+    deliveries = []
+
+    async def accept_message(_settings, *, chat_id, text, reply_markup):
+        deliveries.append(text)
+        return {"ok": True}
+
+    monkeypatch.setattr(notifications, "send_message", accept_message)
+    await dispatch(factory, user_id)
+    await dispatch(factory, user_id)
+
+    async with factory() as session:
+        yesterday, today = (await session.scalars(select(SupplementIntake).order_by(SupplementIntake.scheduled_at))).all()
+        assert yesterday.status == today.status == "pending"
+        assert yesterday.notified_at is None
+        assert today.notified_at is not None
+    assert len(deliveries) == 1
+
+
+@pytest.mark.asyncio
+async def test_short_window_does_not_cross_local_midnight(database, monkeypatch):
+    factory, user_id, *_ = database
+    monkeypatch.setattr(FixedDateTime, "current", datetime(2026, 11, 11, 21, 1, tzinfo=UTC))
+    async with factory() as session:
+        user = await session.get(User, user_id)
+        user.goals = {
+            "notification_settings": {"timezone": "Europe/Moscow", "catch_up": False},
+            "supplements": [
+                {"id": "magnesium", "name_ru": "Магний", "times": ["23:59"]},
+            ],
+        }
+        await session.commit()
+        await supplement_intakes.ensure_day(session, user, NOW.date().replace(day=11))
+    deliveries = []
+
+    async def accept_message(_settings, *, chat_id, text, reply_markup):
+        deliveries.append(text)
+        return {"ok": True}
+
+    monkeypatch.setattr(notifications, "send_message", accept_message)
+    await dispatch(factory, user_id)
+    assert deliveries == []
 
 
 @pytest.mark.asyncio

@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -110,7 +110,9 @@ def scheduled_rows(user: User, day: date) -> list[dict[str, Any]]:
     return rows
 
 
-async def ensure_day(session: AsyncSession, user: User, day: date) -> None:
+async def ensure_day(
+    session: AsyncSession, user: User, day: date, *, commit: bool = True,
+) -> None:
     rows = scheduled_rows(user, day)
     if not rows:
         return
@@ -124,6 +126,9 @@ async def ensure_day(session: AsyncSession, user: User, day: date) -> None:
         set_={
             "slot": statement.excluded.slot,
             "days_mode": statement.excluded.days_mode,
+            "supplement_key": statement.excluded.supplement_key,
+            "name_ru": statement.excluded.name_ru,
+            "dose": statement.excluded.dose,
             "updated_at": func.now(),
         },
         where=(SupplementIntake.status == "pending")
@@ -131,10 +136,31 @@ async def ensure_day(session: AsyncSession, user: User, day: date) -> None:
         & (
             SupplementIntake.slot.is_distinct_from(statement.excluded.slot)
             | SupplementIntake.days_mode.is_distinct_from(statement.excluded.days_mode)
+            | SupplementIntake.supplement_key.is_distinct_from(statement.excluded.supplement_key)
+            | SupplementIntake.name_ru.is_distinct_from(statement.excluded.name_ru)
+            | SupplementIntake.dose.is_distinct_from(statement.excluded.dose)
         ),
     )
     await session.execute(statement)
-    await session.commit()
+    if commit:
+        await session.commit()
+
+
+def _pending_schedule_cleanup(user: User, day: date):
+    statement = delete(SupplementIntake).where(
+        SupplementIntake.user_id == user.id,
+        SupplementIntake.status == "pending",
+    )
+    current_slots = [
+        (row["supplement_entry_id"], row["scheduled_at"])
+        for row in scheduled_rows(user, day)
+    ]
+    if current_slots:
+        statement = statement.where(
+            tuple_(SupplementIntake.supplement_entry_id, SupplementIntake.scheduled_at)
+            .not_in(current_slots)
+        )
+    return statement
 
 
 async def reset_pending_schedule(session: AsyncSession, user: User) -> None:
@@ -147,9 +173,7 @@ async def reset_pending_schedule(session: AsyncSession, user: User) -> None:
     day = local_day_for_user(user)
     start, _ = _day_bounds(day, str(settings.get("timezone") or "Europe/Moscow"))
     await session.execute(
-        delete(SupplementIntake).where(
-            SupplementIntake.user_id == user.id,
-            SupplementIntake.status == "pending",
+        _pending_schedule_cleanup(user, day).where(
             SupplementIntake.scheduled_at >= start,
         )
     )
@@ -173,9 +197,7 @@ async def reset_pending_days(
     for day in days:
         start, end = _day_bounds(day, timezone_name)
         await session.execute(
-            delete(SupplementIntake).where(
-                SupplementIntake.user_id == user.id,
-                SupplementIntake.status == "pending",
+            _pending_schedule_cleanup(user, day).where(
                 SupplementIntake.scheduled_at >= start,
                 SupplementIntake.scheduled_at < end,
             )
@@ -369,6 +391,7 @@ async def due_groups(
     user: User,
     *,
     now: datetime | None = None,
+    materialize: bool = True,
 ) -> list[list[SupplementIntake]]:
     now = now or datetime.now(UTC)
     settings = merge_notification_settings(
@@ -379,10 +402,13 @@ async def due_groups(
     if not bool((settings.get("supplements") or {}).get("enabled", True)):
         return []
     local_day = local_day_for_user(user, now)
-    await ensure_day(session, user, local_day)
+    if materialize:
+        await ensure_day(session, user, local_day, commit=False)
     effective = func.coalesce(SupplementIntake.snoozed_until, SupplementIntake.scheduled_at)
     day_start, _ = _day_bounds(local_day, str(settings.get("timezone") or "Europe/Moscow"))
-    lower_bound = day_start if bool(settings.get("catch_up", True)) else now - timedelta(minutes=5)
+    lower_bound = day_start
+    if not bool(settings.get("catch_up", True)):
+        lower_bound = max(day_start, now - timedelta(minutes=5))
     rows = list(
         await session.scalars(
             select(SupplementIntake)
@@ -396,6 +422,7 @@ async def due_groups(
             )
             .order_by(effective, SupplementIntake.name_ru)
             .with_for_update(skip_locked=True)
+            .execution_options(populate_existing=True)
         )
     )
     rows = [
@@ -415,11 +442,36 @@ async def due_groups(
     return list(grouped.values())
 
 
-async def claim_notified(session: AsyncSession, rows: list[SupplementIntake]) -> None:
+async def claim_notified(
+    session: AsyncSession, rows: list[SupplementIntake], *, commit: bool = True,
+) -> datetime:
     now = datetime.now(UTC)
     for row in rows:
         row.notified_at = now
-    await session.commit()
+    if commit:
+        await session.commit()
+    return now
+
+
+async def lock_claimed_group(
+    session: AsyncSession, user: User, intake_ids: list[uuid.UUID], claim_at: datetime,
+) -> list[SupplementIntake]:
+    """Refresh a durable claim after reacquiring the owner's preference lock."""
+    return list(
+        await session.scalars(
+            select(SupplementIntake)
+            .where(
+                SupplementIntake.user_id == user.id,
+                SupplementIntake.id.in_(intake_ids),
+                SupplementIntake.notified_at == claim_at,
+                SupplementIntake.status == "pending",
+                SupplementIntake.is_deleted.is_(False),
+            )
+            .order_by(SupplementIntake.name_ru)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+    )
 
 
 async def release_notification_claim(session: AsyncSession, rows: list[SupplementIntake]) -> None:

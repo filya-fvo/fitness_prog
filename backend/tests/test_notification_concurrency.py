@@ -145,42 +145,37 @@ async def test_uncertain_supplement_delivery_is_not_sent_again(monkeypatch) -> N
     from app.services.telegram_bot import TelegramDeliveryUncertain
 
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession(user)
     item = SimpleNamespace(id=uuid4(), name_ru="Добавка", dose="", notified_at=None)
+    session = FakeNotificationSession(user, intakes=[item])
     deliveries = []
 
-    async def due(_session, _user):
+    async def due(_session, _user, *, materialize):
         return [[item]] if item.notified_at is None else []
 
     async def timeout(*_args, **_kwargs):
         deliveries.append(1)
         raise TelegramDeliveryUncertain("response lost")
 
-    async def mark(_session, rows):
-        for row in rows:
-            row.notified_at = True
-
     monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
     monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda *_args: None)
     monkeypatch.setattr(notifications.supplement_intakes, "due_groups", due)
-    monkeypatch.setattr(notifications.supplement_intakes, "claim_notified", mark)
     monkeypatch.setattr(notifications, "send_message", timeout)
     settings = Settings(jwt_secret="test-secret", bot_token="configured")
     await notifications._dispatch_user(session, user, settings)
     await notifications._dispatch_user(session, user, settings)
     assert len(deliveries) == 1
-    assert item.notified_at is True
+    assert item.notified_at is not None
 
 
 @pytest.mark.asyncio
 async def test_supplement_connection_failure_remains_retryable(monkeypatch) -> None:
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession(user)
     item = SimpleNamespace(id=uuid4(), name_ru="Добавка", dose="", notified_at=None)
+    session = FakeNotificationSession(user, intakes=[item])
     calls = []
 
-    async def due(_session, _user):
-        return [[item]]
+    async def due(_session, _user, *, materialize):
+        return [[item]] if item.notified_at is None else []
 
     async def fail(*_args, **_kwargs):
         calls.append(1)
@@ -198,13 +193,18 @@ async def test_supplement_connection_failure_remains_retryable(monkeypatch) -> N
 
 
 class FakeNotificationSession:
-    def __init__(self, user) -> None:
+    def __init__(self, user, *, intakes=()) -> None:
         self.commits = 0
         self.user = user
+        self.intakes = intakes
 
     async def scalar(self, statement):
         assert "FOR UPDATE" in str(statement)
         return self.user
+
+    async def scalars(self, statement):
+        assert "FOR UPDATE" in str(statement)
+        return self.intakes
 
     async def commit(self) -> None:
         self.commits += 1
@@ -381,22 +381,30 @@ async def test_explicit_notification_test_uses_selected_channel_and_records_succ
 
 
 @pytest.mark.asyncio
-async def test_android_switch_during_supplement_materialization_stops_delivery(monkeypatch):
+async def test_android_switch_after_supplement_claim_stops_delivery(monkeypatch):
     from unittest.mock import AsyncMock
     user = User(id=uuid4(), telegram_id=1, goals={})
-    session = FakeNotificationSession(user)
+    item = SimpleNamespace(id=uuid4(), name_ru="Добавка", dose="", notified_at=None)
     send = AsyncMock()
-    async def changed_mode(*_args):
-        user.goals = {"android_notifications": {"enabled": True, "device_id": str(uuid4()), "revision": 1}}
-        return [object()]
+
+    class ChannelSwitchSession(FakeNotificationSession):
+        async def commit(self):
+            await super().commit()
+            if self.commits == 1:
+                user.goals = {"android_notifications": {"enabled": True, "device_id": str(uuid4()), "revision": 1}}
+
+    session = ChannelSwitchSession(user, intakes=[item])
+    async def due(*_args, **_kwargs):
+        return [[item]]
     monkeypatch.setattr(notifications, "due_notifications", lambda _goals: [])
     monkeypatch.setattr(notifications.workout_notifications, "due_workout_notification", lambda _goals: None)
-    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", changed_mode)
+    monkeypatch.setattr(notifications.supplement_intakes, "due_groups", due)
     monkeypatch.setattr(notifications, "send_message", send)
     monkeypatch.setattr(notifications, "send_user_web_push", send)
     assert await notifications._dispatch_user(session, user, Settings(jwt_secret="test", bot_token="configured")) == 0
     send.assert_not_awaited()
-    assert session.commits == 0
+    assert item.notified_at is None
+    assert session.commits == 2
 
 
 @pytest.mark.asyncio

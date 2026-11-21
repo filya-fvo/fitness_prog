@@ -87,6 +87,7 @@ jobs:
         working-directory: backend
         env:
           WORKOUT_METHODS_TEST_URL: postgresql+asyncpg://fitness_android_test@127.0.0.1:55439/fitness_android_sync_test
+          FITNESS_SUPPLEMENT_TEST_URL: postgresql+asyncpg://fitness_android_test@127.0.0.1:55439/fitness_android_sync_test
           BOT_TOKEN: ci-test-bot-token
           JWT_SECRET: ci-test-jwt-secret-not-for-production
           ENVIRONMENT: test
@@ -95,7 +96,7 @@ jobs:
           tests/test_workout_execution.py tests/test_workout_method_metrics.py tests/test_workout_plan_identity.py
           tests/test_workout_preparation.py tests/test_workout_recovery_contract.py tests/test_workout_skips.py
           tests/test_workout_migration_runner.py tests/test_workout_topology_postgres.py
-          tests/test_program_workout_start_race.py
+          tests/test_program_workout_start_race.py tests/test_supplement_dispatch.py
       - name: Test owner-bound Telegram linking, merge and concurrent confirmations
         working-directory: backend
         env:
