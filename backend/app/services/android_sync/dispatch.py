@@ -21,6 +21,7 @@ from app.schemas.nutrition import (
 from app.schemas.body_measurements import BodyMeasurementUpdate
 from app.schemas.android_sync import Operation
 from app.services.android_sync.prepared_start import canonical_prepared_start
+from app.services.workout_service import ProgramWorkoutDateOccupied
 
 
 async def dispatch(session: AsyncSession, user: User, op: Operation):
@@ -30,7 +31,11 @@ async def dispatch(session: AsyncSession, user: User, op: Operation):
             payload = WorkoutCreate.model_validate({**body, "client_workout_id": op.entityId})
             if "offline_prepared_at" in body:
                 payload = await canonical_prepared_start(session, user, payload, body)
-            return await workouts.create_workout(payload, session, user)
+            try:
+                return await workouts.create_workout(payload, session, user)
+            except ProgramWorkoutDateOccupied as error:
+                # APK clients keep a 422 in the outbox and continue syncing other items.
+                raise HTTPException(422, error.detail) from error
         identity = uuid.UUID(op.entityId)
         if action == "set":
             return await workouts.add_set(

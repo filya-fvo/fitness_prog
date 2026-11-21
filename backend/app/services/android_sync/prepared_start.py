@@ -28,13 +28,17 @@ async def canonical_prepared_start(
         or not payload.plan.exercises
     ):
         raise HTTPException(422, "Не удалось проверить сохранённый план программы")
+    await workout_service.lock_program_workout_start(session, user)
     existing = await session.scalar(
-        select(Workout).where(
+        select(Workout)
+        .where(
             Workout.user_id == user.id,
             Workout.program_id == payload.program_id,
             Workout.scheduled_date == payload.scheduled_date,
             Workout.is_deleted.is_(False),
         )
+        .order_by(Workout.client_workout_id.is_not_distinct_from(payload.client_workout_id).desc())
+        .limit(1)
     )
     if existing is not None:
         if existing.client_workout_id == payload.client_workout_id:

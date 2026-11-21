@@ -473,11 +473,29 @@ async def _lock_workout_idempotency_key(
     )
 
 
+class ProgramWorkoutDateOccupied(HTTPException):
+    def __init__(self, *, offline: bool) -> None:
+        detail = "Тренировка по этой программе на эту дату уже есть."
+        if offline:
+            detail += " Результат сохранён на устройстве"
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+        )
+
+
+async def lock_program_workout_start(session: AsyncSession, user: User) -> None:
+    """Serialize program starts and load the latest schedule under the owner lock."""
+    await session.refresh(user, attribute_names=["goals"], with_for_update=True)
+
+
 async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate) -> Workout:
     # Rollback expires ORM attributes even with expire_on_commit=False. Keep the
     # stable identifier outside the transaction so the idempotency recovery path
     # never triggers implicit async IO by reading user.id after rollback.
     user_id = user.id
+    if data.program_id is not None:
+        await lock_program_workout_start(session, user)
     if data.client_workout_id is not None:
         await _lock_workout_idempotency_key(
             session,
@@ -507,9 +525,6 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
 
     program: Program | None = None
     if data.program_id is not None:
-        await session.execute(select(User.id).where(User.id == user_id).with_for_update())
-        if data.preparation is not None:
-            await session.refresh(user, attribute_names=["goals"])
         program = await session.scalar(
             select(Program).where(Program.id == data.program_id, Program.is_deleted.is_(False))
         )
@@ -519,6 +534,18 @@ async def create_workout(session: AsyncSession, user: User, data: WorkoutCreate)
             program, (user.goals or {}).get("active_program_id"), user_id=user.id
         ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Программа не найдена")
+
+    if program is not None:
+        occupied = await session.scalar(
+            select(Workout.id).where(
+                Workout.user_id == user_id,
+                Workout.program_id == program.id,
+                Workout.scheduled_date == data.scheduled_date,
+                Workout.is_deleted.is_(False),
+            ).limit(1)
+        )
+        if occupied is not None:
+            raise ProgramWorkoutDateOccupied(offline=data.client_workout_id is not None)
 
     if program is not None and data.plan is not None:
         expected = await build_program_plan_for_user(
@@ -622,6 +649,7 @@ async def start_program_workout(
     cycle_readiness: object = None,
     execution_version: int | None = None,
 ) -> Workout:
+    await lock_program_workout_start(session, user)
     program = await session.scalar(
         select(Program).where(Program.id == program_id, Program.is_deleted.is_(False))
     )

@@ -14,7 +14,7 @@ from app.services.offline_schedule import schedule_fingerprint
 @pytest.mark.asyncio
 async def test_prepared_start_rejects_changed_plan_before_consuming(monkeypatch):
     owner, program, exercise = uuid4(), uuid4(), uuid4()
-    session = SimpleNamespace(scalar=AsyncMock(return_value=None))
+    session = SimpleNamespace(scalar=AsyncMock(return_value=None), refresh=AsyncMock())
     user = SimpleNamespace(id=owner, goals={"active_program_id": str(program)})
     monkeypatch.setattr(dispatch.workouts, "create_workout", AsyncMock())
     from app.services import program_service, workout_service
@@ -66,7 +66,7 @@ async def test_prepared_start_detects_rescheduled_occurrence_with_unchanged_exer
     user = SimpleNamespace(id=owner, goals={"active_program_id":str(program), "workout_schedule_overrides":[{"original_date":"2026-10-09", "target_date":"2026-10-10", "target_time":"10:00"}]})
     plan = WorkoutPlan(day_index=1,exercises=[{"exercise_id":exercise,"order":1,"target_sets":2}])
     payload = WorkoutCreate(program_id=program, scheduled_date=date(2026,10,9), day_index=1,week_phase="medium",plan=plan)
-    session = SimpleNamespace(scalar=AsyncMock(return_value=None))
+    session = SimpleNamespace(scalar=AsyncMock(return_value=None), refresh=AsyncMock())
     monkeypatch.setattr(program_service,"get_program",AsyncMock(return_value=SimpleNamespace(id=program)))
     monkeypatch.setattr(workout_service,"build_program_plan_for_user",AsyncMock(return_value=plan.model_dump(mode="json")))
     with pytest.raises(HTTPException) as caught:
