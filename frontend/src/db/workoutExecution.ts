@@ -220,8 +220,17 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
       if (input.values.note !== undefined) draft.note = input.values.note;
       if (input.values.machineParams !== undefined) draft.machineParams = input.values.machineParams;
       if (step.partOrdinal === null) Object.assign(draft, { reps: input.values.reps, weight: input.values.weight, durationSec: input.values.durationSec });
-      else draft.parts = draft.parts!.map(part => part.ordinal === step.partOrdinal ? { ...part,
-        reps: numberValue(input.values!.reps), weight: numberValue(input.values!.weight), duration_sec: input.values!.durationSec } : part);
+      else {
+        const { reps, weight, durationSec } = input.values;
+        const partWeight = numberValue(weight);
+        const correctClusterWeight = input.action === "correct" && step.kind === "cluster" &&
+          draft.parts!.some(part => part.ordinal === step.partOrdinal && part.status === "completed");
+        draft.parts = draft.parts!.map(part => {
+          if (part.ordinal === step.partOrdinal) return { ...part, reps: numberValue(reps), weight: partWeight, duration_sec: durationSec };
+          if (correctClusterWeight && part.weight !== null) return { ...part, weight: partWeight };
+          return part;
+        });
+      }
     }
     if (step.partOrdinal === null) {
       draft.isCompleted = decision.facts[step.id] === "completed";
