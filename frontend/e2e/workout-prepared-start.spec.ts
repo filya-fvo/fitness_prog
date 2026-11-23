@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installTimingApi } from "./fixtures/workout-execution-api";
+import { installTimingApi, quickComplete } from "./fixtures/workout-execution-api";
 import { acceptedLegalStatus } from "./legal-fixture";
 const owner = "22222222-2222-4222-8222-222222222222", program = "11111111-1111-4111-8111-111111111111", exercise = "33333333-3333-4333-8333-333333333333", server = "55555555-5555-4555-8555-555555555555";
 for (const shortRange of [false, true]) test(`real Training page prepares offline, starts, restores a cluster and syncs in order; shortRange=${shortRange}`, async ({ page }) => {
@@ -74,7 +74,7 @@ for (const shortRange of [false, true]) test(`real Training page prepares offlin
   await expect(dialog).toHaveCount(0);
   await page.getByRole("button", { name: /^Начать ·/ }).click();
   await page.getByRole("button", { name: "Пропустить всё", exact: true }).click();
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");
   await page.clock.runFor(5000);
   await page.reload();

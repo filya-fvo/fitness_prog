@@ -1,7 +1,44 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { installTimingApi } from "./fixtures/workout-execution-api";
+import { applySetWeight, installTimingApi, openPartEditor, quickComplete } from "./fixtures/workout-execution-api";
 const owner = "22222222-2222-4222-8222-222222222222";
+
+test("one editor and quick completion show the recorded cluster result on a short mobile screen", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 600 });
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  const sets = page.getByRole("list", { name: "Подходы упражнения" });
+  await expect(sets.getByRole("button", { name: "Готово", exact: true })).toBeEnabled();
+  await expect(page.getByRole("form", { name: "Результат части" })).toHaveCount(0);
+  await sets.getByRole("button", { name: "Править часть 1", exact: true }).click();
+  const editor = page.getByRole("dialog");
+  await expect(editor).toHaveCount(1);
+  await expect(editor.getByRole("combobox", { name: "Повторения: выбрать значение" })).toHaveValue("4");
+  await expect(editor.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveValue("100");
+  await expect(editor.getByRole("button", { name: "Применить", exact: true })).toBeInViewport();
+  await editor.getByRole("button", { name: "Закрыть", exact: true }).click();
+  await sets.getByRole("button", { name: "Готово", exact: true }).click();
+  await expect(sets.getByText("100 кг × 4", { exact: true }).first()).toBeVisible();
+  await expect(sets.getByLabel("Выполнено", { exact: true })).toHaveCount(1);
+  await expect.poll(() => api.writes.length).toBe(1);
+  expect(api.writes[0].parts[0]).toMatchObject({ reps: 4, weight: 100, status: "completed" });
+});
+
+for (const [width, height, theme] of [[375, 600, "dark"], [393, 740, "light"], [1440, 900, "dark"]] as const) {
+  test(`shared set editor fits ${width}×${height} in ${theme} mode`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.addInitScript(preference => localStorage.setItem("fitness_theme_preference", preference), theme);
+    await installTimingApi(page);
+    await page.goto("/e2e/fixtures/workout-method-runner.html?kind=dropgroup");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    const editor = await openPartEditor(page, 1);
+    await expect(editor.getByRole("button", { name: "Применить", exact: true })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const close = await editor.getByRole("button", { name: "Закрыть", exact: true }).boundingBox();
+    expect(close?.width).toBeGreaterThanOrEqual(44);
+    expect(close?.height).toBeGreaterThanOrEqual(44);
+  });
+}
 
 test("manual selection shows every superset exercise and records a later one", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 740 });
@@ -10,12 +47,11 @@ test("manual selection shows every superset exercise and records a later one", a
   const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
   await page.getByRole("button", { name: /Развернуть медиа и технику/ }).click();
   await expect(page.getByRole("region", { name: "Материалы упражнения" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByText("Подход 1", { exact: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByText("Подход 1 · Кластер", { exact: true })).toBeVisible();
   await expect(navigation.getByRole("button", { name: /Жим штанги лёжа/ })).toBeVisible();
   await navigation.getByRole("button", { name: /Сгибания со штангой/ }).click();
   await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
-  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await applySetWeight(page, "30");
   await expect.poll(() => api.writes.length).toBe(1);
   expect(api.writes[0].is_completed).toBe(true);
   await page.reload();
@@ -23,15 +59,6 @@ test("manual selection shows every superset exercise and records a later one", a
   await expect(navigation.getByRole("button", { name: /Сгибания со штангой/ })).toBeVisible();
   await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
   await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
-});
-
-test("confirmed navigation discards unfinished input and opens selected exercise", async ({ page }) => {
-  await installTimingApi(page, false, false);
-  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("110");
-  page.once("dialog", dialog => dialog.accept());
-  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
-  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
 });
 
 test("opens the full exercise card from gym mode and restores focus after manual input", async ({ page }) => {
@@ -63,10 +90,11 @@ test("ordinary set in a superset uses the standard dialog and records the approa
   await expect(dialog).toHaveCount(0);
   await expect.poll(() => api.writes.length).toBe(1);
   expect(api.writes[0].is_completed).toBe(true);
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("2.5");
+  const sets = page.getByRole("list", { name: "Подходы упражнения" });
+  await expect(sets.getByText(/2[.,]5 кг × 8/)).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("2.5");
+  await expect(sets.getByText(/2[.,]5 кг × 8/)).toBeVisible();
 });
 
 test("standard dialog retains a precise existing weight", async ({ page }) => {
@@ -139,27 +167,30 @@ for (const [initialWeight, chosenKg, expectedWeight] of [["12.35", "13", 13.35],
 
 test("a suggested dumbbell weight keeps the per-hand meaning", async ({ page }) => {
   const api = await installTimingApi(page, false, false);
+  const exerciseId = "44444444-4444-4444-8444-444444444444";
+  await page.route("**/workouts/load-hints", route => route.fulfill({ json: {
+    items: (route.request().postDataJSON().exercise_ids as string[]).includes(exerciseId) ? [{
+      exercise_id: exerciseId, weight: 12.5, reps: 8, duration_sec: null,
+      completed_date: "2026-10-19", weight_mode: "per_hand", machine_params: null, rpe: null,
+    }] : [],
+  } }));
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  await expect(page.getByRole("navigation", { name: "Упражнения тренировки" })).toBeVisible();
-  await page.evaluate(async () => {
-    const dbPath = "/src/db/schema.ts", storePath = "/src/store/workoutStore.ts";
-    const { db } = await import(/* @vite-ignore */ dbPath);
-    const { useWorkoutStore } = await import(/* @vite-ignore */ storePath);
-    const state = useWorkoutStore.getState();
-    state.setCatalog(state.catalog.map((exercise: { id: string }) => exercise.id === "44444444-4444-4444-8444-444444444444" ? { ...exercise, weight_rule: "per_hand" } : exercise));
-    const session = (await db.sessions.toArray())[0];
-    const draft = session.drafts.find((item: { exerciseId: string }) => item.exerciseId === "44444444-4444-4444-8444-444444444444");
-    draft.weight = "12.35"; draft.weightMode = null;
-    session.execution.revision += 1;
-    await db.sessions.put(session);
-  });
   await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
+  const sets = page.getByRole("list", { name: "Подходы упражнения" });
+  await expect(sets.getByText("12,5 кг на гантель × 8", { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate(async id => {
+    const path = "/src/db/schema.ts";
+    const { db } = await import(/* @vite-ignore */ path);
+    const session = (await db.sessions.toArray())[0];
+    return session.drafts.find((item: { exerciseId: string }) => item.exerciseId === id).weight;
+  }, exerciseId)).toBe("");
   await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Добавить подход" });
   await expect(dialog.getByText("Вес одной гантели, кг", { exact: true })).toBeVisible();
-  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();
+  await quickComplete(page).click();
   await expect.poll(() => api.writes.length).toBe(1);
-  expect(api.writes[0]).toMatchObject({ weight: 12.35, weight_mode: "per_hand" });
+  expect(api.writes[0]).toMatchObject({ weight: 12.5, weight_mode: "per_hand" });
 });
 
 test("the standard editor accepts a new weight with hundredths", async ({ page }) => {
@@ -205,36 +236,27 @@ test("the ordinary workout editor keeps a suggested weight in hundredths", async
   expect(api.writes[0]).toMatchObject({ weight: 12.35 });
 });
 
-test("refusing to discard inline input keeps it when opening the standard dialog", async ({ page }) => {
-  await installTimingApi(page, false, false);
+test("closing the editor discards unfinished input and allows navigation", async ({ page }) => {
+  const api = await installTimingApi(page, false, false);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
-  const weight = page.getByLabel("Рабочий вес, кг", { exact: true });
-  await weight.fill("31");
-  page.once("dialog", dialog => dialog.dismiss());
-  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
-  await expect(weight).toHaveValue("31");
-  await expect(page.getByRole("dialog", { name: "Добавить подход" })).toHaveCount(0);
-});
-
-test("reselecting the same exercise does not discard the warning about unfinished input", async ({ page }) => {
-  await installTimingApi(page, false, false);
-  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
-  const weight = page.getByLabel("Рабочий вес, кг", { exact: true });
+  const modal = await openPartEditor(page, 1);
+  const weight = modal.getByRole("textbox", { name: "Точный вес, кг", exact: true });
   await weight.fill("110");
-  await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
-  page.once("dialog", dialog => dialog.dismiss());
+  await page.keyboard.press("Escape");
+  await expect(modal).toHaveCount(0);
+  const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
   await navigation.getByRole("button", { name: /Сгибания со штангой/ }).click();
-  await expect(weight).toHaveValue("110");
-  await expect(page.getByRole("heading", { name: "Жим штанги лёжа", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
+  await navigation.getByRole("button", { name: /Жим штанги лёжа/ }).click();
+  await openPartEditor(page, 1);
+  await expect(weight).toHaveValue("100");
+  expect(api.writes).toHaveLength(0);
 });
 
 test("a cluster part opens the same editing dialog and records only the chosen part", async ({ page }) => {
   const api = await installTimingApi(page, false, false);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  const dialog = await openPartEditor(page, 1);
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -255,9 +277,9 @@ test("editing a restored pending part keeps its own entered values", async ({ pa
     session.execution.revision += 1;
     await db.sessions.put(session);
   });
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("12.35");
-  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
-  await page.getByRole("dialog", { name: "Добавить подход" }).getByRole("button", { name: "Применить", exact: true }).click();
+  const dialog = await openPartEditor(page, 1);
+  await expect(dialog.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveValue("12,35");
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await expect.poll(() => api.writes.length).toBe(1);
   expect(api.writes[0].parts[0]).toMatchObject({ reps: 6, weight: 12.35, status: "completed" });
 });
@@ -265,7 +287,7 @@ test("editing a restored pending part keeps its own entered values", async ({ pa
 test("a later cluster part keeps the original total-weight interpretation", async ({ page }) => {
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await expect.poll(() => api.writes.length).toBe(1);
   await page.evaluate(async () => {
     const dbPath = "/src/db/schema.ts", storePath = "/src/store/workoutStore.ts";
@@ -280,9 +302,7 @@ test("a later cluster part keeps the original total-weight interpretation", asyn
   });
   await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  const dialog = await openPartEditor(page, 2);
   await expect(dialog.getByText("Рабочий вес, кг", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await expect.poll(() => api.writes.length).toBe(2);
@@ -293,11 +313,13 @@ test("finishing rest does not steal a manually opened set editor", async ({ page
   await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Сгибания со штангой/ }).click();
   await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Добавить подход" });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Точный вес, кг", exact: true }).fill("30");
+  await expect(dialog.getByRole("button", { name: "Применить", exact: true })).toBeDisabled();
   await page.clock.runFor(21000);
   await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -326,6 +348,7 @@ test("a saved set synchronizes once even if another tab advances the view before
   });
   await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Добавить подход" });
+  await dialog.getByRole("textbox", { name: "Точный вес, кг", exact: true }).fill("30");
   await dialog.getByRole("button", { name: "Применить", exact: true }).click();
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { held?: boolean }).held))).toBe(true);
   await second.evaluate(async () => {
@@ -354,7 +377,7 @@ test("slow network and double tap do not prolong cluster rest or complete the ne
   const api = await installTimingApi(page, true);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
   await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Записать часть", exact: true }).dblclick();
+  await quickComplete(page).dblclick();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");
   await page.clock.runFor(10000);
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:10");
@@ -373,13 +396,12 @@ test("cluster uses exercise rest once, with no pause after final work", async ({
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clusternext");
   for (let ordinal = 1; ordinal <= 3; ordinal++) {
     await expect(page.getByText(`Часть ${ordinal} из 3`, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText(ordinal < 3 ? "0:20" : "2:00");
     await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   }
   await expect(page.getByText("Подход 2 из 2", { exact: true })).toBeVisible();
-  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("100");
-  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await applySetWeight(page, "100", 2);
   await expect(page.getByText("Все шаги обработаны.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
 });
@@ -389,12 +411,31 @@ test("zero-pause drop advances without recording later work", async ({ page }) =
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=drop");
   for (let ordinal = 1; ordinal <= 3; ordinal++) {
     await expect(page.getByText(`Часть ${ordinal} из 3`, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
   }
   await expect.poll(() => api.writes.length).toBe(3);
   expect(api.writes.map(row => row.base_execution_revision)).toEqual([0, 1, 2]);
   expect(api.writes[2].parts.map(part => part.status)).toEqual(["completed", "completed", "completed"]);
+});
+
+test("a drop-set part requires descending weights and keeps the entered value for retry", async ({ page }) => {
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=drop");
+  await quickComplete(page).click();
+  await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
+  const editor = await openPartEditor(page, 2);
+  const weight = editor.getByRole("textbox", { name: "Точный вес, кг", exact: true });
+  await weight.fill("30");
+  await editor.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(editor.getByRole("alert")).toContainText("меньше предыдущей");
+  await expect(weight).toHaveValue("30");
+  await expect.poll(() => api.writes.length).toBe(1);
+  await weight.fill("22,5");
+  await editor.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1].parts[1]).toMatchObject({ weight: 22.5, status: "completed" });
 });
 
 test("compound participant switches to partner before one round pause", async ({ page }) => {
@@ -403,13 +444,12 @@ test("compound participant switches to partner before one round pause", async ({
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
   for (let ordinal = 1; ordinal <= 3; ordinal++) {
     await expect(page.getByText(`Часть ${ordinal} из 3`, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     if (ordinal < 3) await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   }
   await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
-  await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+  await applySetWeight(page, "30");
   await expect(page.getByText("После круга", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("1:30");
   await page.getByRole("button", { name: "+15 с", exact: true }).click();
@@ -423,17 +463,18 @@ test("old correction keeps deadline; undo cancels last part only", async ({ page
   await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.clock.runFor(5000);
-  await page.getByLabel("Повторы", { exact: true }).fill("3");
-  await page.getByRole("button", { name: "Сохранить исправление", exact: true }).click();
+  const editor = await openPartEditor(page, 1);
+  await editor.getByRole("combobox", { name: "Повторения: выбрать значение" }).selectOption("3");
+  await editor.getByRole("button", { name: "Сохранить исправление", exact: true }).click();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:15");
   await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.getByRole("button", { name: "Отменить последнее действие", exact: true }).click();
   await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeEnabled();
+  await expect(quickComplete(page)).toBeEnabled();
   await expect.poll(() => api.writes.length).toBe(4);
   expect(api.writes.at(-1)!.parts.map(part => part.status)).toEqual(["completed", "pending", "pending"]);
 });
@@ -441,7 +482,7 @@ test("old correction keeps deadline; undo cancels last part only", async ({ page
 test("skip remainder preserves completed parts and requires manual switch", async ({ page }) => {
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   await page.getByRole("button", { name: "Пропустить остаток подхода", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Жим штанги лёжа", exact: true })).toBeVisible();
@@ -457,13 +498,13 @@ test("auto navigation off leaves the viewed part unchanged while timer still fin
   await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });
   await installTimingApi(page, false, false);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.clock.runFor(20000);
   await expect(page.getByText("Отдых завершён", { exact: true })).toBeVisible();
   await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Продолжить", exact: true }).click();
   await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeEnabled();
+  await expect(quickComplete(page)).toBeEnabled();
 });
 
 test("real browser clock emits one completion signal and records no additional work", async ({ page }) => {
@@ -475,11 +516,11 @@ test("real browser clock emits one completion signal and records no additional w
     });
   });
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster&rest=short");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await expect(page.getByText("Отдых завершён", { exact: true })).toBeVisible();
   await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
   await page.evaluate(() => { window.dispatchEvent(new Event("focus")); document.dispatchEvent(new Event("visibilitychange")); });
-  await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeEnabled();
+  await expect(quickComplete(page)).toBeEnabled();
   expect(await page.evaluate(() => (window as unknown as { executionSignals: number }).executionSignals)).toBe(1);
 });
 
@@ -488,16 +529,15 @@ for (const kind of ["triset", "circuit"]) {
     await installTimingApi(page);
     await page.goto(`/e2e/fixtures/workout-method-runner.html?kind=clustergroup${kind}`);
     for (let ordinal = 1; ordinal <= 3; ordinal++) {
-      await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+      await quickComplete(page).click();
       if (ordinal < 3) await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
     }
     await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();
-    await page.getByLabel("Рабочий вес, кг", { exact: true }).fill("30");
-    await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+    await applySetWeight(page, "30");
     await expect(page.getByRole("heading", { name: "Планка", exact: true })).toBeVisible();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveCount(0);
-    await expect(page.getByLabel("Время работы, с", { exact: true })).toHaveValue("40");
-    await page.getByRole("button", { name: "Записать подход", exact: true }).click();
+    await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByText("40 с", { exact: true }).first()).toBeVisible();
+    await quickComplete(page).click();
     await expect(page.getByText("После круга", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("1:30");
   });
@@ -509,8 +549,8 @@ for (const theme of ["light", "dark"]) for (const width of [320, 375, 393, 1440]
     await installTimingApi(page);
     await page.addInitScript(value => localStorage.setItem("fitness_theme_preference", value), theme);
     await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-    await expect(page.getByRole("button", { name: "Записать часть", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await expect(quickComplete(page)).toBeVisible();
+    await quickComplete(page).click();
     await expect(page.getByText("Между кластерами", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const axe = await new AxeBuilder({ page }).include('[aria-label="Выполнение тренировки"]').analyze();
@@ -529,7 +569,7 @@ test("early finish saves partial work immediately and sends completion after its
       completed_at: new Date().toISOString(), sets: [] } });
   });
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.getByRole("button", { name: "Завершить тренировку", exact: true }).last().click();
   await page.getByRole("button", { name: "Завершить · тяжесть 7/10", exact: true }).click();
   await expect(page.getByRole("button", { name: "К прогрессу", exact: true })).toBeVisible();
@@ -546,7 +586,7 @@ test("ordinary group skip persists without starting round rest", async ({ page }
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
   for (let ordinal = 1; ordinal <= 3; ordinal++) {
     await expect(page.getByText(`Часть ${ordinal} из 3`, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     if (ordinal < 3) await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   }
   await expect(page.getByRole("heading", { name: "Сгибания со штангой", exact: true })).toBeVisible();

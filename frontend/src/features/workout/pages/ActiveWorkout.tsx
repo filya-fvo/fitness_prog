@@ -28,6 +28,7 @@ import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscripti
 import { WorkoutReplacementPicker } from "@/features/workout/components/WorkoutReplacementPicker";
 import { rankWorkoutReplacementOptions } from "@/utils/exerciseAlternatives";
 import { WorkoutExecutionNavigator } from "@/features/workout/components/WorkoutExecutionNavigator";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { finishExecutionSession } from "@/db/workoutExecution";
 import { workoutClockSnapshot } from "@/utils/workoutRest";
 import { RestTimerHost } from "@/features/workout/components/RestTimerHost";
@@ -1071,6 +1072,7 @@ export function ActiveWorkout() {
       weightMode: "total" | "per_hand" | null;
       durationSec: number | null;
       restTimeSec: number;
+      startTimer: boolean;
       note: string | null;
       machineParams: Record<string, string | number> | null;
     }>,
@@ -1128,14 +1130,9 @@ export function ActiveWorkout() {
     const reps = draft.reps ? Number(draft.reps) : null;
     const weight = draft.weight ? Number(draft.weight) : null;
     const exerciseForSet = exerciseMap.get(exerciseId);
-    const resolvedWeightMode =
-      overrides?.weightMode ??
-      draft.weightMode ??
-      (/гантел|dumbbell/i.test(
-        `${exerciseForSet?.name_ru || ""} ${exerciseForSet?.equipment || ""}`,
-      )
-        ? "per_hand"
-        : "total");
+    const resolvedWeightMode = exerciseForSet && inferLoadType(exerciseForSet) === "weight_reps"
+      ? exerciseWeightInput(exerciseForSet, draft.weightMode ?? (draft.isCompleted ? null : undefined)).mode
+      : draft.weightMode ?? null;
     const restTimeSec = draft.restTimeSec ?? 60;
     const clientId = useWorkoutStore.getState().clientWorkoutId ?? stableClientId;
 
@@ -1232,7 +1229,7 @@ export function ActiveWorkout() {
       ) || null;
       const plannedWasComplete = isPlannedExerciseComplete(baseDrafts, exerciseId, targetSets);
       const plannedIsComplete = isPlannedExerciseComplete(nextDrafts, exerciseId, targetSets);
-      const shouldStartRest = shouldStartRestAfterSet({
+      const shouldStartRest = overrides?.startTimer !== false && shouldStartRestAfterSet({
         setWasCompleted: draft.isCompleted,
         restWasActiveAtSubmit,
         restIsActiveNow: useWorkoutStore.getState().isResting,
@@ -1602,7 +1599,7 @@ export function ActiveWorkout() {
           event.currentTarget.focus({ preventScroll: true });
           setAutoAdvance(null); setAppendError(null); setExercisePicker("append");
         }}>Добавить упражнение</button> : null}
-      {isV2 ? <WorkoutExecutionNavigator key={`${authenticatedUserId}:${stableClientId}`} autoAdvance={autoAdvanceExercises}
+      {isV2 ? <WorkoutExecutionNavigator key={`${authenticatedUserId}:${stableClientId}`} autoAdvance={autoAdvanceExercises} weekPhase={weekPhase}
         simpleMode={simpleMode} moreOpen={moreOpen} setMoreOpen={setMoreOpen} onEditorOpenChange={setExecutionEditorOpen} /> : null}
       {!isV2 && currentExercise ? (
         <article className="app-card app-card-indigo space-y-3 p-4">
@@ -1978,6 +1975,7 @@ export function ActiveWorkout() {
               open={addSetOpen}
               exercise={currentExercise}
               defaultRestSec={currentRestSec}
+              preserveWeightMode={currentSets.some(draft => draft.setNumber === editingSetNumber && (draft.isCompleted || draft.weightMode != null))}
               initial={(() => {
                 const editing =
                   editingSetNumber != null
@@ -1990,6 +1988,7 @@ export function ActiveWorkout() {
                 return {
                   reps: initial.reps,
                   weight: initial.weight,
+                  weightMode: base?.weightMode,
                   durationSec: currentPlanRow?.target ? initial.durationSec : base?.durationSec || defaultTimedSeconds(currentExercise),
                   restTimeSec: base?.restTimeSec ?? currentRestSec,
                   machineParams: base?.machineParams || null,
@@ -2036,6 +2035,7 @@ export function ActiveWorkout() {
                     note: vals.note,
                     machineParams: vals.machineParams,
                     restTimeSec: vals.restTimeSec,
+                    startTimer: vals.startTimer,
                   });
                   return;
                 }
@@ -2063,6 +2063,7 @@ export function ActiveWorkout() {
                     note: vals.note,
                     machineParams: vals.machineParams,
                     restTimeSec: vals.restTimeSec,
+                    startTimer: vals.startTimer,
                   });
                 } else if (vals.startTimer) {
                   startRest(vals.restTimeSec);

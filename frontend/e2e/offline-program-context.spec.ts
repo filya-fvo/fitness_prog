@@ -1,3 +1,4 @@
+import { quickComplete } from "./fixtures/workout-execution-api";
 import { createServer, type Server } from "node:http";
 import { expect, test } from "@playwright/test";
 import { acceptedLegalStatus } from "./legal-fixture";
@@ -70,7 +71,7 @@ for (const width of [320, 393, 1440]) {
     await expect(page.getByRole("heading", { name: "Жим", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Пропустить всё", exact: true }).click();
     await expect(page.getByText("Часть 1 из 3", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");
     await page.reload();
     await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:20");

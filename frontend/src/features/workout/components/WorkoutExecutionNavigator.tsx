@@ -1,32 +1,36 @@
 import { useEffect, useState } from "react";
+import { loadExerciseHints } from "@/db/workoutLoadHints";
+import type { ExecutionValues } from "@/db/workoutExecution";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
 import type { Exercise, LocalSetDraft, WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 import { executionRestNeedsConfirmation, remainingRestMs, type RestKind } from "@/utils/workoutRest";
 import { useWorkoutExecution } from "../hooks/useWorkoutExecution";
-import { CompoundSetEditor } from "./CompoundSetEditor";
+import { ExecutionSetList } from "./ExecutionSetList";
 import { ExerciseMediaTabs } from "./ExerciseMediaTabs";
 import { ExerciseMediaPlayer } from "./ExerciseMediaPlayer";
 import { ExerciseProgressSection } from "./ExerciseProgressSection";
 import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
-import { formatDurationLabel, inferLoadType } from "@/utils/exerciseLoadType";
+import { formatDurationLabel } from "@/utils/exerciseLoadType";
 import { AddSetModal } from "./AddSetModal";
 import { ActiveTopologyEditor } from "./ActiveTopologyEditor";
-import { preparedTimeSeconds } from "@/utils/workoutMethods";
 import { enumLabel } from "@/utils/localization";
-import type { ExecutionStep } from "@/utils/workoutExecution";
+import { resolveExecutionTransition, type ExecutionStep } from "@/utils/workoutExecution";
+import { executionInputError, executionSetInput } from "@/utils/executionSetInput";
+import { suggestLoad, type ExerciseHistoryBest, type WeekPhaseMeta } from "@/utils/loadProgression";
 
 const restLabels: Record<RestKind, string> = { cluster: "Между кластерами", drop_transition: "Смена веса", group_transition: "Переход к упражнению", round: "После круга", between_sets: "Между подходами", between_blocks: "Перед следующим блоком" };
 const groupLabels = { superset: "Суперсет", triset: "Трисет", circuit: "Круговая тренировка" };
 type Props = {
   autoAdvance: boolean;
+  weekPhase: WeekPhaseMeta;
   simpleMode: boolean;
   moreOpen: boolean;
   setMoreOpen: (open: boolean) => void;
   onEditorOpenChange: (open: boolean) => void;
 };
 
-export function WorkoutExecutionNavigator({ autoAdvance, simpleMode, moreOpen, setMoreOpen, onEditorOpenChange }: Props) {
+export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, moreOpen, setMoreOpen, onEditorOpenChange }: Props) {
   const controller = useWorkoutExecution(true, autoAdvance);
   const workout = useWorkoutStore(state => state.activeWorkout);
   const catalog = useWorkoutStore(state => state.catalog);
@@ -39,6 +43,19 @@ export function WorkoutExecutionNavigator({ autoAdvance, simpleMode, moreOpen, s
   const [formVersion, setFormVersion] = useState(0);
   const [modalError, setModalError] = useState<string | null>(null);
   const [topologyOpen, setTopologyOpen] = useState(false);
+  const [history, setHistory] = useState<{ id: string; value: ExerciseHistoryBest } | null>(null);
+  const step = controller.viewed;
+  const viewedExerciseId = step?.exerciseId;
+  useEffect(() => {
+    if (!owner || !viewedExerciseId) return;
+    let cancelled = false;
+    void loadExerciseHints([viewedExerciseId]).then(hints => {
+      const value = hints.get(viewedExerciseId);
+      if (!cancelled) setHistory(value ? { id: viewedExerciseId, value } : null);
+    }).catch(() => { if (!cancelled) setHistory(null); });
+    return () => { cancelled = true; };
+  }, [owner, viewedExerciseId]);
+  const suggestion = history && history.id === viewedExerciseId ? suggestLoad({ history: history.value, phase: weekPhase }) : undefined;
   const editorOpen = editingStep !== null || topologyOpen;
   useEffect(() => {
     onEditorOpenChange(editorOpen);
@@ -47,7 +64,6 @@ export function WorkoutExecutionNavigator({ autoAdvance, simpleMode, moreOpen, s
   const execution = controller.execution;
   if (!controller.ready || !execution || !workout) return <section className="app-card p-4" aria-live="polite">{controller.error ?? "Восстанавливаем выполнение…"}</section>;
   const plan = workout.plan as WorkoutPlan;
-  const step = controller.viewed;
   const row = plan.exercises.find(row => row.exercise_id === step?.exerciseId);
   const exercise = catalog.find(row => row.id === step?.exerciseId);
   const draft = drafts.find(row => row.exerciseId === step?.exerciseId && row.setNumber === step?.setNumber);
@@ -63,31 +79,38 @@ export function WorkoutExecutionNavigator({ autoAdvance, simpleMode, moreOpen, s
   const modalDraft = editingStep?.draft;
   const modalExercise = editingStep?.exercise;
   const modalRow = editingStep?.row;
-  const modalPart = modalStep?.partOrdinal ? modalDraft?.parts?.find(item => item.ordinal === modalStep.partOrdinal) : null;
-  const clusterWeight = modalStep?.kind === "cluster" ? modalDraft?.parts?.find(item => item.status === "completed")?.weight : null;
-  const partTarget = modalStep?.partOrdinal ? modalRow?.set_methods?.find(item => item.set_number === modalStep.setNumber)?.parts[modalStep.partOrdinal - 1] : undefined;
-  const modalTarget = modalDraft && modalExercise && modalRow ? resolveInitialWorkoutTarget({ row: modalRow,
-    part: partTarget,
-    existing: modalStep?.partOrdinal ? (modalPart ? {
-      ...(modalPart.status !== "pending" || modalPart.reps !== null ? { reps: modalPart.reps == null ? "" : String(modalPart.reps) } : {}),
-      ...(modalPart.status !== "pending" ? { weight: modalPart.weight == null ? "" : String(modalPart.weight), durationSec: modalPart.duration_sec }
-        : clusterWeight != null || modalPart.weight != null ? { weight: String(clusterWeight ?? modalPart.weight) } : {}),
-    } : undefined) : modalRow.target ? modalDraft : undefined,
-    fallback: { reps: modalDraft.reps || modalRow.target_reps?.match(/^\d+/)?.[0] || "10", weight: modalDraft.weight || (modalRow.suggested_weight == null ? "" : String(modalRow.suggested_weight)), durationSec: modalDraft.durationSec ?? preparedTimeSeconds(modalRow, modalExercise) } }) : null;
+  const modalTarget = modalStep && modalDraft && modalExercise && modalRow ? executionSetInput(modalStep, modalDraft, modalRow, modalExercise, suggestion) : null;
+  const liveModalDraft = modalStep && drafts.find(item => item.exerciseId === modalStep.exerciseId && item.setNumber === modalStep.setNumber);
+  const staleModal = Boolean(editingStep && (client !== editingStep.clientId || !liveModalDraft || JSON.stringify(liveModalDraft) !== editingStep.baseDraft));
+  const preview = modalStep && !editingStep?.recorded && owner && client && !blockedRest ? resolveExecutionTransition({
+    plan, ...execution.progress, stepId: modalStep.id, action: "complete", actionId: "preview",
+    owner, clientWorkoutId: client, confirmedAt: controller.clock, allowOutOfOrder: true,
+  }) : null;
+  const modalContext = editingStep?.recorded ? modalStep?.kind === "cluster"
+    ? "Вес изменится во всех записанных частях кластера."
+    : "Исправление результата не запускает отдых заново."
+    : blockedRest ? "После окончания отдыха можно записать результат."
+    : preview?.restKind && preview.durationSec > 0 ? `${restLabels[preview.restKind]} · ${formatDurationLabel(preview.durationSec)}` : undefined;
   const btn = "min-h-11 rounded-xl border border-tg-hint/25 px-3 py-2 text-sm disabled:opacity-40";
-  const openEditor = async (selected: ExecutionStep, opener: HTMLButtonElement) => {
-    if (!await controller.prepareModal()) return;
-    setFormVersion(value => value + 1);
-    await controller.show(selected.id);
+  const persistResult = (selected: ExecutionStep, base: LocalSetDraft, values: ExecutionValues, recorded = false) => controller.act(recorded ? "correct" : "complete", selected.id, {
+    ...values, baseSetRevision: base.executionRevision ?? 0, baseDraft: JSON.stringify(base), manualSelection: true,
+  });
+  const snapshotEditor = (selected: ExecutionStep, opener: HTMLButtonElement) => {
     const store = useWorkoutStore.getState();
     const current = store.execution;
     const currentDraft = store.drafts.find(candidate => candidate.exerciseId === selected.exerciseId && candidate.setNumber === selected.setNumber);
     const currentExercise = store.catalog.find(candidate => candidate.id === selected.exerciseId);
     const currentRow = (store.activeWorkout?.plan as WorkoutPlan | undefined)?.exercises.find(candidate => candidate.exercise_id === selected.exerciseId);
-    if (current?.viewStepId === selected.id && currentDraft && currentExercise && currentRow && store.clientWorkoutId) {
-      setModalError(null); controller.markEditing(true);
-      setEditingStep({ step: structuredClone(selected), draft: structuredClone(currentDraft), exercise: structuredClone(currentExercise), row: structuredClone(currentRow), recorded: current.progress.facts[selected.id] === "completed", clientId: store.clientWorkoutId, baseDraft: JSON.stringify(currentDraft), opener });
-    }
+    if (current?.viewStepId !== selected.id || !currentDraft || !currentExercise || !currentRow || !store.clientWorkoutId || current.progress.facts[selected.id] === "skipped") return;
+    setFormVersion(value => value + 1);
+    setModalError(null);
+    controller.markEditing(true);
+    setEditingStep({ step: selected, draft: structuredClone(currentDraft), exercise: currentExercise, row: currentRow, recorded: current.progress.facts[selected.id] === "completed", clientId: store.clientWorkoutId, baseDraft: JSON.stringify(currentDraft), opener });
+  };
+  const openEditor = async (selected: ExecutionStep, opener: HTMLButtonElement) => {
+    if (!await controller.prepareModal()) return;
+    await controller.show(selected.id);
+    snapshotEditor(selected, opener);
   };
   return <section className="space-y-3" aria-label="Выполнение тренировки">
     {controller.error ? <p role="alert" className="app-card p-3 text-sm text-red-500">{controller.error}</p> : null}
@@ -131,39 +154,32 @@ export function WorkoutExecutionNavigator({ autoAdvance, simpleMode, moreOpen, s
       {owner && client && server && workout.status === "planned" ? <ActiveTopologyEditor owner={owner} client={client} server={server}
         plan={plan} row={row} group={group} exercise={exercise} activeRest={blockedRest}
         onOpenChange={setTopologyOpen} confirmDiscardInput={controller.prepareModal} /> : null}
-      <ol aria-label="Подходы упражнения" className="app-card-inset space-y-2 rounded-xl p-2">
-        {drafts.filter(item => item.exerciseId === row.exercise_id).sort((a, b) => a.setNumber - b.setNumber).map(item => {
-          const parts = controller.steps.filter(candidate => candidate.exerciseId === item.exerciseId && candidate.setNumber === item.setNumber);
-          const selected = parts.find(candidate => execution.progress.facts[candidate.id] === "pending") ?? parts.find(candidate => execution.progress.facts[candidate.id] === "completed");
-          const status = item.isCompleted ? "Выполнено" : item.isSkipped ? "Пропущено" : "Ожидает";
-          const load = exercise ? inferLoadType(exercise) : "weight_reps";
-          const detail = item.parts?.length ? `${item.parts.filter(part => part.status === "completed").length} из ${item.parts.length} частей` : load === "timed" || load === "cardio_machine" ? item.durationSec ? formatDurationLabel(item.durationSec) : status : load === "reps_only" ? item.reps ? `${item.reps} повт.` : status : item.weight || item.reps ? `${item.weight || "—"} кг × ${item.reps || "—"}` : status;
-          return <li key={item.setNumber} className="space-y-2 rounded-xl px-3 py-2 text-sm">
-            <div className="flex items-center justify-between gap-2"><div><p className="text-xs text-tg-hint">Подход {item.setNumber}</p><p>{detail}</p></div>
-            <button type="button" disabled={!selected || !exercise || controller.busy} className="min-h-11 rounded-lg bg-tg-secondary px-3 text-xs font-medium disabled:opacity-40"
-              aria-label={`Править подход ${item.setNumber}`} onClick={event => { if (selected) void openEditor(selected, event.currentTarget); }}>Править</button></div>
-            {parts.length > 1 ? <div className="flex flex-wrap gap-2">{parts.map(part => <button key={part.id} type="button" className={btn} disabled={!exercise || controller.busy || execution.progress.facts[part.id] === "skipped" || (execution.progress.facts[part.id] === "pending" && parts.some(previous => previous.partOrdinal !== null && part.partOrdinal !== null && previous.partOrdinal < part.partOrdinal && execution.progress.facts[previous.id] === "pending"))} onClick={event => void openEditor(part, event.currentTarget)}>
-              Часть {part.partOrdinal} · {execution.progress.facts[part.id] === "completed" ? "Выполнено" : execution.progress.facts[part.id] === "skipped" ? "Пропущено" : "Ожидает"}</button>)}</div> : null}
-          </li>;
-        })}
-      </ol>
+      {exercise ? <ExecutionSetList exercise={exercise} row={row}
+        drafts={drafts.filter(item => item.exerciseId === row.exercise_id).sort((a, b) => a.setNumber - b.setNumber)}
+        steps={controller.steps.filter(item => item.exerciseId === row.exercise_id)} facts={execution.progress.facts}
+        viewedId={step.id} busy={controller.busy} resting={blockedRest} suggestion={suggestion} onEdit={(selected, opener) => void openEditor(selected, opener)}
+        onComplete={(selected, base, values) => void persistResult(selected, base, { ...values, durationSec: values.durationSec ?? null })} />
+        : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
       {earlierPartPending ? <p className="text-sm text-tg-hint">Сначала запишите или пропустите предыдущую часть этого подхода.</p> : null}
-      {exercise ? <CompoundSetEditor key={`${step.id}:${formVersion}`} controller={controller} step={step} row={row} exercise={exercise} draft={draft} blocked={blockedRest || earlierPartPending} /> : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
       {execution.progress.facts[step.id] === "pending" ? <div className="flex flex-wrap gap-2"><button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
         {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}
     </article> : null}
     {last ? <button className={`${btn} w-full`} disabled={controller.busy} onClick={() => void controller.act("undo", last.stepId, undefined, last.actionId)}>Отменить последнее действие</button> : null}
-    {modalStep && modalDraft && modalExercise ? <AddSetModal key={modalStep.id} open exercise={modalExercise} initial={{ ...modalDraft, isCompleted: editingStep?.recorded, ...(modalTarget ? { reps: modalTarget.reps, weight: modalTarget.weight, durationSec: modalTarget.durationSec } : {}) }} editing={editingStep?.recorded} allowCompletionChange={false} subtitle={modalStep.partOrdinal ? `подход ${modalStep.setNumber}, часть ${modalStep.partOrdinal} из ${modalDraft.parts?.length ?? 0}` : undefined} preserveWeightMode={modalDraft.weightMode != null || editingStep?.recorded || Boolean(modalDraft.parts?.some(item => item.status === "completed"))} preserveWeightPrecision={Boolean(modalTarget?.weight)} showTimerControls={false}
-      busy={controller.busy} error={modalError ?? controller.error} returnFocusTo={editingStep?.opener} onClose={() => { controller.markEditing(false); setEditingStep(null); }} onApply={value => { void (async () => {
-        setModalError(null);
-        const currentDraft = useWorkoutStore.getState().drafts.find(item => item.exerciseId === modalStep.exerciseId && item.setNumber === modalStep.setNumber);
-        if (useWorkoutStore.getState().clientWorkoutId !== editingStep?.clientId || !currentDraft || JSON.stringify(currentDraft) !== editingStep.baseDraft) { setModalError("Подход изменён в другой вкладке. Введённые значения остались в форме."); return; }
-        const values = { baseSetRevision: modalDraft.executionRevision ?? 0, baseDraft: editingStep?.baseDraft, manualSelection: true, reps: value.reps, weight: value.weight, weightMode: value.weightMode,
-          durationSec: value.durationSec, note: value.note, machineParams: value.machineParams };
-        const recorded = editingStep.recorded;
-        const saved = await controller.act(recorded ? "correct" : "complete", modalStep.id, values);
-        if (saved) setEditingStep(null);
-      })(); }} /> : null}
+    {editingStep && modalStep && modalDraft && modalExercise && modalTarget ? <AddSetModal key={`${modalStep.id}:${formVersion}`} open exercise={modalExercise}
+      initial={modalTarget} editing={editingStep.recorded} allowCompletionChange={false}
+      subtitle={`подход ${modalStep.setNumber}${modalStep.partOrdinal ? `, часть ${modalStep.partOrdinal} из ${modalDraft.parts?.length ?? 0}` : ""}`}
+      preserveWeightMode showTimerControls={false} requireWeight contextMessage={modalContext}
+      preserveBlankWeight={editingStep.recorded && modalStep.partOrdinal === null && !modalDraft.weight}
+      applyLabel={editingStep.recorded ? "Сохранить исправление" : "Применить"} applyDisabled={staleModal || (blockedRest && !editingStep.recorded)}
+      busy={controller.busy} error={staleModal ? "Подход изменён в другой вкладке. Введённые значения остались в форме." : modalError ?? controller.error}
+      onRefresh={staleModal ? () => snapshotEditor(modalStep, editingStep.opener) : undefined}
+      returnFocusTo={editingStep.opener} onClose={() => { controller.markEditing(false); setEditingStep(null); }}
+      onApply={value => {
+        if (staleModal) return;
+        const error = executionInputError(modalStep, modalDraft, value, modalExercise);
+        setModalError(error);
+        if (!error) void persistResult(modalStep, modalDraft, value, editingStep.recorded).then(saved => { if (saved) setEditingStep(null); });
+      }} /> : null}
     <details className="app-card p-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Все шаги и записи</summary><ol className="space-y-1">{controller.steps.slice(0, limit).map(item => {
       const name = plan.exercises.find(row => row.exercise_id === item.exerciseId)?.name_ru ?? catalog.find(row => row.id === item.exerciseId)?.name_ru ?? "Упражнение";
       const fact = execution.progress.facts[item.id];
