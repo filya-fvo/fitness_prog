@@ -140,6 +140,33 @@ async def test_replaces_the_remaining_round_and_keeps_old_group_results(database
 
 
 @pytest.mark.asyncio
+async def test_dissolving_active_group_keeps_every_set_and_part_and_replays(database):
+    session, owner, _, workout, group, a, b, _ = await start_group(database, drop=True)
+    workout_id = workout.id
+    old = next(row for row in workout.sets if row.exercise_id == a and row.set_number == 1)
+    part, pending = old.parts
+    recorded = await workout_service.add_workout_set(session, owner, workout_id, WorkoutSetCreate(
+        exercise_id=a, set_number=1, execution_version=2, execution_kind="drop", base_execution_revision=0,
+        client_operation_id=uuid4(), parts=[
+            {"id": part.id, "ordinal": 1, "reps": 8, "weight": 30, "status": "completed", "rest_after_sec": 0},
+            {"id": pending.id, "ordinal": 2, "status": "pending", "rest_after_sec": 0},
+        ],
+    ))
+    await workout_service.add_workout_set(session, owner, workout_id, result(b))
+    before = WorkoutResponse.model_validate(await workout_service.get_workout(session, owner, workout_id))
+    request = ActiveTopologyRequest(operation_id=uuid4(), action="dissolve_group", subject_id=group, expected_plan_revision=0)
+    payload = await confirmed(session, owner, workout_id, request)
+    applied = await apply_topology(session, owner, workout_id, payload)
+
+    assert applied.plan["groups"] == [] and applied.plan["active_plan_revision"] == 1
+    assert applied.plan["exercises"] == before.plan["exercises"]
+    assert {row.id: row.model_dump() for row in applied.sets} == {row.id: row.model_dump() for row in before.sets}
+    assert next(row for row in applied.sets if row.id == recorded.id).parts == recorded.parts
+    assert (await apply_topology(session, owner, workout_id, payload)).model_dump() == applied.model_dump()
+    assert (await workout_service.add_workout_set(session, owner, workout_id, result(b, 2, revision=1))).is_completed
+
+
+@pytest.mark.asyncio
 async def test_replacing_member_keeps_partial_drop_set_and_original_round_order(database):
     session, owner, _, workout, _, a, b, replacement = await start_group(database, drop=True)
     workout_id = workout.id

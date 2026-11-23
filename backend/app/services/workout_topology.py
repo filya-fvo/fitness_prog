@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.schemas.workout import WorkoutPlan
 
-TopologyAction = Literal["append_exercise", "replace_member", "replace_group", "resize_exercise", "resize_group"]
+TopologyAction = Literal["append_exercise", "replace_member", "replace_group", "resize_exercise", "resize_group", "dissolve_group"]
 PLAN_CHANGED = "План тренировки уже изменился. Записанный результат сохранён на устройстве"
 
 
@@ -152,6 +152,13 @@ def preview_active_topology_change(
 
 def project_v2_topology(plan: WorkoutPlan, rows: list[dict], request: ActiveTopologyRequest, name: str | None) -> WorkoutPlan:
     """Keep unworked slots in the plan and leave recorded rows attached to the workout."""
+    if request.action == "dissolve_group":
+        if request.target_count is not None or request.replacement_exercise_id is not None:
+            raise HTTPException(422, "Для роспуска связки выберите только связку")
+        groups = [group for group in plan.groups if group.id != request.subject_id]
+        if len(groups) == len(plan.groups):
+            raise HTTPException(409, "Связка отсутствует в сохранённом плане")
+        return plan.model_copy(update={"groups": groups})
     if request.action == "append_exercise":
         if len(plan.exercises) >= 20:
             raise HTTPException(409, "В тренировке уже 20 упражнений")

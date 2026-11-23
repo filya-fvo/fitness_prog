@@ -119,7 +119,8 @@ async def apply_topology(session, user, workout_id: UUID, request: ActiveTopolog
     ))
     if request.preview_fingerprint != stamp:
         raise HTTPException(409, PLAN_CHANGED)
-    _align_slots(workout, projected)
+    if request.action != "dissolve_group":
+        _align_slots(workout, projected)
     workout.plan = {**workout.plan, **projected.model_dump(mode="json"), "active_plan_revision": revision + 1}
     await session.flush()
     workout = await workout_execution.lock_workout(session, workout_id, user.id)

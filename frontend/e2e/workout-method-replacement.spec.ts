@@ -1,12 +1,45 @@
 import { expect, test } from "@playwright/test";
 import type { Workout, WorkoutPlan, WorkoutSet } from "../src/types/workout";
-import { installTimingApi } from "./fixtures/workout-execution-api";
+import { installTimingApi, quickComplete } from "./fixtures/workout-execution-api";
 
 const owner = "22222222-2222-4222-8222-222222222222";
 const workoutId = "11111111-1111-4111-8111-111111111111";
 const original = "33333333-3333-4333-8333-333333333333";
 const replacement = "99999999-9999-4999-8999-999999999999";
 const fingerprint = "a".repeat(64);
+
+test("dissolves an active superset and restores the recorded drop part after reload", async ({ page }) => {
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=dropgroup&topology=1");
+  await quickComplete(page).click();
+  await expect.poll(() => api.writes.length).toBe(1);
+  const workout = await page.evaluate(async () => {
+    const source = "/src/db/schema.ts";
+    const { db } = await import(/* @vite-ignore */ source);
+    return (await db.sessions.toArray())[0].workout as Workout;
+  });
+  const plan: WorkoutPlan = { ...(workout.plan as WorkoutPlan), groups: [], active_plan_revision: 1 };
+  await page.route("**/active-topology/preview", route => {
+    const body = route.request().postDataJSON();
+    expect(body).toMatchObject({ action: "dissolve_group", subject_id: "55555555-5555-4555-8555-555555555555", expected_plan_revision: 0 });
+    expect(body).not.toHaveProperty("target_count");
+    return route.fulfill({ json: { plan, plan_revision: 0, preview_fingerprint: fingerprint } });
+  });
+  await page.route("**/active-topology", route => route.fulfill({ json: { ...workout, plan } }));
+  const dissolve = page.getByRole("button", { name: "Распустить связку", exact: true });
+  await dissolve.click();
+  const dialog = page.getByRole("dialog", { name: "Распустить связку" });
+  await dialog.getByRole("button", { name: "Проверить изменение" }).click();
+  await dialog.getByRole("button", { name: "Применить изменение" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button")).toHaveCount(2);
+  await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByText("30 кг × 4", { exact: true })).toBeVisible();
+  await expect(dissolve).toHaveCount(0);
+  await quickComplete(page).click();
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1]).toMatchObject({ active_plan_revision: 1, parts: [{ status: "completed", weight: 30 }, { status: "completed", weight: 25 }, { status: "pending" }] });
+});
 
 for (const kind of ["superset", "triset"]) {
   test(`changes the rest of a ${kind} and recovers a lost confirmation after reload`, async ({ page }) => {
@@ -43,7 +76,7 @@ for (const kind of ["superset", "triset"]) {
     });
 
     await page.goto(`/e2e/fixtures/workout-method-runner.html?kind=${kind === "triset" ? "dropgroup-triset" : "dropgroup"}&topology=1`);
-    await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+    await quickComplete(page).click();
     await expect.poll(() => api.writes.length).toBe(1);
     expect(api.writes[0].parts.map(part => part.status)).toEqual(["completed", "pending", "pending"]);
     await page.getByRole("button", { name: "Заменить связку" }).click();
