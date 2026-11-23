@@ -8,7 +8,7 @@ export function ProgramNumberField({ label, ariaLabel = label, value, min, max, 
   const [editing, setEditing] = useState(false);
   const seconds = timeUnit ? programTimeSeconds(value, timeUnit) : null;
   const valid = timeUnit ? seconds !== null : weight ? validProgramWeight(value) : validProgramNumber(value, min, max);
-  const numeric = timeUnit ? seconds : Number(value);
+  const numeric = timeUnit ? seconds : Number(value.replace(",", "."));
   const showError = !valid && !editing && !mixed;
   function adjust(delta: number) {
     // An explicit action may replace an incomplete draft, while typing never does.
@@ -21,7 +21,8 @@ export function ProgramNumberField({ label, ariaLabel = label, value, min, max, 
       return;
     }
     const current = valid && value !== "" ? Number(value.replace(",", ".")) : min;
-    const next = Math.max(min, Math.min(max, current + delta * (weight ? 0.5 : 1)));
+    const adjusted = weight ? (Math.round(current * 100) + delta * 50) / 100 : current + delta;
+    const next = Math.max(min, Math.min(max, adjusted));
     onChange(weight && clearAtZero && next === 0 ? "" : String(next));
   }
   return <div className="min-w-0">

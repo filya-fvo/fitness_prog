@@ -26,7 +26,8 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
     if (disabled || draft) return;
     const next = group ?? { id: crypto.randomUUID(), kind, exercise_ids: exerciseId ? [exerciseId] : [],
       rounds: plan.exercises.find(row => row.exercise_id === exerciseId)?.target_sets ?? 3, transition_sec: 0, round_rest_sec: 90 };
-    setDraft({ ...next, exercise_ids: [...next.exercise_ids], rounds: raw?.[`${next.id}/rounds`] ?? String(next.rounds),
+    const initialRounds = group ? String(group.rounds) : exerciseId ? String(Math.min(maxRounds, next.rounds)) : "";
+    setDraft({ ...next, exercise_ids: [...next.exercise_ids], rounds: raw?.[`${next.id}/rounds`] ?? initialRounds,
       transition_sec: raw?.[`${next.id}/transition_sec`] ?? String(next.transition_sec), round_rest_sec: raw?.[`${next.id}/round_rest_sec`] ?? String(next.round_rest_sec), isNew: !group });
     setError(null); onEditingChange(true);
   }
@@ -43,6 +44,14 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
   const validCount = draft && (required ? draft.exercise_ids.length === required : draft.exercise_ids.length >= 2);
   const validNumbers = draft && validProgramNumber(draft.rounds, 1, maxRounds) && validProgramNumber(draft.transition_sec, 0, 600) && validProgramNumber(draft.round_rest_sec, 0, 600);
   const available = plan.exercises.filter(row => !(plan.groups ?? []).some(group => group.exercise_ids.includes(row.exercise_id))).length;
+  function moveParticipant(index: number, direction: -1 | 1) {
+    if (!draft) return;
+    const exercise_ids = [...draft.exercise_ids];
+    const next = index + direction;
+    if (next < 0 || next >= exercise_ids.length) return;
+    [exercise_ids[index], exercise_ids[next]] = [exercise_ids[next], exercise_ids[index]];
+    setDraft({ ...draft, exercise_ids });
+  }
   return <div className="space-y-2">
     <h4 className="text-sm font-semibold">Суперсеты, трисеты и круги</h4>
     <p className="text-xs text-tg-hint">Суперсет — 2 упражнения подряд, трисет — 3. Выберите участников и задайте отдых после всего круга.</p>
@@ -64,11 +73,19 @@ export const WorkoutGroupEditor = forwardRef<WorkoutGroupEditorHandle, Props>(fu
           const occupied = plan.groups?.some(group => group.id !== draft.id && group.exercise_ids.includes(row.exercise_id));
           return <label key={row.exercise_id} className={`flex min-h-[44px] items-center gap-2 py-2 text-sm ${occupied ? "text-tg-hint" : ""}`}>
             <input type="checkbox" checked={draft.exercise_ids.includes(row.exercise_id)} disabled={disabled || occupied} onChange={event => setDraft({ ...draft,
+              rounds: event.target.checked && !draft.exercise_ids.length && !draft.rounds ? String(Math.min(maxRounds, row.target_sets)) : draft.rounds,
               exercise_ids: event.target.checked ? [...draft.exercise_ids, row.exercise_id] : draft.exercise_ids.filter(id => id !== row.exercise_id) })} className="h-5 w-5 shrink-0" />
             <span className="break-words">{row.name_ru || "Упражнение"}{occupied ? " · в другой связке" : ""}</span>
           </label>;
         })}
       </fieldset>
+      {draft.exercise_ids.length > 1 ? <ol aria-label="Порядок упражнений в связке" className="space-y-1">
+        {draft.exercise_ids.map((id, index) => <li key={id} className="flex items-center gap-1.5 text-sm">
+          <span className="min-w-0 flex-1 break-words">{index + 1}. {names.get(id)}</span>
+          <button type="button" disabled={disabled || index === 0} aria-label={`Выше: ${names.get(id)}`} onClick={() => moveParticipant(index, -1)} className="min-h-11 min-w-11 rounded-lg bg-tg-secondary disabled:opacity-40">↑</button>
+          <button type="button" disabled={disabled || index === draft.exercise_ids.length - 1} aria-label={`Ниже: ${names.get(id)}`} onClick={() => moveParticipant(index, 1)} className="min-h-11 min-w-11 rounded-lg bg-tg-secondary disabled:opacity-40">↓</button>
+        </li>)}
+      </ol> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ProgramNumberField label="Раунды" min={1} max={maxRounds} disabled={disabled} value={draft.rounds} onChange={rounds => setDraft({ ...draft, rounds })} />
         <ProgramNumberField label="Переход, с" ariaLabel="Переход между упражнениями, с" min={0} max={600} disabled={disabled} value={draft.transition_sec} onChange={transition_sec => setDraft({ ...draft, transition_sec })} presets={[0, 15, 30]} />
