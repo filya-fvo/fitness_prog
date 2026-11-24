@@ -134,6 +134,11 @@ export function AddSetModal({
 
   const durationSec = Math.max(0, min * 60 + sec);
   const isTimed = loadType === "timed" || loadType === "cardio_machine";
+  const loadValue = isTimed ? durationSec : reps;
+  const loadField = isTimed ? "durationSec" : "reps";
+  const unchangedZero = editing && loadValue === 0 && !changedFields.includes(loadField) &&
+    (isTimed ? initial?.durationSec === 0 : initial?.reps === "0");
+  const validLoad = Number.isInteger(loadValue) && (loadValue >= 1 || unchangedZero) && loadValue <= (isTimed ? 86400 : 100000);
   const weightStr =
     loadType === "weight_reps" && weightChosen
       ? exactWeight !== null ? String(exactWeight) : preserveWeightPrecision && initial?.weight && !changedFields.includes("weight") ? initial.weight
@@ -325,7 +330,7 @@ export function AddSetModal({
 
         <button
           type="button"
-          disabled={busy || !weightValid || applyDisabled || (isTimed ? !Number.isInteger(durationSec) || durationSec < 1 || durationSec > 86400 : !Number.isInteger(reps) || reps < 1 || reps > 100000)}
+          disabled={busy || !weightValid || applyDisabled || !validLoad}
           className="app-button app-gradient-action w-full rounded-full"
           onClick={() =>
             onApply({

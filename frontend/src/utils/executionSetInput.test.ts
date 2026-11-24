@@ -50,4 +50,18 @@ describe("structured workout set input", () => {
     expect(executionInputError(dropStep, started, { reps: "4", weight: "16", durationSec: null }, exercise)).toContain("меньше");
     expect(executionInputError(dropStep, started, { reps: "4", weight: "15.75", durationSec: null }, exercise)).toBeNull();
   });
+
+  it.each(["drop", "cluster"] as const)("keeps the history weight and its original unit together for %s", kind => {
+    const suggestion = { weight: "32", reps: "7", durationSec: null, weightMode: "total" as const, machineParams: null, note: null };
+    const compound: WorkoutPlanExercise = { ...row, set_methods: [{ kind, set_number: 1, parts: [
+      { target_reps: 6, target_weight: null, pause_after_sec: 0 },
+      { target_reps: 4, target_weight: null, pause_after_sec: 0 },
+    ] }] };
+    const [step] = stepsFor(compound);
+    expect(executionSetInput(step, draft, compound, exercise, suggestion)).toMatchObject({ weight: "32", weightMode: "total" });
+    expect(executionSetInput(step, { ...draft, weightMode: "per_hand" }, compound, exercise, suggestion))
+      .toMatchObject({ weight: "", weightMode: "per_hand" });
+    const planned = { ...compound, suggested_weight: 18 };
+    expect(executionSetInput(step, draft, planned, exercise, suggestion)).toMatchObject({ weight: "18", weightMode: "per_hand" });
+  });
 });

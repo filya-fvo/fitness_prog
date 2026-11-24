@@ -22,14 +22,19 @@ export function executionSetInput(
   const method = row.set_methods?.find(item => item.set_number === step.setNumber);
   const target = ordinal === null ? undefined : method?.parts[ordinal - 1];
   const alreadyRecorded = draft.isCompleted || parts.some(item => item.weight !== null);
-  const suggestedMode = ordinal === null && !draft.weight && row.suggested_weight == null && !row.target && suggestion?.weight
-    ? suggestion?.weightMode : undefined;
-  const mode = exerciseWeightInput(exercise, alreadyRecorded ? draft.weightMode ?? null : draft.weightMode ?? suggestedMode).mode;
+  const exerciseTargetWeight = row.target?.kind === "weight_reps" ? row.target.target_weight : null;
+  const hasPlannedWeight = row.suggested_weight != null || exerciseTargetWeight != null ||
+    method?.parts.some(item => item.target_weight != null);
+  const suggestionMode = suggestion?.weight ? suggestion.weightMode : undefined;
+  const fixedMode = draft.weightMode != null || hasPlannedWeight || Boolean(draft.weight);
+  const mode = exerciseWeightInput(exercise, alreadyRecorded ? draft.weightMode ?? null
+    : draft.weightMode ?? (fixedMode ? undefined : suggestionMode)).mode;
+  const historyWeight = suggestionMode !== undefined && exerciseWeightInput(exercise, suggestionMode).mode === mode
+    ? suggestion?.weight : "";
   const recordedPart = part?.status === "completed";
   const clusterWeight = step.kind === "cluster" ? parts.find(item => item.weight !== null)?.weight : null;
   const previousWeight = ordinal === null ? null : parts.filter(item => item.ordinal < ordinal && item.weight !== null).at(-1)?.weight;
-  const fallbackWeight = draft.weight || (row.suggested_weight == null ? "" : String(row.suggested_weight)) || suggestion?.weight || "";
-  const exerciseTargetWeight = row.target?.kind === "weight_reps" ? row.target.target_weight : null;
+  const fallbackWeight = draft.weight || (row.suggested_weight == null ? "" : String(row.suggested_weight)) || historyWeight || "";
   const standard = resolveInitialWorkoutTarget({ row, existing: draft.isCompleted || row.target ? draft : {
     ...(draft.reps ? { reps: draft.reps } : {}),
     ...(draft.weight ? { weight: draft.weight } : {}),
