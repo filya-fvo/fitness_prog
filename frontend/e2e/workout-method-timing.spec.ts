@@ -35,8 +35,9 @@ for (const [width, height, theme] of [[375, 600, "dark"], [393, 740, "light"], [
     await expect(editor.getByRole("button", { name: "Применить", exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const close = await editor.getByRole("button", { name: "Закрыть", exact: true }).boundingBox();
-    expect(close?.width).toBeGreaterThanOrEqual(44);
-    expect(close?.height).toBeGreaterThanOrEqual(44);
+    // Firefox can report a 44px hit area as 43.999996px.
+    expect(close?.width).toBeGreaterThanOrEqual(44 - 0.001);
+    expect(close?.height).toBeGreaterThanOrEqual(44 - 0.001);
   });
 }
 
@@ -439,7 +440,7 @@ test("a drop-set part requires descending weights and keeps the entered value fo
 });
 
 test("compound participant switches to partner before one round pause", async ({ page }) => {
-  await page.clock.install({ time: new Date("2026-10-19T09:00:00Z") });
+  await page.clock.setFixedTime(new Date("2026-10-19T09:00:00Z"));
   await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
   for (let ordinal = 1; ordinal <= 3; ordinal++) {
