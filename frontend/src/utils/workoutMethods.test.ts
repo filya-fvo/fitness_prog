@@ -1,10 +1,18 @@
 import { expect, it } from "vitest";
 import type { Exercise, WorkoutPlan } from "@/types/workout";
-import { configureWorkoutGroup, dissolveWorkoutGroup, replacePreparedExercise, removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds } from "./workoutMethods";
+import { configureWorkoutGroup, defaultWorkoutMethod, dissolveWorkoutGroup, replacePreparedExercise, removePreparedExercise, updatePreparedExerciseSets, preparedTimeSeconds, workoutPreparationError } from "./workoutMethods";
 import { reorderWorkoutExercise } from "./workoutCustomization";
 const base: WorkoutPlan = { exercises: ["A", "B", "C"].map((id, i) => ({ exercise_id: id, order: i + 1, target_sets: i + 2, rest_sec: 120 })) };
 const group = { id: "group", kind: "superset" as const, exercise_ids: ["A", "C"], rounds: 3, transition_sec: 0, round_rest_sec: 90 };
 const exercise = (id: string, tags = ["load:weight_reps"]) => ({ id, name_ru: id, muscle_group: "biceps", equipment: null, tags }) as Exercise;
+
+it.each([0.01, 0.02, 0.03, 40])("uses the explicit goal and keeps a default drop starting at %s kg valid", weight => {
+  const row = { ...base.exercises[0], suggested_weight: 100, target: { kind: "weight_reps" as const, reps_min: 6, reps_max: 8, target_weight: weight } };
+  const drop = defaultWorkoutMethod(row, "drop", 1);
+  expect(drop.parts[0]).toMatchObject({ target_reps: 6, target_weight: weight });
+  expect(workoutPreparationError({ execution_version: 2, exercises: [{ ...row, set_methods: [drop] }] })).toBeNull();
+  expect(defaultWorkoutMethod(row, "cluster", 1).parts.map(part => part.target_weight)).toEqual([weight, weight, weight]);
+});
 
 it("uses typed time before an exact legacy target and catalog default", () => {
   const row = { ...base.exercises[0], target_reps: "30 с", target: { kind: "timed" as const, duration_sec: 95 } };

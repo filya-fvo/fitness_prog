@@ -305,7 +305,7 @@ export function suggestLoad(input: {
     weight,
     reps,
     durationSec: hist.lastDurationSec ?? null,
-    weightMode: hist.lastWeightMode ?? null,
+    weightMode: source ? source.weightMode : hist.lastWeightMode ?? null,
     machineParams: hist.lastMachineParams ?? null,
     note: hist.lastDurationSec && !weight && hist.lastReps <= 0
       ? `Прошлый раз${date}: ${Math.floor(hist.lastDurationSec / 60)}:${String(hist.lastDurationSec % 60).padStart(2, "0")}.`

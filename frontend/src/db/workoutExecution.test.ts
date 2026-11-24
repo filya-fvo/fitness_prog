@@ -152,6 +152,25 @@ it("commits part, cursor, pause and complete queue payload atomically from confi
   expect(queued[0].payload).toMatchObject({ executionVersion: 2, executionKind: "cluster", baseExecutionRevision: 0,
     parts: [{ reps: 4, weight: 100, status: "completed" }, { status: "pending" }, { status: "pending" }] });
 });
+
+it("corrects a cluster's shared weight without resetting the current rest or changing other repetitions", async () => {
+  await seed();
+  const first = await commitExecutionAction(action());
+  const steps = buildExecutionSteps(plan);
+  const next = action();
+  const second = await commitExecutionAction({ ...next, stepId: steps[1].id, expectedRevision: first.session.execution!.revision,
+    confirmedAt: { ...clock, wallMs: 22000, monotonicMs: 22000 }, values: { ...next.values, reps: "5" } });
+  const correction = action();
+  const saved = await commitExecutionAction({ ...correction, action: "correct", expectedRevision: second.session.execution!.revision,
+    values: { ...correction.values, weight: "97.5" } });
+  expect(saved.session.execution!.progress.rest).toEqual(second.session.execution!.progress.rest);
+  expect(saved.session.drafts[0].parts?.map(part => [part.id, part.reps, part.weight, part.status])).toEqual(
+    second.session.drafts[0].parts?.map(part => [part.id, part.reps, part.weight === null ? null : 97.5, part.status]),
+  );
+  expect((await db.syncQueue.get(correction.actionId))?.payload).toMatchObject({ parts: [
+    { reps: 4, weight: 97.5 }, { reps: 5, weight: 97.5 }, { status: "pending", weight: null },
+  ] });
+});
 it("storage failure rolls back result and cursor and never creates a rest", async () => {
   await seed();
   vi.spyOn(db.syncQueue, "add").mockRejectedValue(new Error("storage unavailable"));

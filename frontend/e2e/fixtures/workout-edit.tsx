@@ -40,6 +40,10 @@ const saved: Workout = {
   ],
 };
 const methodKind = new URLSearchParams(location.search).get("method");
+if (new URLSearchParams(location.search).has("zeroTarget")) {
+  saved.sets[0].reps = 0;
+  saved.sets[1].duration_sec = 0;
+}
 if (methodKind === "cluster") {
   const parts = [0, 1, 2].map(index => ({ id: ["99999999-9999-4999-8999-999999999999", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"][index],
     ordinal: index + 1, reps: index < 2 ? 4 : null, weight: index < 2 ? 100 : null, duration_sec: null,

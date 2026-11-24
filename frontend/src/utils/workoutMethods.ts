@@ -1,11 +1,32 @@
 /** Atomic preparation edits; a running workout keeps its own immutable snapshot. */
-import type { Exercise, WorkoutGroup, WorkoutPlan } from "@/types/workout";
+import type { Exercise, WorkoutGroup, WorkoutPlan, WorkoutPlanExercise, WorkoutSetMethod } from "@/types/workout";
 import { buildExecutionSteps } from "./workoutExecution";
 import { inferLoadType, defaultTimedSeconds } from "./exerciseLoadType";
 import { resolveInitialWorkoutTarget } from "./workoutTargets";
 
 export const workoutGroupLabels = { superset: "Суперсет", triset: "Трисет", circuit: "Круговая тренировка" } as const;
 export const workoutMethodLabels = { standard: "Обычные подходы", drop: "Дроп-сет", cluster: "Кластеры" } as const;
+
+export function nextDropWeight(weight: number | null | undefined, factor = 0.8): number | null {
+  if (!weight) return null;
+  const cents = Math.round(weight * 100);
+  const next = Math.min(cents - 1, Math.round(cents * factor));
+  return next > 0 ? next / 100 : null;
+}
+
+export function defaultWorkoutMethod(row: WorkoutPlanExercise, kind: WorkoutSetMethod["kind"], setNumber: number): WorkoutSetMethod {
+  const target = row.target?.kind === "weight_reps" ? row.target : null;
+  const baseWeight = target?.target_weight ?? row.suggested_weight;
+  const weight = baseWeight && baseWeight >= 0.01 && baseWeight <= 10000 ? Math.round(baseWeight * 100) / 100 : null;
+  const baseReps = target?.reps_min ?? Number(row.target_reps?.match(/^\d+/)?.[0]);
+  const reps = Number.isInteger(baseReps) && baseReps > 0 && baseReps <= 100000 ? baseReps : 10;
+  const second = nextDropWeight(weight);
+  const weights = kind === "drop" ? [weight, second, nextDropWeight(second, 0.75)] : [weight, weight, weight];
+  return { kind, set_number: setNumber, parts: weights.map((target_weight, index) => ({
+    target_reps: kind === "cluster" ? Math.min(reps, 4) : reps,
+    target_weight, pause_after_sec: kind === "cluster" && index < 2 ? 20 : 0,
+  })) };
+}
 
 export function configureWorkoutGroup(plan: WorkoutPlan, group: WorkoutGroup): WorkoutPlan {
   const selected = new Set(group.exercise_ids);

@@ -50,6 +50,30 @@ test("one saved set updates the day immediately and survives reopening", async (
   expect(stored.status).toBe("completed");
 });
 
+test("history notes can be edited without changing old zero reps or duration", async ({ page }) => {
+  await page.goto("/e2e/fixtures/workout-edit.html?zeroTarget");
+  const before = JSON.parse(await page.getByLabel("Сохранённая тренировка").textContent() || "{}");
+  const writes: Array<Record<string, unknown>> = [];
+  await page.route(`**/workouts/${before.id}/sets`, route => {
+    const payload = route.request().postDataJSON();
+    const row = before.sets.find((item: { exercise_id: string }) => item.exercise_id === payload.exercise_id);
+    writes.push(payload);
+    return route.fulfill({ json: { ...row, ...payload } });
+  });
+  const editor = page.getByRole("dialog", { name: "Изменить подход", exact: true });
+  for (const exercise of ["Гакк-приседания", "Планка"]) {
+    await page.getByRole("button", { name: `Изменить подход 1: ${exercise}`, exact: true }).click();
+    const addNote = editor.getByRole("button", { name: "Добавить примечание", exact: true });
+    if (await addNote.isVisible()) await addNote.click();
+    await editor.getByRole("textbox", { name: "Примечание (по желанию)", exact: true }).fill("Правка записи");
+    await editor.getByRole("button", { name: "Применить", exact: true }).click();
+    await expect(editor).toHaveCount(0);
+  }
+  expect(writes).toHaveLength(2);
+  expect(writes[0]).toMatchObject({ reps: 0, note: "Правка записи" });
+  expect(writes[1]).toMatchObject({ duration_sec: 0, note: "Правка записи" });
+});
+
 test("full day status colors remain readable in both themes and small viewports", async ({ page }, testInfo) => {
   await page.goto("/e2e/fixtures/workout-edit.html");
   for (const theme of ["light", "dark"]) {

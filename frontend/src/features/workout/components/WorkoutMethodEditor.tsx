@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Exercise, WorkoutPlanExercise, WorkoutSetMethod } from "@/types/workout";
 import { inferLoadType } from "@/utils/exerciseLoadType";
-import { workoutMethodLabels } from "@/utils/workoutMethods";
+import { defaultWorkoutMethod, nextDropWeight, workoutMethodLabels } from "@/utils/workoutMethods";
+import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { ProgramNumberField } from "./ProgramNumberField";
 import { methodRawKey, validMethodText, type PartField, type WorkoutRaw } from "./workoutEditorDraft";
 
@@ -21,6 +22,11 @@ export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: 
   const allowed = Boolean(exercise && inferLoadType(exercise) === "weight_reps");
   const locked = disabled || !allowed;
   const name = row.name_ru || exercise?.name_ru || "Упражнение";
+  const weightLabel = exercise ? exerciseWeightInput(exercise, row.weight_mode ?? undefined).label : "Рабочий вес, кг";
+  const invalidDrop = kind === "drop" && picked.some(method => {
+    const weights = method?.parts.flatMap(part => part.target_weight == null ? [] : [part.target_weight]) ?? [];
+    return weights.some((weight, index) => index > 0 && weight >= weights[index - 1]);
+  });
   const key = (slot: number, index: number, field: PartField) => methodRawKey(row.exercise_id, slot, index, field);
   function text(method: WorkoutSetMethod, index: number, field: PartField) { return raw[key(method.set_number, index, field)] ?? String(method.parts[index][field] ?? ""); }
   function input(index: number, field: PartField, label: string, ariaLabel: string) {
@@ -30,16 +36,11 @@ export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: 
       min={field === "target_reps" ? 1 : field === "target_weight" ? 0.01 : 0} max={field === "target_reps" ? 100000 : field === "target_weight" ? 10000 : 600}
       weight={field === "target_weight"} disabled={locked} presets={field === "pause_after_sec" ? [0, 20, 30] : undefined} onChange={value => editText(index, field, value)} />;
   }
-  function defaults(selectedKind: "drop" | "cluster", slot: number): WorkoutSetMethod {
-    return { set_number: slot, kind: selectedKind, parts: [0, 1, 2].map(i => ({ target_reps: selectedKind === "cluster" ? 4 : 10,
-      target_weight: row.suggested_weight ? Math.round(row.suggested_weight * (selectedKind === "drop" ? 1 - i * 0.2 : 1) * 100) / 100 : null,
-      pause_after_sec: selectedKind === "cluster" && i < 2 ? 20 : 0 })) };
-  }
   function changeKind(value: string) {
     const remaining = methods.filter(method => !slots.includes(method.set_number));
     const template = picked.find(method => method?.kind === value);
     const next = value === "standard" ? remaining : [...remaining, ...slots.map(slot => {
-      const common = template ?? defaults(value as "drop" | "cluster", slot);
+      const common = template ?? defaultWorkoutMethod(row, value as "drop" | "cluster", slot);
       return { ...common, set_number: slot, parts: common.parts.map(part => ({ ...part })) };
     })];
     const cleared = Object.fromEntries(Object.entries(raw).filter(([owner]) => !slots.some(slot => owner.startsWith(`${row.exercise_id}/method/${slot}/`))));
@@ -48,7 +49,7 @@ export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: 
   function edit(update: (method: WorkoutSetMethod) => WorkoutSetMethod, nextRaw = raw) {
     if (kind !== "drop" && kind !== "cluster") return;
     const remaining = methods.filter(method => !slots.includes(method.set_number));
-    onChange([...remaining, ...slots.map(slot => update(methods.find(method => method.set_number === slot) ?? defaults(kind, slot)))].sort((a, b) => a.set_number - b.set_number), nextRaw);
+    onChange([...remaining, ...slots.map(slot => update(methods.find(method => method.set_number === slot) ?? defaultWorkoutMethod(row, kind, slot)))].sort((a, b) => a.set_number - b.set_number), nextRaw);
   }
   function editText(index: number, field: PartField, value: string) {
     const nextRaw = { ...raw };
@@ -76,12 +77,13 @@ export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: 
       {!allowed ? <p className="text-xs text-tg-hint">Дроп-сет и кластеры доступны для упражнений с весом и повторами.</p> : null}
       {shown ? <>
         <p className="text-xs text-tg-hint">{kind === "cluster" ? "Части одного подхода с одинаковым весом." : "Части одного подхода с уменьшением веса."} Вес можно заполнить при выполнении; формат веса тот же, что в обычных подходах.</p>
-        {kind === "cluster" ? input(0, "target_weight", "Рабочий вес, кг", `Рабочий вес ${name}`) : null}
+        {invalidDrop ? <p role="alert" className="app-field-error">Укажите меньший вес для каждой следующей части дроп-сета.</p> : null}
+        {kind === "cluster" ? input(0, "target_weight", weightLabel, `Рабочий вес ${name}`) : null}
         {shown.parts.map((_, index) => <div key={index} className="border-t border-black/10 pt-2 dark:border-white/10">
           <p className="mb-2 text-xs font-medium">Часть {index + 1}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {input(index, "target_reps", "Повторы", `Повторы части ${index + 1} ${name}`)}
-            {kind === "drop" ? input(index, "target_weight", "Вес, кг", `Вес части ${index + 1} ${name}`) : null}
+            {kind === "drop" ? input(index, "target_weight", weightLabel, `Вес части ${index + 1} ${name}`) : null}
             {index < shown.parts.length - 1 ? input(index, "pause_after_sec", "Пауза, с", `Пауза после части ${index + 1} ${name}`) : null}
           </div>
           {index === shown.parts.length - 1 ? <p className="mt-2 text-xs text-tg-hint">Далее — следующий участник или отдых между подходами.</p> : null}
@@ -93,7 +95,7 @@ export function WorkoutMethodEditor({ row, exercise, disabled, raw, onChange }: 
             edit(method => {
             const last = method.parts[method.parts.length - 1];
             return { ...method, parts: [...method.parts.map((part, i) => i === method.parts.length - 1 ? { ...part, pause_after_sec: kind === "cluster" ? method.parts[0].pause_after_sec : 0 } : part),
-              { ...last, target_weight: kind === "drop" && last.target_weight ? Math.round(last.target_weight * 0.8 * 100) / 100 || null : last.target_weight, pause_after_sec: 0 }] };
+              { ...last, target_weight: kind === "drop" ? nextDropWeight(last.target_weight) : last.target_weight, pause_after_sec: 0 }] };
             }, nextRaw);
           }}>Добавить часть</button>
           <button type="button" disabled={locked || shown.parts.length <= 2} className="min-h-[44px] rounded-lg px-2 text-xs text-tg-hint" onClick={() => {

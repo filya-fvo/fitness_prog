@@ -47,6 +47,15 @@ test("V1 explicit zero displays and opens as zero, saves zero and reloads withou
   await expect(page.getByText("Без отдыха · таймер не запускается", { exact: true })).toBeVisible();
 });
 
+test("V1 modal saves the configured rest without starting it when the checkbox is off", async ({ page }) => {
+  const api = await openWorkout(page, "60");
+  await page.getByRole("button", { name: "Править", exact: true }).first().click();
+  await page.getByRole("checkbox", { name: /Запустить таймер/ }).uncheck();
+  await page.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect.poll(() => api.writes).toMatchObject([{ rest_time_sec: 60, is_completed: true }]);
+  await expect(page.getByRole("button", { name: /Открыть таймер/ })).toHaveCount(0);
+});
+
 test("V1 runtime rest permits clearing and typing bounded integers; invalid input blocks completion", async ({ page }) => {
   const api = await openWorkout(page, "60");
   const input = page.getByLabel("Отдых в секундах", { exact: true });

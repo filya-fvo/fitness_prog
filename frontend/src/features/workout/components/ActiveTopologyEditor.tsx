@@ -69,12 +69,14 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
   async function requestPreview(next?: Exercise) {
     if (!selection || inFlight.current) return;
     const adding = selection.action === "append_exercise";
+    const resizing = selection.action.startsWith("resize_");
     if (adding && !next) return;
     inFlight.current = true; setBusy(true); setError(null);
     const payload: ActiveWorkoutTopologyRequest = {
       operation_id: crypto.randomUUID(), action: selection.action, subject_id: adding && next ? next.id : selection.subject,
       expected_plan_revision: selection.revision,
-      ...(next ? (adding ? {} : { replacement_exercise_id: next.id }) : { target_count: Number(count) }),
+      ...(next && !adding ? { replacement_exercise_id: next.id } : {}),
+      ...(resizing ? { target_count: Number(count) } : {}),
     };
     try {
       await flushSyncQueue(owner);
@@ -141,6 +143,7 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
       <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_member", event.currentTarget)}>Заменить</button>
       {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_group", event.currentTarget)}>Заменить связку</button> : null}
       <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit(group ? "resize_group" : "resize_exercise", event.currentTarget)}>{group ? "Изменить раунды" : "Изменить подходы"}</button>
+      {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("dissolve_group", event.currentTarget)}>Распустить связку</button> : null}
     </div>
     {!open && error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
     {!online && !open ? <p className="text-xs text-tg-hint">Изменение плана доступно в сети.</p> : null}
@@ -149,7 +152,7 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
       <section ref={ref} tabIndex={-1} className="app-card max-h-[90dvh] w-full max-w-lg space-y-3 overflow-y-auto p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 id="active-topology-title" className="text-lg font-semibold">
-            {selection?.action === "append_exercise" ? "Добавить упражнение" : selection?.action === "replace_member" ? "Замена упражнения" : selection?.action === "replace_group" ? "Замена связки" : "Изменить текущую тренировку"}
+            {selection?.action === "append_exercise" ? "Добавить упражнение" : selection?.action === "replace_member" ? "Замена упражнения" : selection?.action === "replace_group" ? "Замена связки" : selection?.action === "dissolve_group" ? "Распустить связку" : "Изменить текущую тренировку"}
           </h2>
           <button type="button" disabled={busy || retry} className={button} onClick={close}>Закрыть</button>
         </div>
@@ -167,7 +170,10 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
           <WorkoutReplacementPicker source={selection.source} catalog={catalog} occupiedIds={occupiedIds}
             recommended={rankWorkoutReplacementOptions(selection.source, catalog, occupiedIds)}
             onChoose={item => void requestPreview(item)} />
-        </fieldset> : selection ? <>
+        </fieldset> : selection?.action === "dissolve_group" ? <>
+          <p className="text-sm">Упражнения будут выполняться по отдельности. Записанные подходы и настройки дроп-сетов и кластеров сохранятся.</p>
+          <button type="button" className={button} disabled={busy || !online} onClick={() => void requestPreview()}>Проверить изменение</button>
+        </> : selection ? <>
           <label className="block text-sm">{selection.action === "resize_group" ? "Число раундов" : "Число подходов"}
             <input className="app-field mt-1 block min-h-11 w-full text-base" type="number" min={1} max={20}
               disabled={busy} value={count} onChange={event => setCount(event.target.value)} />

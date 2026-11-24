@@ -141,6 +141,15 @@ describe("loadProgression", () => {
     expect(fromMedium.note).toMatch(/85% от 90 кг/i);
   });
 
+  it("uses the weight mode of the selected phase entry", () => {
+    const phase = resolveWeekPhase("2026-07-20", new Date(2026, 6, 20));
+    const history = {
+      exerciseId: "dumbbells", lastWeight: 50, lastReps: 10, lastDate: "2026-07-17", lastWeightMode: "total" as const,
+      phaseLoads: { heavy: { weight: 30, reps: 7, date: "2026-07-10", durationSec: null, weightMode: "per_hand" as const, machineParams: null, rpe: 8 } },
+    };
+    expect(suggestLoad({ history, phase })).toMatchObject({ weight: "21", weightMode: "per_hand" });
+  });
+
   it("uses 82.5% of heavy or 117.5% of light for a medium week", () => {
     const medium = resolveWeekPhase("2026-07-13", new Date(2026, 6, 20));
     const heavyHistory = {

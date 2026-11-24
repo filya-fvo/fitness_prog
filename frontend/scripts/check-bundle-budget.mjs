@@ -214,8 +214,10 @@ const limits = {
   // Schedule identity, retry handling and conflict messages measure 664582/607879
   // bytes in CI. Allow the measured growth with about 0.25 KB of headroom.
   // Per-date preparation drafts and retry controls add about 0.65 KB gzip.
-  totalJsGzip: 665_500,
-  productJsGzip: 608_800,
+  // Shared set entry, group ordering and active dissolution add about 1.5 KB
+  // gzip across existing lazy routes with the same dependency and vendor chunks.
+  totalJsGzip: 667_000,
+  productJsGzip: 610_300,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

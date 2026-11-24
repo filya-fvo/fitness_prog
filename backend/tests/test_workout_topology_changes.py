@@ -149,6 +149,27 @@ def workout_plan():
     })
 
 
+def test_dissolving_a_group_keeps_members_existing_slots_and_methods():
+    original = workout_plan().model_dump()
+    original["exercises"][0]["active_set_numbers"] = [2]
+    original["exercises"][1]["set_methods"] = [{"set_number": 1, "kind": "drop", "parts": [
+        {"target_reps": 8, "target_weight": 30, "pause_after_sec": 0},
+        {"target_reps": 7, "target_weight": 20, "pause_after_sec": 0},
+    ]}]
+    plan = WorkoutPlan.model_validate(original)
+    request = workout_topology.ActiveTopologyRequest(operation_id=OPERATION, action="dissolve_group", subject_id=GROUP)
+    rows = [step(30, B, 1, "completed", part=1), step(31, B, 1, "pending", part=2),
+            step(32, A, 2, "pending"), step(33, B, 2, "skipped"), step(34, OTHER, 1, "pending", group=None)]
+
+    projected = workout_topology.project_v2_topology(plan, rows, request, None)
+
+    assert projected.groups == []
+    assert projected.exercises == plan.exercises
+    with pytest.raises(HTTPException) as caught:
+        workout_topology.project_v2_topology(projected, rows, request, None)
+    assert caught.value.status_code == 409
+
+
 def test_v2_projection_replaces_an_untouched_group_member_without_carrying_load():
     request = workout_topology.ActiveTopologyRequest(
         operation_id=OPERATION, action="replace_member", subject_id=A, replacement_exercise_id=REPLACEMENT,

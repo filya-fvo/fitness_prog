@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { installTimingApi } from "./fixtures/workout-execution-api";
+import { installTimingApi, openPartEditor, openSetEditor, quickComplete } from "./fixtures/workout-execution-api";
 
 test("synthetic V1 missing-slot control reaches the real timed modal; durable values survive reload", async ({ page }) => {
   await installTimingApi(page);
@@ -43,7 +43,9 @@ test("online V2 timed start initializes95 from all server-seeded slots before hi
     weight: null, reps: null, duration_sec: 30, completed_date: "2026-10-19", weight_mode: null, machine_params: null, rpe: null }] } }));
   await page.goto("/e2e/fixtures/workout-method-runner.html?target=timed-v2");
   await expect(page.getByText("Цель: 95 с", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Время работы, с", { exact: true })).toHaveValue("95");
+  const editor = await openSetEditor(page);
+  await expect(editor.getByRole("combobox", { name: "Минуты: выбрать значение" })).toHaveValue("1");
+  await expect(editor.getByRole("combobox", { name: "Секунды: выбрать значение" })).toHaveValue("35");
   const persisted = await page.evaluate(async () => {
     const dbPath = "/src/db/schema.ts";
     const { db } = await import(/* @vite-ignore */ dbPath);
@@ -54,14 +56,17 @@ test("online V2 timed start initializes95 from all server-seeded slots before hi
   expect(persisted.session.workout.sets.every((set: { duration_sec: number | null; execution_revision: number; is_completed: boolean }) => set.duration_sec === null && set.execution_revision === 0 && !set.is_completed)).toBe(true);
   expect(persisted.session.drafts.every((draft: { durationSec: number | null; isCompleted: boolean }) => draft.durationSec === 95 && !draft.isCompleted)).toBe(true);
   await page.reload();
-  await expect(page.getByLabel("Время работы, с", { exact: true })).toHaveValue("95");
+  await openSetEditor(page);
+  await expect(editor.getByRole("combobox", { name: "Секунды: выбрать значение" })).toHaveValue("35");
 });
 
 test("method goals initialize forms while ordinary targets keep their range and facts stay separate", async ({ page }) => {
   await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?target=weight");
-  await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("4");
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("100");
+  const editor = await openPartEditor(page, 1);
+  await expect(editor.getByRole("combobox", { name: "Повторения: выбрать значение" })).toHaveValue("4");
+  await expect(editor.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveValue("100");
+  await editor.getByRole("button", { name: "Закрыть", exact: true }).click();
   const parts = await page.evaluate(async () => {
     const dbPath = "/src/db/schema.ts";
     const { db } = await import(/* @vite-ignore */ dbPath);
@@ -69,14 +74,16 @@ test("method goals initialize forms while ordinary targets keep their range and 
   });
   expect(parts).toHaveLength(3);
   expect(parts.every((part: { reps: number | null; weight: number | null; status: string }) => part.reps === null && part.weight === null && part.status === "pending")).toBe(true);
-  await page.getByRole("button", { name: "Записать часть", exact: true }).click();
+  await quickComplete(page).click();
   await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   await page.getByRole("button", { name: "Пропустить часть", exact: true }).click();
   await page.getByText("Все шаги и записи", { exact: true }).click();
   await page.getByRole("button", { name: /Жим штанги лёжа · 2Ожидает/ }).click();
   await expect(page.getByText("Цель: 12–15 повт. · 40 кг", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("12");
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("40");
+  await openSetEditor(page, 2);
+  await expect(editor.getByRole("combobox", { name: "Повторения: выбрать значение" })).toHaveValue("12");
+  await expect(editor.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveValue("40");
+  await editor.getByRole("button", { name: "Закрыть", exact: true }).click();
   const saved = await page.evaluate(async () => {
     const dbPath = "/src/db/schema.ts";
     const { db } = await import(/* @vite-ignore */ dbPath);
@@ -86,8 +93,11 @@ test("method goals initialize forms while ordinary targets keep their range and 
     return session.drafts;
   });
   await page.reload();
-  await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("");
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveValue("");
+  const secondSet = page.getByRole("list", { name: "Подходы упражнения" }).getByRole("listitem")
+    .filter({ has: page.getByText("Подход 2", { exact: true }) });
+  await expect(secondSet.getByRole("button", { name: "Готово", exact: true })).toBeDisabled();
+  await openSetEditor(page, 2);
+  await expect(editor.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveValue("");
   const restored = await page.evaluate(async () => {
     const dbPath = "/src/db/schema.ts";
     const { db } = await import(/* @vite-ignore */ dbPath);
@@ -101,6 +111,7 @@ test("reps-only explicit goal starts at the minimum without a weight input", asy
   await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?target=reps");
   await expect(page.getByText("Цель: 12–15 повт.", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Повторы", { exact: true })).toHaveValue("12");
-  await expect(page.getByLabel("Рабочий вес, кг", { exact: true })).toHaveCount(0);
+  const editor = await openSetEditor(page);
+  await expect(editor.getByRole("combobox", { name: "Повторения: выбрать значение" })).toHaveValue("12");
+  await expect(editor.getByRole("textbox", { name: "Точный вес, кг", exact: true })).toHaveCount(0);
 });

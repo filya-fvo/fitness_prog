@@ -4,7 +4,7 @@ import { invalidateWorkoutResponse, mapWorkout, workoutPlanSchema, workoutSchema
 
 export type ActiveWorkoutTopologyRequest = {
   operation_id: string;
-  action: "append_exercise" | "replace_member" | "replace_group" | "resize_exercise" | "resize_group";
+  action: "append_exercise" | "replace_member" | "replace_group" | "resize_exercise" | "resize_group" | "dissolve_group";
   subject_id: string;
   replacement_exercise_id?: string;
   target_count?: number;

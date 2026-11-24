@@ -106,14 +106,14 @@ export function WheelPicker({ label, value, options, onChange, format = String, 
   return (
     <div className={`block min-w-0 flex-1 text-center text-[11px] text-tg-hint ${className}`}>
       <span id={`${id}-label`}>{label}</span>
-      <div className="relative mt-1 h-[220px] overflow-hidden rounded-xl bg-tg-secondary">
+      <div className="relative mt-1 h-[220px] overflow-hidden rounded-xl bg-tg-secondary [@media(max-height:700px)]:h-[132px]">
         <div className="pointer-events-none absolute inset-x-2 top-1/2 z-10 h-11 -translate-y-1/2 rounded-lg border border-[var(--border-subtle)]" />
         <div ref={ref} role="listbox" tabIndex={0} aria-labelledby={`${id}-label`}
           aria-activedescendant={`${id}-option-${indexOf(value)}`}
           onKeyDown={onKeyDown} onScroll={onScroll}
           onPointerDown={() => { programmatic.current = false; }}
           onWheel={() => { programmatic.current = false; }}
-          className="h-full touch-pan-y snap-y snap-mandatory overflow-y-auto overscroll-contain py-[88px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tg-button [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="h-full touch-pan-y snap-y snap-mandatory overflow-y-auto overscroll-contain py-[88px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tg-button [-ms-overflow-style:none] [scrollbar-width:none] [@media(max-height:700px)]:py-11 [&::-webkit-scrollbar]:hidden"
           style={{ scrollSnapType: "y mandatory", WebkitOverflowScrolling: "touch" }}>
           {uniq.map((n, idx) => (
             <div key={n} id={`${id}-option-${idx}`} role="option" aria-selected={n === value}

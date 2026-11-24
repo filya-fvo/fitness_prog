@@ -21,7 +21,7 @@ test("typed preparation goals are read-only while legacy and supported edits per
   await page.getByRole("button", { name: "Сохранить подготовку", exact: true }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("prepared-patch")!).exercise_overrides)).toEqual([
     { exercise_id: "11111111-1111-4111-8111-000000000001", target_sets: 4, rest_sec: 75,
-      set_methods: [{ set_number: 4, kind: "cluster", parts: [20, 20, 0].map(pause_after_sec => ({ target_reps: 4, target_weight: null, pause_after_sec })) }] },
+      set_methods: [{ set_number: 4, kind: "cluster", parts: [20, 20, 0].map(pause_after_sec => ({ target_reps: 4, target_weight: 12.5, pause_after_sec })) }] },
     { exercise_id: "11111111-1111-4111-8111-000000000005", target_reps: "9-11" },
     { exercise_id: "11111111-1111-4111-8111-000000000006", target_reps: "120 с" },
   ]);

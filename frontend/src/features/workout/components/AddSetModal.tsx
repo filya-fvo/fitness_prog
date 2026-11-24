@@ -52,6 +52,12 @@ type Props = {
   busy?: boolean;
   error?: string | null;
   subtitle?: string;
+  applyLabel?: string;
+  applyDisabled?: boolean;
+  requireWeight?: boolean;
+  preserveBlankWeight?: boolean;
+  contextMessage?: string;
+  onRefresh?: () => void;
 };
 
 function splitWeight(w: number): { whole: number; tenth: number } {
@@ -78,6 +84,12 @@ export function AddSetModal({
   busy = false,
   error = null,
   subtitle,
+  applyLabel = "Применить",
+  applyDisabled = false,
+  requireWeight = false,
+  preserveBlankWeight = false,
+  contextMessage,
+  onRefresh,
 }: Props) {
   const dialogRef = useModalAccessibility(open, () => { if (!busy) onClose(); }, returnFocusTo);
   const fieldId = useId();
@@ -90,7 +102,7 @@ export function AddSetModal({
 
   const initWeight = Number(initial?.weight) || 0;
   const { whole: w0, tenth: t0 } = splitWeight(initWeight);
-  const initReps = Math.max(0, Math.round(initial?.reps ? Number(initial.reps) : 10));
+  const initReps = Math.max(0, Math.round(initial?.reps ? Number(initial.reps) : requireWeight ? 0 : 10));
   const initDur =
     initial?.durationSec ??
     defaultTimedSeconds(exercise);
@@ -99,7 +111,8 @@ export function AddSetModal({
   const [kgWhole, setKgWhole] = useState(w0);
   const [kgTenth, setKgTenth] = useState(t0);
   const [exactWeight, setExactWeight] = useState<number | null>(null);
-  const [weightValid, setWeightValid] = useState(true);
+  const [weightValid, setWeightValid] = useState(loadType !== "weight_reps" || !requireWeight || preserveBlankWeight || Boolean(initial?.weight));
+  const [weightChosen, setWeightChosen] = useState((!requireWeight && !preserveBlankWeight) || Boolean(initial?.weight));
   const [min, setMin] = useState(Math.floor(initDur / 60));
   const [sec, setSec] = useState(initDur % 60);
   const [noteOpen, setNoteOpen] = useState(Boolean(initial?.note));
@@ -120,8 +133,14 @@ export function AddSetModal({
   if (!open) return null;
 
   const durationSec = Math.max(0, min * 60 + sec);
+  const isTimed = loadType === "timed" || loadType === "cardio_machine";
+  const loadValue = isTimed ? durationSec : reps;
+  const loadField = isTimed ? "durationSec" : "reps";
+  const unchangedZero = editing && loadValue === 0 && !changedFields.includes(loadField) &&
+    (isTimed ? initial?.durationSec === 0 : initial?.reps === "0");
+  const validLoad = Number.isInteger(loadValue) && (loadValue >= 1 || unchangedZero) && loadValue <= (isTimed ? 86400 : 100000);
   const weightStr =
-    loadType === "weight_reps"
+    loadType === "weight_reps" && weightChosen
       ? exactWeight !== null ? String(exactWeight) : preserveWeightPrecision && initial?.weight && !changedFields.includes("weight") ? initial.weight
         : (Math.round((kgWhole + kgTenth / 10) * 10) / 10).toFixed(kgTenth ? 1 : 0).replace(/\.0$/, "")
       : "";
@@ -140,24 +159,25 @@ export function AddSetModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 pb-[max(.75rem,env(safe-area-inset-bottom),var(--tg-safe-area-inset-bottom,0px))] sm:items-center">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-busy={busy}
-        aria-labelledby="add-set-title"
+        aria-labelledby={`${fieldId}-title`}
         tabIndex={-1}
-        className="app-card app-card-hero max-h-[92vh] w-full max-w-md overflow-y-auto p-4 text-tg-text"
+        className="app-card app-card-hero flex max-h-[min(92dvh,calc(100dvh-1.5rem-var(--tg-safe-area-inset-top,0px)-var(--tg-safe-area-inset-bottom,0px)))] w-full max-w-md flex-col overflow-hidden text-tg-text"
       >
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 id="add-set-title" className="text-base font-semibold">{editing ? "Изменить подход" : "Добавить подход"}</h3>
+        <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-2">
+          <h3 id={`${fieldId}-title`} className="text-base font-semibold">{editing ? "Изменить подход" : "Добавить подход"}</h3>
           <button type="button" disabled={busy} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center text-sm text-tg-hint" onClick={onClose}>
             ✕
           </button>
         </div>
-        <p className="mb-3 text-xs text-tg-hint">{exercise.name_ru}{subtitle ? ` · ${subtitle}` : ""}</p>
+        <p className="mb-2 shrink-0 px-4 text-xs text-tg-hint">{exercise.name_ru}{subtitle ? ` · ${subtitle}` : ""}</p>
 
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-2">
         <fieldset disabled={busy} {...(busy ? { inert: "" } : {})}>
 
         {loadType === "weight_reps" ? (
@@ -170,7 +190,8 @@ export function AddSetModal({
             </div>
             <SetWeightSelector label={weightInput.label} hint={weightInput.hint} whole={kgWhole} tenth={kgTenth}
               displayWeight={exactWeight ?? (preserveWeightPrecision && initial?.weight && !changedFields.includes("weight") ? Number(initial.weight) : undefined)}
-              onChange={(whole, tenth, exact) => { setKgWhole(whole); setKgTenth(tenth); setExactWeight(exact ?? null); markChanged("weight"); }} onValidityChange={setWeightValid} previousWeight={initWeight} />
+              onChange={(whole, tenth, exact) => { setKgWhole(whole); setKgTenth(tenth); setExactWeight(exact ?? null); setWeightChosen(true); markChanged("weight"); }}
+              onValidityChange={setWeightValid} hasWeight={weightChosen} />
           </div>
           </div>
         ) : null}
@@ -217,6 +238,20 @@ export function AddSetModal({
           </div>
         ) : null}
 
+        <details className="mt-2 text-xs text-tg-hint">
+          <summary className="flex min-h-11 cursor-pointer items-center underline">Точный ввод {isTimed ? "времени" : "повторов"}</summary>
+          <label htmlFor={`${fieldId}-exact`}>{isTimed ? "Время работы, с" : "Точное число повторений"}</label>
+          <input id={`${fieldId}-exact`} type="number" inputMode="numeric" min={1} max={isTimed ? 86400 : 100000} step={1}
+            className="app-field mt-1 min-h-11 w-full text-base" value={(isTimed ? durationSec : reps) || ""}
+            onChange={event => {
+              const value = Number(event.target.value);
+              if (isTimed) {
+                setMin(Math.floor(value / 60)); setSec(value % 60); markChanged("durationSec");
+              } else {
+                setReps(value); markChanged("reps");
+              }
+            }} />
+        </details>
         <div className="mt-3 space-y-2">
           {!noteOpen ? (
             <button
@@ -235,6 +270,7 @@ export function AddSetModal({
                 onChange={(e) => { setNote(e.target.value); markChanged("note"); }}
                 placeholder="Добавить примечание (по желанию)"
                 rows={2}
+                maxLength={1000}
                 className="app-field mt-1 w-full"
               />
             </label>
@@ -286,12 +322,16 @@ export function AddSetModal({
         </div>
 
         </fieldset>
-        {error ? <p role="alert" className="mt-3 text-sm text-[var(--app-danger)]">{error}</p> : null}
+        </div>
+        <div className="shrink-0 space-y-2 px-4 pb-3 pt-2">
+        {contextMessage ? <p className="text-xs text-tg-hint">{contextMessage}</p> : null}
+        {error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
+        {onRefresh ? <button type="button" onClick={onRefresh} className="min-h-11 text-sm font-medium text-tg-link">Обновить форму</button> : null}
 
         <button
           type="button"
-          disabled={busy || !weightValid}
-          className="app-button app-gradient-action mt-4 w-full rounded-full"
+          disabled={busy || !weightValid || applyDisabled || !validLoad}
+          className="app-button app-gradient-action w-full rounded-full"
           onClick={() =>
             onApply({
               reps:
@@ -308,8 +348,9 @@ export function AddSetModal({
             })
           }
         >
-          {busy ? "Сохраняем…" : "Применить"}
+          {busy ? "Сохраняем…" : applyLabel}
         </button>
+        </div>
       </div>
     </div>
   );
