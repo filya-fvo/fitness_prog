@@ -87,6 +87,45 @@ for (const [width, height, theme] of [[375, 600, "dark"], [393, 740, "light"], [
   });
 }
 
+test("superset uses the ordinary workout navigation and action styles", async ({ page, browser }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await installTimingApi(page, false, false);
+  const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
+  const actionStyles = (workoutPage: Page) => Promise.all(
+    ["Добавить упражнение", "Заменить", "Таймер отдыха", "Как прошлый"].map(name =>
+      workoutPage.getByRole("button", { name, exact: true }).evaluate(button => {
+        const { borderRadius, backgroundColor, color, fontSize } = getComputedStyle(button);
+        return { borderRadius, backgroundColor, color, fontSize };
+      }),
+    ),
+  );
+
+  const ordinary = await browser.newContext({ viewport: { width: 320, height: 640 }, colorScheme: "light" });
+  let ordinaryStyles;
+  try {
+    const ordinaryPage = await ordinary.newPage();
+    await installTimingApi(ordinaryPage, false, false);
+    await ordinaryPage.goto("/e2e/fixtures/workout-method-runner.html?target=weight-v1");
+    await expect(ordinaryPage.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button")).toHaveText(["1"]);
+    ordinaryStyles = await actionStyles(ordinaryPage);
+  } finally {
+    await ordinary.close();
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergroup");
+  await expect(navigation.getByRole("button")).toHaveText(["1", "2"]);
+  const second = navigation.getByRole("button", { name: /Сгибания со штангой/ });
+  await expect(second).toHaveCSS("border-radius", "9999px");
+  expect(await actionStyles(page)).toEqual(ordinaryStyles);
+
+  const card = page.getByRole("article", { name: "Текущий шаг" });
+  await expect(card.getByRole("button", { name: "Заменить", exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Добавить упражнение", exact: true })).toHaveCount(0);
+  await second.click();
+  await expect(second).toHaveAttribute("aria-current", "true");
+  await expect(card.getByRole("heading", { name: "Сгибания со штангой" })).toBeVisible();
+});
+
 test("manual selection shows every superset exercise and records a later one", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 740 });
   const api = await installTimingApi(page, false, false);

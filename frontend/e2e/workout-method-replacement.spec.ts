@@ -135,8 +135,9 @@ test("appends a catalog exercise to the active workout and opens its standard se
   await expect(dialog).toHaveCount(0);
   await page.reload();
   const navigation = page.getByRole("navigation", { name: "Упражнения тренировки" });
-  await expect(navigation.getByRole("button").last()).toHaveText("3. Молитва");
-  await navigation.getByRole("button", { name: /Молитва/ }).click();
+  const addedExercise = navigation.getByRole("button", { name: "3. Молитва", exact: true });
+  await expect(addedExercise).toHaveText("3");
+  await addedExercise.click();
   await expect(page.getByRole("heading", { name: "Молитва", exact: true })).toBeVisible();
   await expect(page.getByRole("list", { name: "Подходы упражнения" }).getByRole("listitem")).toHaveCount(3);
   await page.getByRole("button", { name: "Править подход 1", exact: true }).click();

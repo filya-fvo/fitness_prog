@@ -20,14 +20,15 @@ import { cacheCompletedDraftHints, loadExerciseHints } from "@/db/workoutLoadHin
 import { AddSetModal } from "@/features/workout/components/AddSetModal";
 import { WorkoutRestControl } from "@/features/workout/components/WorkoutRestControl";
 import { validProgramNumber } from "@/features/workout/components/programNumbers";
-import { ExerciseMediaPlayer } from "@/features/workout/components/ExerciseMediaPlayer";
 import { ExerciseMediaTabs } from "@/features/workout/components/ExerciseMediaTabs";
-import { ExerciseProgressSection } from "@/features/workout/components/ExerciseProgressSection";
 import { PlusAccessSummary } from "@/features/subscription/components/PlusAccessSummary";
 import { hasPlus, isPlusRequiredError } from "@/features/subscription/subscriptionAccess";
 import { WorkoutReplacementPicker } from "@/features/workout/components/WorkoutReplacementPicker";
 import { rankWorkoutReplacementOptions } from "@/utils/exerciseAlternatives";
 import { WorkoutExecutionNavigator } from "@/features/workout/components/WorkoutExecutionNavigator";
+import { WorkoutExerciseNavigation } from "@/features/workout/components/WorkoutExerciseNavigation";
+import { WorkoutExerciseMedia } from "@/features/workout/components/WorkoutExerciseMedia";
+import { workoutActionStyles } from "@/features/workout/components/workoutActionStyles";
 import { exerciseWeightInput } from "@/utils/exerciseWeightRule";
 import { finishExecutionSession } from "@/db/workoutExecution";
 import { workoutClockSnapshot } from "@/utils/workoutRest";
@@ -1561,38 +1562,19 @@ export function ActiveWorkout() {
         </div>
       ) : null}
 
-      {!isV2 ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-        {exerciseIds.map((id, idx) => {
-          const name =
-            exerciseMap.get(id)?.name_ru ||
-            plan.exercises.find((e) => e.exercise_id === id)?.name_ru ||
-            `№${idx + 1}`;
-          const done = drafts.filter((d) => d.exerciseId === id).every((d) => d.isCompleted);
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                setCurrentExerciseIndex(idx);
-                if (activeWorkout) void persistSession(activeWorkout, drafts, idx);
-              }}
-              className={[
-                "tap-target shrink-0 rounded-full px-3 py-2 text-xs",
-                idx === currentExerciseIndex
-                  ? "app-gradient-action text-white"
-                  : done
-                    ? "bg-tg-secondary text-tg-hint"
-                    : "bg-tg-secondary",
-              ].join(" ")}
-            >
-              {simpleMode ? `${idx + 1}${done ? "✓" : ""}` : `${idx + 1}. ${name}`}
-            </button>
-          );
-        })}
-      </div> : null}
+      {!isV2 ? <div className="mb-3"><WorkoutExerciseNavigation currentId={exerciseIds[currentExerciseIndex]}
+        items={exerciseIds.map((id, idx) => ({
+          id,
+          name: exerciseMap.get(id)?.name_ru ?? plan.exercises.find(e => e.exercise_id === id)?.name_ru ?? "Упражнение",
+          done: drafts.some(d => d.exerciseId === id) && drafts.every(d => d.exerciseId !== id || d.isCompleted),
+          onSelect: () => {
+            setCurrentExerciseIndex(idx);
+            void persistSession(activeWorkout, drafts, idx);
+          },
+        }))} /></div> : null}
 
       {!isV2 && activeWorkout.status === "planned" ? <button type="button"
-        className="app-button app-ghost-action mb-3 min-h-11 w-full"
+        className={`${workoutActionStyles.addExercise} mb-3`}
         disabled={completing || Boolean(savingKey)}
         onClick={event => {
           if (completingSetsRef.current.size) return;
@@ -1628,7 +1610,7 @@ export function ActiveWorkout() {
             <div className="flex shrink-0 flex-col items-end gap-1">
               <button
                 type="button"
-                className="tap-target text-xs text-tg-link"
+                className={workoutActionStyles.replace}
                 onClick={() => {
                   setExercisePicker("replace");
                 }}
@@ -1661,7 +1643,7 @@ export function ActiveWorkout() {
               type="button"
               disabled={aiAssistLoading}
               onClick={() => void askAiForCurrent("replace")}
-              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+              className={workoutActionStyles.pill}
             >
               Замена
             </button>
@@ -1669,7 +1651,7 @@ export function ActiveWorkout() {
               type="button"
               disabled={aiAssistLoading}
               onClick={() => void askAiForCurrent("easier")}
-              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+              className={workoutActionStyles.pill}
             >
               Легче
             </button>
@@ -1677,7 +1659,7 @@ export function ActiveWorkout() {
               type="button"
               disabled={aiAssistLoading}
               onClick={() => void askAiForCurrent("no_equipment")}
-              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+              className={workoutActionStyles.pill}
             >
               Без инвентаря
             </button>
@@ -1685,42 +1667,13 @@ export function ActiveWorkout() {
               type="button"
               disabled={aiAssistLoading}
               onClick={() => void askAiForCurrent("technique")}
-              className="rounded-full bg-tg-bg px-2.5 py-1 text-[11px] text-tg-link disabled:opacity-50"
+              className={workoutActionStyles.pill}
             >
               Техника
             </button>
           </div>
 
-          {simpleMode && !moreOpen ? (
-            <div className="relative overflow-hidden rounded-xl">
-              <ExerciseMediaPlayer exercise={currentExercise} compact mediaOnly preview />
-              <button
-                type="button"
-                onClick={() => setMoreOpen(true)}
-                className="tap-target-x absolute right-2 top-2 rounded-lg bg-black/65 px-3 py-2 text-xs font-medium text-white"
-                aria-label={`Развернуть медиа и технику: ${currentExercise.name_ru}`}
-              >
-                Медиа и техника
-              </button>
-            </div>
-          ) : null}
-          {simpleMode && moreOpen ? (
-            <button
-              type="button"
-              onClick={() => setMoreOpen(false)}
-              className="w-full rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link"
-            >
-              Скрыть дополнительные настройки
-            </button>
-          ) : null}
-
-          {!simpleMode || moreOpen ? (
-            <ExerciseMediaTabs key={currentExercise.id} exercise={currentExercise} compact showTechnique />
-          ) : null}
-
-          {!simpleMode || moreOpen ? (
-            <ExerciseProgressSection exerciseId={currentExercise.id} exerciseName={currentExercise.name_ru} />
-          ) : null}
+          <WorkoutExerciseMedia exercise={currentExercise} simpleMode={simpleMode} moreOpen={moreOpen} setMoreOpen={setMoreOpen} />
 
           {!simpleMode || moreOpen ? (
             <WorkoutRestControl key={restInputKey(currentExercise.id)} seconds={currentRestSec} draft={restInputDrafts[restInputKey(currentExercise.id)]}
@@ -1781,7 +1734,7 @@ export function ActiveWorkout() {
                         <span className="text-xs text-tg-hint">✓</span>
                         <button
                           type="button"
-                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          className={workoutActionStyles.editSet}
                           disabled={invalidRestInput}
                           onClick={() => {
                             setEditingSetNumber(draft.setNumber);
@@ -1795,7 +1748,7 @@ export function ActiveWorkout() {
                       <>
                         <button
                           type="button"
-                          className="tap-target-x min-h-[44px] rounded-lg bg-tg-secondary px-3 py-2 text-xs font-medium"
+                          className={workoutActionStyles.editSet}
                           disabled={invalidRestInput}
                           onClick={() => {
                             setEditingSetNumber(draft.setNumber);
@@ -1816,7 +1769,7 @@ export function ActiveWorkout() {
                             void completeSet(draft.exerciseId, draft.setNumber);
                           }}
                           className={[
-                            "app-button app-gradient-action tap-target-x rounded-lg px-3 disabled:opacity-50",
+                            workoutActionStyles.completeSet,
                             isFocus ? "min-h-[52px] px-5 text-sm" : "min-h-[44px] py-2 text-xs",
                           ].join(" ")}
                         >
@@ -1855,7 +1808,7 @@ export function ActiveWorkout() {
                 });
                 startRest(currentRestSec);
               }}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-tg-bg text-lg"
+              className={workoutActionStyles.timer}
               disabled={invalidRestInput}
               aria-label="Таймер отдыха"
               title="Таймер"
@@ -1915,7 +1868,7 @@ export function ActiveWorkout() {
                 setEditingSetNumber(null);
                 setAddSetOpen(true);
               }}
-              className="rounded-full bg-tg-secondary px-3 py-3 text-xs font-semibold"
+              className={workoutActionStyles.repeat}
             >
               Как прошлый
             </button>
@@ -1937,7 +1890,7 @@ export function ActiveWorkout() {
             <div className="flex gap-2">
               <button
                 type="button"
-                className="flex-1 rounded-xl bg-tg-bg px-3 py-2.5 text-xs font-medium text-tg-link"
+                className={`${workoutActionStyles.details} flex-1`}
                 onClick={() => setMoreOpen(true)}
               >
                 Ещё: замена, отдых, медиа
@@ -1945,7 +1898,7 @@ export function ActiveWorkout() {
               {!isLastExercise ? (
                 <button
                   type="button"
-                  className="rounded-xl bg-tg-bg px-3 py-2.5 text-xs text-tg-hint"
+                  className={workoutActionStyles.skip}
                   onClick={() => void (async () => {
                     if (!await confirmAction("Пропустить это упражнение и перейти к следующему?")) return;
                     nextExercise();

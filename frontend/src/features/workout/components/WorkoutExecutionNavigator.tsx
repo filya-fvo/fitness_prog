@@ -7,13 +7,13 @@ import type { Exercise, LocalSetDraft, WorkoutPlan, WorkoutPlanExercise } from "
 import { executionRestNeedsConfirmation, remainingRestMs, type RestKind } from "@/utils/workoutRest";
 import { useWorkoutExecution } from "../hooks/useWorkoutExecution";
 import { ExecutionSetList } from "./ExecutionSetList";
-import { ExerciseMediaTabs } from "./ExerciseMediaTabs";
-import { ExerciseMediaPlayer } from "./ExerciseMediaPlayer";
-import { ExerciseProgressSection } from "./ExerciseProgressSection";
+import { WorkoutExerciseMedia } from "./WorkoutExerciseMedia";
 import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
 import { formatDurationLabel, inferLoadType } from "@/utils/exerciseLoadType";
 import { AddSetModal } from "./AddSetModal";
-import { ActiveTopologyEditor } from "./ActiveTopologyEditor";
+import { ActiveTopologyEditor, type TopologyControls } from "./ActiveTopologyEditor";
+import { WorkoutExerciseNavigation } from "./WorkoutExerciseNavigation";
+import { workoutActionStyles } from "./workoutActionStyles";
 import { WorkoutRestControl } from "./WorkoutRestControl";
 import { validProgramNumber } from "./programNumbers";
 import { enumLabel } from "@/utils/localization";
@@ -149,18 +149,21 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
     if (!values || executionInputError(selected, base, values, currentExercise)) { void openEditor(selected, opener); return; }
     void applyQuickResult(selected, base, { ...values, note: base.note, restTimeSec: base.restTimeSec });
   };
-  return <section className="space-y-3" aria-label="Выполнение тренировки">
+  const renderWorkout = (controls?: TopologyControls) => <section className="space-y-3" aria-label="Выполнение тренировки">
     {controller.error ? <p role="alert" className="app-card p-3 text-sm text-red-500">{controller.error}</p> : null}
-    <nav aria-label="Упражнения тренировки" className="flex gap-2 overflow-x-auto pb-1">
-      {[...plan.exercises].sort((a, b) => a.order - b.order).map((item, index) => {
+    <WorkoutExerciseNavigation currentId={step?.exerciseId}
+      items={[...plan.exercises].sort((a, b) => a.order - b.order).map(item => {
         const available = controller.steps.filter(candidate => candidate.exerciseId === item.exercise_id);
-        const target = available.find(candidate => execution.progress.facts[candidate.id] === "pending") ?? available[0];
-        const name = item.name_ru ?? catalog.find(candidate => candidate.id === item.exercise_id)?.name_ru ?? `Упражнение ${index + 1}`;
-        return <button key={item.exercise_id} type="button" disabled={!target} aria-current={item.exercise_id === step?.exerciseId ? "true" : undefined}
-          className={`${btn} shrink-0 ${item.exercise_id === step?.exerciseId ? "app-gradient-action text-white" : "bg-tg-secondary"}`}
-          onClick={() => { if (target) void controller.show(target.id); }}>{index + 1}. {name}</button>;
-      })}
-    </nav>
+        const pending = available.find(candidate => execution.progress.facts[candidate.id] === "pending");
+        const target = pending ?? available[0];
+        return {
+          id: item.exercise_id,
+          name: item.name_ru ?? catalog.find(candidate => candidate.id === item.exercise_id)?.name_ru ?? "Упражнение",
+          done: available.length > 0 && available.every(candidate => execution.progress.facts[candidate.id] === "completed"),
+          onSelect: target ? () => void controller.show(target.id) : undefined,
+        };
+      })} />
+    {controls?.add}
     {rest ? <section className="app-card app-card-hero space-y-2 p-4" aria-label="Отдых">
       <p className="text-xs font-semibold uppercase tracking-wide text-tg-hint">{restLabels[rest.restKind]}</p>
       {uncertain ? <p role="status" className="text-sm">Время устройства изменилось. Подтвердите окончание отдыха, чтобы продолжить.</p> : seconds > 0 ? <output aria-label="Осталось отдыха" className="block text-4xl font-semibold tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</output> : <p role="status" className="font-semibold">Отдых завершён</p>}
@@ -171,32 +174,26 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
     {!controller.next ? <p role="status" className="app-card p-4 text-sm">Все шаги обработаны. Можно проверить записи и завершить тренировку.</p> : execution.progress.manualContinue ? <p role="status" className="app-card p-3 text-sm">Шаг пропущен. Продолжите, когда будете готовы.</p> : null}
     {controller.next && step?.id !== controller.next.id && !blockedRest ? <button className={`${btn} w-full`} onClick={() => void controller.show(controller.next!.id)}>К текущему шагу</button> : null}
     {step && row && draft ? <article className="app-card app-card-indigo space-y-3 p-4" aria-label="Текущий шаг">
-      <div><p className="text-xs text-tg-hint">{group ? `${groupLabels[group.kind]} · круг ${step.round} из ${group.rounds}` : `Подход ${step.setNumber} из ${row.target_sets}`}</p>
+      <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs text-tg-hint">{group ? `${groupLabels[group.kind]} · круг ${step.round} из ${group.rounds}` : `Подход ${step.setNumber} из ${row.target_sets}`}</p>
         <h2 className="mt-1 font-medium">{row.name_ru ?? exercise?.name_ru ?? "Упражнение"}</h2>
         {exercise?.muscle_group ? <p className="mt-0.5 text-xs font-medium text-tg-link">{enumLabel(exercise.muscle_group)}</p> : null}
         {step.partOrdinal ? <><p className="mt-2 font-medium">Часть {step.partOrdinal} из {draft.parts?.length}</p><p className="text-xs text-tg-hint">{step.kind === "cluster" ? "Кластер" : "Дроп-сет"} · подход {step.setNumber}</p></> : null}
         {row.target ? <p className="mt-1 text-xs text-tg-hint">Цель: {resolveInitialWorkoutTarget({ row, part: step.partOrdinal == null ? undefined : row.set_methods?.find(method => method.set_number === step.setNumber)?.parts[step.partOrdinal - 1] }).label}</p> : null}
-        {suggestion?.note ? <p className="mt-1 text-xs text-tg-hint">{suggestion.note}</p> : null}</div>
-      {exercise && simpleMode && !moreOpen ? <div className="relative overflow-hidden rounded-xl">
-        <ExerciseMediaPlayer exercise={exercise} compact mediaOnly preview />
-        <button type="button" onClick={() => setMoreOpen(true)} aria-label={`Развернуть медиа и технику: ${exercise.name_ru}`}
-          className="tap-target-x absolute right-2 top-2 rounded-lg bg-black/65 px-3 py-2 text-xs font-medium text-white">
-          Медиа и техника
-        </button>
-      </div> : null}
-      {exercise && (!simpleMode || moreOpen) ? <>
-        {simpleMode ? <button type="button" className={`${btn} w-full text-tg-link`} onClick={() => setMoreOpen(false)}>Скрыть дополнительные настройки</button> : null}
-        <ExerciseMediaTabs key={exercise.id} exercise={exercise} compact showTechnique />
-        <ExerciseProgressSection exerciseId={exercise.id} exerciseName={exercise.name_ru} />
-      </> : null}
-      {owner && client && server && workout.status === "planned" ? <ActiveTopologyEditor owner={owner} client={client} server={server}
-        plan={plan} row={row} group={group} exercise={exercise} activeRest={blockedRest}
-        onOpenChange={setTopologyOpen} confirmDiscardInput={controller.prepareModal} /> : null}
+        {suggestion?.note ? <p className="mt-1 text-[11px] text-tg-hint">{suggestion.note}</p> : null}</div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {controls?.replace}
+          {simpleMode && exercise ? <button type="button" className="tap-target text-xs text-tg-hint"
+            aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)}>{moreOpen ? "Скрыть" : "Ещё"}</button> : null}
+        </div>
+      </div>
+      {controls?.settings}
+      {exercise ? <WorkoutExerciseMedia exercise={exercise} simpleMode={simpleMode} moreOpen={moreOpen} setMoreOpen={setMoreOpen} /> : null}
       {controller.next && execution.progress.facts[step.id] === "pending" && (!simpleMode || moreOpen) ? <WorkoutRestControl
         seconds={restSeconds} draft={restChoice}
         label={currentPause?.restKind ? restLabels[currentPause.restKind] : "Таймер отдыха"}
         hint={currentPause?.restKind ? "Для текущего подхода или части." : "Для ручного таймера."}
         onChange={value => setRestChoices(current => ({ ...current, [step.id]: value }))} /> : null}
+      {(!simpleMode || moreOpen) && exercise?.common_mistakes ? <p className="text-xs text-tg-hint">Частые ошибки: {exercise.common_mistakes}</p> : null}
       {exercise ? <ExecutionSetList exercise={exercise} row={row}
         drafts={drafts.filter(item => item.exerciseId === row.exercise_id).sort((a, b) => a.setNumber - b.setNumber)}
         steps={controller.steps.filter(item => item.exerciseId === row.exercise_id)} facts={execution.progress.facts}
@@ -205,13 +202,22 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
         onComplete={(selected, base, values) => void applyQuickResult(selected, base, values)} />
         : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
       {earlierPartPending ? <p className="text-sm text-tg-hint">Сначала запишите или пропустите предыдущую часть этого подхода.</p> : null}
-      {execution.progress.facts[step.id] === "pending" ? <div className="flex flex-wrap gap-2">
-        <button type="button" className={btn} disabled={controller.busy || blockedRest || !restValid || !restSeconds} onClick={() => void controller.startTimer(restSeconds)}>Таймер отдыха</button>
-        {exercise ? <button type="button" className={btn} disabled={controller.busy || blockedRest || earlierPartPending || !restValid}
-          onClick={event => repeatPrevious(step, draft, exercise, event.currentTarget)}>Как прошлый</button> : null}
-        {simpleMode && !moreOpen && exercise ? <button type="button" className={btn} onClick={() => setMoreOpen(true)}>Ещё: отдых, медиа</button> : null}
-        <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
-        {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}
+      {execution.progress.facts[step.id] === "pending" ? <>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className={workoutActionStyles.timer} aria-label="Таймер отдыха" title="Таймер"
+            disabled={controller.busy || blockedRest || !restValid || !restSeconds} onClick={() => void controller.startTimer(restSeconds)}>⏱</button>
+          {exercise ? <button type="button" className={workoutActionStyles.repeat} disabled={controller.busy || blockedRest || earlierPartPending || !restValid}
+            onClick={event => repeatPrevious(step, draft, exercise, event.currentTarget)}>Как прошлый</button> : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {simpleMode && !moreOpen && exercise ? <button type="button" className={`${workoutActionStyles.details} flex-1`}
+            onClick={() => setMoreOpen(true)}>Ещё: отдых, медиа</button> : null}
+          <button type="button" className={workoutActionStyles.skip} disabled={controller.busy || blockedRest || earlierPartPending}
+            onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
+          {step.partOrdinal ? <button type="button" className={workoutActionStyles.skip} disabled={controller.busy || blockedRest || earlierPartPending}
+            onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}
+        </div>
+      </> : null}
     </article> : null}
     {last ? <button className={`${btn} w-full`} disabled={controller.busy} onClick={() => void controller.act("undo", last.stepId, undefined, last.actionId)}>Отменить последнее действие</button> : null}
     {editingStep && modalStep && modalDraft && modalExercise && modalTarget ? <AddSetModal key={`${modalStep.id}:${formVersion}`} open exercise={modalExercise}
@@ -240,4 +246,11 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
       return <li key={item.id}><button className={`${btn} w-full text-left ${item.id === step?.id ? "bg-tg-hint/10" : ""}`} aria-current={item.id === step?.id ? "step" : undefined} onClick={() => void controller.show(item.id)}>{name} · {item.setNumber}{item.partOrdinal ? `.${item.partOrdinal}` : ""}<span className="ml-2 text-xs text-tg-hint">{fact === "completed" ? "Выполнено" : fact === "skipped" ? "Пропущено" : "Ожидает"}</span></button></li>;
     })}</ol>{limit < controller.steps.length ? <button className={`${btn} mt-2 w-full`} onClick={() => setLimit(value => value + 20)}>Показать ещё</button> : null}</details>
   </section>;
+
+  return owner && client && server && row && workout.status === "planned" ?
+    <ActiveTopologyEditor owner={owner} client={client} server={server}
+      plan={plan} row={row} group={group} exercise={exercise} activeRest={blockedRest}
+      onOpenChange={setTopologyOpen} confirmDiscardInput={controller.prepareModal}>
+      {renderWorkout}
+    </ActiveTopologyEditor> : renderWorkout();
 }

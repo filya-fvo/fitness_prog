@@ -218,8 +218,9 @@ const limits = {
   // gzip across existing lazy routes with the same dependency and vendor chunks.
   // Structured timers, previous results and check-in replay add about 2.4 KB
   // gzip without enlarging the vendor or admin budgets.
-  totalJsGzip: 669_400,
-  productJsGzip: 612_700,
+  // Shared workout navigation and action layout add about 0.44 KB gzip.
+  totalJsGzip: 669_850,
+  productJsGzip: 613_100,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

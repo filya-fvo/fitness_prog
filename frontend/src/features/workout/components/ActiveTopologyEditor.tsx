@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import axios from "axios";
 import {
   applyActiveWorkoutTopology, previewActiveWorkoutTopology,
@@ -13,17 +13,21 @@ import { isOnline } from "@/utils/network";
 import { toUserMessage } from "@/utils/errors";
 import { rankWorkoutReplacementOptions } from "@/utils/exerciseAlternatives";
 import { WorkoutReplacementPicker } from "./WorkoutReplacementPicker";
+import { workoutActionStyles } from "./workoutActionStyles";
+
+export type TopologyControls = { add: ReactNode; replace: ReactNode; settings: ReactNode };
 
 type Props = {
   owner: string; client: string; server: string; plan: WorkoutPlan; row: WorkoutPlanExercise;
   group?: WorkoutGroup; exercise?: Exercise; activeRest: boolean; onOpenChange: (open: boolean) => void;
   confirmDiscardInput: () => Promise<boolean>;
+  children: (controls: TopologyControls) => ReactNode;
 };
 type Action = ActiveWorkoutTopologyRequest["action"];
 type Selection = { action: Action; subject: string; revision: number; source?: Exercise; opener: HTMLButtonElement };
 const button = "min-h-11 rounded-xl border border-tg-hint/25 px-3 text-sm disabled:opacity-40";
 
-export function ActiveTopologyEditor({ owner, client, server, plan, row, group, exercise, activeRest, onOpenChange, confirmDiscardInput }: Props) {
+export function ActiveTopologyEditor({ owner, client, server, plan, row, group, exercise, activeRest, onOpenChange, confirmDiscardInput, children }: Props) {
   const catalog = useWorkoutStore(state => state.catalog);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [count, setCount] = useState("");
@@ -137,16 +141,24 @@ export function ActiveTopologyEditor({ owner, client, server, plan, row, group, 
     setCount(String(group?.rounds ?? row.target_sets)); setError(null);
   }
 
+  const actionButton = (action: Action, label: string, className: string) => (
+    <button type="button" className={className} disabled={controlsDisabled}
+      onClick={event => void edit(action, event.currentTarget)}>{label}</button>
+  );
   return <>
-    <div className="flex flex-wrap gap-2" aria-label="Настройки текущей тренировки">
-      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("append_exercise", event.currentTarget)}>Добавить упражнение</button>
-      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_member", event.currentTarget)}>Заменить</button>
-      {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("replace_group", event.currentTarget)}>Заменить связку</button> : null}
-      <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit(group ? "resize_group" : "resize_exercise", event.currentTarget)}>{group ? "Изменить раунды" : "Изменить подходы"}</button>
-      {group ? <button type="button" className={button} disabled={controlsDisabled} onClick={event => void edit("dissolve_group", event.currentTarget)}>Распустить связку</button> : null}
-    </div>
-    {!open && error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
-    {!online && !open ? <p className="text-xs text-tg-hint">Изменение плана доступно в сети.</p> : null}
+    {children({
+      add: actionButton("append_exercise", "Добавить упражнение", workoutActionStyles.addExercise),
+      replace: actionButton("replace_member", "Заменить", workoutActionStyles.replace),
+      settings: <>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Настройки текущей тренировки">
+          {group ? actionButton("replace_group", "Заменить связку", workoutActionStyles.pill) : null}
+          {actionButton(group ? "resize_group" : "resize_exercise", group ? "Изменить раунды" : "Изменить подходы", workoutActionStyles.pill)}
+          {group ? actionButton("dissolve_group", "Распустить связку", workoutActionStyles.pill) : null}
+        </div>
+        {!open && error ? <p role="alert" className="text-sm text-[var(--app-danger)]">{error}</p> : null}
+        {!online && !open ? <p className="text-xs text-tg-hint">Изменение плана доступно в сети.</p> : null}
+      </>,
+    })}
     {open ? <div role="dialog" aria-modal="true" aria-labelledby="active-topology-title"
       className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 sm:items-center">
       <section ref={ref} tabIndex={-1} className="app-card max-h-[90dvh] w-full max-w-lg space-y-3 overflow-y-auto p-4">

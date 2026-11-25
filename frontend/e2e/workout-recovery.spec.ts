@@ -158,7 +158,10 @@ legal_status: legalStatus(),
   expect(workoutRequests).toBe(1);
 
   await page.setViewportSize({ width: 320, height: 700 });
-  for (const name of ["Зал", "1", "ИИ", "Ещё"]) {
+  const exercise = page.getByRole("navigation", { name: "Упражнения тренировки" })
+    .getByRole("button", { name: "1. Тестовый жим", exact: true });
+  await expect(exercise).toHaveText("1");
+  for (const name of ["Зал", "1. Тестовый жим", "ИИ", "Ещё"]) {
     await expectMinimumTouchTarget(page.getByRole("button", { name, exact: true }));
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

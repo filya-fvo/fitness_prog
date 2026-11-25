@@ -1,6 +1,7 @@
 import type { Exercise, LocalSetDraft, WorkoutPlanExercise } from "@/types/workout";
 import { executionInputError, executionSetInput, executionSetLabel, type ExecutionLoadSuggestion } from "@/utils/executionSetInput";
 import type { ExecutionFacts, ExecutionStep } from "@/utils/workoutExecution";
+import { workoutActionStyles } from "./workoutActionStyles";
 
 type Props = {
   exercise: Exercise;
@@ -23,7 +24,7 @@ export function ExecutionSetList({ exercise, row, drafts, steps, facts, viewedId
       const entries = steps.filter(step => step.setNumber === draft.setNumber);
       const method = entries[0]?.kind;
       if (!entries.length) return null;
-      return <li key={draft.setNumber} className="space-y-1 rounded-xl p-2 text-sm">
+      return <li key={draft.setNumber} className="space-y-1 text-sm">
         {method !== "standard" ? <p className="px-1 text-xs font-medium text-tg-hint">
           Подход {draft.setNumber} · {method === "cluster" ? "Кластер" : "Дроп-сет"}
         </p> : null}
@@ -35,17 +36,17 @@ export function ExecutionSetList({ exercise, row, drafts, steps, facts, viewedId
           const input = executionSetInput(entry, draft, row, exercise, suggestion);
           const label = entry.partOrdinal === null ? `Подход ${entry.setNumber}` : `Часть ${entry.partOrdinal}`;
           const editLabel = entry.partOrdinal === null ? `Править подход ${entry.setNumber}` : `Править часть ${entry.partOrdinal}`;
-          return <div key={entry.id} aria-current={viewed ? "step" : undefined} className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg px-2 py-1.5 ${viewed ? "ring-2 ring-tg-button/40" : ""}`}>
+          return <div key={entry.id} aria-current={viewed ? "step" : undefined} className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-xl px-3 py-2 ${viewed ? "ring-2 ring-tg-button/40" : ""}`}>
             <div className="min-w-0 flex-1 basis-24">
               <p className="text-xs text-tg-hint">{label}{status === "completed" ? <span aria-label="Выполнено" className="ml-1">✓</span> : null}</p>
-              <p className="font-medium">{status === "skipped" ? "Пропущено" : blockedPart ? "Ожидает" : executionSetLabel(exercise, input)}</p>
+              <p className={`font-medium ${viewed ? "text-base" : ""}`}>{status === "skipped" ? "Пропущено" : blockedPart ? "Ожидает" : executionSetLabel(exercise, input)}</p>
             </div>
             {status !== "skipped" ? <div className="flex flex-wrap items-center gap-1.5">
-              <button type="button" aria-label={editLabel} disabled={busy || blockedPart} className="min-h-11 rounded-lg bg-tg-secondary px-2.5 text-xs font-medium disabled:opacity-40"
+              <button type="button" aria-label={editLabel} disabled={busy || blockedPart} className={workoutActionStyles.editSet}
                 onClick={event => onEdit(entry, event.currentTarget)}>Править</button>
               {(viewed || entry.kind === "standard") && status === "pending" ? <button type="button" disabled={busy || resting || blockedPart || invalidRestIds.includes(entry.id) || executionInputError(entry, draft, input, exercise) !== null}
                 aria-label={viewed ? undefined : `Готово: подход ${entry.setNumber}`}
-                className="app-button app-gradient-action min-h-11 rounded-lg px-2.5 py-1 text-xs disabled:opacity-50"
+                className={`${workoutActionStyles.completeSet} ${viewed ? "min-h-[52px] px-5 text-sm" : "min-h-[44px] py-2 text-xs"}`}
                 onClick={() => onComplete(entry, draft, input)}>Готово</button> : null}
             </div> : null}
           </div>;
