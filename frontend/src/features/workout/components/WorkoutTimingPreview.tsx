@@ -4,7 +4,7 @@ import { pluralRu } from "@/utils/localization";
 import { workoutPreparationError, preparedTimeSeconds } from "@/utils/workoutMethods";
 import type { WorkoutPlan, Exercise } from "@/types/workout";
 import { buildExecutionTimingPreview } from "@/utils/workoutExecution";
-const reasons = { cluster: "между частями", drop_transition: "смена веса", group_transition: "переход", round: "после раунда", between_sets: "между подходами", between_blocks: "перед следующим блоком" };
+const reasons = { cluster: "между частями", drop_transition: "смена веса", group_transition: "переход", round: "после раунда", between_sets: "между подходами", between_blocks: "перед следующим блоком", manual: "отдыха" };
 export function WorkoutTimingPreview({ plan, catalog = [] }: { plan: WorkoutPlan; catalog?: Exercise[] }) {
   const [visible, setVisible] = useState(36);
   const error = workoutPreparationError(plan);

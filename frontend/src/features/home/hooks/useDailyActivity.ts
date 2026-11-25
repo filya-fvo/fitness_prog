@@ -4,6 +4,7 @@ import { getStoredToken } from "@/api/client";
 import { fetchDailyMetrics, saveDailyMetrics } from "@/api/dailyMetrics";
 import { fetchWaterLog, saveWaterLog } from "@/api/notifications";
 import { trackEvent } from "@/lib/analytics";
+import { syncCheckin } from "@/lib/checkinSync";
 import { toast } from "@/store/toastStore";
 import { useUserStore } from "@/store/userStore";
 import {
@@ -110,13 +111,14 @@ export function useDailyActivity(date?: string): DailyActivity {
       .then(([metrics, water]) => {
         if (cancelled) return;
         if (water.daily_target_ml != null) setWaterTargetMl(water.daily_target_ml);
+        const latest = getHabitDay(selectedDate, ownerUserId);
+        const keepLocalMetrics = local.metricsPending || latest.metricsPending || local.metricsRevision !== latest.metricsRevision;
         const merged: HabitDay = {
-          ...local,
-          waterMl: local.waterPending ? local.waterMl : Number(water.ml) || 0,
-          waterPending: local.waterPending,
-          sleepHours: metrics.sleep_minutes != null ? metrics.sleep_minutes / 60 : local.sleepHours,
-          steps: metrics.steps ?? local.steps ?? null,
-          activeMinutes: metrics.active_minutes ?? local.activeMinutes ?? null,
+          ...latest,
+          waterMl: latest.waterPending ? latest.waterMl : Number(water.ml) || 0,
+          sleepHours: keepLocalMetrics || metrics.sleep_minutes == null ? latest.sleepHours : metrics.sleep_minutes / 60,
+          steps: keepLocalMetrics ? latest.steps : metrics.steps ?? latest.steps ?? null,
+          activeMinutes: keepLocalMetrics ? latest.activeMinutes : metrics.active_minutes ?? latest.activeMinutes ?? null,
         };
         setDay(cacheHabitDay(merged, ownerUserId));
         setSleep(valueOrEmpty(merged.sleepHours));
@@ -126,11 +128,11 @@ export function useDailyActivity(date?: string): DailyActivity {
           (metrics.sleep_minutes == null && local.sleepHours != null) ||
           (metrics.steps == null && local.steps != null) ||
           (metrics.active_minutes == null && local.activeMinutes != null);
-        if (hasOfflineMetrics) {
+        if (hasOfflineMetrics && !keepLocalMetrics && useUserStore.getState().user?.id === ownerUserId) {
           void saveDailyMetrics({
-            sleepMinutes: merged.sleepHours != null ? Math.round(merged.sleepHours * 60) : null,
-            steps: merged.steps ?? null,
-            activeMinutes: merged.activeMinutes ?? null,
+            sleepMinutes: metrics.sleep_minutes == null && merged.sleepHours != null ? Math.round(merged.sleepHours * 60) : undefined,
+            steps: metrics.steps == null ? merged.steps ?? undefined : undefined,
+            activeMinutes: metrics.active_minutes == null ? merged.activeMinutes ?? undefined : undefined,
           }, selectedDate).catch(() => null);
         }
         if (merged.waterPending) syncPendingWater(selectedDate);
@@ -165,16 +167,13 @@ export function useDailyActivity(date?: string): DailyActivity {
       sleepHours,
       steps: stepsValue == null ? null : Math.round(stepsValue),
       activeMinutes: activeValue == null ? null : Math.round(activeValue),
+      metricsPending: Boolean(ownerUserId),
+      metricsRevision: ownerUserId ? crypto.randomUUID() : undefined,
     }, ownerUserId);
     setDay(next);
     setSaving(true);
     try {
-      if (getStoredToken() && isOnline()) {
-        await saveDailyMetrics({
-          sleepMinutes: next.sleepHours != null ? Math.round(next.sleepHours * 60) : null,
-          steps: next.steps ?? null,
-          activeMinutes: next.activeMinutes ?? null,
-        }, selectedDate);
+      if (ownerUserId && await syncCheckin(ownerUserId, selectedDate)) {
         toast("Показатели сохранены");
       } else {
         toast("Сохранено на устройстве — синхронизируем позже", "info");

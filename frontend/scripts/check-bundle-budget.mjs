@@ -216,8 +216,10 @@ const limits = {
   // Per-date preparation drafts and retry controls add about 0.65 KB gzip.
   // Shared set entry, group ordering and active dissolution add about 1.5 KB
   // gzip across existing lazy routes with the same dependency and vendor chunks.
-  totalJsGzip: 667_000,
-  productJsGzip: 610_300,
+  // Structured timers, previous results and check-in replay add about 2.4 KB
+  // gzip without enlarging the vendor or admin budgets.
+  totalJsGzip: 669_400,
+  productJsGzip: 612_700,
   // Saved filters, group export, program editor and controlled exercise-media upload
   // remain isolated in admin routes, including the new subscription controls.
   // The required-reason GIF rejection dialog adds 0.55 KB to AdminExercises only.

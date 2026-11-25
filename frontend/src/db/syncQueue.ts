@@ -28,6 +28,7 @@ import {
   type ProfileUpdatePayload,
 } from "@/db/profileUpdate";
 import { db, type SyncQueueItem } from "@/db/schema";
+import { retryPendingCheckins } from "@/lib/checkinSync";
 import { syncItemBelongsToUser, workoutsForUser } from "@/db/userScope";
 import { useUserStore } from "@/store/userStore";
 import { useWorkoutStore } from "@/store/workoutStore";
@@ -606,14 +607,16 @@ async function processQueueItem(item: SyncQueueItem, ownerUserId: string): Promi
 
 export function startSyncListeners(ownerUserId: string): () => void {
   const onOnline = () => {
+    retryPendingCheckins(ownerUserId);
     void flushSyncQueue(ownerUserId, { retryFailed: true });
   };
   window.addEventListener("online", onOnline);
   // A Funnel/API outage can leave navigator.onLine=true. Opening the app again
   // is an explicit recovery signal, so previously exhausted items get one more cycle.
-  void flushSyncQueue(ownerUserId, { retryFailed: true });
+  onOnline();
   // Periodic background flush while app is open (covers "online but queue stuck")
   const timer = window.setInterval(() => {
+    retryPendingCheckins(ownerUserId);
     if (navigator.onLine) void flushSyncQueue(ownerUserId);
   }, 20_000);
   return () => {

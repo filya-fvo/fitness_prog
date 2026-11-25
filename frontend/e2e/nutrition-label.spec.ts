@@ -166,7 +166,7 @@ legal_status: acceptedLegalStatus(USER_ID),
   await expect(addDialog.getByText(/Заполните ккал и БЖУ/)).toBeVisible();
 });
 
-test("unknown barcode offers label, rescan and manual product entry", async ({ page }) => {
+for (const rescan of [false, true]) test(rescan ? "rescan and label photo do not reuse the old barcode" : "unknown barcode offers label, rescan and manual product entry", async ({ page }) => {
   let createdProductBody: Record<string, unknown> | null = null;
   await page.addInitScript(() => localStorage.setItem("fitness_jwt", "e2e-token"));
   await page.route("**/users/me", async (route) => route.fulfill({
@@ -235,6 +235,24 @@ legal_status: acceptedLegalStatus(USER_ID),
 
   await expect(page.getByText(/пока не найден в каталоге/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Сканировать ещё раз" })).toBeVisible();
+  if (rescan) {
+    await page.route("**/nutrition/label/recognize", route => route.fulfill({ json: {
+      recognized: true, name_ru: "Другой продукт", calories_kcal: 81, proteins_g: 5.2, fats_g: 2.5, carbs_g: 9.1,
+      confidence: 0.92,
+    } }));
+    await page.getByRole("button", { name: "Сканировать ещё раз" }).click();
+    await scanner.getByRole("button", { name: "Этикетка" }).click();
+    await page.getByRole("dialog", { name: "Фото этикетки" }).locator('input[type="file"]').setInputFiles({
+      name: "label.png", mimeType: "image/png",
+      buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+    });
+    const review = page.getByRole("dialog", { name: "Проверьте этикетку" });
+    await expect(review.getByLabel("Название")).toHaveValue("Другой продукт");
+    await review.getByRole("button", { name: "Создать и выбрать" }).click();
+    await expect.poll(() => createdProductBody).toMatchObject({ name_ru: "Другой продукт" });
+    expect(createdProductBody).not.toHaveProperty("barcode");
+    return;
+  }
   await page.getByRole("button", { name: "Ввести вручную" }).click();
   const manualDialog = page.getByRole("dialog", { name: "Новый продукт" });
   await expect(manualDialog).toBeVisible();

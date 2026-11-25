@@ -42,7 +42,7 @@ export function useModalAccessibility<T extends HTMLElement = HTMLDivElement>(
 
     const frame = window.requestAnimationFrame(() => {
       const dialog = dialogRef.current;
-      if (!dialog) return;
+      if (!dialog || dialog.contains(document.activeElement)) return;
       const preferred = dialog.querySelector<HTMLElement>("[data-autofocus]");
       preferred?.focus();
       if (!preferred) (focusableElements(dialog)[0] ?? dialog).focus();

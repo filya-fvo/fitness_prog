@@ -43,6 +43,8 @@ type Props = {
   }) => void;
   /** Manual timer without completing a set */
   onStartTimerOnly?: (seconds: number) => void;
+  timerOnlyDisabled?: boolean;
+  showAutoTimer?: boolean;
   defaultRestSec?: number;
   editing?: boolean;
   allowCompletionChange?: boolean;
@@ -75,6 +77,8 @@ export function AddSetModal({
   returnFocusTo,
   onApply,
   onStartTimerOnly,
+  timerOnlyDisabled = false,
+  showAutoTimer = true,
   defaultRestSec = 60,
   editing = false,
   allowCompletionChange = editing,
@@ -134,6 +138,7 @@ export function AddSetModal({
 
   const durationSec = Math.max(0, min * 60 + sec);
   const isTimed = loadType === "timed" || loadType === "cardio_machine";
+  const timerOnlySeconds = isTimed ? durationSec || restSec : restSec;
   const loadValue = isTimed ? durationSec : reps;
   const loadField = isTimed ? "durationSec" : "reps";
   const unchangedZero = editing && loadValue === 0 && !changedFields.includes(loadField) &&
@@ -276,8 +281,8 @@ export function AddSetModal({
             </label>
           )}
 
-          {showTimerControls ? <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-xs">
-            <label htmlFor={`${fieldId}-rest`} className="text-tg-hint">Отдых после подхода</label>
+          {showTimerControls && (showAutoTimer || !isTimed) ? <div className="flex items-center justify-between gap-2 rounded-xl bg-tg-secondary px-3 py-2 text-xs">
+            <label htmlFor={`${fieldId}-rest`} className="text-tg-hint">{showAutoTimer ? "Отдых после подхода" : "Длительность таймера"}</label>
             <select
               id={`${fieldId}-rest`}
               value={restSec}
@@ -297,7 +302,7 @@ export function AddSetModal({
             Подход выполнен
           </label> : null}
 
-          {showTimerControls ? <label className="flex min-h-11 items-center gap-2 text-xs text-tg-hint">
+          {showTimerControls && showAutoTimer ? <label className="flex min-h-11 items-center gap-2 text-xs text-tg-hint">
             <input
               type="checkbox"
               checked={startTimer}
@@ -309,12 +314,9 @@ export function AddSetModal({
           {showTimerControls && onStartTimerOnly ? (
             <button
               type="button"
-              className="min-h-11 w-full rounded-xl bg-white/10 px-3 py-2 text-sm"
-              onClick={() =>
-                onStartTimerOnly(
-                  loadType === "timed" || loadType === "cardio_machine" ? durationSec || restSec : restSec,
-                )
-              }
+              disabled={timerOnlyDisabled || timerOnlySeconds === 0}
+              className="min-h-11 w-full rounded-xl bg-white/10 px-3 py-2 text-sm disabled:opacity-50"
+              onClick={() => onStartTimerOnly(timerOnlySeconds)}
             >
               ⏱ Только таймер
             </button>
@@ -343,7 +345,7 @@ export function AddSetModal({
               note: note.trim() || null,
               machineParams: machineParams(),
               restTimeSec: restSec,
-              startTimer: showTimerControls && startTimer,
+              startTimer: showTimerControls && showAutoTimer && startTimer,
               ...(editing ? { isCompleted, changedFields } : {}),
             })
           }

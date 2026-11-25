@@ -39,6 +39,9 @@ _SECTION_END_RE = re.compile(
     re.IGNORECASE,
 )
 _VALUE_AFTER_LABEL_RE = re.compile(r"^[\s:;=–—-]*(?:\([гg]\)\s*)?" + _NUMBER_RE)
+_PER_100_RE = re.compile(r"(?:на|в|per)\s*100\s*(?:г(?:р)?|g|мл|ml)\b", re.IGNORECASE)
+_SERVING_RE = re.compile(r"(?:порц\w*|serving)[^\d]{0,20}" + _NUMBER_RE + r"\s*(?:г|g|мл|ml)\b", re.IGNORECASE)
+_SERVING_COLUMN_RE = re.compile(r"\b(?:порци[яию]|serving|portion)\b", re.IGNORECASE)
 _LOCAL_OCR_HOSTS = {"ocr", "localhost", "127.0.0.1", "::1"}
 
 
@@ -165,20 +168,46 @@ def parse_ocr_text(text: str, *, ocr_confidence: float = 0.0) -> NutritionLabelR
     normalized = re.sub(r"[ \t]+", " ", text.replace("\u00a0", " ")).strip()
     lines = _nutrition_lines(normalized)
     joined = "\n".join(lines).casefold()
-    values = {field: _line_value(lines, field) for field in _NUTRIENT_PATTERNS}
-    calories = _energy_kcal(lines)
-
-    basis_100 = re.search(r"(?:на|в|per)\s*100\s*(?:г(?:р)?|g|мл|ml)\b", joined)
+    basis_100 = _PER_100_RE.search(joined)
     if not basis_100:
         basis_100 = re.search(
             r"пищев\w*\s+ценност\w*\s*100\s*(?:г(?:р)?|мл)\b", joined
         )
-    serving_match = re.search(
-        r"(?:порц\w*|serving)[^\d]{0,20}" + _NUMBER_RE + r"\s*(?:г|g|мл|ml)\b",
-        joined,
-    )
+    serving_match = _SERVING_RE.search(joined)
     serving = _decimal(serving_match.group(1)) if serving_match else None
     warnings: list[str] = []
+    for index, header in enumerate(lines):
+        if not (_PER_100_RE.search(header) and _SERVING_COLUMN_RE.search(header)):
+            continue
+        columns = header.split("|")
+        if len(columns) != 2 or sum(bool(_PER_100_RE.search(column)) for column in columns) != 1:
+            warnings.append("Не удалось разделить столбцы «на порцию» и «на 100 г/мл».")
+            lines = []
+            break
+        per_100_column = 0 if _PER_100_RE.search(columns[0]) else 1
+        selected_lines = []
+        for line in lines[index + 1 :]:
+            cells = [cell.strip() for cell in line.split("|")]
+            if len(cells) == 3:
+                selected_lines.append(f"{cells[0]} {cells[per_100_column + 1]}")
+            elif len(cells) == 2 and re.search(r"\d", cells[0]) and re.match(r"\d", cells[1]):
+                label = re.split(r"\d", cells[0], maxsplit=1)[0]
+                selected_lines.append(cells[0] if per_100_column == 0 else f"{label}{cells[1]}")
+        if not selected_lines:
+            warnings.append("Не удалось разделить значения по столбцам этикетки.")
+        lines = selected_lines
+        break
+    else:
+        if basis_100 and _SERVING_COLUMN_RE.search(joined) and any(
+            (len(list(_NUTRIENT_LABEL_RE.finditer(line))) == 1 and len(re.findall(_NUMBER_RE, line)) > 1)
+            or len(re.findall(_NUMBER_RE + r"\s*(?:ккал|kcal)", line, re.IGNORECASE)) > 1
+            or len(re.findall(_NUMBER_RE + r"\s*(?:кдж|kj)", line, re.IGNORECASE)) > 1
+            for line in lines
+        ):
+            warnings.append("Не удалось разделить столбцы «на порцию» и «на 100 г/мл».")
+            lines = []
+    values = {field: _line_value(lines, field) for field in _NUTRIENT_PATTERNS}
+    calories = _energy_kcal(lines)
     basis_label: str | None = None
     factor = 1.0
     if basis_100:

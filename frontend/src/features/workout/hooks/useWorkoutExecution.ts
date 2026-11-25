@@ -2,7 +2,7 @@ import { liveQuery } from "dexie";
 import { db } from "@/db/schema";
 import { assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, changeExecutionRest, finishExecutionSession, showExecutionStep,
+import { initializeExecutionSession, commitExecutionAction, claimExecutionSignal, changeExecutionRest, finishExecutionSession, showExecutionStep, startExecutionTimer,
   type ExecutionValues } from "@/db/workoutExecution";
 import { flushSyncQueue } from "@/db/syncQueue";
 import type { LocalWorkoutSession } from "@/db/schema";
@@ -149,6 +149,18 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
     } catch (err) { if (current === generation.current) setError(toUserMessage(err, "Не удалось изменить отдых")); }
     finally { if (current === generation.current) { busyRef.current = false; setBusy(false); } }
   }, [apply, client, owner]);
+  const startTimer = useCallback(async (seconds: number) => {
+    if (!owner || !client || busyRef.current || seconds === 0) return false;
+    const current = generation.current;
+    busyRef.current = true; setBusy(true); setError(null);
+    try {
+      const session = await startExecutionTimer(owner, client, crypto.randomUUID(), seconds, workoutClockSnapshot());
+      return apply(session, current);
+    } catch (err) {
+      if (current === generation.current) setError(toUserMessage(err, "Не удалось запустить таймер"));
+      return false;
+    } finally { if (current === generation.current) { busyRef.current = false; setBusy(false); } }
+  }, [apply, client, owner]);
   const show = useCallback(async (stepId: string) => {
     if (!owner || !client || busyRef.current) return;
     if (useWorkoutStore.getState().execution?.viewStepId === stepId) return;
@@ -178,7 +190,7 @@ export function useWorkoutExecution(enabled: boolean, autoAdvance: boolean) {
   const steps = useMemo(() => enabled && plan?.exercises.length ? buildExecutionSteps(plan) : [], [enabled, plan]);
   const viewed = steps.find(step => step.id === execution?.viewStepId) ?? steps.find(step => step.id === execution?.progress.cursor) ?? null;
   const next = steps.find(step => step.id === execution?.progress.cursor) ?? null;
-  return { ready, busy, error, clock, execution, steps, viewed, next, act, restAction, show, finish, prepareModal,
+  return { ready, busy, error, clock, execution, steps, viewed, next, act, restAction, startTimer, show, finish, prepareModal,
     markEditing: (value: boolean) => { editing.current = value; }, reload };
 }
 export type WorkoutExecutionController = ReturnType<typeof useWorkoutExecution>;

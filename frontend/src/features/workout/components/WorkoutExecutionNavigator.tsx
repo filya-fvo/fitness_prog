@@ -11,15 +11,17 @@ import { ExerciseMediaTabs } from "./ExerciseMediaTabs";
 import { ExerciseMediaPlayer } from "./ExerciseMediaPlayer";
 import { ExerciseProgressSection } from "./ExerciseProgressSection";
 import { resolveInitialWorkoutTarget } from "@/utils/workoutTargets";
-import { formatDurationLabel } from "@/utils/exerciseLoadType";
+import { formatDurationLabel, inferLoadType } from "@/utils/exerciseLoadType";
 import { AddSetModal } from "./AddSetModal";
 import { ActiveTopologyEditor } from "./ActiveTopologyEditor";
+import { WorkoutRestControl } from "./WorkoutRestControl";
+import { validProgramNumber } from "./programNumbers";
 import { enumLabel } from "@/utils/localization";
 import { resolveExecutionTransition, type ExecutionStep } from "@/utils/workoutExecution";
 import { executionInputError, executionSetInput } from "@/utils/executionSetInput";
 import { suggestLoad, type ExerciseHistoryBest, type WeekPhaseMeta } from "@/utils/loadProgression";
 
-const restLabels: Record<RestKind, string> = { cluster: "Между кластерами", drop_transition: "Смена веса", group_transition: "Переход к упражнению", round: "После круга", between_sets: "Между подходами", between_blocks: "Перед следующим блоком" };
+const restLabels: Record<RestKind, string> = { cluster: "Между кластерами", drop_transition: "Смена веса", group_transition: "Переход к упражнению", round: "После круга", between_sets: "Между подходами", between_blocks: "Перед следующим блоком", manual: "Таймер" };
 const groupLabels = { superset: "Суперсет", triset: "Трисет", circuit: "Круговая тренировка" };
 type Props = {
   autoAdvance: boolean;
@@ -43,6 +45,7 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
   const [formVersion, setFormVersion] = useState(0);
   const [modalError, setModalError] = useState<string | null>(null);
   const [topologyOpen, setTopologyOpen] = useState(false);
+  const [restChoices, setRestChoices] = useState<Record<string, string>>({});
   const [history, setHistory] = useState<{ id: string; value: ExerciseHistoryBest } | null>(null);
   const step = controller.viewed;
   const viewedExerciseId = step?.exerciseId;
@@ -82,10 +85,18 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
   const modalTarget = modalStep && modalDraft && modalExercise && modalRow ? executionSetInput(modalStep, modalDraft, modalRow, modalExercise, suggestion) : null;
   const liveModalDraft = modalStep && drafts.find(item => item.exerciseId === modalStep.exerciseId && item.setNumber === modalStep.setNumber);
   const staleModal = Boolean(editingStep && (client !== editingStep.clientId || !liveModalDraft || JSON.stringify(liveModalDraft) !== editingStep.baseDraft));
-  const preview = modalStep && !editingStep?.recorded && owner && client && !blockedRest ? resolveExecutionTransition({
-    plan, ...execution.progress, stepId: modalStep.id, action: "complete", actionId: "preview",
+  const previewPause = (target: ExecutionStep) => owner && client ? resolveExecutionTransition({
+    plan, ...execution.progress, rest: null, stepId: target.id, action: "complete", actionId: "preview",
     owner, clientWorkoutId: client, confirmedAt: controller.clock, allowOutOfOrder: true,
   }) : null;
+  const preview = modalStep && !editingStep?.recorded ? previewPause(modalStep) : null;
+  const currentPause = step ? previewPause(step) : null;
+  const restChoice = step ? restChoices[step.id] : undefined;
+  const restValid = restChoice === undefined || validProgramNumber(restChoice, 0, 600);
+  const restSeconds = restChoice !== undefined && restValid ? Number(restChoice) : currentPause?.restKind ? currentPause.durationSec : Math.min(600, draft?.restTimeSec ?? 60);
+  const modalChoice = modalStep ? restChoices[modalStep.id] : undefined;
+  const modalRest = modalChoice !== undefined && validProgramNumber(modalChoice, 0, 600)
+    ? Number(modalChoice) : preview?.restKind ? preview.durationSec : Math.min(600, modalDraft?.restTimeSec ?? 60);
   const modalContext = editingStep?.recorded ? modalStep?.kind === "cluster"
     ? "Вес изменится во всех записанных частях кластера."
     : "Исправление результата не запускает отдых заново."
@@ -112,6 +123,32 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
     await controller.show(selected.id);
     snapshotEditor(selected, opener);
   };
+  const applyQuickResult = (selected: ExecutionStep, base: LocalSetDraft, values: LocalSetDraft) => {
+    const selectedRest = restChoices[selected.id];
+    if (selectedRest !== undefined && !validProgramNumber(selectedRest, 0, 600)) return;
+    return persistResult(selected, base, {
+      ...values, durationSec: values.durationSec ?? null,
+      restTimeSec: selectedRest === undefined || !previewPause(selected)?.restKind ? undefined : Number(selectedRest),
+    });
+  };
+  const repeatPrevious = (selected: ExecutionStep, base: LocalSetDraft, currentExercise: Exercise, opener: HTMLButtonElement) => {
+    const previous = controller.steps.filter(candidate => candidate.exerciseId === selected.exerciseId &&
+      candidate.kind === selected.kind && execution.progress.facts[candidate.id] === "completed" &&
+      (candidate.setNumber < selected.setNumber && candidate.partOrdinal === selected.partOrdinal ||
+        selected.kind === "cluster" && candidate.setNumber === selected.setNumber && candidate.partOrdinal! < selected.partOrdinal!)).at(-1);
+    const source = previous && drafts.find(item => item.exerciseId === previous.exerciseId && item.setNumber === previous.setNumber);
+    const past = history?.id === selected.exerciseId ? history.value : null;
+    const load = inferLoadType(currentExercise);
+    const timed = load === "timed" || load === "cardio_machine";
+    const values = previous && source && row ? executionSetInput(previous, source, row, currentExercise)
+      : selected.kind === "standard" && past?.lastDate ? {
+        ...base, reps: timed ? "" : String(past.lastReps), weight: load === "weight_reps" ? String(past.lastWeight) : "",
+        weightMode: load === "weight_reps" ? past.lastWeightMode ?? null : null,
+        durationSec: timed ? past.lastDurationSec ?? null : null, machineParams: load === "cardio_machine" ? past.lastMachineParams ?? null : null,
+      } : null;
+    if (!values || executionInputError(selected, base, values, currentExercise)) { void openEditor(selected, opener); return; }
+    void applyQuickResult(selected, base, { ...values, note: base.note, restTimeSec: base.restTimeSec });
+  };
   return <section className="space-y-3" aria-label="Выполнение тренировки">
     {controller.error ? <p role="alert" className="app-card p-3 text-sm text-red-500">{controller.error}</p> : null}
     <nav aria-label="Упражнения тренировки" className="flex gap-2 overflow-x-auto pb-1">
@@ -127,7 +164,7 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
     {rest ? <section className="app-card app-card-hero space-y-2 p-4" aria-label="Отдых">
       <p className="text-xs font-semibold uppercase tracking-wide text-tg-hint">{restLabels[rest.restKind]}</p>
       {uncertain ? <p role="status" className="text-sm">Время устройства изменилось. Подтвердите окончание отдыха, чтобы продолжить.</p> : seconds > 0 ? <output aria-label="Осталось отдыха" className="block text-4xl font-semibold tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</output> : <p role="status" className="font-semibold">Отдых завершён</p>}
-      {nextRow ? <p className="text-sm text-tg-hint">Далее: {nextRow.name_ru ?? catalog.find(row => row.id === nextRow.exercise_id)?.name_ru ?? "Упражнение"}{controller.next?.partOrdinal ? ` · часть ${controller.next.partOrdinal}` : ` · подход ${controller.next?.setNumber}`}</p> : null}
+      {nextRow && rest.restKind !== "manual" ? <p className="text-sm text-tg-hint">Далее: {nextRow.name_ru ?? catalog.find(row => row.id === nextRow.exercise_id)?.name_ru ?? "Упражнение"}{controller.next?.partOrdinal ? ` · часть ${controller.next.partOrdinal}` : ` · подход ${controller.next?.setNumber}`}</p> : null}
       <div className="flex gap-2">{seconds > 0 && !uncertain ? <button className={btn} disabled={controller.busy} onClick={() => void controller.restAction(15)}>+15 с</button> : null}
         <button className={btn} disabled={controller.busy} onClick={() => { if (!blockedRest && controller.next) void controller.show(controller.next.id); else void controller.restAction(); }}>{blockedRest ? "Закончить отдых" : "Продолжить"}</button></div>
     </section> : null}
@@ -138,7 +175,8 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
         <h2 className="mt-1 font-medium">{row.name_ru ?? exercise?.name_ru ?? "Упражнение"}</h2>
         {exercise?.muscle_group ? <p className="mt-0.5 text-xs font-medium text-tg-link">{enumLabel(exercise.muscle_group)}</p> : null}
         {step.partOrdinal ? <><p className="mt-2 font-medium">Часть {step.partOrdinal} из {draft.parts?.length}</p><p className="text-xs text-tg-hint">{step.kind === "cluster" ? "Кластер" : "Дроп-сет"} · подход {step.setNumber}</p></> : null}
-        {row.target ? <p className="mt-1 text-xs text-tg-hint">Цель: {resolveInitialWorkoutTarget({ row, part: step.partOrdinal == null ? undefined : row.set_methods?.find(method => method.set_number === step.setNumber)?.parts[step.partOrdinal - 1] }).label}</p> : null}</div>
+        {row.target ? <p className="mt-1 text-xs text-tg-hint">Цель: {resolveInitialWorkoutTarget({ row, part: step.partOrdinal == null ? undefined : row.set_methods?.find(method => method.set_number === step.setNumber)?.parts[step.partOrdinal - 1] }).label}</p> : null}
+        {suggestion?.note ? <p className="mt-1 text-xs text-tg-hint">{suggestion.note}</p> : null}</div>
       {exercise && simpleMode && !moreOpen ? <div className="relative overflow-hidden rounded-xl">
         <ExerciseMediaPlayer exercise={exercise} compact mediaOnly preview />
         <button type="button" onClick={() => setMoreOpen(true)} aria-label={`Развернуть медиа и технику: ${exercise.name_ru}`}
@@ -154,21 +192,36 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
       {owner && client && server && workout.status === "planned" ? <ActiveTopologyEditor owner={owner} client={client} server={server}
         plan={plan} row={row} group={group} exercise={exercise} activeRest={blockedRest}
         onOpenChange={setTopologyOpen} confirmDiscardInput={controller.prepareModal} /> : null}
+      {controller.next && execution.progress.facts[step.id] === "pending" && (!simpleMode || moreOpen) ? <WorkoutRestControl
+        seconds={restSeconds} draft={restChoice}
+        label={currentPause?.restKind ? restLabels[currentPause.restKind] : "Таймер отдыха"}
+        hint={currentPause?.restKind ? "Для текущего подхода или части." : "Для ручного таймера."}
+        onChange={value => setRestChoices(current => ({ ...current, [step.id]: value }))} /> : null}
       {exercise ? <ExecutionSetList exercise={exercise} row={row}
         drafts={drafts.filter(item => item.exerciseId === row.exercise_id).sort((a, b) => a.setNumber - b.setNumber)}
         steps={controller.steps.filter(item => item.exerciseId === row.exercise_id)} facts={execution.progress.facts}
         viewedId={step.id} busy={controller.busy} resting={blockedRest} suggestion={suggestion} onEdit={(selected, opener) => void openEditor(selected, opener)}
-        onComplete={(selected, base, values) => void persistResult(selected, base, { ...values, durationSec: values.durationSec ?? null })} />
+        invalidRestIds={Object.keys(restChoices).filter(id => !validProgramNumber(restChoices[id], 0, 600))}
+        onComplete={(selected, base, values) => void applyQuickResult(selected, base, values)} />
         : <p role="alert" className="text-sm">Не удалось загрузить описание упражнения. Подключитесь к сети и откройте тренировку заново.</p>}
       {earlierPartPending ? <p className="text-sm text-tg-hint">Сначала запишите или пропустите предыдущую часть этого подхода.</p> : null}
-      {execution.progress.facts[step.id] === "pending" ? <div className="flex flex-wrap gap-2"><button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
+      {execution.progress.facts[step.id] === "pending" ? <div className="flex flex-wrap gap-2">
+        <button type="button" className={btn} disabled={controller.busy || blockedRest || !restValid || !restSeconds} onClick={() => void controller.startTimer(restSeconds)}>Таймер отдыха</button>
+        {exercise ? <button type="button" className={btn} disabled={controller.busy || blockedRest || earlierPartPending || !restValid}
+          onClick={event => repeatPrevious(step, draft, exercise, event.currentTarget)}>Как прошлый</button> : null}
+        {simpleMode && !moreOpen && exercise ? <button type="button" className={btn} onClick={() => setMoreOpen(true)}>Ещё: отдых, медиа</button> : null}
+        <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip", step.id)}>{step.partOrdinal ? "Пропустить часть" : "Пропустить подход"}</button>
         {step.partOrdinal ? <button className={btn} disabled={controller.busy || blockedRest || earlierPartPending} onClick={() => void controller.act("skip_participant", step.id)}>Пропустить остаток подхода</button> : null}</div> : null}
     </article> : null}
     {last ? <button className={`${btn} w-full`} disabled={controller.busy} onClick={() => void controller.act("undo", last.stepId, undefined, last.actionId)}>Отменить последнее действие</button> : null}
     {editingStep && modalStep && modalDraft && modalExercise && modalTarget ? <AddSetModal key={`${modalStep.id}:${formVersion}`} open exercise={modalExercise}
-      initial={modalTarget} editing={editingStep.recorded} allowCompletionChange={false}
+      initial={editingStep.recorded ? modalTarget : { ...modalTarget, restTimeSec: modalRest }} editing={editingStep.recorded} allowCompletionChange={false}
       subtitle={`подход ${modalStep.setNumber}${modalStep.partOrdinal ? `, часть ${modalStep.partOrdinal} из ${modalDraft.parts?.length ?? 0}` : ""}`}
-      preserveWeightMode showTimerControls={false} requireWeight contextMessage={modalContext}
+      preserveWeightMode showTimerControls={!editingStep.recorded} requireWeight contextMessage={modalContext}
+      showAutoTimer={Boolean(preview?.restKind)} timerOnlyDisabled={blockedRest || staleModal || !controller.next}
+      onStartTimerOnly={duration => void controller.startTimer(duration).then(started => {
+        if (started) { controller.markEditing(false); setEditingStep(null); }
+      })}
       preserveBlankWeight={editingStep.recorded && modalStep.partOrdinal === null && !modalDraft.weight}
       applyLabel={editingStep.recorded ? "Сохранить исправление" : "Применить"} applyDisabled={staleModal || (blockedRest && !editingStep.recorded)}
       busy={controller.busy} error={staleModal ? "Подход изменён в другой вкладке. Введённые значения остались в форме." : modalError ?? controller.error}
@@ -178,7 +231,8 @@ export function WorkoutExecutionNavigator({ autoAdvance, weekPhase, simpleMode, 
         if (staleModal) return;
         const error = executionInputError(modalStep, modalDraft, value, modalExercise);
         setModalError(error);
-        if (!error) void persistResult(modalStep, modalDraft, value, editingStep.recorded).then(saved => { if (saved) setEditingStep(null); });
+        const result = editingStep.recorded || !preview?.restKind ? { ...value, restTimeSec: undefined, startTimer: undefined } : value;
+        if (!error) void persistResult(modalStep, modalDraft, result, editingStep.recorded).then(saved => { if (saved) setEditingStep(null); });
       }} /> : null}
     <details className="app-card p-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Все шаги и записи</summary><ol className="space-y-1">{controller.steps.slice(0, limit).map(item => {
       const name = plan.exercises.find(row => row.exercise_id === item.exerciseId)?.name_ru ?? catalog.find(row => row.id === item.exerciseId)?.name_ru ?? "Упражнение";

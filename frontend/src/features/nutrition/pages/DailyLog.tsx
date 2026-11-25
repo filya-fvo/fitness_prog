@@ -190,7 +190,7 @@ export function DailyLog() {
   const [ovC, setOvC] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
   const customFormVersion = useRef(0);
-  const addDialogRef = useModalAccessibility(addPanelOpen, () => setAddPanelOpen(false));
+  const addDialogRef = useModalAccessibility(addPanelOpen, closeAddPanel);
   const editDialogRef = useModalAccessibility(Boolean(editingLog), () => setEditingLog(null));
   const customDialogRef = useModalAccessibility(customOpen, closeCustomProduct);
   const [cName, setCName] = useState("");
@@ -206,8 +206,10 @@ export function DailyLog() {
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const [pendingBarcode, setPendingBarcode] = useState("");
   const [barcodeFallback, setBarcodeFallback] = useState<string | null>(null);
+  const barcodeLookupVersion = useRef(0);
   const [labelBusy, setLabelBusy] = useState(false);
   const [labelCameraOpen, setLabelCameraOpen] = useState(false);
+  const labelLookupVersion = useRef(0);
   const [labelFeedback, setLabelFeedback] = useState<{
     message: string;
     error: boolean;
@@ -216,8 +218,36 @@ export function DailyLog() {
   const [okNote, setOkNote] = useState<string | null>(null);
   const productSearchRef = useRef<HTMLInputElement>(null);
 
+  const clearBarcodeLookup = useCallback(() => {
+    barcodeLookupVersion.current += 1;
+    setPendingBarcode("");
+    setBarcodeFallback(null);
+    setBarcodeBusy(false);
+  }, []);
+
+  function closeAddPanel() {
+    clearBarcodeLookup();
+    cancelLabelLookup();
+    setAddPanelOpen(false);
+  }
+
+  const cancelLabelLookup = useCallback(() => {
+    labelLookupVersion.current += 1;
+    setLabelBusy(false);
+    setLabelFeedback(null);
+  }, []);
+
+  function resetProductFields() {
+    setCName("");
+    setCCal("");
+    setCP("");
+    setCF("");
+    setCC("");
+  }
+
   function closeCustomProduct() {
     ++customFormVersion.current;
+    cancelLabelLookup();
     setCustomOpen(false);
     setLabelReview(null);
   }
@@ -272,6 +302,8 @@ export function DailyLog() {
     setSaving(false);
     setCopyingYesterday(false);
     setBarcodeBusy(false);
+    setPendingBarcode("");
+    setBarcodeFallback(null);
     setLabelBusy(false);
     setLabelFeedback(null);
     return () => {
@@ -375,6 +407,8 @@ export function DailyLog() {
   }, [grams, ovC, ovCal, ovF, ovP, overrideOpen, selected]);
 
   const pickProduct = useCallback((p: NutritionProduct, opts?: { grams?: number; meal?: MealId }) => {
+    clearBarcodeLookup();
+    cancelLabelLookup();
     setSelected(p);
     setQuery(p.name_ru);
     setSuggestions([]);
@@ -387,7 +421,7 @@ export function DailyLog() {
     setAddError(null);
     setGrams(opts?.grams && opts.grams > 0 ? String(opts.grams) : "");
     if (opts?.meal) setMealType(opts.meal);
-  }, []);
+  }, [clearBarcodeLookup, cancelLabelLookup]);
 
   /** Drop draft selection before «Добавить» (unsaved product). */
   function clearSelectedDraft() {
@@ -504,7 +538,7 @@ export function DailyLog() {
         ? `${selected.name_ru} добавлен в «${mealLabel}». БЖУ сохранены для вас и будущих добавлений; общий продукт отправлен на проверку.`
         : `${selected.name_ru} добавлен в «${mealLabel}».${closeAfterSave ? "" : " Можно сразу выбрать следующий продукт."}`);
       toast(`Добавлено · ${selected.name_ru} · ${g} г · ${mealLabel}`);
-      if (closeAfterSave) setAddPanelOpen(false);
+      if (closeAfterSave) closeAddPanel();
       else window.requestAnimationFrame(() => productSearchRef.current?.focus());
     } catch (err) {
       if (activeScope.current === scope && useUserStore.getState().user?.id === ownerId) {
@@ -724,6 +758,8 @@ export function DailyLog() {
   const handleBarcodeDetected = useCallback(async (code: string) => {
     const digits = String(code || "").replace(/\D/g, "");
     if (digits.length < 8) return;
+    const lookupVersion = ++barcodeLookupVersion.current;
+    const currentLookup = () => isCurrentScope() && lookupVersion === barcodeLookupVersion.current;
     setBarcodeBusy(true);
     setError(null);
     setOkNote(null);
@@ -734,7 +770,7 @@ export function DailyLog() {
         return;
       }
       const res = await lookupBarcode(digits);
-      if (!isCurrentScope()) return;
+      if (!currentLookup()) return;
       if (!res.found || !res.product) {
         if (res.error === "invalid_barcode") {
           setError("Некорректный штрихкод. Попробуйте ещё раз или сфотографируйте этикетку.");
@@ -764,15 +800,17 @@ export function DailyLog() {
         `Найден: ${res.product.name_ru}. Укажите граммы (сейчас ${gramsDefault} г) и нажмите «Добавить».`,
       );
     } catch (err) {
-      if (!isCurrentScope()) return;
+      if (!currentLookup()) return;
       setError(toUserMessage(err, "Не удалось распознать штрихкод"));
     } finally {
-      if (isCurrentScope()) setBarcodeBusy(false);
+      if (currentLookup()) setBarcodeBusy(false);
     }
   }, [isCurrentScope, pickProduct]);
 
   async function handleLabelPhoto(file: File | null) {
     if (!file || labelBusy) return;
+    const version = ++labelLookupVersion.current;
+    const currentLabel = () => isCurrentScope() && version === labelLookupVersion.current;
     setLabelCameraOpen(false);
     if (!getStoredToken() || !isOnline()) {
       const message = "Распознавание этикетки доступно онлайн после входа";
@@ -786,13 +824,14 @@ export function DailyLog() {
     setLabelFeedback({ message: "Подготавливаем фото…", error: false });
     try {
       const prepared = await prepareNutritionLabelImage(file);
-      if (!isCurrentScope()) return;
+      if (!currentLabel()) return;
       setLabelFeedback({ message: "Распознаём этикетку, это может занять несколько секунд…", error: false });
       const result = await recognizeNutritionLabel(prepared);
-      if (!isCurrentScope()) return;
+      if (!currentLabel()) return;
       if (!result.recognized) {
         const message = "Не удалось распознать этикетку. Внесите данные с упаковки вручную.";
-        setLabelFeedback({ message, error: true });
+        setLabelFeedback({ message: [message, ...result.warnings].join(" "), error: true });
+        resetProductFields();
         setLabelReview(null);
         setCustomError(null);
         setCustomOpen(true);
@@ -818,19 +857,20 @@ export function DailyLog() {
         ].every((value) => value != null),
       });
     } catch (err) {
-      if (!isCurrentScope()) return;
+      if (!currentLabel()) return;
       const message = toUserMessage(
         err,
         err instanceof Error ? err.message : "Не удалось распознать этикетку",
       );
       const fallbackMessage = `${message} Внесите данные с упаковки вручную.`;
+      resetProductFields();
       setLabelReview(null);
       setLabelFeedback({ message: fallbackMessage, error: true });
       setCustomError(null);
       setCustomOpen(true);
       toast(fallbackMessage, "error", 5000);
     } finally {
-      if (isCurrentScope()) setLabelBusy(false);
+      if (currentLabel()) setLabelBusy(false);
     }
   }
 
@@ -914,6 +954,8 @@ export function DailyLog() {
           onClick={() => {
             setError(null);
             setOkNote(null);
+            clearBarcodeLookup();
+            cancelLabelLookup();
             setScannerOpen(true);
           }}
           className="w-full rounded-xl bg-tg-bg px-3 py-3 text-sm font-semibold text-tg-link disabled:opacity-50"
@@ -947,7 +989,7 @@ export function DailyLog() {
               <button
                 type="button"
                 onClick={() => {
-                  setLabelFeedback(null);
+                  cancelLabelLookup();
                   setLabelCameraOpen(true);
                 }}
                 className="rounded-xl bg-tg-button px-3 py-2 text-xs font-semibold text-tg-button-text"
@@ -957,6 +999,7 @@ export function DailyLog() {
               <button
                 type="button"
                 onClick={() => {
+                  cancelLabelLookup();
                   setLabelReview(null);
                   setCustomError(null);
                   setCustomOpen(true);
@@ -969,7 +1012,8 @@ export function DailyLog() {
             <button
               type="button"
               onClick={() => {
-                setBarcodeFallback(null);
+                clearBarcodeLookup();
+                cancelLabelLookup();
                 setScannerOpen(true);
               }}
               className="w-full rounded-xl px-3 py-2 text-xs text-tg-link"
@@ -1180,6 +1224,8 @@ export function DailyLog() {
         <button
           type="button"
           onClick={() => {
+            clearBarcodeLookup();
+            cancelLabelLookup();
             setLabelReview(null);
             setCustomError(null);
             setCustomOpen(true);
@@ -1321,7 +1367,7 @@ export function DailyLog() {
         </> : null}
         <button
           type="button"
-          onClick={() => setAddPanelOpen(false)}
+          onClick={closeAddPanel}
           className="w-full rounded-xl bg-tg-bg px-4 py-3 text-sm font-medium text-tg-hint"
         >
           Закрыть добавление
@@ -1542,9 +1588,9 @@ export function DailyLog() {
               </div>
             ) : <div className="space-y-1 text-xs text-tg-hint">
               {labelFeedback?.error ? <p className="text-amber-700 dark:text-amber-300">{labelFeedback.message}</p> : null}
-              {pendingBarcode ? <p>Штрихкод {pendingBarcode} будет сохранён с этим продуктом.</p> : null}
               <p>БЖУ и ккал — на 100 г. Продукт увидят все пользователи.</p>
             </div>}
+            {pendingBarcode ? <p className="text-xs text-tg-hint">Штрихкод {pendingBarcode} будет сохранён с этим продуктом.</p> : null}
             <AppField label="Название" value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 w-full" />
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs text-tg-hint">Ккал<DecimalInput value={cCal} onValueChange={setCCal} className="app-field mt-1 w-full" /></label>
@@ -1580,12 +1626,13 @@ export function DailyLog() {
             onDetected={handleBarcodeDetected}
             onOpenLabel={() => {
               setScannerOpen(false);
-              setLabelFeedback(null);
+              cancelLabelLookup();
               setLabelCameraOpen(true);
             }}
             onManualProduct={() => {
               setScannerOpen(false);
               setPendingBarcode("");
+              cancelLabelLookup();
               setLabelReview(null);
               setCustomError(null);
               setCustomOpen(true);

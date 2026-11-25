@@ -1,7 +1,7 @@
 /** Deadlines are durable; intervals only repaint. One action can create at most one pause. */
 import type { ExecutionStep } from "./workoutExecution";
 
-export type RestKind = "cluster" | "drop_transition" | "group_transition" | "round" | "between_sets" | "between_blocks";
+export type RestKind = "cluster" | "drop_transition" | "group_transition" | "round" | "between_sets" | "between_blocks" | "manual";
 export type ClockSnapshot = { wallMs: number; monotonicMs: number; processId: string };
 export type RestState = {
   version: 1;
@@ -19,7 +19,8 @@ export type RestState = {
   completionNotified: boolean;
 };
 type RestInput = Pick<RestState, "owner" | "clientWorkoutId" | "sourceActionId" | "targetStep" | "restKind" | "durationSec"> & { confirmedAt: ClockSnapshot };
-const restKinds: RestKind[] = ["cluster", "drop_transition", "group_transition", "round", "between_sets", "between_blocks"];
+const restKinds: RestKind[] = ["cluster", "drop_transition", "group_transition", "round", "between_sets", "between_blocks", "manual"];
+const durationLimit = (kind: RestKind) => kind === "manual" ? 86400 : 600;
 const finiteTime = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= 8.64e15;
 const boundedId = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 256;
 function validClock(value: unknown): value is ClockSnapshot {
@@ -42,13 +43,13 @@ function validRest(value: unknown): value is RestState {
   const rest = value as RestState;
   return rest.version === 1 && boundedId(rest.transitionId) && boundedId(rest.sourceActionId) && boundedId(rest.owner) && boundedId(rest.clientWorkoutId) && validStep(rest.targetStep) &&
     restKinds.includes(rest.restKind) && finiteTime(rest.startedAt) && finiteTime(rest.endsAt) &&
-    Number.isInteger(rest.durationSec) && rest.durationSec >= 0 && rest.durationSec <= 600 && validClock(rest.anchor) &&
+    Number.isInteger(rest.durationSec) && rest.durationSec >= 0 && rest.durationSec <= durationLimit(rest.restKind) && validClock(rest.anchor) &&
     finiteTime(rest.anchor.remainingMs) && rest.anchor.remainingMs >= 0 && rest.anchor.remainingMs <= rest.durationSec * 1000 &&
     typeof rest.requiresConfirmation === "boolean" && typeof rest.completionNotified === "boolean";
 }
 
 export function createExecutionRest(input: RestInput): RestState | null {
-  if (!Number.isInteger(input.durationSec) || input.durationSec < 0 || input.durationSec > 600 || !validClock(input.confirmedAt)) throw new Error("Проверьте время отдыха");
+  if (!Number.isInteger(input.durationSec) || input.durationSec < 0 || input.durationSec > durationLimit(input.restKind) || !validClock(input.confirmedAt)) throw new Error("Проверьте время отдыха");
   if (input.durationSec === 0) return null;
   const rest: RestState = { version: 1, transitionId: `${input.sourceActionId}:rest`, sourceActionId: input.sourceActionId,
     owner: input.owner, clientWorkoutId: input.clientWorkoutId, targetStep: input.targetStep, restKind: input.restKind,
@@ -93,7 +94,7 @@ export function adjustExecutionRest(rest: RestState, deltaSeconds: number, now: 
   const clock = readClock(rest, now);
   if (!Number.isFinite(deltaSeconds) || clock.uncertain || clock.remainingMs <= 0) return rest;
   const delta = Math.round(deltaSeconds);
-  const durationSec = Math.max(0, Math.min(600, rest.durationSec + delta));
+  const durationSec = Math.max(0, Math.min(durationLimit(rest.restKind), rest.durationSec + delta));
   const remainingMs = Math.max(0, Math.min(durationSec * 1000, clock.remainingMs + delta * 1000));
   return { ...rest, durationSec, endsAt: now.wallMs + remainingMs, anchor: { ...now, remainingMs }, completionNotified: remainingMs === 0 || rest.completionNotified };
 }

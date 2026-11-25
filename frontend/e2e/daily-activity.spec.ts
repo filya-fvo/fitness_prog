@@ -3,6 +3,40 @@ import { expect, test } from "@playwright/test";
 
 const USER_ID = "89999999-9999-4999-8999-999999999999";
 
+test("an offline correction to an existing check-in survives reload and is synced", async ({ page, context }) => {
+  await page.addInitScript(() => localStorage.setItem("fitness_jwt", "offline-activity-e2e"));
+  await page.route("**/users/me", route => route.fulfill({ json: {
+    legal_status: acceptedLegalStatus(USER_ID), id: USER_ID, username: "checkin-qa", telegram_id: null, auth_email: null,
+    anthropometry: {}, goals: { onboarding_completed: true }, subscription_status: "free", stars_balance: 0,
+    onboarding_completed: true,
+  } }));
+  await page.route("**/notifications/water**", route => route.fulfill({ json: {
+    date: new URL(route.request().url()).searchParams.get("date"), ml: 750, daily_target_ml: 2500,
+  } }));
+  let remoteSteps = 5000;
+  const writes: number[] = [];
+  await page.route("**/metrics/daily**", route => {
+    const date = new URL(route.request().url()).searchParams.get("date");
+    if (route.request().method() === "PUT") {
+      remoteSteps = route.request().postDataJSON().steps;
+      writes.push(remoteSteps);
+    }
+    return route.fulfill({ json: { date, steps: remoteSteps, sleep_minutes: 450, active_minutes: 35, sources: {} } });
+  });
+  await page.goto("/activity");
+  const steps = page.getByRole("region", { name: "Шаги" }).getByRole("textbox", { name: "Шаги" });
+  await expect(steps).toHaveValue("5000");
+  await context.setOffline(true);
+  await steps.fill("6500");
+  await page.getByRole("button", { name: "Сохранить показатели" }).click();
+  await expect(page.getByText("Сохранено на устройстве — синхронизируем позже")).toBeVisible();
+  expect(writes).toEqual([]);
+  await context.setOffline(false);
+  await page.reload();
+  await expect.poll(() => writes).toEqual([6500]);
+  await expect(steps).toHaveValue("6500");
+});
+
 test("home activity cards open the dated activity page with direct controls", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.clock.install({ time: new Date("2026-09-07T12:00:00+03:00") });

@@ -1,10 +1,10 @@
 import { useId, useState } from "react";
 import { validProgramNumber } from "./programNumbers";
 
-type Props = { seconds: number; draft?: string; onChange: (value: string) => void };
+type Props = { seconds: number; draft?: string; onChange: (value: string) => void; label?: string; hint?: string };
 const PRESETS = [0, 45, 60, 75, 90, 120, 150, 180];
 
-export function WorkoutRestControl({ seconds, draft, onChange }: Props) {
+export function WorkoutRestControl({ seconds, draft, onChange, label = "Отдых между подходами", hint = "Применяется к незавершённым подходам этого упражнения." }: Props) {
   const id = useId();
   const [editing, setEditing] = useState(false);
   const value = draft ?? String(seconds);
@@ -15,7 +15,7 @@ export function WorkoutRestControl({ seconds, draft, onChange }: Props) {
   }
   return <div className="rounded-xl bg-tg-bg p-3">
     <div className="mb-2 flex items-center justify-between gap-2">
-      <label htmlFor={id} className="text-xs font-medium text-tg-hint">Отдых между подходами</label>
+      <label htmlFor={id} className="text-xs font-medium text-tg-hint">{label}</label>
       <p className="text-sm font-semibold tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</p>
     </div>
     <div className="flex items-center gap-1">
@@ -38,6 +38,6 @@ export function WorkoutRestControl({ seconds, draft, onChange }: Props) {
         {sec === 0 ? "Без отдыха" : sec < 60 ? `${sec}с` : sec % 60 === 0 ? `${sec / 60}м` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`}
       </button>)}
     </div>
-    <p className="mt-1.5 text-[10px] text-tg-hint">Применяется к незавершённым подходам этого упражнения.</p>
+    <p className="mt-1.5 text-[10px] text-tg-hint">{hint}</p>
   </div>;
 }

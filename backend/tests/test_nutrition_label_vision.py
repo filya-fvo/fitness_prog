@@ -20,6 +20,32 @@ class FakeUpload:
         return self.data[:size]
 
 
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("serving_label", ["Serving 50 g", "Per serving"])
+def test_parser_uses_explicit_per_100_column(reverse, serving_label):
+    rows = [
+        ("", serving_label, "per 100 g"),
+        ("Energy ", "120 kcal", "240 kcal"),
+        ("Protein ", "6 g", "12 g"),
+        ("Fat ", "4 g", "8 g"),
+        ("Carbohydrates ", "15 g", "30 g"),
+    ]
+    label = "Nutrition facts\n" + "\n".join(
+        name + " | ".join((per_100, serving) if reverse else (serving, per_100))
+        for name, serving, per_100 in rows
+    )
+    parsed = parse_ocr_text(label)
+    assert (parsed.calories_kcal, parsed.proteins_g, parsed.fats_g, parsed.carbs_g) == (240, 12, 8, 30)
+
+
+@pytest.mark.parametrize("separator", [" ", "\n"])
+def test_parser_does_not_guess_unaligned_serving_and_per_100_columns(separator):
+    parsed = parse_ocr_text(f"Nutrition facts\nServing 50 g{separator}per 100 g\nEnergy 120 kcal 240 kcal\nProtein 6 g 12 g")
+    assert parsed.recognized is False
+    assert parsed.calories_kcal is None
+    assert any("столбц" in warning for warning in parsed.warnings)
+
+
 class FakeOcrResponse:
     def raise_for_status(self) -> None:
         return None

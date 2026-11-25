@@ -16,6 +16,8 @@ export type HabitDay = {
   cycleReadiness?: CycleReadiness | null;
   cycleReadinessPending?: boolean;
   waterPending?: boolean;
+  metricsPending?: boolean;
+  metricsRevision?: string;
   checkedIn: boolean;
 };
 
@@ -151,6 +153,10 @@ export function getHabitDay(
       waterPending: false,
       checkedIn: false,
     };
+}
+
+export function pendingCheckinDates(ownerUserId: string): string[] {
+  return Object.entries(readStore(ownerUserId)).filter(([, day]) => day?.metricsPending === true).map(([date]) => date);
 }
 
 export function cacheHabitDay(day: HabitDay, ownerUserId?: string | null): HabitDay {

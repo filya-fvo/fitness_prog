@@ -45,6 +45,7 @@ export type TransitionInput = {
   autoAdvance?: boolean;
   allowOutOfOrder?: boolean;
   manualContinue?: boolean;
+  restOverrideSec?: number;
 };
 export type TransitionDecision = ExecutionProgress & {
   accepted: boolean;
@@ -166,7 +167,7 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
   if (input.action === "undo") {
     const last = input.lastAction;
     if (!last || last.stepId !== source.id || last.actionId !== input.undoActionId) return { ...base, blockedReason: "undo_unavailable" };
-    const rest = input.rest?.sourceActionId === last.actionId ? null : input.rest;
+    const rest = input.rest?.sourceActionId === last.actionId || input.rest?.restKind === "manual" ? null : input.rest;
     const restored = { ...input.facts, ...last.previousFacts };
     const firstPending = steps.find(step => (restored[step.id] ?? "pending") === "pending") ?? null;
     return { ...base, ...accepted, facts: restored, cursor: firstPending?.id ?? null,
@@ -184,6 +185,7 @@ export function resolveExecutionTransition(input: TransitionInput): TransitionDe
   const nextPart = source.partOrdinal === null ? null : steps.find(step => step.exerciseId === source.exerciseId && step.setNumber === source.setNumber && step.partOrdinal !== null && step.partOrdinal > source.partOrdinal! && (facts[step.id] ?? "pending") === "pending") ?? null;
   const nextStep = nextPart ?? steps.find(step => (facts[step.id] ?? "pending") === "pending") ?? null;
   const pause = skipping || (source.id !== input.cursor && !nextPart) ? { restKind: null, durationSec: 0 } : pauseFor(input.plan, source, nextStep);
+  if (pause.restKind && input.restOverrideSec !== undefined) pause.durationSec = input.restOverrideSec;
   const rest = nextStep && pause.restKind ? createExecutionRest({
     owner: input.owner, clientWorkoutId: input.clientWorkoutId, sourceActionId: input.actionId,
     targetStep: nextStep, restKind: pause.restKind, durationSec: pause.durationSec, confirmedAt: input.confirmedAt,

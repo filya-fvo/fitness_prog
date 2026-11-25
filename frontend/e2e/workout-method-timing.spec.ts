@@ -1,7 +1,53 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { applySetWeight, installTimingApi, openPartEditor, quickComplete } from "./fixtures/workout-execution-api";
 const owner = "22222222-2222-4222-8222-222222222222";
+
+async function activeTimer(page: Page): Promise<{ durationSec: number; endsAt: number; transitionId: string }> {
+  return page.evaluate(async () => {
+    const path = "/src/store/workoutStore.ts";
+    const { useWorkoutStore } = await import(path);
+    return useWorkoutStore.getState().execution.progress.rest;
+  });
+}
+
+test("structured sets expose manual rest and reuse a recorded result", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-19T09:00:00Z"));
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
+  await page.getByRole("button", { name: "Править часть 1", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Отдых после подхода").selectOption("45");
+  await dialog.getByRole("button", { name: /Только таймер/ }).click();
+  await expect(page.getByLabel("Осталось отдыха")).toBeVisible();
+  expect((await activeTimer(page)).durationSec).toBe(45);
+  expect(api.writes).toHaveLength(0);
+  await page.getByRole("button", { name: "Закончить отдых" }).click();
+  await page.getByRole("button", { name: "Править часть 1", exact: true }).click();
+  await dialog.getByRole("checkbox", { name: /Запустить таймер/ }).uncheck();
+  await dialog.getByRole("button", { name: "Применить", exact: true }).click();
+  await expect(page.getByText("Часть 2 из 3", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Осталось отдыха")).toHaveCount(0);
+  await page.getByRole("button", { name: "Как прошлый", exact: true }).click();
+  await expect.poll(() => api.writes.length).toBe(2);
+  expect(api.writes[1].parts[1]).toMatchObject({ weight: 100, reps: 4, status: "completed" });
+});
+
+test("timer only uses work duration on an out-of-order timed exercise", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-19T09:00:00Z"));
+  const api = await installTimingApi(page);
+  await page.goto("/e2e/fixtures/workout-method-runner.html?kind=clustergrouptriset");
+  await page.getByRole("navigation", { name: "Упражнения тренировки" }).getByRole("button", { name: /Планка/ }).click();
+  await page.getByRole("button", { name: "Править подход 1", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("checkbox", { name: /Запустить таймер/ })).toHaveCount(0);
+  await dialog.getByRole("button", { name: /Только таймер/ }).click();
+  await expect(page.getByLabel("Осталось отдыха")).toBeVisible();
+  expect((await activeTimer(page)).durationSec).toBe(40);
+  expect(api.writes).toHaveLength(0);
+  await page.getByRole("button", { name: "Закончить отдых" }).click();
+  await expect(page.getByRole("heading", { name: "Планка", exact: true })).toBeVisible();
+});
 
 test("one editor and quick completion show the recorded cluster result on a short mobile screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 600 });
@@ -465,11 +511,14 @@ test("old correction keeps deadline; undo cancels last part only", async ({ page
   const api = await installTimingApi(page);
   await page.goto("/e2e/fixtures/workout-method-runner.html?kind=cluster");
   await quickComplete(page).click();
+  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toBeVisible();
+  const originalTimer = await activeTimer(page);
   await page.clock.runFor(5000);
   const editor = await openPartEditor(page, 1);
   await editor.getByRole("combobox", { name: "Повторения: выбрать значение" }).selectOption("3");
   await editor.getByRole("button", { name: "Сохранить исправление", exact: true }).click();
-  await expect(page.getByLabel("Осталось отдыха", { exact: true })).toHaveText("0:15");
+  await expect(editor).toHaveCount(0);
+  expect(await activeTimer(page)).toMatchObject({ endsAt: originalTimer.endsAt, transitionId: originalTimer.transitionId });
   await page.getByRole("button", { name: "Закончить отдых", exact: true }).click();
   await quickComplete(page).click();
   await page.getByRole("button", { name: "Отменить последнее действие", exact: true }).click();

@@ -12,11 +12,12 @@ type Props = {
   busy: boolean;
   resting: boolean;
   suggestion?: ExecutionLoadSuggestion;
+  invalidRestIds: string[];
   onEdit: (step: ExecutionStep, opener: HTMLButtonElement) => void;
   onComplete: (step: ExecutionStep, draft: LocalSetDraft, values: LocalSetDraft) => void;
 };
 
-export function ExecutionSetList({ exercise, row, drafts, steps, facts, viewedId, busy, resting, suggestion, onEdit, onComplete }: Props) {
+export function ExecutionSetList({ exercise, row, drafts, steps, facts, viewedId, busy, resting, suggestion, invalidRestIds, onEdit, onComplete }: Props) {
   return <ol aria-label="Подходы упражнения" className="app-card-inset space-y-2 rounded-xl p-2">
     {drafts.map(draft => {
       const entries = steps.filter(step => step.setNumber === draft.setNumber);
@@ -42,7 +43,8 @@ export function ExecutionSetList({ exercise, row, drafts, steps, facts, viewedId
             {status !== "skipped" ? <div className="flex flex-wrap items-center gap-1.5">
               <button type="button" aria-label={editLabel} disabled={busy || blockedPart} className="min-h-11 rounded-lg bg-tg-secondary px-2.5 text-xs font-medium disabled:opacity-40"
                 onClick={event => onEdit(entry, event.currentTarget)}>Править</button>
-              {viewed && status === "pending" ? <button type="button" disabled={busy || resting || blockedPart || executionInputError(entry, draft, input, exercise) !== null}
+              {(viewed || entry.kind === "standard") && status === "pending" ? <button type="button" disabled={busy || resting || blockedPart || invalidRestIds.includes(entry.id) || executionInputError(entry, draft, input, exercise) !== null}
+                aria-label={viewed ? undefined : `Готово: подход ${entry.setNumber}`}
                 className="app-button app-gradient-action min-h-11 rounded-lg px-2.5 py-1 text-xs disabled:opacity-50"
                 onClick={() => onComplete(entry, draft, input)}>Готово</button> : null}
             </div> : null}

@@ -5,11 +5,12 @@ import type { LocalSetDraft, Workout, WorkoutPlan, WorkoutSet } from "@/types/wo
 import { MAX_EXECUTION_ACTIONS, buildExecutionSteps, executionStepId, resolveExecutionTransition, type ExecutionProgress, type TransitionInput } from "@/utils/workoutExecution";
 import { executionFactsFromDrafts } from "@/utils/workoutSession";
 import { ensureExecutionDrafts, executionSnapshotKey, assertExecutionSessionSnapshot } from "@/utils/workoutExecutionState";
-import { remainingRestMs, adjustExecutionRest, claimRestCompletion, executionRestNeedsConfirmation, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
+import { remainingRestMs, adjustExecutionRest, claimRestCompletion, createExecutionRest, executionRestNeedsConfirmation, finishExecutionRest, restoreExecutionRest, type ClockSnapshot, workoutClockSnapshot } from "@/utils/workoutRest";
 import type { ActiveWorkoutTopologyApply } from "@/api/activeWorkoutTopology";
 
 export type ExecutionValues = { baseSetRevision?: number; baseDraft?: string; manualSelection?: boolean; reps: string; weight: string; weightMode?: "total" | "per_hand" | null;
-  durationSec: number | null; note?: string | null; machineParams?: Record<string, string | number> | null };
+  durationSec: number | null; note?: string | null; machineParams?: Record<string, string | number> | null;
+  restTimeSec?: number; startTimer?: boolean };
 export type ExecutionAction = Pick<TransitionInput, "owner" | "clientWorkoutId" | "action" | "actionId" | "stepId" | "confirmedAt" | "undoActionId"> & {
   expectedRevision: number; values?: ExecutionValues; autoAdvance: boolean;
 };
@@ -201,7 +202,13 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
     if (execution.progress.processedActionIds.includes(input.actionId)) return { session, accepted: false };
     if (execution.revision !== input.expectedRevision) throw new Error("Тренировка изменилась в другой вкладке. Повторите действие после обновления");
     if (session.workout.status !== "planned") throw new Error("Тренировка уже завершена");
+    const chosenRest = input.values?.restTimeSec;
+    if (chosenRest !== undefined && (!Number.isInteger(chosenRest) || chosenRest < 0 || chosenRest > 600)) {
+      throw new Error("Укажите время отдыха от 0 до 600 секунд");
+    }
+    const restOverrideSec = input.values?.startTimer === false ? 0 : chosenRest;
     const decision = resolveExecutionTransition({ ...input, ...execution.progress, plan: session.workout.plan as WorkoutPlan, rest: execution.progress.rest,
+      restOverrideSec,
       allowOutOfOrder: execution.viewStepId === input.stepId || (input.values?.manualSelection === true && input.values.baseDraft !== undefined) });
     if (!decision.accepted) {
       if (decision.blockedReason === "active_rest") throw new Error("Сначала закончите текущий отдых");
@@ -219,6 +226,7 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
       draft.weightMode = input.values.weightMode ?? draft.weightMode ?? null;
       if (input.values.note !== undefined) draft.note = input.values.note;
       if (input.values.machineParams !== undefined) draft.machineParams = input.values.machineParams;
+      if (step.partOrdinal === null && chosenRest !== undefined) draft.restTimeSec = chosenRest;
       if (step.partOrdinal === null) Object.assign(draft, { reps: input.values.reps, weight: input.values.weight, durationSec: input.values.durationSec });
       else {
         const { reps, weight, durationSec } = input.values;
@@ -265,6 +273,31 @@ export async function commitExecutionAction(input: ExecutionAction): Promise<Exe
   });
 }
 
+export async function startExecutionTimer(owner: string, client: string, actionId: string, durationSec: number, now: ClockSnapshot): Promise<LocalWorkoutSession> {
+  requireOwner(owner);
+  return db.transaction("rw", db.sessions, db.workouts, db.meta, async () => {
+    const session = await db.sessions.get(client);
+    assertSession(session, owner);
+    await requireNoPendingTopology(owner, client);
+    const execution = session.execution!;
+    const progress = execution.progress;
+    if (progress.processedActionIds.includes(actionId)) return session;
+    const targetStep = buildExecutionSteps(session.workout.plan as WorkoutPlan).find(step => step.id === progress.cursor);
+    if (!targetStep || session.workout.status !== "planned") throw new Error("Нет следующего шага тренировки");
+    if (progress.rest && (remainingRestMs(progress.rest, now) > 0 || executionRestNeedsConfirmation(progress.rest, now))) {
+      throw new Error("Сначала закончите текущий отдых");
+    }
+    if (progress.processedActionIds.length >= MAX_EXECUTION_ACTIONS) throw new Error("Достигнут лимит действий");
+    const rest = createExecutionRest({ owner, clientWorkoutId: client, sourceActionId: actionId, targetStep, restKind: "manual", durationSec, confirmedAt: now });
+    if (!rest) return session;
+    progress.rest = rest;
+    progress.processedActionIds = [...progress.processedActionIds, actionId];
+    execution.revision += 1;
+    await writeSession(session);
+    return session;
+  });
+}
+
 export async function claimExecutionSignal(owner: string, client: string, now: ClockSnapshot, autoAdvance: boolean): Promise<{ session: LocalWorkoutSession; claimed: boolean }> {
   requireOwner(owner);
   return db.transaction("rw", db.sessions, db.workouts, async () => {
@@ -276,7 +309,7 @@ export async function claimExecutionSignal(owner: string, client: string, now: C
     if (!result.shouldNotify) return { session, claimed: false };
     progress.rest = result.rest;
     session.execution!.revision += 1;
-    jumpToCursor(session, autoAdvance);
+    jumpToCursor(session, autoAdvance && result.rest.restKind !== "manual");
     await writeSession(session);
     return { session, claimed: true };
   });
@@ -299,7 +332,7 @@ export async function changeExecutionRest(input: { owner: string; clientWorkoutI
     execution.progress.rest = next;
     if (execution.progress.processedActionIds.length < MAX_EXECUTION_ACTIONS) execution.progress.processedActionIds = [...execution.progress.processedActionIds, input.actionId];
     execution.revision += 1;
-    if (input.deltaSeconds === undefined) jumpToCursor(session, input.autoAdvance);
+    if (input.deltaSeconds === undefined) jumpToCursor(session, input.autoAdvance && rest.restKind !== "manual");
     await writeSession(session);
     return session;
   });
